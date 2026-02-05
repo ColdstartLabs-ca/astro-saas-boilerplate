@@ -69,7 +69,7 @@ export function LocaleSwitcher(): JSX.Element {
       <button
         onClick={() => setIsOpen(!isOpen)}
         className="flex items-center gap-1.5 px-2 py-1.5 rounded-lg text-sm font-medium text-muted-foreground hover:text-white hover:bg-white/5 transition-colors"
-        aria-label={t('i18n.switcher.ariaLabel')}
+        aria-label={t('switcher.ariaLabel')}
       >
         <CurrentFlag className="w-5 h-3.5 rounded-sm" />
         <ChevronDown

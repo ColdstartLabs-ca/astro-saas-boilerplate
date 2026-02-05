@@ -1,5 +1,4 @@
 import type { Metadata } from 'next';
-import { Suspense } from 'react';
 import { HomePageClient } from '@client/components/pages/HomePageClient';
 import { clientEnv } from '@shared/config/env';
 import type { Locale } from '@/i18n/config';
@@ -48,20 +47,5 @@ export default async function LocaleHomePage({ params }: ILocaleHomePageProps) {
   // Locale is available in params but not used in this generic page
   await params;
 
-  return (
-    <>
-      <Suspense
-        fallback={
-          <div className="min-h-screen flex items-center justify-center bg-background">
-            <div className="text-center">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto mb-4"></div>
-              <p className="text-muted-foreground">Loading...</p>
-            </div>
-          </div>
-        }
-      >
-        <HomePageClient />
-      </Suspense>
-    </>
-  );
+  return <HomePageClient />;
 }

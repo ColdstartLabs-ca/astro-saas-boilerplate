@@ -8,7 +8,7 @@ import { clientEnv } from '@shared/config/env';
 import { DEFAULT_LOCALE } from '@src/i18n/config';
 import { getTranslations } from '@src/i18n/utils';
 import { Menu, X } from 'lucide-react';
-import { useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 
 export function NavBarAstro(): JSX.Element {
   const t = useMemo(() => getTranslations('nav'), []);
@@ -41,6 +41,17 @@ export function NavBarAstro(): JSX.Element {
   // Check if user is authenticated through email/password
   const isPasswordUser = user?.provider === AuthProvider.EMAIL;
 
+  // Active page detection — must read pathname in useEffect to avoid SSR/hydration mismatch
+  const [pathname, setPathname] = useState('');
+  useEffect(() => {
+    setPathname(window.location.pathname);
+  }, []);
+  const isActive = (path: string) => {
+    if (!pathname) return false;
+    if (path === '/') return pathname === '/' || pathname === `/${DEFAULT_LOCALE}`;
+    return pathname === path || pathname.startsWith(`${path}/`);
+  };
+
   return (
     <header className="sticky top-0 z-50 w-full border-b border-border bg-main/80 backdrop-blur-xl transition-all duration-300">
       <div className="mx-auto flex h-20 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
@@ -70,26 +81,32 @@ export function NavBarAstro(): JSX.Element {
           {isAuthenticated && (
             <a
               href={localizedPath('/dashboard')}
-              className="text-sm font-bold text-text-muted hover:text-white transition-colors"
+              className={`text-sm font-bold transition-colors pb-1 ${isActive('/dashboard') ? 'text-white border-b-2 border-accent' : 'text-text-muted hover:text-white border-b-2 border-transparent'}`}
             >
               {t('dashboard')}
             </a>
           )}
           <a
+            href={localizedPath('/features')}
+            className={`text-sm font-bold transition-colors pb-1 ${isActive('/features') ? 'text-white border-b-2 border-accent' : 'text-text-muted hover:text-white border-b-2 border-transparent'}`}
+          >
+            {t('features')}
+          </a>
+          <a
             href={localizedPath('/blog')}
-            className="text-sm font-bold text-text-muted hover:text-white transition-colors"
+            className={`text-sm font-bold transition-colors pb-1 ${isActive('/blog') ? 'text-white border-b-2 border-accent' : 'text-text-muted hover:text-white border-b-2 border-transparent'}`}
           >
             {t('blog')}
           </a>
           <a
             href={localizedPath('/pricing')}
-            className="text-sm font-bold text-text-muted hover:text-white transition-colors"
+            className={`text-sm font-bold transition-colors pb-1 ${isActive('/pricing') ? 'text-white border-b-2 border-accent' : 'text-text-muted hover:text-white border-b-2 border-transparent'}`}
           >
             {t('pricing')}
           </a>
           <a
             href={localizedPath('/help')}
-            className="text-sm font-bold text-text-muted hover:text-white transition-colors"
+            className={`text-sm font-bold transition-colors pb-1 ${isActive('/help') ? 'text-white border-b-2 border-accent' : 'text-text-muted hover:text-white border-b-2 border-transparent'}`}
           >
             {t('support')}
           </a>
@@ -98,9 +115,24 @@ export function NavBarAstro(): JSX.Element {
         <div className="flex items-center gap-2 lg:gap-3 xl:gap-4">
           <LocaleSwitcher />
           {isLoading ? (
-            <div className="hidden md:flex items-center gap-3">
-              <div className="h-10 w-24 bg-white/5 rounded-full animate-pulse"></div>
-              <div className="h-10 w-20 bg-white/5 rounded-xl animate-pulse"></div>
+            /* Real button markup with invisible text for pixel-perfect skeleton sizing */
+            <div
+              className="flex items-center gap-2 lg:gap-3 xl:gap-4 pointer-events-none"
+              aria-hidden="true"
+            >
+              <div className="hidden xl:flex items-center gap-1.5 bg-white/5 animate-pulse px-2.5 py-1.5 rounded-full">
+                <span className="h-1.5 w-1.5 rounded-full flex-shrink-0 opacity-0"></span>
+                <span className="text-[10px] font-black uppercase tracking-tighter whitespace-nowrap opacity-0">
+                  {t('freeCredits')}
+                </span>
+              </div>
+              <span className="hidden xl:inline-flex items-center justify-center rounded-xl text-sm font-bold bg-white/5 animate-pulse h-10 px-3 py-2">
+                <span className="opacity-0">{t('signIn')}</span>
+              </span>
+              <span className="inline-flex items-center justify-center rounded-xl text-sm font-black bg-white/5 animate-pulse h-10 px-3 sm:px-5 py-2">
+                <span className="hidden sm:inline opacity-0">{t('getStartedFree')}</span>
+                <span className="sm:hidden opacity-0">{t('getStarted')}</span>
+              </span>
             </div>
           ) : !isAuthenticated ? (
             <>
@@ -186,6 +218,22 @@ export function NavBarAstro(): JSX.Element {
                         {t('history')}
                       </a>
                     </li>
+                    <li>
+                      <a
+                        href={localizedPath('/help')}
+                        className="block px-4 py-2 text-sm text-muted-foreground hover:bg-surface/10 hover:text-white rounded-lg transition-colors cursor-pointer"
+                      >
+                        {t('support')}
+                      </a>
+                    </li>
+                    <li>
+                      <a
+                        href={localizedPath('/pricing')}
+                        className="block px-4 py-2 text-sm text-muted-foreground hover:bg-surface/10 hover:text-white rounded-lg transition-colors cursor-pointer"
+                      >
+                        {t('viewPlans')}
+                      </a>
+                    </li>
                     {isPasswordUser && (
                       <li>
                         <button
@@ -226,26 +274,32 @@ export function NavBarAstro(): JSX.Element {
             {isAuthenticated && (
               <a
                 href={localizedPath('/dashboard')}
-                className="block px-4 py-2 text-sm font-medium text-muted-foreground hover:bg-surface/10 hover:text-white rounded-lg transition-colors"
+                className={`block px-4 py-2 text-sm font-medium rounded-lg transition-colors ${isActive('/dashboard') ? 'text-white bg-white/5' : 'text-muted-foreground hover:bg-surface/10 hover:text-white'}`}
               >
                 {t('dashboard')}
               </a>
             )}
             <a
+              href={localizedPath('/features')}
+              className={`block px-4 py-2 text-sm font-medium rounded-lg transition-colors ${isActive('/features') ? 'text-white bg-white/5' : 'text-muted-foreground hover:bg-surface/10 hover:text-white'}`}
+            >
+              {t('features')}
+            </a>
+            <a
               href={localizedPath('/blog')}
-              className="block px-4 py-2 text-sm font-medium text-muted-foreground hover:bg-surface/10 hover:text-white rounded-lg transition-colors"
+              className={`block px-4 py-2 text-sm font-medium rounded-lg transition-colors ${isActive('/blog') ? 'text-white bg-white/5' : 'text-muted-foreground hover:bg-surface/10 hover:text-white'}`}
             >
               {t('blog')}
             </a>
             <a
               href={localizedPath('/pricing')}
-              className="block px-4 py-2 text-sm font-medium text-muted-foreground hover:bg-surface/10 hover:text-white rounded-lg transition-colors"
+              className={`block px-4 py-2 text-sm font-medium rounded-lg transition-colors ${isActive('/pricing') ? 'text-white bg-white/5' : 'text-muted-foreground hover:bg-surface/10 hover:text-white'}`}
             >
               {t('pricing')}
             </a>
             <a
               href={localizedPath('/help')}
-              className="block px-4 py-2 text-sm font-medium text-muted-foreground hover:bg-surface/10 hover:text-white rounded-lg transition-colors"
+              className={`block px-4 py-2 text-sm font-medium rounded-lg transition-colors ${isActive('/help') ? 'text-white bg-white/5' : 'text-muted-foreground hover:bg-surface/10 hover:text-white'}`}
             >
               {t('support')}
             </a>

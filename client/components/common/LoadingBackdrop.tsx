@@ -1,6 +1,7 @@
+import React from 'react';
 import { useLoadingStore } from '@client/store/loadingStore';
 
-export const LoadingBackdrop = (): JSX.Element | null => {
+export const LoadingBackdrop = (): React.ReactElement | null => {
   const { isLoading } = useLoadingStore();
 
   if (!isLoading) return null;

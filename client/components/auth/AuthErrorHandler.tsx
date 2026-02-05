@@ -1,8 +1,8 @@
-import { JSX, useEffect } from 'react';
+import React, { useEffect } from 'react';
 import { useModalStore } from '@client/store/modalStore';
 import { useToastStore } from '@client/store/toastStore';
 
-export const AuthErrorHandler = (): JSX.Element => {
+export const AuthErrorHandler = (): React.ReactElement => {
   const { showToast } = useToastStore();
   const { openAuthModal } = useModalStore();
 

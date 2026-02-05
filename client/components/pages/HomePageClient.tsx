@@ -1,3 +1,5 @@
+'use client';
+
 import { AmbientBackground } from '@client/components/landing/AmbientBackground';
 import { FadeIn } from '@client/components/ui/MotionWrappers';
 import { useModalStore } from '@client/store/modalStore';
@@ -15,9 +17,8 @@ const FAQ = lazy(() => import('@client/components/ui/FAQ').then(m => ({ default:
 
 // Animation variants for hero section
 const heroContainerVariants = {
-  hidden: { opacity: 0 },
+  hidden: {},
   visible: {
-    opacity: 1,
     transition: {
       staggerChildren: 0.15,
       delayChildren: 0.1,
@@ -92,7 +93,7 @@ export function HomePageClient(): JSX.Element {
   return (
     <div className="flex-grow bg-main font-sans selection:bg-accent/20 selection:text-white">
       {/* Hero Section */}
-      <section className="relative pt-20 pb-16 lg:pt-32 lg:pb-24 hero-gradient-2025 z-20">
+      <section className="relative pt-20 pb-16 lg:pt-32 lg:pb-24 hero-gradient-2025 z-20 min-h-[calc(100vh-5rem)]">
         <AmbientBackground variant="hero" />
 
         <motion.div
@@ -265,15 +266,13 @@ export function HomePageClient(): JSX.Element {
               {t('pricingCtaDescription')}
             </p>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-6">
-              <motion.a
+              <a
                 href="/pricing"
-                className="group inline-flex items-center gap-2 px-8 py-4 text-white font-semibold rounded-xl transition-all duration-300 gradient-cta shine-effect"
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
+                className="group inline-flex items-center gap-2 px-8 py-4 text-white font-semibold rounded-xl transition-all duration-300 gradient-cta shine-effect hover:scale-[1.02] active:scale-[0.98]"
               >
                 {t('ctaSeePricing')}
                 <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" />
-              </motion.a>
+              </a>
               <motion.button
                 onClick={() => openAuthModal('register')}
                 className="inline-flex items-center gap-2 px-8 py-4 glass-strong hover:bg-white/5 text-white font-semibold rounded-xl transition-all duration-300"
@@ -315,14 +314,12 @@ export function HomePageClient(): JSX.Element {
                 {t('ctaStartNow')}
                 <ArrowRight size={20} className="group-hover:translate-x-1 transition-transform" />
               </motion.button>
-              <motion.a
+              <a
                 href="/pricing"
-                className="inline-flex items-center gap-2 px-10 py-5 glass-strong hover:bg-white/5 text-white font-semibold rounded-xl transition-all duration-300 text-lg"
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
+                className="inline-flex items-center gap-2 px-10 py-5 glass-strong hover:bg-white/5 text-white font-semibold rounded-xl transition-all duration-300 text-lg hover:scale-[1.05] active:scale-[0.95]"
               >
                 {t('ctaComparePlans')}
-              </motion.a>
+              </a>
             </div>
             <p className="mt-8 text-sm text-text-muted">{t('finalCtaSubtext')}</p>
           </div>

@@ -1,10 +1,13 @@
 ---
-import AdminDashboardLayout from '../../../../layouts/AdminDashboardLayout.astro';
+import DashboardLayout from '../../../../layouts/DashboardLayout.astro';
+import AdminDashboardLayout from '@client/components/admin/AdminDashboardLayout';
 import AdminUserDetailPageClient from '@client/components/pages/AdminUserDetailPageClient';
 
 const { userId } = Astro.params;
 ---
 
-<AdminDashboardLayout>
-  <AdminUserDetailPageClient userId={userId} client:only="react" />
-</AdminDashboardLayout>
+<DashboardLayout title="Admin - User Details">
+  <AdminDashboardLayout client:load>
+    <AdminUserDetailPageClient userId={userId} client:load />
+  </AdminDashboardLayout>
+</DashboardLayout>

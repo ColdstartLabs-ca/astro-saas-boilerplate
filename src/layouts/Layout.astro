@@ -8,16 +8,37 @@ const { title = 'SaaS Boilerplate' } = Astro.props;
 // Import global styles
 import '@client/styles/index.css';
 // Import Astro-compatible components
-import { NavBarAstro } from '@client/components/navigation/NavBarAstro';
-import { FooterAstro } from '@client/components/layout/FooterAstro';
 import GlobalUI from '@client/components/GlobalUI';
+import { FooterAstro } from '@client/components/layout/FooterAstro';
+import { NavBarAstro } from '@client/components/navigation/NavBarAstro';
 // Import analytics components
-import GoogleAnalytics from '../components/analytics/GoogleAnalytics.astro';
 import AhrefsAnalytics from '../components/analytics/AhrefsAnalytics.astro';
+import GoogleAnalytics from '../components/analytics/GoogleAnalytics.astro';
+// Import env for structured data
+import { clientEnv } from '@shared/config/env';
+
+// JSON-LD structured data
+const websiteJsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'WebSite',
+  name: clientEnv.APP_NAME,
+  url: clientEnv.BASE_URL,
+  inLanguage: 'en',
+  description: 'Transform your images with cutting-edge AI. Upscale, enhance, and restore details with professional quality.',
+};
+
+const organizationJsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'Organization',
+  name: clientEnv.APP_NAME,
+  url: clientEnv.BASE_URL,
+  logo: `${clientEnv.BASE_URL}/logo/horizontal-logo-full.png`,
+  description: 'AI-powered image upscaling and enhancement platform',
+};
 ---
 
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="bg-base">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -30,6 +51,10 @@ import AhrefsAnalytics from '../components/analytics/AhrefsAnalytics.astro';
     <link rel="dns-prefetch" href="https://analytics.ahrefs.com" />
     <link rel="preconnect" href="https://js.stripe.com" />
     <link rel="dns-prefetch" href="https://js.stripe.com" />
+ 
+    <!-- JSON-LD structured data -->
+    <script type="application/ld+json" set:html={JSON.stringify(websiteJsonLd)} />
+    <script type="application/ld+json" set:html={JSON.stringify(organizationJsonLd)} />
 
     <!-- Analytics -->
     <GoogleAnalytics />
@@ -40,12 +65,12 @@ import AhrefsAnalytics from '../components/analytics/AhrefsAnalytics.astro';
   </head>
   <body class="antialiased">
     <div class="min-h-screen bg-main flex flex-col overflow-x-hidden">
-      <NavBarAstro client:only="react" />
+      <NavBarAstro client:load />
       <main class="flex-1 w-full">
         <slot />
       </main>
-      <FooterAstro client:only="react" />
+      <FooterAstro client:load />
     </div>
-    <GlobalUI client:only="react" />
+    <GlobalUI client:load />
   </body>
 </html>

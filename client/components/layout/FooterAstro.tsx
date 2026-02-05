@@ -1,26 +1,17 @@
 import { clientEnv } from '@shared/config/env';
-
-// Simple translations for footer (will be replaced with proper i18n)
-const t = (key: string) => {
-  const translations: Record<string, string> = {
-    description: 'Build and scale your SaaS with powerful APIs and developer-friendly tools.',
-    product: 'Product',
-    pricingPlans: 'Pricing Plans',
-    latestUpdates: 'Blog',
-    support: 'Support',
-    helpCenter: 'Help Center',
-    contactSupport: 'Contact Support',
-    legal: 'Legal',
-    privacyPolicy: 'Privacy Policy',
-    termsOfService: 'Terms of Service',
-    copyright: 'All rights reserved',
-    allRightsReserved: 'All rights reserved',
-  };
-  return translations[key] || key;
-};
+import { LocaleSwitcher } from '@client/components/i18n/LocaleSwitcher';
+import { useMemo } from 'react';
+import { getTranslations } from '@src/i18n/utils';
+import { DEFAULT_LOCALE } from '@src/i18n/config';
 
 export function FooterAstro(): JSX.Element {
+  const t = useMemo(() => getTranslations('footer'), []);
   const currentYear = new Date().getFullYear();
+
+  // Helper to generate localized URLs
+  const localizedPath = (path: string) => {
+    return DEFAULT_LOCALE === 'en' ? path : `/${DEFAULT_LOCALE}${path}`;
+  };
 
   return (
     <footer className="bg-main text-text-muted mt-auto border-t border-border">
@@ -49,12 +40,12 @@ export function FooterAstro(): JSX.Element {
             </h4>
             <ul className="space-y-4 text-sm font-medium">
               <li>
-                <a href="/pricing" className="hover:text-accent transition-colors">
+                <a href={localizedPath('/pricing')} className="hover:text-accent transition-colors">
                   {t('pricingPlans')}
                 </a>
               </li>
               <li>
-                <a href="/blog" className="hover:text-accent transition-colors">
+                <a href={localizedPath('/blog')} className="hover:text-accent transition-colors">
                   {t('latestUpdates')}
                 </a>
               </li>
@@ -104,10 +95,24 @@ export function FooterAstro(): JSX.Element {
         </div>
 
         {/* Bottom Bar */}
-        <div className="pt-8 border-t border-border/50 flex flex-col md:flex-row justify-between items-center gap-4">
-          <p className="text-sm text-text-muted">
-            {t('copyright')} © {currentYear} {clientEnv.APP_NAME}. {t('allRightsReserved')}
+        <div className="pt-8 border-t border-border flex flex-col md:flex-row justify-between items-center gap-6">
+          <p className="text-xs font-medium text-text-muted">
+            © {currentYear} {clientEnv.APP_NAME}. {t('allRightsReserved')} {t('copyright')}
           </p>
+          <div className="flex items-center gap-6">
+            <LocaleSwitcher />
+            <div className="flex gap-8 text-xs font-black uppercase tracking-widest">
+              <a href="/privacy" className="hover:text-white transition-colors">
+                {t('privacy')}
+              </a>
+              <a href="/terms" className="hover:text-white transition-colors">
+                {t('terms')}
+              </a>
+              <a href="/help" className="hover:text-white transition-colors">
+                {t('help')}
+              </a>
+            </div>
+          </div>
         </div>
       </div>
     </footer>

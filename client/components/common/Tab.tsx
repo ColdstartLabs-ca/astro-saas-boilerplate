@@ -8,7 +8,7 @@ import {
   Sparkles,
   Wand2,
 } from 'lucide-react';
-import { JSX } from 'react';
+import React from 'react';
 import { IconType } from '@/shared/types/icons.types';
 
 const icons = {
@@ -30,7 +30,7 @@ interface ITabProps {
   onClick: () => void;
 }
 
-export const Tab = ({ label, icon, isActive, onClick }: ITabProps): JSX.Element => {
+export const Tab = ({ label, icon, isActive, onClick }: ITabProps): React.ReactElement => {
   const Icon = icons[icon];
 
   return (

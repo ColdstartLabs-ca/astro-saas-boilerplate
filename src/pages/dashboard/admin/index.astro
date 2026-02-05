@@ -1,8 +1,11 @@
 ---
-import AdminDashboardLayout from '../../../layouts/AdminDashboardLayout.astro';
+import DashboardLayout from '../../../layouts/DashboardLayout.astro';
+import AdminDashboardLayout from '@client/components/admin/AdminDashboardLayout';
 import AdminDashboardPageClient from '@client/components/pages/AdminDashboardPageClient';
 ---
 
-<AdminDashboardLayout title="Admin Dashboard">
-  <AdminDashboardPageClient client:only="react" />
-</AdminDashboardLayout>
+<DashboardLayout title="Admin Dashboard">
+  <AdminDashboardLayout client:load>
+    <AdminDashboardPageClient client:load />
+  </AdminDashboardLayout>
+</DashboardLayout>

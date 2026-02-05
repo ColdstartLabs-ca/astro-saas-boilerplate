@@ -1,22 +1,20 @@
 ---
 import Layout from '../layouts/Layout.astro';
 import { clientEnv } from '@shared/config/env';
-import HomePageClient from '@client/components/pages/HomePageClient';
+import FeaturesPageClient from '@client/components/pages/FeaturesPageClient';
 
 // SEO metadata
-const title = `${clientEnv.APP_NAME} - Build Your SaaS Faster`;
-const description = `Powerful API platform for developers. Start building with ${clientEnv.APP_NAME} - simple, fast, and reliable infrastructure for your next project.`;
+const title = 'Features';
+const description = `Discover the powerful features of ${clientEnv.APP_NAME}. Built for developers, by developers.`
 ---
 
 <Layout title={title}>
-  <!-- SEO Meta Tags in head slot -->
   <Fragment slot="head">
     <meta name="description" content={description} />
-    <meta property="og:title" content={title} />
+    <meta property="og:title" content={`${title} - ${clientEnv.APP_NAME}`} />
     <meta property="og:description" content={description} />
+    <meta property="og:url" content={`${clientEnv.BASE_URL}/features`} />
     <meta property="og:type" content="website" />
-    <meta property="og:url" content={`${clientEnv.BASE_URL}/`} />
-    <meta property="og:site_name" content={clientEnv.APP_NAME} />
     <meta property="og:image" content={`${clientEnv.BASE_URL}/og-image.png`} />
     <meta property="og:image:width" content="1200" />
     <meta property="og:image:height" content="630" />
@@ -24,9 +22,8 @@ const description = `Powerful API platform for developers. Start building with $
     <meta name="twitter:title" content={title} />
     <meta name="twitter:description" content={description} />
     <meta name="twitter:image" content={`${clientEnv.BASE_URL}/og-image.png`} />
-    <link rel="canonical" href={`${clientEnv.BASE_URL}/`} />
+    <link rel="canonical" href={`${clientEnv.BASE_URL}/features`} />
   </Fragment>
 
-  <!-- React island for interactive landing page -->
-  <HomePageClient client:load />
+  <FeaturesPageClient client:load />
 </Layout>

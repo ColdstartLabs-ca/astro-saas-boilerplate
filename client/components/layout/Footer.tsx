@@ -1,12 +1,12 @@
+import React from 'react';
 import { clientEnv } from '@shared/config/env';
 import { DEFAULT_LOCALE } from '@/i18n/config';
 import Image from 'next/image';
 import Link from 'next/link';
-import { JSX } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
 import { LocaleSwitcher } from '@client/components/i18n/LocaleSwitcher';
 
-export const Footer = (): JSX.Element => {
+export const Footer = (): React.ReactElement => {
   const t = useTranslations('footer');
   const locale = useLocale();
   const currentYear = new Date().getFullYear();
@@ -17,7 +17,7 @@ export const Footer = (): JSX.Element => {
   };
 
   return (
-    <footer className="bg-main text-text-muted mt-auto border-t border-border">
+    <footer className="bg-main text-text-muted mt-auto border-t border-border opacity-0 animate-[fade-in_0.4s_ease-out_0.3s_forwards]">
       <div className="max-w-[1600px] mx-auto px-6 py-20">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-12 mb-16">
           {/* Company Info */}

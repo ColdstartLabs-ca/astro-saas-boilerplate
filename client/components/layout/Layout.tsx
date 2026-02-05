@@ -4,13 +4,13 @@ import { LoadingBackdrop } from '@client/components/common/LoadingBackdrop';
 import { Footer } from '@client/components/layout/Footer';
 import { NavBar } from '@client/components/navigation/NavBar';
 import { usePathname } from 'next/navigation';
-import React, { JSX } from 'react';
+import React from 'react';
 
 interface ILayoutProps {
   children: React.ReactNode;
 }
 
-export const Layout = ({ children }: ILayoutProps): JSX.Element => {
+export const Layout = ({ children }: ILayoutProps): React.ReactElement => {
   const pathname = usePathname();
   // Check for dashboard routes with or without locale prefix (e.g., /dashboard or /en/dashboard)
   const segments = pathname?.split('/').filter(Boolean);
@@ -30,7 +30,7 @@ export const Layout = ({ children }: ILayoutProps): JSX.Element => {
     <div className="min-h-screen bg-main flex flex-col overflow-x-hidden">
       <LoadingBackdrop />
       <NavBar />
-      <main className="flex-1 w-full">{children}</main>
+      <main className="flex-1 min-h-screen w-full">{children}</main>
       <Footer />
     </div>
   );
