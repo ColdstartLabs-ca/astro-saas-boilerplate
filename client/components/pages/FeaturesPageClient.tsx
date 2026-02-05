@@ -1,59 +1,71 @@
 'use client';
 
 import React from 'react';
-import { Shield, Zap, Users, BarChart, Lock, RefreshCw, Globe, CreditCard } from 'lucide-react';
+import {
+  Cpu,
+  Wand2,
+  ShieldCheck,
+  FileText,
+  Search,
+  Calendar,
+  Globe,
+  Edit,
+} from 'lucide-react';
 import { getTranslations } from '@src/i18n/utils';
 import { useMemo } from 'react';
 import { clientEnv } from '@shared/config/env';
 
 const features = [
   {
-    icon: Shield,
-    title: 'Authentication',
+    icon: Cpu,
+    title: 'Multi-Model AI Engine',
     description:
-      'Built-in authentication with Supabase supporting Google, Azure, and Email/Password providers.',
+      'GPT-4, Claude, Gemini, and Llama working together. The best model for each task means more variety and better quality.',
   },
   {
-    icon: CreditCard,
-    title: 'Payments',
+    icon: Wand2,
+    title: 'Humanizer Engine',
     description:
-      'Stripe integration for subscriptions and one-time purchases with comprehensive billing management.',
+      'Our proprietary rewriting engine transforms AI patterns into natural prose. Content that flows like a human wrote it.',
   },
   {
-    icon: BarChart,
-    title: 'Credit System',
+    icon: ShieldCheck,
+    title: 'Pre-Publication QA',
     description:
-      'Flexible credit-based pricing with subscription credits, purchased credits, and automatic rollover.',
+      'Plagiarism check, AI detection score, SEO optimization, readability analysis—all automatic. Nothing slips through.',
   },
   {
-    icon: Users,
-    title: 'User Management',
-    description: 'Complete user profile management with admin roles and team support capabilities.',
-  },
-  {
-    icon: Lock,
-    title: 'Security',
+    icon: FileText,
+    title: 'Campaign Management',
     description:
-      'Secure by default with rate limiting, error handling, and proper authentication flows.',
+      'Create keyword campaigns that generate hundreds of articles automatically. Set it once, watch it scale.',
   },
   {
-    icon: RefreshCw,
-    title: 'Real-time Updates',
-    description: 'Reactive state management with automatic UI updates when data changes.',
+    icon: Search,
+    title: 'GSC Integration',
+    description:
+      'Connect Google Search Console and let AutopilotRank find your best content opportunities automatically.',
   },
   {
     icon: Globe,
-    title: 'i18n Ready',
-    description: 'Built-in internationalization support with easy locale management.',
+    title: 'WordPress Publishing',
+    description:
+      'Native WordPress plugin with one-click publishing. Also supports Webflow, Shopify, Ghost, and webhooks.',
   },
   {
-    icon: Zap,
-    title: 'Developer Experience',
-    description: 'TypeScript throughout, clean architecture, and comprehensive tooling setup.',
+    icon: Calendar,
+    title: 'Content Calendar',
+    description:
+      'Editorial calendar with scheduled publishing. Plan your content strategy months in advance.',
+  },
+  {
+    icon: Edit,
+    title: 'Article Editor',
+    description:
+      'Inline review and editing interface. Approve, edit, or reject content before it publishes.',
   },
 ];
 
- 
 export default function FeaturesPageClient(): React.ReactElement {
   const _t = useMemo(() => getTranslations('common'), []);
 
@@ -63,9 +75,9 @@ export default function FeaturesPageClient(): React.ReactElement {
         {/* Page Header */}
         <div className="text-center mb-16">
           <h1 className="text-4xl md:text-5xl font-bold text-text-primary mb-4">Features</h1>
-          <p className="text-lg text-text-secondary max-w-2xl mx-auto">
-            Everything you need to build your SaaS faster. Production-ready infrastructure from day
-            one.
+          <p className="text-lg text-text-secondary max-w-3xl mx-auto">
+            Complete AI SEO content automation. From keyword research to published content—entirely on
+            autopilot.
           </p>
         </div>
 
@@ -91,22 +103,23 @@ export default function FeaturesPageClient(): React.ReactElement {
         {/* CTA Section */}
         <div className="text-center mt-16">
           <div className="bg-gradient-to-br from-accent/10 to-secondary/10 rounded-2xl p-8 max-w-2xl mx-auto border border-accent/20">
-            <h3 className="text-2xl font-bold text-text-primary mb-4">Ready to get started?</h3>
+            <h3 className="text-2xl font-bold text-text-primary mb-4">Ready to scale your content?</h3>
             <p className="text-text-secondary mb-6">
-              Start building your SaaS today with {clientEnv.APP_NAME}. No credit card required.
+              Start generating publish-ready SEO content with {clientEnv.APP_NAME}. 3 free articles, no
+              credit card required.
             </p>
             <div className="flex justify-center gap-4">
               <a
                 href="/pricing"
-                className="inline-flex items-center px-6 py-3 bg-accent hover:bg-accent-hover text-white font-medium rounded-lg transition-colors"
+                className="inline-flex items-center gap-2 px-6 py-3 bg-accent hover:bg-accent-hover text-white font-semibold rounded-lg transition-colors"
               >
-                View Pricing
+                See Pricing
               </a>
               <a
-                href="/blog"
-                className="inline-flex items-center px-6 py-3 bg-surface hover:bg-surface-light text-text-primary font-medium rounded-lg border border-border transition-colors"
+                href="/"
+                className="inline-flex items-center gap-2 px-6 py-3 bg-surface hover:bg-elevated text-text-primary font-semibold rounded-lg border border-border transition-colors"
               >
-                Read the Blog
+                Back to Home
               </a>
             </div>
           </div>

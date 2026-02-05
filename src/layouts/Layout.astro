@@ -3,7 +3,7 @@ interface IProps {
   title?: string;
 }
 
-const { title = 'SaaS Boilerplate' } = Astro.props;
+const { title = 'AutopilotRank' } = Astro.props;
 
 // Import global styles
 import '@client/styles/index.css';
@@ -24,7 +24,7 @@ const websiteJsonLd = {
   name: clientEnv.APP_NAME,
   url: clientEnv.BASE_URL,
   inLanguage: 'en',
-  description: 'Transform your images with cutting-edge AI. Upscale, enhance, and restore details with professional quality.',
+  description: 'AI SEO content automation platform. Generate publish-ready, human-quality SEO content on autopilot.',
 };
 
 const organizationJsonLd = {
@@ -33,7 +33,7 @@ const organizationJsonLd = {
   name: clientEnv.APP_NAME,
   url: clientEnv.BASE_URL,
   logo: `${clientEnv.BASE_URL}/logo/horizontal-logo-full.png`,
-  description: 'AI-powered image upscaling and enhancement platform',
+  description: 'AutopilotRank - AI-powered SEO content automation for businesses and agencies.',
 };
 ---
 

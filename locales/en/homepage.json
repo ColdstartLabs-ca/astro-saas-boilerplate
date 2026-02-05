@@ -1,18 +1,256 @@
 {
-  "badge": "Get Started Today",
+  "badge": "AI SEO Content Automation",
   "badgeVersion": "v1.0",
-  "heroTitle": "Build Your SaaS",
-  "heroTitleHighlight": "Faster Than Ever",
-  "heroSubtitle": "Powerful API platform for developers.",
-  "heroSubtitleHighlight": "Simple. Fast. Reliable.",
-  "heroDescription": "Start building with",
-  "heroDescriptionHighlight": "10 free credits",
-  "heroDescriptionMiddle": "—no credit card required. Scale your application with",
-  "heroDescriptionTextSharp": "enterprise-grade infrastructure",
-  "ctaGetStarted": "Get Started Free",
-  "ctaStartBuilding": "Start Building",
+  "heroTitle": "Scale Your Organic Traffic",
+  "heroTitleHighlight": "on Autopilot",
+  "heroSubtitle": "The only AI SEO platform that truly does it all – automating content creation, optimization, and publishing with human-level quality.",
+  "heroDescription": "Start with",
+  "heroDescriptionHighlight": "3 free articles",
+  "heroDescriptionMiddle": "—no credit card required. Generate publish-ready, human-quality SEO content with",
+  "heroDescriptionTextSharp": "full automation",
+  "ctaStartFreeTrial": "Start Free Trial",
+  "ctaWatchDemo": "Watch Demo",
+  "ctaGetStarted": "Get Started",
   "ctaSignIn": "Sign In",
-  "ctaSubtext": "10 free credits • No credit card required • Start in seconds",
+  "ctaSubtext": "No credit card required • 3 free articles • Cancel anytime",
+  "ctaStartNow": "Start Your Free Trial",
+  "ctaComparePlans": "Compare Plans",
+  "finalCtaSubtext": "No credit card required • 3 free articles • Setup in 15 minutes",
+
+  "socialProofBar": {
+    "heading": "Launching Soon - Join the Beta"
+  },
+
+  "painPoints": {
+    "title": "Sound Familiar?",
+    "subtitle": "Common challenges that hold content growth back",
+    "card1": {
+      "title": "AI Content That Sounds Like AI",
+      "description": "You've tried AI writers. The output is generic, repetitive, and needs hours of editing. Google knows. Your readers know."
+    },
+    "card2": {
+      "title": "Unreliable Tools, Slow Support",
+      "description": "Some platforms have stability issues and slow response times. You're paying premium prices for an inconsistent experience."
+    },
+    "card3": {
+      "title": "Multiple Tools, One Job",
+      "description": "An optimizer here, a writer there, keyword tool somewhere else. Multiple subscriptions and you still do most of the work."
+    },
+    "transition": "There's a better way →"
+  },
+
+  "solution": {
+    "title": "One Platform. Complete Automation. Human-Quality Content.",
+    "subtitle": "From keywords to published content—entirely on autopilot",
+    "workflow": {
+      "keywords": "Keywords",
+      "content": "Content",
+      "optimize": "Optimize",
+      "publish": "Publish",
+      "track": "Track",
+      "auto": "Auto"
+    },
+    "features": {
+      "setAndForget": {
+        "title": "Set It & Forget It",
+        "description": "Configure once, get fresh content daily"
+      },
+      "publishReady": {
+        "title": "Publish-Ready Quality",
+        "description": "Humanizer engine produces human-level content"
+      },
+      "allInOne": {
+        "title": "All-In-One",
+        "description": "Keywords, writing, optimization, publishing, tracking"
+      },
+      "worksWithYourStack": {
+        "title": "Works With Your Stack",
+        "description": "WordPress, Webflow, Shopify, Ghost + webhooks"
+      }
+    }
+  },
+
+  "features": {
+    "label": "Feature Deep Dive",
+    "title": "Built for Quality at Scale",
+    "subtitle": "We didn't just wrap ChatGPT in a UI. We built a complete publishing engine.",
+    "feature1": {
+      "title": "Multi-Model AI Engine",
+      "highlight": "Not Just GPT-4. The Best Model for Each Task.",
+      "description": "While competitors lock you into one AI model, AutopilotRank uses GPT-4, Claude, Gemini, and Llama strategically. Different models for different content types means more variety, less repetition, better quality.",
+      "proof": "Unlike single-model tools that can produce repetitive content"
+    },
+    "feature2": {
+      "title": "Humanizer Engine",
+      "highlight": "AI Content That Actually Sounds Human",
+      "description": "Our proprietary Humanizer engine rewrites AI patterns into natural prose. Designed to significantly reduce editing time and produce content that flows naturally.",
+      "proof": "Designed to significantly reduce editing time"
+    },
+    "feature3": {
+      "title": "Pre-Publication QA",
+      "highlight": "Multi-Layer Quality Checks",
+      "description": "Plagiarism check. AI detection score. SEO optimization score. Readability analysis. Fact verification. All automatic. Nothing slips through.",
+      "proof": "Quality checks happen before publishing, not after"
+    }
+  },
+
+  "comparison": {
+    "title": "How We Compare",
+    "subtitle": "See what sets AutopilotRank apart from other tools",
+    "disclaimer": "Feature comparison based on publicly available information as of February 2026. Verify current details on each provider's website.",
+    "rows": {
+      "fullAutomation": "Full Automation",
+      "humanQuality": "Human-Quality Content",
+      "nativeCMS": "Native CMS Publishing",
+      "gscIntegration": "GSC Integration",
+      "humanizer": "Humanizer/AI Detection",
+      "prePublicationQA": "Pre-Publication QA",
+      "startingPrice": "Starting Price"
+    },
+    "columns": {
+      "autopilotrank": "AutopilotRank",
+      "toolA": "Outrank",
+      "toolB": "Surfer",
+      "toolC": "Byword"
+    }
+  },
+
+  "useCases": {
+    "title": "Built For Teams Like Yours",
+    "subtitle": "See how AutopilotRank fits your workflow",
+    "tab1": {
+      "label": "SMB Owners",
+      "title": "Scale Without Hiring a Content Team",
+      "points": [
+        "Generate 100+ SEO articles/month automatically",
+        "90% cost savings vs. agencies ($0.50/article vs. $50-200)",
+        "No technical knowledge required",
+        "Done-for-you programmatic SEO"
+      ],
+      "testimonial": "[Testimonial from beta user]"
+    },
+    "tab2": {
+      "label": "Content Sites",
+      "title": "Unlimited Content at Fixed Cost",
+      "points": [
+        "Daily fresh content on autopilot",
+        "Long-tail keyword capture at scale",
+        "Ad/affiliate revenue growth",
+        "Niche authority building"
+      ],
+      "testimonial": "[Testimonial from beta user]"
+    },
+    "tab3": {
+      "label": "Agencies",
+      "title": "White-Label SEO Content at Scale",
+      "points": [
+        "Resell under your brand",
+        "10x your content capacity overnight",
+        "Multi-site discounts",
+        "Expand margins on SEO retainers"
+      ],
+      "testimonial": "[Testimonial from beta user]"
+    }
+  },
+
+  "socialProof": {
+    "metrics": {
+      "aiModels": "3 AI Models",
+      "integrations": "5+ Integrations",
+      "qa": "Multi-Layer QA",
+      "quality": "Human-Quality Output"
+    },
+    "testimonialsNote": "Beta user testimonials coming soon"
+  },
+
+  "pricing": {
+    "title": "Simple, Transparent Pricing",
+    "subtitle": "No per-word charges. No seat limits. No surprise fees.",
+    "allPlansInclude": "All plans include:",
+    "humanizer": "Humanizer engine",
+    "qa": "Pre-publication QA",
+    "wordpress": "WordPress publishing",
+    "trust": "No credit card required - Cancel anytime - 3 free articles to try",
+    "starter": {
+      "name": "Starter",
+      "price": "$49",
+      "period": "per month",
+      "description": "For solopreneurs",
+      "articles": "30 articles/mo",
+      "sites": "1 site",
+      "integrations": "WordPress",
+      "cta": "Start Free Trial"
+    },
+    "growth": {
+      "name": "Growth",
+      "price": "$99",
+      "period": "per month",
+      "description": "For SMBs & content sites",
+      "badge": "Most Popular",
+      "articles": "100 articles/mo",
+      "sites": "3 sites",
+      "integrations": "All integrations",
+      "cta": "Start Free Trial"
+    },
+    "agency": {
+      "name": "Agency",
+      "price": "$249",
+      "period": "per month",
+      "description": "For agencies",
+      "articles": "500 articles/mo",
+      "sites": "Unlimited sites",
+      "integrations": "White-label",
+      "cta": "Contact Sales"
+    },
+    "compareLink": "See full plan comparison"
+  },
+
+  "faq": {
+    "title": "Frequently Asked Questions",
+    "subtitle": "Everything you need to know about AutopilotRank",
+    "items": [
+      {
+        "question": "Will Google penalize AI-generated content?",
+        "answer": "No. Google's policy targets low-quality content, not AI content specifically. Our Humanizer engine produces content designed to read naturally, and we run quality checks before publishing."
+      },
+      {
+        "question": "How does AutopilotRank compare to other tools?",
+        "answer": "AutopilotRank combines full automation, human-quality content via our Humanizer engine, native CMS publishing, and GSC integration in one platform. Many tools focus on just one aspect, requiring you to piece together multiple solutions."
+      },
+      {
+        "question": "Do I need technical skills to set this up?",
+        "answer": "No. If you can install a WordPress plugin, you can use AutopilotRank. Our guided onboarding walks you through everything in under 15 minutes."
+      },
+      {
+        "question": "What CMS platforms do you support?",
+        "answer": "Native integrations: WordPress, Webflow, Shopify, Ghost, Notion. Plus webhooks and API for custom platforms."
+      },
+      {
+        "question": "Can I review content before it publishes?",
+        "answer": "Yes. Choose between: (1) Full autopilot - content publishes automatically after QA passes, (2) Review mode - content queued for your approval, (3) Draft mode - content saved as drafts in your CMS."
+      },
+      {
+        "question": "What's your refund policy?",
+        "answer": "We offer a money-back guarantee. If you're not satisfied, contact our support team within the trial period."
+      }
+    ]
+  },
+
+  "finalCta": {
+    "title": "Ready to Scale Your Organic Traffic?",
+    "subtitle": "Join businesses publishing quality content on autopilot"
+  },
+
+  "toastLoginRequired": "Please sign in to access the dashboard",
+  "ctaSeePricing": "See Pricing",
+  "pricingCtaTitle": "Simple, Transparent Pricing",
+  "pricingCtaDescription": "Choose the plan that fits your needs. Scale as you grow.",
+  "ctaTryFree": "Try 3 Free Articles",
+  "ctaGetFree": "Get 3 Free Articles",
+  "pricingCtaSubtext": "3 free articles • No credit card • Unused credits roll over",
+  "finalCtaTitleHighlight": "Start free trial today.",
+  "finalCtaDescription": "Join businesses publishing quality content on autopilot.",
+
   "featuresTitle": "Everything You Need",
   "featuresSubtitle": "Powerful features to help you build and scale",
   "feature1Title": "Simple API",
@@ -21,32 +259,10 @@
   "feature2Description": "Built to handle millions of requests. Auto-scaling and load balancing out of the box.",
   "feature3Title": "Transparent Pricing",
   "feature3Description": "Pay only for what you use. Credits roll over monthly. No hidden fees.",
-  "faqTitle": "Frequently Asked Questions",
-  "faqSubtitle": "Common questions about our platform",
-  "faq1Question": "What is a credit?",
-  "faq1Answer": "A credit is consumed for each API call. Different operations may consume different amounts of credits based on complexity. Check our documentation for detailed credit costs.",
-  "faq2Question": "Do credits expire?",
-  "faq2Answer": "Subscription credits roll over month-to-month up to your plan's maximum limit as long as your subscription is active. One-time credit packs never expire.",
-  "faq3Question": "Can I cancel anytime?",
-  "faq3Answer": "Yes! You can cancel your subscription at any time. You'll continue to have access until the end of your billing period, and any remaining credits will stay in your account.",
-  "faq4Question": "What payment methods do you accept?",
-  "faq4Answer": "We accept all major credit cards (Visa, Mastercard, American Express) and various other payment methods through Stripe.",
-  "pricingCtaTitle": "Simple, Transparent Pricing",
-  "pricingCtaDescription": "Choose the plan that fits your needs. Scale as you grow.",
-  "ctaSeePricing": "See Pricing",
-  "ctaTryFree": "Try 10 Free Credits",
-  "ctaGetFree": "Get 10 Free Credits",
-  "pricingCtaSubtext": "10 free credits • No credit card • Unused credits roll over",
-  "finalCtaTitle": "Ready to Get Started?",
-  "finalCtaTitleHighlight": "Start building today.",
-  "finalCtaDescription": "Join thousands of developers building amazing products with our platform.",
-  "ctaStartNow": "Start Building Now",
-  "ctaComparePlans": "Compare Plans",
-  "finalCtaSubtext": "10 free credits • No credit card • See results before you pay",
-  "toastLoginRequired": "Please sign in to access the dashboard",
+
   "footer": {
-    "description": "Powerful API platform for developers. Build faster, scale better.",
-    "copyright": "Built for developers.",
+    "description": "AI SEO content automation platform. Generate publish-ready, human-quality SEO content on autopilot.",
+    "copyright": "Built for content creators.",
     "allRightsReserved": "All rights reserved.",
     "product": "Product",
     "pricingPlans": "Pricing Plans",
@@ -70,7 +286,7 @@
     "signIn": "Sign In",
     "getStarted": "Get Started",
     "getStartedFree": "Get Started Free",
-    "freeCredits": "10 Free Credits",
+    "freeCredits": "3 Free Articles",
     "billing": "Billing",
     "settings": "Settings",
     "history": "History",

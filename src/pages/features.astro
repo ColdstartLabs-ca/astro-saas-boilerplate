@@ -4,14 +4,14 @@ import { clientEnv } from '@shared/config/env';
 import FeaturesPageClient from '@client/components/pages/FeaturesPageClient';
 
 // SEO metadata
-const title = 'Features';
-const description = `Discover the powerful features of ${clientEnv.APP_NAME}. Built for developers, by developers.`
+const title = 'Features - AI SEO Content Automation';
+const description = `Discover AutopilotRank's powerful features: Multi-model AI engine, humanizer, pre-publication QA, WordPress publishing, GSC integration, and more.`
 ---
 
 <Layout title={title}>
   <Fragment slot="head">
     <meta name="description" content={description} />
-    <meta property="og:title" content={`${title} - ${clientEnv.APP_NAME}`} />
+    <meta property="og:title" content={title} />
     <meta property="og:description" content={description} />
     <meta property="og:url" content={`${clientEnv.BASE_URL}/features`} />
     <meta property="og:type" content="website" />
