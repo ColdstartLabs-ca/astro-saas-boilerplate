@@ -179,8 +179,8 @@ import { createBrowserClient } from '@supabase/ssr';
 
 export function createClient() {
   return createBrowserClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+    import.meta.env.PUBLIC_SUPABASE_URL,
+    import.meta.env.PUBLIC_SUPABASE_ANON_KEY
   );
 }
 ```
@@ -190,22 +190,23 @@ export function createClient() {
 ```typescript
 // shared/utils/supabase/server.ts
 import { createServerClient } from '@supabase/ssr';
-import { cookies } from 'next/headers';
+import { AstroCookies } from 'astro';
 
-export async function createClient() {
-  const cookieStore = await cookies();
-
+export async function createClient(cookies: AstroCookies) {
   return createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    import.meta.env.PUBLIC_SUPABASE_URL,
+    import.meta.env.PUBLIC_SUPABASE_ANON_KEY,
     {
       cookies: {
         getAll() {
-          return cookieStore.getAll();
+          return Array.from(cookies.entries()).map(([name, value]) => ({
+            name,
+            value,
+          }));
         },
         setAll(cookiesToSet) {
           cookiesToSet.forEach(({ name, value, options }) => {
-            cookieStore.set(name, value, options);
+            cookies.set(name, value, options);
           });
         },
       },
@@ -217,26 +218,24 @@ export async function createClient() {
 ### Middleware
 
 ```typescript
-// middleware.ts
+// src/middleware.ts
 import { createServerClient } from '@supabase/ssr';
-import { NextResponse } from 'next/server';
-import type { NextRequest } from 'next/server';
+import { defineMiddleware } from 'astro:middleware';
 
-export async function middleware(request: NextRequest) {
-  const response = NextResponse.next();
-
+export const onRequest = defineMiddleware(async ({ request, locals, url }) => {
   const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    import.meta.env.PUBLIC_SUPABASE_URL,
+    import.meta.env.PUBLIC_SUPABASE_ANON_KEY,
     {
       cookies: {
         getAll() {
-          return request.cookies.getAll();
+          return request.headers.get('cookie')?.split(';').map(c => {
+            const [name, value] = c.trim().split('=');
+            return { name, value };
+          }) || [];
         },
         setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value, options }) => {
-            response.cookies.set(name, value, options);
-          });
+          // Set cookies on response headers
         },
       },
     }
@@ -247,16 +246,20 @@ export async function middleware(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser();
 
+  // Store user in locals for use in pages
+  locals.user = user;
+
   // Protect routes
   const protectedPaths = ['/dashboard', '/upscaler', '/api/upscale'];
-  const isProtected = protectedPaths.some(path => request.nextUrl.pathname.startsWith(path));
+  const isProtected = protectedPaths.some(path => url.pathname.startsWith(path));
 
   if (isProtected && !user) {
-    return NextResponse.redirect(new URL('/login', request.url));
+    return new Response(null, {
+      status: 307,
+      headers: { Location: `/login?redirect=${encodeURIComponent(url.pathname)}` },
+    });
   }
-
-  return response;
-}
+});
 ```
 
 ## Protected Routes

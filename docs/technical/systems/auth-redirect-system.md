@@ -83,7 +83,7 @@ const signIn = async (returnTo?: string) => {
 };
 ```
 
-#### 4. Email Confirmation (`app/auth/confirm/page.tsx`)
+#### 4. Email Confirmation (`src/pages/auth/confirm.astro`)
 
 ```typescript
 // Before: router.push('/dashboard')
@@ -93,17 +93,17 @@ setTimeout(async () => {
 }, 1500);
 ```
 
-#### 5. Dashboard Guard (`middleware.ts`)
+#### 5. Dashboard Guard (Astro middleware)
 
 ```typescript
 // Before: Silent redirect to '/'
 // After:
 if (!user && pathname.startsWith('/dashboard')) {
-  const url = req.nextUrl.clone();
+  const url = new URL(request.url);
   url.pathname = '/';
   url.searchParams.set('login', '1');
   url.searchParams.set('next', pathname);
-  return NextResponse.redirect(url);
+  return Response.redirect(url, 307);
 }
 ```
 
@@ -206,8 +206,8 @@ The system maintains backward compatibility:
 - `client/hooks/useGoogleSignIn.ts` - Accepts returnTo parameter
 - `client/components/myimageupscaler.com/Pricing.tsx` - Uses prepareAuthRedirect
 - `client/components/stripe/PricingCard.tsx` - Uses prepareAuthRedirect
-- `app/auth/confirm/page.tsx` - Uses unified redirect handler
-- `app/auth/callback/page.tsx` - New OAuth callback handler
-- `middleware.ts` - User-friendly dashboard guard
+- `src/pages/auth/confirm.astro` - Uses unified redirect handler
+- `src/pages/auth/callback.astro` - New OAuth callback handler
+- `src/middleware.ts` - User-friendly dashboard guard
 - `client/components/pages/HomePageClient.tsx` - Handles login prompts
 - `client/components/form/GoogleSignInButton.tsx` - Passes returnTo to OAuth

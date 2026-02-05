@@ -27,10 +27,8 @@ export default [
       'playwright-report/**',
       'test-results/**',
       'next-env.d.ts',
-      'next.config.js', // Next.js config file
-      'open-next.config.ts', // OpenNext config file
       'astro.config.mjs', // Astro config file
-      'middleware.ts', // Old Next.js middleware - being migrated
+      'src/middleware.ts', // Astro middleware
     ],
   },
   {
@@ -200,7 +198,7 @@ export default [
       ...typescriptEslint.configs.recommended.rules,
       ...reactPlugin.configs.recommended.rules,
       ...reactHooks.configs.recommended.rules,
-      'import/no-default-export': 'off', // Next.js requires default exports
+      'import/no-default-export': 'off', // Astro pages require default exports
       '@typescript-eslint/explicit-module-boundary-types': 'off',
       'react/react-in-jsx-scope': 'off',
       'react/jsx-uses-react': 'off',
@@ -239,7 +237,6 @@ export default [
   {
     files: [
       'shared/config/env.ts', // Centralized env config
-      'next.config.js', // Next.js config (runs at build time)
       'playwright.config.ts', // Test config
     ],
     rules: {
@@ -265,9 +262,9 @@ export default [
       ],
     },
   },
-  // i18n and data loader files - allow dynamic imports for locale/data file loading
+  // Data loader files - allow dynamic imports for data file loading
   {
-    files: ['i18n.config.ts', 'lib/seo/data-loader.ts'],
+    files: ['lib/seo/data-loader.ts'],
     rules: {
       'no-restricted-syntax': [
         'error',
@@ -280,7 +277,7 @@ export default [
           message:
             'Direct process.env access is forbidden. Import from "@shared/config/env" instead: `import { clientEnv, serverEnv } from "@shared/config/env"`',
         },
-        // Note: Dynamic import() is allowed for locale/data file loading
+        // Note: Dynamic import() is allowed for data file loading
       ],
     },
   },

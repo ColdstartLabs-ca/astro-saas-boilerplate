@@ -5,12 +5,13 @@ step_deploy() {
 
     cd "$PROJECT_ROOT"
 
-    # Main worker
-    log_info "Deploying main worker..."
-    npx opennextjs-cloudflare deploy
-    log_success "Main worker deployed"
+    # Deploy to Cloudflare Pages using wrangler
+    log_info "Deploying to Cloudflare Pages..."
+    npx wrangler pages deploy dist --project-name="$PROJECT_NAME"
 
-    # Cron worker
+    log_success "Main application deployed"
+
+    # Cron worker (separate deployment)
     if [[ -d "workers/cron" ]]; then
         log_info "Deploying cron worker..."
         npx wrangler deploy --config workers/cron/wrangler.toml
