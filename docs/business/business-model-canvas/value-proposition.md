@@ -215,7 +215,7 @@ This gap represents a significant opportunity for AutopilotRank.
 
 | Platform          | Entry Plan           | Mid-Tier              | Enterprise            | Cost/Article    | Notes                                   |
 | ----------------- | -------------------- | --------------------- | --------------------- | --------------- | --------------------------------------- |
-| **AutopilotRank** | TBD                  | TBD                   | TBD                   | $0.10-$1.00     | Credit-based, unlimited at higher tiers |
+| **AutopilotRank** | $49/mo (30 articles) | $99/mo (100 articles) | $249/mo (500 articles)| $0.50-$1.63     | Usage-based tiers, 3 free articles trial |
 | **Outrank.so**    | $99/mo               | -                     | -                     | ~$12/article\*  | Single tier, 8+ articles/mo to justify  |
 | **RankYak**       | $99/mo               | Multi-site discount   | -                     | ~$3-4/article   | 3-day free trial                        |
 | **Byword**        | $99/mo (25 articles) | $299/mo (80 articles) | $2,499/mo (unlimited) | $3.74-$5.00     | Pay-as-you-go: $5/article               |

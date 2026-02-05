@@ -269,10 +269,10 @@ This document outlines how AutopilotRank reaches, acquires, and delivers value t
 
 **Free Trial**:
 
-- 14-day free trial
-- 10 free articles to test
+- 3 free articles on signup
 - No credit card required
 - Guided onboarding
+- Upgrade to paid for more articles
 
 **Pricing Page**:
 
@@ -290,7 +290,7 @@ This document outlines how AutopilotRank reaches, acquires, and delivers value t
 
 **KPIs**:
 
-- Trial-to-paid conversion: 15-20%
+- Free-to-paid conversion: 15-20%
 - Annual prepay rate: 40%+
 
 ### Sales-Assisted (Hybrid)
@@ -450,9 +450,9 @@ This document outlines how AutopilotRank reaches, acquires, and delivers value t
 
 **SLA by Tier**:
 
-- Free: Community (48 hr response)
-- Pro: Chat (24 hr response)
-- Enterprise: Priority + dedicated CSM (4 hr response)
+- Free/Starter: Community (48 hr response)
+- Growth: Chat (24 hr response)
+- Agency/Enterprise: Priority + dedicated CSM (4 hr response)
 
 ### Email Support (Owned)
 
@@ -467,7 +467,7 @@ This document outlines how AutopilotRank reaches, acquires, and delivers value t
 
 **KPI**:
 
-- Response time: <4 hours (Pro), <1 hour (Enterprise)
+- Response time: <4 hours (Growth/Agency), <1 hour (Enterprise)
 - CSAT: 4.5/5
 
 ### Community (Owned)
@@ -503,7 +503,7 @@ This document outlines how AutopilotRank reaches, acquires, and delivers value t
 - Custom training
 - Strategic guidance
 
-**For Pro Customers**:
+**For Growth/Agency Customers**:
 
 - Email success sequences
 - Monthly office hours

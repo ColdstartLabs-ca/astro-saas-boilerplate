@@ -141,7 +141,7 @@ Key resources are the essential assets required to make AutopilotRank's business
 
 #### Compute & Hosting
 
-- **Application Servers**: Cloudflare Workers/Vercel for edge computing
+- **Application Servers**: Cloudflare Pages (Astro SSR) + Cloudflare Workers for cron
 - **Database**: Supabase (PostgreSQL) with read replicas
 - **File Storage**: AWS S3 or Cloudflare R2 for images, exports
 - **CDN**: Cloudflare for global content delivery
@@ -267,8 +267,7 @@ Key resources are the essential assets required to make AutopilotRank's business
 
 #### Infrastructure Partners
 
-- **Cloudflare**: Edge computing, CDN, workers
-- **Vercel**: Application hosting (initially)
+- **Cloudflare**: Pages hosting, CDN, Workers cron, R2 storage
 - **Supabase**: Database and authentication
 - **Stripe**: Payments and subscriptions
 
@@ -386,7 +385,7 @@ Key resources are the essential assets required to make AutopilotRank's business
 | Resource Type      | Requirements                          | Monthly Cost |
 | ------------------ | ------------------------------------- | ------------ |
 | **Team**           | 2-3 founders, 2-3 contractors         | $10K-15K     |
-| **Infrastructure** | Vercel, Supabase, OpenAI, Cloudflare  | $500-1K      |
+| **Infrastructure** | Cloudflare, Supabase, OpenAI          | $500-1K      |
 | **Tools**          | Stripe, Slack, Notion, Linear         | $500         |
 | **Marketing**      | Content marketing, community building | $2K-3K       |
 | **Total**          |                                       | **$13K-20K** |

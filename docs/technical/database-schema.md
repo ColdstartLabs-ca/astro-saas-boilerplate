@@ -68,7 +68,7 @@ erDiagram
 Extends Supabase `auth.users`.
 
 - `credits_balance`: Current available credits for content generation.
-- `subscription_tier`: 'starter', 'pro', 'agency'.
+- `subscription_tier`: 'starter', 'growth', 'agency'.
 
 ### projects
 

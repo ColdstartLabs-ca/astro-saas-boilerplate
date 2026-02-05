@@ -70,15 +70,17 @@ These costs increase as customer usage grows but should decrease as a percentage
 
 **Cost per Customer**:
 
-- Free tier: $0 (community, self-service)
-- Pro tier: $0.50-1/month
-- Business tier: $2-5/month
+- Free trial: $0 (community, self-service)
+- Starter tier: $0.50-1/month
+- Growth tier: $1-3/month
+- Agency tier: $3-5/month
 - Enterprise tier: $10-20/month
 
 **At 5,000 customers**:
 
-- 3,500 Pro × $1 = $3,500
-- 1,400 Business × $3 = $4,200
+- 2,000 Starter × $1 = $2,000
+- 2,000 Growth × $2 = $4,000
+- 900 Agency × $4 = $3,600
 - 100 Enterprise × $15 = $1,500
 - **Total**: ~$9,000-10,000/month
 
@@ -332,26 +334,26 @@ _Includes payroll taxes, benefits, equity (~25-30% overhead)_
 
 ### 6.1 Gross Margin
 
-**Revenue**: $49/month for Pro plan (100 articles)
+**Revenue**: $49/month for Starter plan (30 articles)
 
 **Variable Costs**:
 
-- AI generation: $10 (100 × $0.10)
-- Infrastructure: $2
-- Support allocation: $3
-- **Total COGS**: $15
+- AI generation: $4.50 (30 × $0.15)
+- Infrastructure: $1
+- Support allocation: $1
+- **Total COGS**: $6.50
 
-**Gross Margin**: ($49 - $15) / $49 = **69%**
+**Gross Margin**: ($49 - $6.50) / $49 = **87%**
 
-**Target**: 80%+ gross margin at scale
+**Target**: 85%+ gross margin at scale
 
 ### 6.2 Contribution Margin
 
 **Revenue**: $49/month
 
-**Variable Costs**: $15
+**Variable Costs**: $6.50
 
-**Contribution Margin**: $34/month (69%)
+**Contribution Margin**: $42.50/month (87%)
 
 **Use**: Covers fixed costs and profit
 
@@ -402,16 +404,17 @@ _Includes payroll taxes, benefits, equity (~25-30% overhead)_
 
 ### 7.2 Infrastructure Optimization
 
-**Current**: Vercel hosting
-
-- $500-2,000/month
-- Good for development, expensive at scale
-
-**Optimization**: Migrate to Cloudflare Workers
+**Current**: Cloudflare Pages + Astro 5 SSR
 
 - $0.50/million requests
-- 90% cost reduction
-- Better global performance
+- Excellent cost-efficiency at scale
+- Global edge performance
+
+**Optimization**: Further optimize Cloudflare Workers usage
+
+- Cache aggressively at edge
+- Optimize bundle sizes for 10ms CPU limit
+- Leverage R2 for storage over S3
 
 ### 7.3 Support Optimization
 

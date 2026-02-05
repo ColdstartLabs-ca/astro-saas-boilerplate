@@ -96,7 +96,7 @@
 
 **Current State:** Slow responses, unhelpful, ignored issues
 **Desired State:** Fast, knowledgeable, actually solves problems
-**Measurement:** <24hr response (Pro), <4hr (Enterprise), CSAT 4.5/5
+**Measurement:** <24hr response (Growth/Agency), <4hr (Enterprise), CSAT 4.5/5
 
 ### Customer Benefit Ladder
 

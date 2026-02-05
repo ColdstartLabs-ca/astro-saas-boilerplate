@@ -112,24 +112,6 @@ Key partnerships are the network of suppliers and partners that make the busines
 - Generous free tier
 - Developer-friendly platform
 
-#### Vercel (Initial/Transition)
-
-**Partnership Type**: Application Hosting
-**Dependency**: High (initially), Medium (post-migration)
-
-**What They Provide**:
-
-- Next.js optimized hosting
-- Preview deployments
-- Edge functions
-- Analytics
-
-**Migration Plan**:
-
-- Start on Vercel for speed
-- Migrate to Cloudflare for cost optimization
-- Maintain Vercel for preview environments
-
 #### Supabase
 
 **Partnership Type**: Database & Auth Platform

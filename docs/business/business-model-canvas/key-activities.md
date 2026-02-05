@@ -349,7 +349,7 @@ Key activities are the most important actions a company must take to make its bu
 
 ### 3.2 Customer Support
 
-#### Tier 1 Support (Self-Serve, Pro)
+#### Tier 1 Support (Starter, Growth)
 
 **Activity**: Handle customer inquiries and issues
 

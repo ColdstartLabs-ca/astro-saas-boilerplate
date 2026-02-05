@@ -44,7 +44,7 @@ graph TD
 | Tier        | Monthly Credits | Rollover Cap |
 | ----------- | --------------- | ------------ |
 | **Starter** | 30              | 60           |
-| **Pro**     | 100             | 200          |
+| **Growth**  | 100             | 200          |
 | **Agency**  | 500             | 1000         |
 
 ## Deduction Flow

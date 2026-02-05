@@ -245,26 +245,32 @@ This document outlines how AutopilotRank acquires, retains, and grows relationsh
 | Signal                    | Opportunity          | Action                |
 | ------------------------- | -------------------- | --------------------- |
 | Article limit hit (80%+)  | Upgrade to next tier | In-app prompt + email |
-| Multiple team members     | Pro/Enterprise tier  | CSM outreach          |
+| Multiple team members     | Agency/Enterprise tier | CSM outreach          |
 | API usage detected        | Enterprise plan      | Feature unlock offer  |
 | Agency reselling          | Partner program      | Invitation to join    |
 | Competitor features asked | Roadmap alignment    | Beta access           |
 
 ### Upgrade Paths
 
-**From Free to Pro**:
+**From Free to Starter**:
 
-- Trigger: Trial limit reached or 14 days passed
+- Trigger: 3 free articles used
 - Offer: 20% off first month (time-limited)
-- Emphasis: Article exceeded, what they could have done
+- Emphasis: Articles they generated, what they could do with 30/mo
 
-**From Pro to Business**:
+**From Starter to Growth**:
+
+- Trigger: Article limit consistently hit (80%+)
+- Offer: "3x the articles for 2x the price"
+- Emphasis: GSC integration, advanced humanizer, 3 CMS sites
+
+**From Growth to Agency**:
 
 - Trigger: Team member limit or article limit consistently hit
 - Offer: Annual payment discount (save 20%)
-- Emphasis: Team collaboration features
+- Emphasis: 500 articles, white-label, team accounts, API access
 
-**From Business to Enterprise**:
+**From Agency to Enterprise**:
 
 - Trigger: SSO request, API needs, compliance requirements
 - Offer: Custom pricing with CSM
@@ -395,7 +401,7 @@ This document outlines how AutopilotRank acquires, retains, and grows relationsh
 - Offer quick win: "Here are 5 keywords you could rank for"
 - Re-engagement offer: "Come back with 50 bonus articles"
 
-**Human Outreach** (Pro/Business):
+**Human Outreach** (Growth/Agency):
 
 - CSM reaches out personally
 - Understanding: "What changed?"
@@ -457,7 +463,7 @@ This document outlines how AutopilotRank acquires, retains, and grows relationsh
 | ---------------------------- | --------- | ---------- |
 | NPS (Net Promoter Score)     | 50+       | Quarterly  |
 | CSAT (Customer Satisfaction) | 4.5/5     | Per ticket |
-| Response time (Pro)          | <24 hours | Ongoing    |
+| Response time (Growth/Agency)| <24 hours | Ongoing    |
 | Response time (Enterprise)   | <4 hours  | Ongoing    |
 
 ### Advocacy Metrics

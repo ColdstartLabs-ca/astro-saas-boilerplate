@@ -49,7 +49,7 @@ This document provides comprehensive instructions for building the AutopilotRank
 - Primary CTA: "Start Free Trial" (green/primary color)
 - Secondary CTA: "Watch Demo" (ghost button)
 - Hero visual: Dashboard screenshot showing content being generated OR animated workflow
-- Trust badges: "No credit card required" • "14-day free trial" • "Cancel anytime"
+- Trust badges: "No credit card required" • "3 free articles" • "Cancel anytime"
 
 **Copy Notes:**
 
@@ -268,20 +268,20 @@ Keywords → Content → Optimize → Publish → Track
 
 | Plan        | Price   | Best For             | Key Features                                                       |
 | ----------- | ------- | -------------------- | ------------------------------------------------------------------ |
-| **Starter** | $49/mo  | Solopreneurs         | 50 articles/mo, 1 site, WordPress                                  |
-| **Growth**  | $99/mo  | SMBs & Content Sites | 150 articles/mo, 3 sites, All integrations                         |
-| **Agency**  | $249/mo | Agencies             | Unlimited articles, Unlimited sites, White-label, Priority support |
+| **Starter** | $49/mo  | Solopreneurs         | 30 articles/mo, 1 site, WordPress                                |
+| **Growth**  | $99/mo  | SMBs & Content Sites | 100 articles/mo, 3 sites, All integrations                       |
+| **Agency**  | $249/mo | Agencies             | 500 articles/mo, Unlimited sites, White-label, Priority support  |
 
 **All plans include:**
 
 - Humanizer engine
 - Pre-publication QA
 - GSC integration
-- 14-day free trial
+- 3 free articles on signup (no credit card required)
 
-**CTA:** "Start Free Trial" | "Compare Plans"
+**CTA:** "Start Free — 3 Articles on Us" | "Compare Plans"
 
-**Trust line:** "No credit card required • Cancel anytime • 14-day money-back guarantee"
+**Trust line:** "No credit card required • Cancel anytime • Money-back guarantee"
 
 ---
 
@@ -312,7 +312,7 @@ Keywords → Content → Optimize → Publish → Track
    > Yes. Choose between: (1) Full autopilot - content publishes automatically after QA passes, (2) Review mode - content queued for your approval, (3) Draft mode - content saved as drafts in your CMS.
 
 6. **"What's your refund policy?"**
-   > 14-day money-back guarantee, no questions asked. Unlike some competitors (looking at you, Byword), we honor refund requests.
+   > Money-back guarantee, no questions asked. Unlike some competitors (looking at you, Byword), we honor refund requests.
 
 ---
 
@@ -331,7 +331,7 @@ Keywords → Content → Optimize → Publish → Track
 **Trust elements:**
 
 - "No credit card required"
-- "14-day free trial"
+- "3 free articles to try"
 - "Setup in 15 minutes"
 
 ---

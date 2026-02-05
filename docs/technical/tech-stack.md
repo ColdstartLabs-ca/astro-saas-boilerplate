@@ -7,23 +7,20 @@ Complete technology stack for **AutopilotRank**.
 ```mermaid
 graph TB
     subgraph "Frontend"
-        NEXT[Next.js 14+]
-        REACT[React 18]
+        ASTRO[Astro 5]
+        REACT[React 18 Islands]
         TS[TypeScript]
         TAILWIND[Tailwind CSS]
         SHADCN[ShadCN UI]
     end
 
     subgraph "Backend Services"
-        NEXT_API[Next.js API]
-        NODE[Node.js Workers]
-        PYTHON[Python AI Service (Optional)]
+        ASTRO_API[Astro SSR API Routes]
+        CF_WORKERS[Cloudflare Workers Cron]
     end
 
     subgraph "Data Persistence"
         SUPABASE[(Supabase PG)]
-        REDIS[(Redis/Queue)]
-        PINECONE[(Pinecone/Vector)]
     end
 
     subgraph "AI & External"
@@ -33,14 +30,13 @@ graph TB
         DATA_SEO[DataForSEO/Serper]
     end
 
-    NEXT --> NEXT_API
-    NEXT_API --> SUPABASE
-    NEXT_API --> REDIS
+    ASTRO --> ASTRO_API
+    ASTRO_API --> SUPABASE
 
-    NODE --> REDIS
-    NODE --> OPENAI
-    NODE --> ANTHROPIC
-    NODE --> DATA_SEO
+    CF_WORKERS --> ASTRO_API
+    ASTRO_API --> OPENAI
+    ASTRO_API --> ANTHROPIC
+    ASTRO_API --> DATA_SEO
 ```
 
 ## Core Technologies
@@ -48,8 +44,9 @@ graph TB
 ### Frontend
 
 | Technology | Version | Purpose |
-|Data Visualization|
-| **Next.js** | 14+ (App Router) | Core Framework |
+|---|---|---|
+| **Astro** | 5.x | Core Framework (SSR + Islands) |
+| **React** | 18.x | Interactive UI Components (Islands) |
 | **TypeScript** | 5.x | Type Safety |
 | **Tailwind CSS** | 3.x | Styling |
 | **ShadCN/UI** | Latest | UI Components |
@@ -58,12 +55,11 @@ graph TB
 
 ### Backend & Infrastructure
 
-| Technology          | Purpose                                     |
-| ------------------- | ------------------------------------------- |
-| **Supabase**        | Auth, Database (PostgreSQL), & Realtime     |
-| **Vercel**          | Hosting & Deployments                       |
-| **Redis (Upstash)** | Job Queues & Caching                        |
-| **BullMQ**          | Handling background content generation jobs |
+| Technology               | Purpose                                         |
+| ------------------------ | ----------------------------------------------- |
+| **Supabase**             | Auth, Database (PostgreSQL), & Realtime         |
+| **Cloudflare Pages**     | Hosting & Deployments (Astro SSR)               |
+| **Cloudflare Workers**   | Cron Jobs (webhook recovery, expiration checks) |
 
 ### AI & Agents
 
@@ -98,7 +94,7 @@ Instead of relying on a single model, we use a "Chain of Thought" approach:
 
 Content generation is time-consuming (research -> write -> optimize). We cannot use simple Request/Response.
 
-- **Pattern**: User initiates Job -> pushed to Redis Queue -> Worker processes it -> Updates DB -> Frontend polls/subscribes via Supabase Realtime.
+- **Pattern**: User initiates Job -> stored in DB with "queued" status -> Cloudflare Workers cron picks up jobs -> Processes via AI pipeline -> Updates DB -> Frontend polls/subscribes via Supabase Realtime.
 
 ### 3. Native CMS Integrations
 
@@ -107,28 +103,27 @@ Content generation is time-consuming (research -> write -> optimize). We cannot 
 
 ## Environment Variables
 
+**Important**: Never use `process.env` directly. Use `clientEnv` or `serverEnv` from `@shared/config/env`.
+
+- **Client vars** (`.env.client`): Prefixed with `PUBLIC_*`, accessed via `import.meta.env`
+- **Server vars** (`.env.api`): Validated with Zod schema, accessed via `serverEnv`
+
 ```bash
-# Core
-NEXT_PUBLIC_APP_URL=https://app.autopilotrank.com
+# .env.client (public, client-safe)
+PUBLIC_APP_URL=https://app.autopilotrank.com
+PUBLIC_SUPABASE_URL=
+PUBLIC_SUPABASE_ANON_KEY=
+PUBLIC_STRIPE_PUBLISHABLE_KEY=
 
-# Database
-NEXT_PUBLIC_SUPABASE_URL=
-NEXT_PUBLIC_SUPABASE_ANON_KEY=
+# .env.api (secrets, server-only)
 SUPABASE_SERVICE_ROLE_KEY=
-
-# AI Services
 OPENAI_API_KEY=
 ANTHROPIC_API_KEY=
 GEMINI_API_KEY=
-
-# SEO Data
 DATA_FOR_SEO_LOGIN=
 DATA_FOR_SEO_PASSWORD=
 GOOGLE_CLIENT_ID=
 GOOGLE_CLIENT_SECRET=
-
-# Payments
 STRIPE_SECRET_KEY=
 STRIPE_WEBHOOK_SECRET=
-NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=
 ```

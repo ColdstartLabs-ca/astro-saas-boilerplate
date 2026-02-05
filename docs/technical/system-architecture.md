@@ -6,35 +6,33 @@ High-level architecture for **AutopilotRank**, an autonomous SEO content automat
 
 ```mermaid
 graph TB
-    subgraph "Client Layer"
-        WEB[Web App (Next.js)]
-        PLUGIN[WordPress Plugin]
-        API_CLIENT[External API Clients]
+    subgraph Client Layer
+        WEB["Web App - Astro 5 SSR"]
+        PLUGIN["WordPress Plugin"]
+        API_CLIENT["External API Clients"]
     end
 
-    subgraph "Edge & Routing"
-        CDN[Cloudflare CDN]
-        WAF[Cloudflare WAF]
+    subgraph Edge & Routing
+        CDN["Cloudflare CDN"]
+        WAF["Cloudflare WAF"]
     end
 
-    subgraph "Application Layer"
-        API[Next.js API Routes]
-        QUEUE[Job Queue (BullMQ/Inngest)]
-        WORKERS[Background Workers]
+    subgraph Application Layer
+        API["Astro SSR API Routes"]
+        CRON["Cloudflare Workers Cron"]
     end
 
-    subgraph "Service Layer"
-        AUTH[Supabase Auth]
-        DB[(PostgreSQL)]
-        VECTOR[(Vector DB)]
-        CACHE[Redis]
+    subgraph Service Layer
+        AUTH["Supabase Auth"]
+        DB[("PostgreSQL")]
+        VECTOR[("Vector DB - Future")]
     end
 
-    subgraph "AI & Data Engine"
-        ORCHESTRATOR[Agent Orchestrator]
-        LLMS[LLM Gateway (GPT-4/Claude/Gemini)]
-        SERP[SERP Data Provider]
-        GSC[GSC Integration Service]
+    subgraph AI & Data Engine
+        ORCHESTRATOR["Agent Orchestrator"]
+        LLMS["LLM Gateway - GPT-4 / Claude / Gemini"]
+        SERP["SERP Data Provider"]
+        GSC["GSC Integration Service"]
     end
 
     WEB --> CDN
@@ -42,11 +40,10 @@ graph TB
     CDN --> API
 
     API --> AUTH
-    API --> QUEUE
     API --> DB
 
-    QUEUE --> WORKERS
-    WORKERS --> ORCHESTRATOR
+    CRON --> API
+    API --> ORCHESTRATOR
 
     ORCHESTRATOR --> LLMS
     ORCHESTRATOR --> SERP
@@ -169,10 +166,10 @@ flowchart LR
 
 ## Infrastructure & Scaling
 
-- **Compute**: Serverless/Edge functions for API, specific long-running containers for AI processing agents.
-- **Database**: PostgreSQL (Supabase) for relational data, Vector DB for semantic search/context.
-- **Queues**: Redis-backed queues (BullMQ) to handle massive bulk generation jobs without timeouts.
-- **Storage**: Object storage (R2/S3) for generated images and backups.
+- **Compute**: Cloudflare Pages (Astro SSR) for API and frontend. Cloudflare Workers for cron-triggered background jobs.
+- **Database**: PostgreSQL (Supabase) for relational data, Vector DB for semantic search/context (future).
+- **Job Processing**: Cloudflare Workers cron triggers (webhook recovery every 15min, expiration checks hourly, daily reconciliation at 3:05 UTC).
+- **Storage**: Cloudflare R2 for generated images and backups.
 
 ## Security Architecture
 
