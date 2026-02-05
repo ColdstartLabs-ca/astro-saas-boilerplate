@@ -39,6 +39,7 @@ const PlanConfigSchema = z.object({
   description: z.string(),
   displayOrder: z.number().min(0),
   enabled: z.boolean(),
+  batchLimit: z.number().min(0).nullable(),
 });
 
 const CreditCostConfigSchema = z.object({
@@ -48,16 +49,10 @@ const CreditCostConfigSchema = z.object({
     premium: z.number().positive(),
     enterprise: z.number().positive(),
   }),
-  scaleMultipliers: z
-    .object({
-      '2x': z.number().positive().optional(),
-      '4x': z.number().positive().optional(),
-    })
-    .optional(), // Made optional for boilerplate
+  featureMultipliers: z.record(z.string(), z.number()),
   options: z.object({
-    customPrompt: z.number().min(0).optional(),
     priorityProcessing: z.number().min(0),
-    batchPerRequest: z.number().min(0), // Renamed from batchPerImage
+    batchPerRequest: z.number().min(0),
   }),
   minimumCost: z.number().positive(),
   maximumCost: z.number().positive(),
@@ -68,6 +63,7 @@ const FreeUserConfigSchema = z.object({
   monthlyRefresh: z.boolean(),
   monthlyCredits: z.number().min(0),
   maxBalance: z.number().positive(),
+  batchLimit: z.number().min(0),
 });
 
 const WarningConfigSchema = z.object({
@@ -84,9 +80,22 @@ const DefaultsConfigSchema = z.object({
   defaultRolloverMultiplier: z.number().positive(),
 });
 
+const CreditPackSchema = z.object({
+  key: z.string().min(1),
+  name: z.string().min(1),
+  credits: z.number().positive(),
+  priceInCents: z.number().positive(),
+  currency: z.enum(['usd', 'eur', 'gbp']),
+  stripePriceId: z.string().startsWith('price_').nullable(),
+  description: z.string(),
+  popular: z.boolean().optional(),
+  enabled: z.boolean(),
+});
+
 export const SubscriptionConfigSchema = z.object({
   version: z.string(),
   plans: z.array(PlanConfigSchema).min(1),
+  creditPacks: z.array(CreditPackSchema),
   creditCosts: CreditCostConfigSchema,
   freeUser: FreeUserConfigSchema,
   warnings: WarningConfigSchema,

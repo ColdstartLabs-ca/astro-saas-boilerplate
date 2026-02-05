@@ -22,9 +22,8 @@ export class PricingPage extends BasePage {
   readonly contactSalesButton: Locator;
 
   // Individual plan cards
-  readonly hobbyCard: Locator;
-  readonly proCard: Locator;
-  readonly businessCard: Locator;
+  readonly growthCard: Locator;
+  readonly agencyCard: Locator;
   readonly starterCard: Locator;
 
   constructor(page: Page) {
@@ -55,9 +54,8 @@ export class PricingPage extends BasePage {
 
     // Individual plan cards - scope to pricing grid for more specific selection
     // These need to be initialized after pricingGrid is defined
-    this.hobbyCard = this.pricingGrid.locator('div').filter({ hasText: 'Hobby' }).first();
-    this.proCard = this.pricingGrid.locator('div').filter({ hasText: 'Professional' }).first();
-    this.businessCard = this.pricingGrid.locator('div').filter({ hasText: 'Business' }).first();
+    this.growthCard = this.pricingGrid.locator('div').filter({ hasText: 'Growth' }).first();
+    this.agencyCard = this.pricingGrid.locator('div').filter({ hasText: 'Agency' }).first();
     this.starterCard = this.pricingGrid.locator('div').filter({ hasText: 'Starter' }).first();
   }
 
@@ -121,19 +119,17 @@ export class PricingPage extends BasePage {
     // Wait for skeleton cards to be replaced with actual pricing cards
     // Use exact text matching and scope to pricing grid to avoid conflicts with FAQ headings
     const starterHeading = this.pricingGrid.getByRole('heading', { name: 'Starter', exact: true });
-    const hobbyHeading = this.pricingGrid.getByRole('heading', { name: 'Hobby', exact: true });
-    const proHeading = this.pricingGrid.getByRole('heading', { name: 'Professional', exact: true });
-    const businessHeading = this.pricingGrid.getByRole('heading', {
-      name: 'Business',
+    const growthHeading = this.pricingGrid.getByRole('heading', { name: 'Growth', exact: true });
+    const agencyHeading = this.pricingGrid.getByRole('heading', {
+      name: 'Agency',
       exact: true,
     });
 
     // Wait for each plan heading to be visible within the pricing grid
     // Increase timeout for parallel test execution
     await expect(starterHeading).toBeVisible({ timeout: 15000 });
-    await expect(hobbyHeading).toBeVisible({ timeout: 15000 });
-    await expect(proHeading).toBeVisible({ timeout: 15000 });
-    await expect(businessHeading).toBeVisible({ timeout: 15000 });
+    await expect(growthHeading).toBeVisible({ timeout: 15000 });
+    await expect(agencyHeading).toBeVisible({ timeout: 15000 });
 
     // Wait for Get Started buttons to be visible (not loading)
     const getStartedButtons = this.pricingGrid.getByRole('button', { name: 'Get Started' });
@@ -168,16 +164,14 @@ export class PricingPage extends BasePage {
   /**
    * Get a specific plan card by plan type
    */
-  getPlanCard(planType: 'starter' | 'hobby' | 'pro' | 'business'): PricingCard {
+  getPlanCard(planType: 'starter' | 'growth' | 'agency'): PricingCard {
     switch (planType) {
       case 'starter':
         return new PricingCard(this.starterCard);
-      case 'hobby':
-        return new PricingCard(this.hobbyCard);
-      case 'pro':
-        return new PricingCard(this.proCard);
-      case 'business':
-        return new PricingCard(this.businessCard);
+      case 'growth':
+        return new PricingCard(this.growthCard);
+      case 'agency':
+        return new PricingCard(this.agencyCard);
       default:
         throw new Error(`Unknown plan type: ${planType}`);
     }

@@ -122,22 +122,14 @@ export default function PricingPageClient() {
   const currentSubscriptionPrice = useMemo(() => {
     if (!subscription?.price_id) return null;
 
-    // Check for Starter tier using type-safe property access
-    const starterPriceId = (STRIPE_PRICES as Record<string, string>).STARTER_MONTHLY;
-    const starterPlan = (SUBSCRIPTION_PLANS as Record<string, { price?: number }>).STARTER_MONTHLY;
+    const prices = STRIPE_PRICES as Record<string, string>;
+    const plans = SUBSCRIPTION_PLANS as Record<string, { price?: number }>;
 
-    // Find the matching plan to get the price
-    if (starterPriceId && subscription.price_id === starterPriceId) {
-      return starterPlan?.price;
-    }
-    if (subscription.price_id === STRIPE_PRICES.HOBBY_MONTHLY) {
-      return SUBSCRIPTION_PLANS.HOBBY_MONTHLY.price;
-    }
-    if (subscription.price_id === STRIPE_PRICES.PRO_MONTHLY) {
-      return SUBSCRIPTION_PLANS.PRO_MONTHLY.price;
-    }
-    if (subscription.price_id === STRIPE_PRICES.BUSINESS_MONTHLY) {
-      return SUBSCRIPTION_PLANS.BUSINESS_MONTHLY.price;
+    // Check each tier
+    for (const tier of ['STARTER_MONTHLY', 'GROWTH_MONTHLY', 'AGENCY_MONTHLY']) {
+      if (prices[tier] && subscription.price_id === prices[tier]) {
+        return plans[tier]?.price;
+      }
     }
     return null;
   }, [subscription?.price_id]);
@@ -252,159 +244,65 @@ export default function PricingPageClient() {
           </h2>
           <p className="text-center text-text-secondary mb-8">{t('subscription.subtitle')}</p>
 
-          <div
-            className="grid md:grid-cols-2 lg:grid-cols-4 gap-8 max-w-6xl mx-auto"
-            data-testid="pricing-grid"
-          >
+          <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto" data-testid="pricing-grid">
             {loading ? (
-              // Show skeleton loading cards while fetching subscription data
               <>
                 <PricingCardSkeleton />
                 <PricingCardSkeleton recommended={true} />
                 <PricingCardSkeleton />
-                <PricingCardSkeleton />
               </>
             ) : (
               <>
-                {/* Starter Plan - Add when available in configuration */}
-                {(() => {
-                  const starterPriceId = (STRIPE_PRICES as Record<string, string>).STARTER_MONTHLY;
-                  const starterPlan = (
-                    SUBSCRIPTION_PLANS as Record<
-                      string,
-                      {
-                        name: string;
-                        description: string;
-                        price: number;
-                        interval: string;
-                        features: readonly string[];
-                      }
-                    >
-                  ).STARTER_MONTHLY;
+                {(['STARTER_MONTHLY', 'GROWTH_MONTHLY', 'AGENCY_MONTHLY'] as const).map(tier => {
+                  const prices = STRIPE_PRICES as Record<string, string>;
+                  const plans = SUBSCRIPTION_PLANS as Record<
+                    string,
+                    {
+                      name: string;
+                      description: string;
+                      price: number;
+                      interval: 'month' | 'year';
+                      features: readonly string[];
+                      recommended?: boolean;
+                    }
+                  >;
+                  const priceId = prices[tier];
+                  const plan = plans[tier];
+                  const tierKey = tier.replace('_MONTHLY', '').toLowerCase();
 
-                  return starterPriceId && starterPlan ? (
+                  if (!priceId || !plan) return null;
+
+                  return (
                     <PricingCard
-                      name={starterPlan.name}
-                      description={starterPlan.description}
-                      price={starterPlan.price}
-                      interval={starterPlan.interval as 'month' | 'year'}
-                      features={starterPlan.features}
-                      priceId={starterPriceId}
+                      key={tier}
+                      name={plan.name}
+                      description={plan.description}
+                      price={plan.price}
+                      interval={plan.interval}
+                      features={plan.features}
+                      priceId={priceId}
+                      recommended={plan.recommended}
                       disabled={
-                        profile?.subscription_tier === 'starter' ||
-                        subscription?.scheduled_price_id === starterPriceId
+                        profile?.subscription_tier === tierKey ||
+                        subscription?.scheduled_price_id === priceId
                       }
-                      scheduled={subscription?.scheduled_price_id === starterPriceId}
+                      scheduled={subscription?.scheduled_price_id === priceId}
                       onCancelScheduled={
-                        subscription?.scheduled_price_id === starterPriceId
+                        subscription?.scheduled_price_id === priceId
                           ? handleCancelScheduledChange
                           : undefined
                       }
                       cancelingScheduled={cancelingSchedule}
                       onSelect={
                         subscription
-                          ? () =>
-                              handleSubscribeClick(starterPriceId, () =>
-                                handlePlanSelect(starterPriceId)
-                              )
+                          ? () => handleSubscribeClick(priceId, () => handlePlanSelect(priceId))
                           : undefined
                       }
                       currentSubscriptionPrice={currentSubscriptionPrice}
-                      loading={buttonLoadingStates[starterPriceId] || false}
+                      loading={buttonLoadingStates[priceId] || false}
                     />
-                  ) : null;
-                })()}
-
-                <PricingCard
-                  name={SUBSCRIPTION_PLANS.HOBBY_MONTHLY.name}
-                  description={SUBSCRIPTION_PLANS.HOBBY_MONTHLY.description}
-                  price={SUBSCRIPTION_PLANS.HOBBY_MONTHLY.price}
-                  interval={SUBSCRIPTION_PLANS.HOBBY_MONTHLY.interval}
-                  features={SUBSCRIPTION_PLANS.HOBBY_MONTHLY.features}
-                  priceId={STRIPE_PRICES.HOBBY_MONTHLY}
-                  disabled={
-                    profile?.subscription_tier === 'hobby' ||
-                    subscription?.scheduled_price_id === STRIPE_PRICES.HOBBY_MONTHLY
-                  }
-                  scheduled={subscription?.scheduled_price_id === STRIPE_PRICES.HOBBY_MONTHLY}
-                  onCancelScheduled={
-                    subscription?.scheduled_price_id === STRIPE_PRICES.HOBBY_MONTHLY
-                      ? handleCancelScheduledChange
-                      : undefined
-                  }
-                  cancelingScheduled={cancelingSchedule}
-                  onSelect={
-                    subscription
-                      ? () =>
-                          handleSubscribeClick(STRIPE_PRICES.HOBBY_MONTHLY, () =>
-                            handlePlanSelect(STRIPE_PRICES.HOBBY_MONTHLY)
-                          )
-                      : undefined
-                  }
-                  currentSubscriptionPrice={currentSubscriptionPrice}
-                  loading={buttonLoadingStates[STRIPE_PRICES.HOBBY_MONTHLY] || false}
-                />
-
-                <PricingCard
-                  name={SUBSCRIPTION_PLANS.PRO_MONTHLY.name}
-                  description={SUBSCRIPTION_PLANS.PRO_MONTHLY.description}
-                  price={SUBSCRIPTION_PLANS.PRO_MONTHLY.price}
-                  interval={SUBSCRIPTION_PLANS.PRO_MONTHLY.interval}
-                  features={SUBSCRIPTION_PLANS.PRO_MONTHLY.features}
-                  priceId={STRIPE_PRICES.PRO_MONTHLY}
-                  recommended={SUBSCRIPTION_PLANS.PRO_MONTHLY.recommended}
-                  disabled={
-                    profile?.subscription_tier === 'pro' ||
-                    subscription?.scheduled_price_id === STRIPE_PRICES.PRO_MONTHLY
-                  }
-                  scheduled={subscription?.scheduled_price_id === STRIPE_PRICES.PRO_MONTHLY}
-                  onCancelScheduled={
-                    subscription?.scheduled_price_id === STRIPE_PRICES.PRO_MONTHLY
-                      ? handleCancelScheduledChange
-                      : undefined
-                  }
-                  cancelingScheduled={cancelingSchedule}
-                  onSelect={
-                    subscription
-                      ? () =>
-                          handleSubscribeClick(STRIPE_PRICES.PRO_MONTHLY, () =>
-                            handlePlanSelect(STRIPE_PRICES.PRO_MONTHLY)
-                          )
-                      : undefined
-                  }
-                  currentSubscriptionPrice={currentSubscriptionPrice}
-                  loading={buttonLoadingStates[STRIPE_PRICES.PRO_MONTHLY] || false}
-                />
-
-                <PricingCard
-                  name={SUBSCRIPTION_PLANS.BUSINESS_MONTHLY.name}
-                  description={SUBSCRIPTION_PLANS.BUSINESS_MONTHLY.description}
-                  price={SUBSCRIPTION_PLANS.BUSINESS_MONTHLY.price}
-                  interval={SUBSCRIPTION_PLANS.BUSINESS_MONTHLY.interval}
-                  features={SUBSCRIPTION_PLANS.BUSINESS_MONTHLY.features}
-                  priceId={STRIPE_PRICES.BUSINESS_MONTHLY}
-                  disabled={
-                    profile?.subscription_tier === 'business' ||
-                    subscription?.scheduled_price_id === STRIPE_PRICES.BUSINESS_MONTHLY
-                  }
-                  scheduled={subscription?.scheduled_price_id === STRIPE_PRICES.BUSINESS_MONTHLY}
-                  onCancelScheduled={
-                    subscription?.scheduled_price_id === STRIPE_PRICES.BUSINESS_MONTHLY
-                      ? handleCancelScheduledChange
-                      : undefined
-                  }
-                  cancelingScheduled={cancelingSchedule}
-                  onSelect={
-                    subscription
-                      ? () =>
-                          handleSubscribeClick(STRIPE_PRICES.BUSINESS_MONTHLY, () =>
-                            handlePlanSelect(STRIPE_PRICES.BUSINESS_MONTHLY)
-                          )
-                      : undefined
-                  }
-                  currentSubscriptionPrice={currentSubscriptionPrice}
-                  loading={buttonLoadingStates[STRIPE_PRICES.BUSINESS_MONTHLY] || false}
-                />
+                  );
+                })}
               </>
             )}
           </div>

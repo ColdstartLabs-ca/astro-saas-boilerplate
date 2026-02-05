@@ -13,7 +13,7 @@ export interface ICreditAssertionOptions {
   purchasedCredits?: number;
   totalCredits?: number;
   subscriptionStatus?: 'free' | 'active' | 'trialing' | 'past_due' | 'canceled';
-  subscriptionTier?: 'starter' | 'pro' | 'business' | 'hobby';
+  subscriptionTier?: 'starter' | 'growth' | 'agency';
   stripeSubscriptionId?: string;
 }
 
@@ -207,18 +207,16 @@ export async function getCreditTransactions(
  * Credit amount constants from subscription config
  */
 export const CREDITS = {
-  STARTER_MONTHLY: 100,
-  HOBBY_MONTHLY: 200,
-  PRO_MONTHLY: 1000,
-  BUSINESS_MONTHLY: 5000,
+  STARTER_MONTHLY: 30,
+  GROWTH_MONTHLY: 100,
+  AGENCY_MONTHLY: 500,
 } as const;
 
 /**
  * Price ID constants from subscription config
  */
 export const PRICE_IDS = {
-  STARTER: 'price_1Sq14eALMLhQocpf5CXIwYSv',
-  HOBBY: 'price_1SZmVyALMLhQocpf0H7n5ls8',
-  PRO: 'price_1SZmVzALMLhQocpfPyRX2W8D',
-  BUSINESS: 'price_1SZmVzALMLhQocpfqPk9spg4',
+  STARTER: 'price_1SxZp7K2K0pPNfoSMt94q8kP',
+  GROWTH: 'price_1SxZp9K2K0pPNfoSeOwSLmcp',
+  AGENCY: 'price_1SxZpAK2K0pPNfoSbxIQNtKL',
 } as const;

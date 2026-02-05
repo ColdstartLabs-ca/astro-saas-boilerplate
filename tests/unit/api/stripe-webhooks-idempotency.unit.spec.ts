@@ -1,4 +1,23 @@
 import { describe, test, expect, vi, beforeEach, afterEach } from 'vitest';
+
+// Mock dependencies BEFORE importing the route
+vi.mock('@server/analytics', () => ({
+  trackServerEvent: vi.fn(async () => {}),
+}));
+
+vi.mock('@server/di/container', () => ({
+  getService: vi.fn(() => ({
+    calculateUpgradeCredits: vi.fn(() => ({ totalCredits: 100, refundCents: 0 })),
+  })),
+}));
+
+vi.mock('@server/services/email.service', () => ({
+  getEmailService: vi.fn(() => ({
+    send: vi.fn(async () => {}),
+  })),
+}));
+
+// Import after mocking
 import { POST } from '../../../src/pages/api/webhooks/stripe/index';
 
 // Mock webhook secret that can be changed per test
@@ -8,14 +27,8 @@ let mockWebhookSecret = 'whsec_test_secret';
 let mockIdempotencyEnabled = true;
 
 // Trackers - initialize with default implementations (will be updated in beforeEach)
-let idempotencyInsertFn: ((data: unknown) => Promise<{ error: unknown }>) = (data: unknown) => {
-  mockCalls.webhookEventsInsert.push(data);
-  return { error: null };
-};
-let idempotencyUpdateFn: ((data: unknown) => Promise<{ error: unknown }>) = (data: unknown) => {
-  mockCalls.webhookEventsUpdate.push(data);
-  return { error: null };
-};
+let idempotencyInsertFn: ((data: unknown) => Promise<{ error: unknown }>) | null = null;
+let idempotencyUpdateFn: ((data: unknown) => Promise<{ error: unknown }>) | null = null;
 
 // Initialize with default implementations
 const mockCalls = {
@@ -66,58 +79,67 @@ vi.mock('@server/webhooks/stripe/services/idempotency.service', () => ({
           existingStatus: webhookEventsSelectReturn.data.status,
         };
       }
-      // Event doesn't exist - insert it
-      if (idempotencyInsertFn) {
-        const insertData = {
-          event_id: eventId,
-          event_type: eventType,
-          status: 'processing',
-          payload: event,
-        };
-        await idempotencyInsertFn(insertData);
-        // Note: idempotencyInsertFn already pushes to mockCalls.webhookEventsInsert
+      // Event doesn't exist - try to insert it
+      const insertData = {
+        event_id: eventId,
+        event_type: eventType,
+        status: 'processing',
+        payload: event,
+      };
+      // Check if insert fails due to race condition
+      if (webhookEventsInsertReturn?.error?.code === '23505') {
+        // Duplicate key violation - concurrent request won
+        // Return as if event exists (matches real service behavior)
+        console.log(`Webhook event ${eventId} claimed by concurrent request`);
+        return { isNew: false, existingStatus: 'processing' };
       }
+      mockCalls.webhookEventsInsert.push(insertData);
       return { isNew: true, existingStatus: null };
     }),
     markEventCompleted: vi.fn(async (eventId: string) => {
-      if (idempotencyUpdateFn) {
-        const updateData = { status: 'completed', completed_at: expect.any(String) };
-        await idempotencyUpdateFn(updateData);
-        // Note: idempotencyUpdateFn already pushes to mockCalls.webhookEventsUpdate
-      }
+      // Generate actual ISO timestamp string
+      const updateData = { status: 'completed', completed_at: new Date().toISOString() };
+      mockCalls.webhookEventsUpdate.push(updateData);
     }),
     markEventFailed: vi.fn(async (eventId: string, errorMessage: string) => {
-      if (idempotencyUpdateFn) {
-        const updateData = { status: 'failed', error_message: errorMessage };
-        await idempotencyUpdateFn(updateData);
-        // Note: idempotencyUpdateFn already pushes to mockCalls.webhookEventsUpdate
-      }
+      // Generate actual ISO timestamp string
+      const updateData = {
+        status: 'failed',
+        error_message: errorMessage,
+        completed_at: new Date().toISOString(),
+      };
+      mockCalls.webhookEventsUpdate.push(updateData);
     }),
     markEventUnrecoverable: vi.fn(async () => {}),
   },
 }));
 
 vi.mock('@shared/config/stripe', () => ({
-  getPlanForPriceId: vi.fn(),
+  getPlanForPriceId: vi.fn(() => ({
+    key: 'starter',
+    name: 'Starter',
+    creditsPerMonth: 30,
+    maxRollover: 90,
+  })),
   assertKnownPriceId: vi.fn((priceId: string) => ({
     type: 'plan',
-    key: 'hobby',
-    name: 'Hobby',
+    key: 'starter',
+    name: 'Starter',
     stripePriceId: priceId,
-    priceInCents: 1900,
+    priceInCents: 4900,
     currency: 'usd',
-    credits: 200,
-    maxRollover: 1200,
+    credits: 30,
+    maxRollover: 90,
   })),
   resolvePriceId: vi.fn((priceId: string) => ({
     type: 'plan',
-    key: 'hobby',
-    name: 'Hobby',
+    key: 'starter',
+    name: 'Starter',
     stripePriceId: priceId,
-    priceInCents: 1900,
+    priceInCents: 4900,
     currency: 'usd',
-    credits: 200,
-    maxRollover: 1200,
+    credits: 30,
+    maxRollover: 90,
   })),
 }));
 
@@ -171,6 +193,10 @@ vi.mock('@server/supabase/supabaseAdmin', () => ({
                 mockCalls.profilesSelect.push({ table });
                 return Promise.resolve(profilesSelectReturn);
               }),
+              maybeSingle: vi.fn(() => {
+                mockCalls.profilesSelect.push({ table });
+                return Promise.resolve(profilesSelectReturn);
+              }),
             })),
           })),
           update: vi.fn(() => ({
@@ -205,6 +231,7 @@ vi.mock('@shared/config/env', () => ({
       },
     });
   },
+  isTest: () => true,
 }));
 
 describe('Stripe Webhook Idempotency', () => {
@@ -236,17 +263,6 @@ describe('Stripe Webhook Idempotency', () => {
     };
     mockWebhookSecret = 'whsec_test_secret';
     mockIdempotencyEnabled = true;
-
-    // Set up idempotency functions
-    idempotencyInsertFn = async (data: unknown) => {
-      mockCalls.webhookEventsInsert.push(data);
-      return webhookEventsInsertReturn;
-    };
-
-    idempotencyUpdateFn = async (data: unknown) => {
-      mockCalls.webhookEventsUpdate.push(data);
-      return webhookEventsUpdateReturn;
-    };
 
     consoleSpy = {
       log: vi.spyOn(console, 'log').mockImplementation(() => {}),
@@ -615,7 +631,7 @@ describe('Stripe Webhook Idempotency', () => {
       });
 
       // Act - First call
-      const response1 = await POST(request1);
+      const response1 = await POST({ request: request1 });
 
       // Assert - First call succeeds
       expect(response1.status).toBe(200);
@@ -639,7 +655,7 @@ describe('Stripe Webhook Idempotency', () => {
       });
 
       // Act - Second call (duplicate)
-      const response2 = await POST(request2);
+      const response2 = await POST({ request: request2 });
 
       // Assert - Second call is skipped
       expect(response2.status).toBe(200);
@@ -679,10 +695,10 @@ describe('Stripe Webhook Idempotency', () => {
       // Setup proper plan mocking
       const { getPlanForPriceId } = await import('@shared/config/stripe');
       vi.mocked(getPlanForPriceId).mockReturnValue({
-        key: 'pro',
-        name: 'Professional',
-        creditsPerMonth: 1000,
-        maxRollover: 6000,
+        key: 'growth',
+        name: 'Growth',
+        creditsPerMonth: 100,
+        maxRollover: 300,
       });
 
       // Mock: event doesn't exist
@@ -704,7 +720,7 @@ describe('Stripe Webhook Idempotency', () => {
       });
 
       // Act
-      await POST(request);
+      await POST({ request });
 
       // Assert - Verify insert was called with correct data
       expect(mockCalls.webhookEventsInsert).toHaveLength(1);

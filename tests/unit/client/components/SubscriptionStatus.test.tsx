@@ -29,7 +29,7 @@ describe('SubscriptionStatus', () => {
   const mockSubscription = {
     id: 'sub_test_123',
     status: 'active',
-    price_id: 'price_pro_monthly',
+    price_id: 'price_1SxZp9K2K0pPNfoSeOwSLmcp',
     current_period_start: '2024-01-01T00:00:00Z',
     current_period_end: '2024-02-01T00:00:00Z',
     cancel_at_period_end: false,
@@ -37,8 +37,8 @@ describe('SubscriptionStatus', () => {
   };
 
   const mockProfile = {
-    subscription_tier: 'Professional',
-    credits_balance: 1000,
+    subscription_tier: 'Growth',
+    credits_balance: 100,
   };
 
   it('shows loading state initially', () => {
@@ -68,10 +68,10 @@ describe('SubscriptionStatus', () => {
     mockStripeService.getActiveSubscription.mockResolvedValue(mockSubscription);
     mockStripeService.getUserProfile.mockResolvedValue(mockProfile);
     mockGetPlanForPriceId.mockReturnValue({
-      name: 'Professional',
-      key: 'pro',
-      creditsPerMonth: 1000,
-      maxRollover: 6000,
+      name: 'Growth',
+      key: 'growth',
+      creditsPerMonth: 100,
+      maxRollover: 300,
     });
 
     render(<SubscriptionStatus />);
@@ -80,7 +80,7 @@ describe('SubscriptionStatus', () => {
       expect(screen.getByText('Subscription Status')).toBeInTheDocument();
       expect(screen.getByText('Active')).toBeInTheDocument();
       expect(screen.getByText('Plan:')).toBeInTheDocument();
-      expect(screen.getByText('Professional')).toBeInTheDocument();
+      expect(screen.getByText('Growth')).toBeInTheDocument();
       expect(screen.getByText('Current Period Ends:')).toBeInTheDocument();
     });
 
@@ -96,7 +96,7 @@ describe('SubscriptionStatus', () => {
     render(<SubscriptionStatus />);
 
     await waitFor(() => {
-      expect(screen.getByText('Professional')).toBeInTheDocument();
+      expect(screen.getByText('Growth')).toBeInTheDocument();
     });
   });
 

@@ -27,7 +27,7 @@ interface IUpdateSubscriptionRequest {
  */
 interface IUpdateProfileRequest {
   role?: 'user' | 'admin';
-  subscription_tier?: 'hobby' | 'pro' | 'business';
+  subscription_tier?: 'starter' | 'growth' | 'agency';
   subscription_status?: 'active' | 'canceled' | 'trialing' | 'past_due' | 'incomplete';
 }
 
@@ -328,12 +328,20 @@ export class AdminController extends BaseController {
     }
 
     // Validate subscription_tier
-    if (body.subscription_tier !== undefined && !['hobby', 'pro', 'business'].includes(body.subscription_tier)) {
+    if (
+      body.subscription_tier !== undefined &&
+      !['starter', 'growth', 'agency'].includes(body.subscription_tier)
+    ) {
       return this.error('VALIDATION_ERROR', 'Invalid subscription_tier value', 400);
     }
 
     // Validate subscription_status
-    if (body.subscription_status !== undefined && !['active', 'canceled', 'trialing', 'past_due', 'incomplete'].includes(body.subscription_status)) {
+    if (
+      body.subscription_status !== undefined &&
+      !['active', 'canceled', 'trialing', 'past_due', 'incomplete'].includes(
+        body.subscription_status
+      )
+    ) {
       return this.error('VALIDATION_ERROR', 'Invalid subscription_status value', 400);
     }
 

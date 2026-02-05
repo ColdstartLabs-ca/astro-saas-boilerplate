@@ -182,7 +182,7 @@ export const DEFAULT_ADDITIONAL_OPTIONS: IAdditionalOptions = {
 
 // Multi-Model Architecture Types
 
-export type SubscriptionTier = 'free' | 'hobby' | 'pro' | 'business';
+export type SubscriptionTier = 'free' | 'starter' | 'growth' | 'agency';
 
 export type ModelId =
   | 'real-esrgan'

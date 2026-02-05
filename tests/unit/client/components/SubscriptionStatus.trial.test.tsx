@@ -13,7 +13,7 @@ vi.mock('@client/services/stripeService', () => ({
 }));
 
 vi.mock('@shared/config/stripe', () => ({
-  getPlanDisplayName: vi.fn(() => 'Pro Plan'),
+  getPlanDisplayName: vi.fn(() => 'Growth Plan'),
 }));
 
 vi.mock('dayjs', () => {
@@ -57,7 +57,7 @@ describe('SubscriptionStatus - Trial Functionality', () => {
     id: 'sub_123',
     user_id: 'user_123',
     status: 'trialing',
-    price_id: 'price_pro_monthly',
+    price_id: 'price_1SxZp9K2K0pPNfoSeOwSLmcp',
     current_period_start: '2024-01-01T00:00:00Z',
     current_period_end: '2024-02-01T00:00:00Z',
     trial_end: '2024-01-29T00:00:00Z', // 14 days from 2024-01-15
@@ -72,7 +72,7 @@ describe('SubscriptionStatus - Trial Functionality', () => {
     stripe_customer_id: 'cus_123',
     credits_balance: 500,
     subscription_status: 'trialing',
-    subscription_tier: 'Pro',
+    subscription_tier: 'Growth',
     role: 'user',
     created_at: '2024-01-01T00:00:00Z',
     updated_at: '2024-01-15T10:00:00Z',
@@ -83,7 +83,7 @@ describe('SubscriptionStatus - Trial Functionality', () => {
 
     mockStripeService.getActiveSubscription.mockResolvedValue(null);
     mockStripeService.getUserProfile.mockResolvedValue(null);
-    mockGetPlanDisplayName.mockReturnValue('Pro Plan');
+    mockGetPlanDisplayName.mockReturnValue('Growth Plan');
   });
 
   it('displays trial badge when subscription status is trialing', async () => {
@@ -286,12 +286,12 @@ describe('SubscriptionStatus - Trial Functionality', () => {
     render(<SubscriptionStatus />);
 
     await waitFor(() => {
-      expect(screen.getByText('Pro Plan')).toBeInTheDocument();
+      expect(screen.getByText('Growth Plan')).toBeInTheDocument();
     });
 
     expect(mockGetPlanDisplayName).toHaveBeenCalledWith({
-      priceId: 'price_pro_monthly',
-      subscriptionTier: 'Pro',
+      priceId: 'price_1SxZp9K2K0pPNfoSeOwSLmcp',
+      subscriptionTier: 'Growth',
     });
   });
 });

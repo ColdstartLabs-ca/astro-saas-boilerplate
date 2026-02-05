@@ -15,57 +15,46 @@ describe('Unified Pricing Resolver', () => {
       const index = getPriceIndex();
 
       // Should contain starter plan
-      expect(index).toHaveProperty('price_1Sq14eALMLhQocpf5CXIwYSv');
-      expect(index['price_1Sq14eALMLhQocpf5CXIwYSv']).toMatchObject({
+      expect(index).toHaveProperty('price_1SxZp7K2K0pPNfoSMt94q8kP');
+      expect(index['price_1SxZp7K2K0pPNfoSMt94q8kP']).toMatchObject({
         type: 'plan',
         key: 'starter',
         name: 'Starter',
+        currency: 'usd',
+        credits: 30,
+        maxRollover: 90, // 30 * 3
+      });
+
+      // Should contain growth plan
+      expect(index).toHaveProperty('price_1SxZp9K2K0pPNfoSeOwSLmcp');
+      expect(index['price_1SxZp9K2K0pPNfoSeOwSLmcp']).toMatchObject({
+        type: 'plan',
+        key: 'growth',
+        name: 'Growth',
         currency: 'usd',
         credits: 100,
         maxRollover: 300, // 100 * 3
       });
 
-      // Should contain hobby plan
-      expect(index).toHaveProperty('price_1SZmVyALMLhQocpf0H7n5ls8');
-      expect(index['price_1SZmVyALMLhQocpf0H7n5ls8']).toMatchObject({
+      // Should contain agency plan
+      expect(index).toHaveProperty('price_1SxZpAK2K0pPNfoSbxIQNtKL');
+      expect(index['price_1SxZpAK2K0pPNfoSbxIQNtKL']).toMatchObject({
         type: 'plan',
-        key: 'hobby',
-        name: 'Hobby',
+        key: 'agency',
+        name: 'Agency',
         currency: 'usd',
-        credits: 200,
-        maxRollover: 1200, // 200 * 6
-      });
-
-      // Should contain pro plan
-      expect(index).toHaveProperty('price_1SZmVzALMLhQocpfPyRX2W8D');
-      expect(index['price_1SZmVzALMLhQocpfPyRX2W8D']).toMatchObject({
-        type: 'plan',
-        key: 'pro',
-        name: 'Professional',
-        currency: 'usd',
-        credits: 1000,
-        maxRollover: 6000, // 1000 * 6
-      });
-
-      // Should contain business plan
-      expect(index).toHaveProperty('price_1SZmVzALMLhQocpfqPk9spg4');
-      expect(index['price_1SZmVzALMLhQocpfqPk9spg4']).toMatchObject({
-        type: 'plan',
-        key: 'business',
-        name: 'Business',
-        currency: 'usd',
-        credits: 5000,
-        maxRollover: 0, // No rollover for business plan (use it or lose it)
+        credits: 500,
+        maxRollover: 0, // No rollover for agency plan (use it or lose it)
       });
 
       // Should contain credit packs
-      expect(index).toHaveProperty('price_1SbAASALMLhQocpfGUg3wLXM');
-      expect(index['price_1SbAASALMLhQocpfGUg3wLXM']).toMatchObject({
+      expect(index).toHaveProperty('price_1SxZpbK2K0pPNfoSOZkDy9td');
+      expect(index['price_1SxZpbK2K0pPNfoSOZkDy9td']).toMatchObject({
         type: 'pack',
         key: 'small',
         name: 'Small Pack',
         currency: 'usd',
-        credits: 50,
+        credits: 10,
       });
     });
 
@@ -78,59 +67,59 @@ describe('Unified Pricing Resolver', () => {
 
   describe('resolvePriceId', () => {
     test('should resolve known subscription plan price IDs', () => {
-      const starter = resolvePriceId('price_1Sq14eALMLhQocpf5CXIwYSv');
+      const starter = resolvePriceId('price_1SxZp7K2K0pPNfoSMt94q8kP');
       expect(starter).toMatchObject({
         type: 'plan',
         key: 'starter',
         name: 'Starter',
-        stripePriceId: 'price_1Sq14eALMLhQocpf5CXIwYSv',
-        priceInCents: 900,
+        stripePriceId: 'price_1SxZp7K2K0pPNfoSMt94q8kP',
+        priceInCents: 4900,
+        currency: 'usd',
+        credits: 30,
+        maxRollover: 90, // 30 * 3
+      });
+
+      const growth = resolvePriceId('price_1SxZp9K2K0pPNfoSeOwSLmcp');
+      expect(growth).toMatchObject({
+        type: 'plan',
+        key: 'growth',
+        name: 'Growth',
+        stripePriceId: 'price_1SxZp9K2K0pPNfoSeOwSLmcp',
+        priceInCents: 9900,
         currency: 'usd',
         credits: 100,
         maxRollover: 300, // 100 * 3
       });
 
-      const hobby = resolvePriceId('price_1SZmVyALMLhQocpf0H7n5ls8');
-      expect(hobby).toMatchObject({
+      const agency = resolvePriceId('price_1SxZpAK2K0pPNfoSbxIQNtKL');
+      expect(agency).toMatchObject({
         type: 'plan',
-        key: 'hobby',
-        name: 'Hobby',
-        stripePriceId: 'price_1SZmVyALMLhQocpf0H7n5ls8',
-        priceInCents: 1900,
-        currency: 'usd',
-        credits: 200,
-        maxRollover: 1200, // 200 * 6
-      });
-
-      const pro = resolvePriceId('price_1SZmVzALMLhQocpfPyRX2W8D');
-      expect(pro).toMatchObject({
-        type: 'plan',
-        key: 'pro',
-        name: 'Professional',
-        credits: 1000,
-        maxRollover: 6000, // 1000 * 6
+        key: 'agency',
+        name: 'Agency',
+        credits: 500,
+        maxRollover: 0, // No rollover for agency
       });
     });
 
     test('should resolve known credit pack price IDs', () => {
-      const smallPack = resolvePriceId('price_1SbAASALMLhQocpfGUg3wLXM');
+      const smallPack = resolvePriceId('price_1SxZpbK2K0pPNfoSOZkDy9td');
       expect(smallPack).toMatchObject({
         type: 'pack',
         key: 'small',
         name: 'Small Pack',
-        stripePriceId: 'price_1SbAASALMLhQocpfGUg3wLXM',
-        priceInCents: 499,
+        stripePriceId: 'price_1SxZpbK2K0pPNfoSOZkDy9td',
+        priceInCents: 999,
         currency: 'usd',
-        credits: 50,
+        credits: 10,
         maxRollover: null,
       });
 
-      const mediumPack = resolvePriceId('price_1SbAASALMLhQocpf7nw3wRj7');
+      const mediumPack = resolvePriceId('price_1SxZpbK2K0pPNfoSQ9VDhGSt');
       expect(mediumPack).toMatchObject({
         type: 'pack',
         key: 'medium',
         name: 'Medium Pack',
-        credits: 200,
+        credits: 25,
       });
     });
 
@@ -148,11 +137,11 @@ describe('Unified Pricing Resolver', () => {
 
   describe('assertKnownPriceId', () => {
     test('should return resolved data for known price IDs', () => {
-      const result = assertKnownPriceId('price_1SZmVyALMLhQocpf0H7n5ls8');
+      const result = assertKnownPriceId('price_1SxZp9K2K0pPNfoSeOwSLmcp');
       expect(result).toMatchObject({
         type: 'plan',
-        key: 'hobby',
-        name: 'Hobby',
+        key: 'growth',
+        name: 'Growth',
       });
     });
 
@@ -179,24 +168,24 @@ describe('Unified Pricing Resolver', () => {
 
   describe('resolvePlanOrPack', () => {
     test('should resolve subscription plans with correct structure', () => {
-      const result = resolvePlanOrPack('price_1SZmVyALMLhQocpf0H7n5ls8');
+      const result = resolvePlanOrPack('price_1SxZp7K2K0pPNfoSMt94q8kP');
       expect(result).toMatchObject({
         type: 'plan',
-        key: 'hobby',
-        name: 'Hobby',
-        creditsPerCycle: 200,
-        maxRollover: 1200,
+        key: 'starter',
+        name: 'Starter',
+        creditsPerCycle: 30,
+        maxRollover: 90,
       });
       expect(result).not.toHaveProperty('credits');
     });
 
     test('should resolve credit packs with correct structure', () => {
-      const result = resolvePlanOrPack('price_1SbAASALMLhQocpfGUg3wLXM');
+      const result = resolvePlanOrPack('price_1SxZpbK2K0pPNfoSOZkDy9td');
       expect(result).toMatchObject({
         type: 'pack',
         key: 'small',
         name: 'Small Pack',
-        credits: 50,
+        credits: 10,
       });
       expect(result).not.toHaveProperty('creditsPerCycle');
       expect(result).not.toHaveProperty('maxRollover');
@@ -215,27 +204,27 @@ describe('Unified Pricing Resolver', () => {
 
   describe('Starter Tier Specific Tests', () => {
     test('should resolve Starter plan with correct rollover configuration', () => {
-      const starter = resolvePriceId('price_1Sq14eALMLhQocpf5CXIwYSv');
+      const starter = resolvePriceId('price_1SxZp7K2K0pPNfoSMt94q8kP');
 
       expect(starter).toMatchObject({
         type: 'plan',
         key: 'starter',
         name: 'Starter',
-        credits: 100,
-        maxRollover: 300,
-        priceInCents: 900,
+        credits: 30,
+        maxRollover: 90,
+        priceInCents: 4900,
       });
     });
 
     test('should handle Starter plan in resolvePlanOrPack', () => {
-      const resolved = resolvePlanOrPack('price_1Sq14eALMLhQocpf5CXIwYSv');
+      const resolved = resolvePlanOrPack('price_1SxZp7K2K0pPNfoSMt94q8kP');
 
       expect(resolved).toMatchObject({
         type: 'plan',
         key: 'starter',
         name: 'Starter',
-        creditsPerCycle: 100,
-        maxRollover: 300,
+        creditsPerCycle: 30,
+        maxRollover: 90,
       });
     });
   });
@@ -249,7 +238,7 @@ describe('Unified Pricing Resolver', () => {
       // Test that Starter price ID is in the index
       const index = getPriceIndex();
       const starterPriceIds = Object.keys(index).filter(
-        key => key.toLowerCase().includes('starter') || key === 'price_1Sq14eALMLhQocpf5CXIwYSv'
+        key => key.toLowerCase().includes('starter') || key === 'price_1SxZp7K2K0pPNfoSMt94q8kP'
       );
       expect(starterPriceIds.length).toBeGreaterThan(0);
 
@@ -264,48 +253,13 @@ describe('Unified Pricing Resolver', () => {
     test('should verify rollover is enabled for Starter tier', () => {
       const index = getPriceIndex();
       const starterPriceIds = Object.keys(index).filter(
-        key => key.toLowerCase().includes('starter') || key === 'price_1Sq14eALMLhQocpf5CXIwYSv'
+        key => key.toLowerCase().includes('starter') || key === 'price_1SxZp7K2K0pPNfoSMt94q8kP'
       );
 
       if (starterPriceIds.length > 0) {
         const starterPlan = resolvePriceId(starterPriceIds[0]);
         expect(starterPlan?.maxRollover).toBeGreaterThan(0);
-        expect(starterPlan?.maxRollover).toBe(300); // 100 * 3
-      }
-    });
-  });
-
-  describe('Integration with existing configuration', () => {
-    test('should ensure all price IDs from subscription config are resolvable', () => {
-      // Since this is testing integration with the actual config, and the main tests
-      // already cover the core functionality, we can simplify these integration tests
-      // to avoid import path issues while still verifying the Starter tier integration
-
-      // Test that Starter price ID is in the index
-      const index = getPriceIndex();
-      const starterPriceIds = Object.keys(index).filter(
-        key => key.toLowerCase().includes('starter') || key === 'price_1Sq14eALMLhQocpf5CXIwYSv'
-      );
-      expect(starterPriceIds.length).toBeGreaterThan(0);
-
-      // Test that the Starter plan can be resolved
-      const starterPriceId = starterPriceIds[0];
-      const starterPlan = resolvePriceId(starterPriceId);
-      expect(starterPlan).not.toBeNull();
-      expect(starterPlan?.type).toBe('plan');
-      expect(starterPlan?.key).toBe('starter');
-    });
-
-    test('should verify rollover is enabled for Starter tier', () => {
-      const index = getPriceIndex();
-      const starterPriceIds = Object.keys(index).filter(
-        key => key.toLowerCase().includes('starter') || key === 'price_1Sq14eALMLhQocpf5CXIwYSv'
-      );
-
-      if (starterPriceIds.length > 0) {
-        const starterPlan = resolvePriceId(starterPriceIds[0]);
-        expect(starterPlan?.maxRollover).toBeGreaterThan(0);
-        expect(starterPlan?.maxRollover).toBe(300); // 100 * 3
+        expect(starterPlan?.maxRollover).toBe(90); // 30 * 3
       }
     });
   });

@@ -120,15 +120,15 @@ async function fixSubscription(customerId: string, dryRun: boolean = false) {
       console.log(`  📝 Fallback: Using price ID fragments for plan detection`);
 
       // Fallback to legacy detection for unknown price IDs - use keys not names
-      if (priceId.includes('hobby') || priceId.includes('Hobby')) {
-        planKey = 'hobby';
-        planName = 'Hobby';
-      } else if (priceId.includes('pro') || priceId.includes('Pro')) {
-        planKey = 'pro';
-        planName = 'Professional';
-      } else if (priceId.includes('business') || priceId.includes('Business')) {
-        planKey = 'business';
-        planName = 'Business';
+      if (priceId.includes('starter') || priceId.includes('Starter')) {
+        planKey = 'starter';
+        planName = 'Starter';
+      } else if (priceId.includes('growth') || priceId.includes('Growth')) {
+        planKey = 'growth';
+        planName = 'Growth';
+      } else if (priceId.includes('agency') || priceId.includes('Agency')) {
+        planKey = 'agency';
+        planName = 'Agency';
       } else {
         // Use price ID itself as last resort
         planKey = 'unknown';

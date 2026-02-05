@@ -215,7 +215,7 @@ export class StripeWebhookMockFactory {
       userId,
       customerId = `cus_test_${userId}`,
       subscriptionId = `sub_test_${userId}`,
-      priceId = 'price_test_pro_monthly',
+      priceId = 'price_test_growth_monthly',
     } = options;
 
     return {
@@ -276,8 +276,8 @@ export class StripeWebhookMockFactory {
                   interval_count: 1,
                   livemode: false,
                   metadata: {},
-                  nickname: 'Pro Plan Monthly',
-                  product: 'prod_test_pro',
+                  nickname: 'Growth Plan Monthly',
+                  product: 'prod_test_growth',
                   tiers: null,
                   tiers_mode: null,
                   transform_usage: null,
@@ -294,8 +294,8 @@ export class StripeWebhookMockFactory {
                   custom_unit_amount: null,
                   lookup_key: null,
                   metadata: {},
-                  nickname: 'Pro Plan Monthly',
-                  product: 'prod_test_pro',
+                  nickname: 'Growth Plan Monthly',
+                  product: 'prod_test_growth',
                   recurring: {
                     aggregate_usage: null,
                     interval: 'month',
@@ -368,7 +368,7 @@ export class StripeWebhookMockFactory {
       userId,
       customerId = `cus_test_${userId}`,
       subscriptionId = `sub_test_${userId}`,
-      priceId = 'price_test_pro_monthly',
+      priceId = 'price_test_growth_monthly',
       status = 'active',
     } = options;
 
@@ -392,7 +392,7 @@ export class StripeWebhookMockFactory {
       userId,
       customerId = `cus_test_${userId}`,
       subscriptionId = `sub_test_${userId}`,
-      priceId = 'price_test_pro_monthly',
+      priceId = 'price_test_growth_monthly',
     } = options;
 
     const baseEvent = this.createSubscriptionCreated({
@@ -484,7 +484,7 @@ export class StripeWebhookMockFactory {
                 amount: 2900,
                 amount_excluding_tax: 2900,
                 currency: 'usd',
-                description: 'Pro Plan Monthly',
+                description: 'Growth Plan Monthly',
                 discount_amounts: [],
                 discountable: true,
                 discounts: [],
@@ -496,7 +496,7 @@ export class StripeWebhookMockFactory {
                   start: Math.floor(Date.now() / 1000),
                 },
                 plan: {
-                  id: 'price_test_pro_monthly',
+                  id: 'price_test_growth_monthly',
                   object: 'plan',
                   active: true,
                   aggregate_usage: null,
@@ -509,8 +509,8 @@ export class StripeWebhookMockFactory {
                   interval_count: 1,
                   livemode: false,
                   metadata: {},
-                  nickname: 'Pro Plan Monthly',
-                  product: 'prod_test_pro',
+                  nickname: 'Growth Plan Monthly',
+                  product: 'prod_test_growth',
                   tiers: null,
                   tiers_mode: null,
                   transform_usage: null,
@@ -518,7 +518,7 @@ export class StripeWebhookMockFactory {
                   usage_type: 'licensed',
                 },
                 price: {
-                  id: 'price_test_pro_monthly',
+                  id: 'price_test_growth_monthly',
                   object: 'price',
                   active: true,
                   billing_scheme: 'per_unit',
@@ -527,8 +527,8 @@ export class StripeWebhookMockFactory {
                   custom_unit_amount: null,
                   lookup_key: null,
                   metadata: {},
-                  nickname: 'Pro Plan Monthly',
-                  product: 'prod_test_pro',
+                  nickname: 'Growth Plan Monthly',
+                  product: 'prod_test_growth',
                   recurring: {
                     aggregate_usage: null,
                     interval: 'month',

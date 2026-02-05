@@ -83,7 +83,9 @@ export class SubscriptionController extends BaseController {
   /**
    * Authenticate user from Authorization header
    */
-  private async authenticateUser(req: Request): Promise<{ userId: string; email?: string } | Response> {
+  private async authenticateUser(
+    req: Request
+  ): Promise<{ userId: string; email?: string } | Response> {
     const authHeader = req.headers.get('authorization');
     if (!authHeader) {
       return this.error('UNAUTHORIZED', 'Missing authorization header', 401);
@@ -105,20 +107,31 @@ export class SubscriptionController extends BaseController {
   /**
    * Validate price ID and resolve to plan
    */
-  private validatePriceId(targetPriceId: string): { plan: ReturnType<typeof getPlanForPriceId>; error?: Response } {
+  private validatePriceId(targetPriceId: string): {
+    plan: ReturnType<typeof getPlanForPriceId>;
+    error?: Response;
+  } {
     try {
       const resolved = assertKnownPriceId(targetPriceId);
       if (resolved.type !== 'plan') {
         return {
           plan: null,
-          error: this.error('INVALID_PRICE_ID', `Price ID ${targetPriceId} is not a subscription plan`, 400),
+          error: this.error(
+            'INVALID_PRICE_ID',
+            `Price ID ${targetPriceId} is not a subscription plan`,
+            400
+          ),
         };
       }
       const plan = getPlanForPriceId(targetPriceId);
       if (!plan) {
         return {
           plan: null,
-          error: this.error('INTERNAL_ERROR', 'Failed to resolve target plan after validation', 500),
+          error: this.error(
+            'INTERNAL_ERROR',
+            'Failed to resolve target plan after validation',
+            500
+          ),
         };
       }
       return { plan };
@@ -139,10 +152,9 @@ export class SubscriptionController extends BaseController {
    */
   private isDowngrade(subscriptionTier: string | null, targetCredits: number): boolean {
     const tierCreditsMap: Record<string, number> = {
-      starter: 100,
-      hobby: 200,
-      pro: 1000,
-      business: 5000,
+      starter: 30,
+      growth: 100,
+      agency: 500,
     };
     const currentTierCredits = tierCreditsMap[subscriptionTier || ''] || 0;
     return currentTierCredits > targetCredits;
@@ -197,11 +209,18 @@ export class SubscriptionController extends BaseController {
 
     // 7. Handle no current subscription
     if (subError || !currentSubscription) {
-      return this.error('NO_ACTIVE_SUBSCRIPTION', 'No active subscription found. Use checkout endpoint instead.', 400);
+      return this.error(
+        'NO_ACTIVE_SUBSCRIPTION',
+        'No active subscription found. Use checkout endpoint instead.',
+        400
+      );
     }
 
     // 8. Determine if this is a downgrade
-    const isDowngradeChange = this.isDowngrade(profile.subscription_tier, targetPlan.creditsPerMonth);
+    const isDowngradeChange = this.isDowngrade(
+      profile.subscription_tier,
+      targetPlan.creditsPerMonth
+    );
 
     console.log('[PLAN_CHANGE_START]', {
       userId,
@@ -243,7 +262,10 @@ export class SubscriptionController extends BaseController {
     // Sync database with Stripe if price_id is out of sync
     const latestPriceId = latestSubscription.items.data[0]?.price.id;
     if (latestPriceId !== currentSubscription.price_id) {
-      await supabaseAdmin.from('subscriptions').update({ price_id: latestPriceId }).eq('id', currentSubscription.id);
+      await supabaseAdmin
+        .from('subscriptions')
+        .update({ price_id: latestPriceId })
+        .eq('id', currentSubscription.id);
       currentSubscription.price_id = latestPriceId;
     }
 
@@ -276,7 +298,11 @@ export class SubscriptionController extends BaseController {
     if (isDowngradeChange) {
       // DOWNGRADE: Schedule at end of billing period using Subscription Schedules
       if (!periodEnd) {
-        return this.error('INVALID_SUBSCRIPTION_STATE', 'Could not determine billing period end date', 500);
+        return this.error(
+          'INVALID_SUBSCRIPTION_STATE',
+          'Could not determine billing period end date',
+          500
+        );
       }
 
       // Release existing schedule if present
@@ -434,7 +460,11 @@ export class SubscriptionController extends BaseController {
       .single();
 
     if (subError || !currentSubscription) {
-      return this.error('NO_ACTIVE_SUBSCRIPTION', 'No active subscription found. Use checkout endpoint instead.', 400);
+      return this.error(
+        'NO_ACTIVE_SUBSCRIPTION',
+        'No active subscription found. Use checkout endpoint instead.',
+        400
+      );
     }
 
     const currentPriceId = currentSubscription.price_id;
@@ -457,10 +487,9 @@ export class SubscriptionController extends BaseController {
 
     // 7. Determine if this is a downgrade
     const tierCreditsMap: Record<string, number> = {
-      starter: 100,
-      hobby: 200,
-      pro: 1000,
-      business: 5000,
+      starter: 30,
+      growth: 100,
+      agency: 500,
     };
     const currentTierCredits = tierCreditsMap[profile.subscription_tier || ''] || 0;
     const targetCredits = targetPlan.creditsPerMonth;
@@ -512,7 +541,9 @@ export class SubscriptionController extends BaseController {
         const periodStart = subscriptionUnknown.current_period_start;
         const periodEnd = subscriptionUnknown.current_period_end;
 
-        const periodStartISO = periodStart ? dayjs.unix(periodStart).toISOString() : dayjs().toISOString();
+        const periodStartISO = periodStart
+          ? dayjs.unix(periodStart).toISOString()
+          : dayjs().toISOString();
         effectiveDate = periodEnd ? dayjs.unix(periodEnd).toISOString() : undefined;
 
         prorationResult = {
@@ -551,7 +582,9 @@ export class SubscriptionController extends BaseController {
         const seenTypes = new Set<string>();
         const uniqueItems = relevantItems.filter((line: Stripe.InvoiceLineItem) => {
           const desc = line.description || '';
-          const type = desc.includes('Unused') ? `unused_${currentPlanName}` : `remaining_${targetPlanName}`;
+          const type = desc.includes('Unused')
+            ? `unused_${currentPlanName}`
+            : `remaining_${targetPlanName}`;
           if (seenTypes.has(type)) return false;
           seenTypes.add(type);
           return true;
@@ -574,11 +607,11 @@ export class SubscriptionController extends BaseController {
     // 10. Build response
     const tierNameMap: Record<string, string> = {
       starter: 'Starter',
-      hobby: 'Hobby',
-      pro: 'Professional',
-      business: 'Business',
+      growth: 'Growth',
+      agency: 'Agency',
     };
-    const currentTierName = tierNameMap[profile.subscription_tier || ''] || profile.subscription_tier || 'Unknown';
+    const currentTierName =
+      tierNameMap[profile.subscription_tier || ''] || profile.subscription_tier || 'Unknown';
 
     const response: IPreviewChangeResponse = {
       proration: prorationResult,
@@ -724,10 +757,7 @@ export class SubscriptionController extends BaseController {
       updateData.cancellation_reason = cancellationReason;
     }
 
-    await supabaseAdmin
-      .from('subscriptions')
-      .update(updateData)
-      .eq('id', subscription.id);
+    await supabaseAdmin.from('subscriptions').update(updateData).eq('id', subscription.id);
 
     // Access period end timestamp
     const updatedSubUnknown = updatedSubscription as unknown as {

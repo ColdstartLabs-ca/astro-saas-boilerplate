@@ -55,8 +55,7 @@ export const SUBSCRIPTION_CONFIG: ISubscriptionConfig = {
     {
       key: 'starter',
       name: 'Starter',
-      // TODO: Replace with real Stripe price ID after creating products
-      stripePriceId: 'price_PLACEHOLDER_STARTER_MONTHLY',
+      stripePriceId: 'price_1SxZp7K2K0pPNfoSMt94q8kP',
       priceInCents: 4900, // $49.00
       currency: 'usd',
       interval: 'month',
@@ -95,8 +94,7 @@ export const SUBSCRIPTION_CONFIG: ISubscriptionConfig = {
     {
       key: 'growth',
       name: 'Growth',
-      // TODO: Replace with real Stripe price ID after creating products
-      stripePriceId: 'price_PLACEHOLDER_GROWTH_MONTHLY',
+      stripePriceId: 'price_1SxZp9K2K0pPNfoSeOwSLmcp',
       priceInCents: 9900, // $99.00
       currency: 'usd',
       interval: 'month',
@@ -136,8 +134,7 @@ export const SUBSCRIPTION_CONFIG: ISubscriptionConfig = {
     {
       key: 'agency',
       name: 'Agency',
-      // TODO: Replace with real Stripe price ID after creating products
-      stripePriceId: 'price_PLACEHOLDER_AGENCY_MONTHLY',
+      stripePriceId: 'price_1SxZpAK2K0pPNfoSbxIQNtKL',
       priceInCents: 24900, // $249.00
       currency: 'usd',
       interval: 'month',
@@ -182,7 +179,7 @@ export const SUBSCRIPTION_CONFIG: ISubscriptionConfig = {
       credits: CREDIT_COSTS.SMALL_PACK_CREDITS, // 10 articles
       priceInCents: 999, // $9.99
       currency: 'usd',
-      stripePriceId: 'price_PLACEHOLDER_SMALL_PACK',
+      stripePriceId: 'price_1SxZpbK2K0pPNfoSOZkDy9td',
       description: '10 articles',
       popular: false,
       enabled: true,
@@ -193,7 +190,7 @@ export const SUBSCRIPTION_CONFIG: ISubscriptionConfig = {
       credits: CREDIT_COSTS.MEDIUM_PACK_CREDITS, // 25 articles
       priceInCents: 1999, // $19.99
       currency: 'usd',
-      stripePriceId: 'price_PLACEHOLDER_MEDIUM_PACK',
+      stripePriceId: 'price_1SxZpbK2K0pPNfoSQ9VDhGSt',
       description: '25 articles - Best value',
       popular: true,
       enabled: true,
@@ -204,7 +201,7 @@ export const SUBSCRIPTION_CONFIG: ISubscriptionConfig = {
       credits: CREDIT_COSTS.LARGE_PACK_CREDITS, // 50 articles
       priceInCents: 3499, // $34.99
       currency: 'usd',
-      stripePriceId: 'price_PLACEHOLDER_LARGE_PACK',
+      stripePriceId: 'price_1SxZpcK2K0pPNfoSv4WoPMSI',
       description: '50 articles',
       popular: false,
       enabled: true,

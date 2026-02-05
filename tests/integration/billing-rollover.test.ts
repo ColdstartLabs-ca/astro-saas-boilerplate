@@ -14,7 +14,7 @@ const createMockInvoice = (overrides: Partial<Record<string, unknown>> = {}) => 
         type: 'subscription',
         price: { id: 'price_STARTER_PLACEHOLDER' },
         plan: { id: 'plan_starter' },
-        amount: 900,
+        amount: 4900, // $49.00 for Starter
       },
     ],
   },
@@ -72,49 +72,49 @@ describe('Billing System with Credit Rollover Integration Tests', () => {
   describe('Credit Rollover Calculations', () => {
     test('should calculate rollover correctly for Starter tier', () => {
       const result = calculateBalanceWithExpiration({
-        currentBalance: 500,
-        newCredits: CREDIT_COSTS.STARTER_MONTHLY_CREDITS, // 100
+        currentBalance: 70,
+        newCredits: CREDIT_COSTS.STARTER_MONTHLY_CREDITS, // 30
         expirationMode: 'never',
-        maxRollover: CREDIT_COSTS.STARTER_MONTHLY_CREDITS * 6, // 600
+        maxRollover: CREDIT_COSTS.STARTER_MONTHLY_CREDITS * 3, // 90
       });
 
-      expect(result.newBalance).toBe(600); // Capped at 600
+      expect(result.newBalance).toBe(90); // Capped at 90
       expect(result.expiredAmount).toBe(0);
     });
 
     test('should not cap when under the rollover limit', () => {
       const result = calculateBalanceWithExpiration({
-        currentBalance: 300,
-        newCredits: CREDIT_COSTS.STARTER_MONTHLY_CREDITS, // 100
+        currentBalance: 40,
+        newCredits: CREDIT_COSTS.STARTER_MONTHLY_CREDITS, // 30
         expirationMode: 'never',
-        maxRollover: 600,
+        maxRollover: 90,
       });
 
-      expect(result.newBalance).toBe(400); // 300 + 100
+      expect(result.newBalance).toBe(70); // 40 + 30
       expect(result.expiredAmount).toBe(0);
     });
 
     test('should handle zero current balance', () => {
       const result = calculateBalanceWithExpiration({
         currentBalance: 0,
-        newCredits: CREDIT_COSTS.STARTER_MONTHLY_CREDITS, // 100
+        newCredits: CREDIT_COSTS.STARTER_MONTHLY_CREDITS, // 30
         expirationMode: 'never',
-        maxRollover: 600,
+        maxRollover: 90,
       });
 
-      expect(result.newBalance).toBe(100);
+      expect(result.newBalance).toBe(30);
       expect(result.expiredAmount).toBe(0);
     });
 
     test('should handle maximum rollover cap', () => {
       const result = calculateBalanceWithExpiration({
-        currentBalance: 600, // Already at cap
-        newCredits: CREDIT_COSTS.STARTER_MONTHLY_CREDITS, // 100
+        currentBalance: 90, // Already at cap
+        newCredits: CREDIT_COSTS.STARTER_MONTHLY_CREDITS, // 30
         expirationMode: 'never',
-        maxRollover: 600,
+        maxRollover: 90,
       });
 
-      expect(result.newBalance).toBe(600); // No change
+      expect(result.newBalance).toBe(90); // No change
       expect(result.expiredAmount).toBe(0);
     });
   });
@@ -123,18 +123,20 @@ describe('Billing System with Credit Rollover Integration Tests', () => {
     test('should add credits with rollover for Starter tier', async () => {
       const _mockInvoice = createMockInvoice();
       const mockProfile = createMockProfile({
-        subscription_credits_balance: 400,
-        purchased_credits_balance: 100,
+        subscription_credits_balance: 60,
+        purchased_credits_balance: 10,
       });
 
       // Mock supabase calls
       mockSupabaseAdmin.from = vi.fn(() => ({
         select: vi.fn(() => ({
           eq: vi.fn(() => ({
-            maybeSingle: vi.fn(() => Promise.resolve({
-              data: mockProfile,
-              error: null,
-            })),
+            maybeSingle: vi.fn(() =>
+              Promise.resolve({
+                data: mockProfile,
+                error: null,
+              })
+            ),
           })),
         })),
       }));
@@ -150,9 +152,10 @@ describe('Billing System with Credit Rollover Integration Tests', () => {
       });
 
       // Test the calculation logic
-      const currentBalance = mockProfile.subscription_credits_balance + mockProfile.purchased_credits_balance;
-      const maxRollover = CREDIT_COSTS.STARTER_MONTHLY_CREDITS * 6; // 600
-      const newCredits = CREDIT_COSTS.STARTER_MONTHLY_CREDITS; // 100
+      const currentBalance =
+        mockProfile.subscription_credits_balance + mockProfile.purchased_credits_balance;
+      const maxRollover = CREDIT_COSTS.STARTER_MONTHLY_CREDITS * 3; // 90
+      const newCredits = CREDIT_COSTS.STARTER_MONTHLY_CREDITS; // 30
 
       const { newBalance, expiredAmount } = calculateBalanceWithExpiration({
         currentBalance,
@@ -161,24 +164,25 @@ describe('Billing System with Credit Rollover Integration Tests', () => {
         maxRollover,
       });
 
-      expect(newBalance).toBe(600); // 500 total, capped at 600
+      expect(newBalance).toBe(90); // 70 total + 30 = 100, capped at 90
       expect(expiredAmount).toBe(0);
 
-      // Expected credits to add: 600 - 500 = 100
+      // Expected credits to add: 90 - 70 = 20
       const actualCreditsToAdd = newBalance - (expiredAmount > 0 ? 0 : currentBalance);
-      expect(actualCreditsToAdd).toBe(100);
+      expect(actualCreditsToAdd).toBe(20);
     });
 
     test('should not add credits when already at rollover cap', async () => {
       const _mockInvoice = createMockInvoice();
       const mockProfile = createMockProfile({
-        subscription_credits_balance: 600,
+        subscription_credits_balance: 90,
         purchased_credits_balance: 0,
       });
 
-      const currentBalance = mockProfile.subscription_credits_balance + mockProfile.purchased_credits_balance;
-      const maxRollover = CREDIT_COSTS.STARTER_MONTHLY_CREDITS * 6; // 600
-      const newCredits = CREDIT_COSTS.STARTER_MONTHLY_CREDITS; // 100
+      const currentBalance =
+        mockProfile.subscription_credits_balance + mockProfile.purchased_credits_balance;
+      const maxRollover = CREDIT_COSTS.STARTER_MONTHLY_CREDITS * 3; // 90
+      const newCredits = CREDIT_COSTS.STARTER_MONTHLY_CREDITS; // 30
 
       const { newBalance, expiredAmount } = calculateBalanceWithExpiration({
         currentBalance,
@@ -187,7 +191,7 @@ describe('Billing System with Credit Rollover Integration Tests', () => {
         maxRollover,
       });
 
-      expect(newBalance).toBe(600); // No change, already at cap
+      expect(newBalance).toBe(90); // No change, already at cap
       expect(expiredAmount).toBe(0);
 
       const actualCreditsToAdd = newBalance - (expiredAmount > 0 ? 0 : currentBalance);
@@ -198,21 +202,21 @@ describe('Billing System with Credit Rollover Integration Tests', () => {
       const testCases = [
         {
           plan: 'starter',
-          currentBalance: 500,
+          currentBalance: 70,
           creditsPerCycle: CREDIT_COSTS.STARTER_MONTHLY_CREDITS,
-          expectedCap: CREDIT_COSTS.STARTER_MONTHLY_CREDITS * 6,
+          expectedCap: CREDIT_COSTS.STARTER_MONTHLY_CREDITS * 3,
         },
         {
-          plan: 'hobby',
-          currentBalance: 1000,
-          creditsPerCycle: CREDIT_COSTS.HOBBY_MONTHLY_CREDITS,
-          expectedCap: CREDIT_COSTS.HOBBY_MONTHLY_CREDITS * 6,
+          plan: 'growth',
+          currentBalance: 250,
+          creditsPerCycle: CREDIT_COSTS.GROWTH_MONTHLY_CREDITS,
+          expectedCap: CREDIT_COSTS.GROWTH_MONTHLY_CREDITS * 3,
         },
         {
-          plan: 'pro',
-          currentBalance: 5000,
-          creditsPerCycle: CREDIT_COSTS.PRO_MONTHLY_CREDITS,
-          expectedCap: CREDIT_COSTS.PRO_MONTHLY_CREDITS * 6,
+          plan: 'agency',
+          currentBalance: 400,
+          creditsPerCycle: CREDIT_COSTS.AGENCY_MONTHLY_CREDITS,
+          expectedCap: 0, // Agency has no rollover
         },
       ];
 
@@ -224,7 +228,10 @@ describe('Billing System with Credit Rollover Integration Tests', () => {
           maxRollover: expectedCap,
         });
 
-        const expectedBalance = Math.min(currentBalance + creditsPerCycle, expectedCap);
+        const expectedBalance =
+          expectedCap === 0
+            ? currentBalance + creditsPerCycle // No cap for Agency
+            : Math.min(currentBalance + creditsPerCycle, expectedCap);
         expect(result.newBalance).toBe(expectedBalance);
         expect(result.expiredAmount).toBe(0);
       });
@@ -235,19 +242,19 @@ describe('Billing System with Credit Rollover Integration Tests', () => {
     test('should correctly calculate total balance from both pools', () => {
       const testCases = [
         {
-          subscriptionBalance: 300,
-          purchasedBalance: 100,
-          expectedTotal: 400,
+          subscriptionBalance: 60,
+          purchasedBalance: 20,
+          expectedTotal: 80,
         },
         {
           subscriptionBalance: 0,
-          purchasedBalance: 200,
-          expectedTotal: 200,
+          purchasedBalance: 30,
+          expectedTotal: 30,
         },
         {
-          subscriptionBalance: 500,
+          subscriptionBalance: 70,
           purchasedBalance: 0,
-          expectedTotal: 500,
+          expectedTotal: 70,
         },
       ];
 
@@ -258,37 +265,37 @@ describe('Billing System with Credit Rollover Integration Tests', () => {
     });
 
     test('should apply rollover cap to total balance, not just subscription pool', () => {
-      const subscriptionBalance = 300;
-      const purchasedBalance = 200;
+      const subscriptionBalance = 60;
+      const purchasedBalance = 10;
       const totalBalance = subscriptionBalance + purchasedBalance;
-      const maxRollover = 600;
+      const maxRollover = 90;
 
-      // Total balance (500) is under cap, should all be preserved
+      // Total balance (70) is under cap, should all be preserved
       const result = calculateBalanceWithExpiration({
         currentBalance: totalBalance,
-        newCredits: 100,
+        newCredits: 30,
         expirationMode: 'never',
         maxRollover,
       });
 
-      expect(result.newBalance).toBe(600); // 500 + 100, capped at 600
+      expect(result.newBalance).toBe(90); // 70 + 30 = 100, capped at 90
       expect(result.expiredAmount).toBe(0);
     });
 
     test('should handle purchased credits exceeding rollover cap', () => {
-      const subscriptionBalance = 100;
-      const purchasedBalance = 800; // Over cap already
+      const subscriptionBalance = 30;
+      const purchasedBalance = 80; // Over cap
       const totalBalance = subscriptionBalance + purchasedBalance;
-      const maxRollover = 600;
+      const maxRollover = 90;
 
       const result = calculateBalanceWithExpiration({
         currentBalance: totalBalance,
-        newCredits: 100,
+        newCredits: 30,
         expirationMode: 'never',
         maxRollover,
       });
 
-      expect(result.newBalance).toBe(600); // Capped at maxRollover
+      expect(result.newBalance).toBe(90); // Capped at maxRollover
       expect(result.expiredAmount).toBe(0);
     });
   });
@@ -297,40 +304,40 @@ describe('Billing System with Credit Rollover Integration Tests', () => {
     test('should handle transition from end_of_cycle to never mode', () => {
       // Simulate old behavior: credits expire
       const oldModeResult = calculateBalanceWithExpiration({
-        currentBalance: 500,
-        newCredits: 100,
+        currentBalance: 60,
+        newCredits: 30,
         expirationMode: 'end_of_cycle',
-        maxRollover: 600,
+        maxRollover: 90,
       });
 
-      expect(oldModeResult.newBalance).toBe(100); // Only new credits
-      expect(oldModeResult.expiredAmount).toBe(500); // All old credits expired
+      expect(oldModeResult.newBalance).toBe(30); // Only new credits
+      expect(oldModeResult.expiredAmount).toBe(60); // All old credits expired
 
       // Simulate new behavior: credits roll over
       const newModeResult = calculateBalanceWithExpiration({
-        currentBalance: 500,
-        newCredits: 100,
+        currentBalance: 60,
+        newCredits: 30,
         expirationMode: 'never',
-        maxRollover: 600,
+        maxRollover: 90,
       });
 
-      expect(newModeResult.newBalance).toBe(600); // All credits preserved
+      expect(newModeResult.newBalance).toBe(90); // All credits preserved
       expect(newModeResult.expiredAmount).toBe(0); // No expiration
     });
 
     test('should handle rolling_window mode same as end_of_cycle', () => {
       const result1 = calculateBalanceWithExpiration({
-        currentBalance: 400,
-        newCredits: 100,
+        currentBalance: 50,
+        newCredits: 30,
         expirationMode: 'end_of_cycle',
-        maxRollover: 600,
+        maxRollover: 90,
       });
 
       const result2 = calculateBalanceWithExpiration({
-        currentBalance: 400,
-        newCredits: 100,
+        currentBalance: 50,
+        newCredits: 30,
         expirationMode: 'rolling_window',
-        maxRollover: 600,
+        maxRollover: 90,
       });
 
       expect(result1.newBalance).toBe(result2.newBalance);
@@ -341,49 +348,49 @@ describe('Billing System with Credit Rollover Integration Tests', () => {
   describe('Edge Cases for Rollover Logic', () => {
     test('should handle very large credit balances', () => {
       const result = calculateBalanceWithExpiration({
-        currentBalance: 10000,
-        newCredits: 100,
+        currentBalance: 1000,
+        newCredits: 30,
         expirationMode: 'never',
-        maxRollover: 600,
+        maxRollover: 90,
       });
 
-      expect(result.newBalance).toBe(600); // Capped at maxRollover
+      expect(result.newBalance).toBe(90); // Capped at maxRollover
       expect(result.expiredAmount).toBe(0);
     });
 
     test('should handle zero maxRollover (no cap)', () => {
       const result = calculateBalanceWithExpiration({
-        currentBalance: 10000,
-        newCredits: 100,
+        currentBalance: 500,
+        newCredits: 500,
         expirationMode: 'never',
-        maxRollover: null,
+        maxRollover: 0, // Agency tier
       });
 
-      expect(result.newBalance).toBe(10100); // No cap applied
-      expect(result.expiredAmount).toBe(0);
+      expect(result.newBalance).toBe(500); // Only new credits (use it or lose it)
+      expect(result.expiredAmount).toBe(500); // Previous balance expired
     });
 
     test('should handle negative current balance', () => {
       const result = calculateBalanceWithExpiration({
-        currentBalance: -50,
-        newCredits: 100,
+        currentBalance: -20,
+        newCredits: 30,
         expirationMode: 'never',
-        maxRollover: 600,
+        maxRollover: 90,
       });
 
-      expect(result.newBalance).toBe(50); // -50 + 100
+      expect(result.newBalance).toBe(10); // -20 + 30
       expect(result.expiredAmount).toBe(0);
     });
 
     test('should handle zero new credits', () => {
       const result = calculateBalanceWithExpiration({
-        currentBalance: 300,
+        currentBalance: 50,
         newCredits: 0,
         expirationMode: 'never',
-        maxRollover: 600,
+        maxRollover: 90,
       });
 
-      expect(result.newBalance).toBe(300); // No change
+      expect(result.newBalance).toBe(50); // No change
       expect(result.expiredAmount).toBe(0);
     });
   });
@@ -392,63 +399,67 @@ describe('Billing System with Credit Rollover Integration Tests', () => {
     test('should apply correct caps for Starter tier upgrade scenarios', () => {
       const scenarios = [
         {
-          name: 'Starter to Hobby upgrade',
-          starterBalance: 600, // Starter cap
-          hobbyCredits: 200,
-          hobbyCap: CREDIT_COSTS.HOBBY_MONTHLY_CREDITS * 6, // 1200
-          expectedBalance: 800, // 600 + 200
+          name: 'Starter to Growth upgrade',
+          starterBalance: 90, // Starter cap
+          growthCredits: 100,
+          growthCap: CREDIT_COSTS.GROWTH_MONTHLY_CREDITS * 3, // 300
+          expectedBalance: 190, // 90 + 100
         },
         {
-          name: 'Starter to Pro upgrade',
-          starterBalance: 600, // Starter cap
-          proCredits: 1000,
-          proCap: CREDIT_COSTS.PRO_MONTHLY_CREDITS * 6, // 6000
-          expectedBalance: 1600, // 600 + 1000
+          name: 'Starter to Agency upgrade',
+          starterBalance: 90, // Starter cap
+          agencyCredits: 500,
+          agencyCap: 0, // No cap for Agency
+          expectedBalance: 590, // 90 + 500
         },
       ];
 
-      scenarios.forEach(({ name: _name, starterBalance, hobbyCredits, hobbyCap, expectedBalance }) => {
-        const result = calculateBalanceWithExpiration({
-          currentBalance: starterBalance,
-          newCredits: hobbyCredits,
-          expirationMode: 'never',
-          maxRollover: hobbyCap,
-        });
+      scenarios.forEach(
+        ({ name: _name, starterBalance, growthCredits, growthCap, expectedBalance }) => {
+          const result = calculateBalanceWithExpiration({
+            currentBalance: starterBalance,
+            newCredits: growthCredits,
+            expirationMode: 'never',
+            maxRollover: growthCap,
+          });
 
-        expect(result.newBalance).toBe(expectedBalance);
-        expect(result.expiredAmount).toBe(0);
-      });
+          expect(result.newBalance).toBe(expectedBalance);
+          expect(result.expiredAmount).toBe(0);
+        }
+      );
     });
 
     test('should handle downgrade scenarios with cap reduction', () => {
       const scenarios = [
         {
-          name: 'Pro to Starter downgrade',
-          proBalance: 2000, // From Pro plan
-          starterCredits: 100,
-          starterCap: CREDIT_COSTS.STARTER_MONTHLY_CREDITS * 6, // 600
-          expectedBalance: 600, // Capped at Starter level
+          name: 'Growth to Starter downgrade',
+          growthBalance: 250, // From Growth plan
+          starterCredits: 30,
+          starterCap: CREDIT_COSTS.STARTER_MONTHLY_CREDITS * 3, // 90
+          expectedBalance: 90, // Capped at Starter level
         },
         {
-          name: 'Hobby to Starter downgrade',
-          hobbyBalance: 1000, // From Hobby plan
-          starterCredits: 100,
-          starterCap: 600,
-          expectedBalance: 600, // Capped at Starter level
+          name: 'Agency to Growth downgrade',
+          agencyBalance: 450, // From Agency plan
+          growthCredits: 100,
+          growthCap: CREDIT_COSTS.GROWTH_MONTHLY_CREDITS * 3, // 300
+          expectedBalance: 300, // Capped at Growth level
         },
       ];
 
-      scenarios.forEach(({ name: _name, proBalance, starterCredits, starterCap, expectedBalance }) => {
-        const result = calculateBalanceWithExpiration({
-          currentBalance: proBalance,
-          newCredits: starterCredits,
-          expirationMode: 'never',
-          maxRollover: starterCap,
-        });
+      scenarios.forEach(
+        ({ name: _name, growthBalance, starterCredits, starterCap, expectedBalance }) => {
+          const result = calculateBalanceWithExpiration({
+            currentBalance: growthBalance,
+            newCredits: starterCredits,
+            expirationMode: 'never',
+            maxRollover: starterCap,
+          });
 
-        expect(result.newBalance).toBe(expectedBalance);
-        expect(result.expiredAmount).toBe(0);
-      });
+          expect(result.newBalance).toBe(expectedBalance);
+          expect(result.expiredAmount).toBe(0);
+        }
+      );
     });
   });
 });

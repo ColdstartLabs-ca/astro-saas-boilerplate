@@ -34,7 +34,7 @@ export class IntegrationTestHelpers {
    */
   async createTestUser(
     subscription: 'free' | 'active' | 'trialing' | 'past_due' | 'canceled' = 'free',
-    tier?: 'starter' | 'pro' | 'business',
+    tier?: 'starter' | 'growth' | 'agency',
     credits: number = 10
   ): Promise<ITestUser> {
     if (subscription === 'free') {
@@ -366,11 +366,11 @@ export const testFixtures = {
   },
 
   /**
-   * Pro user with credits
+   * Growth user with credits
    */
-  async createProUser(credits: number = 500): Promise<ITestUser> {
+  async createGrowthUser(credits: number = 100): Promise<ITestUser> {
     const helpers = new IntegrationTestHelpers();
-    return await helpers.createTestUser('active', 'pro', credits);
+    return await helpers.createTestUser('active', 'growth', credits);
   },
 
   /**
@@ -378,7 +378,7 @@ export const testFixtures = {
    */
   async createUserWithSubscription(
     status: 'active' | 'trialing' | 'past_due' | 'canceled',
-    tier: 'starter' | 'pro' | 'business' = 'pro',
+    tier: 'starter' | 'growth' | 'agency' = 'growth',
     credits: number = 100
   ): Promise<ITestUser> {
     const helpers = new IntegrationTestHelpers();

@@ -29,6 +29,7 @@ export default [
       'next-env.d.ts',
       'astro.config.mjs', // Astro config file
       'src/middleware.ts', // Astro middleware
+      'UI_TEMPLATE/**', // Template files - not part of main codebase
     ],
   },
   {

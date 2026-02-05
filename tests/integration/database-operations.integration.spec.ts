@@ -77,11 +77,11 @@ test.describe('Database Operations Integration', () => {
 
     test('should update profile with proper validation', async () => {
       // Update subscription status
-      await ctx.data.setSubscriptionStatus(testUser.id, 'active', 'pro');
+      await ctx.data.setSubscriptionStatus(testUser.id, 'active', 'growth');
 
       const updatedProfile = await ctx.data.getUserProfile(testUser.id);
       expect(updatedProfile.subscription_status).toBe('active');
-      expect(updatedProfile.subscription_tier).toBe('pro');
+      expect(updatedProfile.subscription_tier).toBe('growth');
       expect(updatedProfile.updated_at > updatedProfile.created_at).toBeTruthy();
     });
   });

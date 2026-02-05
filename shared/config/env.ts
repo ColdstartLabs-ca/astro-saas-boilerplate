@@ -108,9 +108,12 @@ function loadClientEnv(): IClientEnv {
     // Stripe
     STRIPE_PUBLISHABLE_KEY: import.meta.env.PUBLIC_STRIPE_PUBLISHABLE_KEY || '',
     // Stripe Credit Pack Price IDs
-    STRIPE_PRICE_CREDITS_SMALL: import.meta.env.PUBLIC_STRIPE_PRICE_CREDITS_SMALL || 'price_credits_small',
-    STRIPE_PRICE_CREDITS_MEDIUM: import.meta.env.PUBLIC_STRIPE_PRICE_CREDITS_MEDIUM || 'price_credits_medium',
-    STRIPE_PRICE_CREDITS_LARGE: import.meta.env.PUBLIC_STRIPE_PRICE_CREDITS_LARGE || 'price_credits_large',
+    STRIPE_PRICE_CREDITS_SMALL:
+      import.meta.env.PUBLIC_STRIPE_PRICE_CREDITS_SMALL || 'price_credits_small',
+    STRIPE_PRICE_CREDITS_MEDIUM:
+      import.meta.env.PUBLIC_STRIPE_PRICE_CREDITS_MEDIUM || 'price_credits_medium',
+    STRIPE_PRICE_CREDITS_LARGE:
+      import.meta.env.PUBLIC_STRIPE_PRICE_CREDITS_LARGE || 'price_credits_large',
   };
 
   return clientEnvSchema.parse(env);
@@ -162,11 +165,10 @@ const serverEnvSchema = z.object({
   // Stripe
   STRIPE_SECRET_KEY: z.string().default(''),
   STRIPE_WEBHOOK_SECRET: z.string().default(''),
-  // Stripe Price IDs
-  STRIPE_STARTER_MONTHLYLY_PRICE_ID: z.string().default('price_1Sq14eALMLhQocpf5CXIwYSv'),
-  STRIPE_HOBBY_MONTHLYLY_PRICE_ID: z.string().default('price_1SZmVyALMLhQocpf0H7n5ls8'),
-  STRIPE_PRO_MONTHLYLY_PRICE_ID: z.string().default('price_1SZmVzALMLhQocpfPyRX2W8D'),
-  STRIPE_BUSINESS_MONTHLYLY_PRICE_ID: z.string().default('price_1SZmVzALMLhQocpfqPk9spg4'),
+  // Stripe Price IDs (legacy env vars — actual source of truth is subscription.config.ts)
+  STRIPE_STARTER_MONTHLY_PRICE_ID: z.string().default(''),
+  STRIPE_GROWTH_MONTHLY_PRICE_ID: z.string().default(''),
+  STRIPE_AGENCY_MONTHLY_PRICE_ID: z.string().default(''),
   // Baselime monitoring (server-side)
   BASELIME_API_KEY: z.string().default(''),
   // Analytics (server-side HTTP API)
@@ -225,15 +227,10 @@ function loadServerEnv(): IServerEnv {
     // Stripe
     STRIPE_SECRET_KEY: import.meta.env.STRIPE_SECRET_KEY || '',
     STRIPE_WEBHOOK_SECRET: import.meta.env.STRIPE_WEBHOOK_SECRET || '',
-    // Stripe Price IDs
-    STRIPE_STARTER_MONTHLYLY_PRICE_ID:
-      import.meta.env.STRIPE_STARTER_MONTHLYLY_PRICE_ID || 'price_1Sq14eALMLhQocpf5CXIwYSv',
-    STRIPE_HOBBY_MONTHLYLY_PRICE_ID:
-      import.meta.env.STRIPE_HOBBY_MONTHLYLY_PRICE_ID || 'price_1SZmVyALMLhQocpf0H7n5ls8',
-    STRIPE_PRO_MONTHLYLY_PRICE_ID:
-      import.meta.env.STRIPE_PRO_MONTHLYLY_PRICE_ID || 'price_1SZmVzALMLhQocpfPyRX2W8D',
-    STRIPE_BUSINESS_MONTHLYLY_PRICE_ID:
-      import.meta.env.STRIPE_BUSINESS_MONTHLYLY_PRICE_ID || 'price_1SZmVzALMLhQocpfqPk9spg4',
+    // Stripe Price IDs (legacy env vars — actual source of truth is subscription.config.ts)
+    STRIPE_STARTER_MONTHLY_PRICE_ID: import.meta.env.STRIPE_STARTER_MONTHLY_PRICE_ID || '',
+    STRIPE_GROWTH_MONTHLY_PRICE_ID: import.meta.env.STRIPE_GROWTH_MONTHLY_PRICE_ID || '',
+    STRIPE_AGENCY_MONTHLY_PRICE_ID: import.meta.env.STRIPE_AGENCY_MONTHLY_PRICE_ID || '',
     // Baselime monitoring
     BASELIME_API_KEY: import.meta.env.BASELIME_API_KEY || '',
     // Analytics (server-side HTTP API)
@@ -256,7 +253,10 @@ function loadServerEnv(): IServerEnv {
     BREVO_API_KEY: import.meta.env.BREVO_API_KEY || '',
     RESEND_API_KEY: import.meta.env.RESEND_API_KEY || '',
     EMAIL_FROM_ADDRESS: import.meta.env.EMAIL_FROM_ADDRESS || 'noreply@example.com',
-    SUPPORT_EMAIL: import.meta.env.SUPPORT_EMAIL || import.meta.env.PUBLIC_SUPPORT_EMAIL || 'support@example.com',
+    SUPPORT_EMAIL:
+      import.meta.env.SUPPORT_EMAIL ||
+      import.meta.env.PUBLIC_SUPPORT_EMAIL ||
+      'support@example.com',
     ALLOW_TRANSACTIONAL_EMAILS_IN_DEV: import.meta.env.ALLOW_TRANSACTIONAL_EMAILS_IN_DEV ?? 'false',
 
     // AI Providers
@@ -299,7 +299,9 @@ export function isDevelopment(): boolean {
 export function isTest(): boolean {
   // Check both the cached serverEnv and the raw import.meta.env for dynamic test detection
   return (
-    serverEnv.ENV === 'test' || import.meta.env.ENV === 'test' || import.meta.env.PLAYWRIGHT_TEST === 'true'
+    serverEnv.ENV === 'test' ||
+    import.meta.env.ENV === 'test' ||
+    import.meta.env.PLAYWRIGHT_TEST === 'true'
   );
 }
 

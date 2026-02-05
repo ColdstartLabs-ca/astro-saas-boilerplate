@@ -133,11 +133,11 @@ describe('Checkout API - Trial Integration', () => {
       });
 
       mockGetPlanConfig.mockReturnValue({
-        key: 'pro',
-        name: 'Professional',
-        stripePriceId: 'price_pro_monthly',
-        priceInCents: 4900,
-        creditsPerCycle: 1000,
+        key: 'growth',
+        name: 'Growth',
+        stripePriceId: 'price_growth_monthly',
+        priceInCents: 9900,
+        creditsPerCycle: 100,
         trial: {
           enabled: true,
           durationDays: 14,
@@ -170,7 +170,7 @@ describe('Checkout API - Trial Integration', () => {
 
       const request = mockRequest(
         {
-          priceId: 'price_pro_monthly',
+          priceId: 'price_growth_monthly',
         },
         {
           Authorization: 'Bearer valid_token',
@@ -198,11 +198,11 @@ describe('Checkout API - Trial Integration', () => {
       // Mock no trial configuration
       mockGetTrialConfig.mockReturnValue(null);
       mockGetPlanConfig.mockReturnValue({
-        key: 'hobby',
-        name: 'Hobby',
-        stripePriceId: 'price_hobby_monthly',
-        priceInCents: 1900,
-        creditsPerCycle: 200,
+        key: 'starter',
+        name: 'Starter',
+        stripePriceId: 'price_starter_monthly',
+        priceInCents: 4900,
+        creditsPerCycle: 30,
         trial: {
           enabled: false,
           durationDays: 0,
@@ -235,7 +235,7 @@ describe('Checkout API - Trial Integration', () => {
 
       const request = mockRequest(
         {
-          priceId: 'price_hobby_monthly',
+          priceId: 'price_starter_monthly',
         },
         {
           Authorization: 'Bearer valid_token',
@@ -339,11 +339,11 @@ describe('Checkout API - Trial Integration', () => {
       });
 
       mockGetPlanConfig.mockReturnValue({
-        key: 'business',
-        name: 'Business',
-        stripePriceId: 'price_business_monthly',
-        priceInCents: 14900,
-        creditsPerCycle: 5000,
+        key: 'agency',
+        name: 'Agency',
+        stripePriceId: 'price_agency_monthly',
+        priceInCents: 24900,
+        creditsPerCycle: 500,
         trial: {
           enabled: true,
           durationDays: 30,
@@ -376,7 +376,7 @@ describe('Checkout API - Trial Integration', () => {
 
       const request = mockRequest(
         {
-          priceId: 'price_business_monthly',
+          priceId: 'price_agency_monthly',
         },
         {
           Authorization: 'Bearer valid_token',
@@ -409,11 +409,11 @@ describe('Checkout API - Trial Integration', () => {
       });
 
       mockGetPlanConfig.mockReturnValue({
-        key: 'pro',
-        name: 'Professional',
-        stripePriceId: 'price_pro_monthly',
-        priceInCents: 4900,
-        creditsPerCycle: 1000,
+        key: 'growth',
+        name: 'Growth',
+        stripePriceId: 'price_growth_monthly',
+        priceInCents: 9900,
+        creditsPerCycle: 100,
         trial: {
           enabled: true,
           durationDays: 14,
@@ -446,7 +446,7 @@ describe('Checkout API - Trial Integration', () => {
 
       const request = mockRequest(
         {
-          priceId: 'price_pro_monthly',
+          priceId: 'price_growth_monthly',
         },
         {
           Authorization: 'Bearer valid_token',
@@ -513,11 +513,11 @@ describe('Checkout API - Trial Integration', () => {
       });
 
       mockGetPlanConfig.mockReturnValue({
-        key: 'pro',
-        name: 'Professional',
-        stripePriceId: 'price_pro_monthly',
-        priceInCents: 4900,
-        creditsPerCycle: 1000,
+        key: 'growth',
+        name: 'Growth',
+        stripePriceId: 'price_growth_monthly',
+        priceInCents: 9900,
+        creditsPerCycle: 100,
         trial: {
           enabled: true,
           durationDays: 14,
@@ -544,7 +544,7 @@ describe('Checkout API - Trial Integration', () => {
 
       const request = mockRequest(
         {
-          priceId: 'price_pro_monthly',
+          priceId: 'price_growth_monthly',
         },
         {
           Authorization: 'Bearer valid_token',

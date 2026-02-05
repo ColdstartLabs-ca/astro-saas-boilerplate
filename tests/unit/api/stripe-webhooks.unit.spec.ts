@@ -34,39 +34,39 @@ vi.mock('@shared/config/stripe', () => ({
   getPlanForPriceId: vi.fn(),
   assertKnownPriceId: vi.fn((priceId: string) => ({
     type: 'plan',
-    key: 'hobby',
-    name: 'Hobby',
+    key: 'starter',
+    name: 'Starter',
     stripePriceId: priceId,
-    priceInCents: 1900,
+    priceInCents: 4900,
     currency: 'usd',
-    credits: 200,
-    maxRollover: 1200,
-    creditsPerMonth: 200,
-    creditsPerCycle: 200,
+    credits: 30,
+    maxRollover: 90,
+    creditsPerMonth: 30,
+    creditsPerCycle: 30,
   })),
   resolvePriceId: vi.fn((priceId: string) => ({
     type: 'plan',
-    key: 'hobby',
-    name: 'Hobby',
+    key: 'starter',
+    name: 'Starter',
     stripePriceId: priceId,
-    priceInCents: 1900,
+    priceInCents: 4900,
     currency: 'usd',
-    credits: 200,
-    maxRollover: 1200,
-    creditsPerMonth: 200,
-    creditsPerCycle: 200,
+    credits: 30,
+    maxRollover: 90,
+    creditsPerMonth: 30,
+    creditsPerCycle: 30,
   })),
   resolvePlanOrPack: vi.fn((priceId: string) => ({
     type: 'plan',
-    key: 'hobby',
-    name: 'Hobby',
+    key: 'starter',
+    name: 'Starter',
     stripePriceId: priceId,
-    priceInCents: 1900,
+    priceInCents: 4900,
     currency: 'usd',
-    credits: 200,
-    maxRollover: 1200,
-    creditsPerMonth: 200,
-    creditsPerCycle: 200,
+    credits: 30,
+    maxRollover: 90,
+    creditsPerMonth: 30,
+    creditsPerCycle: 30,
   })),
 }));
 
@@ -368,10 +368,10 @@ describe('Stripe Webhook Handler', () => {
     test('should handle subscription credit addition failure gracefully', async () => {
       // Arrange
       const mockPlan = {
-        key: 'hobby',
-        name: 'Hobby',
-        creditsPerMonth: 200,
-        maxRollover: 1200,
+        key: 'starter',
+        name: 'Starter',
+        creditsPerMonth: 30,
+        maxRollover: 90,
       };
 
       // Mock successful plan lookup
@@ -383,7 +383,7 @@ describe('Stripe Webhook Handler', () => {
           data: [
             {
               price: {
-                id: 'price_test_hobby',
+                id: 'price_test_starter',
               },
             },
           ],
@@ -456,13 +456,13 @@ describe('Stripe Webhook Handler', () => {
     test('should handle subscription mode by adding initial credits', async () => {
       // Arrange
       const mockPlan = {
-        key: 'pro',
-        name: 'Professional',
-        creditsPerMonth: 1000,
-        maxRollover: 6000,
+        key: 'growth',
+        name: 'Growth',
+        creditsPerMonth: 100,
+        maxRollover: 300,
       };
 
-      // Mock successful plan lookup for the default PRO_MONTHLY price ID
+      // Mock successful plan lookup for the default GROWTH_MONTHLY price ID
       vi.mocked(getPlanForPriceId).mockReturnValue(mockPlan);
 
       const event = {
@@ -488,12 +488,12 @@ describe('Stripe Webhook Handler', () => {
 
       // Assert
       expect(response.status).toBe(200);
-      expect(getPlanForPriceId).toHaveBeenCalledWith('price_1SZmVzALMLhQocpfPyRX2W8D');
+      expect(getPlanForPriceId).toHaveBeenCalledWith('price_1SxZp7K2K0pPNfoSMt94q8kP');
       expect(supabaseAdmin.rpc).toHaveBeenCalledWith('add_subscription_credits', {
         target_user_id: 'user_456',
-        amount: 1000,
+        amount: 100,
         ref_id: 'cs_test_sub_123',
-        description: 'Test subscription credits - Professional plan - 1000 credits',
+        description: 'Test subscription credits - Growth plan - 100 credits',
       });
     });
 
@@ -539,7 +539,7 @@ describe('Stripe Webhook Handler', () => {
       items: {
         data: [
           {
-            price: { id: 'price_pro_monthly' },
+            price: { id: 'price_1SxZp9K2K0pPNfoSeOwSLmcp' },
           },
         ],
       },
@@ -552,15 +552,15 @@ describe('Stripe Webhook Handler', () => {
     test('should handle customer.subscription.created', async () => {
       // Arrange
       const mockPlan = {
-        key: 'business',
-        name: 'Business',
-        creditsPerMonth: 5000,
-        maxRollover: 30000,
+        key: 'agency',
+        name: 'Agency',
+        creditsPerMonth: 500,
+        maxRollover: 0,
       };
 
       // Mock successful plan lookup
       vi.mocked(getPlanForPriceId).mockReturnValue(mockPlan);
-      vi.mocked(getPlanConfig).mockReturnValue({ key: 'business', name: 'Business' });
+      vi.mocked(getPlanConfig).mockReturnValue({ key: 'agency', name: 'Agency' });
       vi.mocked(getTrialConfig).mockReturnValue({
         enabled: false,
         trialCredits: null,
@@ -639,7 +639,7 @@ describe('Stripe Webhook Handler', () => {
           id: 'sub_test_123',
           user_id: 'user_123',
           status: 'active',
-          price_id: 'price_pro_monthly',
+          price_id: 'price_1SxZp9K2K0pPNfoSeOwSLmcp',
           cancel_at_period_end: false,
           canceled_at: null,
         })
@@ -740,11 +740,11 @@ describe('Stripe Webhook Handler', () => {
       vi.mocked(getTrialConfig).mockReturnValue({ enabled: false, trialCredits: null });
       vi.mocked(getPlanForPriceId).mockReturnValue({
         type: 'plan',
-        key: 'pro',
-        name: 'Professional',
-        creditsPerMonth: 1000,
-        creditsPerCycle: 1000,
-        maxRollover: 6000,
+        key: 'growth',
+        name: 'Growth',
+        creditsPerMonth: 100,
+        creditsPerCycle: 100,
+        maxRollover: 300,
       });
 
       vi.mocked(supabaseAdmin.from).mockImplementation((table: string) => {
@@ -772,15 +772,15 @@ describe('Stripe Webhook Handler', () => {
     test('should handle subscription update errors gracefully', async () => {
       // Arrange
       // Mock successful plan lookup to get past that validation
-      vi.mocked(getPlanConfig).mockReturnValue({ key: 'pro', name: 'Professional' });
+      vi.mocked(getPlanConfig).mockReturnValue({ key: 'growth', name: 'Growth' });
       vi.mocked(getTrialConfig).mockReturnValue({ enabled: false, trialCredits: null });
       vi.mocked(getPlanForPriceId).mockReturnValue({
         type: 'plan',
-        key: 'pro',
-        name: 'Professional',
-        creditsPerMonth: 1000,
-        creditsPerCycle: 1000,
-        maxRollover: 6000,
+        key: 'growth',
+        name: 'Growth',
+        creditsPerMonth: 100,
+        creditsPerCycle: 100,
+        maxRollover: 300,
       });
 
       const event = {
@@ -858,39 +858,39 @@ describe('Stripe Webhook Handler', () => {
     test('should handle invoice.payment_succeeded and add credits in test mode', async () => {
       // Arrange
       const mockPlan = {
-        key: 'pro',
-        name: 'Professional',
-        creditsPerMonth: 1000,
-        maxRollover: 6000,
+        key: 'growth',
+        name: 'Growth',
+        creditsPerMonth: 100,
+        maxRollover: 300,
       };
 
       // Mock successful plan lookup
       const { resolvePlanOrPack, assertKnownPriceId } =
         await import('@shared/config/subscription.utils');
       vi.mocked(getPlanForPriceId).mockReturnValue(mockPlan);
-      vi.mocked(getPlanConfig).mockReturnValue({ key: 'pro', name: 'Professional' });
+      vi.mocked(getPlanConfig).mockReturnValue({ key: 'growth', name: 'Growth' });
       vi.mocked(getTrialConfig).mockReturnValue({ enabled: false, trialCredits: null });
       vi.mocked(getPlanByPriceId).mockReturnValue({ creditsExpiration: { mode: 'never' } });
       vi.mocked(calculateBalanceWithExpiration).mockReturnValue({
-        newBalance: 1100,
+        newBalance: 200,
         expiredAmount: 0,
       });
       vi.mocked(resolvePlanOrPack).mockReturnValue({
         type: 'plan',
-        key: 'pro',
-        name: 'Professional',
-        creditsPerCycle: 1000,
-        maxRollover: 6000,
+        key: 'growth',
+        name: 'Growth',
+        creditsPerCycle: 100,
+        maxRollover: 300,
       });
       vi.mocked(assertKnownPriceId).mockReturnValue({
         type: 'plan',
-        key: 'pro',
-        name: 'Professional',
-        stripePriceId: 'price_test_pro_monthly',
-        priceInCents: 1999,
+        key: 'growth',
+        name: 'Growth',
+        stripePriceId: 'price_test_growth_monthly',
+        priceInCents: 9900,
         currency: 'usd',
-        credits: 1000,
-        maxRollover: 6000,
+        credits: 100,
+        maxRollover: 300,
       });
 
       const customerId = 'cus_test_renewal';
@@ -905,7 +905,7 @@ describe('Stripe Webhook Handler', () => {
         lines: {
           data: [
             {
-              price: { id: 'price_test_pro_monthly' },
+              price: { id: 'price_test_growth_monthly' },
             },
           ],
         },
@@ -968,9 +968,9 @@ describe('Stripe Webhook Handler', () => {
       // Now we add credits on subscription renewal (this was the bug fix!)
       expect(supabaseAdmin.rpc).toHaveBeenCalledWith('add_subscription_credits', {
         target_user_id: userId,
-        amount: 1000, // Professional tier credits
+        amount: 100, // Growth tier credits
         ref_id: 'invoice_in_test_123',
-        description: 'Monthly subscription renewal - Professional plan',
+        description: 'Monthly subscription renewal - Growth plan',
       });
       expect(consoleSpy.log).toHaveBeenCalledWith(expect.stringContaining('Added'));
       expect(stripe.subscriptions.retrieve).not.toHaveBeenCalled();

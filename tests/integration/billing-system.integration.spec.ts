@@ -15,14 +15,14 @@ import { stripeWebhookMocks } from '../helpers/stripe-webhook-mocks';
 test.describe('Billing System Integration', () => {
   let ctx: TestContext;
   let freeUser: { id: string; email: string; token: string };
-  let proUser: { id: string; email: string; token: string };
+  let growthUser: { id: string; email: string; token: string };
 
   test.beforeAll(async () => {
     ctx = new TestContext();
 
     // Create test users with different subscription states
     freeUser = await ctx.createUser({ subscription: 'free' });
-    proUser = await ctx.createUser({ subscription: 'active', tier: 'pro', credits: 500 });
+    growthUser = await ctx.createUser({ subscription: 'active', tier: 'growth', credits: 100 });
   });
 
   test.afterAll(async () => {
@@ -32,7 +32,7 @@ test.describe('Billing System Integration', () => {
   test.describe('Subscription Status Validation', () => {
     test('should reflect correct subscription status', async ({ request }) => {
       const freeApi = new ApiClient(request).withAuth(freeUser.token);
-      const proApi = new ApiClient(request).withAuth(proUser.token);
+      const growthApi = new ApiClient(request).withAuth(growthUser.token);
 
       const freeResponse = await freeApi.get('/api/profile');
       freeResponse.expectStatus(200);
@@ -41,12 +41,12 @@ test.describe('Billing System Integration', () => {
       expect(freeProfile.data.subscription_tier).toBeNull();
       expect(freeProfile.data.credits_balance).toBe(10);
 
-      const proResponse = await proApi.get('/api/profile');
-      proResponse.expectStatus(200);
-      const proProfile = await proResponse.json();
-      expect(proProfile.data.subscription_status).toBe('active');
-      expect(proProfile.data.subscription_tier).toBe('pro');
-      expect(proProfile.data.credits_balance).toBe(500);
+      const growthResponse = await growthApi.get('/api/profile');
+      growthResponse.expectStatus(200);
+      const growthProfile = await growthResponse.json();
+      expect(growthProfile.data.subscription_status).toBe('active');
+      expect(growthProfile.data.subscription_tier).toBe('growth');
+      expect(growthProfile.data.credits_balance).toBe(100);
     });
   });
 
@@ -64,17 +64,17 @@ test.describe('Billing System Integration', () => {
       expect(freeCredits.data.monthlyAllowance).toBe(10);
       expect(freeCredits.data.maxRollover).toBe(10);
 
-      // Test pro tier benefits
-      const proCreditsResponse = await request.get('/api/credits', {
+      // Test growth tier benefits
+      const growthCreditsResponse = await request.get('/api/credits', {
         headers: {
-          Authorization: `Bearer ${proUser.token}`,
+          Authorization: `Bearer ${growthUser.token}`,
         },
       });
 
-      const proCredits = await proCreditsResponse.json();
-      expect(proCredits.data.balance).toBe(500);
-      expect(proCredits.data.monthlyAllowance).toBe(500);
-      expect(proCredits.data.maxRollover).toBe(3000);
+      const growthCredits = await growthCreditsResponse.json();
+      expect(growthCredits.data.balance).toBe(100);
+      expect(growthCredits.data.monthlyAllowance).toBe(100);
+      expect(growthCredits.data.maxRollover).toBe(600);
     });
   });
 
@@ -84,7 +84,7 @@ test.describe('Billing System Integration', () => {
       const webhookPayload = stripeWebhookMocks.checkoutCompleted({
         customerId: `cus_test_${freeUser.id}`,
         userId: freeUser.id,
-        tier: 'pro',
+        tier: 'growth',
         amount: 2900,
       });
 
@@ -101,9 +101,9 @@ test.describe('Billing System Integration', () => {
 
     test('should handle invoice.payment_succeeded webhook', async ({ request }) => {
       const webhookPayload = stripeWebhookMocks.invoicePaymentSucceeded({
-        customerId: `cus_test_${proUser.id}`,
-        userId: proUser.id,
-        tier: 'pro',
+        customerId: `cus_test_${growthUser.id}`,
+        userId: growthUser.id,
+        tier: 'growth',
         amount: 2900,
       });
 
@@ -119,10 +119,10 @@ test.describe('Billing System Integration', () => {
 
     test('should handle customer.subscription.updated webhook', async ({ request }) => {
       const webhookPayload = stripeWebhookMocks.subscriptionUpdated({
-        customerId: `cus_test_${proUser.id}`,
-        userId: proUser.id,
+        customerId: `cus_test_${growthUser.id}`,
+        userId: growthUser.id,
         status: 'active',
-        tier: 'pro',
+        tier: 'growth',
       });
 
       const response = await request.post('/api/webhooks/stripe', {
@@ -139,7 +139,7 @@ test.describe('Billing System Integration', () => {
       const webhookPayload = stripeWebhookMocks.checkoutCompleted({
         customerId: `cus_test_${freeUser.id}`,
         userId: freeUser.id,
-        tier: 'pro',
+        tier: 'growth',
         amount: 2900,
       });
 
@@ -180,7 +180,7 @@ test.describe('Billing System Integration', () => {
           'Content-Type': 'application/json',
         },
         data: {
-          priceId: 'price_pro_monthly',
+          priceId: 'price_growth_monthly',
           successUrl: 'http://localhost:3000/success',
           cancelUrl: 'http://localhost:3000/cancel',
         },
@@ -214,7 +214,7 @@ test.describe('Billing System Integration', () => {
     test('should require authentication for checkout', async ({ request }) => {
       const response = await request.post('/api/billing/checkout', {
         data: {
-          priceId: 'price_pro_monthly',
+          priceId: 'price_growth_monthly',
           successUrl: 'http://localhost:3000/success',
           cancelUrl: 'http://localhost:3000/cancel',
         },
@@ -227,11 +227,11 @@ test.describe('Billing System Integration', () => {
   test.describe('Customer Portal Integration', () => {
     test('should create portal session for active subscribers', async ({ request }) => {
       // First ensure user has a Stripe customer ID (mock this scenario)
-      await ctx.data.setSubscriptionStatus(proUser.id, 'active', 'pro', 'cus_test_portal');
+      await ctx.data.setSubscriptionStatus(growthUser.id, 'active', 'pro', 'cus_test_portal');
 
       const response = await request.post('/api/billing/portal', {
         headers: {
-          Authorization: `Bearer ${proUser.token}`,
+          Authorization: `Bearer ${growthUser.token}`,
         },
       });
 
@@ -257,7 +257,7 @@ test.describe('Billing System Integration', () => {
   test.describe('Credit Rollover Logic', () => {
     test('should calculate correct rollover for different tiers', async ({ request }) => {
       // Create user with existing credits for rollover testing
-      const rolloverUser = await ctx.data.createTestUserWithSubscription('active', 'starter', 200); // Above normal starter amount
+      const rolloverUser = await ctx.data.createTestUserWithSubscription('active', 'starter', 50); // Above normal starter amount
 
       const response = await request.get('/api/credits', {
         headers: {
@@ -267,8 +267,8 @@ test.describe('Billing System Integration', () => {
 
       expect(response.ok()).toBeTruthy();
       const credits = await response.json();
-      expect(credits.data.balance).toBe(200);
-      expect(credits.data.maxRollover).toBe(600); // 6x monthly for starter
+      expect(credits.data.balance).toBe(50);
+      expect(credits.data.maxRollover).toBe(180); // 6x monthly for starter (30 * 6)
 
       await ctx.data.cleanupUser(rolloverUser.id);
     });
@@ -289,20 +289,20 @@ test.describe('Billing System Integration', () => {
 
     test('should handle free to active transition', async () => {
       // Set to active subscription
-      await ctx.data.setSubscriptionStatus(transitioningUser.id, 'active', 'pro');
+      await ctx.data.setSubscriptionStatus(transitioningUser.id, 'active', 'growth');
 
       // Add credits for subscription
-      await ctx.data.addCredits(transitioningUser.id, 500);
+      await ctx.data.addCredits(transitioningUser.id, 100);
 
       const profile = await ctx.data.getUserProfile(transitioningUser.id);
       expect(profile.subscription_status).toBe('active');
-      expect(profile.subscription_tier).toBe('pro');
-      expect(profile.credits_balance).toBeGreaterThan(500);
+      expect(profile.subscription_tier).toBe('growth');
+      expect(profile.credits_balance).toBeGreaterThan(100);
     });
 
     test('should handle active to canceled transition', async () => {
       // Cancel subscription
-      await ctx.data.setSubscriptionStatus(transitioningUser.id, 'canceled', 'pro');
+      await ctx.data.setSubscriptionStatus(transitioningUser.id, 'canceled', 'growth');
 
       const profile = await ctx.data.getUserProfile(transitioningUser.id);
       expect(profile.subscription_status).toBe('canceled');
@@ -312,7 +312,7 @@ test.describe('Billing System Integration', () => {
 
     test('should handle past due state', async () => {
       // Set to past due
-      await ctx.data.setSubscriptionStatus(transitioningUser.id, 'past_due', 'pro');
+      await ctx.data.setSubscriptionStatus(transitioningUser.id, 'past_due', 'growth');
 
       const profile = await ctx.data.getUserProfile(transitioningUser.id);
       expect(profile.subscription_status).toBe('past_due');
@@ -322,9 +322,9 @@ test.describe('Billing System Integration', () => {
   test.describe('Transaction History', () => {
     test('should track credit transactions', async () => {
       // Add some credits to generate transactions
-      await ctx.data.addCredits(proUser.id, 50, 'purchase');
+      await ctx.data.addCredits(growthUser.id, 50, 'purchase');
 
-      const transactions = await ctx.data.getCreditTransactions(proUser.id);
+      const transactions = await ctx.data.getCreditTransactions(growthUser.id);
       expect(transactions.length).toBeGreaterThan(0);
 
       // Find our test transaction
@@ -338,13 +338,13 @@ test.describe('Billing System Integration', () => {
 
     test('should track usage transactions', async () => {
       // Simulate credit deduction (would normally happen during processing)
-      const _initialBalance = (await ctx.data.getUserProfile(proUser.id)).credits_balance;
+      const _initialBalance = (await ctx.data.getUserProfile(growthUser.id)).credits_balance;
 
       // This would be done by the actual processing logic
       // For testing, we can manually create a usage transaction
-      await ctx.data.addCredits(proUser.id, -1, 'usage');
+      await ctx.data.addCredits(growthUser.id, -1, 'usage');
 
-      const transactions = await ctx.data.getCreditTransactions(proUser.id);
+      const transactions = await ctx.data.getCreditTransactions(growthUser.id);
       const usageTransaction = transactions.find(t => t.type === 'usage' && t.amount === -1);
       expect(usageTransaction).toBeDefined();
     });
@@ -365,7 +365,7 @@ test.describe('Billing System Integration', () => {
       if (response.ok()) {
         const data = await response.json();
         // Should not return pro user's data
-        expect(data.data.subscription_tier).not.toBe('pro');
+        expect(data.data.subscription_tier).not.toBe('growth');
       }
     });
 
@@ -373,7 +373,7 @@ test.describe('Billing System Integration', () => {
       const validPayload = stripeWebhookMocks.checkoutCompleted({
         customerId: 'cus_test_security',
         userId: freeUser.id,
-        tier: 'pro',
+        tier: 'growth',
         amount: 2900,
       });
 

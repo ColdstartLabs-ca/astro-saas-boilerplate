@@ -29,7 +29,7 @@ export class TestContext {
    */
   async createUser(options?: {
     subscription?: 'free' | 'active' | 'trialing' | 'past_due' | 'canceled';
-    tier?: 'starter' | 'pro' | 'business';
+    tier?: 'starter' | 'growth' | 'agency';
     credits?: number;
   }): Promise<ITestUser> {
     const { subscription = 'free', tier, credits = 10 } = options || {};
@@ -50,7 +50,7 @@ export class TestContext {
         const mockToken =
           subscription === 'free'
             ? `test_token_mock_user_${mockUserId}`
-            : `test_token_mock_user_${mockUserId}_sub_${subscription}_${tier || 'pro'}`;
+            : `test_token_mock_user_${mockUserId}_sub_${subscription}_${tier || 'growth'}`;
 
         const mockUser: ITestUser = {
           id: mockUserId,
@@ -76,7 +76,7 @@ export class TestContext {
     count: number,
     options?: {
       subscription?: 'free' | 'active' | 'trialing' | 'past_due' | 'canceled';
-      tier?: 'starter' | 'pro' | 'business';
+      tier?: 'starter' | 'growth' | 'agency';
       credits?: number;
     }
   ): Promise<ITestUser[]> {

@@ -123,22 +123,14 @@ export default function PricingPageClient(): JSX.Element {
   const currentSubscriptionPrice = useMemo(() => {
     if (!subscription?.price_id) return null;
 
-    // Check for Starter tier using type-safe property access
-    const starterPriceId = (STRIPE_PRICES as Record<string, string>).STARTER_MONTHLY;
-    const starterPlan = (SUBSCRIPTION_PLANS as Record<string, { price?: number }>).STARTER_MONTHLY;
-
-    // Find the matching plan to get the price
-    if (starterPriceId && subscription.price_id === starterPriceId) {
-      return starterPlan?.price;
+    if (subscription.price_id === STRIPE_PRICES.STARTER_MONTHLY) {
+      return SUBSCRIPTION_PLANS.STARTER_MONTHLY.price;
     }
-    if (subscription.price_id === STRIPE_PRICES.HOBBY_MONTHLY) {
-      return SUBSCRIPTION_PLANS.HOBBY_MONTHLY.price;
+    if (subscription.price_id === STRIPE_PRICES.GROWTH_MONTHLY) {
+      return SUBSCRIPTION_PLANS.GROWTH_MONTHLY.price;
     }
-    if (subscription.price_id === STRIPE_PRICES.PRO_MONTHLY) {
-      return SUBSCRIPTION_PLANS.PRO_MONTHLY.price;
-    }
-    if (subscription.price_id === STRIPE_PRICES.BUSINESS_MONTHLY) {
-      return SUBSCRIPTION_PLANS.BUSINESS_MONTHLY.price;
+    if (subscription.price_id === STRIPE_PRICES.AGENCY_MONTHLY) {
+      return SUBSCRIPTION_PLANS.AGENCY_MONTHLY.price;
     }
     return null;
   }, [subscription?.price_id]);
@@ -253,83 +245,29 @@ export default function PricingPageClient(): JSX.Element {
           </h2>
           <p className="text-center text-text-secondary mb-8">{t('subscription.subtitle')}</p>
 
-          <div
-            className="grid md:grid-cols-2 lg:grid-cols-4 gap-8 max-w-6xl mx-auto"
-            data-testid="pricing-grid"
-          >
+          <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto" data-testid="pricing-grid">
             {loading ? (
-              // Show skeleton loading cards while fetching subscription data
               <>
                 <PricingCardSkeleton />
                 <PricingCardSkeleton recommended={true} />
                 <PricingCardSkeleton />
-                <PricingCardSkeleton />
               </>
             ) : (
               <>
-                {/* Starter Plan - Add when available in configuration */}
-                {(() => {
-                  const starterPriceId = (STRIPE_PRICES as Record<string, string>).STARTER_MONTHLY;
-                  const starterPlan = (
-                    SUBSCRIPTION_PLANS as Record<
-                      string,
-                      {
-                        name: string;
-                        description: string;
-                        price: number;
-                        interval: string;
-                        features: readonly string[];
-                      }
-                    >
-                  ).STARTER_MONTHLY;
-
-                  return starterPriceId && starterPlan ? (
-                    <PricingCard
-                      name={starterPlan.name}
-                      description={starterPlan.description}
-                      price={starterPlan.price}
-                      interval={starterPlan.interval as 'month' | 'year'}
-                      features={starterPlan.features}
-                      priceId={starterPriceId}
-                      disabled={
-                        profile?.subscription_tier === 'starter' ||
-                        subscription?.scheduled_price_id === starterPriceId
-                      }
-                      scheduled={subscription?.scheduled_price_id === starterPriceId}
-                      onCancelScheduled={
-                        subscription?.scheduled_price_id === starterPriceId
-                          ? handleCancelScheduledChange
-                          : undefined
-                      }
-                      cancelingScheduled={cancelingSchedule}
-                      onSelect={
-                        subscription
-                          ? () =>
-                              handleSubscribeClick(starterPriceId, () =>
-                                handlePlanSelect(starterPriceId)
-                              )
-                          : undefined
-                      }
-                      currentSubscriptionPrice={currentSubscriptionPrice}
-                      loading={buttonLoadingStates[starterPriceId] || false}
-                    />
-                  ) : null;
-                })()}
-
                 <PricingCard
-                  name={SUBSCRIPTION_PLANS.HOBBY_MONTHLY.name}
-                  description={SUBSCRIPTION_PLANS.HOBBY_MONTHLY.description}
-                  price={SUBSCRIPTION_PLANS.HOBBY_MONTHLY.price}
-                  interval={SUBSCRIPTION_PLANS.HOBBY_MONTHLY.interval}
-                  features={SUBSCRIPTION_PLANS.HOBBY_MONTHLY.features}
-                  priceId={STRIPE_PRICES.HOBBY_MONTHLY}
+                  name={SUBSCRIPTION_PLANS.STARTER_MONTHLY.name}
+                  description={SUBSCRIPTION_PLANS.STARTER_MONTHLY.description}
+                  price={SUBSCRIPTION_PLANS.STARTER_MONTHLY.price}
+                  interval={SUBSCRIPTION_PLANS.STARTER_MONTHLY.interval}
+                  features={SUBSCRIPTION_PLANS.STARTER_MONTHLY.features}
+                  priceId={STRIPE_PRICES.STARTER_MONTHLY}
                   disabled={
-                    profile?.subscription_tier === 'hobby' ||
-                    subscription?.scheduled_price_id === STRIPE_PRICES.HOBBY_MONTHLY
+                    profile?.subscription_tier === 'starter' ||
+                    subscription?.scheduled_price_id === STRIPE_PRICES.STARTER_MONTHLY
                   }
-                  scheduled={subscription?.scheduled_price_id === STRIPE_PRICES.HOBBY_MONTHLY}
+                  scheduled={subscription?.scheduled_price_id === STRIPE_PRICES.STARTER_MONTHLY}
                   onCancelScheduled={
-                    subscription?.scheduled_price_id === STRIPE_PRICES.HOBBY_MONTHLY
+                    subscription?.scheduled_price_id === STRIPE_PRICES.STARTER_MONTHLY
                       ? handleCancelScheduledChange
                       : undefined
                   }
@@ -337,30 +275,30 @@ export default function PricingPageClient(): JSX.Element {
                   onSelect={
                     subscription
                       ? () =>
-                          handleSubscribeClick(STRIPE_PRICES.HOBBY_MONTHLY, () =>
-                            handlePlanSelect(STRIPE_PRICES.HOBBY_MONTHLY)
+                          handleSubscribeClick(STRIPE_PRICES.STARTER_MONTHLY, () =>
+                            handlePlanSelect(STRIPE_PRICES.STARTER_MONTHLY)
                           )
                       : undefined
                   }
                   currentSubscriptionPrice={currentSubscriptionPrice}
-                  loading={buttonLoadingStates[STRIPE_PRICES.HOBBY_MONTHLY] || false}
+                  loading={buttonLoadingStates[STRIPE_PRICES.STARTER_MONTHLY] || false}
                 />
 
                 <PricingCard
-                  name={SUBSCRIPTION_PLANS.PRO_MONTHLY.name}
-                  description={SUBSCRIPTION_PLANS.PRO_MONTHLY.description}
-                  price={SUBSCRIPTION_PLANS.PRO_MONTHLY.price}
-                  interval={SUBSCRIPTION_PLANS.PRO_MONTHLY.interval}
-                  features={SUBSCRIPTION_PLANS.PRO_MONTHLY.features}
-                  priceId={STRIPE_PRICES.PRO_MONTHLY}
-                  recommended={SUBSCRIPTION_PLANS.PRO_MONTHLY.recommended}
+                  name={SUBSCRIPTION_PLANS.GROWTH_MONTHLY.name}
+                  description={SUBSCRIPTION_PLANS.GROWTH_MONTHLY.description}
+                  price={SUBSCRIPTION_PLANS.GROWTH_MONTHLY.price}
+                  interval={SUBSCRIPTION_PLANS.GROWTH_MONTHLY.interval}
+                  features={SUBSCRIPTION_PLANS.GROWTH_MONTHLY.features}
+                  priceId={STRIPE_PRICES.GROWTH_MONTHLY}
+                  recommended={SUBSCRIPTION_PLANS.GROWTH_MONTHLY.recommended}
                   disabled={
-                    profile?.subscription_tier === 'pro' ||
-                    subscription?.scheduled_price_id === STRIPE_PRICES.PRO_MONTHLY
+                    profile?.subscription_tier === 'growth' ||
+                    subscription?.scheduled_price_id === STRIPE_PRICES.GROWTH_MONTHLY
                   }
-                  scheduled={subscription?.scheduled_price_id === STRIPE_PRICES.PRO_MONTHLY}
+                  scheduled={subscription?.scheduled_price_id === STRIPE_PRICES.GROWTH_MONTHLY}
                   onCancelScheduled={
-                    subscription?.scheduled_price_id === STRIPE_PRICES.PRO_MONTHLY
+                    subscription?.scheduled_price_id === STRIPE_PRICES.GROWTH_MONTHLY
                       ? handleCancelScheduledChange
                       : undefined
                   }
@@ -368,29 +306,29 @@ export default function PricingPageClient(): JSX.Element {
                   onSelect={
                     subscription
                       ? () =>
-                          handleSubscribeClick(STRIPE_PRICES.PRO_MONTHLY, () =>
-                            handlePlanSelect(STRIPE_PRICES.PRO_MONTHLY)
+                          handleSubscribeClick(STRIPE_PRICES.GROWTH_MONTHLY, () =>
+                            handlePlanSelect(STRIPE_PRICES.GROWTH_MONTHLY)
                           )
                       : undefined
                   }
                   currentSubscriptionPrice={currentSubscriptionPrice}
-                  loading={buttonLoadingStates[STRIPE_PRICES.PRO_MONTHLY] || false}
+                  loading={buttonLoadingStates[STRIPE_PRICES.GROWTH_MONTHLY] || false}
                 />
 
                 <PricingCard
-                  name={SUBSCRIPTION_PLANS.BUSINESS_MONTHLY.name}
-                  description={SUBSCRIPTION_PLANS.BUSINESS_MONTHLY.description}
-                  price={SUBSCRIPTION_PLANS.BUSINESS_MONTHLY.price}
-                  interval={SUBSCRIPTION_PLANS.BUSINESS_MONTHLY.interval}
-                  features={SUBSCRIPTION_PLANS.BUSINESS_MONTHLY.features}
-                  priceId={STRIPE_PRICES.BUSINESS_MONTHLY}
+                  name={SUBSCRIPTION_PLANS.AGENCY_MONTHLY.name}
+                  description={SUBSCRIPTION_PLANS.AGENCY_MONTHLY.description}
+                  price={SUBSCRIPTION_PLANS.AGENCY_MONTHLY.price}
+                  interval={SUBSCRIPTION_PLANS.AGENCY_MONTHLY.interval}
+                  features={SUBSCRIPTION_PLANS.AGENCY_MONTHLY.features}
+                  priceId={STRIPE_PRICES.AGENCY_MONTHLY}
                   disabled={
-                    profile?.subscription_tier === 'business' ||
-                    subscription?.scheduled_price_id === STRIPE_PRICES.BUSINESS_MONTHLY
+                    profile?.subscription_tier === 'agency' ||
+                    subscription?.scheduled_price_id === STRIPE_PRICES.AGENCY_MONTHLY
                   }
-                  scheduled={subscription?.scheduled_price_id === STRIPE_PRICES.BUSINESS_MONTHLY}
+                  scheduled={subscription?.scheduled_price_id === STRIPE_PRICES.AGENCY_MONTHLY}
                   onCancelScheduled={
-                    subscription?.scheduled_price_id === STRIPE_PRICES.BUSINESS_MONTHLY
+                    subscription?.scheduled_price_id === STRIPE_PRICES.AGENCY_MONTHLY
                       ? handleCancelScheduledChange
                       : undefined
                   }
@@ -398,13 +336,13 @@ export default function PricingPageClient(): JSX.Element {
                   onSelect={
                     subscription
                       ? () =>
-                          handleSubscribeClick(STRIPE_PRICES.BUSINESS_MONTHLY, () =>
-                            handlePlanSelect(STRIPE_PRICES.BUSINESS_MONTHLY)
+                          handleSubscribeClick(STRIPE_PRICES.AGENCY_MONTHLY, () =>
+                            handlePlanSelect(STRIPE_PRICES.AGENCY_MONTHLY)
                           )
                       : undefined
                   }
                   currentSubscriptionPrice={currentSubscriptionPrice}
-                  loading={buttonLoadingStates[STRIPE_PRICES.BUSINESS_MONTHLY] || false}
+                  loading={buttonLoadingStates[STRIPE_PRICES.AGENCY_MONTHLY] || false}
                 />
               </>
             )}

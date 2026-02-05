@@ -1,7 +1,6 @@
 /// <reference types="astro/client" />
 
 /* eslint-disable @typescript-eslint/naming-convention */
- 
 
 interface ImportMetaEnv {
   // Client environment variables (PUBLIC_* prefix)
@@ -49,10 +48,9 @@ interface ImportMetaEnv {
   readonly SUPABASE_SERVICE_ROLE_KEY?: string;
   readonly STRIPE_SECRET_KEY?: string;
   readonly STRIPE_WEBHOOK_SECRET?: string;
-  readonly STRIPE_STARTER_MONTHLYLY_PRICE_ID?: string;
-  readonly STRIPE_HOBBY_MONTHLYLY_PRICE_ID?: string;
-  readonly STRIPE_PRO_MONTHLYLY_PRICE_ID?: string;
-  readonly STRIPE_BUSINESS_MONTHLYLY_PRICE_ID?: string;
+  readonly STRIPE_STARTER_MONTHLY_PRICE_ID?: string;
+  readonly STRIPE_GROWTH_MONTHLY_PRICE_ID?: string;
+  readonly STRIPE_AGENCY_MONTHLY_PRICE_ID?: string;
   readonly BASELIME_API_KEY?: string;
   readonly AMPLITUDE_API_KEY?: string;
   readonly ALLOWED_ORIGIN?: string;

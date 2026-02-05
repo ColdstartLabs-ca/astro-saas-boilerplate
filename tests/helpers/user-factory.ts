@@ -1,7 +1,7 @@
 import { TestDataManager, type ITestUser } from './test-data-manager';
 
 export type SubscriptionStatus = 'free' | 'active' | 'trialing' | 'past_due' | 'canceled';
-export type SubscriptionTier = 'starter' | 'pro' | 'business';
+export type SubscriptionTier = 'starter' | 'growth' | 'agency';
 
 export interface IUserBuilderOptions {
   subscription?: SubscriptionStatus;
@@ -115,32 +115,32 @@ export class UserBuilder {
   }
 
   /**
-   * Creates a pro tier active user
+   * Creates a growth tier active user
+   *
+   * @param credits - Number of credits (default: 100)
+   * @returns This builder for chaining
+   */
+  asGrowthUser(credits = 100): this {
+    return this.withSubscription('active', 'growth').withCredits(credits);
+  }
+
+  /**
+   * Creates an agency tier active user
    *
    * @param credits - Number of credits (default: 500)
    * @returns This builder for chaining
    */
-  asProUser(credits = 500): this {
-    return this.withSubscription('active', 'pro').withCredits(credits);
-  }
-
-  /**
-   * Creates a business tier active user
-   *
-   * @param credits - Number of credits (default: 1000)
-   * @returns This builder for chaining
-   */
-  asBusinessUser(credits = 1000): this {
-    return this.withSubscription('active', 'business').withCredits(credits);
+  asAgencyUser(credits = 500): this {
+    return this.withSubscription('active', 'agency').withCredits(credits);
   }
 
   /**
    * Creates a starter tier active user
    *
-   * @param credits - Number of credits (default: 100)
+   * @param credits - Number of credits (default: 30)
    * @returns This builder for chaining
    */
-  asStarterUser(credits = 100): this {
+  asStarterUser(credits = 30): this {
     return this.withSubscription('active', 'starter').withCredits(credits);
   }
 
@@ -150,7 +150,7 @@ export class UserBuilder {
    * @param tier - Subscription tier for trial (default: pro)
    * @returns This builder for chaining
    */
-  asTrialingUser(tier: SubscriptionTier = 'pro'): this {
+  asTrialingUser(tier: SubscriptionTier = 'growth'): this {
     return this.withSubscription('trialing', tier);
   }
 
@@ -160,27 +160,27 @@ export class UserBuilder {
    * @param tier - Subscription tier (default: pro)
    * @returns This builder for chaining
    */
-  asPastDueUser(tier: SubscriptionTier = 'pro'): this {
+  asPastDueUser(tier: SubscriptionTier = 'growth'): this {
     return this.withSubscription('past_due', tier);
   }
 
   /**
    * Creates a user with canceled subscription
    *
-   * @param tier - Original subscription tier (default: pro)
+   * @param tier - Original subscription tier (default: growth)
    * @returns This builder for chaining
    */
-  asCanceledUser(tier: SubscriptionTier = 'pro'): this {
+  asCanceledUser(tier: SubscriptionTier = 'growth'): this {
     return this.withSubscription('canceled', tier);
   }
 
   /**
    * Creates a user with expired trial
    *
-   * @param tier - Original trial tier (default: pro)
+   * @param tier - Original trial tier (default: growth)
    * @returns This builder for chaining
    */
-  asExpiredTrialUser(tier: SubscriptionTier = 'pro'): this {
+  asExpiredTrialUser(tier: SubscriptionTier = 'growth'): this {
     return this.withSubscription('canceled', tier);
   }
 
@@ -191,7 +191,7 @@ export class UserBuilder {
    * @returns This builder for chaining
    */
   asHighCreditUser(credits = 10000): this {
-    return this.withSubscription('active', 'business').withCredits(credits);
+    return this.withSubscription('active', 'agency').withCredits(credits);
   }
 
   /**
@@ -248,12 +248,7 @@ export class UserBuilder {
         : await this.dataManager.createTestUser();
 
       // Set subscription status
-      await this.dataManager.setSubscriptionStatus(
-        user.id,
-        subscription,
-        tier,
-        subscriptionId
-      );
+      await this.dataManager.setSubscriptionStatus(user.id, subscription, tier, subscriptionId);
 
       // Set credits if specified
       if (credits !== 10) {
@@ -321,32 +316,32 @@ export class UserFactory {
   }
 
   /**
-   * Creates a pro tier user
+   * Creates a growth tier user
    *
-   * @param credits - Number of credits (default: 500)
-   * @returns Promise resolving to pro test user
+   * @param credits - Number of credits (default: 100)
+   * @returns Promise resolving to growth test user
    */
-  async proUser(credits = 500): Promise<ITestUser> {
-    return this.create().asProUser(credits).build();
+  async growthUser(credits = 100): Promise<ITestUser> {
+    return this.create().asGrowthUser(credits).build();
   }
 
   /**
-   * Creates a business tier user
+   * Creates an agency tier user
    *
-   * @param credits - Number of credits (default: 1000)
-   * @returns Promise resolving to business test user
+   * @param credits - Number of credits (default: 500)
+   * @returns Promise resolving to agency test user
    */
-  async businessUser(credits = 1000): Promise<ITestUser> {
-    return this.create().asBusinessUser(credits).build();
+  async agencyUser(credits = 500): Promise<ITestUser> {
+    return this.create().asAgencyUser(credits).build();
   }
 
   /**
    * Creates a starter tier user
    *
-   * @param credits - Number of credits (default: 100)
+   * @param credits - Number of credits (default: 30)
    * @returns Promise resolving to starter test user
    */
-  async starterUser(credits = 100): Promise<ITestUser> {
+  async starterUser(credits = 30): Promise<ITestUser> {
     return this.create().asStarterUser(credits).build();
   }
 
@@ -356,27 +351,27 @@ export class UserFactory {
    * @param tier - Subscription tier for trial (default: pro)
    * @returns Promise resolving to trialing test user
    */
-  async trialingUser(tier: SubscriptionTier = 'pro'): Promise<ITestUser> {
+  async trialingUser(tier: SubscriptionTier = 'growth'): Promise<ITestUser> {
     return this.create().asTrialingUser(tier).build();
   }
 
   /**
    * Creates a user with past due subscription
    *
-   * @param tier - Subscription tier (default: pro)
+   * @param tier - Subscription tier (default: growth)
    * @returns Promise resolving to past due test user
    */
-  async pastDueUser(tier: SubscriptionTier = 'pro'): Promise<ITestUser> {
+  async pastDueUser(tier: SubscriptionTier = 'growth'): Promise<ITestUser> {
     return this.create().asPastDueUser(tier).build();
   }
 
   /**
    * Creates a user with canceled subscription
    *
-   * @param tier - Original subscription tier (default: pro)
+   * @param tier - Original subscription tier (default: growth)
    * @returns Promise resolving to canceled test user
    */
-  async canceledUser(tier: SubscriptionTier = 'pro'): Promise<ITestUser> {
+  async canceledUser(tier: SubscriptionTier = 'growth'): Promise<ITestUser> {
     return this.create().asCanceledUser(tier).build();
   }
 
@@ -422,7 +417,7 @@ export class UserFactory {
           user = await this.freeUser(options.credits);
           break;
         case 'active':
-          user = await this.proUser(options.credits);
+          user = await this.growthUser(options.credits);
           break;
         case 'trialing':
           user = await this.trialingUser(options.tier);
@@ -449,29 +444,29 @@ export class UserFactory {
   /**
    * Creates users with different tiers for comparison testing
    *
-   * @param creditsPerTier - Credits per tier (default: free:10, starter:100, pro:500, business:1000)
+   * @param creditsPerTier - Credits per tier (default: free:10, starter:30, growth:100, agency:500)
    * @returns Promise resolving to users of all tiers
    */
   async createAllTiers(creditsPerTier: Partial<Record<SubscriptionTier, number>> = {}): Promise<{
     free: ITestUser;
     starter: ITestUser;
-    pro: ITestUser;
-    business: ITestUser;
+    growth: ITestUser;
+    agency: ITestUser;
   }> {
     const defaultCredits = {
-      starter: 100,
-      pro: 500,
-      business: 1000,
+      starter: 30,
+      growth: 100,
+      agency: 500,
       ...creditsPerTier,
     };
 
-    const [free, starter, pro, business] = await Promise.all([
+    const [free, starter, growth, agency] = await Promise.all([
       this.freeUser(),
       this.starterUser(defaultCredits.starter),
-      this.proUser(defaultCredits.pro),
-      this.businessUser(defaultCredits.business),
+      this.growthUser(defaultCredits.growth),
+      this.agencyUser(defaultCredits.agency),
     ]);
 
-    return { free, starter, pro, business };
+    return { free, starter, growth, agency };
   }
 }

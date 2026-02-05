@@ -18,9 +18,9 @@ describe('getPlanByKey', () => {
     expect(plan?.key).toBe('starter');
     expect(plan?.name).toBe('Starter');
     expect(plan?.enabled).toBe(true);
-    expect(plan?.priceInCents).toBe(900);
-    expect(plan?.creditsPerCycle).toBe(CREDIT_COSTS.STARTER_MONTHLY_CREDITS);
-    expect(plan?.maxRollover).toBe(CREDIT_COSTS.STARTER_MONTHLY_CREDITS * 3);
+    expect(plan?.priceInCents).toBe(4900); // $49.00
+    expect(plan?.creditsPerCycle).toBe(CREDIT_COSTS.STARTER_MONTHLY_CREDITS); // 30
+    expect(plan?.maxRollover).toBe(CREDIT_COSTS.STARTER_MONTHLY_CREDITS * 3); // 90
     expect(plan?.creditsExpiration.mode).toBe('never');
   });
 
@@ -62,36 +62,36 @@ describe('calculateBalanceWithExpiration', () => {
     test('should add new credits to existing balance', () => {
       const result = calculateBalanceWithExpiration({
         currentBalance: 50,
-        newCredits: 100,
+        newCredits: 30,
         expirationMode: 'never',
-        maxRollover: 600,
+        maxRollover: 90,
       });
 
-      expect(result.newBalance).toBe(150);
+      expect(result.newBalance).toBe(80);
       expect(result.expiredAmount).toBe(0);
     });
 
     test('should cap balance at maxRollover limit', () => {
       const result = calculateBalanceWithExpiration({
-        currentBalance: 550,
-        newCredits: 100,
+        currentBalance: 70,
+        newCredits: 30,
         expirationMode: 'never',
-        maxRollover: 600,
+        maxRollover: 90,
       });
 
-      expect(result.newBalance).toBe(600); // Capped at 600
+      expect(result.newBalance).toBe(90); // Capped at 90
       expect(result.expiredAmount).toBe(0);
     });
 
     test('should handle balance already at cap', () => {
       const result = calculateBalanceWithExpiration({
-        currentBalance: 600,
-        newCredits: 100,
+        currentBalance: 90,
+        newCredits: 30,
         expirationMode: 'never',
-        maxRollover: 600,
+        maxRollover: 90,
       });
 
-      expect(result.newBalance).toBe(600); // Still capped
+      expect(result.newBalance).toBe(90); // Still capped
       expect(result.expiredAmount).toBe(0);
     });
 
@@ -109,25 +109,25 @@ describe('calculateBalanceWithExpiration', () => {
 
     test('should handle zero new credits', () => {
       const result = calculateBalanceWithExpiration({
-        currentBalance: 300,
+        currentBalance: 60,
         newCredits: 0,
         expirationMode: 'never',
-        maxRollover: 600,
+        maxRollover: 90,
       });
 
-      expect(result.newBalance).toBe(300);
+      expect(result.newBalance).toBe(60);
       expect(result.expiredAmount).toBe(0);
     });
 
     test('should handle zero current balance', () => {
       const result = calculateBalanceWithExpiration({
         currentBalance: 0,
-        newCredits: 100,
+        newCredits: 30,
         expirationMode: 'never',
-        maxRollover: 600,
+        maxRollover: 90,
       });
 
-      expect(result.newBalance).toBe(100);
+      expect(result.newBalance).toBe(30);
       expect(result.expiredAmount).toBe(0);
     });
   });
@@ -135,25 +135,25 @@ describe('calculateBalanceWithExpiration', () => {
   describe('with "end_of_cycle" expiration mode (no rollover)', () => {
     test('should expire all credits and replace with new allocation', () => {
       const result = calculateBalanceWithExpiration({
-        currentBalance: 500,
-        newCredits: 100,
+        currentBalance: 50,
+        newCredits: 30,
         expirationMode: 'end_of_cycle',
-        maxRollover: 600, // Ignored in this mode
+        maxRollover: 90, // Ignored in this mode
       });
 
-      expect(result.newBalance).toBe(100);
-      expect(result.expiredAmount).toBe(500);
+      expect(result.newBalance).toBe(30);
+      expect(result.expiredAmount).toBe(50);
     });
 
     test('should handle empty current balance', () => {
       const result = calculateBalanceWithExpiration({
         currentBalance: 0,
-        newCredits: 100,
+        newCredits: 30,
         expirationMode: 'end_of_cycle',
-        maxRollover: 600,
+        maxRollover: 90,
       });
 
-      expect(result.newBalance).toBe(100);
+      expect(result.newBalance).toBe(30);
       expect(result.expiredAmount).toBe(0);
     });
   });
@@ -161,14 +161,14 @@ describe('calculateBalanceWithExpiration', () => {
   describe('with "rolling_window" expiration mode', () => {
     test('should behave like end_of_cycle', () => {
       const result = calculateBalanceWithExpiration({
-        currentBalance: 400,
-        newCredits: 100,
+        currentBalance: 40,
+        newCredits: 30,
         expirationMode: 'rolling_window',
-        maxRollover: 600,
+        maxRollover: 90,
       });
 
-      expect(result.newBalance).toBe(100);
-      expect(result.expiredAmount).toBe(400);
+      expect(result.newBalance).toBe(30);
+      expect(result.expiredAmount).toBe(40);
     });
   });
 
@@ -178,7 +178,7 @@ describe('calculateBalanceWithExpiration', () => {
         currentBalance: -10,
         newCredits: 100,
         expirationMode: 'never',
-        maxRollover: 600,
+        maxRollover: 90,
       });
 
       expect(result.newBalance).toBe(90);
@@ -225,7 +225,8 @@ describe('creditsExpireForPlan', () => {
     config.plans
       .filter(p => p.enabled)
       .forEach(plan => {
-        expect(creditsExpireForPlan(plan.stripePriceId)).toBe(false);
+        // All enabled plans have 'never' expiration mode (rollover enabled)
+        expect(creditsExpireForPlan(plan.stripePriceId!)).toBe(false);
       });
   });
 });
@@ -269,10 +270,10 @@ describe('buildHomepageTiers', () => {
     const starterTier = tiers.find(t => t.name === 'Starter');
 
     expect(starterTier).toBeDefined();
-    expect(starterTier?.price).toBe('$9');
-    expect(starterTier?.priceValue).toBe(9);
+    expect(starterTier?.price).toBe('$49'); // Changed from $9 to $49
+    expect(starterTier?.priceValue).toBe(49);
     expect(starterTier?.period).toBe('/mo');
-    expect(starterTier?.description).toBe('Perfect for getting started');
+    expect(starterTier?.description).toBe('Perfect for getting started with SEO content');
     expect(starterTier?.recommended).toBe(false);
     expect(starterTier?.variant).toBe('secondary');
   });
@@ -281,11 +282,9 @@ describe('buildHomepageTiers', () => {
     const tiers = buildHomepageTiers();
     const starterTier = tiers.find(t => t.name === 'Starter');
 
-    expect(starterTier?.features).toContain('100 credits per month');
-    expect(starterTier?.features).toContain('Credits roll over (up to 300)');
+    expect(starterTier?.features).toContain('30 articles per month'); // Changed from 100 to 30
+    expect(starterTier?.features).toContain('Credits roll over (up to 90)'); // Changed from 300 to 90
     expect(starterTier?.features).toContain('Email support');
-    // Note: Removed image-specific features "All AI models included" and "Batch upload up to 5 images"
-    // These are replaced with generic API features
   });
 
   test('should have correct CTA for Starter tier', () => {
@@ -298,10 +297,10 @@ describe('buildHomepageTiers', () => {
   test('should maintain correct order including free tier', () => {
     const tiers = buildHomepageTiers();
 
-    expect(tiers[0].name).toBe('Free Tier');
+    expect(tiers[0].name).toBe('Free Trial');
     expect(tiers[1].name).toBe('Starter');
-    expect(tiers[2].name).toBe('Hobby');
-    expect(tiers[3].name).toBe('Professional');
-    expect(tiers[4].name).toBe('Business');
+    expect(tiers[2].name).toBe('Growth');
+    expect(tiers[3].name).toBe('Agency');
+    expect(tiers.length).toBe(4); // Free + 3 paid tiers
   });
 });

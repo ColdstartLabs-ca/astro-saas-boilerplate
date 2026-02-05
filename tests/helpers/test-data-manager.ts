@@ -215,10 +215,11 @@ export class TestDataManager {
       if (adminError) {
         // If user already exists, try to sign them in directly
         if (adminError.message.includes('already registered')) {
-          const { data: signInData, error: signInError } = await this.supabase.auth.signInWithPassword({
-            email: testEmail,
-            password: testPassword,
-          });
+          const { data: signInData, error: signInError } =
+            await this.supabase.auth.signInWithPassword({
+              email: testEmail,
+              password: testPassword,
+            });
 
           if (signInError) {
             throw new Error(`Existing user sign in failed: ${signInError.message}`);
@@ -272,7 +273,9 @@ export class TestDataManager {
 
         signInAttempts++;
         const backoffDelay = Math.min(2000 * Math.pow(2, signInAttempts), 15000);
-        console.log(`Sign-in attempt ${signInAttempts + 1} failed, retrying in ${backoffDelay}ms...`);
+        console.log(
+          `Sign-in attempt ${signInAttempts + 1} failed, retrying in ${backoffDelay}ms...`
+        );
         await new Promise(resolve => setTimeout(resolve, backoffDelay));
       }
 
@@ -331,7 +334,7 @@ export class TestDataManager {
   async setSubscriptionStatus(
     userId: string,
     status: 'free' | 'active' | 'trialing' | 'past_due' | 'canceled',
-    tier?: 'starter' | 'pro' | 'business',
+    tier?: 'starter' | 'growth' | 'agency',
     subscriptionId?: string
   ): Promise<void> {
     // Skip all database operations in test mode
@@ -393,7 +396,7 @@ export class TestDataManager {
         id: subscriptionId,
         user_id: userId,
         status: status === 'active' ? 'active' : status,
-        price_id: 'price_test_pro_monthly', // Mock price ID
+        price_id: 'price_test_growth_monthly', // Mock price ID
         current_period_start: new Date().toISOString(),
         current_period_end: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(), // 30 days from now
       };
@@ -446,7 +449,7 @@ export class TestDataManager {
         updated_at: new Date().toISOString(),
       };
 
-      existingProfile.credits_balance = (existingProfile.credits_balance as number || 0) + amount;
+      existingProfile.credits_balance = ((existingProfile.credits_balance as number) || 0) + amount;
       existingProfile.updated_at = new Date().toISOString();
 
       this.testModeProfiles.set(userId, existingProfile);
@@ -635,7 +638,7 @@ export class TestDataManager {
    */
   async createTestUserWithSubscription(
     status: 'free' | 'active' | 'trialing' | 'past_due' | 'canceled',
-    tier?: 'starter' | 'pro' | 'business',
+    tier?: 'starter' | 'growth' | 'agency',
     initialCredits: number = 10
   ): Promise<ITestUser> {
     // For test environment, create a user with subscription info encoded in token
@@ -643,9 +646,10 @@ export class TestDataManager {
       const mockUserId = this.generateUUID();
 
       // Create token with subscription info: test_token_mock_user_{userId}_sub_{status}_{tier}
-      const mockToken = status === 'free'
-        ? `test_token_mock_user_${mockUserId}`
-        : `test_token_mock_user_${mockUserId}_sub_${status}_${tier || 'pro'}`;
+      const mockToken =
+        status === 'free'
+          ? `test_token_mock_user_${mockUserId}`
+          : `test_token_mock_user_${mockUserId}_sub_${status}_${tier || 'growth'}`;
 
       this.createdUsers.push(mockUserId);
       return {
@@ -694,7 +698,8 @@ export class TestDataManager {
         .eq('id', userId)
         .single();
 
-      if (fetchError && fetchError.code !== 'PGRST116') { // PGRST116 = not found
+      if (fetchError && fetchError.code !== 'PGRST116') {
+        // PGRST116 = not found
         console.warn('Error checking existing profile:', fetchError.message);
         return;
       }
@@ -705,13 +710,11 @@ export class TestDataManager {
       }
 
       // Create the profile
-      const { error: insertError } = await this.supabase
-        .from('profiles')
-        .insert({
-          id: userId,
-          credits_balance: 10, // Default initial credits
-          updated_at: new Date().toISOString(),
-        });
+      const { error: insertError } = await this.supabase.from('profiles').insert({
+        id: userId,
+        credits_balance: 10, // Default initial credits
+        updated_at: new Date().toISOString(),
+      });
 
       if (insertError) {
         console.warn('Failed to create test user profile:', insertError.message);
@@ -728,9 +731,9 @@ export class TestDataManager {
    * @returns A valid UUID string
    */
   private generateUUID(): string {
-    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
-      const r = Math.random() * 16 | 0;
-      const v = c == 'x' ? r : (r & 0x3 | 0x8);
+    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
+      const r = (Math.random() * 16) | 0;
+      const v = c == 'x' ? r : (r & 0x3) | 0x8;
       return v.toString(16);
     });
   }

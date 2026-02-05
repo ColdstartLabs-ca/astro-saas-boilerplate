@@ -25,14 +25,14 @@ export interface ISignupProperties {
 }
 
 export interface ISubscriptionProperties {
-  plan: 'hobby' | 'pro' | 'business';
+  plan: 'starter' | 'growth' | 'agency';
   amountCents: number;
   billingInterval: 'monthly' | 'yearly';
   currency?: string;
 }
 
 export interface ICreditPackProperties {
-  pack: 'starter' | 'pro' | 'enterprise';
+  pack: 'small' | 'medium' | 'large';
   amountCents: number;
   credits: number;
   currency?: string;

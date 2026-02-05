@@ -150,7 +150,7 @@ export function getPlanByPriceId(priceId: string): IPlanConfig | null {
 }
 
 /**
- * Get plan configuration by plan key (e.g., 'hobby', 'pro')
+ * Get plan configuration by plan key (e.g., 'starter', 'growth', 'agency')
  */
 export function getPlanByKey(key: string): IPlanConfig | null {
   const config = getSubscriptionConfig();
@@ -608,17 +608,16 @@ export function buildHomepageTiers(): Array<{
 
   // Add free tier
   tiers.push({
-    name: 'Free Tier',
+    name: 'Free Trial',
     price: '$0',
     priceValue: 0,
-    period: '/mo',
-    description: 'For testing and personal use.',
+    period: '',
+    description: 'Try AutopilotRank with no commitment.',
     features: [
-      '10 free images to start',
-      '2x & 4x Upscaling',
-      'Basic Enhancement',
-      'No watermark',
-      '5MB file limit',
+      '3 free articles to start',
+      'Multi-model AI generation',
+      'SEO scoring',
+      'No credit card required',
     ],
     cta: 'Start for Free',
     variant: 'outline' as const,

@@ -13,19 +13,17 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 vi.mock('@shared/config/stripe', () => ({
   getPlanForPriceId: vi.fn((priceId: string) => {
     const plans: Record<string, { name: string; key: string; creditsPerMonth: number }> = {
-      price_starter: { name: 'Starter', key: 'starter', creditsPerMonth: 100 },
-      price_hobby: { name: 'Hobby', key: 'hobby', creditsPerMonth: 200 },
-      price_pro: { name: 'Professional', key: 'pro', creditsPerMonth: 1000 },
-      price_business: { name: 'Business', key: 'business', creditsPerMonth: 5000 },
+      price_starter: { name: 'Starter', key: 'starter', creditsPerMonth: 30 },
+      price_growth: { name: 'Growth', key: 'growth', creditsPerMonth: 100 },
+      price_agency: { name: 'Agency', key: 'agency', creditsPerMonth: 500 },
     };
     return plans[priceId] || null;
   }),
   assertKnownPriceId: vi.fn((priceId: string) => {
     const plans: Record<string, { type: string; credits: number; name: string }> = {
-      price_starter: { type: 'plan', credits: 100, name: 'Starter' },
-      price_hobby: { type: 'plan', credits: 200, name: 'Hobby' },
-      price_pro: { type: 'plan', credits: 1000, name: 'Professional' },
-      price_business: { type: 'plan', credits: 5000, name: 'Business' },
+      price_starter: { type: 'plan', credits: 30, name: 'Starter' },
+      price_growth: { type: 'plan', credits: 100, name: 'Growth' },
+      price_agency: { type: 'plan', credits: 500, name: 'Agency' },
     };
     if (!plans[priceId]) {
       throw new Error(`Unknown price ID: ${priceId}`);
@@ -34,9 +32,8 @@ vi.mock('@shared/config/stripe', () => ({
   }),
   STRIPE_PRICES: {
     STARTER_MONTHLY: 'price_starter',
-    HOBBY_MONTHLY: 'price_hobby',
-    PRO_MONTHLY: 'price_pro',
-    BUSINESS_MONTHLY: 'price_business',
+    GROWTH_MONTHLY: 'price_growth',
+    AGENCY_MONTHLY: 'price_agency',
   },
 }));
 
@@ -48,10 +45,9 @@ describe('Subscription Change Fixes', () => {
   describe('Tier-based Downgrade Detection', () => {
     // Credit map used in the actual implementation
     const tierCreditsMap: Record<string, number> = {
-      starter: 100,
-      hobby: 200,
-      pro: 1000,
-      business: 5000,
+      starter: 30,
+      growth: 100,
+      agency: 500,
     };
 
     /**
@@ -63,63 +59,48 @@ describe('Subscription Change Fixes', () => {
       return currentTierCredits > targetCreditsPerMonth;
     }
 
-    it('should detect downgrade from Business to Professional', () => {
-      const isDowngrade = isDowngradeByTier('business', 1000);
+    it('should detect downgrade from Agency to Growth', () => {
+      const isDowngrade = isDowngradeByTier('agency', 100);
       expect(isDowngrade).toBe(true);
     });
 
-    it('should detect downgrade from Business to Hobby', () => {
-      const isDowngrade = isDowngradeByTier('business', 200);
+    it('should detect downgrade from Agency to Starter', () => {
+      const isDowngrade = isDowngradeByTier('agency', 30);
       expect(isDowngrade).toBe(true);
     });
 
-    it('should detect downgrade from Business to Starter', () => {
-      const isDowngrade = isDowngradeByTier('business', 100);
+    it('should detect downgrade from Growth to Starter', () => {
+      const isDowngrade = isDowngradeByTier('growth', 30);
       expect(isDowngrade).toBe(true);
     });
 
-    it('should detect downgrade from Professional to Hobby', () => {
-      const isDowngrade = isDowngradeByTier('pro', 200);
-      expect(isDowngrade).toBe(true);
-    });
-
-    it('should detect downgrade from Professional to Starter', () => {
-      const isDowngrade = isDowngradeByTier('pro', 100);
-      expect(isDowngrade).toBe(true);
-    });
-
-    it('should detect downgrade from Hobby to Starter', () => {
-      const isDowngrade = isDowngradeByTier('hobby', 100);
-      expect(isDowngrade).toBe(true);
-    });
-
-    it('should NOT detect downgrade for upgrade from Starter to Hobby', () => {
-      const isDowngrade = isDowngradeByTier('starter', 200);
+    it('should NOT detect downgrade for upgrade from Starter to Growth', () => {
+      const isDowngrade = isDowngradeByTier('starter', 100);
       expect(isDowngrade).toBe(false);
     });
 
-    it('should NOT detect downgrade for upgrade from Starter to Professional', () => {
-      const isDowngrade = isDowngradeByTier('starter', 1000);
+    it('should NOT detect downgrade for upgrade from Starter to Agency', () => {
+      const isDowngrade = isDowngradeByTier('starter', 500);
       expect(isDowngrade).toBe(false);
     });
 
-    it('should NOT detect downgrade for upgrade from Hobby to Professional', () => {
-      const isDowngrade = isDowngradeByTier('hobby', 1000);
+    it('should NOT detect downgrade for upgrade from Growth to Agency', () => {
+      const isDowngrade = isDowngradeByTier('growth', 500);
       expect(isDowngrade).toBe(false);
     });
 
     it('should NOT detect downgrade for same tier change', () => {
-      const isDowngrade = isDowngradeByTier('pro', 1000);
+      const isDowngrade = isDowngradeByTier('growth', 100);
       expect(isDowngrade).toBe(false);
     });
 
     it('should handle null/unknown tier gracefully', () => {
-      const isDowngrade = isDowngradeByTier(null, 1000);
+      const isDowngrade = isDowngradeByTier(null, 100);
       expect(isDowngrade).toBe(false);
     });
 
     it('should handle unknown tier string gracefully', () => {
-      const isDowngrade = isDowngradeByTier('unknown_tier', 1000);
+      const isDowngrade = isDowngradeByTier('unknown_tier', 100);
       expect(isDowngrade).toBe(false);
     });
   });
@@ -130,16 +111,16 @@ describe('Subscription Change Fixes', () => {
      * we should sync DB to match Stripe (source of truth)
      */
     it('should identify when sync is needed', () => {
-      const dbPriceId = 'price_old_business_legacy';
-      const stripePriceId = 'price_business';
+      const dbPriceId = 'price_old_agency_legacy';
+      const stripePriceId = 'price_agency';
 
       const needsSync = dbPriceId !== stripePriceId;
       expect(needsSync).toBe(true);
     });
 
     it('should NOT sync when prices match', () => {
-      const dbPriceId = 'price_business';
-      const stripePriceId = 'price_business';
+      const dbPriceId = 'price_agency';
+      const stripePriceId = 'price_agency';
 
       const needsSync = dbPriceId !== stripePriceId;
       expect(needsSync).toBe(false);
@@ -147,7 +128,7 @@ describe('Subscription Change Fixes', () => {
 
     it('should handle undefined DB price_id', () => {
       const dbPriceId = undefined;
-      const stripePriceId = 'price_business';
+      const stripePriceId = 'price_agency';
 
       const needsSync = dbPriceId !== stripePriceId;
       expect(needsSync).toBe(true);
@@ -166,7 +147,7 @@ describe('Subscription Change Fixes', () => {
           {
             start_date: 1704067200, // Unix timestamp
             end_date: null,
-            items: [{ price: 'price_pro', quantity: 1 }],
+            items: [{ price: 'price_growth', quantity: 1 }],
           },
         ],
       };
@@ -189,8 +170,8 @@ describe('Subscription Change Fixes', () => {
     it('should create valid phase update structure', () => {
       const existingPhaseStartDate = 1704067200;
       const periodEnd = 1706745600;
-      const currentPriceId = 'price_pro';
-      const targetPriceId = 'price_hobby';
+      const currentPriceId = 'price_growth';
+      const targetPriceId = 'price_starter';
 
       const phases = [
         {
@@ -216,7 +197,7 @@ describe('Subscription Change Fixes', () => {
 
   describe('Scheduled Downgrade Database Updates', () => {
     it('should create correct scheduled change data', () => {
-      const targetPriceId = 'price_hobby';
+      const targetPriceId = 'price_starter';
       const periodEnd = 1706745600; // Unix timestamp
 
       const updateData = {
@@ -225,13 +206,13 @@ describe('Subscription Change Fixes', () => {
         updated_at: new Date().toISOString(),
       };
 
-      expect(updateData.scheduled_price_id).toBe('price_hobby');
+      expect(updateData.scheduled_price_id).toBe('price_starter');
       expect(updateData.scheduled_change_date).toContain('2024-02'); // Feb 2024
     });
 
     it('should clear scheduled change data on upgrade', () => {
       const updateData = {
-        price_id: 'price_business',
+        price_id: 'price_agency',
         updated_at: new Date().toISOString(),
         scheduled_price_id: null,
         scheduled_change_date: null,
@@ -252,14 +233,14 @@ describe('Subscription Change Fixes', () => {
           period_end: '2024-02-01T00:00:00.000Z',
         },
         current_plan: {
-          name: 'Professional',
-          price_id: 'price_pro',
-          credits_per_month: 1000,
+          name: 'Growth',
+          price_id: 'price_growth',
+          credits_per_month: 100,
         },
         new_plan: {
-          name: 'Business',
-          price_id: 'price_business',
-          credits_per_month: 5000,
+          name: 'Agency',
+          price_id: 'price_agency',
+          credits_per_month: 500,
         },
         effective_immediately: true,
         is_downgrade: false,
@@ -281,14 +262,14 @@ describe('Subscription Change Fixes', () => {
           period_end: effectiveDate,
         },
         current_plan: {
-          name: 'Business',
-          price_id: 'price_business',
-          credits_per_month: 5000,
+          name: 'Agency',
+          price_id: 'price_agency',
+          credits_per_month: 500,
         },
         new_plan: {
-          name: 'Professional',
-          price_id: 'price_pro',
-          credits_per_month: 1000,
+          name: 'Growth',
+          price_id: 'price_growth',
+          credits_per_month: 100,
         },
         effective_immediately: false,
         effective_date: effectiveDate,

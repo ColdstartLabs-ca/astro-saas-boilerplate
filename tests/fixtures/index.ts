@@ -54,3 +54,6 @@ export const mockUpscaleErrorResponses = {
     code: 'FILE_TOO_LARGE',
   },
 };
+
+// Plan fixtures for centralized plan configuration in tests
+export * from './plan-fixtures.js';

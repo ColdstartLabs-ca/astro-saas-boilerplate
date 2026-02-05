@@ -53,9 +53,8 @@ interface ILegacySubscriptionPlan {
 export const STRIPE_PRICES = buildStripePrices() as {
   // Subscription plans
   STARTER_MONTHLY: string;
-  HOBBY_MONTHLY: string;
-  PRO_MONTHLY: string;
-  BUSINESS_MONTHLY: string;
+  GROWTH_MONTHLY: string;
+  AGENCY_MONTHLY: string;
   // Credit packs
   SMALL_CREDITS: string;
   MEDIUM_CREDITS: string;
@@ -111,7 +110,7 @@ export const SUBSCRIPTION_PLANS = buildSubscriptionPlans() as {
     features: readonly string[];
     recommended?: boolean;
   };
-  HOBBY_MONTHLY: {
+  GROWTH_MONTHLY: {
     name: string;
     description: string;
     price: number;
@@ -122,18 +121,7 @@ export const SUBSCRIPTION_PLANS = buildSubscriptionPlans() as {
     features: readonly string[];
     recommended?: boolean;
   };
-  PRO_MONTHLY: {
-    name: string;
-    description: string;
-    price: number;
-    interval: 'month' | 'year';
-    creditsPerMonth: number;
-    maxRollover: number;
-    key: string;
-    features: readonly string[];
-    recommended?: boolean;
-  };
-  BUSINESS_MONTHLY: {
+  AGENCY_MONTHLY: {
     name: string;
     description: string;
     price: number;
@@ -384,16 +372,12 @@ export function getPlanDisplayName(
       case 'starter':
       case 'starter_monthly':
         return `${SUBSCRIPTION_PLANS.STARTER_MONTHLY.name} Plan`;
-      case 'hobby':
-      case 'hobby_monthly':
-        return `${SUBSCRIPTION_PLANS.HOBBY_MONTHLY.name} Plan`;
-      case 'pro':
-      case 'professional':
-      case 'pro_monthly':
-        return `${SUBSCRIPTION_PLANS.PRO_MONTHLY.name} Plan`;
-      case 'business':
-      case 'business_monthly':
-        return `${SUBSCRIPTION_PLANS.BUSINESS_MONTHLY.name} Plan`;
+      case 'growth':
+      case 'growth_monthly':
+        return `${SUBSCRIPTION_PLANS.GROWTH_MONTHLY.name} Plan`;
+      case 'agency':
+      case 'agency_monthly':
+        return `${SUBSCRIPTION_PLANS.AGENCY_MONTHLY.name} Plan`;
       default:
         // If input already contains "plan" (case insensitive), return as-is
         if (input.toLowerCase().includes('plan')) {
@@ -417,13 +401,10 @@ export function getPlanDisplayName(
   switch (subscriptionTier.toLowerCase()) {
     case 'starter':
       return `${SUBSCRIPTION_PLANS.STARTER_MONTHLY.name} Plan`;
-    case 'hobby':
-      return `${SUBSCRIPTION_PLANS.HOBBY_MONTHLY.name} Plan`;
-    case 'pro':
-    case 'professional':
-      return `${SUBSCRIPTION_PLANS.PRO_MONTHLY.name} Plan`;
-    case 'business':
-      return `${SUBSCRIPTION_PLANS.BUSINESS_MONTHLY.name} Plan`;
+    case 'growth':
+      return `${SUBSCRIPTION_PLANS.GROWTH_MONTHLY.name} Plan`;
+    case 'agency':
+      return `${SUBSCRIPTION_PLANS.AGENCY_MONTHLY.name} Plan`;
   }
 
   // If subscriptionTier didn't match known plans, try priceId lookup

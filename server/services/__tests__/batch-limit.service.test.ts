@@ -18,22 +18,22 @@ describe('batch-limit.service', () => {
     });
 
     test('should allow requests within limit for paid users', async () => {
-      // Test hobby user (10 limit)
-      let result = await batchLimitCheck.checkAndIncrement('user456', 'hobby');
+      // Test starter user (5 limit)
+      let result = await batchLimitCheck.checkAndIncrement('user456', 'starter');
       expect(result.allowed).toBe(true);
-      expect(result.limit).toBe(10);
+      expect(result.limit).toBe(5);
       expect(result.current).toBe(0);
 
-      // Test pro user (50 limit)
-      result = await batchLimitCheck.checkAndIncrement('user789', 'pro');
+      // Test growth user (25 limit)
+      result = await batchLimitCheck.checkAndIncrement('user789', 'growth');
       expect(result.allowed).toBe(true);
-      expect(result.limit).toBe(50);
+      expect(result.limit).toBe(25);
       expect(result.current).toBe(0);
 
-      // Test business user (500 limit)
-      result = await batchLimitCheck.checkAndIncrement('user101112', 'business');
+      // Test agency user (100 limit)
+      result = await batchLimitCheck.checkAndIncrement('user101112', 'agency');
       expect(result.allowed).toBe(true);
-      expect(result.limit).toBe(500);
+      expect(result.limit).toBe(100);
       expect(result.current).toBe(0);
     });
 
@@ -94,29 +94,29 @@ describe('batch-limit.service', () => {
     test('should return correct usage for new user', async () => {
       const userId = 'usage-new-user';
 
-      const usage = await batchLimitCheck.getUsage(userId, 'hobby');
+      const usage = await batchLimitCheck.getUsage(userId, 'starter');
 
       expect(usage.current).toBe(0);
-      expect(usage.limit).toBe(10);
-      expect(usage.remaining).toBe(10);
+      expect(usage.limit).toBe(5);
+      expect(usage.remaining).toBe(5);
       expect(usage.resetAt).toBeInstanceOf(Date);
     });
 
     test('should return correct usage for different tiers', async () => {
-      // Test hobby user (10 limit)
-      const hobbyUsage = await batchLimitCheck.getUsage('user-hobby', 'hobby');
-      expect(hobbyUsage.limit).toBe(10);
-      expect(hobbyUsage.remaining).toBe(10);
+      // Test starter user (5 limit)
+      const starterUsage = await batchLimitCheck.getUsage('user-starter', 'starter');
+      expect(starterUsage.limit).toBe(5);
+      expect(starterUsage.remaining).toBe(5);
 
-      // Test pro user (50 limit)
-      const proUsage = await batchLimitCheck.getUsage('user-pro', 'pro');
-      expect(proUsage.limit).toBe(50);
-      expect(proUsage.remaining).toBe(50);
+      // Test growth user (25 limit)
+      const growthUsage = await batchLimitCheck.getUsage('user-growth', 'growth');
+      expect(growthUsage.limit).toBe(25);
+      expect(growthUsage.remaining).toBe(25);
 
-      // Test business user (500 limit)
-      const businessUsage = await batchLimitCheck.getUsage('user-business', 'business');
-      expect(businessUsage.limit).toBe(500);
-      expect(businessUsage.remaining).toBe(500);
+      // Test agency user (100 limit)
+      const agencyUsage = await batchLimitCheck.getUsage('user-agency', 'agency');
+      expect(agencyUsage.limit).toBe(100);
+      expect(agencyUsage.remaining).toBe(100);
 
       // Test free user (1 limit)
       const freeUsage = await batchLimitCheck.getUsage('user-free', null);
@@ -147,7 +147,7 @@ describe('batch-limit.service', () => {
       const userId = 'reset-usage-user';
       const now = Date.now();
 
-      const usage = await batchLimitCheck.getUsage(userId, 'hobby');
+      const usage = await batchLimitCheck.getUsage(userId, 'starter');
 
       // Reset time should be approximately 1 hour from now
       const resetTime = usage.resetAt.getTime();
@@ -166,9 +166,9 @@ describe('batch-limit.service', () => {
       const user3 = 'multi-user-3';
 
       // Check each user independently
-      const result1 = await batchLimitCheck.checkAndIncrement(user1, 'pro');
-      const result2 = await batchLimitCheck.checkAndIncrement(user2, 'pro');
-      const result3 = await batchLimitCheck.checkAndIncrement(user3, 'pro');
+      const result1 = await batchLimitCheck.checkAndIncrement(user1, 'growth');
+      const result2 = await batchLimitCheck.checkAndIncrement(user2, 'growth');
+      const result3 = await batchLimitCheck.checkAndIncrement(user3, 'growth');
 
       expect(result1.allowed).toBe(true);
       expect(result1.current).toBe(0);
@@ -187,11 +187,11 @@ describe('batch-limit.service', () => {
 
       // Rapidly call checkAndIncrement
       const results = await Promise.all(
-        Array.from({ length: 20 }, () => batchLimitCheck.checkAndIncrement(userId, 'hobby'))
+        Array.from({ length: 20 }, () => batchLimitCheck.checkAndIncrement(userId, 'starter'))
       );
 
       // All should be allowed in test environment
-      results.forEach((result) => {
+      results.forEach(result => {
         expect(result.allowed).toBe(true);
         expect(result.current).toBe(0);
       });
@@ -201,13 +201,13 @@ describe('batch-limit.service', () => {
       const userId = 'integrity-user';
 
       // Mix operations
-      await batchLimitCheck.checkAndIncrement(userId, 'pro');
-      await batchLimitCheck.getUsage(userId, 'pro');
-      await batchLimitCheck.checkAndIncrement(userId, 'pro');
+      await batchLimitCheck.checkAndIncrement(userId, 'growth');
+      await batchLimitCheck.getUsage(userId, 'growth');
+      await batchLimitCheck.checkAndIncrement(userId, 'growth');
 
-      const usage = await batchLimitCheck.getUsage(userId, 'pro');
+      const usage = await batchLimitCheck.getUsage(userId, 'growth');
       expect(usage.current).toBe(0);
-      expect(usage.remaining).toBe(50);
+      expect(usage.remaining).toBe(25);
     });
   });
 });

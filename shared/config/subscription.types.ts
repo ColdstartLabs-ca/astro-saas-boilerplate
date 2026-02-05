@@ -49,7 +49,7 @@ export interface ICreditsExpirationConfig {
  * Individual plan configuration
  */
 export interface IPlanConfig {
-  /** Unique plan identifier (e.g., 'hobby', 'pro', 'business') */
+  /** Unique plan identifier (e.g., 'starter', 'growth', 'agency') */
   key: string;
   /** Display name for UI */
   name: string;

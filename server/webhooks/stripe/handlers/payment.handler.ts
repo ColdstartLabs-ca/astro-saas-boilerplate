@@ -42,7 +42,7 @@ export class PaymentHandler {
             console.log('Test subscription detected, using mock data');
 
             // For test subscriptions, add credits based on session metadata or a default
-            const testPriceId = 'price_1SZmVzALMLhQocpfPyRX2W8D'; // Default to PRO_MONTHLY for testing
+            const testPriceId = 'price_1SxZp7K2K0pPNfoSMt94q8kP'; // Default to STARTER_MONTHLY for testing
             let plan;
             try {
               const resolved = assertKnownPriceId(testPriceId);

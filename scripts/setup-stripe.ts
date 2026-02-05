@@ -1,12 +1,12 @@
 #!/usr/bin/env npx tsx
 /**
- * Stripe Setup Script for MyImageUpscaler
+ * Stripe Setup Script for AutopilotRank
  *
  * Automatically creates all necessary Stripe products, prices, and billing portal
- * configuration for the MyImageUpscaler application.
+ * configuration for the AutopilotRank application.
  *
  * This script:
- * - Creates subscription products (Hobby, Professional, Business)
+ * - Creates subscription products (Starter, Growth, Agency)
  * - Creates credit pack products (Small, Medium, Large)
  * - Sets up the billing portal configuration
  * - Reuses existing products with matching metadata to avoid duplicates
@@ -54,38 +54,38 @@ interface ICreatedProduct {
 // Product definitions matching subscription.config.ts
 const SUBSCRIPTION_PRODUCTS: IProductDefinition[] = [
   {
-    key: 'hobby',
-    name: 'Hobby',
-    description: '200 credits per month - For personal projects',
-    priceInCents: 1900, // $19.00
-    type: 'subscription',
-    metadata: {
-      tier: 'hobby',
-      credits_per_cycle: '200',
-      product_type: 'subscription',
-    },
-  },
-  {
-    key: 'pro',
-    name: 'Professional',
-    description: '1000 credits per month - For professionals',
+    key: 'starter',
+    name: 'Starter',
+    description: '30 articles per month - Perfect for getting started with SEO content',
     priceInCents: 4900, // $49.00
     type: 'subscription',
     metadata: {
-      tier: 'pro',
-      credits_per_cycle: '1000',
+      tier: 'starter',
+      credits_per_cycle: '30',
       product_type: 'subscription',
     },
   },
   {
-    key: 'business',
-    name: 'Business',
-    description: '5000 credits per month - For teams and agencies',
-    priceInCents: 14900, // $149.00
+    key: 'growth',
+    name: 'Growth',
+    description: '100 articles per month - For growing content teams',
+    priceInCents: 9900, // $99.00
     type: 'subscription',
     metadata: {
-      tier: 'business',
-      credits_per_cycle: '5000',
+      tier: 'growth',
+      credits_per_cycle: '100',
+      product_type: 'subscription',
+    },
+  },
+  {
+    key: 'agency',
+    name: 'Agency',
+    description: '500 articles per month - For agencies and large teams',
+    priceInCents: 24900, // $249.00
+    type: 'subscription',
+    metadata: {
+      tier: 'agency',
+      credits_per_cycle: '500',
       product_type: 'subscription',
     },
   },
@@ -95,36 +95,36 @@ const CREDIT_PACK_PRODUCTS: IProductDefinition[] = [
   {
     key: 'small',
     name: 'Small Credit Pack',
-    description: '50 credits - Perfect for occasional use',
-    priceInCents: 499, // $4.99
+    description: '10 articles - Perfect for occasional use',
+    priceInCents: 999, // $9.99
     type: 'one_time',
     metadata: {
       pack_key: 'small',
-      credits: '50',
+      credits: '10',
       product_type: 'credit_pack',
     },
   },
   {
     key: 'medium',
     name: 'Medium Credit Pack',
-    description: '200 credits - Best value for one-time purchases',
-    priceInCents: 1499, // $14.99
+    description: '25 articles - Best value for one-time purchases',
+    priceInCents: 1999, // $19.99
     type: 'one_time',
     metadata: {
       pack_key: 'medium',
-      credits: '200',
+      credits: '25',
       product_type: 'credit_pack',
     },
   },
   {
     key: 'large',
     name: 'Large Credit Pack',
-    description: '600 credits - For larger projects',
-    priceInCents: 3999, // $39.99
+    description: '50 articles - For larger projects',
+    priceInCents: 3499, // $34.99
     type: 'one_time',
     metadata: {
       pack_key: 'large',
-      credits: '600',
+      credits: '50',
       product_type: 'credit_pack',
     },
   },
@@ -465,7 +465,7 @@ class StripeSetup {
       // Create new billing portal configuration
       const config = await this.stripe.billingPortal.configurations.create({
         business_profile: {
-          headline: 'Manage your MyImageUpscaler subscription',
+          headline: 'Manage your AutopilotRank subscription',
         },
         features: {
           customer_update: {

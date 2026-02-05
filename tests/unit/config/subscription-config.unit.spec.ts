@@ -50,7 +50,6 @@ describe('Subscription Configuration', () => {
       expect(config.creditCosts.modes.basic).toBeGreaterThan(0);
       expect(config.creditCosts.modes.premium).toBeGreaterThan(0);
       expect(config.creditCosts.modes.enterprise).toBeGreaterThan(0);
-      // Note: enterprise is 5 credits (premium tier)
     });
 
     test('minimumCost <= maximumCost', () => {
@@ -60,11 +59,11 @@ describe('Subscription Configuration', () => {
   });
 
   describe('Plan Lookup Functions', () => {
-    test('getPlanByPriceId returns correct plan', () => {
-      const plan = getPlanByPriceId('price_1SZmVzALMLhQocpfPyRX2W8D');
+    test('getPlanByPriceId returns correct plan for Starter', () => {
+      const plan = getPlanByPriceId('price_1SxZp7K2K0pPNfoSMt94q8kP');
       expect(plan).toBeDefined();
-      expect(plan?.key).toBe('pro');
-      expect(plan?.name).toBe('Professional');
+      expect(plan?.key).toBe('starter');
+      expect(plan?.name).toBe('Starter');
     });
 
     test('getPlanByPriceId returns null for invalid price ID', () => {
@@ -72,11 +71,11 @@ describe('Subscription Configuration', () => {
       expect(plan).toBeNull();
     });
 
-    test('getPlanByKey returns correct plan', () => {
-      const plan = getPlanByKey('hobby');
+    test('getPlanByKey returns correct plan for Starter', () => {
+      const plan = getPlanByKey('starter');
       expect(plan).toBeDefined();
-      expect(plan?.stripePriceId).toBe('price_1SZmVyALMLhQocpf0H7n5ls8');
-      expect(plan?.creditsPerCycle).toBe(200);
+      expect(plan?.stripePriceId).toBe('price_1SxZp7K2K0pPNfoSMt94q8kP');
+      expect(plan?.creditsPerCycle).toBe(30);
     });
 
     test('getPlanByKey returns null for invalid key', () => {
@@ -100,7 +99,7 @@ describe('Subscription Configuration', () => {
       const plan = getRecommendedPlan();
       expect(plan).toBeDefined();
       expect(plan?.recommended).toBe(true);
-      expect(plan?.key).toBe('pro'); // Pro is marked as recommended
+      expect(plan?.key).toBe('growth'); // Growth is marked as recommended
     });
   });
 
@@ -117,12 +116,12 @@ describe('Subscription Configuration', () => {
 
     test('calculateCreditCost for premium mode', () => {
       const cost = calculateCreditCost({ mode: 'premium' });
-      expect(cost).toBe(2);
+      expect(cost).toBe(1); // Changed to 1 in new pricing model
     });
 
     test('calculateCreditCost for enterprise mode', () => {
       const cost = calculateCreditCost({ mode: 'enterprise' });
-      expect(cost).toBe(5);
+      expect(cost).toBe(1); // Changed to 1 in new pricing model
     });
 
     test('calculateCreditCost respects minimum cost', () => {
@@ -133,47 +132,47 @@ describe('Subscription Configuration', () => {
     test('getCreditCostForMode returns correct costs', () => {
       expect(getCreditCostForMode('api')).toBe(1);
       expect(getCreditCostForMode('basic')).toBe(1);
-      expect(getCreditCostForMode('premium')).toBe(2);
-      expect(getCreditCostForMode('enterprise')).toBe(5);
+      expect(getCreditCostForMode('premium')).toBe(1); // Changed to 1
+      expect(getCreditCostForMode('enterprise')).toBe(1); // Changed to 1
     });
   });
 
   describe('Free User & Warnings', () => {
     test('getFreeUserCredits returns initial credits', () => {
       const credits = getFreeUserCredits();
-      expect(credits).toBe(10);
+      expect(credits).toBe(3); // Changed from 10 to 3 for new pricing
     });
 
     test('getLowCreditThreshold returns warning threshold', () => {
       const threshold = getLowCreditThreshold();
-      expect(threshold).toBe(5);
+      expect(threshold).toBe(2); // Changed from 5 to 2
     });
   });
 
   describe('Plan Configuration Values', () => {
-    test('hobby plan has correct values', () => {
-      const plan = getPlanByKey('hobby');
-      expect(plan?.creditsPerCycle).toBe(200);
+    test('starter plan has correct values', () => {
+      const plan = getPlanByKey('starter');
+      expect(plan?.creditsPerCycle).toBe(30);
       expect(plan?.maxRollover).toBeDefined();
-      expect(plan?.rolloverMultiplier).toBe(6);
-      expect(plan?.priceInCents).toBe(1900);
+      expect(plan?.rolloverMultiplier).toBe(3); // Changed from 6 to 3
+      expect(plan?.priceInCents).toBe(4900);
     });
 
-    test('pro plan has correct values', () => {
-      const plan = getPlanByKey('pro');
-      expect(plan?.creditsPerCycle).toBe(1000);
+    test('growth plan has correct values', () => {
+      const plan = getPlanByKey('growth');
+      expect(plan?.creditsPerCycle).toBe(100);
       expect(plan?.maxRollover).toBeDefined();
-      expect(plan?.rolloverMultiplier).toBe(6);
-      expect(plan?.priceInCents).toBe(4900);
+      expect(plan?.rolloverMultiplier).toBe(3); // Changed from 6 to 3
+      expect(plan?.priceInCents).toBe(9900);
       expect(plan?.recommended).toBe(true);
     });
 
-    test('business plan has correct values', () => {
-      const plan = getPlanByKey('business');
-      expect(plan?.creditsPerCycle).toBe(5000);
-      expect(plan?.maxRollover).toBe(0); // No rollover for business (like Let's Enhance)
+    test('agency plan has correct values', () => {
+      const plan = getPlanByKey('agency');
+      expect(plan?.creditsPerCycle).toBe(500);
+      expect(plan?.maxRollover).toBe(0); // No rollover for agency
       expect(plan?.rolloverMultiplier).toBe(0);
-      expect(plan?.priceInCents).toBe(14900);
+      expect(plan?.priceInCents).toBe(24900);
     });
   });
 
@@ -200,7 +199,7 @@ describe('Subscription Configuration', () => {
 
   describe('Credits Expiration Functions', () => {
     test('getExpirationConfig returns config for valid price ID', () => {
-      const config = getExpirationConfig('price_1SZmVzALMLhQocpfPyRX2W8D');
+      const config = getExpirationConfig('price_1SxZp9K2K0pPNfoSeOwSLmcp'); // Growth plan
       expect(config).toBeDefined();
       expect(config?.mode).toBeDefined();
       expect(['never', 'end_of_cycle', 'rolling_window']).toContain(config?.mode);
@@ -212,74 +211,74 @@ describe('Subscription Configuration', () => {
     });
 
     test('creditsExpireForPlan returns correct value based on mode', () => {
-      const expires = creditsExpireForPlan('price_1SZmVzALMLhQocpfPyRX2W8D');
+      const expires = creditsExpireForPlan('price_1SxZp9K2K0pPNfoSeOwSLmcp'); // Growth plan
       expect(typeof expires).toBe('boolean');
     });
 
     test('calculateBalanceWithExpiration - never mode with rollover', () => {
       const result = calculateBalanceWithExpiration({
-        currentBalance: 150,
-        newCredits: 200,
+        currentBalance: 50,
+        newCredits: 30,
         expirationMode: 'never',
-        maxRollover: 1200,
+        maxRollover: 90,
       });
 
-      expect(result.newBalance).toBe(350); // 150 + 200
+      expect(result.newBalance).toBe(80); // 50 + 30
       expect(result.expiredAmount).toBe(0);
     });
 
     test('calculateBalanceWithExpiration - never mode with rollover cap', () => {
       const result = calculateBalanceWithExpiration({
-        currentBalance: 1100,
-        newCredits: 200,
+        currentBalance: 80,
+        newCredits: 30,
         expirationMode: 'never',
-        maxRollover: 1200,
+        maxRollover: 90,
       });
 
-      expect(result.newBalance).toBe(1200); // Capped at max
+      expect(result.newBalance).toBe(90); // Capped at max
       expect(result.expiredAmount).toBe(0);
     });
 
     test('calculateBalanceWithExpiration - end_of_cycle mode expires all', () => {
       const result = calculateBalanceWithExpiration({
-        currentBalance: 150,
-        newCredits: 200,
+        currentBalance: 50,
+        newCredits: 30,
         expirationMode: 'end_of_cycle',
         maxRollover: null,
       });
 
-      expect(result.newBalance).toBe(200); // Fresh allocation
-      expect(result.expiredAmount).toBe(150); // All old credits expired
+      expect(result.newBalance).toBe(30); // Fresh allocation
+      expect(result.expiredAmount).toBe(50); // All old credits expired
     });
 
     test('calculateBalanceWithExpiration - rolling_window mode expires all', () => {
       const result = calculateBalanceWithExpiration({
-        currentBalance: 75,
-        newCredits: 200,
+        currentBalance: 25,
+        newCredits: 30,
         expirationMode: 'rolling_window',
         maxRollover: null,
       });
 
-      expect(result.newBalance).toBe(200); // Fresh allocation
-      expect(result.expiredAmount).toBe(75); // All old credits expired
+      expect(result.newBalance).toBe(30); // Fresh allocation
+      expect(result.expiredAmount).toBe(25); // All old credits expired
     });
 
     test('calculateBalanceWithExpiration - end_of_cycle with zero balance', () => {
       const result = calculateBalanceWithExpiration({
         currentBalance: 0,
-        newCredits: 200,
+        newCredits: 30,
         expirationMode: 'end_of_cycle',
         maxRollover: null,
       });
 
-      expect(result.newBalance).toBe(200);
+      expect(result.newBalance).toBe(30);
       expect(result.expiredAmount).toBe(0); // Nothing to expire
     });
 
     test('shouldSendExpirationWarning returns correct value based on config', () => {
-      const plan = getPlanByPriceId('price_1SZmVzALMLhQocpfPyRX2W8D');
+      const plan = getPlanByPriceId('price_1SxZp9K2K0pPNfoSeOwSLmcp'); // Growth plan
       const should = shouldSendExpirationWarning({
-        priceId: 'price_1SZmVzALMLhQocpfPyRX2W8D',
+        priceId: 'price_1SxZp9K2K0pPNfoSeOwSLmcp',
         daysUntilExpiration: 3,
       });
 
@@ -302,18 +301,18 @@ describe('Subscription Configuration', () => {
     });
 
     test('shouldSendExpirationWarning checks warning configuration', () => {
-      const plan = getPlanByPriceId('price_1SZmVzALMLhQocpfPyRX2W8D');
+      const plan = getPlanByPriceId('price_1SxZp9K2K0pPNfoSeOwSLmcp'); // Growth plan
       const warningDays = plan?.creditsExpiration.warningDaysBefore || 0;
 
       // Test within warning window
       const shouldWarn = shouldSendExpirationWarning({
-        priceId: 'price_1SZmVzALMLhQocpfPyRX2W8D',
+        priceId: 'price_1SxZp9K2K0pPNfoSeOwSLmcp',
         daysUntilExpiration: warningDays - 1,
       });
 
       // Test outside warning window
       const shouldNotWarn = shouldSendExpirationWarning({
-        priceId: 'price_1SZmVzALMLhQocpfPyRX2W8D',
+        priceId: 'price_1SxZp9K2K0pPNfoSeOwSLmcp',
         daysUntilExpiration: warningDays + 1,
       });
 
