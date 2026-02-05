@@ -63,7 +63,7 @@ export const NavBar = (): JSX.Element => {
             alt={clientEnv.APP_NAME}
             width={100}
             height={40}
-            className="xs:hidden h-8 w-auto drop-shadow-[0_2px_8px_rgba(59,130,246,0.3)]"
+            className="xs:hidden h-8 w-auto drop-shadow-[0_2px_8px_rgba(34,197,94,0.3)]"
             priority
           />
           {/* Full logo for desktop */}
@@ -72,7 +72,7 @@ export const NavBar = (): JSX.Element => {
             alt={clientEnv.APP_NAME}
             width={200}
             height={40}
-            className="hidden xs:block h-10 w-auto drop-shadow-[0_2px_8px_rgba(59,130,246,0.3)]"
+            className="hidden xs:block h-10 w-auto drop-shadow-[0_2px_8px_rgba(34,197,94,0.3)]"
             priority
           />
         </Link>

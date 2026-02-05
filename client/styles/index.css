@@ -5,35 +5,35 @@
 @layer base {
   :root {
     /* === UPDATED BACKGROUND COLORS === */
-    --color-bg-base: 10 10 31;
-    /* #0A0A1F - darker, richer */
-    --color-bg-surface: 18 18 43;
-    /* #12122B */
-    --color-bg-surface-light: 26 26 62;
-    /* #1A1A3E */
-    --color-bg-elevated: 34 34 85;
-    /* #222255 */
+    --color-bg-base: 2 6 23;
+    /* #020617 - slate-950 (from UI_TEMPLATE) */
+    --color-bg-surface: 15 23 42;
+    /* #0f172a - slate-900 */
+    --color-bg-surface-light: 30 41 59;
+    /* #1e293b - slate-800 */
+    --color-bg-elevated: 51 65 85;
+    /* #334155 - slate-700 */
 
-    /* === DUAL ACCENT SYSTEM === */
-    /* Primary: Blue */
-    --color-accent: 59 130 246;
-    /* #3B82F6 */
-    --color-accent-hover: 96 165 250;
-    /* #60A5FA */
-    --color-accent-light: 147 197 253;
-    /* #93C5FD */
+    /* === GREEN ACCENT SYSTEM (from UI_TEMPLATE) === */
+    /* Primary: Green */
+    --color-accent: 34 197 94;
+    /* #22c55e - brand-500 */
+    --color-accent-hover: 74 222 128;
+    /* #4ade80 - brand-400 */
+    --color-accent-light: 134 239 172;
+    /* #86efac - brand-300 */
 
-    /* Secondary: Violet */
-    --color-secondary: 139 92 246;
-    /* #8B5CF6 */
-    --color-secondary-hover: 167 139 250;
-    /* #A78BFA */
-    --color-secondary-light: 196 181 253;
-    /* #C4B5FD */
+    /* Secondary: Lighter Green */
+    --color-secondary: 22 163 74;
+    /* #16a34a - brand-600 */
+    --color-secondary-hover: 21 128 61;
+    /* #15803d - brand-700 */
+    --color-secondary-light: 187 247 208;
+    /* #bbf7d0 - brand-200 */
 
-    /* Tertiary: Teal (for gradients) */
-    --color-tertiary: 20 184 166;
-    /* #14B8A6 */
+    /* Tertiary: Darker Green (for gradients) */
+    --color-tertiary: 22 163 74;
+    /* #16a34a - brand-600 */
 
     /* === TEXT COLORS === */
     --color-text-primary: 255 255 255;
@@ -153,11 +153,11 @@
 
   .glass-card-2025:hover {
     background: rgba(255, 255, 255, 0.05);
-    border-color: rgba(139, 92, 246, 0.3);
+    border-color: rgba(34, 197, 94, 0.3);
     transform: translateY(-4px);
     box-shadow:
       0 20px 40px rgba(0, 0, 0, 0.2),
-      0 0 40px rgba(139, 92, 246, 0.1);
+      0 0 40px rgba(34, 197, 94, 0.1);
   }
 
   .glass-dropdown {
@@ -171,24 +171,24 @@
   }
 
   /* === GRADIENT CTA BUTTON === */
-  /* Updated to match logo colors: blue to teal/cyan */
+  /* Green theme from UI_TEMPLATE */
   .gradient-cta {
     background: linear-gradient(
       135deg,
       rgb(var(--color-accent)) 0%,
-      rgb(var(--color-tertiary)) 100%
+      rgb(var(--color-secondary)) 100%
     );
     box-shadow:
-      0 4px 20px rgba(59, 130, 246, 0.3),
-      0 4px 20px rgba(20, 184, 166, 0.2);
+      0 4px 20px rgba(34, 197, 94, 0.3),
+      0 4px 20px rgba(22, 163, 74, 0.2);
     transition: all 0.3s ease;
   }
 
   .gradient-cta:hover {
-    background: linear-gradient(135deg, rgb(var(--color-accent-hover)) 0%, rgb(20, 200, 180) 100%);
+    background: linear-gradient(135deg, rgb(var(--color-accent-hover)) 0%, rgb(var(--color-secondary-hover)) 100%);
     box-shadow:
-      0 8px 30px rgba(59, 130, 246, 0.4),
-      0 8px 30px rgba(20, 184, 166, 0.3);
+      0 8px 30px rgba(34, 197, 94, 0.4),
+      0 8px 30px rgba(22, 163, 74, 0.3);
     transform: translateY(-2px);
   }
 
@@ -197,15 +197,34 @@
   }
 
   /* === GRADIENT TEXT === */
+  /* Exact match for UI_TEMPLATE gradient-text class */
+  .gradient-text {
+    background: linear-gradient(to right, #4ade80, #22c55e, #16a34a);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-size: 200% auto;
+    animation: shine 4s linear infinite;
+  }
+
+  @keyframes shine {
+    to {
+      background-position: 200% center;
+    }
+  }
+
   .gradient-text-primary {
     background: linear-gradient(
-      135deg,
-      rgb(var(--color-accent-light)) 0%,
-      rgb(var(--color-tertiary)) 100%
+      to right,
+      rgb(74, 222, 128),
+      rgb(34, 197, 94),
+      rgb(22, 163, 74)
     );
     -webkit-background-clip: text;
     background-clip: text;
     -webkit-text-fill-color: transparent;
+    background-size: 200% auto;
+    animation: shine 4s linear infinite;
   }
 
   .gradient-text-secondary {
@@ -229,31 +248,31 @@
     will-change: transform;
   }
 
-  .ambient-orb-violet {
-    background: rgba(139, 92, 246, 0.25);
+  .ambient-orb-green {
+    background: rgba(34, 197, 94, 0.25);
   }
 
-  .ambient-orb-blue {
-    background: rgba(59, 130, 246, 0.2);
+  .ambient-orb-green-light {
+    background: rgba(74, 222, 128, 0.2);
   }
 
-  .ambient-orb-teal {
-    background: rgba(20, 184, 166, 0.18);
+  .ambient-orb-green-dark {
+    background: rgba(22, 163, 74, 0.18);
   }
 
   /* === HERO GRADIENT 2025 === */
   .hero-gradient-2025 {
     background:
-      radial-gradient(circle at 20% 0%, rgba(59, 130, 246, 0.05) 0%, transparent 50%),
-      radial-gradient(circle at 80% 0%, rgba(139, 92, 246, 0.05) 0%, transparent 50%),
+      radial-gradient(circle at 20% 0%, rgba(34, 197, 94, 0.05) 0%, transparent 50%),
+      radial-gradient(circle at 80% 0%, rgba(74, 222, 128, 0.05) 0%, transparent 50%),
       rgb(var(--color-bg-base));
     position: relative;
   }
 
   .hero-gradient {
     background:
-      radial-gradient(ellipse at top, rgba(45, 129, 255, 0.15) 0%, transparent 50%),
-      radial-gradient(ellipse at bottom right, rgba(6, 182, 212, 0.1) 0%, transparent 50%),
+      radial-gradient(ellipse at top, rgba(34, 197, 94, 0.15) 0%, transparent 50%),
+      radial-gradient(ellipse at bottom right, rgba(22, 163, 74, 0.1) 0%, transparent 50%),
       rgb(var(--color-bg-base));
   }
 
@@ -273,9 +292,46 @@
     background: linear-gradient(
       90deg,
       transparent 0%,
-      rgba(139, 92, 246, 0.5) 50%,
+      rgba(34, 197, 94, 0.5) 50%,
       transparent 100%
     );
+  }
+
+  /* === UTILITY CLASSES FROM UI_TEMPLATE === */
+  .bg-grid-pattern {
+    background-size: 40px 40px;
+    background-image:
+      linear-gradient(to right, rgba(255, 255, 255, 0.05) 1px, transparent 1px),
+      linear-gradient(to bottom, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
+    mask-image: linear-gradient(to bottom, black 40%, transparent 100%);
+    -webkit-mask-image: linear-gradient(to bottom, black 40%, transparent 100%);
+  }
+
+  .glass-card-template {
+    background: rgba(15, 23, 42, 0.6);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+  }
+
+  .perspective-1000 {
+    perspective: 1000px;
+  }
+
+  .perspective-2000 {
+    perspective: 2000px;
+  }
+
+  .rotate-x-12 {
+    transform: rotateX(12deg);
+  }
+
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
   }
 }
 
@@ -403,7 +459,7 @@
     inset: -1px;
     border-radius: inherit;
     padding: 1px;
-    background: linear-gradient(90deg, #3b82f6, #8b5cf6, #14b8a6, #8b5cf6, #3b82f6);
+    background: linear-gradient(90deg, #22c55e, #4ade80, #16a34a, #4ade80, #22c55e);
     background-size: 300% 100%;
     -webkit-mask:
       linear-gradient(#fff 0 0) content-box,
@@ -434,7 +490,7 @@
     inset: -1px;
     border-radius: inherit;
     padding: 1px;
-    background: linear-gradient(90deg, #3b82f6, #8b5cf6, #14b8a6, #8b5cf6, #3b82f6);
+    background: linear-gradient(90deg, #22c55e, #4ade80, #16a34a, #4ade80, #22c55e);
     background-size: 300% 100%;
     -webkit-mask:
       linear-gradient(#fff 0 0) content-box,
@@ -499,5 +555,13 @@
   .animation-delay-600 {
     animation-delay: 0.6s;
     opacity: 0;
+  }
+
+  .animation-delay-2000 {
+    animation-delay: 2s;
+  }
+
+  .animation-delay-4000 {
+    animation-delay: 4s;
   }
 }

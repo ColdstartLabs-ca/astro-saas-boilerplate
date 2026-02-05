@@ -2,7 +2,13 @@
 
 import React from 'react';
 import {
-  LayoutDashboard,
+  LayoutGrid,
+  Layers,
+  Search,
+  CheckCircle2,
+  Calendar as CalendarIcon,
+  Link2,
+  BarChart2,
   CreditCard,
   Settings,
   HelpCircle,
@@ -10,13 +16,14 @@ import {
   Shield,
   X,
   Loader2,
+  ChevronDown,
 } from 'lucide-react';
 import { useUserStore, useIsAdmin, useSubscription } from '@client/store/userStore';
 import { CreditsDisplay } from '@client/components/stripe/CreditsDisplay';
+import { Logo } from '@client/components/logo/Logo';
 import { getPlanDisplayName } from '@shared/config/stripe';
 import { useLogger } from '@client/utils/logger';
 import { cn } from '@client/utils/cn';
-import { clientEnv } from '@shared/config/env';
 import { getTranslations } from '@src/i18n/utils';
 import { useMemo, useState, useEffect } from 'react';
 import { LocaleSwitcher } from '@client/components/i18n/LocaleSwitcher';
@@ -33,7 +40,7 @@ interface IDashboardSidebarProps {
 }
 
 export const DashboardSidebar: React.FC<IDashboardSidebarProps> = ({ isOpen, onClose }) => {
-  const t = useMemo(() => getTranslations('dashboard.sidebar'), []);
+  const t = useMemo(() => getTranslations('dashboard'), []);
   const { signOut, user, isLoading, error } = useUserStore();
   const isAdmin = useIsAdmin();
   const subscription = useSubscription();
@@ -54,20 +61,33 @@ export const DashboardSidebar: React.FC<IDashboardSidebarProps> = ({ isOpen, onC
     priceId: subscription?.price_id,
   });
 
-  // Build menu items dynamically based on user role
-  const menuItems: ISidebarItem[] = [
-    { label: t('dashboard'), href: '/dashboard', icon: LayoutDashboard },
-    { label: t('billing'), href: '/dashboard/billing', icon: CreditCard },
-    { label: t('settings'), href: '/dashboard/settings', icon: Settings },
+  // Active site name (placeholder — will be fetched from user data in future)
+  const [siteName] = useState('');
+
+  // Primary nav — AutopilotRank-specific views
+  const primaryItems: ISidebarItem[] = [
+    { label: t('sidebar.overview'), href: '/dashboard', icon: LayoutGrid },
+    { label: t('sidebar.campaigns'), href: '/dashboard/campaigns', icon: Layers },
+    { label: t('sidebar.keywords'), href: '/dashboard/keywords', icon: Search },
+    { label: t('sidebar.optimization'), href: '/dashboard/optimization', icon: CheckCircle2 },
+    { label: t('sidebar.calendar'), href: '/dashboard/calendar', icon: CalendarIcon },
+    { label: t('sidebar.backlinks'), href: '/dashboard/backlinks', icon: Link2 },
+    { label: t('sidebar.analytics'), href: '/dashboard/analytics', icon: BarChart2 },
+  ];
+
+  // Secondary nav — account management
+  const secondaryItems: ISidebarItem[] = [
+    { label: t('sidebar.billing'), href: '/dashboard/billing', icon: CreditCard },
+    { label: t('sidebar.settings'), href: '/dashboard/settings', icon: Settings },
   ];
 
   // Add Admin menu item if user is admin
   if (isAdmin) {
-    menuItems.push({ label: t('admin'), href: '/dashboard/admin', icon: Shield });
+    secondaryItems.push({ label: t('sidebar.admin'), href: '/dashboard/admin', icon: Shield });
   }
 
   const bottomMenuItems: ISidebarItem[] = [
-    { label: t('helpSupport'), href: '/help', icon: HelpCircle },
+    { label: t('sidebar.helpSupport'), href: '/help', icon: HelpCircle },
   ];
 
   const isActive = (href: string) => {
@@ -126,7 +146,7 @@ export const DashboardSidebar: React.FC<IDashboardSidebarProps> = ({ isOpen, onC
           <button
             className="md:hidden absolute top-4 right-4 p-2 rounded-lg text-muted-foreground hover:text-white hover:bg-surface-light transition-colors"
             onClick={onClose}
-            aria-label={t('closeMenu')}
+            aria-label={t('sidebar.closeMenu')}
           >
             <X className="h-5 w-5" />
           </button>
@@ -135,17 +155,38 @@ export const DashboardSidebar: React.FC<IDashboardSidebarProps> = ({ isOpen, onC
         {/* Logo/Brand */}
         <div className="p-6 border-b border-border flex items-center justify-between">
           <a href="/" className="flex items-center">
-            <img
-              src="/logo/horizontal-logo-compact.png"
-              alt={clientEnv.APP_NAME}
-              className="h-8 w-auto"
-            />
+            <Logo variant="compact" />
           </a>
           <LocaleSwitcher />
         </div>
 
+        {/* Active Site Selector */}
+        <div className="px-4 pt-4 pb-2">
+          <div className="text-xs font-semibold text-muted uppercase tracking-wider mb-2 px-2">
+            {t('sidebar.activeSite')}
+          </div>
+          <button
+            className="w-full bg-surface-light hover:bg-elevated transition-colors border border-border rounded-lg p-3 flex items-center justify-between group"
+          >
+            <div className="flex items-center gap-3 overflow-hidden">
+              <div className="w-8 h-8 rounded bg-accent/20 text-accent flex items-center justify-center font-bold text-sm shrink-0">
+                {siteName ? siteName.charAt(0) : '?'}
+              </div>
+              <div className="truncate text-left">
+                <div className="text-sm font-medium text-white truncate">
+                  {siteName || t('sidebar.noSiteConnected')}
+                </div>
+                <div className="text-xs text-muted group-hover:text-secondary">
+                  {t('sidebar.manageSites')}
+                </div>
+              </div>
+            </div>
+            <ChevronDown className="w-4 h-4 text-muted shrink-0" />
+          </button>
+        </div>
+
         {/* User Info */}
-        <div className="px-4 py-4 border-b border-border">
+        <div className="px-4 py-3 border-b border-border">
           <div className="flex items-center space-x-3">
             <div className="w-10 h-10 rounded-full bg-gradient-to-br from-accent/30 to-tertiary/30 flex items-center justify-center ring-1 ring-accent/20">
               <span className="text-accent font-semibold text-sm">
@@ -157,7 +198,7 @@ export const DashboardSidebar: React.FC<IDashboardSidebarProps> = ({ isOpen, onC
                 <p className="text-sm font-medium text-white truncate">{user?.name || 'User'}</p>
                 {isAdmin && (
                   <span className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-accent/20 text-accent">
-                    {t('admin')}
+                    {t('sidebar.admin')}
                   </span>
                 )}
               </div>
@@ -179,9 +220,9 @@ export const DashboardSidebar: React.FC<IDashboardSidebarProps> = ({ isOpen, onC
           </div>
         </div>
 
-        {/* Main Navigation */}
-        <nav className="flex-1 px-3 py-4 space-y-1">
-          {menuItems.map(item => {
+        {/* Primary Navigation */}
+        <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
+          {primaryItems.map(item => {
             const Icon = item.icon;
             const active = isActive(item.href);
 
@@ -189,18 +230,44 @@ export const DashboardSidebar: React.FC<IDashboardSidebarProps> = ({ isOpen, onC
               <button
                 key={item.href}
                 onClick={() => handleNavigation(item.href)}
-                className={`
-                flex items-center px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 w-full text-left
-                ${
+                className={cn(
+                  'flex items-center px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 w-full text-left',
                   active
-                    ? 'bg-accent/10 text-accent'
-                    : 'text-muted-foreground hover:bg-surface-light hover:text-white'
-                }
-              `}
+                    ? 'bg-accent text-white shadow-lg shadow-accent/20'
+                    : 'text-secondary hover:bg-surface-light hover:text-white'
+                )}
               >
                 <Icon
                   size={20}
-                  className={`mr-3 ${active ? 'text-accent' : 'text-muted-foreground'}`}
+                  className={cn('mr-3', active ? 'text-white' : 'text-secondary')}
+                />
+                {item.label}
+              </button>
+            );
+          })}
+
+          {/* Separator */}
+          <div className="border-t border-border my-2" />
+
+          {/* Secondary Navigation */}
+          {secondaryItems.map(item => {
+            const Icon = item.icon;
+            const active = isActive(item.href);
+
+            return (
+              <button
+                key={item.href}
+                onClick={() => handleNavigation(item.href)}
+                className={cn(
+                  'flex items-center px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 w-full text-left',
+                  active
+                    ? 'bg-accent/10 text-accent'
+                    : 'text-secondary hover:bg-surface-light hover:text-white'
+                )}
+              >
+                <Icon
+                  size={20}
+                  className={cn('mr-3', active ? 'text-accent' : 'text-secondary')}
                 />
                 {item.label}
               </button>
@@ -218,18 +285,16 @@ export const DashboardSidebar: React.FC<IDashboardSidebarProps> = ({ isOpen, onC
               <button
                 key={item.href}
                 onClick={() => handleNavigation(item.href)}
-                className={`
-                flex items-center px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 w-full text-left
-                ${
+                className={cn(
+                  'flex items-center px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 w-full text-left',
                   active
                     ? 'bg-accent/10 text-accent'
-                    : 'text-muted-foreground hover:bg-surface-light hover:text-white'
-                }
-              `}
+                    : 'text-secondary hover:bg-surface-light hover:text-white'
+                )}
               >
                 <Icon
                   size={20}
-                  className={`mr-3 ${active ? 'text-accent' : 'text-muted-foreground'}`}
+                  className={cn('mr-3', active ? 'text-accent' : 'text-secondary')}
                 />
                 {item.label}
               </button>
@@ -239,10 +304,10 @@ export const DashboardSidebar: React.FC<IDashboardSidebarProps> = ({ isOpen, onC
           {/* Sign Out Button */}
           <button
             onClick={handleSignOut}
-            className="w-full flex items-center px-3 py-2.5 rounded-lg text-sm font-medium text-muted-foreground hover:bg-red-500/10 hover:text-red-500 transition-all duration-200"
+            className="w-full flex items-center px-3 py-2.5 rounded-lg text-sm font-medium text-secondary hover:bg-red-500/10 hover:text-red-500 transition-all duration-200"
           >
-            <LogOut size={20} className="mr-3 text-muted-foreground" />
-            {t('signOut')}
+            <LogOut size={20} className="mr-3 text-secondary" />
+            {t('sidebar.signOut')}
           </button>
         </div>
       </aside>

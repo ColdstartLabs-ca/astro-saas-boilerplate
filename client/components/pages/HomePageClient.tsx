@@ -7,7 +7,6 @@ import { getTranslations } from '@src/i18n/utils';
 import { useEffect } from 'react';
 import {
   HeroSection,
-  SocialProofBar,
   PainPointsSection,
   SolutionSection,
   FeaturesSection,
@@ -16,7 +15,6 @@ import {
   SocialProofSection,
   PricingPreviewSection,
   FAQSection,
-  FinalCTASection,
 } from '@client/components/landing';
 
 export function HomePageClient(): JSX.Element {
@@ -72,8 +70,8 @@ export function HomePageClient(): JSX.Element {
       {/* Section 1: Hero */}
       <HeroSection />
 
-      {/* Section 2: Social Proof Bar */}
-      <SocialProofBar />
+      {/* Section 2: Social Proof Top */}
+      <SocialProofSection location="top" />
 
       {/* Section 3: Pain Points */}
       <PainPointsSection />
@@ -90,17 +88,14 @@ export function HomePageClient(): JSX.Element {
       {/* Section 7: Use Cases */}
       <UseCasesSection />
 
-      {/* Section 8: Social Proof */}
-      <SocialProofSection />
+      {/* Section 8: Social Proof Bottom */}
+      <SocialProofSection location="bottom" />
 
       {/* Section 9: Pricing Preview */}
       <PricingPreviewSection />
 
       {/* Section 10: FAQ */}
       <FAQSection />
-
-      {/* Section 11: Final CTA */}
-      <FinalCTASection />
     </div>
   );
 }

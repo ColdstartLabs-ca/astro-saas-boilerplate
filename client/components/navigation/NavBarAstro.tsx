@@ -1,10 +1,10 @@
 import { AuthProvider } from '@shared/types/authProviders.types';
 import { LocaleSwitcher } from '@client/components/i18n/LocaleSwitcher';
 import { CreditsDisplay } from '@client/components/stripe/CreditsDisplay';
+import { Logo } from '@client/components/logo/Logo';
 import { useClickOutside } from '@client/hooks/useClickOutside';
 import { useModalStore } from '@client/store/modalStore';
 import { useUserStore } from '@client/store/userStore';
-import { clientEnv } from '@shared/config/env';
 import { DEFAULT_LOCALE } from '@src/i18n/config';
 import { getTranslations } from '@src/i18n/utils';
 import { Menu, X } from 'lucide-react';
@@ -57,24 +57,9 @@ export function NavBarAstro(): JSX.Element {
       <div className="mx-auto flex h-20 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
         <a
           href={localizedPath('/')}
-          className="flex items-center cursor-pointer hover:opacity-90 transition-all active:scale-95 flex-shrink-0"
+          className="flex items-center cursor-pointer hover:opacity-90 transition-all active:scale-95 flex-shrink-0 drop-shadow-[0_2px_8px_rgba(34,197,94,0.3)]"
         >
-          {/* Compact logo for mobile */}
-          <img
-            src="/logo/horizontal-logo-compact.png"
-            alt={clientEnv.APP_NAME}
-            width={100}
-            height={40}
-            className="xs:hidden h-8 w-auto drop-shadow-[0_2px_8px_rgba(59,130,246,0.3)]"
-          />
-          {/* Full logo for desktop */}
-          <img
-            src="/logo/horizontal-logo-full.png"
-            alt={clientEnv.APP_NAME}
-            width={200}
-            height={40}
-            className="hidden xs:block h-10 w-auto drop-shadow-[0_2px_8px_rgba(59,130,246,0.3)]"
-          />
+          <Logo variant="full" />
         </a>
 
         <nav className="hidden lg:flex items-center gap-2 xl:gap-4 ml-6 xl:ml-10">
@@ -87,16 +72,10 @@ export function NavBarAstro(): JSX.Element {
             </a>
           )}
           <a
-            href={localizedPath('/features')}
-            className={`text-sm font-bold transition-colors pb-1 ${isActive('/features') ? 'text-white border-b-2 border-accent' : 'text-text-muted hover:text-white border-b-2 border-transparent'}`}
+            href={localizedPath('/#comparison')}
+            className="text-sm font-bold transition-colors pb-1 text-text-muted hover:text-white border-b-2 border-transparent"
           >
-            {t('features')}
-          </a>
-          <a
-            href={localizedPath('/blog')}
-            className={`text-sm font-bold transition-colors pb-1 ${isActive('/blog') ? 'text-white border-b-2 border-accent' : 'text-text-muted hover:text-white border-b-2 border-transparent'}`}
-          >
-            {t('blog')}
+            {t('comparison')}
           </a>
           <a
             href={localizedPath('/pricing')}
@@ -105,10 +84,10 @@ export function NavBarAstro(): JSX.Element {
             {t('pricing')}
           </a>
           <a
-            href={localizedPath('/help')}
-            className={`text-sm font-bold transition-colors pb-1 ${isActive('/help') ? 'text-white border-b-2 border-accent' : 'text-text-muted hover:text-white border-b-2 border-transparent'}`}
+            href={localizedPath('/#faq')}
+            className="text-sm font-bold transition-colors pb-1 text-text-muted hover:text-white border-b-2 border-transparent"
           >
-            {t('support')}
+            {t('faq')}
           </a>
         </nav>
 
@@ -280,16 +259,10 @@ export function NavBarAstro(): JSX.Element {
               </a>
             )}
             <a
-              href={localizedPath('/features')}
-              className={`block px-4 py-2 text-sm font-medium rounded-lg transition-colors ${isActive('/features') ? 'text-white bg-white/5' : 'text-muted-foreground hover:bg-surface/10 hover:text-white'}`}
+              href={localizedPath('/#comparison')}
+              className="block px-4 py-2 text-sm font-medium rounded-lg transition-colors text-muted-foreground hover:bg-surface/10 hover:text-white"
             >
-              {t('features')}
-            </a>
-            <a
-              href={localizedPath('/blog')}
-              className={`block px-4 py-2 text-sm font-medium rounded-lg transition-colors ${isActive('/blog') ? 'text-white bg-white/5' : 'text-muted-foreground hover:bg-surface/10 hover:text-white'}`}
-            >
-              {t('blog')}
+              {t('comparison')}
             </a>
             <a
               href={localizedPath('/pricing')}
@@ -298,10 +271,10 @@ export function NavBarAstro(): JSX.Element {
               {t('pricing')}
             </a>
             <a
-              href={localizedPath('/help')}
-              className={`block px-4 py-2 text-sm font-medium rounded-lg transition-colors ${isActive('/help') ? 'text-white bg-white/5' : 'text-muted-foreground hover:bg-surface/10 hover:text-white'}`}
+              href={localizedPath('/#faq')}
+              className="block px-4 py-2 text-sm font-medium rounded-lg transition-colors text-muted-foreground hover:bg-surface/10 hover:text-white"
             >
-              {t('support')}
+              {t('faq')}
             </a>
             {!isAuthenticated && (
               <>

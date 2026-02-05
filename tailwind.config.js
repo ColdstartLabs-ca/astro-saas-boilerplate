@@ -22,6 +22,20 @@ export default {
         display: ['DM Sans', 'Inter', 'ui-sans-serif', 'sans-serif'],
       },
       colors: {
+        // Green brand colors (from UI_TEMPLATE)
+        brand: {
+          50: '#f0fdf4',
+          100: '#dcfce7',
+          200: '#bbf7d0',
+          300: '#86efac',
+          400: '#4ade80',
+          500: '#22c55e',
+          600: '#16a34a',
+          700: '#15803d',
+          800: '#166534',
+          900: '#14532d',
+          950: '#052e16',
+        },
         // Updated dark theme colors
         main: 'rgb(var(--color-bg-base) / <alpha-value>)',
         surface: 'rgb(var(--color-bg-surface) / <alpha-value>)',
@@ -69,10 +83,10 @@ export default {
         card: 'rgb(var(--color-card))',
       },
       boxShadow: {
-        'glow-blue': '0 0 20px rgba(59, 130, 246, 0.3)',
-        'glow-violet': '0 0 20px rgba(139, 92, 246, 0.3)',
-        'glow-mixed': '0 0 30px rgba(59, 130, 246, 0.2), 0 0 30px rgba(139, 92, 246, 0.2)',
-        'card-hover': '0 20px 40px rgba(0, 0, 0, 0.2), 0 0 40px rgba(139, 92, 246, 0.1)',
+        'glow-green': '0 0 20px rgba(34, 197, 94, 0.3)',
+        'glow-green-light': '0 0 20px rgba(74, 222, 128, 0.3)',
+        'glow-green-mixed': '0 0 30px rgba(34, 197, 94, 0.2), 0 0 30px rgba(74, 222, 128, 0.2)',
+        'card-hover': '0 20px 40px rgba(0, 0, 0, 0.2), 0 0 40px rgba(34, 197, 94, 0.1)',
       },
       keyframes: {
         'fade-in': {
@@ -88,12 +102,46 @@ export default {
           '100%': { transform: 'translateY(0)', opacity: '1' },
         },
         'glow-pulse': {
-          '0%, 100%': { boxShadow: '0 0 20px rgba(59, 130, 246, 0.3)' },
-          '50%': { boxShadow: '0 0 40px rgba(59, 130, 246, 0.5)' },
+          '0%, 100%': { boxShadow: '0 0 20px rgba(34, 197, 94, 0.3)' },
+          '50%': { boxShadow: '0 0 40px rgba(34, 197, 94, 0.5)' },
         },
         'gradient-shift': {
           '0%, 100%': { backgroundPosition: '0% 50%' },
           '50%': { backgroundPosition: '100% 50%' },
+        },
+        // From UI_TEMPLATE
+        blob: {
+          '0%': { transform: 'translate(0px, 0px) scale(1)' },
+          '33%': { transform: 'translate(30px, -50px) scale(1.1)' },
+          '66%': { transform: 'translate(-20px, 20px) scale(0.9)' },
+          '100%': { transform: 'translate(0px, 0px) scale(1)' },
+        },
+        scroll: {
+          '0%': { transform: 'translateX(0)' },
+          '100%': { transform: 'translateX(-50%)' },
+        },
+        float: {
+          '0%, 100%': { transform: 'translateY(0)' },
+          '50%': { transform: 'translateY(-20px)' },
+        },
+        scan: {
+          '0%': { top: '-10%', opacity: '0' },
+          '10%': { opacity: '1' },
+          '90%': { opacity: '1' },
+          '100%': { top: '110%', opacity: '0' },
+        },
+        typing: {
+          '0%': { width: '0' },
+          '50%': { width: '100%' },
+          '100%': { width: '100%' },
+        },
+        fadeIn: {
+          '0%': { opacity: '0', transform: 'translateY(6px)' },
+          '100%': { opacity: '1', transform: 'translateY(0)' },
+        },
+        progress: {
+          '0%': { transform: 'translateX(-100%)' },
+          '100%': { transform: 'translateX(100%)' },
         },
       },
       animation: {
@@ -102,6 +150,16 @@ export default {
         'fade-in-up': 'fade-in-up 0.3s ease-out',
         'glow-pulse': 'glow-pulse 2s ease-in-out infinite',
         'gradient-shift': 'gradient-shift 8s ease infinite',
+        fadeIn: 'fadeIn 0.3s ease-out',
+        progress: 'progress 2s ease-in-out infinite',
+        // From UI_TEMPLATE
+        'blob': 'blob 7s infinite',
+        'scroll': 'scroll 25s linear infinite',
+        'float': 'float 6s ease-in-out infinite',
+        'pulse-slow': 'pulse 4s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+        'spin-slow': 'spin 3s linear infinite',
+        'scan': 'scan 4s linear infinite',
+        'typing': 'typing 3s steps(40, end) infinite alternate',
       },
       typography: {
         DEFAULT: {

@@ -11,14 +11,14 @@ import {
   Search,
   Check,
   ChevronDown,
-  Plus,
-  Filter,
   LayoutGrid,
   Settings,
   Bell,
   User,
   Zap,
 } from 'lucide-react';
+import { Plus as PlusIcon } from 'lucide-react';
+import { Filter as FilterIcon } from 'lucide-react';
 
 interface IProps {
   className?: string;
@@ -45,7 +45,7 @@ const PipelineView: React.FC<IPipelineViewProps> = ({ typedText, cursorVisible }
         <p className="text-text-muted text-xs mt-1">Processing 3 campaigns • 12 articles remaining</p>
       </div>
       <button className="h-7 text-xs px-3 bg-accent hover:bg-accent-hover text-white rounded-md transition-colors flex items-center gap-1.5">
-        <Plus className="w-3 h-3" /> New Campaign
+        <PlusIcon className="w-3 h-3" /> New Campaign
       </button>
     </div>
 
@@ -132,7 +132,7 @@ const KeywordView: React.FC = () => (
       </div>
       <div className="flex gap-2">
         <button className="p-1.5 rounded hover:bg-elevated text-text-secondary">
-          <Filter className="w-4 h-4" />
+          <FilterIcon className="w-4 h-4" />
         </button>
         <button className="p-1.5 rounded hover:bg-elevated text-text-secondary">
           <LayoutGrid className="w-4 h-4" />
@@ -161,7 +161,7 @@ const KeywordView: React.FC = () => (
           <div key={i} className="grid grid-cols-12 gap-2 p-3 items-center border-b border-border/50 hover:bg-elevated/30 group transition-colors text-xs">
             <div className="col-span-5 font-medium text-text-primary group-hover:text-white flex items-center gap-2">
               <div className="w-4 h-4 rounded flex items-center justify-center border border-border bg-main text-text-muted opacity-0 group-hover:opacity-100 transition-opacity">
-                <Plus className="w-3 h-3" />
+                <PlusIcon className="w-3 h-3" />
               </div>
               {row.kw}
             </div>

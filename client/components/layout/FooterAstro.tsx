@@ -1,5 +1,6 @@
 import { clientEnv } from '@shared/config/env';
 import { LocaleSwitcher } from '@client/components/i18n/LocaleSwitcher';
+import { Logo } from '@client/components/logo/Logo';
 import { useMemo } from 'react';
 import { getTranslations } from '@src/i18n/utils';
 import { DEFAULT_LOCALE } from '@src/i18n/config';
@@ -20,13 +21,7 @@ export function FooterAstro(): JSX.Element {
           {/* Company Info */}
           <div className="space-y-4">
             <a href="/">
-              <img
-                src="/logo/horizontal-logo-full.png"
-                alt={clientEnv.APP_NAME}
-                width={180}
-                height={45}
-                className="h-10 w-auto"
-              />
+              <Logo variant="full" />
             </a>
             <p className="text-sm text-text-muted font-medium leading-relaxed max-w-xs">
               {t('description')}

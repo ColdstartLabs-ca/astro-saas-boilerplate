@@ -3,13 +3,38 @@
   "subtitle": "Manage your account and credits",
   "sidebar": {
     "dashboard": "Dashboard",
+    "overview": "Overview",
+    "campaigns": "Campaigns",
+    "keywords": "Keyword Research",
+    "optimization": "Optimization",
+    "calendar": "Calendar",
+    "backlinks": "Backlinks",
+    "analytics": "Analytics",
     "billing": "Billing",
     "settings": "Settings",
     "admin": "Admin",
     "helpSupport": "Help & Support",
     "signOut": "Sign Out",
     "closeMenu": "Close menu",
-    "plan": "Plan"
+    "plan": "Plan",
+    "activeSite": "Active Site",
+    "manageSites": "Manage Sites",
+    "noSiteConnected": "No site connected"
+  },
+  "header": {
+    "newCampaign": "New Campaign",
+    "notifications": "Notifications",
+    "breadcrumb": {
+      "overview": "Overview",
+      "campaigns": "Campaigns",
+      "keywords": "Keyword Research",
+      "optimization": "Optimization",
+      "calendar": "Calendar",
+      "backlinks": "Backlinks",
+      "analytics": "Analytics",
+      "billing": "Billing",
+      "settings": "Settings"
+    }
   },
   "history": {
     "title": "History",

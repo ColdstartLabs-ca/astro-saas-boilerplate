@@ -1,6 +1,7 @@
 'use client';
 
 import React, { forwardRef, useEffect, useState } from 'react';
+import { Logo } from '@client/components/logo/Logo';
 import { useTranslations } from '@client/hooks/useTranslations';
 
 interface IModalProps {
@@ -112,11 +113,7 @@ export const Modal = forwardRef<HTMLDivElement, IModalProps>(
           >
             {showLogo && (
               <div className="flex justify-center mb-4">
-                <img
-                  src="/logo/horizontal-logo-compact.png"
-                  alt="MyImageUpscaler"
-                  className="h-8 w-auto"
-                />
+                <Logo variant="compact" />
               </div>
             )}
             <h3

@@ -1,0 +1,8 @@
+---
+import DashboardLayout from '../../layouts/DashboardLayout.astro';
+import KeywordsPageClient from '@client/components/pages/KeywordsPageClient';
+---
+
+<DashboardLayout title="Keyword Research">
+  <KeywordsPageClient client:only="react" />
+</DashboardLayout>

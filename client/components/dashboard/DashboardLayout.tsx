@@ -6,9 +6,10 @@ import { CreditsDisplay } from '@client/components/stripe/CreditsDisplay';
 import { useLowCreditWarning } from '@client/hooks/useLowCreditWarning';
 import { useUserStore } from '@client/store/userStore';
 import { useRouter } from 'next/navigation';
-import { Menu } from 'lucide-react';
-import React from 'react';
+import { Menu, Plus, Bell, User } from 'lucide-react';
+import React, { useMemo } from 'react';
 import { clientEnv, getAppLogoAbbr } from '@shared/config/env';
+import { getTranslations } from '@src/i18n/utils';
 
 // Grace period to allow auth state to settle after OAuth redirect
 const AUTH_GRACE_PERIOD_MS = 500;
@@ -17,6 +18,55 @@ const MIN_REFRESH_INTERVAL_MS = 30_000;
 
 interface IDashboardLayoutProps {
   children: React.ReactNode;
+}
+
+// Derive breadcrumb label from pathname
+function getBreadcrumbLabel(pathname: string, t: ReturnType<typeof getTranslations>): string {
+  const segment = pathname.replace('/dashboard', '').replace(/^\//, '') || 'overview';
+  const label = t(`header.breadcrumb.${segment}`);
+  // If the key resolves to the raw key path, fall back to a capitalized segment
+  if (label === `header.breadcrumb.${segment}`) {
+    return segment.charAt(0).toUpperCase() + segment.slice(1);
+  }
+  return label;
+}
+
+// Desktop top header bar
+function DashboardHeader(): JSX.Element {
+  const t = useMemo(() => getTranslations('dashboard'), []);
+  const [pathname, setPathname] = useState('');
+
+  useEffect(() => {
+    setPathname(window.location.pathname);
+  }, []);
+
+  const breadcrumb = getBreadcrumbLabel(pathname, t);
+
+  return (
+    <header className="hidden md:flex h-14 border-b border-border bg-surface/50 backdrop-blur-sm items-center justify-between px-8 shrink-0">
+      <div className="flex text-sm text-secondary">
+        <span className="text-muted mr-2">/</span>
+        <span>{breadcrumb}</span>
+      </div>
+
+      <div className="flex items-center space-x-4">
+        <button
+          className="hidden sm:inline-flex items-center px-4 py-2 rounded-lg text-sm font-medium bg-accent hover:bg-accent-hover text-white transition-colors shadow-lg shadow-accent/20"
+        >
+          <Plus className="w-4 h-4 mr-2" />
+          {t('header.newCampaign')}
+        </button>
+        <div className="w-px h-6 bg-border mx-2" />
+        <button className="text-secondary hover:text-white relative transition-colors">
+          <Bell className="w-5 h-5" />
+          <span className="absolute top-0 right-0 w-2 h-2 bg-red-500 rounded-full" />
+        </button>
+        <div className="w-8 h-8 bg-surface-light rounded-full border border-border flex items-center justify-center text-secondary">
+          <User className="w-4 h-4" />
+        </div>
+      </div>
+    </header>
+  );
 }
 
 const DashboardLayout: React.FC<IDashboardLayoutProps> = ({ children }) => {
@@ -95,8 +145,11 @@ const DashboardLayout: React.FC<IDashboardLayoutProps> = ({ children }) => {
         <DashboardSidebar isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} />
 
         {/* Main Content */}
-        <main className="flex-1 overflow-auto pt-14 md:pt-0">
-          <div className="p-4 md:p-8">{children}</div>
+        <main className="flex-1 flex flex-col overflow-hidden pt-14 md:pt-0">
+          <DashboardHeader />
+          <div className="flex-1 overflow-y-auto p-4 md:p-8">
+            <div className="max-w-7xl mx-auto">{children}</div>
+          </div>
         </main>
       </div>
     );
@@ -153,8 +206,11 @@ const DashboardLayout: React.FC<IDashboardLayoutProps> = ({ children }) => {
       <DashboardSidebar isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} />
 
       {/* Main Content */}
-      <main className="flex-1 overflow-auto pt-14 md:pt-0">
-        <div className="p-4 md:p-8">{children}</div>
+      <main className="flex-1 flex flex-col overflow-hidden pt-14 md:pt-0">
+        <DashboardHeader />
+        <div className="flex-1 overflow-y-auto p-4 md:p-8">
+          <div className="max-w-7xl mx-auto">{children}</div>
+        </div>
       </main>
     </div>
   );

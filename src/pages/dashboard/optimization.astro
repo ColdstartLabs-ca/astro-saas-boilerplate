@@ -1,0 +1,8 @@
+---
+import DashboardLayout from '../../layouts/DashboardLayout.astro';
+import OptimizationPageClient from '@client/components/pages/OptimizationPageClient';
+---
+
+<DashboardLayout title="Optimization">
+  <OptimizationPageClient client:only="react" />
+</DashboardLayout>

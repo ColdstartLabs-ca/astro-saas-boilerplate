@@ -1,10 +1,7 @@
 'use client';
 
-import { FadeIn } from '@client/components/ui/MotionWrappers';
-import { getTranslations } from '@src/i18n/utils';
-import { useMemo } from 'react';
-import { AmbientBackground } from '@client/components/landing/AmbientBackground';
-import { Check, X } from 'lucide-react';
+import React from 'react';
+import { Check, X, AlertTriangle } from 'lucide-react';
 import { useModalStore } from '@client/store/modalStore';
 
 interface IProps {
@@ -12,123 +9,67 @@ interface IProps {
 }
 
 export function ComparisonSection({ className = '' }: IProps): JSX.Element {
-  const t = useMemo(() => getTranslations('homepage'), []);
   const { openAuthModal } = useModalStore();
 
-  const comparisonData = [
-    {
-      row: 'fullAutomation',
-      values: [true, true, false, false],
-    },
-    {
-      row: 'humanQuality',
-      values: [true, false, null, false],
-    },
-    {
-      row: 'nativeCMS',
-      values: [true, true, false, true],
-    },
-    {
-      row: 'gscIntegration',
-      values: [true, false, false, false],
-    },
-    {
-      row: 'humanizer',
-      values: [true, false, false, false],
-    },
-    {
-      row: 'prePublicationQA',
-      values: [true, false, false, false],
-    },
-    {
-      row: 'startingPrice',
-      values: ['$49', '$99', '$99', '$99'],
-    },
+  const data = [
+    { feature: "Full Automation", us: true, outrank: true, surfer: false, byword: false },
+    { feature: "Human-Quality Content", us: true, outrank: false, surfer: "N/A", byword: "warn" },
+    { feature: "Platform Reliability", us: true, outrank: false, surfer: true, byword: "warn" },
+    { feature: "Native CMS Publishing", us: true, outrank: true, surfer: false, byword: true },
+    { feature: "GSC Integration", us: true, outrank: false, surfer: false, byword: false },
+    { feature: "Humanizer/AI Detection", us: true, outrank: false, surfer: false, byword: false },
+    { feature: "Pre-Publication QA", us: true, outrank: false, surfer: false, byword: false },
+    { feature: "Support Quality", us: true, outrank: false, surfer: true, byword: "warn" },
+    { feature: "Starting Price", us: "$49/mo", outrank: "$99/mo", surfer: "$99/mo", byword: "$99/mo" },
   ];
 
-  const columns = ['autopilotrank', 'toolA', 'toolB', 'toolC'];
-
-  const renderValue = (value: boolean | null | string) => {
-    if (typeof value === 'boolean') {
-      if (value === null) {
-        return <span className="text-text-muted">—</span>;
-      }
-      return value ? (
-        <Check className="w-5 h-5 text-success mx-auto" />
-      ) : (
-        <X className="w-5 h-5 text-error mx-auto" />
-      );
-    }
-    return <span className="font-semibold text-text-primary">{value}</span>;
+  const renderCell = (value: boolean | string) => {
+    if (value === true) return <Check className="h-5 w-5 text-brand-500 mx-auto" />;
+    if (value === false) return <X className="h-5 w-5 text-red-500 mx-auto" />;
+    if (value === "warn") return <AlertTriangle className="h-5 w-5 text-yellow-500 mx-auto" />;
+    return <span className="text-sm font-medium">{value}</span>;
   };
 
   return (
-    <FadeIn>
-      <section className={`py-24 relative ${className}`}>
-        <AmbientBackground variant="section" />
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 relative z-10">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl sm:text-5xl font-bold text-white mb-4">{t('comparison.title')}</h2>
-            <p className="text-lg text-text-secondary">{t('comparison.subtitle')}</p>
-          </div>
+    <section id="comparison" className={`py-24 bg-slate-950 ${className}`}>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="text-center mb-16">
+          <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">How We Stack Up</h2>
+          <p className="text-slate-400">See why teams are switching to AutopilotRank.</p>
+        </div>
 
-          {/* Comparison Table */}
-          <div className="overflow-x-auto">
-            <div className="min-w-[800px]">
-              <table className="w-full">
-                <thead>
-                  <tr className="border-b border-border">
-                    <th className="text-left py-4 px-4 text-text-muted font-semibold text-sm uppercase tracking-wider w-48">
-                      Feature
-                    </th>
-                    {columns.map((col, index) => (
-                      <th
-                        key={col}
-                        className={`py-4 px-4 text-sm font-semibold ${
-                          index === 0 ? 'text-accent bg-accent/5 border-l-4 border-accent' : 'text-text-secondary'
-                        }`}
-                      >
-                        {t(`comparison.columns.${col}`)}
-                      </th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {comparisonData.map((item, rowIndex) => (
-                    <tr key={rowIndex} className="border-b border-border/50 hover:bg-elevated/20 transition-colors">
-                      <td className="py-4 px-4 text-text-secondary font-medium">
-                        {t(`comparison.rows.${item.row}`)}
-                      </td>
-                      {item.values.map((value, colIndex) => (
-                        <td
-                          key={colIndex}
-                          className={`py-4 px-4 text-center ${colIndex === 0 ? 'bg-accent/5' : ''}`}
-                        >
-                          {renderValue(value)}
-                        </td>
-                      ))}
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+        <div className="overflow-x-auto pb-4">
+          <div className="min-w-[800px] bg-slate-900 rounded-xl border border-slate-800 shadow-xl overflow-hidden">
+            <div className="grid grid-cols-5 p-4 border-b border-slate-800 bg-slate-900/50 text-sm font-semibold text-slate-300">
+              <div className="pl-4">Feature</div>
+              <div className="text-center text-brand-400">AutopilotRank</div>
+              <div className="text-center">Outrank.so</div>
+              <div className="text-center">Surfer SEO</div>
+              <div className="text-center">Byword</div>
             </div>
-          </div>
 
-          {/* Disclaimer */}
-          <p className="mt-6 text-xs text-text-muted text-center">{t('comparison.disclaimer')}</p>
-
-          {/* CTA */}
-          <div className="mt-12 text-center">
-            <button
-              onClick={() => openAuthModal('register')}
-              className="inline-flex items-center gap-2 px-8 py-4 text-white font-semibold rounded-xl transition-all duration-300 gradient-cta shine-effect hover:scale-[1.02] active:scale-[0.98]"
-            >
-              Start Free Trial
-            </button>
+            {data.map((row, i) => (
+              <div key={i} className="grid grid-cols-5 p-4 border-b border-slate-800 last:border-0 hover:bg-slate-800/30 transition-colors items-center">
+                <div className="pl-4 text-sm font-medium text-slate-200">{row.feature}</div>
+                <div className="text-center bg-brand-900/10 py-1 rounded border border-brand-900/20 text-brand-200">{renderCell(row.us)}</div>
+                <div className="text-center text-slate-400">{renderCell(row.outrank)}</div>
+                <div className="text-center text-slate-400">{renderCell(row.surfer)}</div>
+                <div className="text-center text-slate-400">{renderCell(row.byword)}</div>
+              </div>
+            ))}
           </div>
         </div>
-      </section>
-    </FadeIn>
+
+        <div className="text-center mt-12">
+          <button
+            onClick={() => openAuthModal('register')}
+            className="inline-flex items-center justify-center px-10 py-4 text-white font-semibold rounded-xl transition-all duration-300 gradient-cta shine-effect hover:scale-[1.02] active:scale-[0.98]"
+          >
+            Switch & Save 50%
+          </button>
+          <p className="mt-4 text-sm text-slate-500">Free migration assistance for agency plans.</p>
+        </div>
+      </div>
+    </section>
   );
 }
-

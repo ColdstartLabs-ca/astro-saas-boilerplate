@@ -26,7 +26,9 @@ import enHowItWorks from '@locales/en/howItWorks.json';
 import enDashboard from '@locales/en/dashboard.json';
 
 // Type for translation function
-export type TFunction = (key: string, params?: Record<string, string | number>) => string;
+export type TFunction = ((key: string, params?: Record<string, string | number>) => string) & {
+  raw: (key: string) => unknown;
+};
 
 // Store all translations
 const translations: Record<string, Record<string, unknown>> = {
@@ -59,7 +61,7 @@ const translations: Record<string, Record<string, unknown>> = {
 export function getTranslations(namespace: string): TFunction {
   const ns = translations[namespace] || {};
 
-  return (key: string, params?: Record<string, string | number>) => {
+  const resolve = (key: string): unknown => {
     const keys = key.split('.');
     let value: unknown = ns;
 
@@ -67,9 +69,15 @@ export function getTranslations(namespace: string): TFunction {
       if (value && typeof value === 'object' && k in value) {
         value = (value as Record<string, unknown>)[k];
       } else {
-        return key; // Return key if translation not found
+        return undefined;
       }
     }
+
+    return value;
+  };
+
+  const t = ((key: string, params?: Record<string, string | number>) => {
+    const value = resolve(key);
 
     if (typeof value !== 'string') {
       return key;
@@ -83,7 +91,14 @@ export function getTranslations(namespace: string): TFunction {
     }
 
     return value;
+  }) as TFunction;
+
+  t.raw = (key: string): unknown => {
+    const value = resolve(key);
+    return value ?? key;
   };
+
+  return t;
 }
 
 /**

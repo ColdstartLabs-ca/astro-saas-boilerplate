@@ -1,12 +1,12 @@
 {
-  "badge": "AI SEO Content Automation",
-  "badgeVersion": "v1.0",
-  "heroTitle": "Scale Your Organic Traffic",
-  "heroTitleHighlight": "on Autopilot",
-  "heroSubtitle": "The only AI SEO platform that truly does it all – automating content creation, optimization, and publishing with human-level quality.",
-  "heroDescription": "Start with",
-  "heroDescriptionHighlight": "3 free articles",
-  "heroDescriptionMiddle": "—no credit card required. Generate publish-ready, human-quality SEO content with",
+  "badge": "NEW: AutopilotRank",
+  "badgeVersion": "v2.0",
+  "heroTitle": "Turn Keywords Into",
+  "heroTitleHighlight": "Rankings",
+  "heroSubtitle": "Generate publish-ready, human-quality SEO content on autopilot. The only AI platform with full automation, native CMS publishing, and pre-publication QA.",
+  "heroDescription": "Start free.",
+  "heroDescriptionHighlight": "No credit card required.",
+  "heroDescriptionMiddle": "Generate publish-ready, human-quality SEO content with",
   "heroDescriptionTextSharp": "full automation",
   "ctaStartFreeTrial": "Start Free Trial",
   "ctaWatchDemo": "Watch Demo",
@@ -18,7 +18,7 @@
   "finalCtaSubtext": "No credit card required • 3 free articles • Setup in 15 minutes",
 
   "socialProofBar": {
-    "heading": "Launching Soon - Join the Beta"
+    "heading": "Trusted by content teams worldwide"
   },
 
   "painPoints": {
