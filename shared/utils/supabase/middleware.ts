@@ -54,7 +54,7 @@ export async function updateSession(cookies: AstroCookies): Promise<IUpdateSessi
  * Check if the current user is an admin
  * For use in Astro layouts and pages
  */
-export async function requireAdmin(cookies: AstroCookies): Promise<IAdminCheckResult> {
+export async function requireAdmin(_cookies: AstroCookies): Promise<IAdminCheckResult> {
   try {
     const supabase = createServerClient(clientEnv.SUPABASE_URL, clientEnv.SUPABASE_ANON_KEY, {
       cookies: {

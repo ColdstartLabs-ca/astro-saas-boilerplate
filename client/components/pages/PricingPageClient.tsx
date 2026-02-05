@@ -16,10 +16,10 @@ import {
   isStripePricesConfigured,
 } from '@shared/config/stripe';
 import { ArrowRight, Calendar, Loader2, X } from 'lucide-react';
-import { getTranslations } from '../../../src/i18n/utils';
+import { getTranslations } from '@src/i18n/utils';
 import { useEffect, useMemo, useState } from 'react';
 
-export default function PricingPageClient() {
+export default function PricingPageClient(): JSX.Element {
   const t = useMemo(() => getTranslations('pricing'), []);
   const pricesConfigured = isStripePricesConfigured();
   const [profile, setProfile] = useState<IUserProfile | null>(null);

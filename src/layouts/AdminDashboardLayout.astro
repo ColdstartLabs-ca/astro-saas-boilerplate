@@ -1,20 +1,9 @@
 ---
 import AdminDashboardLayout from '@client/components/admin/AdminDashboardLayout';
-import { getUser } from '@shared/utils/supabase/server';
-import { requireAdmin } from '@shared/utils/supabase/middleware';
+import GlobalUI from '@client/components/GlobalUI';
+import '@client/styles/index.css';
 
-// Auth check for admin routes
-const user = await getUser(Astro.cookies);
-
-if (!user) {
-  return Astro.redirect('/?login=1&next=/dashboard/admin');
-}
-
-// Admin check
-const adminCheck = await requireAdmin(Astro.cookies);
-if ('error' in adminCheck && adminCheck.error) {
-  return Astro.redirect(adminCheck.error.headers.get('location') || '/');
-}
+// Auth + admin role checks are handled by middleware (src/middleware.ts)
 
 interface IProps {
   title?: string;
@@ -34,5 +23,6 @@ const { title = 'Admin Dashboard' } = Astro.props;
     <AdminDashboardLayout client:load>
       <slot />
     </AdminDashboardLayout>
+    <GlobalUI client:only="react" />
   </body>
 </html>

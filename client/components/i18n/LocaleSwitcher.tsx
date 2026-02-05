@@ -5,7 +5,7 @@ import { US, ES, BR, DE, FR, IT, JP } from 'country-flag-icons/react/3x2';
 import { ChevronDown } from 'lucide-react';
 import { useClickOutside } from '@client/hooks/useClickOutside';
 import { SUPPORTED_LOCALES, DEFAULT_LOCALE, locales, type Locale } from '../../../i18n/config';
-import { getTranslations } from '../../../src/i18n/utils';
+import { getTranslations } from '@src/i18n/utils';
 
 /** Map locale country codes to flag components */
 const FlagComponents = {

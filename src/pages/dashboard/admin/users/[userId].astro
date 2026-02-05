@@ -5,6 +5,6 @@ import AdminUserDetailPageClient from '@client/components/pages/AdminUserDetailP
 const { userId } = Astro.params;
 ---
 
-<AdminDashboardLayout client:load>
+<AdminDashboardLayout>
   <AdminUserDetailPageClient userId={userId} client:only="react" />
 </AdminDashboardLayout>

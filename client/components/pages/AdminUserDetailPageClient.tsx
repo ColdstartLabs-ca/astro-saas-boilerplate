@@ -2,6 +2,7 @@
 
 import { adminFetch } from '@/client/utils/admin-api-client';
 import { IAdminUserDetail } from '@/shared/types/admin.types';
+import { useTranslations } from '@src/i18n/utils';
 import dayjs from 'dayjs';
 import { ArrowLeft, Coins } from 'lucide-react';
 

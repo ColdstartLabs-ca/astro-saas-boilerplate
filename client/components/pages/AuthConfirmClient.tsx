@@ -3,7 +3,7 @@
 import { useEffect, useState, Suspense, useMemo } from 'react';
 import { createClient } from '@shared/utils/supabase/client';
 import { handleAuthRedirect, setAuthIntent } from '@client/utils/authRedirectManager';
-import { getTranslations } from '../../../src/i18n/utils';
+import { getTranslations } from '@src/i18n/utils';
 
 function AuthConfirmContent() {
   const [status, setStatus] = useState<'loading' | 'success' | 'verified_please_login'>('loading');

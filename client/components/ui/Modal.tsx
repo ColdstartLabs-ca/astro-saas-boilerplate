@@ -2,7 +2,7 @@
 
 import React, { useEffect, useRef } from 'react';
 import { X } from 'lucide-react';
-import { useTranslations } from 'next-intl';
+import { useTranslations } from '@client/hooks/useTranslations';
 
 export interface IModalProps {
   isOpen: boolean;
@@ -21,7 +21,7 @@ export const Modal: React.FC<IModalProps> = ({
   size = 'md',
   showCloseButton = true,
 }) => {
-  const t = useTranslations();
+  const t = useTranslations('modal');
   const modalRef = useRef<HTMLDivElement>(null);
 
   // Handle ESC key
@@ -76,7 +76,7 @@ export const Modal: React.FC<IModalProps> = ({
               <button
                 onClick={onClose}
                 className="p-2 text-text-muted hover:text-text-primary hover:bg-surface/80 rounded-lg transition-colors"
-                aria-label={t('modal.aria.close')}
+                aria-label={t('aria.close')}
               >
                 <X size={20} />
               </button>

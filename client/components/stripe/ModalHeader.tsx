@@ -1,6 +1,7 @@
 'use client';
 
-import { X, LucideIcon } from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
+import { X } from 'lucide-react';
 
 interface IModalHeaderProps {
   title: string;

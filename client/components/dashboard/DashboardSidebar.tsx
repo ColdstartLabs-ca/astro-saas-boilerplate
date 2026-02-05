@@ -17,7 +17,7 @@ import { getPlanDisplayName } from '@shared/config/stripe';
 import { useLogger } from '@client/utils/logger';
 import { cn } from '@client/utils/cn';
 import { clientEnv } from '@shared/config/env';
-import { getTranslations } from '../../../src/i18n/utils';
+import { getTranslations } from '@src/i18n/utils';
 import { useMemo, useState, useEffect } from 'react';
 import { LocaleSwitcher } from '@client/components/i18n/LocaleSwitcher';
 

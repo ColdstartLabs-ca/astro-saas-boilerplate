@@ -21,6 +21,7 @@
       "@client/*": ["./client/*"],
       "@server/*": ["./server/*"],
       "@shared/*": ["./shared/*"],
+      "@src/*": ["./src/*"],
       "@app/*": ["./app/*"],
       "@lib/*": ["./lib/*"],
       "@locales/*": ["./locales/*"]

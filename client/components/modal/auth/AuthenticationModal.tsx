@@ -4,18 +4,21 @@ import { SocialLoginButton } from '@client/components/form/SocialLoginButton';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { createClient } from '@shared/utils/supabase/client';
 import { useUserStore } from '@client/store/userStore';
-import { useModalStore, AuthModalView } from '@client/store/modalStore';
+import type { AuthModalView } from '@client/store/modalStore';
+import { useModalStore } from '@client/store/modalStore';
 import { useToastStore } from '@client/store/toastStore';
 import { loginSchema, registerSchema } from '@shared/validation/authValidationSchema';
 import React, { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
-import { useTranslations } from 'next-intl';
+import { useTranslations } from '@client/hooks/useTranslations';
 import { Modal } from '@client/components/modal/Modal';
 import { ChangePasswordForm } from '@client/components/modal/auth/ChangePasswordForm';
 import { ForgotPasswordForm } from '@client/components/modal/auth/ForgotPasswordForm';
 import { ForgotPasswordSetNewPasswordForm } from '@client/components/modal/auth/ForgotPasswordSetNewPasswordForm';
-import { ILoginForm, LoginForm } from '@client/components/modal/auth/LoginForm';
-import { IRegisterForm, RegisterForm } from '@client/components/modal/auth/RegisterForm';
+import type { ILoginForm } from '@client/components/modal/auth/LoginForm';
+import { LoginForm } from '@client/components/modal/auth/LoginForm';
+import type { IRegisterForm } from '@client/components/modal/auth/RegisterForm';
+import { RegisterForm } from '@client/components/modal/auth/RegisterForm';
 
 const MODAL_ID = 'authenticationModal';
 

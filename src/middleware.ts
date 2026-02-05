@@ -11,7 +11,7 @@ import {
   verifyApiAuth,
   addUserContextLocals,
 } from '@lib/middleware';
-import { updateSession } from '@shared/utils/supabase/middleware';
+import { updateSession, requireAdmin } from '@shared/utils/supabase/middleware';
 import { DEFAULT_LOCALE, isValidLocale, LOCALE_COOKIE, type Locale } from '@/i18n/config';
 
 // Stub for deleted country-locale-map
@@ -58,6 +58,25 @@ function isDashboardPath(pathname: string): boolean {
 
   // /{locale}/dashboard or /{locale}/dashboard/*
   if (segments.length >= 2 && isValidLocale(segments[0]) && segments[1] === 'dashboard') {
+    return true;
+  }
+
+  return false;
+}
+
+/**
+ * Check if pathname is an admin dashboard route (with or without locale prefix)
+ */
+function isAdminDashboardPath(pathname: string): boolean {
+  const segments = pathname.split('/').filter(Boolean);
+
+  // /dashboard/admin or /dashboard/admin/*
+  if (segments[0] === 'dashboard' && segments[1] === 'admin') {
+    return true;
+  }
+
+  // /{locale}/dashboard/admin or /{locale}/dashboard/admin/*
+  if (segments.length >= 3 && isValidLocale(segments[0]) && segments[1] === 'dashboard' && segments[2] === 'admin') {
     return true;
   }
 
@@ -406,6 +425,46 @@ export const onRequest = defineMiddleware(async (context, next) => {
         });
       }
 
+      // Check auth for dashboard routes (default locale, no prefix)
+      if (isDashboardPath(pathname)) {
+        const isTestEnv = serverEnv.ENV === 'test';
+        const hasTestHeader =
+          context.request.headers.get('x-test-env') === 'true' ||
+          context.request.headers.get('x-playwright-test') === 'true';
+
+        const { user } = await updateSession(cookies);
+
+        if (!user && !isTestEnv && !hasTestHeader) {
+          const newUrl = new URL(url.toString());
+          newUrl.pathname = '/';
+          newUrl.searchParams.set('login', '1');
+          newUrl.searchParams.set('next', pathname);
+
+          return new Response(null, {
+            status: 302,
+            headers: { Location: newUrl.toString() },
+          });
+        }
+
+        if (user) {
+          context.locals = {
+            ...context.locals,
+            ...addUserContextLocals({ id: user.id, email: user.email }),
+          };
+
+          // Check admin role for admin routes
+          if (isAdminDashboardPath(pathname)) {
+            const adminCheck = await requireAdmin(cookies);
+            if (!adminCheck.isAdmin) {
+              return new Response(null, {
+                status: 302,
+                headers: { Location: '/?forbidden=1' },
+              });
+            }
+          }
+        }
+      }
+
       const response = await next();
       applySecurityHeaders(response);
       return response;
@@ -474,6 +533,18 @@ export const onRequest = defineMiddleware(async (context, next) => {
           ...context.locals,
           ...addUserContextLocals({ id: user.id, email: user.email }),
         };
+
+        // Check admin role for admin routes
+        if (isAdminDashboardPath(pathname)) {
+          const adminCheck = await requireAdmin(cookies);
+          if (!adminCheck.isAdmin) {
+            const pathLocale = getLocaleFromPath(pathname);
+            return new Response(null, {
+              status: 302,
+              headers: { Location: pathLocale ? `/${pathLocale}/?forbidden=1` : '/?forbidden=1' },
+            });
+          }
+        }
       }
     }
 

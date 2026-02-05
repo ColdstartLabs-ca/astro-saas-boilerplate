@@ -284,3 +284,4 @@ describe('Astro Middleware (Security & SEO)', () => {
     });
   });
 });
+});

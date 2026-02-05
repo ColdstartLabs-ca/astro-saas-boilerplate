@@ -3,7 +3,7 @@
 import { Search, X } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { useTranslations } from 'next-intl';
+import { useTranslations } from '@client/hooks/useTranslations';
 
 export function BlogSearch(): JSX.Element {
   const t = useTranslations('blog.search');

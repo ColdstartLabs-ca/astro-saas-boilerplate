@@ -2,6 +2,7 @@
 
 import { adminFetch } from '@/client/utils/admin-api-client';
 import { IAdminStats } from '@/shared/types/admin.types';
+import { useTranslations } from '@src/i18n/utils';
 import { Coins, CreditCard, TrendingUp, Users } from 'lucide-react';
 
 import React, { useEffect, useState } from 'react';
@@ -116,7 +117,7 @@ function StatsCard({ title, value, icon: Icon, iconBg, iconColor }: IStatsCardPr
   );
 }
 
-function QuickActionsCard() {
+function QuickActionsCard(): JSX.Element {
   const t = useTranslations('admin.dashboard');
   return (
     <div className="bg-surface rounded-lg border border-border p-6">
@@ -142,7 +143,7 @@ function QuickActionsCard() {
   );
 }
 
-function RecentActivityCard() {
+function RecentActivityCard(): JSX.Element {
   const t = useTranslations('admin.dashboard');
   return (
     <div className="bg-surface rounded-lg border border-border p-6">

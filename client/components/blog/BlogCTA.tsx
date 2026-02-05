@@ -14,8 +14,8 @@
 import { ArrowRight, Zap, Check } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { ReactElement } from 'react';
-import { useTranslations } from 'next-intl';
+import type { ReactElement } from 'react';
+import { useTranslations } from '@client/hooks/useTranslations';
 
 export type BlogCTAType = 'try' | 'demo' | 'pricing' | 'tool';
 

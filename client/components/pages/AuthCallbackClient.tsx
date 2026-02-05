@@ -4,7 +4,7 @@ import { useEffect, useState, Suspense, useRef } from 'react';
 import { createClient } from '@shared/utils/supabase/client';
 import { handleAuthRedirect, setAuthIntent } from '@client/utils/authRedirectManager';
 
-function AuthCallbackContent() {
+function AuthCallbackContent(): JSX.Element {
   const [status, setStatus] = useState<'loading' | 'success' | 'error'>('loading');
   const hasRedirected = useRef(false);
 
@@ -124,7 +124,7 @@ function AuthCallbackContent() {
   );
 }
 
-export default function AuthCallbackClient() {
+export default function AuthCallbackClient(): JSX.Element {
   return (
     <Suspense
       fallback={

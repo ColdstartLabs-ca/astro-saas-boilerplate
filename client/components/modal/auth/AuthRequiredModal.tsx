@@ -3,7 +3,7 @@
 import React from 'react';
 import { Modal } from '@client/components/modal/Modal';
 import { useModalStore } from '@client/store/modalStore';
-import { useTranslations } from 'next-intl';
+import { useTranslations } from '@client/hooks/useTranslations';
 
 const MODAL_ID = 'authRequiredModal';
 

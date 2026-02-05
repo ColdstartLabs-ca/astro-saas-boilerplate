@@ -143,6 +143,13 @@ export default [
     },
   },
   {
+    files: ['client/components/pages/**/*', 'client/components/GlobalUI.tsx'],
+    rules: {
+      'import/no-default-export': 'off', // Astro client pages and global components require default exports
+      '@typescript-eslint/explicit-module-boundary-types': 'off',
+    },
+  },
+  {
     files: ['app/**/*'],
     plugins: {
       react: reactPlugin,

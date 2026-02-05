@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { useTranslations } from 'next-intl';
+import { useTranslations } from '@client/hooks/useTranslations';
 import { AlertCircle, X } from 'lucide-react';
 
 export interface IInsufficientCreditsModalProps {

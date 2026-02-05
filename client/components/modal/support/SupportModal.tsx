@@ -5,7 +5,7 @@ import { useUserStore } from '@client/store/userStore';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { contactFormSchema, IContactFormInput } from '@shared/validation/support.schema';
 import { CheckCircle, Send } from 'lucide-react';
-import { useTranslations } from 'next-intl';
+import { useTranslations } from '@client/hooks/useTranslations';
 import React, { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { Modal } from '../Modal';

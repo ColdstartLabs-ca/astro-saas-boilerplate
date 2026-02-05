@@ -1,18 +1,9 @@
 ---
 import DashboardLayout from '@client/components/dashboard/DashboardLayout';
-import { getUser } from '@shared/utils/supabase/server';
+import GlobalUI from '@client/components/GlobalUI';
+import '@client/styles/index.css';
 
-// Auth check for dashboard routes
-const user = await getUser(Astro.cookies);
-
-if (!user) {
-  // Get the current URL to preserve query params
-  const url = new URL(Astro.url);
-  const urlWithLogin = new URL(url);
-  urlWithLogin.searchParams.set('login', '1');
-  urlWithLogin.searchParams.set('next', url.pathname);
-  return Astro.redirect(urlWithLogin.toString());
-}
+// Auth is handled by middleware (src/middleware.ts) for all /dashboard/* routes
 
 interface IProps {
   title?: string;
@@ -32,5 +23,6 @@ const { title = 'Dashboard' } = Astro.props;
     <DashboardLayout client:load>
       <slot />
     </DashboardLayout>
+    <GlobalUI client:only="react" />
   </body>
 </html>

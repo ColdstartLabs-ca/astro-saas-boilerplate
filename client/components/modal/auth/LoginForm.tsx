@@ -1,9 +1,10 @@
 import { InputField } from '@client/components/form/InputField';
 import { loginSchema } from '@shared/validation/authValidationSchema';
-import React, { FormEventHandler } from 'react';
-import { FieldErrors, UseFormRegister } from 'react-hook-form';
+import type { FormEventHandler } from 'react';
+import React from 'react';
+import type { FieldErrors, UseFormRegister } from 'react-hook-form';
 import { z } from 'zod';
-import { useTranslations } from 'next-intl';
+import { useTranslations } from '@client/hooks/useTranslations';
 
 export type ILoginForm = z.infer<typeof loginSchema>;
 

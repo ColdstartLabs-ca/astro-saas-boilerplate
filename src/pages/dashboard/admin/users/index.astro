@@ -3,6 +3,6 @@ import AdminDashboardLayout from '../../../../layouts/AdminDashboardLayout.astro
 import AdminUsersPageClient from '@client/components/pages/AdminUsersPageClient';
 ---
 
-<AdminDashboardLayout client:load>
+<AdminDashboardLayout>
   <AdminUsersPageClient client:only="react" />
 </AdminDashboardLayout>

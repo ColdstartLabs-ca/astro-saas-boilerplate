@@ -11,7 +11,7 @@ interface IDashboardLayoutProps {
   children: React.ReactNode;
 }
 
-export const DashboardLayout: React.FC<IDashboardLayoutProps> = ({ children }) => {
+const DashboardLayout: React.FC<IDashboardLayoutProps> = ({ children }) => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   return (
@@ -56,5 +56,5 @@ export const DashboardLayout: React.FC<IDashboardLayoutProps> = ({ children }) =
   );
 };
 
-// Default export for Astro compatibility
+export { DashboardLayout };
 export default DashboardLayout;

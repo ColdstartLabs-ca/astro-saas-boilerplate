@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { TrendingUp, TrendingDown, Calendar, Info } from 'lucide-react';
-import { getTranslations } from '../../../src/i18n/utils';
+import { getTranslations } from '@src/i18n/utils';
 import { StripeService } from '@client/services/stripeService';
 import { getPlanForPriceId } from '@shared/config/stripe';
 import { ModalHeader } from './ModalHeader';

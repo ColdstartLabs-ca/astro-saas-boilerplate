@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { cn } from '@client/utils/cn';
-import { LucideIcon } from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
 
 interface ITabButtonProps {
   active: boolean;

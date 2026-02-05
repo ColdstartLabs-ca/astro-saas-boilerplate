@@ -4,7 +4,7 @@ import { Suspense } from 'react';
 import { useEffect, useState, useMemo } from 'react';
 import { useToastStore } from '@client/store/toastStore';
 import { useUserStore } from '@client/store/userStore';
-import { getTranslations } from '../../../src/i18n/utils';
+import { getTranslations } from '@src/i18n/utils';
 import { StripeService } from '@client/services/stripeService';
 import { clientEnv } from '@shared/config/env';
 import { EmbeddedCheckout, EmbeddedCheckoutProvider } from '@stripe/react-stripe-js';

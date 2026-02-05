@@ -1,5 +1,5 @@
 import { InputField } from '@client/components/form/InputField';
-import { useTranslations } from 'next-intl';
+import { useTranslations } from '@client/hooks/useTranslations';
 import React from 'react';
 import { useForm } from 'react-hook-form';
 

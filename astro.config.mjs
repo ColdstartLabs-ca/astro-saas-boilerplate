@@ -42,6 +42,8 @@ export default defineConfig({
     resolve: {
       alias: {
         '@/*': './*',
+        '@src/*': './src/*',
+        '@i18n/*': './i18n/*',
         '@shared/*': './shared/*',
         '@server/*': './server/*',
         '@client/*': './client/*',

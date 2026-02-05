@@ -1,12 +1,10 @@
-'use client';
-
 import { AmbientBackground } from '@client/components/landing/AmbientBackground';
 import { FadeIn } from '@client/components/ui/MotionWrappers';
 import { useModalStore } from '@client/store/modalStore';
 import { useToastStore } from '@client/store/toastStore';
 import { prepareAuthRedirect } from '@client/utils/authRedirectManager';
 import { getSubscriptionConfig } from '@shared/config/subscription.config';
-import { getTranslations } from '../../../src/i18n/utils';
+import { getTranslations } from '@src/i18n/utils';
 import { motion } from 'framer-motion';
 import { ArrowRight, Rocket, Zap, Shield, CheckCircle } from 'lucide-react';
 
@@ -46,15 +44,13 @@ export function HomePageClient(): JSX.Element {
   // Use Astro i18n helper instead of next-intl's useTranslations
   const t = useMemo(() => getTranslations('homepage'), []);
 
-  // Get URL params from window.location
-  const searchParams = new URLSearchParams(typeof window !== 'undefined' ? window.location.search : '');
-
   // Check if any plan has trial enabled
   const config = getSubscriptionConfig();
   const hasTrialEnabled = config.plans.some(plan => plan.trial.enabled);
 
-  // Check for auth prompts from URL params
+  // Check for auth prompts from URL params (must access window inside useEffect)
   useEffect(() => {
+    const searchParams = new URLSearchParams(window.location.search);
     const loginRequired = searchParams.get('login');
     const signupRequired = searchParams.get('signup');
     const nextUrl = searchParams.get('next');
@@ -91,7 +87,7 @@ export function HomePageClient(): JSX.Element {
       url.searchParams.delete('signup');
       window.history.replaceState({}, '', url.toString());
     }
-  }, [searchParams, openAuthModal, showToast, t]);
+  }, [openAuthModal, showToast, t]);
 
   return (
     <div className="flex-grow bg-main font-sans selection:bg-accent/20 selection:text-white">

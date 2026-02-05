@@ -3,7 +3,7 @@
 import { XCircle, ArrowLeft, HelpCircle } from 'lucide-react';
 import { clientEnv } from '@shared/config/env';
 
-export default function CanceledPageClient() {
+export function CanceledPageClient(): JSX.Element {
   return (
     <main className="flex-1">
       <div className="container mx-auto py-16 px-6">

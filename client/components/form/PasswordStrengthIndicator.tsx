@@ -1,6 +1,6 @@
 import { Check, X } from 'lucide-react';
 import React, { useMemo } from 'react';
-import { useTranslations } from 'next-intl';
+import { useTranslations } from '@client/hooks/useTranslations';
 
 interface IPasswordStrengthIndicatorProps {
   password: string;

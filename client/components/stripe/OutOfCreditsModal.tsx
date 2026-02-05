@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useMemo } from 'react';
-import { getTranslations } from '../../../src/i18n/utils';
+import { getTranslations } from '@src/i18n/utils';
 import { CreditPackSelector } from './CreditPackSelector';
 import { AlertCircle, X } from 'lucide-react';
 

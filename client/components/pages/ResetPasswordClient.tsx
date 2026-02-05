@@ -5,9 +5,9 @@ import { useEffect, useState, useMemo } from 'react';
 import { createClient } from '@shared/utils/supabase/client';
 import { ForgotPasswordSetNewPasswordForm } from '@client/components/modal/auth/ForgotPasswordSetNewPasswordForm';
 import { Loader2 } from 'lucide-react';
-import { getTranslations } from '../../../src/i18n/utils';
+import { getTranslations } from '@src/i18n/utils';
 
-function ResetPasswordContent() {
+function ResetPasswordContent(): JSX.Element {
   const [status, setStatus] = useState<'loading' | 'success' | 'error'>('loading');
   const [error, setError] = useState<string | null>(null);
   const t = useMemo(() => getTranslations('auth.resetPassword'), []);
@@ -106,7 +106,7 @@ function ResetPasswordContent() {
   );
 }
 
-function LoadingFallback() {
+function LoadingFallback(): JSX.Element {
   const t = useMemo(() => getTranslations('auth'), []);
   return (
     <div className="min-h-screen flex items-center justify-center bg-background">
@@ -118,7 +118,7 @@ function LoadingFallback() {
   );
 }
 
-export default function ResetPasswordClient() {
+export function ResetPasswordClient(): JSX.Element {
   return (
     <Suspense fallback={<LoadingFallback />}>
       <ResetPasswordContent />

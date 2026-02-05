@@ -4,9 +4,8 @@ import type { ISubscription, IUserProfile } from '@/shared/types/stripe.types';
 import { StripeService } from '@client/services/stripeService';
 import { getPlanByPriceId, shouldSendExpirationWarning } from '@shared/config/subscription.utils';
 import { differenceInDays, format } from 'date-fns';
-import Link from 'next/link';
 import { useEffect, useState } from 'react';
-import { useTranslations } from 'next-intl';
+import { useTranslations } from '@client/hooks/useTranslations';
 
 interface IExpirationWarningBannerProps {
   /**
@@ -29,7 +28,7 @@ interface IExpirationWarningBannerProps {
 export function ExpirationWarningBanner({
   warningDays = 7,
 }: IExpirationWarningBannerProps): JSX.Element | null {
-  const t = useTranslations();
+  const t = useTranslations('stripe');
   const [profile, setProfile] = useState<IUserProfile | null>(null);
   const [subscription, setSubscription] = useState<ISubscription | null>(null);
   const [loading, setLoading] = useState(true);
@@ -135,7 +134,7 @@ export function ExpirationWarningBanner({
               isUrgent ? 'text-error' : isModerate ? 'text-warning' : 'text-info'
             }`}
           >
-            {isUrgent ? t('stripe.banner.expirationUrgent') : t('stripe.banner.expirationModerate')}
+            {isUrgent ? t('banner.expirationUrgent') : t('banner.expirationModerate')}
           </h3>
           <p
             className={`text-sm ${
@@ -148,20 +147,20 @@ export function ExpirationWarningBanner({
             </strong>{' '}
             will expire on <strong>{formattedDate}</strong>
             {daysUntilExpiration === 0
-              ? ` ${t('stripe.banner.timeRemainder.today')}`
+              ? ` ${t('banner.timeRemainder.today')}`
               : daysUntilExpiration === 1
-                ? ` ${t('stripe.banner.timeRemainder.tomorrow')}`
-                : ` ${t('stripe.banner.timeRemainder.days', { days: daysUntilExpiration })}`}
+                ? ` ${t('banner.timeRemainder.tomorrow')}`
+                : ` ${t('banner.timeRemainder.days', { days: daysUntilExpiration })}`}
             . Use them before they&apos;re gone!
           </p>
           <div className="mt-2">
-            <Link
+            <a
               href="/?signup=1"
               className={`text-sm font-medium inline-flex items-center gap-1 hover:underline ${
                 isUrgent ? 'text-error/70' : isModerate ? 'text-warning/70' : 'text-info/70'
               }`}
             >
-              {t('stripe.banner.startUpscaling')}
+              {t('banner.startUpscaling')}
               <svg
                 className="h-4 w-4"
                 xmlns="http://www.w3.org/2000/svg"
@@ -174,7 +173,7 @@ export function ExpirationWarningBanner({
                   clipRule="evenodd"
                 />
               </svg>
-            </Link>
+            </a>
           </div>
         </div>
 
@@ -188,7 +187,7 @@ export function ExpirationWarningBanner({
             }
           }}
           className="flex-shrink-0 text-muted-foreground hover:text-muted-foreground transition-colors"
-          aria-label={t('stripe.banner.aria.dismiss')}
+          aria-label={t('banner.aria.dismiss')}
         >
           <svg
             className="h-5 w-5"

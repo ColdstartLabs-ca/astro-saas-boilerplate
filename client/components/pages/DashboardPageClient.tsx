@@ -6,7 +6,7 @@ export default function DashboardPage(): JSX.Element {
       {/* Page Header */}
       <div>
         <h1 className="text-2xl font-bold text-primary">Dashboard</h1>
-        <p className="text-muted-foreground mt-1">Welcome back! Here's your workspace overview.</p>
+        <p className="text-muted-foreground mt-1">Welcome back! Here&apos;s your workspace overview.</p>
       </div>
 
       {/* Workspace placeholder - feature components were extracted to boilerplate */}

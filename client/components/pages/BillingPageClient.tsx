@@ -4,6 +4,7 @@ import type { ISubscription, IUserProfile } from '@/shared/types/stripe.types';
 import { CancelSubscriptionModal } from '@client/components/stripe/CancelSubscriptionModal';
 import { CreditPackSelector } from '@client/components/stripe/CreditPackSelector';
 import { StripeService } from '@client/services/stripeService';
+import { useTranslations } from '@src/i18n/utils';
 import { useToastStore } from '@client/store/toastStore';
 import { getPlanDisplayName, getPlanForPriceId } from '@shared/config/stripe';
 import dayjs from 'dayjs';
