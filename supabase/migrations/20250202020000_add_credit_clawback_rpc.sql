@@ -42,7 +42,7 @@ BEGIN
   INSERT INTO credit_transactions (
     user_id,
     amount,
-    transaction_type,
+    type,
     reference_id,
     description,
     created_at
@@ -85,7 +85,7 @@ BEGIN
   FROM credit_transactions
   WHERE user_id = p_target_user_id
     AND reference_id = p_original_ref_id
-    AND transaction_type IN ('subscription', 'purchase')
+    AND type IN ('subscription', 'purchase')
     AND amount > 0; -- Only credit additions
 
   IF total_credits_to_clawback = 0 THEN
@@ -107,12 +107,14 @@ EXCEPTION WHEN OTHERS THEN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
--- Add refund transaction type constraint
+-- Add clawback to the existing type check constraint
+-- First drop the old constraint, then add updated one
+ALTER TABLE credit_transactions DROP CONSTRAINT IF EXISTS credit_transactions_type_check;
 ALTER TABLE credit_transactions
-ADD CONSTRAINT chk_transaction_type_valid
-CHECK (transaction_type IN ('purchase', 'subscription', 'usage', 'refund', 'bonus', 'clawback'));
+ADD CONSTRAINT credit_transactions_type_check
+CHECK (type IN ('purchase', 'subscription', 'usage', 'refund', 'bonus', 'clawback'));
 
 -- Add index for refund-related queries
-CREATE INDEX idx_credit_transactions_ref_type_amount
-ON credit_transactions(reference_id, transaction_type, amount)
-WHERE transaction_type IN ('purchase', 'subscription', 'refund');
+CREATE INDEX IF NOT EXISTS idx_credit_transactions_ref_type_amount
+ON credit_transactions(reference_id, type, amount)
+WHERE type IN ('purchase', 'subscription', 'refund');

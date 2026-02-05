@@ -71,8 +71,8 @@ Annual discount: 20% off (~2 months free). See [Revenue Streams](../business/bus
 
 **Rebrand & Landing Page**
 
-- [ ] Update app name, logos, meta tags from boilerplate to AutopilotRank
-- [ ] Rewrite landing page: hero, pain points, solution, features, pricing, FAQ
+- [x] Update app name, logos, meta tags from boilerplate to AutopilotRank
+- [x] Rewrite landing page: hero, pain points, solution, features, pricing, FAQ
 - [ ] Update pricing page with new tiers (Starter/Growth/Agency) + competitor comparison
 - [ ] Update Stripe products and price IDs for article-based plans
 - [ ] Reconfigure credit system: 1 credit = 1 article generation

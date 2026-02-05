@@ -19,9 +19,9 @@ COMMENT ON COLUMN credit_transactions.credit_pool IS
 -- Backfill existing transactions based on type
 UPDATE credit_transactions
 SET credit_pool = CASE
-    WHEN transaction_type = 'subscription' THEN 'subscription'
-    WHEN transaction_type = 'purchase' THEN 'purchased'
-    WHEN transaction_type IN ('refund', 'clawback') THEN 'mixed'
+    WHEN type = 'subscription' THEN 'subscription'
+    WHEN type = 'purchase' THEN 'purchased'
+    WHEN type IN ('refund', 'clawback') THEN 'mixed'
     ELSE 'mixed'
 END
 WHERE credit_pool IS NULL;
@@ -128,7 +128,7 @@ BEGIN
     INSERT INTO credit_transactions (
         user_id,
         amount,
-        transaction_type,
+        type,
         reference_id,
         description,
         credit_pool,
@@ -188,7 +188,7 @@ BEGIN
     FROM credit_transactions
     WHERE user_id = p_target_user_id
         AND reference_id = p_original_ref_id
-        AND transaction_type IN ('subscription', 'purchase')
+        AND type IN ('subscription', 'purchase')
         AND amount > 0; -- Only credit additions
 
     IF total_credits_to_clawback = 0 THEN
@@ -274,7 +274,7 @@ BEGIN
     INSERT INTO credit_transactions (
         user_id,
         amount,
-        transaction_type,
+        type,
         reference_id,
         description,
         credit_pool,
@@ -322,7 +322,7 @@ BEGIN
     FROM credit_transactions
     WHERE user_id = p_target_user_id
         AND reference_id = p_payment_intent_id
-        AND transaction_type = 'purchase'
+        AND type = 'purchase'
         AND amount > 0;
 
     IF total_credits_to_clawback = 0 THEN
