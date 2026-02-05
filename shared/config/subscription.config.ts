@@ -4,6 +4,9 @@
  *
  * IMPORTANT: This file should be the ONLY place where subscription
  * configuration values are defined. All other files should import from here.
+ *
+ * AutopilotRank - AI SEO Content Platform
+ * 1 credit = 1 article generation
  */
 
 import { CREDIT_COSTS } from './credits.config';
@@ -15,7 +18,7 @@ import { TIMEOUTS } from './timeouts.config';
  * Modify this to change subscription behavior for your SaaS application
  */
 export const SUBSCRIPTION_CONFIG: ISubscriptionConfig = {
-  version: '1.0.0',
+  version: '2.0.0',
 
   plans: [
     {
@@ -25,45 +28,40 @@ export const SUBSCRIPTION_CONFIG: ISubscriptionConfig = {
       priceInCents: 0, // $0.00
       currency: 'usd',
       interval: 'month',
-      creditsPerCycle: 10, // 10 credits total, no refresh
-      maxRollover: 60, // 6 months worth (10 * 6)
-      rolloverMultiplier: 6,
+      creditsPerCycle: 3, // 3 trial articles total, no refresh
+      maxRollover: 3, // No rollover for trial
+      rolloverMultiplier: 1,
       trial: {
         enabled: false,
         durationDays: 0,
         trialCredits: null,
-        requirePaymentMethod: true,
+        requirePaymentMethod: false, // No credit card required for trial
         allowMultipleTrials: false,
         autoConvertToPaid: true,
       },
       creditsExpiration: {
-        mode: 'never', // Credits roll over with cap
+        mode: 'never',
         gracePeriodDays: 0,
         sendExpirationWarning: false,
         warningDaysBefore: 0,
       },
-      features: [
-        '10 credits per month',
-        'Credits roll over (up to 60)',
-        'Basic API access',
-        'Community support',
-        'Single request at a time',
-      ],
+      features: ['3 trial articles', 'Basic AI models', 'No credit card required'],
       recommended: false,
-      description: 'Perfect for getting started',
+      description: 'Try AutopilotRank free',
       displayOrder: 0,
-      enabled: false, // Free tier is handled via freeUser config, not as a subscription plan
-      batchLimit: 1, // Single request only for free tier
+      enabled: false, // Free tier is handled via freeUser config
+      batchLimit: 1,
     },
     {
       key: 'starter',
       name: 'Starter',
-      stripePriceId: 'price_1Sq14eALMLhQocpf5CXIwYSv',
-      priceInCents: 900, // $9.00
+      // TODO: Replace with real Stripe price ID after creating products
+      stripePriceId: 'price_PLACEHOLDER_STARTER_MONTHLY',
+      priceInCents: 4900, // $49.00
       currency: 'usd',
       interval: 'month',
-      creditsPerCycle: 100, // 100 credits per month
-      maxRollover: CREDIT_COSTS.STARTER_MONTHLY_CREDITS * 3, // 300 credits max (3x rollover)
+      creditsPerCycle: CREDIT_COSTS.STARTER_MONTHLY_CREDITS, // 30 articles
+      maxRollover: CREDIT_COSTS.STARTER_MONTHLY_CREDITS * 3, // 90 max (3x rollover)
       rolloverMultiplier: 3,
       trial: {
         enabled: false,
@@ -80,28 +78,31 @@ export const SUBSCRIPTION_CONFIG: ISubscriptionConfig = {
         warningDaysBefore: 0,
       },
       features: [
-        '100 credits per month',
-        'Credits roll over (up to 300)',
+        '30 articles per month',
+        'Credits roll over (up to 90)',
+        'Multi-model AI (GPT-4, Claude, Gemini)',
+        'Humanizer engine',
+        '1 WordPress site',
+        'SEO scoring & AI detection',
         'Email support',
-        'All API features included',
-        'Batch up to 5 requests',
       ],
       recommended: false,
-      description: 'Perfect for getting started',
+      description: 'Perfect for getting started with SEO content',
       displayOrder: 1,
       enabled: true,
-      batchLimit: 5, // Allow batch up to 5 requests
+      batchLimit: 5,
     },
     {
-      key: 'hobby',
-      name: 'Hobby',
-      stripePriceId: 'price_1SZmVyALMLhQocpf0H7n5ls8',
-      priceInCents: 1900, // $19.00
+      key: 'growth',
+      name: 'Growth',
+      // TODO: Replace with real Stripe price ID after creating products
+      stripePriceId: 'price_PLACEHOLDER_GROWTH_MONTHLY',
+      priceInCents: 9900, // $99.00
       currency: 'usd',
       interval: 'month',
-      creditsPerCycle: CREDIT_COSTS.HOBBY_MONTHLY_CREDITS,
-      maxRollover: CREDIT_COSTS.HOBBY_MONTHLY_CREDITS * 6, // 1200 credits max
-      rolloverMultiplier: 6,
+      creditsPerCycle: CREDIT_COSTS.GROWTH_MONTHLY_CREDITS, // 100 articles
+      maxRollover: CREDIT_COSTS.GROWTH_MONTHLY_CREDITS * 3, // 300 max (3x rollover)
+      rolloverMultiplier: 3,
       trial: {
         enabled: false,
         durationDays: 0,
@@ -117,64 +118,30 @@ export const SUBSCRIPTION_CONFIG: ISubscriptionConfig = {
         warningDaysBefore: 0,
       },
       features: [
-        '200 credits per month',
-        'Credits roll over (up to 1,200)',
-        'Email support',
-        'All features included',
-        'Batch up to 10 requests',
+        '100 articles per month',
+        'Credits roll over (up to 300)',
+        'Everything in Starter',
+        'GSC integration',
+        '3 CMS sites',
+        'Advanced humanizer',
+        'Scheduled publishing',
+        'Priority support',
       ],
-      recommended: false,
-      description: 'For personal projects',
+      recommended: true, // Recommended plan
+      description: 'For growing content teams',
       displayOrder: 2,
       enabled: true,
-      batchLimit: 10, // Up to 10 requests in batch
+      batchLimit: 25,
     },
     {
-      key: 'pro',
-      name: 'Professional',
-      stripePriceId: 'price_1SZmVzALMLhQocpfPyRX2W8D',
-      priceInCents: 4900, // $49.00
+      key: 'agency',
+      name: 'Agency',
+      // TODO: Replace with real Stripe price ID after creating products
+      stripePriceId: 'price_PLACEHOLDER_AGENCY_MONTHLY',
+      priceInCents: 24900, // $249.00
       currency: 'usd',
       interval: 'month',
-      creditsPerCycle: CREDIT_COSTS.PRO_MONTHLY_CREDITS,
-      maxRollover: CREDIT_COSTS.PRO_MONTHLY_CREDITS * 6, // 6000 credits max
-      rolloverMultiplier: 6,
-      trial: {
-        enabled: false,
-        durationDays: 0,
-        trialCredits: null,
-        requirePaymentMethod: true,
-        allowMultipleTrials: false,
-        autoConvertToPaid: true,
-      },
-      creditsExpiration: {
-        mode: 'never', // Credits roll over with cap
-        gracePeriodDays: 0,
-        sendExpirationWarning: false,
-        warningDaysBefore: 0,
-      },
-      features: [
-        '1000 credits per month',
-        'Credits roll over (up to 6,000)',
-        'Priority support',
-        'All features included',
-        'Early access to new features',
-        'Batch up to 50 requests',
-      ],
-      recommended: true,
-      description: 'For professionals',
-      displayOrder: 3,
-      enabled: true,
-      batchLimit: 50, // Up to 50 requests in batch
-    },
-    {
-      key: 'business',
-      name: 'Business',
-      stripePriceId: 'price_1SZmVzALMLhQocpfqPk9spg4',
-      priceInCents: 14900, // $149.00
-      currency: 'usd',
-      interval: 'month',
-      creditsPerCycle: CREDIT_COSTS.BUSINESS_MONTHLY_CREDITS,
+      creditsPerCycle: CREDIT_COSTS.AGENCY_MONTHLY_CREDITS, // 500 articles
       maxRollover: 0, // No rollover - use it or lose it
       rolloverMultiplier: 0,
       trial: {
@@ -186,25 +153,25 @@ export const SUBSCRIPTION_CONFIG: ISubscriptionConfig = {
         autoConvertToPaid: true,
       },
       creditsExpiration: {
-        mode: 'never', // Credits roll over with cap
+        mode: 'never',
         gracePeriodDays: 0,
         sendExpirationWarning: false,
         warningDaysBefore: 0,
       },
       features: [
-        '5000 credits per month',
-        'No credit rollover (use monthly allocation)',
-        '24/7 priority support',
-        'All features included',
+        '500 articles per month',
+        'Everything in Growth',
+        'Unlimited CMS sites',
+        'White-label reports (coming soon)',
+        'Team accounts (up to 5)',
+        'API access',
         'Dedicated account manager',
-        'Custom integrations',
-        'Batch up to 500 requests',
       ],
       recommended: false,
-      description: 'For teams and agencies',
-      displayOrder: 4,
+      description: 'For agencies and large teams',
+      displayOrder: 3,
       enabled: true,
-      batchLimit: 500, // Up to 500 requests in batch
+      batchLimit: 100,
     },
   ],
 
@@ -212,33 +179,33 @@ export const SUBSCRIPTION_CONFIG: ISubscriptionConfig = {
     {
       key: 'small',
       name: 'Small Pack',
-      credits: CREDIT_COSTS.SMALL_PACK_CREDITS,
-      priceInCents: 499, // $4.99
+      credits: CREDIT_COSTS.SMALL_PACK_CREDITS, // 10 articles
+      priceInCents: 999, // $9.99
       currency: 'usd',
-      stripePriceId: 'price_1SbAASALMLhQocpfGUg3wLXM',
-      description: '50 credits',
+      stripePriceId: 'price_PLACEHOLDER_SMALL_PACK',
+      description: '10 articles',
       popular: false,
       enabled: true,
     },
     {
       key: 'medium',
       name: 'Medium Pack',
-      credits: CREDIT_COSTS.MEDIUM_PACK_CREDITS,
-      priceInCents: 1499, // $14.99
+      credits: CREDIT_COSTS.MEDIUM_PACK_CREDITS, // 25 articles
+      priceInCents: 1999, // $19.99
       currency: 'usd',
-      stripePriceId: 'price_1SbAASALMLhQocpf7nw3wRj7',
-      description: '200 credits - Best value',
+      stripePriceId: 'price_PLACEHOLDER_MEDIUM_PACK',
+      description: '25 articles - Best value',
       popular: true,
       enabled: true,
     },
     {
       key: 'large',
       name: 'Large Pack',
-      credits: CREDIT_COSTS.LARGE_PACK_CREDITS,
-      priceInCents: 3999, // $39.99
+      credits: CREDIT_COSTS.LARGE_PACK_CREDITS, // 50 articles
+      priceInCents: 3499, // $34.99
       currency: 'usd',
-      stripePriceId: 'price_1SbAASALMLhQocpfCrD7P7TW',
-      description: '600 credits',
+      stripePriceId: 'price_PLACEHOLDER_LARGE_PACK',
+      description: '50 articles',
       popular: false,
       enabled: true,
     },
@@ -246,46 +213,44 @@ export const SUBSCRIPTION_CONFIG: ISubscriptionConfig = {
 
   creditCosts: {
     modes: {
-      api: CREDIT_COSTS.API_CALL, // Base API call cost (1 credit)
-      basic: CREDIT_COSTS.API_CALL * 1, // Basic mode (1 credit)
-      premium: CREDIT_COSTS.API_CALL * 2, // Premium mode (2 credits)
-      enterprise: CREDIT_COSTS.API_CALL * 5, // Enterprise mode (5 credits)
+      api: CREDIT_COSTS.API_CALL, // 1 credit = 1 article
+      basic: CREDIT_COSTS.API_CALL * 1, // 1 article
+      premium: CREDIT_COSTS.API_CALL * 1, // 1 article (no multiplier in new model)
+      enterprise: CREDIT_COSTS.API_CALL * 1, // 1 article (no multiplier in new model)
     },
-    // Option multipliers for different features
     featureMultipliers: {
       basic: 1.0,
-      premium: 2.0,
-      enterprise: 5.0,
+      premium: 1.0,
+      enterprise: 1.0,
     },
-    // Options
     options: {
-      priorityProcessing: 1, // Future feature
-      batchPerRequest: 0, // No extra cost per batch request
+      priorityProcessing: 0,
+      batchPerRequest: 0,
     },
-    minimumCost: CREDIT_COSTS.API_CALL, // At least 1 credit per operation
-    maximumCost: CREDIT_COSTS.API_CALL * 10, // Safety cap
+    minimumCost: CREDIT_COSTS.API_CALL, // 1 credit per article
+    maximumCost: CREDIT_COSTS.API_CALL * 1, // 1 credit per article
   },
 
   freeUser: {
-    initialCredits: CREDIT_COSTS.DEFAULT_FREE_CREDITS, // One-time credits on signup
+    initialCredits: CREDIT_COSTS.DEFAULT_FREE_CREDITS, // 3 trial articles
     monthlyRefresh: false, // Free users don't get monthly refresh
-    monthlyCredits: CREDIT_COSTS.DEFAULT_TRIAL_CREDITS, // Only for paid subscriptions
-    maxBalance: CREDIT_COSTS.DEFAULT_FREE_CREDITS, // Free users capped at initial credits
-    batchLimit: 1, // Up to 1 request at a time for free users
+    monthlyCredits: CREDIT_COSTS.DEFAULT_TRIAL_CREDITS,
+    maxBalance: CREDIT_COSTS.DEFAULT_FREE_CREDITS, // Free users capped at 3
+    batchLimit: 1, // Up to 1 article at a time for free users
   },
 
   warnings: {
-    lowCreditThreshold: CREDIT_COSTS.LOW_CREDIT_WARNING_THRESHOLD, // Warn when balance falls below this
-    lowCreditPercentage: CREDIT_COSTS.CREDIT_WARNING_PERCENTAGE, // Also warn at 20% of monthly allowance
-    showToastOnDashboard: true, // Show toast notification
-    checkIntervalMs: TIMEOUTS.CACHE_MEDIUM_TTL, // Check every 5 minutes
+    lowCreditThreshold: CREDIT_COSTS.LOW_CREDIT_WARNING_THRESHOLD, // Warn at 2 articles
+    lowCreditPercentage: CREDIT_COSTS.CREDIT_WARNING_PERCENTAGE, // 20%
+    showToastOnDashboard: true,
+    checkIntervalMs: TIMEOUTS.CACHE_MEDIUM_TTL,
   },
 
   defaults: {
     defaultCurrency: 'usd',
     defaultInterval: 'month',
     creditsRolloverDefault: true, // Credits roll over by default
-    defaultRolloverMultiplier: 6, // Default to 6x monthly credits
+    defaultRolloverMultiplier: 3, // Default to 3x monthly credits (not 6x anymore)
   },
 } as const;
 

@@ -72,22 +72,23 @@ Annual discount: 20% off (~2 months free).
 
 ---
 
-### Milestone 1: Foundation (Database + Billing Reconfiguration)
+### Milestone 1: Foundation (Database + Billing Reconfiguration) ✅
 
 > **Why first:** Everything else depends on having the right DB schema and billing configured.
+> **Completed:** 2026-02-05
 
 **Database Schema** — Create migrations for the core domain tables:
 
-- [ ] `projects` table — user's connected sites (name, domain, CMS type, credentials)
-- [ ] `campaigns` table — keyword groups with settings (name, project_id, model, tone, word count, status)
-- [ ] `articles` table — generated content (campaign_id, title, content, keyword, status, model_used, seo_score, ai_detection_score, word_count, published_url)
-- [ ] `keywords` table — campaign keywords (campaign_id, keyword, search_volume, status)
+- [x] `projects` table — user's connected sites (name, domain, CMS type, credentials)
+- [x] `campaigns` table — keyword groups with settings (name, project_id, model, tone, word count, status)
+- [x] `articles` table — generated content (campaign_id, title, content, keyword, status, model_used, seo_score, ai_detection_score, word_count, published_url)
+- [x] `keywords` table — campaign keywords (campaign_id, keyword, search_volume, status)
 
 **Billing Reconfiguration:**
 
-- [ ] Update Stripe products and price IDs for Starter/Growth/Agency tiers
-- [ ] Reconfigure credit system: 1 credit = 1 article generation
-- [ ] Update pricing page with new tiers + competitor comparison
+- [ ] Update Stripe products and price IDs for Starter/Growth/Agency tiers (manual - requires Stripe Dashboard access)
+- [x] Reconfigure credit system: 1 credit = 1 article generation
+- [x] Update pricing page with new tiers + competitor comparison
 
 ---
 
@@ -375,7 +376,8 @@ M1 Foundation
 
 ## Changelog
 
-| Date       | Change                                                                                                                                                            |
-| ---------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 2026-02-05 | Restructured MVP into 7 ordered milestones with dependency graph; consolidated pricing/financials to revenue-streams.md; added priority levels to post-MVP phases |
-| 2026-02-04 | Created unified roadmap for AutopilotRank pivot, split into MVP (4 weeks) and Post-MVP phases                                                                     |
+| Date       | Change                                                                                                                                                                                                                                                                  |
+| ---------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 2026-02-05 | **Milestone 1 Foundation completed!** Database tables created (projects, campaigns, articles, keywords), billing reconfigured (3 plans: Starter $49/30cr, Growth $99/100cr, Agency $249/500cr), credit system updated to article-based. PRD moved to `docs/PRDs/done/`. |
+| 2026-02-05 | Restructured MVP into 7 ordered milestones with dependency graph; consolidated pricing/financials to revenue-streams.md; added priority levels to post-MVP phases                                                                                                       |
+| 2026-02-04 | Created unified roadmap for AutopilotRank pivot, split into MVP (4 weeks) and Post-MVP phases                                                                                                                                                                           |
