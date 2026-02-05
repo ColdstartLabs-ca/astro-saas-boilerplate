@@ -1,332 +1,115 @@
 # User Flows
 
-Detailed user journey diagrams for MyImageUpscaler's core features.
+Detailed user journeys for **AutopilotRank**.
 
-## 1. First-Time User (Freemium)
-
-```mermaid
-flowchart TD
-    A[Landing Page] --> B{Has Account?}
-    B -->|No| C[Try Free Button]
-    B -->|Yes| D[Login]
-
-    C --> E[Upload Image]
-    E --> F[Select Processing Mode]
-    F --> G[Process Image]
-    G --> H[View Before/After]
-    H --> I{Satisfied?}
-
-    I -->|Yes| J[Download Result]
-    I -->|No| K[Adjust Settings]
-    K --> G
-
-    J --> L{Create Account?}
-    L -->|Yes| M[Sign Up]
-    L -->|No| N[Continue as Guest]
-
-    M --> O[Dashboard]
-    N --> P{Free Credits Left?}
-    P -->|Yes| E
-    P -->|No| Q[Upgrade Prompt]
-    Q --> R[Pricing Page]
-```
-
-## 2. Registration & Authentication
+## 1. Onboarding & Setup
 
 ```mermaid
 flowchart TD
-    A[Auth Page] --> B{Method}
+    A[Sign Up] --> B{Select User Type}
+    B -->|SMB Owner| C[Project Wizard]
+    B -->|Agency| D[Agency Dashboard]
 
-    B -->|Email/Password| C[Enter Email & Password]
-    C --> D[Submit Form]
-    D --> E[Create Account in Supabase]
-    E --> F[Send Verification Email]
-    F --> G[Show Verification Notice]
-    G --> H[User Clicks Email Link]
-    H --> I[Email Verified]
-    I --> J[Redirect to Dashboard]
+    C --> C1[Enter Website URL]
+    C1 --> C2[Connect GSC (Optional)]
 
-    B -->|Google OAuth| K[Click Google Button]
-    K --> L[Redirect to Google]
-    L --> M[User Consents]
-    M --> N[Google Callback]
-    N --> O{Existing User?}
-    O -->|Yes| P[Link Account]
-    O -->|No| Q[Create New Account]
-    P --> J
-    Q --> R[Auto-create Profile]
-    R --> J
+    C2 --> C3{GSC Connected?}
+    C3 -->|Yes| C4[Auto-Analyze Opportunities]
+    C3 -->|No| C5[Manual Keyword/Competitor Entry]
 
-    B -->|Magic Link| S[Enter Email]
-    S --> T[Send Magic Link]
-    T --> U[User Clicks Link]
-    U --> V[Verify Token]
-    V --> J
+    C4 --> E[Configure Brand Voice]
+    C5 --> E
+
+    E --> F[Connect CMS (WordPress/etc)]
+    F --> G[Onboarding Complete]
 ```
 
-## 3. Image Processing Flow
+## 2. Campaign Creation (The Core Loop)
+
+```mermaid
+flowchart TD
+    Start[Dashboard] --> NewCamp[New Campaign]
+
+    NewCamp --> Source{Keyword Source}
+    Source -->|GSC Opportunities| GCSList[Select from GSC Data]
+    Source -->|Manual CSV| CSV[Upload CSV]
+    Source -->|Competitor Gap| Gap[Enter Competitor URL]
+
+    GCSList --> Config[Configure Content Settings]
+    CSV --> Config
+    Gap --> Config
+
+    Config --> Params[Set Parameters]
+    Params --> AI_Model[Select AI Model]
+    Params --> Article_Len[Length: Short/Long]
+    Params --> Images[AI Images / Stock]
+    Params --> Links[Internal Linking]
+
+    Params --> Preview[Review Campaign Config]
+    Preview --> Launch[Start Generation]
+
+    Launch --> Queue[Job Queued]
+```
+
+## 3. Content Review & Publishing
 
 ```mermaid
 sequenceDiagram
-    participant U as User
-    participant FE as Frontend
-    participant API as API Route
-    participant DB as Supabase
-    participant AI as Gemini API
+    participant User
+    participant Dashboard
+    participant Editor
+    participant CMS
 
-    U->>FE: Upload Image
-    FE->>FE: Validate (size, format)
-    FE->>API: POST /api/upscale
+    User->>Dashboard: View Campaign Status
+    Dashboard-->>User: List of Generated Articles
 
-    API->>DB: Verify JWT & Get User
-    DB-->>API: User Profile + Credits
+    User->>Dashboard: Click "Review" on Article
+    Dashboard->>Editor: Open Standard Editor
 
-    alt Insufficient Credits
-        API-->>FE: 402 Payment Required
-        FE-->>U: Upgrade Prompt
+    User->>Editor: Read content, checking SEO score
+
+    alt Needs Edits
+        User->>Editor: Edit Text / Regenerate Section
+        Editor-->>User: Updated Content
+    else Looks Good
+        User->>Editor: Click "Publish"
     end
 
-    API->>DB: Deduct Credits
-    API->>AI: Send Image + Prompt
-    AI-->>API: Processed Image
-
-    API->>DB: Log Transaction
-    API-->>FE: Return Processed Image
-    FE-->>U: Show Before/After
-    U->>FE: Download Image
+    Editor->>CMS: Post to WordPress/Shopify
+    CMS-->>Editor: Success (Live URL)
+    Editor-->>User: "Published Successfully"
 ```
 
-## 4. Subscription Purchase
+## 4. The "Autopilot" Mode (GSC Driven)
 
 ```mermaid
 flowchart TD
-    A[Dashboard] --> B[Click Upgrade]
-    B --> C[Pricing Modal]
-    C --> D{Select Plan}
+    Timer[Weekly Scheduler] --> Check[Check GSC Data]
+    Check --> Opps{New Opportunities?}
 
-    D -->|Starter $9| E[100 Credits/month]
-    D -->|Pro $29| F[500 Credits/month]
-    D -->|Business $99| G[2500 Credits/month]
+    Opps -->|Yes| Filter[Filter by Difficulty/Volume]
+    Filter --> Gen[Generate Content Candidates]
 
-    E --> H[Stripe Checkout]
-    F --> H
-    G --> H
+    Gen --> Approval{Auto-Publish On?}
 
-    H --> I[Enter Payment Details]
-    I --> J{Payment Success?}
+    Approval -->|Yes| Publish[Publish to CMS]
+    Approval -->|No| Draft[Save as Draft & Notify User]
 
-    J -->|Yes| K[Stripe Webhook]
-    K --> L[checkout.session.completed]
-    L --> M[Update Profile]
-    M --> N[Add Credits]
-    N --> O[Create Subscription Record]
-    O --> P[Redirect to Success Page]
-    P --> Q[Dashboard with New Credits]
-
-    J -->|No| R[Show Error]
-    R --> I
+    Publish --> Report[Weekly Email Report]
+    Draft --> Report
 ```
 
-## 5. Batch Processing (Pro/Business)
+## 5. Subscription & Credits
 
 ```mermaid
 flowchart TD
-    A[Upscaler Page] --> B[Enable Batch Mode]
-    B --> C[Drag & Drop Multiple Images]
-    C --> D{Validate All}
+    User --> Credits{Check Credits}
 
-    D -->|Invalid Files| E[Show Errors]
-    E --> C
+    Credits -->|Enough| Allow[Action Allowed]
+    Credits -->|Low| Warn[Low Balance Warning]
+    Credits -->|Empty| Block[Action Blocked] --> Upgrade[Pricing Page]
 
-    D -->|Valid| F[Select Processing Mode]
-    F --> G[Select Output Format]
-    G --> H[Submit Batch]
-
-    H --> I{Sufficient Credits?}
-    I -->|No| J[Upgrade Prompt]
-    J --> K[Pricing Page]
-
-    I -->|Yes| L[Create Batch Job]
-    L --> M[Queue All Images]
-
-    M --> N[Process Each Image]
-    N --> O[Update Progress Bar]
-    O --> P{All Complete?}
-
-    P -->|No| N
-    P -->|Yes| Q[Generate ZIP]
-    Q --> R[Show Results Gallery]
-    R --> S{Download?}
-
-    S -->|Individual| T[Download Single]
-    S -->|All| U[Download ZIP]
-```
-
-## 6. Subscription Management
-
-```mermaid
-stateDiagram-v2
-    [*] --> Free: New User
-    Free --> Starter: Purchase
-    Free --> Pro: Purchase
-    Free --> Business: Purchase
-
-    Starter --> Pro: Upgrade
-    Starter --> Free: Cancel
-    Starter --> Starter: Renew
-
-    Pro --> Business: Upgrade
-    Pro --> Starter: Downgrade
-    Pro --> Free: Cancel
-    Pro --> Pro: Renew
-
-    Business --> Pro: Downgrade
-    Business --> Free: Cancel
-    Business --> Business: Renew
-
-    state "Cancellation Flow" as cancel {
-        Active --> PendingCancel: Request Cancel
-        PendingCancel --> Canceled: Period Ends
-        PendingCancel --> Active: Reactivate
-    }
-```
-
-## 7. Credit System Flow
-
-```mermaid
-flowchart TD
-    subgraph "Credit Sources"
-        A[Free Signup +10]
-        B[Subscription Renewal]
-        C[One-time Purchase]
-        D[Referral Bonus]
-        E[Refund]
-    end
-
-    subgraph "Credit Pool"
-        F[(credits_balance)]
-    end
-
-    subgraph "Credit Usage"
-        G[Standard Process -1]
-        H[Enhanced Process -2]
-        I[Batch Process -N]
-        J[API Call -1]
-    end
-
-    A --> F
-    B --> F
-    C --> F
-    D --> F
-    E --> F
-
-    F --> G
-    F --> H
-    F --> I
-    F --> J
-
-    G --> K{Credits > 0?}
-    H --> K
-    I --> K
-    J --> K
-
-    K -->|Yes| L[Process]
-    K -->|No| M[Upgrade Required]
-```
-
-## 8. Error Recovery Flow
-
-```mermaid
-flowchart TD
-    A[Processing Failed] --> B{Error Type}
-
-    B -->|Timeout| C[Auto-retry x3]
-    C --> D{Success?}
-    D -->|Yes| E[Return Result]
-    D -->|No| F[Refund Credit]
-
-    B -->|Invalid Image| G[Show Error Message]
-    G --> H[Suggest Fixes]
-    H --> I[User Re-uploads]
-
-    B -->|AI Model Error| J[Fallback Model]
-    J --> K{Fallback Success?}
-    K -->|Yes| E
-    K -->|No| F
-
-    B -->|Rate Limited| L[Queue for Later]
-    L --> M[Notify When Ready]
-
-    F --> N[Log Transaction]
-    N --> O[Email User]
-    O --> P[Support Ticket Option]
-```
-
-## 9. API Integration Flow (Business Tier)
-
-```mermaid
-sequenceDiagram
-    participant App as External App
-    participant API as MyImageUpscaler API
-    participant Auth as Auth Middleware
-    participant DB as Database
-    participant AI as Gemini API
-
-    App->>API: POST /api/v1/upscale
-    Note over App,API: Headers: Authorization: Bearer <api_key>
-
-    API->>Auth: Validate API Key
-    Auth->>DB: Lookup Key + User
-    DB-->>Auth: User Profile
-
-    alt Invalid Key
-        Auth-->>App: 401 Unauthorized
-    end
-
-    alt Insufficient Credits
-        Auth-->>App: 402 Payment Required
-    end
-
-    API->>AI: Process Image
-    AI-->>API: Result
-
-    API->>DB: Deduct Credit
-    API->>DB: Log API Usage
-
-    API-->>App: 200 OK + Result URL
-
-    Note over App: Webhook (optional)
-    API--)App: POST webhook_url
-```
-
-## 10. Session & Token Flow
-
-```mermaid
-sequenceDiagram
-    participant Browser
-    participant App as Next.js App
-    participant Supabase
-
-    Browser->>App: Visit /login
-    App->>Browser: Show Login Form
-    Browser->>App: Submit Credentials
-    App->>Supabase: signInWithPassword()
-    Supabase-->>App: JWT + Refresh Token
-    App->>Browser: Set HttpOnly Cookies
-
-    Note over Browser,Supabase: Subsequent Requests
-
-    Browser->>App: Request /api/upscale
-    App->>App: Read JWT from Cookie
-    App->>Supabase: Verify JWT
-    Supabase-->>App: Valid + User Data
-    App->>App: Process Request
-    App-->>Browser: Response
-
-    Note over Browser,Supabase: Token Refresh
-
-    Browser->>App: Request (Token Near Expiry)
-    App->>Supabase: Refresh Token
-    Supabase-->>App: New JWT
-    App->>Browser: Update Cookie
+    Upgrade --> Stripe[Stripe Checkout]
+    Stripe --> Webhook[Webhook Handler]
+    Webhook --> DB[Update Credit Balance]
 ```

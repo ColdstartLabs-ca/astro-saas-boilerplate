@@ -1,135 +1,134 @@
 # System Architecture
 
-High-level architecture overview for MyImageUpscaler AI Image Enhancer.
+High-level architecture for **AutopilotRank**, an autonomous SEO content automation platform.
 
 ## Architecture Overview
 
 ```mermaid
 graph TB
     subgraph "Client Layer"
-        WEB[Web Browser]
-        MOBILE[Mobile Browser]
-        EXT_API[External API Clients]
+        WEB[Web App (Next.js)]
+        PLUGIN[WordPress Plugin]
+        API_CLIENT[External API Clients]
     end
 
-    subgraph "Edge Layer - Cloudflare"
-        CDN[CDN]
-        WORKERS[Workers Runtime]
+    subgraph "Edge & Routing"
+        CDN[Cloudflare CDN]
+        WAF[Cloudflare WAF]
     end
 
-    subgraph "Application Layer - Next.js"
-        PAGES[Pages/App Router]
-        API[API Routes]
-        MW[Middleware]
+    subgraph "Application Layer"
+        API[Next.js API Routes]
+        QUEUE[Job Queue (BullMQ/Inngest)]
+        WORKERS[Background Workers]
     end
 
     subgraph "Service Layer"
         AUTH[Supabase Auth]
         DB[(PostgreSQL)]
-        STRIPE[Stripe]
-        GEMINI[Gemini API / OpenRouter]
+        VECTOR[(Vector DB)]
+        CACHE[Redis]
     end
 
-    subgraph "AI Processing"
-        GEMINI_FLASH[Gemini 2.5 Flash]
-        GEMINI_PRO[Gemini 3 Pro]
+    subgraph "AI & Data Engine"
+        ORCHESTRATOR[Agent Orchestrator]
+        LLMS[LLM Gateway (GPT-4/Claude/Gemini)]
+        SERP[SERP Data Provider]
+        GSC[GSC Integration Service]
     end
 
     WEB --> CDN
-    MOBILE --> CDN
-    EXT_API --> CDN
+    PLUGIN --> CDN
+    CDN --> API
 
-    CDN --> WORKERS
-    WORKERS --> PAGES
-    WORKERS --> API
+    API --> AUTH
+    API --> QUEUE
+    API --> DB
 
-    PAGES --> AUTH
-    API --> MW
-    MW --> AUTH
-    MW --> DB
-    MW --> STRIPE
+    QUEUE --> WORKERS
+    WORKERS --> ORCHESTRATOR
 
-    API --> GEMINI
+    ORCHESTRATOR --> LLMS
+    ORCHESTRATOR --> SERP
+    ORCHESTRATOR --> GSC
+    ORCHESTRATOR --> VECTOR
+```
 
-    GEMINI --> GEMINI_FLASH
-    GEMINI --> GEMINI_PRO
+## Content Generation Pipeline
+
+The core engine of AutopilotRank uses a multi-agent system to generate high-quality SEO content.
+
+```mermaid
+sequenceDiagram
+    participant Queue
+    participant Researcher as Research Agent
+    participant Writer as Writer Agent
+    participant SEO as SEO Optimizer
+    participant Humanizer as Humanizer Engine
+    participant QA as QA System
+    participant CMS as CMS Integration
+
+    Queue->>Researcher: Start Job (Keyword)
+    Researcher->>Researcher: Analyze SERP Intent
+    Researcher->>Researcher: Extract Competitor Headings
+    Researcher-->>Writer: Content Brief & Outline
+
+    Writer->>Writer: Draft Content (Multi-Model)
+    Writer-->>SEO: Initial Draft
+
+    SEO->>SEO: Inject NLP Keywords
+    SEO->>SEO: Optimize Structure
+    SEO-->>Humanizer: Optimized Draft
+
+    Humanizer->>Humanizer: Apply Human-like Phrasing
+    Humanizer->>Humanizer: Anti-AI Detection Pass
+    Humanizer-->>QA: Final Draft
+
+    QA->>QA: Plagiarism Check
+    QA->>QA: Fact Check (Basic)
+    QA->>QA: AI Detection Score
+
+    alt Passes QA
+        QA-->>CMS: Publish/Draft
+    else Fails QA
+        QA-->>Writer: Regenerate/Refine
+    end
 ```
 
 ## Component Architecture
 
 ```mermaid
 graph LR
-    subgraph "Frontend Components"
-        LP[Landing Page]
-        UP[Upscaler Page]
-        DASH[Dashboard]
-        BILL[Billing]
-        AUTH_UI[Auth UI]
+    subgraph "Dashboard Components"
+        PROJECTS[Project Manager]
+        KW_RESEARCH[Keyword Researcher]
+        EDITOR[Content Editor]
+        SETTINGS[Integration Settings]
     end
 
-    subgraph "Shared Components"
-        IMG_UP[Image Uploader]
-        COMPARE[Before/After Compare]
-        PROGRESS[Progress Indicator]
-        MODAL[Modal System]
+    subgraph "Core Services"
+        GSC_SYNC[GSC Data Sync]
+        KEYWORD_CLUSTERING[Keyword Clustering]
+        CONTENT_GEN[Content Generator]
+        CMS_Connector[CMS Connectors]
     end
 
-    subgraph "State Management"
-        CONTEXT[React Context]
-        HOOKS[Custom Hooks]
-        CACHE[SWR Cache]
+    subgraph "External Integrations"
+        WP[WordPress]
+        WEBFLOW[Webflow]
+        SHOPIFY[Shopify]
+        GHOST[Ghost]
     end
 
-    LP --> IMG_UP
-    UP --> IMG_UP
-    UP --> COMPARE
-    UP --> PROGRESS
+    PROJECTS --> GSC_SYNC
+    KW_RESEARCH --> KEYWORD_CLUSTERING
+    KEYWORD_CLUSTERING --> CONTENT_GEN
+    CONTENT_GEN --> CMS_Connector
 
-    DASH --> CACHE
-    BILL --> MODAL
-
-    IMG_UP --> HOOKS
-    COMPARE --> CONTEXT
-    AUTH_UI --> CONTEXT
-```
-
-## Request Flow
-
-```mermaid
-sequenceDiagram
-    participant Client
-    participant CDN as Cloudflare CDN
-    participant Worker as Edge Worker
-    participant App as Next.js
-    participant Auth as Supabase Auth
-    participant DB as PostgreSQL
-    participant AI as Gemini API
-
-    Client->>CDN: HTTPS Request
-    CDN->>Worker: Route Request
-
-    alt Static Asset
-        Worker->>CDN: Serve from Cache
-        CDN-->>Client: Cached Response
-    end
-
-    alt API Request
-        Worker->>App: Forward to API Route
-        App->>Auth: Verify JWT
-        Auth-->>App: User Context
-
-        App->>DB: Query/Update
-        DB-->>App: Data
-
-        opt Image Processing
-            App->>AI: Send Image + Prompt
-            AI-->>App: Processed Image
-            App->>DB: Log Transaction
-        end
-
-        App-->>Worker: Response + Image Data
-        Worker-->>Client: Response
-    end
+    CMS_Connector --> WP
+    CMS_Connector --> WEBFLOW
+    CMS_Connector --> SHOPIFY
+    CMS_Connector --> GHOST
 ```
 
 ## Data Flow Architecture
@@ -137,227 +136,47 @@ sequenceDiagram
 ```mermaid
 flowchart LR
     subgraph "Input"
-        UPLOAD[User Upload]
-        API_IN[API Request]
+        USER[User Input]
+        GSC[GSC Data]
+        CSV[CSV Upload]
     end
 
-    subgraph "Processing Pipeline"
-        VALIDATE[Validation]
-        CREDITS[Credit Check]
-        PROCESS[AI Processing]
-    end
-
-    subgraph "Database"
-        DB[(PostgreSQL)]
+    subgraph "Processing"
+        QUEUE[Job Queue]
+        AGENTS[AI Agents]
+        DB[(Database)]
     end
 
     subgraph "Output"
-        RESPONSE[API Response]
-        DOWNLOAD[Direct Download]
+        HTML[HTML Content]
+        META[Meta Data]
+        SCHEMA[Schema Markup]
+        IMAGES[AI Images]
     end
 
-    UPLOAD --> VALIDATE
-    API_IN --> VALIDATE
+    USER --> QUEUE
+    GSC --> QUEUE
+    CSV --> QUEUE
 
-    VALIDATE --> CREDITS
-    CREDITS --> PROCESS
-    CREDITS --> DB
+    QUEUE --> AGENTS
+    AGENTS --> DB
 
-    PROCESS --> RESPONSE
-    PROCESS --> DB
-
-    RESPONSE --> DOWNLOAD
+    AGENTS --> HTML
+    AGENTS --> META
+    AGENTS --> SCHEMA
+    AGENTS --> IMAGES
 ```
 
-## Authentication Architecture
+## Infrastructure & Scaling
 
-```mermaid
-flowchart TD
-    subgraph "Auth Providers"
-        EMAIL[Email/Password]
-        GOOGLE[Google OAuth]
-        MAGIC[Magic Link]
-    end
-
-    subgraph "Supabase Auth"
-        AUTH_SVC[Auth Service]
-        JWT[JWT Tokens]
-        SESSIONS[Session Store]
-    end
-
-    subgraph "Application"
-        MW[Middleware]
-        PROTECTED[Protected Routes]
-        PUBLIC[Public Routes]
-    end
-
-    EMAIL --> AUTH_SVC
-    GOOGLE --> AUTH_SVC
-    MAGIC --> AUTH_SVC
-
-    AUTH_SVC --> JWT
-    AUTH_SVC --> SESSIONS
-
-    JWT --> MW
-    MW --> PROTECTED
-    PUBLIC --> MW
-```
-
-## Deployment Architecture
-
-```mermaid
-graph TB
-    subgraph "Development"
-        LOCAL[Local Dev]
-        PREVIEW[Preview Deployments]
-    end
-
-    subgraph "Production - Cloudflare"
-        CF_DNS[DNS]
-        CF_CDN[CDN/Cache]
-        CF_WORKERS[Workers]
-    end
-
-    subgraph "External Services"
-        SUPABASE[Supabase Cloud]
-        STRIPE_SVC[Stripe]
-        GEMINI_SVC[Gemini API / OpenRouter]
-    end
-
-    LOCAL --> PREVIEW
-    PREVIEW --> CF_DNS
-
-    CF_DNS --> CF_CDN
-    CF_CDN --> CF_WORKERS
-
-    CF_WORKERS --> SUPABASE
-    CF_WORKERS --> STRIPE_SVC
-    CF_WORKERS --> GEMINI_SVC
-```
+- **Compute**: Serverless/Edge functions for API, specific long-running containers for AI processing agents.
+- **Database**: PostgreSQL (Supabase) for relational data, Vector DB for semantic search/context.
+- **Queues**: Redis-backed queues (BullMQ) to handle massive bulk generation jobs without timeouts.
+- **Storage**: Object storage (R2/S3) for generated images and backups.
 
 ## Security Architecture
 
-```mermaid
-flowchart TD
-    subgraph "Perimeter"
-        WAF[Cloudflare WAF]
-        DDOS[DDoS Protection]
-        SSL[SSL/TLS]
-    end
-
-    subgraph "Application Security"
-        CORS[CORS Policy]
-        CSP[Content Security Policy]
-        RATE[Rate Limiting]
-        CSRF[CSRF Protection]
-    end
-
-    subgraph "Data Security"
-        RLS[Row Level Security]
-        ENCRYPT[Encryption at Rest]
-        AUDIT[Audit Logging]
-    end
-
-    subgraph "Auth Security"
-        JWT_VERIFY[JWT Verification]
-        KEY_MGMT[API Key Management]
-        MFA[MFA Ready]
-    end
-
-    WAF --> CORS
-    DDOS --> RATE
-    SSL --> CSP
-
-    CORS --> JWT_VERIFY
-    RATE --> KEY_MGMT
-    CSRF --> RLS
-
-    RLS --> ENCRYPT
-    AUDIT --> ENCRYPT
-```
-
-## Scaling Architecture
-
-```mermaid
-graph TB
-    subgraph "Horizontal Scaling"
-        EDGE[Edge Locations]
-        WORKERS_SCALE[Worker Instances]
-    end
-
-    subgraph "Vertical Scaling"
-        DB_SCALE[Database Compute]
-        AI_SCALE[AI Model Replicas]
-    end
-
-    subgraph "Caching Layers"
-        CDN_CACHE[CDN Cache]
-        APP_CACHE[Application Cache]
-        DB_CACHE[Query Cache]
-    end
-
-    EDGE --> CDN_CACHE
-    WORKERS_SCALE --> APP_CACHE
-    DB_SCALE --> DB_CACHE
-    AI_SCALE --> APP_CACHE
-```
-
-## Error Handling Architecture
-
-```mermaid
-flowchart TD
-    ERROR[Error Occurs]
-
-    ERROR --> TYPE{Error Type}
-
-    TYPE -->|Client Error 4xx| CLIENT[Return Error Response]
-    TYPE -->|Server Error 5xx| SERVER[Log & Retry]
-    TYPE -->|AI Error| AI_ERR[Fallback Model]
-    TYPE -->|Network Error| NET_ERR[Queue for Retry]
-
-    SERVER --> SENTRY[Send to Sentry]
-    AI_ERR --> SENTRY
-    NET_ERR --> SENTRY
-
-    SENTRY --> ALERT[Alert Team]
-
-    CLIENT --> USER[Show User Message]
-    SERVER --> USER
-    AI_ERR --> USER
-    NET_ERR --> USER
-```
-
-## Monitoring & Observability
-
-```mermaid
-graph LR
-    subgraph "Data Sources"
-        LOGS[Application Logs]
-        METRICS[Performance Metrics]
-        TRACES[Request Traces]
-        ERRORS[Error Reports]
-    end
-
-    subgraph "Collection"
-        SENTRY[Sentry]
-        ANALYTICS[Vercel Analytics]
-        CF_ANALYTICS[Cloudflare Analytics]
-    end
-
-    subgraph "Visualization"
-        DASHBOARD[Dashboards]
-        ALERTS[Alert System]
-    end
-
-    LOGS --> SENTRY
-    ERRORS --> SENTRY
-    METRICS --> ANALYTICS
-    METRICS --> CF_ANALYTICS
-    TRACES --> ANALYTICS
-
-    SENTRY --> DASHBOARD
-    ANALYTICS --> DASHBOARD
-    CF_ANALYTICS --> DASHBOARD
-
-    DASHBOARD --> ALERTS
-```
+- **Authentication**: Usage of Supabase Auth (JWT).
+- **API Security**: Rate limiting, API Key management for external access.
+- **Data Privacy**: User credentials (CMS passwords/keys) encrypted at rest.
+- **Isolation**: Tenant isolation via RLS (Row Level Security).

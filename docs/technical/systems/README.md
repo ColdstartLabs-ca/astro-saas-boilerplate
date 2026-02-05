@@ -1,78 +1,41 @@
 # Systems Documentation
 
-Detailed documentation for MyImageUpscaler's subsystems.
+Detailed documentation for **AutopilotRank**'s subsystems.
 
 ## Overview
 
 ```mermaid
 graph TB
-    subgraph "Core Systems"
+    subgraph "Core Engines"
+        GEN[Content Generation Engine]
+        CMS[CMS Integrations]
+        GSC[GSC Intelligence]
+    end
+
+    subgraph "Platform Services"
         AUTH[Authentication]
-        PROCESS[Image Processing]
-        BILLING[Billing]
-        CREDITS[Credits]
+        BILLING[Billing & Credits]
+        ANALYTICS[Analytics]
     end
 
-    subgraph "Infrastructure"
-        RATE[Rate Limiting]
-        ERRORS[Error Handling]
-    end
-
-    AUTH --> PROCESS
-    CREDITS --> PROCESS
-    BILLING --> CREDITS
-    RATE --> PROCESS
-    ERRORS --> PROCESS
+    AUTH --> GEN
+    BILLING --> GEN
+    GEN --> CMS
+    GSC --> GEN
+    CMS --> ANALYTICS
 ```
 
 ## System Documents
 
-| Document                                     | Description                                 |
-| -------------------------------------------- | ------------------------------------------- |
-| [authentication.md](./authentication.md)     | User auth, OAuth, session management        |
-| [image-processing.md](./image-processing.md) | AI processing flow, prompts, validation     |
-| [billing.md](./billing.md)                   | Stripe integration, subscriptions, webhooks |
-| [credits.md](./credits.md)                   | Credit system, transactions, rollover       |
-| [rate-limiting.md](./rate-limiting.md)       | Request throttling, tier limits             |
-| [error-handling.md](./error-handling.md)     | Error codes, recovery, logging              |
-| [analytics.md](./analytics.md)               | User behavior tracking, business metrics    |
-| [monitoring.md](./monitoring.md)             | Application health, error monitoring        |
+| Document                                                       | Description                                             |
+| -------------------------------------------------------------- | ------------------------------------------------------- |
+| [content-generation-engine.md](./content-generation-engine.md) | The AI pipeline (Research -> Draft -> SEO -> Humanize). |
+| [cms-integration.md](./cms-integration.md)                     | Adapters for WordPress, Webflow, Shopify, etc.          |
+| [authentication.md](./authentication.md)                       | Supabase auth, user sessions.                           |
+| [billing.md](./billing.md)                                     | Stripe integration, credit consumption logic.           |
+| [credits.md](./credits.md)                                     | Credit balance management and transactional history.    |
+| [monitoring.md](./monitoring.md)                               | Observability for the agent pipeline.                   |
 
-## System Interactions
+## Deprecated/Removed
 
-```mermaid
-sequenceDiagram
-    participant User
-    participant Auth as Authentication
-    participant Rate as Rate Limiting
-    participant Credits as Credit System
-    participant Process as Image Processing
-    participant Billing
-
-    User->>Auth: Login
-    Auth-->>User: Session Token
-
-    User->>Rate: API Request
-    Rate->>Auth: Verify Token
-    Auth-->>Rate: User Context
-
-    Rate->>Credits: Check Balance
-    Credits-->>Rate: Balance OK
-
-    Rate->>Process: Process Image
-    Process->>Credits: Deduct Credit
-    Process-->>User: Result
-
-    Note over User,Billing: Upgrade Flow
-
-    User->>Billing: Purchase Plan
-    Billing->>Credits: Add Credits
-```
-
-## Key Principles
-
-1. **Stateless Processing**: Images are processed in memory, not stored
-2. **Credit-First**: Always verify credits before processing
-3. **Graceful Degradation**: Fallback providers for AI failures
-4. **Atomic Operations**: Credit deductions are transactional
-5. **User-Centric Errors**: Clear, actionable error messages
+- `image-processing.md` (Replaced by Content Generation Engine)
