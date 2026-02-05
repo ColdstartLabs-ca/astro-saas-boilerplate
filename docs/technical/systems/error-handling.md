@@ -1,32 +1,159 @@
 # Error Handling System
 
-**Last Updated:** February 5, 2026
-**Framework:** Astro 5 + React 18 (islands)
-
 ## Overview
 
-The application implements a comprehensive error handling system using React Error Boundaries (for client-side React components) and Astro error pages (for server-side routing) to prevent blank screens and provide user-friendly error messages.
+Comprehensive error handling using standardized response formats, error middleware for API routes, React Error Boundaries for client components, and Baselime monitoring integration.
 
-## Error Boundary Architecture
+## API Error Handling
 
-### 1. Reusable ErrorBoundary Component
+### Standard Error Response Format
 
-**Location:** `src/client/components/errors/ErrorBoundary.tsx`
+All API errors return this consistent structure:
 
-A class-based React component that catches JavaScript errors anywhere in the child component tree.
+```typescript
+interface IErrorResponse {
+  success: false;
+  error: {
+    code: ErrorCode | string;
+    message: string;
+    details?: Record<string, unknown>;
+    requestId?: string;
+  };
+}
+```
+
+### withErrorHandler Middleware (`server/middleware/errorHandler.ts`)
+
+Higher-order function that wraps API route handlers with consistent error handling.
+
+```typescript
+import { withErrorHandler } from '@server/middleware/errorHandler';
+
+export const GET = withErrorHandler(async req => {
+  // Your handler logic
+  return new Response(JSON.stringify({ success: true, data: result }), {
+    headers: { 'Content-Type': 'application/json' },
+  });
+});
+```
+
+**Behavior:**
+
+- Catches all errors thrown in handler
+- Returns formatted JSON error responses
+- Preserves HTTP status codes from `AppError` instances
+- Logs errors to console
+- Uses `AppError.code` as error code, or `INTERNAL_ERROR` for unknown errors
+
+### AppError Class (`shared/utils/errors.ts`)
+
+Application error class with proper error code and details.
+
+```typescript
+import { AppError, ErrorCodes } from '@shared/utils/errors';
+
+throw new AppError(
+  ErrorCodes.INSUFFICIENT_CREDITS,
+  'You do not have enough credits for this action.',
+  402,
+  { required: 10, balance: 5 }
+);
+```
+
+### Error Codes (`shared/utils/errors.ts`)
+
+| Code                   | Status | Description                          |
+| ---------------------- | ------ | ------------------------------------ |
+| `INVALID_REQUEST`      | 400    | The request is invalid or malformed  |
+| `INVALID_FILE`         | 400    | Uploaded file type not supported     |
+| `FILE_TOO_LARGE`       | 400    | File exceeds size limit              |
+| `INVALID_DIMENSIONS`   | 400    | Image dimensions out of bounds       |
+| `VALIDATION_ERROR`     | 400    | Request data validation failed       |
+| `UNAUTHORIZED`         | 401    | Authentication required              |
+| `FORBIDDEN`            | 403    | Permission denied                    |
+| `NOT_FOUND`            | 404    | Resource not found                   |
+| `INSUFFICIENT_CREDITS` | 402    | Not enough credits                   |
+| `PAYMENT_REQUIRED`     | 402    | Payment required                     |
+| `RATE_LIMITED`         | 429    | Too many requests                    |
+| `BATCH_LIMIT_EXCEEDED` | 429    | Batch limit exceeded                 |
+| `MODEL_NOT_FOUND`      | 400    | Model not found                      |
+| `MODEL_NOT_SUPPORTED`  | 400    | Model doesn't support this operation |
+| `TIER_RESTRICTED`      | 403    | Feature requires higher tier         |
+| `INTERNAL_ERROR`       | 500    | Unexpected error occurred            |
+| `AI_UNAVAILABLE`       | 503    | AI service temporarily unavailable   |
+| `PROCESSING_FAILED`    | 500    | Processing failed                    |
+
+### Utility Functions
+
+| Function                  | Purpose                                           |
+| ------------------------- | ------------------------------------------------- |
+| `createErrorResponse()`   | Creates standardized error response with status   |
+| `createSuccessResponse()` | Creates standardized success response             |
+| `serializeError()`        | Safely converts any error to user-friendly string |
+| `ErrorStatusMap`          | Maps error codes to status codes and messages     |
+
+## Monitoring Integration
+
+### Baselime Logger (`server/monitoring/logger.ts`)
+
+Edge-compatible logger for serverless functions.
+
+```typescript
+import { createLogger, HttpError } from '@server/monitoring/logger';
+
+export async function POST(request: Request) {
+  const logger = createLogger(request, 'api-namespace');
+
+  try {
+    logger.info('Processing request', { userId: '123' });
+    // ... logic
+    return Response.json({ success: true });
+  } catch (error) {
+    logger.error('Request failed', { error });
+    throw new HttpError('Failed', 500, 'OPERATION_FAILED');
+  } finally {
+    await logger.flush();
+  }
+}
+```
+
+### withLogging Wrapper
+
+Alternative to `withErrorHandler` that adds Baselime logging.
+
+```typescript
+import { withLogging } from '@server/monitoring/logger';
+
+export const POST = withLogging('api-namespace', async (request, logger) => {
+  logger.info('Processing');
+  // Automatically logs completion/errors
+  return Response.json({ success: true });
+});
+```
 
 **Features:**
 
-- Catches and logs errors with full stack traces
-- Integrates with Baselime monitoring
-- Shows detailed error info in development mode
-- Provides "Try Again" and "Go Home" actions
-- Supports custom fallback UI via props
+- Auto-flushes logs after handler completes
+- Captures errors with stack traces
+- Preserves `HttpError` status codes
+- Returns formatted error responses
 
-**Usage:**
+### HttpError Class
+
+Custom error class compatible with the logging wrapper.
+
+```typescript
+throw new HttpError('Resource not found', 404, 'NOT_FOUND', { resourceId: '123' });
+```
+
+## Client-Side Error Handling
+
+### ErrorBoundary Component (`client/components/errors/ErrorBoundary.tsx`)
+
+React Error Boundary for catching React errors in component trees.
 
 ```tsx
-import { ErrorBoundary } from '@/client/components/errors/ErrorBoundary';
+import { ErrorBoundary } from '@client/components/errors/ErrorBoundary';
 
 <ErrorBoundary>
   <YourComponent />
@@ -42,191 +169,114 @@ import { ErrorBoundary } from '@/client/components/errors/ErrorBoundary';
 </ErrorBoundary>
 ```
 
-### 2. Astro Error Pages
+**Features:**
 
-Astro uses special file conventions for error handling:
+- Catches and logs errors with stack traces
+- Integrates with Baselime (checks `window.baselime.logError`)
+- Shows detailed error info in development mode
+- Provides "Try Again" and "Go Home" actions
+- Supports custom fallback UI
 
-#### Global Error Page
+## Server-Side Error Pages
 
-**Location:** `src/pages/error.astro`
+### 404 Page (`src/pages/404.astro`)
 
-- Catches errors at the root level
-- Full-screen error page
-- Logs to monitoring service
-- Shows error details in development
+Displayed when a route doesn't exist.
 
-#### Dashboard Error Page
-
-**Location:** `src/pages/dashboard/error.astro`
-
-- Catches errors in `/dashboard/*` routes
-- Contextual dashboard error UI
-- Maintains dashboard layout
-- Links back to dashboard home
-
-#### Admin Panel Error Page
-
-**Location:** `src/pages/dashboard/admin/error.astro`
-
-- Catches errors in `/dashboard/admin/*` routes
-- Admin-specific error styling
-- Links back to admin panel home
-- Enhanced logging for admin operations
-
-## 404 Not Found Pages
-
-### Global 404 Page
-
-**Location:** `src/pages/404.astro`
-
-- Shown when route doesn't exist
-- Large "404" display with search icon
-- Links to home and dashboard
 - Full-screen centered layout
+- Large "404" display with search icon
+- Links to home page
+- Uses i18n translations
 
-## Error Handling Hierarchy
+### 500 Page (`src/pages/500.astro`)
 
-```
-┌─────────────────────────────────────────┐
-│         app/error.tsx (Global)          │
-│         Catches root-level errors       │
-└─────────────────────────────────────────┘
-              │
-              ├─ /dashboard
-              │  ├─ app/dashboard/error.tsx
-              │  │  (Dashboard errors)
-              │  │
-              │  └─ /admin
-              │     └─ app/dashboard/admin/error.tsx
-              │        (Admin panel errors)
-              │
-              └─ 404 Errors
-                 └─ app/not-found.tsx
-```
+Displayed for unhandled server errors.
 
-## Error Props in Next.js Error Pages
-
-Next.js error pages receive these props:
-
-```tsx
-{
-  error: Error & { digest?: string };
-  reset: () => void;
-}
-```
-
-- `error`: The error object with optional digest for tracking
-- `reset()`: Function to retry rendering the component
-
-## Monitoring Integration
-
-All error boundaries automatically log to Baselime monitoring if available:
-
-```typescript
-if (typeof window !== 'undefined' && (window as any).baselime) {
-  (window as any).baselime.logError(error, {
-    digest: error.digest,
-    boundary: 'boundary-name',
-    route: window.location.pathname,
-  });
-}
-```
-
-## Development vs Production
-
-### Development Mode
-
-- Full error messages displayed
-- Stack traces visible in collapsible details
-- Error digest shown
-- Component stack trace included
-
-### Production Mode
-
-- User-friendly generic messages
-- No technical details exposed
-- Errors logged to monitoring
-- Users see actionable recovery options
+- Full-screen centered layout
+- Warning icon with "Something went wrong"
+- "Try Again" (reload) and "Go Home" buttons
+- Shows development info in dev mode
 
 ## Best Practices
 
-### 1. Always Use Error Boundaries for Client Components
+### API Errors
 
-Wrap client components that may throw errors:
+1. **Use AppError for known errors:**
 
-```tsx
-<ErrorBoundary>
-  <DataFetchingComponent />
-</ErrorBoundary>
-```
+   ```typescript
+   throw new AppError(ErrorCodes.INSUFFICIENT_CREDITS, 'Not enough credits', 402);
+   ```
 
-### 2. Handle API Errors Explicitly
+2. **Wrap all handlers with middleware:**
 
-Don't rely on error boundaries for expected API failures:
+   ```typescript
+   export const POST = withErrorHandler(async (req) => { ... });
+   // OR
+   export const POST = withLogging('namespace', async (req, logger) => { ... });
+   ```
 
-```tsx
-const [error, setError] = useState<string | null>(null);
+3. **Include details for debugging:**
+   ```typescript
+   throw new AppError(ErrorCodes.VALIDATION_ERROR, 'Invalid input', 400, {
+     field: 'email',
+     value: input,
+   });
+   ```
 
-try {
-  const data = await fetch('/api/endpoint');
-  // handle success
-} catch (err) {
-  setError(err.message); // Show inline error
-}
-```
+### Client Errors
 
-### 3. Log Errors Consistently
+1. **Wrap components that may throw:**
 
-Always log errors before displaying to users:
+   ```tsx
+   <ErrorBoundary>
+     <DataFetchingComponent />
+   </ErrorBoundary>
+   ```
 
-```tsx
-console.error('Operation failed:', error);
-// Then show user-friendly message
-```
+2. **Handle expected failures explicitly:**
 
-### 4. Provide Recovery Actions
+   ```tsx
+   const [error, setError] = useState<string | null>(null);
+   try {
+     await fetchData();
+   } catch (err) {
+     setError(err.message); // Show inline error
+   }
+   ```
 
-Every error UI should offer:
+3. **Always log errors:**
+   ```tsx
+   console.error('Operation failed:', error);
+   ```
 
-- "Try Again" button to retry the operation
-- Navigation to a safe location (home, dashboard)
-- Clear explanation of what happened
+### Logging
 
-## Testing Error Boundaries
+1. **Use appropriate log levels:**
+   - `logger.info()` - Normal operations
+   - `logger.warn()` - Unexpected but recoverable issues
+   - `logger.error()` - Errors requiring investigation
 
-### Manual Testing
+2. **Include context:**
 
-Create a test component that throws:
+   ```typescript
+   logger.info('Processing payment', { userId, amount, planId });
+   logger.error('Payment failed', { userId, error: err.message, code: err.code });
+   ```
 
-```tsx
-function ErrorTest() {
-  throw new Error('Test error boundary');
-}
+3. **Always flush:**
+   ```typescript
+   try {
+     // ... logic
+   } finally {
+     await logger.flush();
+   }
+   ```
 
-// Use in any page to test
-<ErrorBoundary>
-  <ErrorTest />
-</ErrorBoundary>;
-```
+## Related Files
 
-### Check Error Recovery
-
-1. Navigate to any page
-2. Trigger an error
-3. Click "Try Again" - component should re-render
-4. Verify error is logged to console
-5. In production, verify error appears in Baselime
-
-## Future Enhancements
-
-- [ ] Error reporting form for users
-- [ ] Offline error queueing
-- [ ] Error analytics dashboard
-- [ ] A/B testing different error messages
-- [ ] Automatic error recovery with retry logic
-
-## Related Documentation
-
-- [Monitoring Setup](./monitoring.md)
-- [API Error Handling](./api-reference.md#error-handling)
-- [User Experience Guidelines](../management/ux-guidelines.md)
+- `/home/joao/projects/autopilotrank.com/shared/utils/errors.ts`
+- `/home/joao/projects/autopilotrank.com/server/middleware/errorHandler.ts`
+- `/home/joao/projects/autopilotrank.com/server/monitoring/logger.ts`
+- `/home/joao/projects/autopilotrank.com/client/components/errors/ErrorBoundary.tsx`
+- `/home/joao/projects/autopilotrank.com/src/pages/404.astro`
+- `/home/joao/projects/autopilotrank.com/src/pages/500.astro`

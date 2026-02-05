@@ -1,637 +1,320 @@
 # Monitoring System
 
-Comprehensive error monitoring and logging using Baselime for application health and performance insights.
+Server-side error logging with Baselime and client-side analytics with Amplitude.
 
 ## Overview
 
-```mermaid
-graph TD
-    subgraph "Application"
-        API_ROUTES[API Routes]
-        MIDDLEWARE[Middleware]
-        SERVER_COMPONENTS[Server Components]
-        EDGE_FUNCTIONS[Edge Functions]
-    end
+The application uses two complementary monitoring systems:
 
-    subgraph "Monitoring Stack"
-        LOGGER[Baselime Logger]
-        ERROR_CAPTURE[Error Tracking]
-        PERFORMANCE[Performance Metrics]
-        HEALTH_CHECKS[Health Checks]
-    end
+1. **Baselime** - Server-side error logging and request tracking for API routes
+2. **Amplitude** - Product analytics and user behavior tracking (client + server)
 
-    subgraph "Baselime Platform"
-        LOGS[Log Aggregation]
-        ALERTS[Alerting System]
-        DASHBOARDS[Custom Dashboards]
-        RETENTION[Log Retention]
-    end
+## Baselime Integration
 
-    API_ROUTES --> LOGGER
-    MIDDLEWARE --> LOGGER
-    SERVER_COMPONENTS --> LOGGER
-    EDGE_FUNCTIONS --> LOGGER
+### Server Logger
 
-    LOGGER --> LOGS
-    ERROR_CAPTURE --> LOGS
-    PERFORMANCE --> LOGS
-    HEALTH_CHECKS --> LOGS
+Location: `/home/joao/projects/autopilotrank.com/server/monitoring/logger.ts`
 
-    LOGS --> ALERTS
-    LOGS --> DASHBOARDS
-    LOGS --> RETENTION
-```
-
-## Logging Architecture
-
-### Baselime Integration
-
-```mermaid
-sequenceDiagram
-    participant App as Application
-    participant Logger as Baselime Logger
-    participant Edge as Edge Runtime
-    participant Baselime as Baselime Platform
-
-    App->>Logger: createLogger(request, namespace)
-    Logger->>Edge: Initialize with context
-    Edge-->>Logger: Logger instance
-
-    App->>Logger: logger.info('Processing started')
-    Logger->>Logger: Add metadata and timestamp
-    Logger->>Baselime: Async log transmission
-
-    App->>Logger: await logger.flush()
-    Logger->>Baselime: Ensure logs sent
-    Baselime-->>Logger: Acknowledgment
-    Logger-->>App: Flush complete
-```
-
-### Logger Configuration
+The `createLogger()` function creates a Baselime logger instance for edge/serverless functions:
 
 ```typescript
-interface ILoggerConfig {
-  service: string; // 'autopilotrank-api'
-  namespace: string; // Specific API endpoint or feature (e.g., 'article-generation', 'wordpress-publish')
-  apiKey: string; // Baselime API key
-  isLocalDev: boolean; // Skip external calls in development
-  ctx: {
-    url: string; // Request URL
-    method: string; // HTTP method
-    requestId?: string; // Unique request identifier
-    userId?: string; // Authenticated user ID
-    campaignId?: string; // Campaign ID for content generation
-    articleId?: string; // Article ID being processed
-    [key: string]: unknown; // Additional context
-  };
-}
-```
+import { createLogger } from '@server/monitoring/logger';
 
-## Logging Implementation
+const logger = createLogger(request, 'namespace', {
+  userId: 'user_123',
+  requestId: 'req_456',
+});
 
-### Logger Factory
+logger.info('Processing started', { imageSize: 1024 });
+logger.warn('Rate limit approaching');
+logger.error('Processing failed', { error: err.message });
 
-```typescript
-// server/monitoring/logger.ts
-export function createLogger(
-  request: Request,
-  namespace: string,
-  context?: ILogContext
-): BaselimeLogger {
-  const apiKey = serverEnv.BASELIME_API_KEY;
-
-  const logger = new BaselimeLogger({
-    service: 'autopilotrank-api',
-    namespace,
-    apiKey: apiKey || '',
-    ctx: {
-      url: request.url,
-      method: request.method,
-      ...context,
-    },
-    isLocalDev: !apiKey || isDevelopment(),
-  });
-
-  return logger;
-}
+await logger.flush();
 ```
 
 ### Logging Wrapper
 
+The `withLogging()` wrapper automatically handles logging and error capture:
+
 ```typescript
-// Automatic logging wrapper for API handlers
-export function withLogging(
-  namespace: string,
-  handler: (request: Request, logger: BaselimeLogger) => Promise<Response>
-): (request: Request) => Promise<Response> {
-  return async (request: Request) => {
-    const logger = createLogger(request, namespace);
+import { withLogging } from '@server/monitoring/logger';
 
-    try {
-      logger.info('Request started', {
-        userAgent: request.headers.get('user-agent'),
-        contentLength: request.headers.get('content-length'),
-      });
+export const POST = withLogging('api-namespace', async (request, logger) => {
+  logger.info('Request received');
 
-      const response = await handler(request, logger);
+  // Your handler logic
 
-      logger.info('Request completed', {
-        status: response.status,
-        responseTime: Date.now() - startTime,
-      });
+  return Response.json({ success: true });
+});
+```
 
-      return response;
-    } catch (error) {
-      logger.error('Request failed', {
-        error: error instanceof Error ? error.message : String(error),
-        stack: error instanceof Error ? error.stack : undefined,
-        responseTime: Date.now() - startTime,
-      });
+The wrapper:
 
-      return Response.json({ error: 'Internal server error' }, { status: 500 });
-    } finally {
-      await logger.flush();
+- Creates a logger with the provided namespace
+- Logs request completion with status code
+- Captures errors and logs them with context
+- Automatically calls `logger.flush()`
+- Returns appropriate error responses
+
+### HttpError Class
+
+For status code preservation through the logging wrapper:
+
+```typescript
+import { HttpError } from '@server/monitoring/logger';
+
+throw new HttpError('Resource not found', 404, 'NOT_FOUND');
+throw new HttpError('Invalid input', 400, 'VALIDATION_ERROR', { field: 'email' });
+```
+
+### Configuration
+
+**Environment Variable:**
+
+- `BASELIME_API_KEY` - Baselime API key (server-side, from `.env.api`)
+
+**Service Name:** `saas-boilerplate-api`
+
+**Development Mode:** In development or when no API key is present, logs are skipped (`isLocalDev: true`).
+
+## Amplitude Analytics
+
+### Client-Side Analytics
+
+Location: `/home/joao/projects/autopilotrank.com/client/analytics/analyticsClient.ts`
+
+Browser-based analytics using Amplitude Browser SDK with consent management:
+
+```typescript
+import { analytics } from '@client/analytics/analyticsClient';
+
+// Initialize (called on app load)
+analytics.init(apiKey);
+
+// Set consent status
+analytics.setConsent('granted', apiKey);
+
+// Track events
+analytics.track('page_view', { path: '/dashboard' });
+analytics.trackPageView('/pricing', { referrer: document.referrer });
+
+// Identify user
+await analytics.identify({
+  userId: 'user_123',
+  email: 'user@example.com',
+  subscriptionTier: 'pro',
+});
+
+// Reset on logout
+analytics.reset();
+```
+
+**Features:**
+
+- Consent management (GDPR/CCPA compliant)
+- Email hashing (SHA-256) via Web Crypto API
+- Session tracking via sessionStorage
+- UTM parameter capture on page views
+
+### Server-Side Analytics
+
+Location: `/home/joao/projects/autopilotrank.com/server/analytics/analyticsService.ts`
+
+Server-side event tracking via Amplitude HTTP API:
+
+```typescript
+import { trackServerEvent } from '@server/analytics';
+
+await trackServerEvent(
+  'subscription_created',
+  { plan: 'pro', amountCents: 2900 },
+  { apiKey: serverEnv.AMPLITUDE_API_KEY, userId: 'user_123' }
+);
+```
+
+### Analytics Event API
+
+Location: `/home/joao/projects/autopilotrank.com/src/pages/api/analytics/event/index.ts`
+
+Public API endpoint for client-to-server event relay:
+
+- **Route:** `POST /api/analytics/event`
+- **Auth:** Optional (supports anonymous and authenticated events)
+- **Rate Limiting:** Public tier applied
+- **Validation:** Zod schema + security validation for event names
+
+**Allowed Events:**
+
+- `page_view`, `signup_started`, `signup_completed`, `login`, `logout`
+- `subscription_created`, `subscription_canceled`, `subscription_renewed`, `upgrade_started`
+- `credit_pack_purchased`, `credits_deducted`, `credits_refunded`
+- `api_call_completed`, `content_downloaded`
+- `checkout_started`, `checkout_completed`, `checkout_abandoned`
+- `rate_limit_exceeded`, `processing_failed`
+- `batch_limit_modal_shown`, `batch_limit_upgrade_clicked`, `batch_limit_partial_add_clicked`, `batch_limit_modal_closed`
+
+### Event Types
+
+Location: `/home/joao/projects/autopilotrank.com/server/analytics/types.ts`
+
+```typescript
+type IAnalyticsEventName =
+  | 'page_view'
+  | 'signup_started'
+  | 'signup_completed'
+  | 'login'
+  | 'logout'
+  | 'subscription_created'
+  | 'subscription_canceled'
+  | 'subscription_renewed'
+  | 'credit_pack_purchased'
+  | 'credits_deducted'
+  | 'api_call_completed'
+  | 'content_downloaded'
+  | 'checkout_started'
+  | 'checkout_completed'
+  | 'checkout_abandoned'
+  | 'rate_limit_exceeded'
+  | 'processing_failed'
+  | 'batch_limit_modal_shown'
+  | 'batch_limit_upgrade_clicked'
+  | 'batch_limit_partial_add_clicked'
+  | 'batch_limit_modal_closed';
+```
+
+## Client-Side Logger
+
+Location: `/home/joao/projects/autopilotrank.com/client/utils/logger.ts`
+
+Simple client-side logging utility:
+
+```typescript
+import { ClientLogger, useLogger } from '@client/utils/logger';
+
+// Direct usage
+ClientLogger.info('Component mounted', { props });
+ClientLogger.warn('Deprecated API used');
+ClientLogger.error('Fetch failed', { url, status });
+
+// Hook usage
+const logger = useLogger('MyComponent');
+logger.info('User clicked button');
+```
+
+**Behavior:**
+
+- Development: Console methods with formatted output
+- Production: Errors logged to Baselime RUM (auto-captured)
+
+## Health Check Endpoint
+
+Location: `/home/joao/projects/autopilotrank.com/src/pages/api/health/index.ts`
+
+Public health check endpoint:
+
+- **Route:** `GET /api/health`
+- **Response Format:**
+
+```typescript
+{
+  status: 'healthy' | 'degraded' | 'unhealthy',
+  timestamp: string,
+  region: 'Cloudflare' | 'Local',
+  checks: {
+    database: {
+      status: 'pass' | 'fail',
+      message: string,
+      duration?: number
     }
-  };
-}
-```
-
-## Log Levels & Categories
-
-### Log Hierarchy
-
-```mermaid
-graph TD
-    subgraph "Log Levels"
-        DEBUG[Debug]
-        INFO[Info]
-        WARN[Warning]
-        ERROR[Error]
-    end
-
-    subgraph "Categories"
-        AUTH[Authentication]
-        BILLING[Billing]
-        PROCESSING[Image Processing]
-        PERFORMANCE[Performance]
-        SECURITY[Security]
-        BUSINESS[Business Events]
-    end
-
-    DEBUG --> AUTH
-    INFO --> BILLING
-    WARN --> PROCESSING
-    ERROR --> PERFORMANCE
-    ERROR --> SECURITY
-    INFO --> BUSINESS
-```
-
-### Logging Patterns
-
-#### Request Lifecycle Logging
-
-```typescript
-// API route with comprehensive logging
-export const POST = withLogging('upscale-api', async (request, logger) => {
-  const startTime = Date.now();
-  const user = await getUser(request);
-
-  logger.info('Image processing request', {
-    userId: user?.id,
-    contentType: request.headers.get('content-type'),
-  });
-
-  // Validate request
-  if (!user) {
-    logger.warn('Unauthorized processing attempt', {
-      ip: getClientIP(request),
-      userAgent: request.headers.get('user-agent'),
-    });
-    return new Response('Unauthorized', { status: 401 });
   }
-
-  // Process image
-  try {
-    const result = await processImage(image, options);
-
-    logger.info('Image processing completed', {
-      userId: user.id,
-      duration: Date.now() - startTime,
-      inputSize: options.inputSize,
-      outputSize: result.outputSize,
-      creditsUsed: result.creditsUsed,
-      mode: options.mode,
-    });
-
-    return Response.json({ success: true, data: result });
-  } catch (processingError) {
-    logger.error('Image processing failed', {
-      userId: user.id,
-      error: processingError.message,
-      duration: Date.now() - startTime,
-      inputSize: options.inputSize,
-      mode: options.mode,
-    });
-
-    throw processingError;
-  }
-});
-```
-
-#### Business Event Logging
-
-```typescript
-// Billing events
-logger.info('Payment processed', {
-  userId: user.id,
-  amount: payment.amount,
-  currency: payment.currency,
-  stripePaymentIntentId: payment.id,
-  subscriptionTier: user.subscriptionTier,
-  eventCategory: 'billing',
-});
-
-// Credit transactions
-logger.info('Credits transaction', {
-  userId: user.id,
-  amount: -1,
-  type: 'usage',
-  balance: newBalance,
-  reason: 'image_processing',
-  eventCategory: 'credits',
-});
-```
-
-## Error Monitoring
-
-### Error Classification
-
-```mermaid
-flowchart TD
-    ERROR[Error Occurred] --> CLASSIFY{Error Type}
-
-    CLASSIFY -->|User Input| CLIENT[4xx Client Error]
-    CLASSIFY -->|System Failure| SERVER[5xx Server Error]
-    CLASSIFY -->|External Service| EXTERNAL[Service Error]
-
-    CLIENT --> LOG_WARN[Log Warning]
-    SERVER --> LOG_ERROR[Log Error]
-    EXTERNAL --> LOG_WARN
-
-    LOG_ERROR --> ALERT[Send Alert]
-    LOG_WARN --> METRIC[Update Metrics]
-    ALERT --> NOTIFICATION[Team Notification]
-```
-
-### Error Context
-
-```typescript
-interface IErrorContext {
-  requestId?: string;
-  userId?: string;
-  endpoint?: string;
-  method?: string;
-  userAgent?: string;
-  ip?: string;
-  timestamp?: number;
-  stackTrace?: string;
-  additionalContext?: Record<string, unknown>;
-}
-
-// Enhanced error logging
-logger.error('Unexpected error occurred', {
-  error: error.message,
-  stack: error.stack,
-  requestId: context.requestId,
-  userId: context.userId,
-  endpoint: request.url,
-  method: request.method,
-  userAgent: request.headers.get('user-agent'),
-  ip: getClientIP(request),
-  timestamp: Date.now(),
-  service: 'image-processing',
-  severity: 'high',
-});
-```
-
-## Performance Monitoring
-
-### Request Timing
-
-```typescript
-// Performance tracking middleware
-export function withPerformanceTracking(
-  namespace: string,
-  handler: (request: Request, logger: BaselimeLogger) => Promise<Response>
-) {
-  return async (request: Request) => {
-    const logger = createLogger(request, `${namespace}-performance`);
-    const startTime = performance.now();
-    const startMemory = getMemoryUsage();
-
-    try {
-      const response = await handler(request, logger);
-      const duration = performance.now() - startTime;
-      const memoryUsed = getMemoryUsage() - startMemory;
-
-      logger.info('Performance metrics', {
-        duration: Math.round(duration),
-        memoryUsed,
-        statusCode: response.status,
-        endpoint: new URL(request.url).pathname,
-        method: request.method,
-        category: 'performance',
-      });
-
-      return response;
-    } catch (error) {
-      const duration = performance.now() - startTime;
-
-      logger.error('Performance impact from error', {
-        duration: Math.round(duration),
-        error: error.message,
-        category: 'performance',
-      });
-
-      throw error;
-    } finally {
-      await logger.flush();
-    }
-  };
-}
-
-function getMemoryUsage(): number {
-  if (typeof process !== 'undefined' && process.memoryUsage) {
-    return process.memoryUsage().heapUsed;
-  }
-  return 0;
 }
 ```
 
-### AI Processing Metrics
+- **Status Codes:** 200 for healthy/degraded, 503 for unhealthy
+- **Headers:** `Cache-Control: no-store, must-revalidate`
 
-```typescript
-// AI service performance logging
-logger.info('AI processing metrics', {
-  provider: 'gemini',
-  model: 'gemini-2.5-flash-image',
-  requestSize: inputBuffer.length,
-  responseSize: outputBuffer.length,
-  duration: processingTime,
-  success: true,
-  category: 'ai_performance',
-});
+## Environment Configuration
 
-logger.warn('AI fallback triggered', {
-  primaryProvider: 'gemini',
-  fallbackProvider: 'openrouter',
-  reason: 'timeout',
-  originalDuration: timeoutDuration,
-  category: 'ai_reliability',
-});
+### Environment Variables
+
+**Server-side (`.env.api`):**
+
+```bash
+BASELIME_API_KEY=xxx          # Baselime logging
+AMPLITUDE_API_KEY=xxx         # Server-side analytics
 ```
 
-## Health Checks
+**Client-side (`.env.client`):**
 
-### System Health Monitoring
+```bash
+PUBLIC_AMPLITUDE_API_KEY=xxx  # Client-side analytics
+```
+
+### Development vs Production
+
+- **Development:** Baselime logging disabled, console logging enabled
+- **Production:** Baselime logging enabled, console logging minimal
+
+## Usage Patterns
+
+### API Route with Monitoring
 
 ```typescript
-// Health check endpoint
-export async function GET() {
-  const logger = createLogger(new Request('http://localhost/api/health'), 'health-check');
-  const startTime = Date.now();
+import { createLogger } from '@server/monitoring/logger';
+import { trackServerEvent } from '@server/analytics';
 
-  const health = {
-    status: 'healthy',
-    timestamp: new Date().toISOString(),
-    uptime: process.uptime(),
-    checks: {} as Record<string, { status: string; duration?: number; error?: string }>,
-  };
+export async function POST(request: Request) {
+  const logger = createLogger(request, 'checkout-api');
 
   try {
-    // Database connectivity
-    const dbStart = Date.now();
-    await supabase.from('profiles').select('id').limit(1);
-    health.checks.database = {
-      status: 'healthy',
-      duration: Date.now() - dbStart,
-    };
+    logger.info('Checkout started', { plan: 'pro' });
 
-    // External service health
-    const geminiStart = Date.now();
-    const geminiHealth = await checkGeminiHealth();
-    health.checks.gemini = {
-      status: geminiHealth ? 'healthy' : 'unhealthy',
-      duration: Date.now() - geminiStart,
-    };
+    // Process payment...
 
-    // Rate limiter health
-    const rateLimiterStart = Date.now();
-    await rateLimit.limit('health-check');
-    health.checks.rateLimiter = {
-      status: 'healthy',
-      duration: Date.now() - rateLimiterStart,
-    };
+    await trackServerEvent(
+      'checkout_completed',
+      { plan: 'pro', amountCents: 2900 },
+      { apiKey: serverEnv.AMPLITUDE_API_KEY, userId: user.id }
+    );
 
-    const totalDuration = Date.now() - startTime;
-
-    logger.info('Health check completed', {
-      status: 'healthy',
-      totalDuration,
-      checks: health.checks,
-      category: 'health',
-    });
-
-    return Response.json(health);
+    logger.info('Checkout completed', { subscriptionId });
+    return Response.json({ success: true });
   } catch (error) {
-    health.status = 'unhealthy';
-
-    logger.error('Health check failed', {
-      error: error.message,
-      totalDuration: Date.now() - startTime,
-      category: 'health',
-    });
-
-    return Response.json(health, { status: 503 });
+    logger.error('Checkout failed', { error: error.message });
+    throw error;
   } finally {
     await logger.flush();
   }
 }
 ```
 
-## Alerting Strategy
-
-### Alert Conditions
+### Using withLogging Wrapper
 
 ```typescript
-interface IAlertRule {
-  name: string;
-  condition: string;
-  threshold: number;
-  window: string;
-  severity: 'critical' | 'warning' | 'info';
-  channels: string[];
-}
+import { withLogging, HttpError } from '@server/monitoring/logger';
 
-// Alert configuration
-const alertRules: IAlertRule[] = [
-  {
-    name: 'High Error Rate',
-    condition: 'error_rate',
-    threshold: 5, // 5% error rate
-    window: '5m',
-    severity: 'critical',
-    channels: ['slack', 'email'],
-  },
-  {
-    name: 'Slow Response Time',
-    condition: 'avg_response_time',
-    threshold: 5000, // 5 seconds
-    window: '10m',
-    severity: 'warning',
-    channels: ['slack'],
-  },
-  {
-    name: 'AI Processing Failures',
-    condition: 'ai_error_rate',
-    threshold: 10, // 10% failure rate
-    window: '5m',
-    severity: 'critical',
-    channels: ['slack', 'email'],
-  },
-];
+export const GET = withLogging('user-api', async (request, logger) => {
+  const user = await getUser(request);
+
+  if (!user) {
+    throw new HttpError('Unauthorized', 401, 'UNAUTHORIZED');
+  }
+
+  logger.info('User data fetched', { userId: user.id });
+  return Response.json({ user });
+});
 ```
 
-### Alert Integration
+## CSP Configuration
+
+The Content Security Policy allows Baselime and Amplitude:
 
 ```typescript
-// Custom alerting for critical events
-logger.error('Critical system error', {
-  error: error.message,
-  impact: 'Image processing service unavailable',
-  userId: user?.id,
-  severity: 'critical',
-  alerting: {
-    enabled: true,
-    channels: ['slack', 'email'],
-    escalationPolicy: 'engineering_team',
-  },
-});
-
-// Performance degradation alerts
-logger.warn('Performance degradation detected', {
-  metric: 'response_time_p95',
-  value: 3500, // 3.5 seconds
-  threshold: 2000, // 2 second threshold
-  severity: 'warning',
-  alerting: {
-    enabled: true,
-    channels: ['slack'],
-  },
-});
+'connect-src': [
+  'https://rum.baselime.io',     // Baselime RUM
+  'https://*.amplitude.com',     // Amplitude analytics
+  // ...
+]
 ```
 
-## Log Management
-
-### Log Retention & Archiving
-
-```mermaid
-pie title Log Storage Strategy
-    "Hot Logs (7 days)" : 15
-    "Warm Logs (30 days)" : 25
-    "Cold Logs (90 days)" : 30
-    "Archived Logs (1 year)" : 20
-    "Deleted" : 10
-```
-
-### Log Querying Examples
-
-```typescript
-// Query patterns for common investigations
-
-// Find all errors for a specific user
-const userErrors = await baselime.query({
-  service: 'myimageupscaler.com-api',
-  level: 'error',
-  userId: 'user_123',
-  timeRange: '24h',
-});
-
-// Monitor processing failures
-const processingFailures = await baselime.query({
-  service: 'myimageupscaler.com-api',
-  category: 'ai_processing',
-  status: 'failed',
-  timeRange: '1h',
-});
-
-// Track performance issues
-const slowRequests = await baselime.query({
-  service: 'myimageupscaler.com-api',
-  duration: { gt: 5000 }, // > 5 seconds
-  timeRange: '6h',
-});
-
-// Security monitoring
-const authFailures = await baselime.query({
-  service: 'myimageupscaler.com-api',
-  category: 'authentication',
-  result: 'failed',
-  timeRange: '24h',
-});
-```
-
-## Environment Configuration
-
-### Development vs Production
-
-```typescript
-// Environment-specific logging
-const loggingConfig = {
-  development: {
-    level: 'debug',
-    enableConsole: true,
-    enableBaselime: false,
-    samplingRate: 1.0,
-  },
-  staging: {
-    level: 'info',
-    enableConsole: true,
-    enableBaselime: true,
-    samplingRate: 0.5,
-  },
-  production: {
-    level: 'info',
-    enableConsole: false,
-    enableBaselime: true,
-    samplingRate: 0.1, // Sample debug logs
-  },
-};
-
-// Conditional logging
-if (loggingConfig[env].enableConsole) {
-  console.log('[App]', message, metadata);
-}
-
-if (loggingConfig[env].enableBaselime && shouldLog(level)) {
-  logger.info(message, metadata);
-}
-```
-
-### Environment Variables
-
-```bash
-# Baselime Configuration
-BASELIME_API_KEY=your_baselime_api_key
-BASELIME_SERVICE=myimageupscaler.com-api
-BASELIME_ENVIRONMENT=production
-
-# Logging Configuration
-LOG_LEVEL=info
-LOG_SAMPLING_RATE=0.1
-ENABLE_PERFORMANCE_LOGGING=true
-
-# Alerting Configuration
-ALERT_SLACK_WEBHOOK_URL=your_slack_webhook
-ALERT_EMAIL_RECIPIENTS=team@example.com
-```
+See `/home/joao/projects/autopilotrank.com/shared/config/security.ts` for full CSP configuration.

@@ -1,362 +1,286 @@
 # Rate Limiting System
 
-Simple in-memory rate limiting for API protection and abuse prevention.
+In-memory rate limiting for API protection using sliding window algorithm.
 
 ## Overview
 
-```mermaid
-flowchart TD
-    REQUEST[Incoming Request] --> IDENTIFY{Get Identifier}
+Location: `/home/joao/projects/autopilotrank.com/server/rateLimit.ts`
 
-    IDENTIFY -->|Auth User| USER_ID[User ID]
-    IDENTIFY -->|Public| IP[IP Address]
+The application uses simple in-memory rate limiting with no external dependencies. Rate limiting is applied via Astro middleware at `/home/joao/projects/autopilotrank.com/src/middleware.ts`.
 
-    USER_ID --> LIMIT_CHECK{Check Rate Limit}
-    IP --> LIMIT_CHECK
+## Rate Limiters
 
-    LIMIT_CHECK -->|Under Limit| ALLOW[Allow Request]
-    LIMIT_CHECK -->|Over Limit| BLOCK[Block Request]
-
-    ALLOW --> UPDATE[Update Counter]
-    UPDATE --> SUCCESS[Process Request]
-
-    BLOCK --> RESPONSE[429 Too Many Requests]
-```
-
-## Implementation
-
-### Rate Limiter Algorithm
-
-Uses sliding window algorithm with in-memory storage:
-
-```mermaid
-sequenceDiagram
-    participant Client
-    participant API
-    participant Memory as In-Memory Store
-
-    Client->>API: Request
-    API->>Memory: Get timestamps for user/IP
-
-    Note over Memory: Remove old timestamps<br/>outside window
-
-    alt Under limit
-        Memory-->>API: [t1, t2, t3] (count < limit)
-        API->>Memory: Add current timestamp
-        API-->>Client: Process request
-    else Over limit
-        Memory-->>API: [t1, t2, t3, t4, t5] (count ≥ limit)
-        API-->>Client: 429 Too Many Requests
-    end
-```
-
-### Configuration
+### Available Limiters
 
 ```typescript
-interface IRateLimitConfig {
-  limit: number; // Max requests allowed
-  windowMs: number; // Time window in milliseconds
-}
+import { rateLimit, publicRateLimit } from '@server/rateLimit';
 
-// Rate limiters used in the application
-export const rateLimit = {
-  limit: createRateLimiter(50, 10 * 1000), // 50 req/10s for authenticated users
-  publicRateLimit: createRateLimiter(10, 10 * 1000), // 10 req/10s for public routes
-};
+// Authenticated users: 50 requests per 10 seconds
+rateLimit.limit(identifier);
+
+// Public/anonymous: 10 requests per 10 seconds
+publicRateLimit.limit(identifier);
 ```
 
-### Rate Limit Rules
+### Limit Configuration
 
-| User Type          | Limit | Window     | Use Case                                  |
-| ------------------ | ----- | ---------- | ----------------------------------------- |
-| Authenticated      | 50    | 10 seconds | General API usage (dashboard, articles)   |
-| Public/Anonymous   | 10    | 10 seconds | Unauthenticated endpoints (signup, login) |
-| Article Generation | 5     | 1 minute   | Heavy operations (generation, humanizer)  |
-| Stripe Webhooks    | 100   | 1 minute   | Payment event processing                  |
+| User Type        | Limit | Window | Limiter           |
+| ---------------- | ----- | ------ | ----------------- |
+| Authenticated    | 50    | 10 sec | `rateLimit`       |
+| Public/Anonymous | 10    | 10 sec | `publicRateLimit` |
 
-### Memory Management
+### Special Case Limiters
 
-```mermaid
-flowchart TD
-    CLEANUP[Cleanup Timer: 5 min] --> ITERATE[Iterate Store]
-
-    ITERATE --> ENTRY{Check Entry}
-    ENTRY -->|Has Old Timestamps| FILTER[Remove Old Timestamps]
-    ENTRY -->|Empty Entry| DELETE[Delete Entry]
-    ENTRY -->|Active Entry| SKIP[Keep Entry]
-
-    FILTER --> EMPTY{No Timestamps Left?}
-    EMPTY -->|Yes| DELETE
-    EMPTY -->|No| SKIP
-
-    DELETE --> NEXT[Next Entry]
-    SKIP --> NEXT
-    NEXT --> MORE{More Entries?}
-    MORE -->|Yes| ENTRY
-    MORE -->|No| WAIT[Wait 5 min]
-    WAIT --> CLEANUP
-```
-
-## Integration Points
-
-### Middleware Integration
+The `upscaleRateLimit` is also available but is only used in specific contexts. It has special handling for test environments where rate limiting is skipped:
 
 ```typescript
-// middleware.ts
-import { rateLimit, publicRateLimit } from '@/server/rateLimit';
-
-export async function middleware(request: AstroMiddlewareNext) {
-  // Get identifier
-  const user = await getUser(request);
-  const identifier = user?.id || getClientIP(request);
-
-  // Choose appropriate rate limiter
-  const limiter = user ? rateLimit.limit : publicRateLimit.limit;
-
-  // Check rate limit
-  const result = await limiter(identifier);
-
-  if (!result.success) {
-    return new Response('Too Many Requests', {
-      status: 429,
-      headers: {
-        'Retry-After': Math.ceil((result.reset - Date.now()) / 1000).toString(),
-        'X-RateLimit-Limit': '50',
-        'X-RateLimit-Remaining': result.remaining.toString(),
-        'X-RateLimit-Reset': new Date(result.reset).toISOString(),
-      },
-    });
-  }
-
-  // Continue to next middleware/route
-  const response = await next();
-  return response;
-}
+// 5 requests per 60 seconds, skips in test environment
+import { upscaleRateLimit } from '@server/rateLimit';
 ```
 
-### API Route Integration
+## Middleware Integration
+
+Location: `/home/joao/projects/autopilotrank.com/lib/middleware/rateLimit.ts`
+
+Rate limiting is applied through helper functions in the Astro middleware:
 
 ```typescript
-// src/api/articles/generate.ts
-import { rateLimit } from '@/server/rateLimit';
-
-export async function POST({ request, locals }: APIContext) {
-  const user = locals.user;
-
-  if (!user) {
-    const result = await publicRateLimit.limit(getClientIP(request));
-    if (!result.success) {
-      return json(
-        {
-          success: false,
-          error: {
-            code: 'RATE_LIMITED',
-            message: 'Too many requests. Please try again later.',
-            details: { retryAfter: Math.ceil((result.reset - Date.now()) / 1000) },
-          },
-        }),
-        {
-          status: 429,
-          headers: {
-            'Retry-After': Math.ceil((result.reset - Date.now()) / 1000).toString(),
-          },
-        }
-      );
-    }
-  }
-
-  // Continue with processing...
-}
+import { applyPublicRateLimit, applyUserRateLimit } from '@lib/middleware';
 ```
 
-## Rate Limit Response Format
+### applyPublicRateLimit
 
-### HTTP Headers
+For unauthenticated API routes:
 
 ```typescript
-interface RateLimitHeaders {
-  'X-RateLimit-Limit': string; // Maximum requests allowed
-  'X-RateLimit-Remaining': string; // Requests remaining in window
-  'X-RateLimit-Reset': string; // Unix timestamp when window resets
-  'Retry-After': string; // Seconds until client can retry
+const rateLimitResponse = await applyPublicRateLimit(request, response);
+if (rateLimitResponse) {
+  return rateLimitResponse; // Returns 429 if rate limited
 }
 ```
 
-### Error Response
+**Limit:** 10 requests per 10 seconds
+**Identifier:** Client IP address
 
-```json
-{
-  "success": false,
-  "error": {
-    "code": "RATE_LIMITED",
-    "message": "Too many requests. Please try again in 5 seconds.",
-    "details": {
-      "retryAfter": 5,
-      "limit": 50,
-      "remaining": 0,
-      "reset": "2024-01-15T10:30:00Z"
-    }
-  }
+### applyUserRateLimit
+
+For authenticated API routes:
+
+```typescript
+const rateLimitResponse = await applyUserRateLimit(userId, response);
+if (rateLimitResponse) {
+  return rateLimitResponse; // Returns 429 if rate limited
 }
 ```
 
-## Identifier Strategy
-
-### Priority Order
-
-1. **User ID** (authenticated users)
-2. **IP Address** (anonymous users)
-3. **Session ID** (fallback)
+**Limit:** 50 requests per 10 seconds
+**Identifier:** User ID
 
 ### IP Address Extraction
 
 ```typescript
-function getClientIP(request: NextRequest): string {
-  return (
-    request.headers.get('x-forwarded-for')?.split(',')[0] ||
-    request.headers.get('x-real-ip') ||
-    request.ip ||
-    'unknown'
-  );
+import { getClientIp } from '@lib/middleware';
+
+const ip = getClientIp(request);
+```
+
+Priority order:
+
+1. `cf-connecting-ip` (Cloudflare-specific, most reliable)
+2. `x-forwarded-for` (first IP)
+3. `x-real-ip`
+4. `unknown`
+
+## Response Format
+
+### Rate Limit Headers
+
+All successful responses include rate limit headers:
+
+```typescript
+{
+  'X-RateLimit-Limit': '50',           // Maximum requests
+  'X-RateLimit-Remaining': '42',       // Requests remaining in window
+  'X-RateLimit-Reset': '2024-01-15T10:30:00Z'  // Window reset time
 }
 ```
 
-## Scaling Considerations
+### Rate Limited Response
 
-### Single Instance Limitations
+When limit exceeded (HTTP 429):
 
-```mermaid
-graph TD
-    subgraph "Current Setup"
-        INSTANCE[Single CF Worker]
-        MEMORY[In-Memory Store]
-        INSTANCE --> MEMORY
-    end
-
-    subgraph "Limitations"
-        SHARED[Shared State Missing]
-        COORDINATION[No Cross-Instance Coordination]
-        MEMORY_LOSS[Memory Loss on Restart]
-    end
-
-    SHARED --> ISSUES[Rate Limit Evasion]
-    COORDINATION --> ISSUES
-    MEMORY_LOSS --> ISSUES
-```
-
-### Multi-Instance Solutions
-
-| Solution            | Complexity | Cost | Accuracy  |
-| ------------------- | ---------- | ---- | --------- |
-| **Cloudflare KV**   | Low        | $$   | High      |
-| **Durable Objects** | Medium     | $$$  | Very High |
-| **Redis**           | High       | $$   | Very High |
-
-### Migration Path for Scale
-
-```mermaid
-timeline
-    title Rate Limiting Scaling Path
-
-    section Current (MVP)
-        In-Memory : Simple implementation
-                 : Single instance
-                 : No external deps
-
-    section Growth (1K-10K users)
-        Cloudflare KV : Shared state
-                     : Global consistency
-                     : Low latency
-
-    section Scale (10K+ users)
-        Durable Objects : Perfect accuracy
-                       : Stateful workers
-                       : Higher cost
-```
-
-## Monitoring
-
-### Metrics to Track
-
-```typescript
-interface RateLimitMetrics {
-  totalRequests: number; // Total requests processed
-  blockedRequests: number; // Requests blocked
-  averageUtilization: number; // Average % of limit used
-  topViolators: string[]; // IPs/users most blocked
+```json
+{
+  "error": "Too many requests",
+  "details": {
+    "retryAfter": 5
+  }
 }
 ```
 
-### Analytics Integration
+Headers:
 
-```typescript
-// Track rate limit violations
-analytics.track('rate_limit_violation', {
-  ip: clientIP,
-  endpoint: request.url,
-  userAgent: request.headers.get('user-agent'),
-  limitType: user ? 'authenticated' : 'public',
-});
+```http
+HTTP/1.1 429 Too Many Requests
+Content-Type: application/json
+Retry-After: 5
+X-RateLimit-Limit: 10
+X-RateLimit-Remaining: 0
+X-RateLimit-Reset: 2024-01-15T10:30:00Z
 ```
 
-## Security Considerations
+## Test Environment Detection
 
-### Rate Limit Evasion
-
-| Attack Vector        | Mitigation Strategy                   |
-| -------------------- | ------------------------------------- |
-| IP Rotation          | Account-based limiting for auth users |
-| Distributed Requests | Account-based limiting                |
-| Header Spoofing      | Use Cloudflare's real IP detection    |
-| Cookie Bypass        | IP + User ID combined identification  |
-
-### Best Practices
-
-1. **Layered Limits**: Apply multiple rate limits per endpoint
-2. **Graceful Degradation**: Prioritize critical endpoints under load
-3. **User Communication**: Clear error messages with retry times
-4. **Monitoring**: Track rate limit violations for security
-5. **Testing**: Load test rate limit boundaries
-
-## Environment Configuration
+Rate limiting is automatically skipped in test environments:
 
 ```typescript
-// Rate limit configuration via environment
-const RATE_LIMIT_CONFIG = {
-  // Override defaults for different environments
-  development: {
-    authenticated: { limit: 100, window: 10000 },
-    public: { limit: 50, window: 10000 },
-  },
-  production: {
-    authenticated: { limit: 50, window: 10000 },
-    public: { limit: 10, window: 10000 },
-  },
-};
+import { isTestEnvironment } from '@lib/middleware';
+
+if (isTestEnvironment()) {
+  // Rate limiting is disabled
+}
 ```
 
-## Testing
+**Test Conditions:**
 
-### Load Testing Strategy
+- `ENV === 'test'`
+- `NODE_ENV === 'test'`
+- `PLAYWRIGHT_TEST === '1'`
+
+## Algorithm Details
+
+### Sliding Window
+
+The rate limiter uses a sliding window algorithm:
+
+1. Store timestamps of each request in memory
+2. Remove timestamps outside the current window
+3. If remaining timestamps >= limit, reject request
+4. Otherwise, add current timestamp and accept request
+
+### Memory Management
+
+- **Storage:** In-memory `Map<string, IRateLimitEntry>`
+- **Cleanup:** Every 5 minutes, removes entries with timestamps older than 5 minutes
+- **Entry Structure:**
 
 ```typescript
-// Test rate limit behavior
-describe('Rate Limiting', () => {
-  it('should allow requests under limit', async () => {
-    // Send 49 requests in 10 seconds
-    for (let i = 0; i < 49; i++) {
-      const response = await sendRequest();
-      expect(response.status).toBe(200);
-    }
+interface IRateLimitEntry {
+  timestamps: number[];
+}
+```
+
+### Result Format
+
+```typescript
+interface IRateLimitResult {
+  success: boolean; // Whether request is allowed
+  remaining: number; // Requests remaining in window
+  reset: number; // Unix timestamp of window reset
+}
+```
+
+## Public API Routes
+
+Rate limiting is applied to public API routes defined in `/home/joao/projects/autopilotrank.com/shared/config/security.ts`:
+
+```typescript
+export const PUBLIC_API_ROUTES = [
+  '/api/health',
+  '/api/webhooks/*',
+  '/api/analytics/*',
+  '/api/cron/*',
+  '/api/proxy-image',
+  '/api/support/*',
+] as const;
+```
+
+Public routes use `applyPublicRateLimit()`. Protected API routes use `applyUserRateLimit()`.
+
+## Limitations
+
+### Single Instance
+
+The in-memory implementation has known limitations:
+
+- No shared state across Cloudflare Workers edge locations
+- State is lost on worker restart/redeployment
+- Rate limit evasion possible through distributed requests
+
+### Mitigation Strategies
+
+| Attack Vector        | Mitigation                    |
+| -------------------- | ----------------------------- |
+| IP rotation          | User ID limiting for auth     |
+| Distributed requests | User ID limiting for auth     |
+| Header spoofing      | Cloudflare `cf-connecting-ip` |
+
+### Scaling Path
+
+For multi-instance deployments, consider:
+
+1. **Cloudflare KV** - Shared state, global consistency
+2. **Durable Objects** - Perfect accuracy, higher cost
+3. **Redis** - External cache, very high accuracy
+
+## Usage Examples
+
+### Direct Limiter Usage
+
+```typescript
+import { rateLimit } from '@server/rateLimit';
+
+const { success, remaining, reset } = await rateLimit.limit('user_123');
+
+if (!success) {
+  const retryAfter = Math.ceil((reset - Date.now()) / 1000);
+  return new Response('Too many requests', {
+    status: 429,
+    headers: { 'Retry-After': retryAfter.toString() },
   });
+}
 
-  it('should block requests over limit', async () => {
-    // Send 51 requests in 10 seconds
-    for (let i = 0; i < 51; i++) {
-      const response = await sendRequest();
-    }
-    // Last request should be blocked
-    expect(response.status).toBe(429);
-  });
-});
+// Process request...
 ```
+
+### Middleware Implementation
+
+From `/home/joao/projects/autopilotrank.com/src/middleware.ts`:
+
+```typescript
+// For public API routes
+if (isPublic) {
+  const response = await next();
+  applySecurityHeaders(response);
+
+  const rateLimitResponse = await applyPublicRateLimit(request, response);
+  if (rateLimitResponse) return rateLimitResponse;
+
+  return response;
+}
+
+// For protected API routes
+const authResult = await verifyApiAuth(request);
+
+const response = await next();
+applySecurityHeaders(response);
+
+const rateLimitResponse = await applyUserRateLimit(authResult.user.id, response);
+return rateLimitResponse || response;
+```
+
+## Dependencies
+
+- No external dependencies
+- Uses only built-in `Map` and `setInterval`
+- Works in Cloudflare Workers edge runtime
+- Environment detection via `serverEnv`
+
+## Files Reference
+
+| File                          | Purpose                          |
+| ----------------------------- | -------------------------------- |
+| `server/rateLimit.ts`         | Core rate limiter implementation |
+| `lib/middleware/rateLimit.ts` | Middleware helper functions      |
+| `src/middleware.ts`           | Astro middleware integration     |
+| `shared/config/security.ts`   | Public API route definitions     |

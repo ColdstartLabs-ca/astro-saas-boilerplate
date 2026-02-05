@@ -9,344 +9,355 @@ graph TD
     subgraph "Auth Providers"
         EMAIL[Email/Password]
         GOOGLE[Google OAuth]
-        MAGIC[Magic Link]
+        AZURE[Azure OAuth]
     end
 
     subgraph "Supabase Auth"
         AUTH_SVC[Auth Service]
         JWT[JWT Tokens]
         REFRESH[Refresh Tokens]
-        SESSIONS[Session Store]
     end
 
     subgraph "Application Layer"
-        MW[Middleware]
-        CLIENT[Supabase Client]
-        SERVER[Server Client]
+        MW[Astro Middleware]
+        CLIENT[Browser Client]
+        API[API Routes]
     end
 
     EMAIL --> AUTH_SVC
     GOOGLE --> AUTH_SVC
-    MAGIC --> AUTH_SVC
+    AZURE --> AUTH_SVC
 
     AUTH_SVC --> JWT
     AUTH_SVC --> REFRESH
-    AUTH_SVC --> SESSIONS
 
     JWT --> MW
     JWT --> CLIENT
-    JWT --> SERVER
+    JWT --> API
 ```
 
 ## Authentication Methods
 
 ### 1. Email/Password
 
-```mermaid
-sequenceDiagram
-    participant User
-    participant App
-    participant Supabase
-
-    User->>App: Enter email + password
-    App->>Supabase: signUp({ email, password })
-    Supabase->>Supabase: Create user record
-    Supabase->>User: Send verification email
-    Supabase-->>App: { user, session: null }
-
-    Note over User: User clicks email link
-
-    User->>Supabase: Verify email token
-    Supabase->>Supabase: Mark email verified
-    Supabase-->>User: Redirect to app
-
-    User->>App: Login with credentials
-    App->>Supabase: signInWithPassword()
-    Supabase-->>App: { user, session }
-    App->>App: Store session in cookies
-```
+- **Sign Up**: `supabase.auth.signUp({ email, password })`
+- **Sign In**: `supabase.auth.signInWithPassword({ email, password })`
+- **Email Confirmation**: Redirects to `/auth/confirm` after verification
+- **Password Reset**: `supabase.auth.resetPasswordForEmail()` redirects to `/auth/reset-password`
 
 ### 2. Google OAuth
 
-```mermaid
-sequenceDiagram
-    participant User
-    participant App
-    participant Supabase
-    participant Google
-
-    User->>App: Click "Sign in with Google"
-    App->>Supabase: signInWithOAuth({ provider: 'google' })
-    Supabase-->>User: Redirect to Google
-
-    User->>Google: Authorize app
-    Google-->>Supabase: Auth code
-    Supabase->>Google: Exchange for tokens
-    Google-->>Supabase: Access token + user info
-
-    Supabase->>Supabase: Create/link user
-    Supabase-->>App: Redirect with session
-    App->>App: Handle callback, store session
-```
-
-### 3. Magic Link
-
-```mermaid
-sequenceDiagram
-    participant User
-    participant App
-    participant Supabase
-
-    User->>App: Enter email
-    App->>Supabase: signInWithOtp({ email })
-    Supabase->>User: Send magic link email
-    Supabase-->>App: { user: null }
-
-    Note over User: User clicks magic link
-
-    User->>Supabase: Verify OTP token
-    Supabase-->>App: Redirect with session
-    App->>App: Handle callback, store session
-```
-
-## Session Management
-
-### Token Structure
+- **Provider**: `google`
+- **Redirect URI**: `/auth/callback`
+- **Scopes**: `email profile`
+- **Hook**: `useGoogleSignIn()` in `/client/hooks/useGoogleSignIn.ts`
+- **Environment Toggle**: `PUBLIC_ENABLE_GOOGLE_OAUTH` (default: `true`)
 
 ```typescript
-interface Session {
-  access_token: string; // JWT (expires in 1 hour)
-  refresh_token: string; // Long-lived (expires in 7 days)
-  expires_at: number; // Unix timestamp
-  expires_in: number; // Seconds until expiry
-  token_type: 'bearer';
-  user: User;
-}
-
-interface User {
-  id: string; // UUID
-  email: string;
-  email_confirmed_at: string;
-  created_at: string;
-  updated_at: string;
-  user_metadata: {
-    full_name?: string;
-    avatar_url?: string;
-  };
-  app_metadata: {
-    provider: string;
-    providers: string[];
-  };
-}
+// Client-side usage
+const { signIn, loading } = useGoogleSignIn();
+await signIn(returnTo); // Optional return URL after auth
 ```
 
-### Token Refresh Flow
+### 3. Azure OAuth
 
-```mermaid
-sequenceDiagram
-    participant Client
-    participant Middleware
-    participant Supabase
+- **Provider**: `azure`
+- **Redirect URI**: `/auth/callback`
+- **Scopes**: `email openid profile User.Read`
+- **Hook**: `useAzureSignIn()` in `/client/hooks/useAzureSignIn.ts`
+- **Environment Toggle**: `PUBLIC_ENABLE_AZURE_OAUTH` (default: `false`)
 
-    Client->>Middleware: Request with JWT
-    Middleware->>Middleware: Check expiry
-
-    alt Token Valid
-        Middleware->>Middleware: Verify signature
-        Middleware-->>Client: Continue request
-    end
-
-    alt Token Expired (< 60s)
-        Middleware->>Supabase: Refresh token
-        Supabase-->>Middleware: New JWT
-        Middleware->>Middleware: Update cookies
-        Middleware-->>Client: Continue with new token
-    end
-
-    alt Refresh Token Expired
-        Middleware-->>Client: 401 Unauthorized
-        Client->>Client: Redirect to login
-    end
+```typescript
+// Client-side usage
+const { signIn, loading } = useAzureSignIn();
+await signIn();
 ```
 
-## Implementation
+## Client-Side Implementation
 
-### Client-Side (Browser)
+### Browser Client
 
 ```typescript
 // shared/utils/supabase/client.ts
 import { createBrowserClient } from '@supabase/ssr';
 
-export function createClient() {
-  return createBrowserClient(
-    import.meta.env.PUBLIC_SUPABASE_URL,
-    import.meta.env.PUBLIC_SUPABASE_ANON_KEY
-  );
+export function createClient(): SupabaseClient {
+  return createBrowserClient(clientEnv.SUPABASE_URL, clientEnv.SUPABASE_ANON_KEY);
 }
 ```
 
-### Server-Side (API Routes)
+### Auth Store (Zustand)
+
+Located at `/client/store/auth/authStore.ts`:
+
+```typescript
+// State
+interface IAuthState {
+  isAuthenticated: boolean;
+  isLoading: boolean;
+  user: IAuthUser | null;
+  signInWithEmail: (email: string, password: string) => Promise<void>;
+  signUpWithEmail: (email: string, password: string) => Promise<ISignUpResult>;
+  signOut: () => Promise<void>;
+  changePassword: (current: string, new: string) => Promise<void>;
+  resetPassword: (email: string) => Promise<void>;
+  updatePassword: (new: string) => Promise<void>;
+}
+
+// Usage in components
+const { user, isAuthenticated, signInWithEmail, signOut } = useAuthStore();
+```
+
+### Auth Operations
+
+Located at `/client/store/auth/authOperations.ts`:
+
+- **Caching**: Instant UI load from localStorage cache, validated in background
+- **Analytics**: Tracks `login`, `signup_started`, `signup_completed` events
+- **Timeout**: 5-second timeout for auth initialization
+
+## Server-Side Implementation
+
+### Server Client (API Routes)
 
 ```typescript
 // shared/utils/supabase/server.ts
-import { createServerClient } from '@supabase/ssr';
-import { AstroCookies } from 'astro';
-
-export async function createClient(cookies: AstroCookies) {
-  return createServerClient(
-    import.meta.env.PUBLIC_SUPABASE_URL,
-    import.meta.env.PUBLIC_SUPABASE_ANON_KEY,
-    {
-      cookies: {
-        getAll() {
-          return Array.from(cookies.entries()).map(([name, value]) => ({
-            name,
-            value,
-          }));
-        },
-        setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value, options }) => {
-            cookies.set(name, value, options);
-          });
-        },
+export async function createClient(
+  cookies: AstroCookies,
+  request?: Request
+): Promise<SupabaseClient> {
+  return createServerClient(clientEnv.SUPABASE_URL, clientEnv.SUPABASE_ANON_KEY, {
+    cookies: {
+      getAll() {
+        /* ... */
       },
-    }
-  );
+      setAll(cookiesToSet) {
+        /* ... */
+      },
+    },
+  });
 }
 ```
 
-### Middleware
+### Middleware Auth Helpers
+
+Located at `/shared/utils/supabase/middleware.ts`:
 
 ```typescript
-// src/middleware.ts
-import { createServerClient } from '@supabase/ssr';
-import { defineMiddleware } from 'astro:middleware';
+// Update session and get user
+export async function updateSession(
+  cookies: AstroCookies,
+  request?: Request
+): Promise<{ user: User | null }>;
 
-export const onRequest = defineMiddleware(async ({ request, locals, url }) => {
-  const supabase = createServerClient(
-    import.meta.env.PUBLIC_SUPABASE_URL,
-    import.meta.env.PUBLIC_SUPABASE_ANON_KEY,
-    {
-      cookies: {
-        getAll() {
-          return request.headers.get('cookie')?.split(';').map(c => {
-            const [name, value] = c.trim().split('=');
-            return { name, value };
-          }) || [];
-        },
-        setAll(cookiesToSet) {
-          // Set cookies on response headers
-        },
-      },
-    }
-  );
-
-  // Refresh session if needed
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  // Store user in locals for use in pages
-  locals.user = user;
-
-  // Protect routes
-  const protectedPaths = ['/dashboard', '/upscaler', '/api/upscale'];
-  const isProtected = protectedPaths.some(path => url.pathname.startsWith(path));
-
-  if (isProtected && !user) {
-    return new Response(null, {
-      status: 307,
-      headers: { Location: `/login?redirect=${encodeURIComponent(url.pathname)}` },
-    });
-  }
-});
+// Check if user is admin
+export async function requireAdmin(
+  cookies: AstroCookies,
+  request?: Request
+): Promise<{ isAdmin: boolean; error?: Response }>;
 ```
 
-## Protected Routes
+## Middleware Flow
+
+Located at `/src/middleware.ts`:
 
 ```mermaid
 flowchart TD
     REQ[Incoming Request] --> MW{Middleware}
 
-    MW -->|Public Route| PUBLIC[Continue]
-    MW -->|Protected Route| CHECK{Has Valid JWT?}
+    MW -->|API Route| API_CHECK{Public?}
+    MW -->|Page Route| LOCALE{Locale Handling}
+    MW -->|Static/Sitemap| NEXT[Continue]
 
-    CHECK -->|Yes| VERIFY[Verify Token]
-    CHECK -->|No| REDIRECT[Redirect to Login]
+    API_CHECK -->|Yes| PUB[Apply Rate Limit]
+    API_CHECK -->|No| AUTH[Verify JWT]
 
-    VERIFY -->|Valid| INJECT[Inject User Context]
-    VERIFY -->|Invalid| REDIRECT
+    AUTH -->|Valid| ADD_CTX[Add User to Locals]
+    AUTH -->|Invalid| 401[Return 401]
 
-    INJECT --> HANDLER[Route Handler]
+    ADD_CTX --> NEXT
+
+    LOCALE --> DETECT[Detect Locale]
+    DETECT --> DASH{Dashboard?}
+
+    DASH -->|Yes| UPDATE[updateSession]
+    DASH -->|No| NEXT
+
+    UPDATE --> HAS_USER{Has User?}
+    HAS_USER -->|No| REDIRECT[Redirect to Home + login=1]
+    HAS_USER -->|Yes| ADMIN{Admin Route?}
+
+    ADMIN -->|Yes| CHECK_ADMIN{requireAdmin}
+    ADMIN -->|No| NEXT
+
+    CHECK_ADMIN -->|No| FORBIDDEN[Redirect to Home + forbidden=1]
+    CHECK_ADMIN -->|Yes| NEXT
 ```
 
-### Route Protection Matrix
+### Middleware Features
 
-| Path              | Auth Required | Description             |
-| ----------------- | ------------- | ----------------------- |
-| `/`               | No            | Landing page            |
-| `/login`          | No            | Login page              |
-| `/signup`         | No            | Registration page       |
-| `/pricing`        | No            | Pricing page            |
-| `/blog/*`         | No            | Blog posts              |
-| `/dashboard`      | Yes           | User dashboard          |
-| `/dashboard/*`    | Yes           | All dashboard routes    |
-| `/api/campaigns`  | Yes           | Campaign management API |
-| `/api/articles`   | Yes           | Article generation API  |
-| `/api/checkout`   | Yes           | Billing API             |
-| `/api/profile`    | Yes           | User API                |
-| `/api/webhooks/*` | No            | Stripe webhooks         |
-| `/api/health`     | No            | Health check            |
+1. **SEO Redirects**: WWW to non-WWW, tracking parameter cleanup
+2. **Locale Detection**: URL path, cookie, CF-IPCountry, Accept-Language
+3. **API Auth**: JWT verification via `verifyApiAuth()`
+4. **Dashboard Protection**: Redirects unauthenticated users
+5. **Admin Protection**: Role-based access via `requireAdmin()`
+
+### API Authentication
+
+Located at `/lib/middleware/auth.ts`:
+
+```typescript
+// Verify JWT for protected API routes
+export async function verifyApiAuth(
+  req: Request
+): Promise<{ user: { id: string; email?: string } } | { error: Response }>;
+
+// Add user context to Astro locals
+export function addUserContextLocals(user: { id: string; email?: string }): {
+  userId: string;
+  userEmail: string;
+};
+```
+
+**Test Environment Support**:
+
+- Hardcoded token: `test_auth_token_for_testing_only`
+- Environment token: `TEST_AUTH_TOKEN`
+- Mock tokens: `test_token_{userId}`
+
+## Session Management
+
+### Token Structure
+
+Supabase uses standard JWT tokens:
+
+```typescript
+interface Session {
+  access_token: string; // JWT (1 hour expiry)
+  refresh_token: string; // Long-lived (7 days)
+  expires_at: number;
+  user: User;
+}
+```
+
+### Token Refresh
+
+- Automatic refresh handled by Supabase SSR client
+- Refresh triggers when access token expires
+- Session persists across page reloads via cookies
+
+## Protected Routes
+
+### Dashboard Routes (Auth Required)
+
+- `/dashboard` - User dashboard
+- `/dashboard/*` - All dashboard sub-routes
+
+### Admin Routes (Admin Role Required)
+
+- `/dashboard/admin` - Admin dashboard
+- `/dashboard/admin/*` - All admin sub-routes
+
+### Public API Routes
+
+Defined in `/shared/config/security.ts`:
+
+| Pattern            | Purpose                            |
+| ------------------ | ---------------------------------- |
+| `/api/health`      | Health checks                      |
+| `/api/webhooks/*`  | External webhook endpoints         |
+| `/api/analytics/*` | Anonymous + authenticated tracking |
+| `/api/cron/*`      | Cron jobs (x-cron-secret auth)     |
+| `/api/proxy-image` | CORS proxy download                |
+| `/api/support/*`   | Support contact form               |
 
 ## Security Considerations
 
 ### JWT Validation
 
-```mermaid
-flowchart TD
-    JWT[JWT Token] --> PARSE[Parse Header/Payload]
-    PARSE --> CHECK_EXP{Expired?}
-
-    CHECK_EXP -->|Yes| REJECT[Reject]
-    CHECK_EXP -->|No| CHECK_SIG{Valid Signature?}
-
-    CHECK_SIG -->|No| REJECT
-    CHECK_SIG -->|Yes| CHECK_ISS{Valid Issuer?}
-
-    CHECK_ISS -->|No| REJECT
-    CHECK_ISS -->|Yes| ACCEPT[Accept]
-```
+1. Format validation (3 parts, valid base64url)
+2. Supabase signature verification
+3. Issuer validation
+4. Expiry check
 
 ### Security Headers
 
+Applied via `/lib/middleware/securityHeaders.ts`:
+
 ```typescript
-const securityHeaders = {
-  'Strict-Transport-Security': 'max-age=31536000; includeSubDomains',
+{
   'X-Frame-Options': 'DENY',
   'X-Content-Type-Options': 'nosniff',
-  'Referrer-Policy': 'strict-origin-when-cross-origin',
   'X-XSS-Protection': '1; mode=block',
-};
+  'Referrer-Policy': isDevelopment()
+    ? 'no-referrer-when-downgrade'
+    : 'strict-origin-when-cross-origin',
+  'Permissions-Policy': 'camera=(), microphone=(), geolocation=()',
+  'Content-Security-Policy': buildCspHeader()
+}
 ```
+
+### Content Security Policy
+
+Configured in `/shared/config/security.ts`:
+
+- `default-src`: 'self'
+- `script-src`: Includes Google Analytics, Stripe, Google Accounts
+- `connect-src`: Includes Supabase, Amplitude, Stripe
+- `frame-src`: Stripe, Google Accounts
+- `worker-src`: 'self', blob: (for background removal WASM)
 
 ### Cookie Configuration
 
-```typescript
-const cookieOptions = {
-  httpOnly: true, // Prevent XSS access
-  secure: true, // HTTPS only
-  sameSite: 'lax', // CSRF protection
-  path: '/',
-  maxAge: 60 * 60 * 24 * 7, // 7 days
-};
-```
+Managed by Supabase SSR client:
+
+- `httpOnly`: true (prevents XSS access)
+- `secure`: true (HTTPS only)
+- `sameSite`: 'lax' (CSRF protection)
+- Automatic refresh token rotation
+
+## Environment Variables
+
+### Client-Side (Public)
+
+- `PUBLIC_SUPABASE_URL` - Supabase project URL
+- `PUBLIC_SUPABASE_ANON_KEY` - Supabase anonymous key
+- `PUBLIC_ENABLE_GOOGLE_OAUTH` - Enable Google OAuth
+- `PUBLIC_ENABLE_AZURE_OAUTH` - Enable Azure OAuth
+
+### Server-Side (Secret)
+
+- `SUPABASE_SERVICE_ROLE_KEY` - Supabase service role key (bypasses RLS)
+- `TEST_AUTH_TOKEN` - Test authentication token
 
 ## Error Handling
 
-| Error Code            | Description           | User Action         |
-| --------------------- | --------------------- | ------------------- |
-| `invalid_credentials` | Wrong email/password  | Show error message  |
-| `email_not_confirmed` | Email not verified    | Resend verification |
-| `user_already_exists` | Duplicate email       | Redirect to login   |
-| `invalid_grant`       | Expired refresh token | Force re-login      |
-| `otp_expired`         | Magic link expired    | Request new link    |
+| Error Code                | Description           | Resolution                  |
+| ------------------------- | --------------------- | --------------------------- |
+| `invalid_credentials`     | Wrong email/password  | Show error to user          |
+| `email_not_confirmed`     | Email not verified    | Redirect to confirm page    |
+| `user_already_exists`     | Duplicate email       | Redirect to login           |
+| `refresh_token_not_found` | Invalid refresh token | Force re-login              |
+| `Auth session missing`    | No active session     | Ignore (expected on logout) |
+
+## Auth Pages
+
+| Path                   | Purpose                    |
+| ---------------------- | -------------------------- |
+| `/auth/callback`       | OAuth callback handler     |
+| `/auth/confirm`        | Email confirmation handler |
+| `/auth/reset-password` | Password reset form        |
+
+## Key Files
+
+| File                                  | Purpose               |
+| ------------------------------------- | --------------------- |
+| `shared/utils/supabase/client.ts`     | Browser client        |
+| `shared/utils/supabase/server.ts`     | Server client         |
+| `shared/utils/supabase/middleware.ts` | Middleware helpers    |
+| `client/store/auth/authStore.ts`      | Client auth state     |
+| `client/store/auth/authOperations.ts` | Auth operations       |
+| `lib/middleware/auth.ts`              | API auth verification |
+| `src/middleware.ts`                   | Astro middleware      |
+| `shared/config/security.ts`           | Security config       |
+| `shared/config/env.ts`                | Environment config    |

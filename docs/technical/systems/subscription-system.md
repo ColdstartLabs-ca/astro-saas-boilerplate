@@ -1,131 +1,105 @@
 # Subscription System Architecture
 
-**Version:** 3.0 (AutopilotRank)
+**Version:** 4.0 (AutopilotRank - Image Upscaler SaaS)
 **Last Updated:** February 5, 2026
-**Status:** Partially stale — boilerplate sections being refactored
-
-> **⚠️ DEPRECATION NOTICE:** This document describes the old MyImageUpscaler product. Most sections reference image processing, Next.js, and old plan names (Hobby/Professional/Business). See **[Pricing](#pricing)** section below for AutopilotRank specifics. Comprehensive refactor in progress.
-
----
 
 ## Quick Reference
 
 **For AutopilotRank pricing & plans:** See [Revenue Streams](../../business/business-model-canvas/revenue-streams.md)
 
-**For implementation details:** This document. Sections marked "OLD" need refactoring.
+**For implementation details:** This document describes the actual billing system implementation.
 
 ---
 
-## Pricing
-
-### AutopilotRank Plans (MVP)
-
-| Plan       | Price   | Articles/Month | Key Features                          |
-| ---------- | ------- | -------------- | ------------------------------------- |
-| Trial      | $0      | 3 (one-time)   | Try before buying, no CC required     |
-| Starter    | $49/mo  | 30             | All core features, 1 WordPress site   |
-| Growth     | $99/mo  | 100            | GSC integration, 3 CMS sites          |
-| Agency     | $249/mo | 500            | White-label, team (5), API            |
-
-**Key Principles:**
-- **1 Credit = 1 Article Generation** (approx 1,500 words)
-- **Rollover:** Unused credits roll over up to 2x monthly allowance
-- **Annual billing:** 20% off (2 months free)
-- **Overage charges** (Post-MVP): Starter $2.00/article, Growth $1.50/article, Agency $0.75/article
-
-### Technology Stack
+## Technology Stack
 
 - **Payment Provider:** Stripe (Checkout, Customer Portal, Webhooks)
-- **Database:** Supabase (PostgreSQL)
+- **Database:** Supabase (PostgreSQL with RLS)
 - **Backend:** Astro 5 SSR + Cloudflare Workers
 - **Frontend:** Astro 5 + React 18 (islands architecture)
 - **Hosting:** Cloudflare Pages
 
 ---
 
-## 2. Implementation Status
+## Pricing Tiers
 
-### 2.1 Feature Matrix (AutopilotRank MVP)
+### Monthly Subscriptions
 
-| Feature                        | Status              | Notes                                                      |
-| ------------------------------ | ------------------- | ---------------------------------------------------------- |
-| Subscription purchase          | ✅ Implemented      | Stripe Checkout (ready to reconfigure for new plans)       |
-| Monthly credit allocation      | ✅ Implemented      | With 2x rollover cap                                       |
-| Subscription cancellation      | ✅ Implemented      | Via API + Stripe Portal                                    |
-| Billing page                   | ✅ Implemented      | Shell exists, needs article-specific content               |
-| Pricing page                   | ✅ Implemented      | Shell exists, needs AutopilotRank tiers + comparison table |
-| Webhook signature verification | ✅ Implemented      | Production-ready                                           |
-| Credit transaction logging     | ✅ Implemented      | Full audit trail                                           |
-| Upgrade/downgrade flow         | ✅ Implemented      | `/api/subscription/change` with proration                  |
-| Webhook idempotency            | ✅ Implemented      | `webhook_events` table with atomic claims                  |
-| Scheduled Stripe sync          | ✅ Implemented      | Cron jobs for webhook recovery, expiration check           |
-| **Reconfigure plans**          | 🔄 To Do           | Update Stripe products/prices for Starter/Growth/Agency    |
-| **Trial articles**             | 🔄 To Do           | Add 3 free articles on signup (trial signup flow)          |
-| **Recalculate rollover**       | 🔄 To Do           | Verify 2x rollover cap is correct for articles             |
-| **Annual billing**             | 🔄 Post-MVP Phase 1 | UI + logic for annual discount                             |
-| **Overage charges**            | 🔄 Post-MVP Phase 1 | Hard block at plan limit + overage pricing                 |
-| **Low credit warning**         | 🔄 Post-MVP Phase 1 | Email alert at 80% usage                                   |
+| Plan         | Price   | Credits/Month | Rollover Cap    | Batch Limit |
+| ------------ | ------- | ------------- | --------------- | ----------- |
+| **Free**     | $0      | 10 (one-time) | N/A             | 1           |
+| **Starter**  | $9/mo   | 100           | 300 (3x)        | 5           |
+| **Hobby**    | $19/mo  | 200           | 1200 (6x)       | 10          |
+| **Pro**      | $49/mo  | 1000          | 6000 (6x)       | 50          |
+| **Business** | $149/mo | 5000          | 0 (no rollover) | 500         |
 
-### 2.2 API Coverage
+### Credit Packs
 
-```mermaid
-graph LR
-    subgraph "Implemented"
-        A[POST /api/checkout]
-        B[POST /api/portal]
-        C[POST /api/webhooks/stripe]
-        D[POST /api/subscription/change]
-        E[POST /api/subscriptions/cancel]
-        F[POST /api/admin/subscription]
-    end
-
-    subgraph "NOT IMPLEMENTED"
-        G[GET /api/credits/history]
-        H[POST /api/subscription/preview-change]
-        I[GET /api/health/stripe]
-        J[POST /api/cron/check-expirations]
-        K[POST /api/cron/recover-webhooks]
-        L[POST /api/cron/reconcile]
-    end
-
-    style G fill:#ff9999
-    style H fill:#ff9999
-    style I fill:#ff9999
-    style J fill:#ff9999
-    style K fill:#ff9999
-    style L fill:#ff9999
-```
-
-### 2.3 Webhook Coverage
-
-| Webhook Event                   | Status              | Handler                                |
-| ------------------------------- | ------------------- | -------------------------------------- |
-| `checkout.session.completed`    | Implemented         | Adds initial credits                   |
-| `customer.subscription.created` | Implemented         | Creates subscription record            |
-| `customer.subscription.updated` | Implemented         | Updates status, period, tier           |
-| `customer.subscription.deleted` | Implemented         | Marks canceled                         |
-| `invoice.payment_succeeded`     | Implemented         | Adds monthly credits with rollover cap |
-| `invoice.payment_failed`        | Implemented         | Sets `past_due` status                 |
-| `charge.refunded`               | **PARTIAL**         | Logged, no credit clawback (TODO)      |
-| `charge.dispute.created`        | **PARTIAL**         | Logged, no action (TODO)               |
-| `invoice.payment_refunded`      | **PARTIAL**         | Logged, no action (TODO)               |
-| `customer.subscription.paused`  | **NOT IMPLEMENTED** | No handling                            |
-| `customer.subscription.resumed` | **NOT IMPLEMENTED** | No handling                            |
-
-### 2.4 Known Gaps & Risks
-
-| Gap                       | Risk Level | Mitigation                                        |
-| ------------------------- | ---------- | ------------------------------------------------- |
-| No scheduled sync         | **HIGH**   | If webhooks fail, DB drifts from Stripe. See PRD. |
-| No expiration detection   | **MEDIUM** | Users may keep active status after period ends    |
-| No refund credit clawback | **LOW**    | Manual admin intervention required                |
-| No dispute handling       | **LOW**    | Rare, handle via support ticket                   |
+| Pack   | Price  | Credits |
+| ------ | ------ | ------- |
+| Small  | $4.99  | 50      |
+| Medium | $14.99 | 200     |
+| Large  | $39.99 | 600     |
 
 ---
 
-## 3. System Architecture
+## Implementation Status
 
-### 3.1 High-Level Architecture
+### Feature Matrix
+
+| Feature                        | Status      |
+| ------------------------------ | ----------- |
+| Subscription purchase          | Implemented |
+| Monthly credit allocation      | Implemented |
+| Credit pack purchase           | Implemented |
+| Subscription cancellation      | Implemented |
+| Billing page                   | Implemented |
+| Pricing page                   | Implemented |
+| Webhook signature verification | Implemented |
+| Credit transaction logging     | Implemented |
+| Upgrade/downgrade flow         | Implemented |
+| Webhook idempotency            | Implemented |
+| Refund credit clawback         | Implemented |
+| Dispute handling               | Implemented |
+| Scheduled Stripe sync          | Implemented |
+
+### API Endpoints
+
+| Endpoint                           | Status      |
+| ---------------------------------- | ----------- |
+| `POST /api/checkout`               | Implemented |
+| `POST /api/portal`                 | Implemented |
+| `POST /api/webhooks/stripe`        | Implemented |
+| `POST /api/subscription/change`    | Implemented |
+| `POST /api/subscriptions/cancel`   | Implemented |
+| `POST /api/admin/subscription`     | Implemented |
+| `POST /api/cron/recover-webhooks`  | Implemented |
+| `POST /api/cron/check-expirations` | Implemented |
+| `POST /api/cron/reconcile`         | Implemented |
+
+### Webhook Coverage
+
+| Event                                  | Status      |
+| -------------------------------------- | ----------- |
+| `checkout.session.completed`           | Implemented |
+| `customer.created`                     | Implemented |
+| `customer.subscription.created`        | Implemented |
+| `customer.subscription.updated`        | Implemented |
+| `customer.subscription.deleted`        | Implemented |
+| `customer.subscription.trial_will_end` | Implemented |
+| `invoice.payment_succeeded`            | Implemented |
+| `invoice.payment_failed`               | Implemented |
+| `charge.refunded`                      | Implemented |
+| `charge.dispute.created`               | Implemented |
+| `charge.dispute.updated`               | Implemented |
+| `charge.dispute.closed`                | Implemented |
+| `invoice.payment_refunded`             | Implemented |
+
+---
+
+## System Architecture
+
+### High-Level Architecture
 
 ```mermaid
 flowchart TB
@@ -141,6 +115,7 @@ flowchart TB
         CO[POST /checkout]
         PO[POST /portal]
         WH[POST /webhooks/stripe]
+        CR[POST /cron/*]
     end
 
     subgraph Stripe["STRIPE"]
@@ -153,6 +128,7 @@ flowchart TB
         PR[(profiles)]
         SU[(subscriptions)]
         CT[(credit_transactions)]
+        WEVT[(webhook_events)]
         RPC[RPC Functions]
     end
 
@@ -168,13 +144,16 @@ flowchart TB
     PO --> CP
 
     WE --> WH
+    CR --> RPC
+
     WH --> RPC
     RPC --> PR
     RPC --> SU
     RPC --> CT
+    RPC --> WEVT
 ```
 
-### 3.2 Subscription Purchase Flow
+### Subscription Purchase Flow
 
 ```mermaid
 sequenceDiagram
@@ -199,7 +178,7 @@ sequenceDiagram
 
     par Webhook Processing
         S->>WH: checkout.session.completed
-        WH->>DB: increment_credits_with_log()
+        WH->>DB: add_subscription_credits() or add_purchased_credits()
         S->>WH: customer.subscription.created
         WH->>DB: Upsert subscription
         WH->>DB: Update profile tier
@@ -208,7 +187,7 @@ sequenceDiagram
     U->>UI: Sees credits updated
 ```
 
-### 3.3 Monthly Renewal Flow
+### Monthly Renewal Flow
 
 ```mermaid
 sequenceDiagram
@@ -221,9 +200,10 @@ sequenceDiagram
 
     alt Payment Succeeds
         S->>WH: invoice.payment_succeeded
+        WH->>WH: Check billing_reason (skip subscription_create)
         WH->>DB: Get current balance
         WH->>WH: Calculate credits (with rollover cap)
-        WH->>DB: increment_credits_with_log()
+        WH->>DB: add_subscription_credits()
         WH->>DB: Log transaction
     else Payment Fails
         S->>WH: invoice.payment_failed
@@ -231,34 +211,18 @@ sequenceDiagram
     end
 ```
 
-### 3.4 Subscription Management Flow
-
-```mermaid
-flowchart TD
-    A[User clicks Manage Subscription] --> B[POST /api/portal]
-    B --> C{Has stripe_customer_id?}
-    C -->|No| D[Error: Activate subscription first]
-    C -->|Yes| E[Create Portal Session]
-    E --> F[Redirect to Stripe Portal]
-    F --> G[User manages subscription]
-    G --> H[Stripe sends webhooks]
-    H --> I[Update local database]
-
-    style D fill:#ff9999
-```
-
 ---
 
-## 4. Database Schema
+## Database Schema
 
-### 4.1 Entity Relationship Diagram
+### Entity Relationship Diagram
 
 ```mermaid
 erDiagram
     AUTH_USERS ||--|| PROFILES : "extends"
     PROFILES ||--o{ SUBSCRIPTIONS : "has"
     PROFILES ||--o{ CREDIT_TRANSACTIONS : "has"
-    PRODUCTS ||--o{ PRICES : "has"
+    PROFILES ||--o{ WEBHOOK_EVENTS : "logs via webhooks"
 
     AUTH_USERS {
         uuid id PK
@@ -269,9 +233,11 @@ erDiagram
     PROFILES {
         uuid id PK,FK
         string stripe_customer_id UK
-        int credits_balance
+        int subscription_credits_balance
+        int purchased_credits_balance
         string subscription_status
         string subscription_tier
+        string dispute_status
         timestamp created_at
         timestamp updated_at
     }
@@ -283,42 +249,53 @@ erDiagram
         string price_id
         timestamp current_period_start
         timestamp current_period_end
+        timestamp trial_end
         boolean cancel_at_period_end
         timestamp canceled_at
+        timestamp created_at
+        timestamp updated_at
     }
 
     CREDIT_TRANSACTIONS {
         uuid id PK
         uuid user_id FK
         int amount
-        string type "subscription|usage|bonus|refund"
-        string ref_id
+        int balance_after
+        string type "purchase|subscription|usage|refund|bonus"
+        string reference_id
         string description
+        jsonb metadata
         timestamp created_at
     }
 
-    PRODUCTS {
-        string id PK "Stripe product ID"
-        string name
-        string description
-        boolean active
-        jsonb metadata
+    WEBHOOK_EVENTS {
+        uuid id PK
+        string event_id UK "Stripe event ID"
+        string event_type
+        string status "processing|completed|failed|unrecoverable"
+        int retry_count
+        boolean recoverable
+        jsonb payload
+        string error_message
+        timestamp created_at
+        timestamp completed_at
     }
 
-    PRICES {
-        string id PK "Stripe price ID"
-        string product_id FK
-        boolean active
-        string currency
-        int unit_amount
-        string type
-        string interval
+    DISPUTE_EVENTS {
+        uuid id PK
+        string dispute_id UK
+        uuid user_id FK
+        string charge_id
+        int amount_cents
+        int credits_held
+        string status
+        string reason
+        timestamp created_at
+        timestamp updated_at
     }
 ```
 
-> **NOT IMPLEMENTED:** The `products` and `prices` tables exist but are never synced from Stripe. The system uses hardcoded `SUBSCRIPTION_PRICE_MAP` instead.
-
-### 4.2 Table Definitions
+### Table Definitions
 
 #### profiles
 
@@ -326,10 +303,12 @@ erDiagram
 CREATE TABLE profiles (
   id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
   stripe_customer_id TEXT UNIQUE,
-  credits_balance INTEGER DEFAULT 10 NOT NULL,
+  subscription_credits_balance INTEGER DEFAULT 0,
+  purchased_credits_balance INTEGER DEFAULT 0,
   subscription_status TEXT CHECK (subscription_status IN
     ('active', 'trialing', 'past_due', 'canceled', 'unpaid')),
   subscription_tier TEXT,
+  dispute_status TEXT CHECK (dispute_status IN ('pending', 'resolved')),
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
@@ -345,6 +324,7 @@ CREATE TABLE subscriptions (
   price_id TEXT NOT NULL,
   current_period_start TIMESTAMPTZ NOT NULL,
   current_period_end TIMESTAMPTZ NOT NULL,
+  trial_end TIMESTAMPTZ,
   cancel_at_period_end BOOLEAN DEFAULT FALSE,
   canceled_at TIMESTAMPTZ,
   created_at TIMESTAMPTZ DEFAULT NOW(),
@@ -359,54 +339,64 @@ CREATE TABLE credit_transactions (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID REFERENCES profiles(id) ON DELETE CASCADE,
   amount INTEGER NOT NULL,
+  balance_after INTEGER NOT NULL,
   type TEXT CHECK (type IN
     ('purchase', 'subscription', 'usage', 'refund', 'bonus')),
-  ref_id TEXT,
+  reference_id TEXT,
   description TEXT,
+  metadata JSONB,
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 ```
 
-> **NOT IMPLEMENTED:** No API endpoint exposes `credit_transactions` to users. The data is logged but not displayed.
+#### webhook_events
 
-### 4.3 RPC Functions
-
-```mermaid
-graph LR
-    subgraph "Implemented RPC Functions"
-        A[increment_credits_with_log]
-        B[decrement_credits]
-        C[has_sufficient_credits]
-        D[get_active_subscription]
-    end
-
-    subgraph "Callers"
-        W[Webhooks] --> A
-        S[StripeService] --> B
-        S --> C
-        S --> D
-    end
+```sql
+CREATE TABLE webhook_events (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  event_id TEXT UNIQUE NOT NULL,  -- Stripe event ID
+  event_type TEXT NOT NULL,
+  status TEXT CHECK (status IN
+    ('processing', 'completed', 'failed', 'unrecoverable')),
+  retry_count INTEGER DEFAULT 0,
+  recoverable BOOLEAN DEFAULT TRUE,
+  payload JSONB,
+  error_message TEXT,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  completed_at TIMESTAMPTZ
+);
 ```
+
+### RPC Functions
+
+| Function                       | Purpose                                 |
+| ------------------------------ | --------------------------------------- |
+| `add_subscription_credits`     | Add subscription credits with audit log |
+| `add_purchased_credits`        | Add purchased credits with audit log    |
+| `decrement_credits`            | Deduct credits on API usage             |
+| `has_sufficient_credits`       | Check if user has enough credits        |
+| `get_active_subscription`      | Get user's active subscription          |
+| `expire_subscription_credits`  | Apply credit expiration rules           |
+| `clawback_credits_v2`          | Remove credits (FIFO)                   |
+| `clawback_from_transaction_v2` | Reverse a specific transaction          |
 
 ---
 
-## 5. API Endpoints
+## API Endpoints
 
-### 5.1 Implemented Endpoints
+### POST /api/checkout
 
-#### POST /api/checkout
-
-Creates a Stripe Checkout Session for subscription purchase.
+Creates a Stripe Checkout Session for subscription or credit pack purchase.
 
 **Request:**
 
 ```typescript
 interface ICheckoutSessionRequest {
-  priceId: string; // Required: Stripe price ID
-  successUrl?: string; // Optional: Override success URL
-  cancelUrl?: string; // Optional: Override cancel URL
+  priceId: string;
+  mode?: 'subscription' | 'payment';
+  successUrl?: string;
+  cancelUrl?: string;
   metadata?: Record<string, string>;
-  uiMode?: 'hosted' | 'embedded'; // Default: 'hosted'
 }
 ```
 
@@ -416,18 +406,18 @@ interface ICheckoutSessionRequest {
 interface ICheckoutSessionResponse {
   success: true;
   data: {
-    url: string; // Redirect URL (hosted mode)
-    sessionId: string; // Stripe session ID
-    clientSecret?: string; // For embedded checkout
+    url: string;
+    sessionId: string;
+    clientSecret?: string;
   };
 }
 ```
 
-**Location:** `app/api/checkout/route.ts`
+**Location:** `app/api/checkout/index.ts`
 
 ---
 
-#### POST /api/portal
+### POST /api/portal
 
 Creates a Stripe Customer Portal session for subscription management.
 
@@ -435,7 +425,7 @@ Creates a Stripe Customer Portal session for subscription management.
 
 ```typescript
 interface IPortalRequest {
-  returnUrl?: string; // Optional: URL to return to after portal
+  returnUrl?: string;
 }
 ```
 
@@ -445,280 +435,156 @@ interface IPortalRequest {
 interface IPortalResponse {
   success: true;
   data: {
-    url: string; // Stripe portal URL
+    url: string;
   };
 }
 ```
 
-**Location:** `app/api/portal/route.ts`
+**Location:** `app/api/portal/index.ts`
 
 ---
 
-#### POST /api/webhooks/stripe
+### POST /api/webhooks/stripe
 
-Handles Stripe webhook events. See [Section 6](#6-webhook-processing) for details.
+Handles Stripe webhook events. All events are processed with idempotency checks.
 
 **Location:** `app/api/webhooks/stripe/route.ts`
 
----
+**Handlers:**
 
-### 5.2 NOT IMPLEMENTED Endpoints
-
-```mermaid
-graph TD
-    subgraph "Missing API Endpoints"
-        A["GET /api/credits/history<br/>Returns paginated credit transactions"]
-        B["POST /api/subscription/preview-change<br/>Shows proration for plan change"]
-        C["POST /api/subscription/change<br/>Changes plan with confirmation"]
-        D["GET /api/health/stripe<br/>Validates Stripe configuration"]
-    end
-
-    style A fill:#ffcccc
-    style B fill:#ffcccc
-    style C fill:#ffcccc
-    style D fill:#ffcccc
-```
+- `PaymentHandler` - checkout.session.completed, charge.refunded, invoice.payment_refunded
+- `SubscriptionHandler` - customer.subscription.\*, subscription_schedule.completed
+- `InvoiceHandler` - invoice.payment_succeeded, invoice.payment_failed
+- `DisputeHandler` - charge.dispute.\*
 
 ---
 
-## 6. Webhook Processing
+## Webhook Processing
 
-### 6.1 Event Flow
+### Event Flow
 
 ```mermaid
 flowchart TD
     A[Stripe Event] --> B{Signature Valid?}
     B -->|No| C[400 Bad Request]
-    B -->|Yes| D{Event Type?}
+    B -->|Yes| D{Event in webhook_events?}
 
-    D -->|checkout.session.completed| E[handleCheckoutSessionCompleted]
-    D -->|subscription.created/updated| F[handleSubscriptionUpdate]
-    D -->|subscription.deleted| G[handleSubscriptionDeleted]
-    D -->|invoice.payment_succeeded| H[handleInvoicePaymentSucceeded]
-    D -->|invoice.payment_failed| I[handleInvoicePaymentFailed]
-    D -->|Other| J[Log: Unhandled event]
+    D -->|Yes, completed| E[Skip - already processed]
+    D -->|No| F[Insert with status='processing']
 
-    E --> K[Add initial credits]
-    F --> L[Upsert subscription + Update profile]
-    G --> M[Mark subscription canceled]
-    H --> N[Add monthly credits with rollover cap]
-    I --> O[Set profile to past_due]
+    F --> G{Event Type?}
+    G -->|checkout.session.completed| H[PaymentHandler]
+    G -->|customer.subscription.*| I[SubscriptionHandler]
+    G -->|invoice.payment_*| J[InvoiceHandler]
+    G -->|charge.refunded| K[PaymentHandler]
+    G -->|charge.dispute.*| L[DisputeHandler]
+    G -->|Other| M[Mark unrecoverable]
 
-    style C fill:#ff9999
+    H --> N[Add credits via RPC]
+    I --> O[Update subscription + profile]
+    J --> P[Add monthly credits or set past_due]
+    K --> Q[Clawback credits]
+    L --> R[Hold credits, flag account]
+
+    N --> S[Mark completed]
+    O --> S
+    P --> S
+    Q --> S
+    R --> S
+
+    style E fill:#90EE90
+    style M fill:#FFB6C1
+    style S fill:#87CEEB
 ```
 
-### 6.2 Rollover Cap Logic
+### Idempotency
+
+All webhook handlers use `IdempotencyService` for atomic event claims:
+
+```typescript
+// 1. Check if event exists
+const existing = await checkAndClaimEvent(eventId, eventType, payload);
+
+// 2. If already completed, skip
+if (!existing.isNew && existing.existingStatus === 'completed') {
+  return NextResponse.json({ received: true, skipped: true });
+}
+
+// 3. Process event...
+
+// 4. Mark as completed
+await markEventCompleted(eventId);
+```
+
+### Rollover Cap Logic
 
 ```mermaid
 graph TD
-    A[Invoice Payment Succeeded] --> B[Get current balance]
+    A[Invoice Payment Succeeded] --> B[Get current balance from both pools]
     B --> C[Get plan credits & max rollover]
     C --> D{balance + credits > max?}
     D -->|Yes| E[credits_to_add = max - balance]
     D -->|No| F[credits_to_add = plan credits]
     E --> G{credits_to_add > 0?}
     F --> G
-    G -->|Yes| H[increment_credits_with_log]
+    G -->|Yes| H[add_subscription_credits]
     G -->|No| I[Skip - already at max]
 ```
 
-**Example:**
+---
 
-```
-Pro Plan: 1000 credits/month, 6000 max rollover
+## Credit System
 
-Month 6: Balance = 5500
-  → Would add 1000
-  → 5500 + 1000 = 6500 > 6000
-  → Add only 500 → Balance: 6000
+### Credit Pools
 
-Month 7: Balance = 6000
-  → Would add 1000
-  → Already at max
-  → Add 0 → Balance: 6000
-```
+The system maintains two separate credit pools:
 
-### 6.3 NOT IMPLEMENTED Webhook Handlers
+1. **Subscription Credits** (`subscription_credits_balance`)
+   - Allocated monthly via subscription
+   - Subject to rollover caps
+   - Can expire based on plan configuration
 
-| Event                           | Purpose                     | Status              |
-| ------------------------------- | --------------------------- | ------------------- |
-| `charge.refunded`               | Claw back credits on refund | **NOT IMPLEMENTED** |
-| `charge.dispute.created`        | Handle chargebacks          | **NOT IMPLEMENTED** |
-| `customer.subscription.paused`  | Handle pause                | **NOT IMPLEMENTED** |
-| `customer.subscription.resumed` | Handle resume               | **NOT IMPLEMENTED** |
+2. **Purchased Credits** (`purchased_credits_balance`)
+   - One-time credit pack purchases
+   - No expiration
+   - Used after subscription credits (FIFO)
+
+### Credit Transaction Types
+
+| Type           | Description               | Reference Format         |
+| -------------- | ------------------------- | ------------------------ |
+| `purchase`     | Credit pack purchase      | `pi_{payment_intent_id}` |
+| `subscription` | Monthly renewal           | `invoice_{invoice_id}`   |
+| `usage`        | API consumption           | Job ID                   |
+| `refund`       | Credit clawback on refund | Original transaction ref |
+| `bonus`        | Promotional credits       | Campaign ID              |
+
+### Credit Expiration
+
+Plans support two expiration modes via `creditsExpiration.mode`:
+
+1. **Never** (default): Credits roll over with cap
+2. **End of cycle**: Unused credits expire at renewal
+
+Expiration is calculated by `calculateBalanceWithExpiration()` in `shared/config/subscription.utils.ts`.
 
 ---
 
-## 6.5 Stripe-Database Synchronization System
+## Stripe-Database Sync System
 
 ### Overview
 
-The sync system ensures database state matches Stripe source of truth through three scheduled cron jobs:
+Three cron jobs ensure database state matches Stripe source of truth:
 
-1. **Webhook Recovery** (every 15 minutes) - Retries failed webhook events
-2. **Expiration Check** (hourly) - Detects expired subscriptions
-3. **Full Reconciliation** (daily at 3 AM UTC) - Comprehensive sync
+| Job              | Schedule      | Endpoint                      | Purpose                           |
+| ---------------- | ------------- | ----------------------------- | --------------------------------- |
+| Webhook Recovery | Every 15 min  | `/api/cron/recover-webhooks`  | Retry failed webhook events       |
+| Expiration Check | Hourly        | `/api/cron/check-expirations` | Detect expired subscriptions      |
+| Reconciliation   | Daily 3AM UTC | `/api/cron/reconcile`         | Comprehensive sync of all records |
 
-**Implementation:** December 2, 2025
-**Status:** ✅ Production Ready
-**Documentation:** See `docs/PRDs/stripe-db-sync-prd.md` and `docs/technical/cloudflare-cron-setup.md`
+### Monitoring
 
-### Architecture
-
-```mermaid
-flowchart TB
-    subgraph "Scheduled Tasks"
-        A[Cron: Every 15 min] -->|Webhook Recovery| B[/api/cron/recover-webhooks]
-        C[Cron: Hourly] -->|Expiration Check| D[/api/cron/check-expirations]
-        E[Cron: Daily 3AM UTC] -->|Full Reconciliation| F[/api/cron/reconcile]
-    end
-
-    subgraph "Recovery Logic"
-        B --> G{Failed events?}
-        G -->|Yes| H[Re-fetch from Stripe]
-        H --> I[Reprocess event]
-        I --> J[Update webhook_events]
-    end
-
-    subgraph "Expiration Logic"
-        D --> K{Period ended?}
-        K -->|Yes| L[Fetch from Stripe]
-        L --> M{Still active?}
-        M -->|No| N[Update DB to match]
-        M -->|Yes| O[Update period - late webhook]
-    end
-
-    subgraph "Reconciliation"
-        F --> P[Compare all subs with Stripe]
-        P --> Q{Discrepancy?}
-        Q -->|Yes| R[Auto-fix or alert]
-    end
-
-    J --> DB[(Supabase)]
-    N --> DB
-    O --> DB
-    R --> DB
-```
-
-### Cron Endpoints
-
-#### 1. Webhook Recovery (`/api/cron/recover-webhooks`)
-
-**Schedule:** `*/15 * * * *` (every 15 minutes)
-**Purpose:** Retry processing of failed webhook events
-
-**Logic:**
-
-```typescript
-1. Fetch failed events (status='failed', recoverable=true, retry_count < 3)
-2. For each event:
-   - Retrieve event from Stripe API
-   - Re-process using standard handlers
-   - Mark as completed or unrecoverable
-3. Log results to sync_runs table
-```
-
-**Auto-Recovery Scenarios:**
-
-- Temporary database connection failures
-- Transient Stripe API errors
-- Processing timeouts
-
-**Unrecoverable Scenarios:**
-
-- Event older than 30 days (Stripe retention limit)
-- Event deleted from Stripe
-- After 3 failed retry attempts
-
-#### 2. Expiration Check (`/api/cron/check-expirations`)
-
-**Schedule:** `5 * * * *` (hourly at :05)
-**Purpose:** Detect subscriptions past their billing period
-
-**Logic:**
-
-```typescript
-1. Find subs where: status='active' AND current_period_end < NOW()
-2. For each expired sub:
-   - Fetch subscription from Stripe
-   - If Stripe status != 'active': sync status to DB
-   - If Stripe still active: update period (late webhook)
-   - If not found in Stripe: mark as canceled
-3. Log results to sync_runs table
-```
-
-**Why Hourly?**
-
-- Provides grace period for late webhooks (Stripe can delay)
-- Catches expiration within 1 hour maximum
-- Low overhead (only processes expired subs)
-
-#### 3. Full Reconciliation (`/api/cron/reconcile`)
-
-**Schedule:** `5 3 * * *` (daily at 3:05 AM UTC)
-**Purpose:** Comprehensive validation of all active subscriptions
-
-**Logic:**
-
-```typescript
-1. Fetch all active/trialing/past_due subs from DB
-2. For each subscription:
-   - Retrieve from Stripe
-   - Check status mismatch
-   - Check price_id mismatch
-   - Check period drift (>1 hour difference)
-   - Auto-fix discrepancies
-3. Log all issues and fixes to sync_runs table
-```
-
-**Checks Performed:**
-
-- ✅ Subscription status (active, canceled, past_due, etc.)
-- ✅ Price ID (plan tier)
-- ✅ Current period dates
-- ✅ Subscription existence (DB has sub, Stripe doesn't)
-
-**Auto-Fix Actions:**
-
-- Sync subscription data from Stripe
-- Mark deleted subscriptions as canceled
-- Update profile status and tier
-
-### Database Schema
-
-#### sync_runs Table
-
-Tracks execution history of sync jobs for observability.
-
-```sql
-CREATE TABLE sync_runs (
-  id UUID PRIMARY KEY,
-  job_type TEXT CHECK (job_type IN ('expiration_check', 'webhook_recovery', 'full_reconciliation')),
-  started_at TIMESTAMPTZ,
-  completed_at TIMESTAMPTZ,
-  status TEXT CHECK (status IN ('running', 'completed', 'failed')),
-  records_processed INTEGER,
-  records_fixed INTEGER,
-  discrepancies_found INTEGER,
-  error_message TEXT,
-  metadata JSONB
-);
-```
-
-#### webhook_events Enhancements
-
-Added retry tracking columns:
-
-```sql
-ALTER TABLE webhook_events
-ADD COLUMN retry_count INTEGER DEFAULT 0,
-ADD COLUMN last_retry_at TIMESTAMPTZ,
-ADD COLUMN recoverable BOOLEAN DEFAULT TRUE;
-```
-
-### Monitoring & Health
-
-#### Query Sync Statistics
+Query sync statistics:
 
 ```sql
 -- Recent sync runs
@@ -728,269 +594,49 @@ ORDER BY started_at DESC;
 
 -- Sync health by job type
 SELECT * FROM get_sync_run_stats('expiration_check', 24);
-SELECT * FROM get_sync_run_stats('webhook_recovery', 24);
-SELECT * FROM get_sync_run_stats('full_reconciliation', 168);
-
--- Failed webhook events ready for retry
-SELECT * FROM get_retryable_webhook_events(50);
 ```
 
-#### Success Metrics
+See [Stripe DB Sync PRD](../../PRDs/done/stripe-db-sync-prd.md) for complete details.
 
-| Metric                       | Target   | Actual         |
-| ---------------------------- | -------- | -------------- |
-| Expiration detection latency | < 1 hour | ✅ ~30 min avg |
-| Webhook recovery rate        | > 95%    | ✅ ~98%        |
-| Reconciliation discrepancies | < 1%     | ✅ ~0.2%       |
-| Cron job success rate        | > 99%    | ✅ ~99.8%      |
+---
 
-### Security & Authentication
+## Configuration
 
-**Cron Secret Protection:**
-
-- All cron endpoints require `x-cron-secret` header
-- Secret stored in `CRON_SECRET` environment variable
-- Generated with: `openssl rand -hex 32`
-- Rotated quarterly
-
-**Request Validation:**
+### Environment Variables
 
 ```typescript
-const cronSecret = request.headers.get('x-cron-secret');
-if (cronSecret !== serverEnv.CRON_SECRET) {
-  return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+// .env.client (public)
+PUBLIC_STRIPE_PUBLISHABLE_KEY=pk_live_...
+
+// .env.api (secret)
+STRIPE_SECRET_KEY=sk_live_...
+STRIPE_WEBHOOK_SECRET=whsec_...
+CRON_SECRET=... # For cron job authentication
+```
+
+### Subscription Configuration
+
+All pricing is in `shared/config/subscription.config.ts`:
+
+```typescript
+{
+  key: 'pro',
+  name: 'Professional',
+  stripePriceId: 'price_1SZmVzALMLhQocpfPyRX2W8D',
+  priceInCents: 4900,
+  creditsPerCycle: 1000,
+  maxRollover: 6000,
+  rolloverMultiplier: 6,
+  features: [...],
+  batchLimit: 50,
 }
 ```
 
-### Rollback Plan
-
-If sync jobs cause issues:
-
-1. **Immediate:** Disable cron triggers in Cloudflare dashboard
-2. **Verify:** Check `sync_runs` table for error patterns
-3. **Fix:** Address issues in cron endpoint code
-4. **Test:** Manually trigger endpoints to verify fix
-5. **Re-enable:** Turn cron triggers back on
-
-### Related Files
-
-| File                                               | Purpose                                  |
-| -------------------------------------------------- | ---------------------------------------- |
-| `app/api/cron/check-expirations/route.ts`          | Expiration check endpoint                |
-| `app/api/cron/recover-webhooks/route.ts`           | Webhook recovery endpoint                |
-| `app/api/cron/reconcile/route.ts`                  | Full reconciliation endpoint             |
-| `server/services/subscription-sync.service.ts`     | Shared sync helper functions             |
-| `supabase/migrations/20250302_add_sync_tables.sql` | Database schema for sync system          |
-| `docs/technical/cloudflare-cron-setup.md`          | Cloudflare cron configuration guide      |
-| `docs/PRDs/stripe-db-sync-prd.md`                  | Complete PRD with implementation details |
-
 ---
 
-## 7. Credit System
+## Security Model
 
-### 7.1 Credit Flow
-
-```mermaid
-flowchart LR
-    subgraph "Credit Sources"
-        A[Initial Subscription]
-        B[Monthly Renewal]
-        C[Bonus Credits]
-        D[Refund Credits]
-    end
-
-    subgraph "Credit Balance"
-        E[(profiles.credits_balance)]
-    end
-
-    subgraph "Credit Usage"
-        F[Image Processing]
-    end
-
-    subgraph "Audit Log"
-        G[(credit_transactions)]
-    end
-
-    A -->|increment_credits_with_log| E
-    B -->|increment_credits_with_log| E
-    C -->|increment_credits_with_log| E
-    D -->|increment_credits_with_log| E
-    E -->|decrement_credits| F
-
-    A --> G
-    B --> G
-    C --> G
-    D --> G
-```
-
-### 7.2 Credit Types
-
-| Type           | Description         | Trigger          | Implemented |
-| -------------- | ------------------- | ---------------- | ----------- |
-| `subscription` | Monthly allocation  | Invoice payment  | Yes         |
-| `usage`        | Credit consumption  | Image processing | Yes         |
-| `bonus`        | Promotional credits | Manual/campaign  | Schema only |
-| `refund`       | Returned credits    | Support action   | Schema only |
-
-### 7.3 NOT IMPLEMENTED: Credit History UI
-
-```mermaid
-graph TD
-    subgraph "Current State"
-        A[credit_transactions table] -->|Data exists| B[No UI to display]
-    end
-
-    subgraph "Needed"
-        C[GET /api/credits/history endpoint]
-        D[Credit History Component]
-        E[Billing Page Integration]
-        C --> D --> E
-    end
-
-    style B fill:#ffcccc
-    style C fill:#ffcccc
-    style D fill:#ffcccc
-    style E fill:#ffcccc
-```
-
----
-
-## 8. Client Components
-
-### 8.1 Component Hierarchy
-
-```mermaid
-graph TD
-    subgraph "Pricing Page"
-        A[app/pricing/page.tsx]
-        B[PricingCard x3]
-        C[CheckoutModal]
-        D[EmbeddedCheckout]
-    end
-
-    subgraph "Billing Page"
-        E[app/dashboard/billing/page.tsx]
-        F[Current Plan Section]
-        G[Credits Display]
-        H[Manage Subscription Button]
-    end
-
-    subgraph "Shared"
-        I[CreditsDisplay]
-        J[SubscriptionStatus]
-    end
-
-    A --> B
-    B --> C
-    C --> D
-
-    E --> F
-    E --> G
-    E --> H
-    F --> J
-    G --> I
-    H -->|redirects| K[Stripe Portal]
-```
-
-### 8.2 Component Files
-
-| Component               | Location                                          | Status              |
-| ----------------------- | ------------------------------------------------- | ------------------- |
-| `PricingCard`           | `client/components/stripe/PricingCard.tsx`        | Implemented         |
-| `CheckoutModal`         | `client/components/stripe/CheckoutModal.tsx`      | Implemented         |
-| `CreditsDisplay`        | `client/components/stripe/CreditsDisplay.tsx`     | Implemented         |
-| `SubscriptionStatus`    | `client/components/stripe/SubscriptionStatus.tsx` | Implemented         |
-| **CreditHistory**       | —                                                 | **NOT IMPLEMENTED** |
-| **LowCreditWarning**    | —                                                 | **NOT IMPLEMENTED** |
-| **PlanComparison**      | —                                                 | **NOT IMPLEMENTED** |
-| **UpgradeConfirmation** | —                                                 | **NOT IMPLEMENTED** |
-
-### 8.3 Page Files
-
-| Page     | Location                         | Status      |
-| -------- | -------------------------------- | ----------- |
-| Pricing  | `app/pricing/page.tsx`           | Implemented |
-| Billing  | `app/dashboard/billing/page.tsx` | Implemented |
-| Success  | `app/success/page.tsx`           | Implemented |
-| Canceled | `app/canceled/page.tsx`          | Implemented |
-
----
-
-## 9. Configuration
-
-### 9.1 Environment Variables
-
-```mermaid
-graph LR
-    subgraph "Client .env.client"
-        A[NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY]
-        B[NEXT_PUBLIC_BASE_URL]
-    end
-
-    subgraph "Server .env.api"
-        C[STRIPE_SECRET_KEY]
-        D[STRIPE_WEBHOOK_SECRET]
-    end
-
-    subgraph "Usage"
-        A --> E[Stripe.js initialization]
-        B --> F[Redirect URLs]
-        C --> G[Stripe API calls]
-        D --> H[Webhook verification]
-    end
-```
-
-### 9.2 Stripe Configuration
-
-**Location:** `shared/config/stripe.ts`
-
-```typescript
-export const STRIPE_PRICES = {
-  HOBBY_MONTHLY: 'price_xxx',
-  PRO_MONTHLY: 'price_yyy',
-  BUSINESS_MONTHLY: 'price_zzz',
-} as const;
-
-export const SUBSCRIPTION_PRICE_MAP = {
-  [STRIPE_PRICES.HOBBY_MONTHLY]: {
-    key: 'hobby',
-    name: 'Hobby',
-    creditsPerMonth: 200,
-    maxRollover: 1200,
-    features: [...],
-  },
-  // ...
-};
-```
-
-> **NOT IMPLEMENTED:** Annual billing prices and trial period configuration.
-
----
-
-## 10. Security Model
-
-### 10.1 Authentication Flow
-
-```mermaid
-sequenceDiagram
-    participant C as Client
-    participant A as API Route
-    participant S as Supabase Auth
-
-    C->>A: Request with Bearer token
-    A->>A: Extract token from header
-    A->>S: supabaseAdmin.auth.getUser(token)
-
-    alt Token Valid
-        S-->>A: User object
-        A->>A: Continue processing
-    else Token Invalid
-        S-->>A: Error
-        A-->>C: 401 Unauthorized
-    end
-```
-
-### 10.2 Webhook Security
+### Webhook Security
 
 ```mermaid
 sequenceDiagram
@@ -1003,6 +649,7 @@ sequenceDiagram
 
     alt Signature Valid
         W->>W: Parse event
+        W->>W: Check idempotency
         W->>W: Process event
         W-->>S: 200 OK
     else Signature Invalid
@@ -1010,192 +657,45 @@ sequenceDiagram
     end
 ```
 
-### 10.3 Row Level Security (RLS)
+### Row Level Security
 
-| Table               | Policy                 | Access                      |
-| ------------------- | ---------------------- | --------------------------- |
-| profiles            | `auth.uid() = id`      | Users see own profile       |
-| subscriptions       | `auth.uid() = user_id` | Users see own subscriptions |
-| credit_transactions | `auth.uid() = user_id` | Users see own transactions  |
-| products/prices     | `true`                 | Public read access          |
-
----
-
-## 11. Testing Strategy
-
-### 11.1 Test Files
-
-| Test Type   | Location                                               | Status |
-| ----------- | ------------------------------------------------------ | ------ |
-| Unit        | `tests/unit/api/stripe-webhooks.unit.spec.ts`          | Exists |
-| Unit        | `tests/unit/subscription-config.unit.spec.ts`          | Exists |
-| API         | `tests/api/checkout.api.spec.ts`                       | Exists |
-| API         | `tests/api/portal.api.spec.ts`                         | Exists |
-| API         | `tests/api/webhooks.api.spec.ts`                       | Exists |
-| Integration | `tests/integration/billing-system.integration.spec.ts` | Exists |
-| E2E         | `tests/e2e/billing.e2e.spec.ts`                        | Exists |
-
-### 11.2 Test Mode
-
-The system supports test mode when:
-
-- `STRIPE_SECRET_KEY` contains `dummy_key`
-- `ENV=test`
-- `STRIPE_WEBHOOK_SECRET=whsec_test_secret`
-
-### 11.3 Webhook Testing
-
-```bash
-# Forward webhooks to local
-stripe listen --forward-to localhost:3000/api/webhooks/stripe
-
-# Trigger test events
-stripe trigger checkout.session.completed
-stripe trigger invoice.payment_succeeded
-```
+| Table               | Policy Access          |
+| ------------------- | ---------------------- |
+| profiles            | `auth.uid() = id`      |
+| subscriptions       | `auth.uid() = user_id` |
+| credit_transactions | `auth.uid() = user_id` |
+| webhook_events      | Service role only      |
 
 ---
 
-## 12. Deployment
-
-### 12.1 Deployment Flow
-
-```mermaid
-flowchart TD
-    A[Configure env vars] --> B[Set up Stripe webhook]
-    B --> C[Apply database migrations]
-    C --> D[Deploy application]
-    D --> E[Verify webhook connectivity]
-    E --> F[Test checkout flow]
-```
-
-### 12.2 Setup Scripts
-
-```bash
-# Initial setup
-./scripts/stripe-setup.sh
-
-# Complete configuration
-./scripts/stripe-complete-setup.sh
-```
-
----
-
-## 13. Troubleshooting
-
-### 13.1 Common Issues
-
-```mermaid
-graph TD
-    A[Credits not added] --> B{Check webhook logs}
-    B --> C{Signature valid?}
-    C -->|No| D[Check STRIPE_WEBHOOK_SECRET]
-    C -->|Yes| E{user_id in metadata?}
-    E -->|No| F[Check checkout session creation]
-    E -->|Yes| G{RPC error?}
-    G -->|Yes| H[Check Supabase logs]
-    G -->|No| I[Check event type handling]
-```
-
-### 13.2 Debugging Commands
-
-```bash
-# Check user's subscription
-supabase sql "SELECT * FROM subscriptions WHERE user_id = 'xxx'"
-
-# Check credit transactions
-supabase sql "SELECT * FROM credit_transactions WHERE user_id = 'xxx' ORDER BY created_at DESC"
-
-# Check webhook events
-stripe events list --limit 10
-```
-
----
-
-## 14. Future Roadmap
-
-### 14.1 Priority Features
-
-```mermaid
-gantt
-    title Subscription System Roadmap
-    dateFormat  YYYY-MM-DD
-    section High Priority
-    Stripe DB Sync (Cron Jobs)   :a1, 2025-01-01, 14d
-    Expiration Detection         :a2, after a1, 7d
-    Refund Credit Clawback       :a3, after a2, 7d
-    section Medium Priority
-    Credit History UI            :b1, after a3, 10d
-    Low Credit Warnings          :b2, after b1, 7d
-    Proration Preview            :b3, after b2, 5d
-    section Low Priority
-    Annual Billing               :c1, after b3, 14d
-    Trial Period UI              :c2, after c1, 7d
-    Subscription Pause/Resume    :c3, after c2, 5d
-```
-
-### 14.2 Feature Details
-
-| Feature                | Description                                 | Complexity | PRD                               |
-| ---------------------- | ------------------------------------------- | ---------- | --------------------------------- |
-| Stripe DB Sync         | Scheduled sync to catch missed webhooks     | High       | `docs/PRDs/stripe-db-sync-prd.md` |
-| Expiration Detection   | Hourly cron to check `current_period_end`   | Medium     | Part of sync PRD                  |
-| Refund Credit Clawback | Deduct credits when charges are refunded    | Medium     | -                                 |
-| Credit History UI      | Display `credit_transactions` to users      | Low        | -                                 |
-| Low Credit Warnings    | Email/in-app notifications when credits low | Medium     | -                                 |
-| Proration Preview      | Show cost before plan change                | Low        | -                                 |
-| Annual Billing         | Yearly plans with discount                  | Medium     | -                                 |
-
-### 14.3 Completed Features (Recently)
-
-| Feature                       | Completed | Notes                                     |
-| ----------------------------- | --------- | ----------------------------------------- |
-| Upgrade/Downgrade Flow        | Dec 2025  | `/api/subscription/change` with proration |
-| Webhook Idempotency           | Dec 2025  | `webhook_events` table with atomic claims |
-| Admin Subscription Management | Dec 2025  | `/api/admin/subscription` endpoint        |
-
----
-
-## Appendix: File Index
+## Related Files
 
 ### API Routes
 
-- `app/api/checkout/route.ts` - Creates Stripe Checkout Session
-- `app/api/portal/route.ts` - Creates Stripe Customer Portal session
-- `app/api/webhooks/stripe/route.ts` - Main webhook handler (612 lines)
-- `app/api/subscription/change/route.ts` - Plan upgrade/downgrade with proration
-- `app/api/subscriptions/cancel/route.ts` - Cancel subscription at period end
-- `app/api/admin/subscription/route.ts` - Admin subscription management
+- `app/api/checkout/index.ts` - Creates Stripe Checkout Session
+- `app/api/portal/index.ts` - Creates Stripe Customer Portal session
+- `app/api/webhooks/stripe/route.ts` - Main webhook handler
 
-### Pages
+### Webhook Handlers
 
-- `app/pricing/page.tsx`
-- `app/dashboard/billing/page.tsx`
-- `app/success/page.tsx`
-- `app/canceled/page.tsx`
-
-### Components
-
-- `client/components/stripe/CheckoutModal.tsx`
-- `client/components/stripe/PricingCard.tsx`
-- `client/components/stripe/CreditsDisplay.tsx`
-- `client/components/stripe/SubscriptionStatus.tsx`
+- `app/api/webhooks/stripe/handlers/payment.handler.ts` - Checkout, refunds
+- `app/api/webhooks/stripe/handlers/subscription.handler.ts` - Subscription updates
+- `app/api/webhooks/stripe/handlers/invoice.handler.ts` - Invoice payments
+- `app/api/webhooks/stripe/handlers/dispute.handler.ts` - Charge disputes
 
 ### Services
 
-- `server/stripe/stripeService.ts`
-- `server/stripe/config.ts`
-- `server/stripe/types.ts`
+- `app/api/webhooks/stripe/services/webhook-verification.service.ts` - Signature verification
+- `app/api/webhooks/stripe/services/idempotency.service.ts` - Idempotency checks
 
 ### Configuration
 
-- `shared/config/stripe.ts`
-- `shared/config/env.ts`
-- `shared/constants/billing.ts`
+- `shared/config/subscription.config.ts` - Plan/credit pack definitions
+- `shared/config/stripe.ts` - Stripe price ID mappings
+- `shared/config/credits.config.ts` - Credit cost constants
 
 ### Database
 
-- `supabase/migrations/20250120_create_profiles_table.sql`
-- `supabase/migrations/20250120_create_subscriptions_table.sql`
-- `supabase/migrations/20250121_create_credit_transactions_table.sql`
-- `supabase/migrations/20250120_create_rpc_functions.sql`
+- `supabase/migrations/20250120100000_create_subscriptions_table.sql`
+- `supabase/migrations/20250121000000_create_credit_transactions_table.sql`
+- `supabase/migrations/20250202030000_create_webhook_events_table.sql`
