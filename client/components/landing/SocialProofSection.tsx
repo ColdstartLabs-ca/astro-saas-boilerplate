@@ -54,4 +54,3 @@ export function SocialProofSection({ className = '' }: IProps): JSX.Element {
   );
 }
 
-export { SocialProofSection };

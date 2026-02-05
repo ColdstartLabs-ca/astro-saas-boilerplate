@@ -89,4 +89,3 @@ export function SolutionSection({ className = '' }: IProps): JSX.Element {
   );
 }
 
-export { SolutionSection };

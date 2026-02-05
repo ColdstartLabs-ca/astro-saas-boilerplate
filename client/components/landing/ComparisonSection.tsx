@@ -132,4 +132,3 @@ export function ComparisonSection({ className = '' }: IProps): JSX.Element {
   );
 }
 
-export { ComparisonSection };

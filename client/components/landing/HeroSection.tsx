@@ -124,5 +124,3 @@ export function HeroSection({ className = '' }: IProps): JSX.Element {
     </section>
   );
 }
-
-export { HeroSection };

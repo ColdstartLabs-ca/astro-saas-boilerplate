@@ -74,4 +74,3 @@ export function PainPointsSection({ className = '' }: IProps): JSX.Element {
   );
 }
 
-export { PainPointsSection };

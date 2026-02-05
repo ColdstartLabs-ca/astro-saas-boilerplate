@@ -56,4 +56,3 @@ export function FinalCTASection({ className = '' }: IProps): JSX.Element {
   );
 }
 
-export { FinalCTASection };

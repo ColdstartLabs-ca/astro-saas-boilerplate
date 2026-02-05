@@ -100,4 +100,3 @@ export function FeaturesSection({ className = '' }: IProps): JSX.Element {
   );
 }
 
-export { FeaturesSection };

@@ -133,4 +133,3 @@ export function PricingPreviewSection({ className = '' }: IProps): JSX.Element {
   );
 }
 
-export { PricingPreviewSection };

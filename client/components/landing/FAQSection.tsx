@@ -37,4 +37,3 @@ export function FAQSection({ className = '' }: IProps): JSX.Element {
   );
 }
 
-export { FAQSection };

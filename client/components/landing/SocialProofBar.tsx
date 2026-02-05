@@ -19,4 +19,3 @@ export function SocialProofBar({ className = '' }: IProps): JSX.Element {
   );
 }
 
-export { SocialProofBar };

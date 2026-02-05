@@ -503,4 +503,3 @@ export function HeroDashboardPreview({ className = '' }: IProps): JSX.Element {
   );
 }
 
-export { HeroDashboardPreview };
