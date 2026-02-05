@@ -395,7 +395,7 @@ export const onRequest = defineMiddleware(async (context, next) => {
       context.request.headers.get('x-playwright-test') === 'true';
 
     if (!isTestEnv && !hasTestHeader) {
-      const { user } = await updateSession(cookies);
+      const { user } = await updateSession(cookies, request);
       if (user) {
         const loginRequired = url.searchParams.get('login');
         if (!loginRequired) {
@@ -432,7 +432,7 @@ export const onRequest = defineMiddleware(async (context, next) => {
           context.request.headers.get('x-test-env') === 'true' ||
           context.request.headers.get('x-playwright-test') === 'true';
 
-        const { user } = await updateSession(cookies);
+        const { user } = await updateSession(cookies, request);
 
         if (!user && !isTestEnv && !hasTestHeader) {
           const newUrl = new URL(url.toString());
@@ -454,7 +454,7 @@ export const onRequest = defineMiddleware(async (context, next) => {
 
           // Check admin role for admin routes
           if (isAdminDashboardPath(pathname)) {
-            const adminCheck = await requireAdmin(cookies);
+            const adminCheck = await requireAdmin(cookies, request);
             if (!adminCheck.isAdmin) {
               return new Response(null, {
                 status: 302,
@@ -510,7 +510,7 @@ export const onRequest = defineMiddleware(async (context, next) => {
         context.request.headers.get('x-test-env') === 'true' ||
         context.request.headers.get('x-playwright-test') === 'true';
 
-      const { user } = await updateSession(cookies);
+      const { user } = await updateSession(cookies, request);
 
       // Unauthenticated user on protected dashboard routes
       if (!user && !isTestEnv && !hasTestHeader) {

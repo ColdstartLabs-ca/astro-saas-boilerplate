@@ -12,13 +12,15 @@ const description = t('meta.description', { APP_NAME: clientEnv.APP_NAME });
 ---
 
 <Layout title={title}>
-  <!-- SEO Meta Tags -->
-  <meta name="description" content={description} />
-  <meta property="og:title" content={title} />
-  <meta property="og:description" content={description} />
-  <meta property="og:type" content="website" />
-  <meta property="og:url" content={`${clientEnv.BASE_URL}/privacy`} />
-  <link rel="canonical" href={`${clientEnv.BASE_URL}/privacy`} />
+  <Fragment slot="head">
+    <!-- SEO Meta Tags -->
+    <meta name="description" content={description} />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content={`${clientEnv.BASE_URL}/privacy`} />
+    <link rel="canonical" href={`${clientEnv.BASE_URL}/privacy`} />
+  </Fragment>
 
   <main class="flex-1">
     <div class="container mx-auto py-16 px-6 max-w-4xl">

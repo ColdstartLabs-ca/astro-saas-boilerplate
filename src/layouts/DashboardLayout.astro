@@ -20,7 +20,7 @@ const { title = 'Dashboard' } = Astro.props;
     <title>{title}</title>
   </head>
   <body class="antialiased">
-    <DashboardLayout client:load>
+    <DashboardLayout client:only="react">
       <slot />
     </DashboardLayout>
     <GlobalUI client:only="react" />

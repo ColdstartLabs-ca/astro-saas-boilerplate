@@ -14,13 +14,15 @@ const description = `Learn about AI image upscaling, photo enhancement technique
 ---
 
 <Layout title={title}>
-  <!-- SEO Meta Tags -->
-  <meta name="description" content={description} />
-  <meta property="og:title" content={`${title} | ${clientEnv.APP_NAME}`} />
-  <meta property="og:description" content={description} />
-  <meta property="og:type" content="website" />
-  <meta property="og:url" content={`${clientEnv.BASE_URL}/blog`} />
-  <link rel="canonical" href={`${clientEnv.BASE_URL}/blog`} />
+  <Fragment slot="head">
+    <!-- SEO Meta Tags -->
+    <meta name="description" content={description} />
+    <meta property="og:title" content={`${title} | ${clientEnv.APP_NAME}`} />
+    <meta property="og:description" content={description} />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content={`${clientEnv.BASE_URL}/blog`} />
+    <link rel="canonical" href={`${clientEnv.BASE_URL}/blog`} />
+  </Fragment>
 
   <div class="min-h-screen bg-main">
     <!-- Hero Section -->

@@ -24,7 +24,7 @@ const FlagComponents = {
  * Compact flag dropdown for switching languages.
  */
 export function LocaleSwitcher(): JSX.Element {
-  const t = useMemo(() => getTranslations(), []);
+  const t = useMemo(() => getTranslations('i18n'), []);
   const [locale, setLocale] = useState<Locale>(DEFAULT_LOCALE as Locale);
   const [pathname, setPathname] = useState('/');
   const [isOpen, setIsOpen] = useState(false);

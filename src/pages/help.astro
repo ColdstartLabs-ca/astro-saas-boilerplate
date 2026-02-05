@@ -11,13 +11,15 @@ const description = t('page.subtitle', { appName: clientEnv.APP_NAME });
 ---
 
 <Layout title={title}>
-  <!-- SEO Meta Tags -->
-  <meta name="description" content={description} />
-  <meta property="og:title" content={title} />
-  <meta property="og:description" content={description} />
-  <meta property="og:type" content="website" />
-  <meta property="og:url" content={`${clientEnv.BASE_URL}/help`} />
-  <link rel="canonical" href={`${clientEnv.BASE_URL}/help`} />
+  <Fragment slot="head">
+    <!-- SEO Meta Tags -->
+    <meta name="description" content={description} />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content={`${clientEnv.BASE_URL}/help`} />
+    <link rel="canonical" href={`${clientEnv.BASE_URL}/help`} />
+  </Fragment>
 
   <main class="min-h-screen bg-main">
     <!-- Hero Section -->

@@ -59,6 +59,7 @@
   "nav": {
     "dashboard": "Dashboard",
     "pricing": "Pricing",
+    "blog": "Blog",
     "support": "Support",
     "signIn": "Sign In",
     "getStarted": "Get Started",
@@ -66,6 +67,7 @@
     "freeCredits": "10 Free Credits",
     "billing": "Billing",
     "settings": "Settings",
+    "history": "History",
     "viewPlans": "View Plans",
     "changePassword": "Change Password",
     "signOut": "Sign Out",

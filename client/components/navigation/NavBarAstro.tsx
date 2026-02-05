@@ -1,23 +1,25 @@
 import { AuthProvider } from '@shared/types/authProviders.types';
+import { LocaleSwitcher } from '@client/components/i18n/LocaleSwitcher';
+import { CreditsDisplay } from '@client/components/stripe/CreditsDisplay';
+import { useClickOutside } from '@client/hooks/useClickOutside';
+import { useModalStore } from '@client/store/modalStore';
+import { useUserStore } from '@client/store/userStore';
 import { clientEnv } from '@shared/config/env';
 import { DEFAULT_LOCALE } from '@src/i18n/config';
 import { getTranslations } from '@src/i18n/utils';
-import { useModalStore } from '@client/store/modalStore';
 import { Menu, X } from 'lucide-react';
-import { useMemo, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 
 export function NavBarAstro(): JSX.Element {
   const t = useMemo(() => getTranslations('nav'), []);
   const { openAuthModal } = useModalStore();
-
-  // TODO: Wire up proper user auth store for Astro migration
-  const isAuthenticated = false;
-  const isLoading = false;
-  const user = null as { email?: string; provider?: string } | null;
-  const signOut = () => {};
+  const { isAuthenticated, isLoading, user, signOut } = useUserStore();
 
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  useClickOutside(dropdownRef, () => setIsDropdownOpen(false));
 
   // Helper to generate localized URLs
   const localizedPath = (path: string) => {
@@ -46,13 +48,21 @@ export function NavBarAstro(): JSX.Element {
           href={localizedPath('/')}
           className="flex items-center cursor-pointer hover:opacity-90 transition-all active:scale-95 flex-shrink-0"
         >
-          {/* Logo */}
+          {/* Compact logo for mobile */}
+          <img
+            src="/logo/horizontal-logo-compact.png"
+            alt={clientEnv.APP_NAME}
+            width={100}
+            height={40}
+            className="xs:hidden h-8 w-auto drop-shadow-[0_2px_8px_rgba(59,130,246,0.3)]"
+          />
+          {/* Full logo for desktop */}
           <img
             src="/logo/horizontal-logo-full.png"
             alt={clientEnv.APP_NAME}
             width={200}
             height={40}
-            className="h-10 w-auto drop-shadow-[0_2px_8px_rgba(59,130,246,0.3)]"
+            className="hidden xs:block h-10 w-auto drop-shadow-[0_2px_8px_rgba(59,130,246,0.3)]"
           />
         </a>
 
@@ -65,6 +75,12 @@ export function NavBarAstro(): JSX.Element {
               {t('dashboard')}
             </a>
           )}
+          <a
+            href={localizedPath('/blog')}
+            className="text-sm font-bold text-text-muted hover:text-white transition-colors"
+          >
+            {t('blog')}
+          </a>
           <a
             href={localizedPath('/pricing')}
             className="text-sm font-bold text-text-muted hover:text-white transition-colors"
@@ -80,6 +96,7 @@ export function NavBarAstro(): JSX.Element {
         </nav>
 
         <div className="flex items-center gap-2 lg:gap-3 xl:gap-4">
+          <LocaleSwitcher />
           {isLoading ? (
             <div className="hidden md:flex items-center gap-3">
               <div className="h-10 w-24 bg-white/5 rounded-full animate-pulse"></div>
@@ -109,7 +126,7 @@ export function NavBarAstro(): JSX.Element {
             </>
           ) : (
             <>
-              <div className="relative">
+              <div className="relative" ref={dropdownRef}>
                 <button
                   onClick={() => setIsDropdownOpen(!isDropdownOpen)}
                   className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium text-muted-foreground hover:bg-surface/10 hover:text-white transition-colors cursor-pointer"
@@ -133,6 +150,11 @@ export function NavBarAstro(): JSX.Element {
                 {isDropdownOpen && (
                   <ul className="p-2 shadow-2xl glass-dropdown rounded-2xl w-56 absolute top-full right-0 mt-4 z-50 animate-in fade-in zoom-in-95 duration-200">
                     <li>
+                      <div className="px-2 py-2 pointer-events-none">
+                        <CreditsDisplay />
+                      </div>
+                    </li>
+                    <li>
                       <a
                         href={localizedPath('/dashboard')}
                         className="block px-4 py-2 text-sm text-muted-foreground hover:bg-surface/10 hover:text-white rounded-lg transition-colors cursor-pointer"
@@ -154,6 +176,14 @@ export function NavBarAstro(): JSX.Element {
                         className="block px-4 py-2 text-sm text-muted-foreground hover:bg-surface/10 hover:text-white rounded-lg transition-colors cursor-pointer"
                       >
                         {t('settings')}
+                      </a>
+                    </li>
+                    <li>
+                      <a
+                        href={localizedPath('/dashboard/history')}
+                        className="block px-4 py-2 text-sm text-muted-foreground hover:bg-surface/10 hover:text-white rounded-lg transition-colors cursor-pointer"
+                      >
+                        {t('history')}
                       </a>
                     </li>
                     {isPasswordUser && (
@@ -201,6 +231,12 @@ export function NavBarAstro(): JSX.Element {
                 {t('dashboard')}
               </a>
             )}
+            <a
+              href={localizedPath('/blog')}
+              className="block px-4 py-2 text-sm font-medium text-muted-foreground hover:bg-surface/10 hover:text-white rounded-lg transition-colors"
+            >
+              {t('blog')}
+            </a>
             <a
               href={localizedPath('/pricing')}
               className="block px-4 py-2 text-sm font-medium text-muted-foreground hover:bg-surface/10 hover:text-white rounded-lg transition-colors"

@@ -13,6 +13,17 @@ import enHomepage from '@locales/en/homepage.json';
 import enPricing from '@locales/en/pricing.json';
 import enNav from '@locales/en/nav.json';
 import enCommon from '@locales/en/common.json';
+import enAdmin from '@locales/en/admin.json';
+import enCheckout from '@locales/en/checkout.json';
+import enAuth from '@locales/en/auth.json';
+import enBlog from '@locales/en/blog.json';
+import enErrors from '@locales/en/errors.json';
+import enModal from '@locales/en/modal.json';
+import enSubscription from '@locales/en/subscription.json';
+import enStripe from '@locales/en/stripe.json';
+import enI18n from '@locales/en/i18n.json';
+import enHowItWorks from '@locales/en/howItWorks.json';
+import enDashboard from '@locales/en/dashboard.json';
 
 // Type for translation function
 export type TFunction = (key: string, params?: Record<string, string | number>) => string;
@@ -26,6 +37,17 @@ const translations: Record<string, Record<string, unknown>> = {
   pricing: enPricing,
   nav: enNav,
   common: enCommon,
+  admin: enAdmin,
+  checkout: enCheckout,
+  auth: enAuth,
+  blog: enBlog,
+  errors: enErrors,
+  modal: enModal,
+  subscription: enSubscription,
+  stripe: enStripe,
+  i18n: enI18n,
+  howItWorks: enHowItWorks,
+  dashboard: enDashboard,
   footer: ((enCommon as Record<string, unknown>).footer || {}) as Record<string, unknown>,
 } as const;
 

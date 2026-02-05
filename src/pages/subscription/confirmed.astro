@@ -8,12 +8,14 @@ const description = 'Your subscription has been successfully confirmed. Thank yo
 ---
 
 <Layout title={title}>
-  <!-- SEO Meta Tags -->
-  <meta name="description" content={description} />
-  <meta property="og:title" content={title} />
-  <meta property="og:description" content={description} />
-  <meta property="og:type" content="website" />
-  <link rel="canonical" href={`${clientEnv.BASE_URL}/subscription/confirmed`} />
+  <Fragment slot="head">
+    <!-- SEO Meta Tags -->
+    <meta name="description" content={description} />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:type" content="website" />
+    <link rel="canonical" href={`${clientEnv.BASE_URL}/subscription/confirmed`} />
+  </Fragment>
 
   <!-- Subscription confirmed client component -->
   <div id="subscription-confirmed-root"></div>

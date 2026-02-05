@@ -1,0 +1,20 @@
+---
+/**
+ * Ahrefs Analytics Integration for Astro
+ *
+ * Loads the Ahrefs analytics.js script for website traffic tracking.
+ * Only active when AHREFS_ANALYTICS_KEY is set and not in development.
+ */
+import { clientEnv, isDevelopment } from '@shared/config/env';
+
+const analyticsKey = clientEnv.AHREFS_ANALYTICS_KEY;
+const isEnabled = !isDevelopment() && analyticsKey;
+---
+
+{isEnabled && (
+  <Fragment>
+    <link rel="preconnect" href="https://analytics.ahrefs.com" />
+    <link rel="dns-prefetch" href="https://analytics.ahrefs.com" />
+    <script src="https://analytics.ahrefs.com/analytics.js" data-key={analyticsKey}></script>
+  </Fragment>
+)}

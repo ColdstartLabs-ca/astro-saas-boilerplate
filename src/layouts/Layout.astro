@@ -11,6 +11,9 @@ import '@client/styles/index.css';
 import { NavBarAstro } from '@client/components/navigation/NavBarAstro';
 import { FooterAstro } from '@client/components/layout/FooterAstro';
 import GlobalUI from '@client/components/GlobalUI';
+// Import analytics components
+import GoogleAnalytics from '../components/analytics/GoogleAnalytics.astro';
+import AhrefsAnalytics from '../components/analytics/AhrefsAnalytics.astro';
 ---
 
 <!DOCTYPE html>
@@ -19,6 +22,20 @@ import GlobalUI from '@client/components/GlobalUI';
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>{title}</title>
+
+    <!-- Preconnect for performance -->
+    <link rel="preconnect" href="https://www.googletagmanager.com" />
+    <link rel="dns-prefetch" href="https://www.googletagmanager.com" />
+    <link rel="preconnect" href="https://analytics.ahrefs.com" />
+    <link rel="dns-prefetch" href="https://analytics.ahrefs.com" />
+    <link rel="preconnect" href="https://js.stripe.com" />
+    <link rel="dns-prefetch" href="https://js.stripe.com" />
+
+    <!-- Analytics -->
+    <GoogleAnalytics />
+    <AhrefsAnalytics />
+
+    <!-- Page-specific head content -->
     <slot name="head" />
   </head>
   <body class="antialiased">

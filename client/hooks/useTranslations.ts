@@ -16,7 +16,6 @@ import enCheckout from '@locales/en/checkout.json';
 import enCommon from '@locales/en/common.json';
 import enDashboard from '@locales/en/dashboard.json';
 import enErrors from '@locales/en/errors.json';
-import enFeatures from '@locales/en/features.json';
 import enHelp from '@locales/en/help.json';
 import enHomepage from '@locales/en/homepage.json';
 import enHowItWorks from '@locales/en/howItWorks.json';
@@ -38,7 +37,6 @@ const translations: Record<string, Record<string, unknown>> = {
   common: enCommon,
   dashboard: enDashboard,
   errors: enErrors,
-  features: enFeatures,
   help: enHelp,
   homepage: enHomepage,
   howItWorks: enHowItWorks,
