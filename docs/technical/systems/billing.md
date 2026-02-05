@@ -8,9 +8,19 @@ Stripe is the single source of truth for subscriptions. Supabase handles the loc
 
 ## Pricing Tiers
 
-**See [Revenue Streams](../../business/business-model-canvas/revenue-streams.md) for complete pricing details, competitive analysis, and rationale.**
+**IMPORTANT:** There are TWO pricing structures in this codebase:
 
-### Monthly Subscriptions (Current)
+### 1. Target Pricing (Future AutopilotRank Product)
+
+For the AI SEO content automation platform (see [ROADMAP](../../management/ROADMAP.md)):
+
+- **Source:** [Revenue Streams](../../business/business-model-canvas/revenue-streams.md)
+- **Tiers:** Starter $49/mo (30 articles), Growth $99/mo (100 articles), Agency $249/mo (500 articles)
+- **Implementation:** Not yet implemented - planned for Milestone 1
+
+### 2. Current Pricing (Boilerplate Credits System)
+
+Generic SaaS pricing currently in `subscription.config.ts`:
 
 | Plan         | Price   | Credits/Month | Key Features                          |
 | ------------ | ------- | ------------- | ------------------------------------- |
@@ -19,6 +29,8 @@ Stripe is the single source of truth for subscriptions. Supabase handles the loc
 | **Hobby**    | $19/mo  | 200           | For personal projects, batch up to 10 |
 | **Pro**      | $49/mo  | 1000          | For professionals, batch up to 50     |
 | **Business** | $149/mo | 5000          | For teams, batch up to 500            |
+
+**Note:** These tiers will be replaced with the target pricing when the AutopilotRank product is built.
 
 ### Credit Packs (One-Time Purchase)
 

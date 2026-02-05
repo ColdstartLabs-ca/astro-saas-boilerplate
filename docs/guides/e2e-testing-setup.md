@@ -1,6 +1,6 @@
 # E2E Testing Setup Guide
 
-This guide covers setting up and running Playwright E2E tests for the myimageupscaler.com application.
+This guide covers setting up and running Playwright E2E tests for AutopilotRank.
 
 ## Prerequisites
 
@@ -26,7 +26,7 @@ yarn test:e2e
 yarn test:all
 
 # Full verification (TypeScript + Lint + Tests)
-yarn verify
+yarn verify:full
 ```
 
 ## Environment Setup
@@ -50,21 +50,12 @@ Billing tests require access to Supabase Admin API to create/cleanup test users.
 3. Navigate to **Settings** → **API**
 4. Under "Project API keys", copy the **service_role** key (NOT the anon key)
 
-#### Step 2: Configure `.env.prod`
+#### Step 2: Configure `.env.api`
 
 ```bash
-# Copy the example file
-cp .env.prod.example .env.prod
-```
-
-Edit `.env.prod` and add your keys:
-
-```bash
-# Supabase - Get from: Supabase Dashboard > Settings > API
+# The .env.api file should already exist
+# Add your service role key:
 SUPABASE_SERVICE_ROLE_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
-
-# Also ensure .env has the public URL
-# NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
 ```
 
 #### Step 3: Run Billing Tests
@@ -105,8 +96,7 @@ tests/
 │   └── PricingPage.ts
 └── helpers/                # Test utilities
     ├── auth.ts             # Auth fixtures
-    ├── test-data-manager.ts
-    └── checkout-mock.ts
+    └── test-data-manager.ts
 ```
 
 ## Page Object Model (POM)
@@ -201,10 +191,10 @@ page.locator('div > span.text');
 If billing tests show as skipped (`-`):
 
 ```
--  1 › Billing System E2E Tests › should display free user state
+-  1 skipped › Billing System E2E Tests › should display free user state
 ```
 
-**Cause**: Missing `SUPABASE_SERVICE_ROLE_KEY` in `.env.prod`
+**Cause**: Missing `SUPABASE_SERVICE_ROLE_KEY` in `.env.api`
 
 **Solution**: Follow the [Billing Tests setup](#billing-tests-requires-supabase-service-role-key) above.
 
@@ -223,14 +213,14 @@ npx playwright install chromium
 ### Port Already in Use
 
 ```
-Port 3000 is in use by an unknown process
+Port 4321 is in use by an unknown process
 ```
 
 **Solution**:
 
 ```bash
-# Kill processes on port 3000
-lsof -ti:3000 | xargs kill -9
+# Kill processes on port 4321
+lsof -ti:4321 | xargs kill -9
 
 # Or let Playwright use the existing server
 # (playwright.config.ts has reuseExistingServer: true for local dev)
@@ -255,7 +245,7 @@ For CI environments, set environment variables as secrets:
 ```yaml
 # GitHub Actions example
 env:
-  NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+  PUBLIC_SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
   SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
 ```
 
@@ -267,7 +257,7 @@ CI=true yarn test:e2e
 
 ## Security Notes
 
-- **NEVER** commit `.env.prod` to version control
+- **NEVER** commit `.env.api` to version control
 - `SUPABASE_SERVICE_ROLE_KEY` bypasses Row Level Security (RLS)
 - Only use service role key server-side (API routes, tests)
 - Rotate keys if compromised

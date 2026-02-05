@@ -10,6 +10,7 @@
 ## Current State
 
 **Done (from boilerplate):**
+
 - [x] Auth: Email/password, Google OAuth (Supabase)
 - [x] Billing: Stripe subscriptions + one-time credit packs
 - [x] Credit system: Per-user balance, transaction history, rollover
@@ -30,6 +31,7 @@
 Build the only AI SEO platform that combines full content automation with human-level quality. Target SMB owners and agencies who need organic traffic growth without hiring writers or managing freelancers.
 
 **Core Differentiators:**
+
 1. Multi-model AI engine (GPT-4, Claude, Gemini) for content variety
 2. Humanizer engine for AI-undetectable output
 3. Pre-publication QA (plagiarism, AI detection, SEO scoring)
@@ -38,16 +40,18 @@ Build the only AI SEO platform that combines full content automation with human-
 
 ---
 
-## Pricing
+## Pricing (Target - For AutopilotRank Product)
+
+**NOTE:** This is the target pricing for the AutopilotRank AI SEO product. The current boilerplate uses a different pricing structure (see `docs/technical/systems/billing.md` for current implementation).
 
 No free tier. 3 free articles on signup (no credit card required).
 
-| Tier | Price | Articles/Month | $/Article | Key Features |
-|------|-------|----------------|-----------|--------------|
-| Trial | $0 | 3 (one-time) | — | Try before buying, no CC required |
-| Starter | $49/mo | 30 | $1.63 | All core features, 1 WordPress site, humanizer |
-| Growth | $99/mo | 100 | $0.99 | GSC integration, 3 CMS sites, advanced humanizer |
-| Agency | $249/mo | 500 | $0.50 | White-label, team (5), API, unlimited sites |
+| Tier    | Price   | Articles/Month | $/Article | Key Features                                     |
+| ------- | ------- | -------------- | --------- | ------------------------------------------------ |
+| Trial   | $0      | 3 (one-time)   | —         | Try before buying, no CC required                |
+| Starter | $49/mo  | 30             | $1.63     | All core features, 1 WordPress site, humanizer   |
+| Growth  | $99/mo  | 100            | $0.99     | GSC integration, 3 CMS sites, advanced humanizer |
+| Agency  | $249/mo | 500            | $0.50     | White-label, team (5), API, unlimited sites      |
 
 Annual discount: 20% off (~2 months free).
 
@@ -205,13 +209,13 @@ M1 Foundation
 
 ### MVP Risk Mitigation
 
-| Risk | Impact | Mitigation |
-|------|--------|------------|
-| AI generation quality too low | High | Multi-model routing, humanizer pass, manual edit before publish |
-| OpenRouter API downtime | High | Direct API fallback to Anthropic/OpenAI |
-| WordPress integration complexity | Medium | Start with REST API + Application Passwords (simplest auth) |
-| Slow generation time | Medium | Async generation with notification when complete |
-| Low beta signups | Medium | Personal outreach, SEO communities, free tier as hook |
+| Risk                             | Impact | Mitigation                                                      |
+| -------------------------------- | ------ | --------------------------------------------------------------- |
+| AI generation quality too low    | High   | Multi-model routing, humanizer pass, manual edit before publish |
+| OpenRouter API downtime          | High   | Direct API fallback to Anthropic/OpenAI                         |
+| WordPress integration complexity | Medium | Start with REST API + Application Passwords (simplest auth)     |
+| Slow generation time             | Medium | Async generation with notification when complete                |
+| Low beta signups                 | Medium | Personal outreach, SEO communities, free tier as hook           |
 
 ### Launch Checklist (after all milestones complete)
 
@@ -341,17 +345,17 @@ M1 Foundation
 
 ## Tech Stack
 
-| Component | Technology |
-|-----------|-----------|
-| Frontend | Astro 5 + React 18 (islands) |
-| Backend / API | Astro SSR + Cloudflare Workers |
-| Database | Supabase (PostgreSQL) |
-| Auth | Supabase Auth (email, Google OAuth) |
-| Payments | Stripe (subscriptions + one-time) |
-| AI Models | OpenRouter (GPT-4, Claude, Gemini) |
-| Email | Brevo + Resend |
-| Monitoring | Baselime + Amplitude + GA4 |
-| Deployment | Cloudflare Pages |
+| Component      | Technology                                            |
+| -------------- | ----------------------------------------------------- |
+| Frontend       | Astro 5 + React 18 (islands)                          |
+| Backend / API  | Astro SSR + Cloudflare Workers                        |
+| Database       | Supabase (PostgreSQL)                                 |
+| Auth           | Supabase Auth (email, Google OAuth)                   |
+| Payments       | Stripe (subscriptions + one-time)                     |
+| AI Models      | OpenRouter (GPT-4, Claude, Gemini)                    |
+| Email          | Brevo + Resend                                        |
+| Monitoring     | Baselime + Amplitude + GA4                            |
+| Deployment     | Cloudflare Pages                                      |
 | CMS Publishing | WordPress REST API (MVP), Webflow, Shopify (post-MVP) |
 
 ---
@@ -371,7 +375,7 @@ M1 Foundation
 
 ## Changelog
 
-| Date | Change |
-|------|--------|
+| Date       | Change                                                                                                                                                            |
+| ---------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | 2026-02-05 | Restructured MVP into 7 ordered milestones with dependency graph; consolidated pricing/financials to revenue-streams.md; added priority levels to post-MVP phases |
-| 2026-02-04 | Created unified roadmap for AutopilotRank pivot, split into MVP (4 weeks) and Post-MVP phases |
+| 2026-02-04 | Created unified roadmap for AutopilotRank pivot, split into MVP (4 weeks) and Post-MVP phases                                                                     |

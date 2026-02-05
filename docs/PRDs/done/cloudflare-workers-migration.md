@@ -651,7 +651,7 @@ sequenceDiagram
     alt Option 2: Proxy through R2 (Permanent Storage)
         Worker->>Replicate: Fetch image
         Worker->>R2: Store with 7-day expiry
-        Worker-->>Browser: { resultUrl: "https://r2.myimageupscaler.com/..." }
+        Worker-->>Browser: { resultUrl: "https://r2.autopilotrank.com/..." }
         Browser->>R2: Fetch image
     end
 ```
@@ -685,7 +685,7 @@ export async function upscaleImage(input: IUpscaleInput) {
 **Setup R2 Bucket**:
 
 ```bash
-wrangler r2 bucket create myimageupscaler.com-results
+wrangler r2 bucket create autopilotrank.com-results
 ```
 
 **Wrangler Config**:
@@ -694,7 +694,7 @@ wrangler r2 bucket create myimageupscaler.com-results
 # wrangler.toml
 [[r2_buckets]]
 binding = "RESULTS_BUCKET"
-bucket_name = "myimageupscaler.com-results"
+bucket_name = "autopilotrank.com-results"
 ```
 
 **Implementation**:
@@ -727,7 +727,7 @@ export async function storeResultImage(
   });
 
   // Return public URL
-  return `https://results.myimageupscaler.com/${key}`;
+  return `https://results.autopilotrank.com/${key}`;
 }
 ```
 
@@ -796,7 +796,7 @@ async function buildBlogData() {
         title: data.title || '',
         description: data.description || '',
         date: data.date || '',
-        author: data.author || 'myimageupscaler.com Team',
+        author: data.author || 'autopilotrank.com Team',
         category: data.category || 'General',
         tags: data.tags || [],
         image: data.image,
@@ -1134,7 +1134,7 @@ export default nextConfig;
 **File**: `wrangler.toml`
 
 ```toml
-name = "myimageupscaler.com"
+name = "autopilotrank.com"
 compatibility_date = "2025-03-02"
 compatibility_flags = ["nodejs_compat"]
 pages_build_output_dir = ".vercel/output/static"
@@ -1155,8 +1155,8 @@ custom_domain = false  # Now uses edge runtime
 # R2 bucket binding (if using storage solution)
 [[r2_buckets]]
 binding = "RESULTS_BUCKET"
-bucket_name = "myimageupscaler.com-results"
-preview_bucket_name = "myimageupscaler.com-results-preview"
+bucket_name = "autopilotrank.com-results"
+preview_bucket_name = "autopilotrank.com-results-preview"
 ```
 
 ---
@@ -1272,6 +1272,6 @@ test.describe('CPU Budget Compliance', () => {
 
 - [Cloudflare Workers Limits](https://developers.cloudflare.com/workers/platform/limits/)
 - [Cloudflare Workers Pricing](https://developers.cloudflare.com/workers/platform/pricing/)
-- [Next.js Edge Runtime](https://nextjs.org/docs/app/building-your-application/rendering/edge-and-nodejs-runtimes)
+- [Next.js Edge Runtime](https://nextjs.org/docs/src/pages/building-your-application/rendering/edge-and-nodejs-runtimes)
 - [Cloudflare R2 Documentation](https://developers.cloudflare.com/r2/)
 - [Web Crypto API](https://developer.mozilla.org/en-US/docs/Web/API/Web_Crypto_API)

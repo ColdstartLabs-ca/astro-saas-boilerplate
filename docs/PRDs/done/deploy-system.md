@@ -212,7 +212,7 @@ export DEPLOY_TIMESTAMP=$(date +%Y%m%d_%H%M%S)
 
 # Get deployment target (production URL)
 get_deploy_url() {
-    echo "${NEXT_PUBLIC_BASE_URL:-https://myimageupscaler.com.ai}"
+    echo "${NEXT_PUBLIC_BASE_URL:-https://autopilotrank.com.ai}"
 }
 
 # Check if we're on the correct branch
@@ -479,7 +479,7 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$SCRIPT_DIR/common.sh"
 
-PROJECT_NAME="${CF_PROJECT_NAME:-myimageupscaler.com}"
+PROJECT_NAME="${CF_PROJECT_NAME:-autopilotrank.com}"
 
 deploy_app() {
     local project_root="$(dirname "$(dirname "$SCRIPT_DIR")")"
@@ -660,7 +660,7 @@ fi
 ```bash
 #!/bin/bash
 # ============================================================================
-# myimageupscaler.com Deployment Orchestrator
+# autopilotrank.com Deployment Orchestrator
 # ============================================================================
 # Orchestrates complete deployment: preflight → build → migrations → deploy → verify
 #
@@ -701,7 +701,7 @@ SKIP_VERIFY=false
 
 show_help() {
     cat << EOF
-${BOLD}myimageupscaler.com Deployment Orchestrator${NC}
+${BOLD}autopilotrank.com Deployment Orchestrator${NC}
 
 Usage: ./scripts/deploy.sh [options]
 
@@ -759,7 +759,7 @@ done
 
 echo ""
 echo -e "${CYAN}╔════════════════════════════════════════════════════════════╗${NC}"
-echo -e "${CYAN}║${NC}            ${BOLD}myimageupscaler.com Deployment${NC}                         ${CYAN}║${NC}"
+echo -e "${CYAN}║${NC}            ${BOLD}autopilotrank.com Deployment${NC}                         ${CYAN}║${NC}"
 echo -e "${CYAN}║${NC}            $(date '+%Y-%m-%d %H:%M:%S')                           ${CYAN}║${NC}"
 echo -e "${CYAN}╚════════════════════════════════════════════════════════════╝${NC}"
 echo ""

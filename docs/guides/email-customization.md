@@ -1,6 +1,6 @@
 # Email Configuration Guide
 
-This guide covers how to customize authentication emails (Supabase) and enable payment receipt emails (Stripe).
+This guide covers how to customize authentication emails (Supabase) and transactional emails (Brevo/Resend).
 
 ---
 
@@ -15,8 +15,8 @@ Supabase handles all authentication emails including email verification, passwor
 
 ### Step 1: Access Email Templates
 
-1. Log in to [Supabase Dashboard](https://app.supabase.com)
-2. Select your **MyImageUpscaler** project
+1. Log in to [Supabase Dashboard](https://supabase.com/dashboard)
+2. Select your **AutopilotRank** project
 3. Navigate to **Authentication** > **Email Templates**
 
 ### Step 2: Available Templates
@@ -37,16 +37,16 @@ Sent when a new user signs up with email/password.
 **Recommended Customization:**
 
 ```html
-<h2>Welcome to MyImageUpscaler!</h2>
+<h2>Welcome to AutopilotRank!</h2>
 <p>Thanks for signing up. Click the link below to verify your email address:</p>
 <p><a href="{{ .ConfirmationURL }}">Verify Email Address</a></p>
-<p>If you didn't sign up for MyImageUpscaler, you can safely ignore this email.</p>
-<p>Best regards,<br />The MyImageUpscaler Team</p>
+<p>If you didn't sign up for AutopilotRank, you can safely ignore this email.</p>
+<p>Best regards,<br />The AutopilotRank Team</p>
 ```
 
 #### Invite User
 
-Sent when inviting a user to your application (if using team features in Phase 3).
+Sent when inviting a user to your application (if using team features).
 
 #### Magic Link
 
@@ -55,7 +55,7 @@ Sent for passwordless sign-in.
 **Recommended Customization:**
 
 ```html
-<h2>Sign in to MyImageUpscaler</h2>
+<h2>Sign in to AutopilotRank</h2>
 <p>Click the link below to sign in to your account:</p>
 <p><a href="{{ .ConfirmationURL }}">Sign In</a></p>
 <p>This link expires in 1 hour.</p>
@@ -87,7 +87,7 @@ Sent when a user requests a password reset.
 <p><a href="{{ .ConfirmationURL }}">Reset Password</a></p>
 <p>This link expires in 1 hour.</p>
 <p>If you didn't request a password reset, you can safely ignore this email.</p>
-<p>Best regards,<br />The myimageupscaler.com Team</p>
+<p>Best regards,<br />The AutopilotRank Team</p>
 ```
 
 ### Step 3: Branding Guidelines
@@ -96,7 +96,7 @@ For consistent branding across all emails:
 
 **Colors:**
 
-- Primary: `#6366f1` (indigo-500)
+- Primary: Use your brand's primary color
 - Background: `#f8fafc` (slate-50)
 - Text: `#0f172a` (slate-900)
 
@@ -113,17 +113,17 @@ For consistent branding across all emails:
 >
   <div style="background-color: #6366f1; padding: 24px; text-align: center;">
     <!-- Logo here -->
-    <h1 style="color: white; margin: 0;">MyImageUpscaler</h1>
+    <h1 style="color: white; margin: 0;">AutopilotRank</h1>
   </div>
   <div style="background-color: white; padding: 32px; border: 1px solid #e2e8f0;">
     <!-- Email content here -->
   </div>
   <div style="text-align: center; padding: 16px; color: #64748b; font-size: 14px;">
-    <p>© 2025 MyImageUpscaler. All rights reserved.</p>
+    <p>&copy; 2025 AutopilotRank. All rights reserved.</p>
     <p>
-      <a href="https://myimageupscaler.com/privacy" style="color: #6366f1;">Privacy Policy</a> |
-      <a href="https://myimageupscaler.com/terms" style="color: #6366f1;">Terms</a> |
-      <a href="https://myimageupscaler.com/help" style="color: #6366f1;">Help</a>
+      <a href="https://autopilotrank.com/privacy" style="color: #6366f1;">Privacy Policy</a> |
+      <a href="https://autopilotrank.com/terms" style="color: #6366f1;">Terms</a> |
+      <a href="https://autopilotrank.com/help" style="color: #6366f1;">Help</a>
     </p>
   </div>
 </div>
@@ -146,25 +146,18 @@ After customizing templates:
 
 ### Step 5: SMTP Settings (Optional)
 
-By default, Supabase uses their SMTP server. For custom email domain:
+This project uses Brevo (primary) and Resend (fallback) for transactional emails. Configure in `.env.api`:
 
-1. Go to **Project Settings** > **Auth**
-2. Scroll to **SMTP Settings**
-3. Enable **Custom SMTP**
-4. Configure:
-   - **Host**: Your SMTP server
-   - **Port**: Usually 587 (TLS) or 465 (SSL)
-   - **Username**: Your SMTP username
-   - **Password**: Your SMTP password
-   - **Sender Email**: `noreply@myimageupscaler.com`
-   - **Sender Name**: `MyImageUpscaler`
+```bash
+# Brevo (Primary) - 9,000 free emails/month
+BREVO_API_KEY=xkeysib-your-brevo-api-key
 
-**Recommended SMTP Providers:**
+# Resend (Fallback) - 3,000 free emails/month
+RESEND_API_KEY=re_your-resend-api-key
 
-- **Resend** (planned for Phase 2)
-- **SendGrid**
-- **Postmark**
-- **AWS SES**
+# Common email settings
+EMAIL_FROM_ADDRESS=noreply@autopilotrank.com
+```
 
 ---
 
@@ -187,10 +180,10 @@ Stripe can automatically send payment receipts to customers. This requires confi
 
 1. Click **Customize** next to receipt emails
 2. Configure:
-   - **From name**: `MyImageUpscaler`
-   - **Reply-to email**: `support@myimageupscaler.com`
+   - **From name**: `AutopilotRank`
+   - **Reply-to email**: `support@autopilotrank.com`
    - **Logo**: Upload your logo (recommended 200px width)
-   - **Brand color**: `#6366f1`
+   - **Brand color**: Your brand color
    - **Footer text**: Add company address if required by law
 
 ### Step 4: Configure Receipt Settings
@@ -230,7 +223,7 @@ For subscription plans:
 1. Go to **Settings** > **Emails** > **Invoices**
 2. Click **Customize**
 3. Configure:
-   - **Subject line**: `Your MyImageUpscaler invoice for [amount]`
+   - **Subject line**: `Your AutopilotRank invoice for [amount]`
    - **Footer message**: Custom footer with support info
    - **Logo**: Same as receipt logo
 
@@ -339,14 +332,38 @@ Before going live, test all email flows:
 
 ---
 
-## 5. Future Enhancements (Phase 2)
+## 5. Transactional Email System
 
-Planned email improvements:
+This project includes a transactional email system using Brevo (primary) and Resend (fallback).
 
-- [ ] Custom email system using Resend + React Email
-- [ ] Transactional emails (welcome, low credits, etc.)
-- [ ] Email preferences/unsubscribe management
-- [ ] Email analytics tracking
-- [ ] Automated email campaigns
+### Configuration
 
-For now, Supabase + Stripe emails cover all critical user communication needs.
+Configure in `.env.api`:
+
+```bash
+# Brevo (Primary) - 9,000 free emails/month
+BREVO_API_KEY=xkeysib-your-brevo-api-key
+
+# Resend (Fallback) - 3,000 free emails/month
+RESEND_API_KEY=re_your-resend-api-key
+
+# Common email settings
+EMAIL_FROM_ADDRESS=noreply@autopilotrank.com
+ALLOW_TRANSACTIONAL_EMAILS_IN_DEV=false
+```
+
+### Usage
+
+```typescript
+import { EmailService } from '@/server/email';
+
+// Send transactional email
+await EmailService.sendEmail({
+  to: 'user@example.com',
+  subject: 'Welcome to AutopilotRank',
+  template: 'welcome',
+  data: { name: 'User Name' },
+});
+```
+
+For now, Supabase + Stripe emails cover all critical user communication needs. Custom transactional emails can be added as needed.

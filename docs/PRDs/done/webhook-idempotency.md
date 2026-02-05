@@ -11,15 +11,15 @@
 
 ### 1.1 Files Analyzed
 
-| Path | Purpose |
-|------|---------|
-| `/app/api/webhooks/stripe/route.ts` | Stripe webhook handler (main target) |
-| `/supabase/migrations/20250121_create_credit_transactions_table.sql` | Credit transaction schema |
-| `/supabase/migrations/20250121_enhanced_credit_functions.sql` | RPC functions for credit operations |
-| `/supabase/migrations/20250221_secure_credits.sql` | Credit security hardening |
-| `/shared/types/stripe.ts` | Type definitions |
-| `/tests/helpers/stripe-webhook-mocks.ts` | Webhook test mocks |
-| `/tests/api/webhooks.api.spec.ts` | Webhook integration tests |
+| Path                                                                 | Purpose                              |
+| -------------------------------------------------------------------- | ------------------------------------ |
+| `/src/pages/api/webhooks/stripe/route.ts`                            | Stripe webhook handler (main target) |
+| `/supabase/migrations/20250121_create_credit_transactions_table.sql` | Credit transaction schema            |
+| `/supabase/migrations/20250121_enhanced_credit_functions.sql`        | RPC functions for credit operations  |
+| `/supabase/migrations/20250221_secure_credits.sql`                   | Credit security hardening            |
+| `/shared/types/stripe.ts`                                            | Type definitions                     |
+| `/tests/helpers/stripe-webhook-mocks.ts`                             | Webhook test mocks                   |
+| `/tests/api/webhooks.api.spec.ts`                                    | Webhook integration tests            |
 
 ### 1.2 Component & Dependency Overview
 
@@ -77,12 +77,12 @@ The webhook system lacks idempotency protection, allowing duplicate event proces
 
 **Alternatives Considered:**
 
-| Approach | Pros | Cons | Decision |
-|----------|------|------|----------|
-| **Dedicated table (chosen)** | Full audit trail, explicit status, queryable | Extra table, extra query | ✅ Chosen |
-| Unique constraint on `credit_transactions.reference_id` | Simple, DB-enforced | Only protects credits, not subscription updates | ❌ Insufficient |
-| Redis-based deduplication | Fast, no DB migration | Extra dependency, TTL complexity | ❌ Over-engineered |
-| Stripe webhook idempotency key header | Zero code change | Not available for webhooks (only API calls) | ❌ Not applicable |
+| Approach                                                | Pros                                         | Cons                                            | Decision           |
+| ------------------------------------------------------- | -------------------------------------------- | ----------------------------------------------- | ------------------ |
+| **Dedicated table (chosen)**                            | Full audit trail, explicit status, queryable | Extra table, extra query                        | ✅ Chosen          |
+| Unique constraint on `credit_transactions.reference_id` | Simple, DB-enforced                          | Only protects credits, not subscription updates | ❌ Insufficient    |
+| Redis-based deduplication                               | Fast, no DB migration                        | Extra dependency, TTL complexity                | ❌ Over-engineered |
+| Stripe webhook idempotency key header                   | Zero code change                             | Not available for webhooks (only API calls)     | ❌ Not applicable  |
 
 ### 2.2 Architecture Diagram
 
@@ -126,14 +126,14 @@ flowchart LR
 
 ### 2.3 Key Technical Decisions
 
-| Decision | Rationale |
-|----------|-----------|
-| **Use `event.id` as primary key check** | Stripe guarantees uniqueness per event |
-| **Insert before processing** | Prevents race conditions on concurrent retries |
-| **Status enum: processing/completed/failed** | Enables retry differentiation and monitoring |
-| **Store event metadata** | Enables debugging and audit |
-| **Return 200 for duplicates** | Stripe interprets 200 as "handled" and stops retrying |
-| **No TTL on events table** | Permanent audit trail for compliance |
+| Decision                                     | Rationale                                             |
+| -------------------------------------------- | ----------------------------------------------------- |
+| **Use `event.id` as primary key check**      | Stripe guarantees uniqueness per event                |
+| **Insert before processing**                 | Prevents race conditions on concurrent retries        |
+| **Status enum: processing/completed/failed** | Enables retry differentiation and monitoring          |
+| **Store event metadata**                     | Enables debugging and audit                           |
+| **Return 200 for duplicates**                | Stripe interprets 200 as "handled" and stops retrying |
+| **No TTL on events table**                   | Permanent audit trail for compliance                  |
 
 ### 2.4 Data Model Changes
 
@@ -271,6 +271,7 @@ COMMENT ON COLUMN public.webhook_events.status IS 'processing = in progress, com
 ```
 
 **Justification:**
+
 - `UNIQUE` constraint on `event_id` enforces idempotency at DB level
 - `JSONB` payload enables debugging without re-fetching from Stripe
 - RLS with no policies = service_role only access (secure)
@@ -342,14 +343,12 @@ async function checkAndClaimEvent(
   }
 
   // Try to insert - may fail if concurrent request beat us
-  const { error: insertError } = await supabase
-    .from('webhook_events')
-    .insert({
-      event_id: eventId,
-      event_type: eventType,
-      status: 'processing',
-      payload: payload as Record<string, unknown>,
-    });
+  const { error: insertError } = await supabase.from('webhook_events').insert({
+    event_id: eventId,
+    event_type: eventType,
+    status: 'processing',
+    payload: payload as Record<string, unknown>,
+  });
 
   if (insertError) {
     // Unique constraint violation = another request got there first
@@ -424,12 +423,7 @@ export async function POST(request: NextRequest) {
     serverEnv.SUPABASE_SERVICE_ROLE_KEY
   );
 
-  const idempotencyResult = await checkAndClaimEvent(
-    supabaseAdmin,
-    event.id,
-    event.type,
-    event
-  );
+  const idempotencyResult = await checkAndClaimEvent(supabaseAdmin, event.id, event.type, event);
 
   if (!idempotencyResult.isNew) {
     console.log(`Skipping duplicate webhook: ${event.id} (${event.type})`);
@@ -452,15 +446,13 @@ export async function POST(request: NextRequest) {
     await markEventFailed(supabaseAdmin, event.id, errorMessage);
 
     console.error('Webhook processing failed:', error);
-    return NextResponse.json(
-      { error: errorMessage },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: errorMessage }, { status: 500 });
   }
 }
 ```
 
 **Justification:**
+
 - Pre-flight check prevents duplicate processing
 - Atomic insert claims the event
 - Unique constraint handles race conditions
@@ -483,10 +475,7 @@ describe('Webhook Idempotency', () => {
 
   afterEach(async () => {
     // Clean up test events
-    await supabase
-      .from('webhook_events')
-      .delete()
-      .like('event_id', 'evt_test_%');
+    await supabase.from('webhook_events').delete().like('event_id', 'evt_test_%');
   });
 
   describe('duplicate event handling', () => {
@@ -635,31 +624,31 @@ describe('Webhook Idempotency', () => {
 
 ### Unit Tests
 
-| Function | Test Cases |
-|----------|------------|
-| `checkAndClaimEvent()` | New event returns `isNew: true` |
-| `checkAndClaimEvent()` | Existing event returns `isNew: false` |
+| Function               | Test Cases                                  |
+| ---------------------- | ------------------------------------------- |
+| `checkAndClaimEvent()` | New event returns `isNew: true`             |
+| `checkAndClaimEvent()` | Existing event returns `isNew: false`       |
 | `checkAndClaimEvent()` | Concurrent insert handles unique constraint |
-| `markEventCompleted()` | Updates status to 'completed' |
-| `markEventFailed()` | Updates status and error_message |
+| `markEventCompleted()` | Updates status to 'completed'               |
+| `markEventFailed()`    | Updates status and error_message            |
 
 ### Integration Tests
 
-| Scenario | Expected Behavior |
-|----------|-------------------|
-| First webhook delivery | Process normally, return 200 |
-| Stripe retry (duplicate) | Skip processing, return 200 |
-| Concurrent retries | Only one processes, others skip |
-| Processing error | Mark failed, return 500 |
+| Scenario                 | Expected Behavior               |
+| ------------------------ | ------------------------------- |
+| First webhook delivery   | Process normally, return 200    |
+| Stripe retry (duplicate) | Skip processing, return 200     |
+| Concurrent retries       | Only one processes, others skip |
+| Processing error         | Mark failed, return 500         |
 
 ### Edge Cases
 
-| Scenario | Expected Behavior |
-|----------|-------------------|
-| Database unavailable during check | Return 500, Stripe will retry |
-| Event claimed but status update fails | Event processed, status may lag |
-| Very old event ID resubmitted | Still rejected (permanent storage) |
-| Invalid event ID format | Normal processing (no special handling) |
+| Scenario                              | Expected Behavior                       |
+| ------------------------------------- | --------------------------------------- |
+| Database unavailable during check     | Return 500, Stripe will retry           |
+| Event claimed but status update fails | Event processed, status may lag         |
+| Very old event ID resubmitted         | Still rejected (permanent storage)      |
+| Invalid event ID format               | Normal processing (no special handling) |
 
 ---
 
@@ -680,12 +669,12 @@ describe('Webhook Idempotency', () => {
 
 ### Success Criteria
 
-| Metric | Target |
-|--------|--------|
-| Duplicate events processed | 0 (after deployment) |
-| Webhook success rate | > 99.9% |
-| Average latency increase | < 10ms (single DB query) |
-| Events tracked in table | 100% of webhooks |
+| Metric                     | Target                   |
+| -------------------------- | ------------------------ |
+| Duplicate events processed | 0 (after deployment)     |
+| Webhook success rate       | > 99.9%                  |
+| Average latency increase   | < 10ms (single DB query) |
+| Events tracked in table    | 100% of webhooks         |
 
 ### Monitoring
 
@@ -717,16 +706,16 @@ GROUP BY status;
 
 ## Appendix: Stripe Retry Behavior
 
-| Attempt | Delay |
-|---------|-------|
-| 1 | Immediate |
-| 2 | 5 minutes |
-| 3 | 30 minutes |
-| 4 | 2 hours |
-| 5 | 5 hours |
-| 6 | 10 hours |
-| 7 | 10 hours |
-| 8 | 10 hours |
+| Attempt | Delay      |
+| ------- | ---------- |
+| 1       | Immediate  |
+| 2       | 5 minutes  |
+| 3       | 30 minutes |
+| 4       | 2 hours    |
+| 5       | 5 hours    |
+| 6       | 10 hours   |
+| 7       | 10 hours   |
+| 8       | 10 hours   |
 
 **Total window:** ~3 days
 

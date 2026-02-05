@@ -18,7 +18,7 @@ The middleware system provides automatic:
 
 ### 1. Set Up Environment Variables
 
-Add to your `.env.local`:
+Add to your `.env.api`:
 
 ```bash
 # Supabase service role key (from Supabase Dashboard > Settings > API)
@@ -30,7 +30,7 @@ ALLOWED_ORIGIN=*
 
 ### 2. Configure CORS (Production Only)
 
-For production, set the allowed origin in `.env.prod`:
+For production, set the allowed origin in `.env.api`:
 
 ```bash
 ALLOWED_ORIGIN=https://yourdomain.com
@@ -59,23 +59,22 @@ That's it! No external services to set up.
    ↓
 6. Set User Headers (X-User-Id, X-User-Email)
    ↓
-7. API Route Handler (app/api/*/route.ts)
+7. API Route Handler (server/api/*/route.ts)
 ```
 
 ### File Structure
 
 ```
-myimageupscaler.com/
-├── middleware.ts                              # Main middleware (runs on Edge)
-├── src/lib/
-│   ├── rateLimit.ts                          # In-memory rate limiter
-│   └── middleware/
-│       └── getAuthenticatedUser.ts           # Helper to get user in routes
-├── app/api/
-│   ├── health/route.ts                       # Public route example
-│   └── protected/example/route.ts            # Protected route example
+autopilotrank.com/
+├── src/middleware/
+│   └── index.ts                                  # Main middleware (runs on Edge)
+├── server/lib/
+│   └── rateLimit.ts                              # In-memory rate limiter
+├── server/api/
+│   ├── health/route.ts                           # Public route example
+│   └── protected/example/route.ts                # Protected route example
 └── tests/api/
-    └── middleware.spec.ts                     # Integration tests
+    └── middleware.spec.ts                         # Integration tests
 ```
 
 ## Creating Protected Routes
@@ -83,22 +82,24 @@ myimageupscaler.com/
 ### Basic Example
 
 ```typescript
-import { NextRequest, NextResponse } from 'next/server';
-import { getAuthenticatedUser } from '@/lib/middleware/getAuthenticatedUser';
+import { type APIRoute } from 'astro';
+import { getAuthenticatedUser } from '@/server/middleware/getAuthenticatedUser';
 
-export async function GET(req: NextRequest) {
+export const GET: APIRoute = async req => {
   // Middleware already verified JWT and set X-User-Id header
   const user = await getAuthenticatedUser(req);
 
   if (!user) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401 });
   }
 
-  return NextResponse.json({
-    message: 'Success',
-    userId: user.id,
-  });
-}
+  return new Response(
+    JSON.stringify({
+      message: 'Success',
+      userId: user.id,
+    })
+  );
+};
 ```
 
 ### Accessing User Without Database Query
@@ -106,25 +107,25 @@ export async function GET(req: NextRequest) {
 If you only need the user ID or email, read it directly from headers:
 
 ```typescript
-export async function GET(req: NextRequest) {
+export const GET: APIRoute = async req => {
   const userId = req.headers.get('X-User-Id');
   const userEmail = req.headers.get('X-User-Email');
 
   // No database query needed
-  return NextResponse.json({ userId, userEmail });
-}
+  return new Response(JSON.stringify({ userId, userEmail }));
+};
 ```
 
 ## Creating Public Routes
 
-Add routes to the `PUBLIC_ROUTES` array in `middleware.ts`:
+Add routes to the `PUBLIC_API_ROUTES` array in `shared/config/security.ts`:
 
 ```typescript
-const PUBLIC_ROUTES = [
-  '/api/health',
-  '/api/webhooks/*', // Supports wildcards
-  '/api/public/data',
-];
+export const PUBLIC_API_ROUTES = [
+  '/api/health', // Health checks
+  '/api/webhooks/*', // External services with own auth
+  '/api/support/*', // Public forms (validated + rate limited)
+] as const;
 ```
 
 Public routes still get:
@@ -174,7 +175,7 @@ Retry-After: 8
 
 ### Customizing Rate Limits
 
-Edit `src/lib/rateLimit.ts`:
+Edit `server/lib/rateLimit.ts`:
 
 ```typescript
 // Change authenticated user limits
@@ -252,7 +253,7 @@ Disables browser features that could leak data.
 
 ### Customizing Security Headers
 
-Edit `middleware.ts` to adjust headers:
+Edit `shared/config/security.ts` to adjust headers:
 
 ```typescript
 // Example: Allow images from external CDN
@@ -285,32 +286,6 @@ Restrict to your domain:
 ALLOWED_ORIGIN=https://yourdomain.com
 ```
 
-### Multiple Origins
-
-To allow multiple origins, update `next.config.js`:
-
-```javascript
-const allowedOrigins = [
-  'https://yourdomain.com',
-  'https://app.yourdomain.com',
-];
-
-async headers() {
-  return [
-    {
-      source: '/api/:path*',
-      headers: [
-        {
-          key: 'Access-Control-Allow-Origin',
-          value: allowedOrigins.join(','),
-        },
-        // ... other headers
-      ],
-    },
-  ];
-}
-```
-
 ## Testing
 
 ### Run Middleware Tests
@@ -324,13 +299,13 @@ yarn test:api
 **Test public route:**
 
 ```bash
-curl http://localhost:3000/api/health
+curl http://localhost:4321/api/health
 ```
 
 **Test protected route (should fail):**
 
 ```bash
-curl http://localhost:3000/api/protected/example
+curl http://localhost:4321/api/protected/example
 # Expected: 401 Unauthorized
 ```
 
@@ -338,14 +313,14 @@ curl http://localhost:3000/api/protected/example
 
 ```bash
 curl -H "Authorization: Bearer YOUR_JWT_TOKEN" \
-  http://localhost:3000/api/protected/example
+  http://localhost:4321/api/protected/example
 ```
 
 **Test rate limiting:**
 
 ```bash
 for i in {1..15}; do
-  curl http://localhost:3000/api/health
+  curl http://localhost:4321/api/health
   echo "Request $i"
 done
 # Expected: Some requests return 429 after hitting limit
@@ -369,7 +344,7 @@ done
 
 1. Verify token is in `Authorization: Bearer <token>` format
 2. Check token hasn't expired (Supabase JWTs expire after 1 hour)
-3. Ensure `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY` are set
+3. Ensure `PUBLIC_SUPABASE_URL` and `PUBLIC_SUPABASE_ANON_KEY` are set
 
 ### CORS Errors in Browser
 
@@ -378,7 +353,7 @@ done
 **Solution**:
 
 1. Check `ALLOWED_ORIGIN` matches your frontend domain
-2. Ensure preflight OPTIONS requests are handled (automatic in Next.js)
+2. Ensure preflight OPTIONS requests are handled (automatic in Astro)
 3. Verify request includes correct `Origin` header
 
 ### Missing User Profile
@@ -390,17 +365,6 @@ done
 1. Verify user has a profile in `profiles` table
 2. Check `SUPABASE_SERVICE_ROLE_KEY` is set correctly
 3. Ensure Row Level Security (RLS) policies allow service role access
-
-### Middleware Not Running
-
-**Problem**: Security headers missing from responses.
-
-**Solution**:
-
-1. Verify `middleware.ts` is at project root (not in `src/`)
-2. Check `config.matcher` matches your routes
-3. Ensure route is under `/api/*` path
-4. Restart dev server after creating middleware
 
 ## Performance
 
@@ -431,7 +395,7 @@ Total middleware overhead: **6-70ms** per request.
 
 ### Never Commit Secrets
 
-Always use `.env.local` for development and environment variables in production:
+Always use `.env.api` for development and environment variables in production:
 
 ```bash
 # ❌ Bad
@@ -466,40 +430,34 @@ const bodySchema = z.object({
   email: z.string().email(),
 });
 
-export async function POST(req: NextRequest) {
+export const POST: APIRoute = async req => {
   const user = await getAuthenticatedUser(req);
-  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  if (!user) return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401 });
 
   const body = await req.json();
   const result = bodySchema.safeParse(body);
 
   if (!result.success) {
-    return NextResponse.json({ error: result.error }, { status: 400 });
+    return new Response(JSON.stringify({ error: result.error }), { status: 400 });
   }
 
   // Proceed with validated data
-}
+};
 ```
 
 ## FAQ
 
-### Can I use this with Vercel Edge Functions?
+### Can I use this with other platforms?
 
-Yes, the middleware is compatible with both Cloudflare Workers and Vercel Edge Runtime.
+Yes, the middleware is compatible with both Cloudflare Workers and other edge runtime platforms.
 
 ### Does this work with API routes outside `/api`?
 
-Yes, update the `matcher` in `middleware.ts`:
-
-```typescript
-export const config = {
-  matcher: ['/api/:path*', '/trpc/:path*'], // Add custom paths
-};
-```
+Yes, update the `PUBLIC_API_ROUTES` in `shared/config/security.ts` to include your custom paths.
 
 ### Can I disable rate limiting for specific routes?
 
-Yes, add routes to a `NO_RATE_LIMIT_ROUTES` array and skip rate limiting:
+Yes, add routes to a custom `NO_RATE_LIMIT_ROUTES` array and skip rate limiting:
 
 ```typescript
 const NO_RATE_LIMIT_ROUTES = ['/api/webhooks/stripe'];
@@ -509,33 +467,7 @@ if (NO_RATE_LIMIT_ROUTES.includes(pathname)) {
 }
 ```
 
-### How do I test with different users?
-
-Generate test tokens using Supabase's `signInWithPassword()` in your test setup:
-
-```typescript
-import { createClient } from '@supabase/supabase-js';
-
-const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-
-const { data, error } = await supabase.auth.signInWithPassword({
-  email: 'test@example.com',
-  password: 'password123',
-});
-
-const token = data.session?.access_token;
-```
-
 ## Additional Resources
 
-- [Next.js Middleware Docs](https://nextjs.org/docs/app/building-your-application/routing/middleware)
 - [Supabase Auth Docs](https://supabase.com/docs/guides/auth)
 - [OWASP Security Headers](https://owasp.org/www-project-secure-headers/)
-
-## Support
-
-For issues or questions:
-
-1. Check the [troubleshooting section](#troubleshooting)
-2. Review integration tests in `tests/api/middleware.spec.ts`
-3. Consult the PRD at `docs/PRDs/api-middleware-prd.md`

@@ -19,7 +19,7 @@ This guide will walk you through setting up Supabase for authentication, databas
 
 Supabase provides:
 
-- **Authentication** - Email/password, OAuth providers (Google, GitHub)
+- **Authentication** - Email/password, OAuth providers (Google, Azure)
 - **PostgreSQL Database** - Fully managed, scalable database
 - **Row Level Security** - Fine-grained access control at the database level
 - **Real-time Subscriptions** - Live data updates (optional)
@@ -28,7 +28,7 @@ Supabase provides:
 ### Architecture
 
 ```
-Frontend (Next.js)
+Frontend (Astro)
     ↓
 Supabase Client (@supabase/ssr)
     ↓
@@ -50,7 +50,7 @@ API Routes (Service Role Key)
 1. Go to [Supabase Dashboard](https://supabase.com/dashboard)
 2. Click **New Project**
 3. Fill in:
-   - **Name**: Your project name (e.g., `myimageupscaler.com`)
+   - **Name**: Your project name (e.g., `AutopilotRank`)
    - **Database Password**: Generate a strong password (save it!)
    - **Region**: Choose closest to your users
 4. Click **Create new project**
@@ -95,13 +95,9 @@ See the detailed [Google OAuth Setup Guide](./google-oauth-setup.md) for step-by
 - Configuring OAuth consent screen
 - Setting up credentials
 
-#### GitHub OAuth (Optional)
+#### Azure AD (Optional)
 
-See the detailed [GitHub OAuth Setup Guide](./github-oauth-setup.md) for step-by-step instructions including:
-
-- Creating a GitHub OAuth App
-- Configuring callback URLs
-- Handling private emails
+Configure Azure Active Directory for enterprise authentication.
 
 ### Step 2: Configure URL Settings
 
@@ -109,8 +105,8 @@ Go to [**Authentication → URL Configuration**](https://supabase.com/dashboard/
 
 | Setting       | Development                | Production                  |
 | ------------- | -------------------------- | --------------------------- |
-| Site URL      | `http://localhost:3000`    | `https://yourdomain.com`    |
-| Redirect URLs | `http://localhost:3000/**` | `https://yourdomain.com/**` |
+| Site URL      | `http://localhost:4321`    | `https://yourdomain.com`    |
+| Redirect URLs | `http://localhost:4321/**` | `https://yourdomain.com/**` |
 
 > **Tip:** Use wildcard `/**` to allow any path on these domains. The globstar (`**`) matches any sequence of characters including path separators.
 
@@ -135,30 +131,23 @@ Use the setup script to apply all migrations:
 
 ```bash
 # Run the setup script
-./scripts/setup-supabase.sh
+yarn setup:db
 
 # Or generate SQL for manual execution
-./scripts/setup-supabase.sh --manual
+yarn setup:db:manual
 ```
-
-Script options:
-| Flag | Description |
-|------|-------------|
-| `--manual` | Generate combined SQL file for Supabase Dashboard |
-| `--dry-run` | Preview what would be executed |
-| `--skip-verify` | Skip verification checklist |
 
 ### Option 2: Manual Dashboard Setup
 
 1. Go to [Supabase Dashboard](https://supabase.com/dashboard) → **SQL Editor**
 2. Run migrations in order from `supabase/migrations/`:
-   - `20250120_create_profiles_table.sql`
-   - `20250120_create_subscriptions_table.sql`
-   - `20250121_create_credit_transactions_table.sql`
-   - `20250121_create_processing_jobs_table.sql`
-   - `20250120_create_rpc_functions.sql`
-   - `20250121_enhanced_credit_functions.sql`
-   - `20250121_fix_initial_credits.sql`
+   - `20250120000000_create_profiles_table.sql`
+   - `20250120100000_create_subscriptions_table.sql`
+   - `20250121000000_create_credit_transactions_table.sql`
+   - `20250121010000_create_processing_jobs_table.sql`
+   - `20250120200000_create_rpc_functions.sql`
+   - `20250121020000_enhanced_credit_functions.sql`
+   - `20250121030000_fix_initial_credits.sql`
 
 ### What Gets Created
 
@@ -191,19 +180,19 @@ Expected tables: `credit_transactions`, `processing_jobs`, `profiles`, `subscrip
 
 Create two environment files:
 
-**`.env`** - Public variables:
+**`.env.client`** - Public variables:
 
 ```bash
 # Supabase - Get from: Supabase Dashboard > Settings > API
-NEXT_PUBLIC_SUPABASE_URL=https://xxxxx.supabase.co
-NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+PUBLIC_SUPABASE_URL=https://xxxxx.supabase.co
+PUBLIC_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 
 # App
-NEXT_PUBLIC_BASE_URL=http://localhost:3000
-NEXT_PUBLIC_APP_NAME=MyImageUpscaler
+PUBLIC_BASE_URL=http://localhost:4321
+PUBLIC_APP_NAME=AutopilotRank
 ```
 
-**`.env.prod`** - Server-side secrets (NEVER commit):
+**`.env.api`** - Server-side secrets (NEVER commit):
 
 ```bash
 # Supabase - Get from: Supabase Dashboard > Settings > API
@@ -218,19 +207,19 @@ SUPABASE_SERVICE_ROLE_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 3. Navigate to [**Settings → API**](https://supabase.com/dashboard/project/_/settings/api)
 4. Copy the values:
 
-| Dashboard Field | Environment Variable            |
-| --------------- | ------------------------------- |
-| Project URL     | `NEXT_PUBLIC_SUPABASE_URL`      |
-| anon public     | `NEXT_PUBLIC_SUPABASE_ANON_KEY` |
-| service_role    | `SUPABASE_SERVICE_ROLE_KEY`     |
+| Dashboard Field | Environment Variable        |
+| --------------- | --------------------------- |
+| Project URL     | `PUBLIC_SUPABASE_URL`       |
+| anon public     | `PUBLIC_SUPABASE_ANON_KEY`  |
+| service_role    | `SUPABASE_SERVICE_ROLE_KEY` |
 
 ### Security Notes
 
-| Variable                        | Exposure        | Usage                                |
-| ------------------------------- | --------------- | ------------------------------------ |
-| `NEXT_PUBLIC_SUPABASE_URL`      | Public (client) | Used in browser                      |
-| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Public (client) | Used in browser, respects RLS        |
-| `SUPABASE_SERVICE_ROLE_KEY`     | Server ONLY     | Bypasses RLS, use in API routes only |
+| Variable                    | Exposure        | Usage                                |
+| --------------------------- | --------------- | ------------------------------------ |
+| `PUBLIC_SUPABASE_URL`       | Public (client) | Used in browser                      |
+| `PUBLIC_SUPABASE_ANON_KEY`  | Public (client) | Used in browser, respects RLS        |
+| `SUPABASE_SERVICE_ROLE_KEY` | Server ONLY     | Bypasses RLS, use in API routes only |
 
 ## Row Level Security (RLS)
 
@@ -287,7 +276,7 @@ const supabaseAdmin = createClient(url, serviceRoleKey);
    yarn dev
    ```
 
-2. Navigate to `http://localhost:3000`
+2. Navigate to `http://localhost:4321`
 
 3. Click "Sign In" and test:
    - Email/password signup
@@ -306,18 +295,18 @@ SELECT * FROM profiles LIMIT 5;
 SELECT * FROM profiles;
 
 -- Test RPC function
-SELECT add_credits('user-uuid-here', 100, 'test', 'test-ref', 'Test credits');
+SELECT increment_credits('user-uuid-here', 100, 'test', 'test-ref', 'Test credits');
 ```
 
 ### Test API Routes
 
 ```bash
 # Health check
-curl http://localhost:3000/api/health
+curl http://localhost:4321/api/health
 
 # Billing info (requires auth)
 curl -H "Authorization: Bearer YOUR_ACCESS_TOKEN" \
-  http://localhost:3000/api/billing
+  http://localhost:4321/api/billing
 ```
 
 ### E2E Tests
@@ -325,7 +314,7 @@ curl -H "Authorization: Bearer YOUR_ACCESS_TOKEN" \
 Billing E2E tests require the service role key:
 
 ```bash
-# Ensure .env.prod has SUPABASE_SERVICE_ROLE_KEY
+# Ensure .env.api has SUPABASE_SERVICE_ROLE_KEY
 yarn test:e2e
 ```
 
@@ -340,11 +329,11 @@ Set environment variables in Cloudflare Dashboard:
 1. Go to **Workers & Pages** → Your Project → **Settings** → **Environment Variables**
 2. Add:
 
-| Variable                        | Type       |
-| ------------------------------- | ---------- |
-| `NEXT_PUBLIC_SUPABASE_URL`      | Plain text |
-| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Plain text |
-| `SUPABASE_SERVICE_ROLE_KEY`     | Encrypted  |
+| Variable                    | Type       |
+| --------------------------- | ---------- |
+| `PUBLIC_SUPABASE_URL`       | Plain text |
+| `PUBLIC_SUPABASE_ANON_KEY`  | Plain text |
+| `SUPABASE_SERVICE_ROLE_KEY` | Encrypted  |
 
 ### Production Checklist
 
@@ -367,8 +356,8 @@ Set environment variables in Cloudflare Dashboard:
 
 ### "Invalid API key"
 
-- Verify `NEXT_PUBLIC_SUPABASE_URL` is correct
-- Check `NEXT_PUBLIC_SUPABASE_ANON_KEY` is the anon key (not service role)
+- Verify `PUBLIC_SUPABASE_URL` is correct
+- Check `PUBLIC_SUPABASE_ANON_KEY` is the anon key (not service role)
 - Ensure no extra whitespace in environment variables
 
 ### "User not found" / Profile not created
@@ -394,7 +383,7 @@ Set environment variables in Cloudflare Dashboard:
 ### Service Role Key Not Working
 
 - Ensure you copied the `service_role` key (not anon)
-- Check it's in `.env.prod` (not `.env`)
+- Check it's in `.env.api` (not `.env.client`)
 - Verify the key hasn't been rotated in Supabase Dashboard
 
 ## Security Best Practices
@@ -429,13 +418,6 @@ Supabase now offers two API key systems. The new **publishable** and **secret** 
 | **Security**    | All keys tied to single JWT secret       | Independent key management      |
 | **Revocation**  | Requires careful coordination            | Instant, reversible revocation  |
 
-### Key Differences
-
-1. **Independent Rotation** - Secret keys can be rotated without affecting publishable keys
-2. **Browser Protection** - Secret keys automatically reject browser requests (401 Unauthorized)
-3. **Multiple Secret Keys** - Create separate secret keys for different backend components
-4. **No JWT Secret Exposure** - Private keys cannot be extracted from Supabase
-
 ### Migration Steps
 
 1. Go to [**Settings → API**](https://supabase.com/dashboard/project/_/settings/api) in the Supabase Dashboard
@@ -443,11 +425,11 @@ Supabase now offers two API key systems. The new **publishable** and **secret** 
 3. Update your environment variables:
 
 ```bash
-# .env (public)
-NEXT_PUBLIC_SUPABASE_URL=https://xxxxx.supabase.co
-NEXT_PUBLIC_SUPABASE_ANON_KEY=sb_publishable_xxx  # New format
+# .env.client (public)
+PUBLIC_SUPABASE_URL=https://xxxxx.supabase.co
+PUBLIC_SUPABASE_ANON_KEY=sb_publishable_xxx  # New format
 
-# .env.prod (server-side)
+# .env.api (server-side)
 SUPABASE_SERVICE_ROLE_KEY=sb_secret_xxx  # New format
 ```
 
@@ -481,14 +463,7 @@ const {
 - **Edge Functions**: Currently only support JWT verification via legacy keys. Use `--no-verify-jwt` flag with new keys and implement your own verification
 - **CLI/Self-hosting**: Publishable and secret keys are only available on the hosted platform
 
-### Resources
+## Additional Resources
 
-- [Understanding API Keys](https://supabase.com/docs/guides/api/api-keys)
-- [JWT Signing Keys](https://supabase.com/docs/guides/auth/signing-keys)
-- [Migration Guide (Nuxt)](https://supabase.nuxtjs.org/getting-started/migration)
-
-## Support
-
-- **Supabase Docs**: https://supabase.com/docs
-- **Supabase Discord**: https://discord.supabase.com
-- **GitHub Issues**: Report project-specific issues
+- [Supabase Docs](https://supabase.com/docs)
+- [Supabase Discord](https://discord.supabase.com)

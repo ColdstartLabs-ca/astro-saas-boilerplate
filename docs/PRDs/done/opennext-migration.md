@@ -234,7 +234,7 @@ export default defineCloudflareConfig({
 ```jsonc
 {
   "$schema": "node_modules/wrangler/config-schema.json",
-  "name": "myimageupscaler.com",
+  "name": "autopilotrank.com",
   "main": ".open-next/worker.js",
   "compatibility_date": "2024-12-30",
   "compatibility_flags": ["nodejs_compat"],
@@ -259,7 +259,7 @@ export default defineCloudflareConfig({
   "services": [
     {
       "binding": "WORKER_SELF_REFERENCE",
-      "service": "myimageupscaler.com",
+      "service": "autopilotrank.com",
     },
   ],
 }

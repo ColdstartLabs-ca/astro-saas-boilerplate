@@ -6,12 +6,12 @@
 
 ### 1.1 Files Analyzed
 
-- `/home/joao/projects/myimageupscaler.com/package.json` - Current dependencies
-- `/home/joao/projects/myimageupscaler.com/app/api/health/route.ts` - API route structure reference
-- `/home/joao/projects/myimageupscaler.com/next.config.js` - Next.js configuration
-- `/home/joano/projects/myimageupscaler.com/wrangler.toml` - Cloudflare Workers config
-- `/home/joao/projects/myimageupscaler.com/docs/PRDs/cloudflare-migration-prd.md` - Deployment constraints
-- `/home/joao/projects/myimageupscaler.com/src/lib/supabase/*` - Existing auth utilities
+- `/home/joao/projects/autopilotrank.com/package.json` - Current dependencies
+- `/home/joao/projects/autopilotrank.com/src/pages/api/health/route.ts` - API route structure reference
+- `/home/joao/projects/autopilotrank.com/next.config.js` - Next.js configuration
+- `/home/joano/projects/autopilotrank.com/wrangler.toml` - Cloudflare Workers config
+- `/home/joao/projects/autopilotrank.com/docs/PRDs/cloudflare-migration-prd.md` - Deployment constraints
+- `/home/joao/projects/autopilotrank.com/src/lib/supabase/*` - Existing auth utilities
 
 ### 1.2 Component & Dependency Overview
 

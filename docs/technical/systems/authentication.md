@@ -10,6 +10,7 @@ graph TD
         EMAIL[Email/Password]
         GOOGLE[Google OAuth]
         AZURE[Azure OAuth]
+        FACEBOOK[Facebook OAuth<br/><i>Code exists, not integrated</i>]
     end
 
     subgraph "Supabase Auth"
@@ -27,6 +28,7 @@ graph TD
     EMAIL --> AUTH_SVC
     GOOGLE --> AUTH_SVC
     AZURE --> AUTH_SVC
+    FACEBOOK -.->|Not wired| AUTH_SVC
 
     AUTH_SVC --> JWT
     AUTH_SVC --> REFRESH
@@ -34,6 +36,8 @@ graph TD
     JWT --> MW
     JWT --> CLIENT
     JWT --> API
+
+    style FACEBOOK stroke-dasharray: 5 5
 ```
 
 ## Authentication Methods
@@ -51,7 +55,9 @@ graph TD
 - **Redirect URI**: `/auth/callback`
 - **Scopes**: `email profile`
 - **Hook**: `useGoogleSignIn()` in `/client/hooks/useGoogleSignIn.ts`
+- **Component**: `GoogleSignInButton` in `/client/components/form/GoogleSignInButton.tsx`
 - **Environment Toggle**: `PUBLIC_ENABLE_GOOGLE_OAUTH` (default: `true`)
+- **Status**: **Fully implemented and enabled by default**
 
 ```typescript
 // Client-side usage
@@ -65,13 +71,31 @@ await signIn(returnTo); // Optional return URL after auth
 - **Redirect URI**: `/auth/callback`
 - **Scopes**: `email openid profile User.Read`
 - **Hook**: `useAzureSignIn()` in `/client/hooks/useAzureSignIn.ts`
+- **Component**: `AzureSignInButton` in `/client/components/form/AzureSignInButton.tsx`
 - **Environment Toggle**: `PUBLIC_ENABLE_AZURE_OAUTH` (default: `false`)
+- **Status**: **Fully implemented, disabled by default**
+- **Setup Guide**: `/docs/authentication/azure-oauth-setup.md`
 
 ```typescript
 // Client-side usage
 const { signIn, loading } = useAzureSignIn();
 await signIn();
 ```
+
+### 4. Facebook OAuth (Partially Implemented)
+
+- **Provider**: `facebook`
+- **Hook**: `useFacebookSignIn()` in `/client/hooks/useFacebookSignIn.ts`
+- **Component**: `FacebookSignInButton` in `/client/components/form/FacebookSignInButton.tsx`
+- **Environment Variable**: `PUBLIC_FACEBOOK_CLIENT_ID` exists but no enable toggle
+- **Status**: **NOT INTEGRATED** - Code exists but not wired into `SocialLoginButton`
+- **Setup Guide**: `/docs/authentication/facebook-oauth-setup.md` (includes integration steps)
+
+To enable Facebook OAuth, additional integration work is required:
+
+1. Add `PUBLIC_ENABLE_FACEBOOK_OAUTH` toggle to `shared/config/env.ts`
+2. Integrate into `SocialLoginButton.tsx`
+3. Configure Supabase with Facebook app credentials
 
 ## Client-Side Implementation
 
@@ -322,8 +346,11 @@ Managed by Supabase SSR client:
 
 - `PUBLIC_SUPABASE_URL` - Supabase project URL
 - `PUBLIC_SUPABASE_ANON_KEY` - Supabase anonymous key
-- `PUBLIC_ENABLE_GOOGLE_OAUTH` - Enable Google OAuth
-- `PUBLIC_ENABLE_AZURE_OAUTH` - Enable Azure OAuth
+- `PUBLIC_GOOGLE_CLIENT_ID` - Google OAuth client ID
+- `PUBLIC_FACEBOOK_CLIENT_ID` - Facebook App ID (not yet integrated)
+- `PUBLIC_AZURE_CLIENT_ID` - Azure Application (client) ID
+- `PUBLIC_ENABLE_GOOGLE_OAUTH` - Enable Google OAuth (default: `true`)
+- `PUBLIC_ENABLE_AZURE_OAUTH` - Enable Azure OAuth (default: `false`)
 
 ### Server-Side (Secret)
 

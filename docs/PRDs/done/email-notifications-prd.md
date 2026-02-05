@@ -179,7 +179,7 @@ sequenceDiagram
 ```typescript
 // Add to serverEnvSchema
 RESEND_API_KEY: z.string().default(''),
-EMAIL_FROM_ADDRESS: z.string().email().default('noreply@myimageupscaler.com'),
+EMAIL_FROM_ADDRESS: z.string().email().default('noreply@autopilotrank.com'),
 ```
 
 **Justification:** Follows project pattern of centralized env config with Zod validation.
@@ -323,7 +323,7 @@ export class EmailService {
 
   private getSubject(template: string, data: Record<string, unknown>): string {
     const subjects: Record<string, string | ((data: Record<string, unknown>) => string)> = {
-      welcome: 'Welcome to MyImageUpscaler!',
+      welcome: 'Welcome to AutopilotRank!',
       'payment-success': d => `Payment confirmed - ${d.amount || 'Receipt'}`,
       'subscription-update': 'Your subscription has been updated',
       'low-credits': 'Running low on credits',
@@ -331,9 +331,7 @@ export class EmailService {
     };
 
     const subject = subjects[template];
-    return typeof subject === 'function'
-      ? subject(data)
-      : subject || 'MyImageUpscaler Notification';
+    return typeof subject === 'function' ? subject(data) : subject || 'AutopilotRank Notification';
   }
 
   private async logEmail(params: {
@@ -584,7 +582,7 @@ export default function PaymentSuccessEmail({
       <Body style={main}>
         <Container style={container}>
           <Section style={header}>
-            <Text style={logo}>MyImageUpscaler</Text>
+            <Text style={logo}>AutopilotRank</Text>
           </Section>
 
           <Section style={content}>
@@ -607,10 +605,10 @@ export default function PaymentSuccessEmail({
 
           <Section style={footer}>
             <Text style={footerText}>
-              Questions? Reply to this email or contact support@myimageupscaler.com
+              Questions? Reply to this email or contact support@autopilotrank.com
             </Text>
             <Text style={footerText}>
-              &copy; {new Date().getFullYear()} MyImageUpscaler. All rights reserved.
+              &copy; {new Date().getFullYear()} AutopilotRank. All rights reserved.
             </Text>
           </Section>
         </Container>

@@ -4,14 +4,14 @@
 
 ### 1.1 Files Analyzed
 
-- `/home/joao/projects/myimageupscaler.com/middleware.ts` - Current API-only middleware
-- `/home/joao/projects/myimageupscaler.com/src/store/authStore.ts` - Client-side Zustand auth store
-- `/home/joao/projects/myimageupscaler.com/src/lib/supabase/supabaseClient.ts` - Existing browser Supabase client
-- `/home/joao/projects/myimageupscaler.com/src/components/pages/HomePageClient.tsx` - Landing page with broken redirect
-- `/home/joao/projects/myimageupscaler.com/src/components/navigation/NavBar.tsx` - NavBar with loading state
-- `/home/joao/projects/myimageupscaler.com/app/page.tsx` - Next.js landing page entry
-- `/home/joao/projects/myimageupscaler.com/app/dashboard/page.tsx` - Dashboard page
-- `/home/joao/projects/myimageupscaler.com/package.json` - Dependencies
+- `/home/joao/projects/autopilotrank.com/middleware.ts` - Current API-only middleware
+- `/home/joao/projects/autopilotrank.com/src/store/authStore.ts` - Client-side Zustand auth store
+- `/home/joao/projects/autopilotrank.com/src/lib/supabase/supabaseClient.ts` - Existing browser Supabase client
+- `/home/joao/projects/autopilotrank.com/src/components/pages/HomePageClient.tsx` - Landing page with broken redirect
+- `/home/joao/projects/autopilotrank.com/src/components/navigation/NavBar.tsx` - NavBar with loading state
+- `/home/joao/projects/autopilotrank.com/src/pages/page.tsx` - Next.js landing page entry
+- `/home/joao/projects/autopilotrank.com/src/pages/dashboard/page.tsx` - Dashboard page
+- `/home/joao/projects/autopilotrank.com/package.json` - Dependencies
 
 ### 1.2 Component & Dependency Overview
 

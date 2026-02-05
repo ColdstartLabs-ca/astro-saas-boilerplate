@@ -4,6 +4,8 @@
 
 This document provides comprehensive instructions for building the AutopilotRank landing page based on competitor research, value proposition analysis, and customer segment priorities.
 
+> **STATUS:** This document describes the **target pricing** ($49/$99/$249) for the AutopilotRank AI SEO product. The current codebase still contains boilerplate pricing which will be replaced during Milestone 1 of the roadmap.
+
 **Target Launch:** MVP landing page for early adopters
 **Primary Audience:** SMB Owners (#1) and Content Site Owners (#2)
 **Secondary Audience:** Digital Marketing Agencies (#3)
@@ -266,11 +268,11 @@ Keywords → Content → Optimize → Publish → Track
 
 **Pricing Cards (3-tier):**
 
-| Plan        | Price   | Best For             | Key Features                                                       |
-| ----------- | ------- | -------------------- | ------------------------------------------------------------------ |
-| **Starter** | $49/mo  | Solopreneurs         | 30 articles/mo, 1 site, WordPress                                |
-| **Growth**  | $99/mo  | SMBs & Content Sites | 100 articles/mo, 3 sites, All integrations                       |
-| **Agency**  | $249/mo | Agencies             | 500 articles/mo, Unlimited sites, White-label, Priority support  |
+| Plan        | Price   | Best For             | Key Features                                                    |
+| ----------- | ------- | -------------------- | --------------------------------------------------------------- |
+| **Starter** | $49/mo  | Solopreneurs         | 30 articles/mo, 1 site, WordPress                               |
+| **Growth**  | $99/mo  | SMBs & Content Sites | 100 articles/mo, 3 sites, All integrations                      |
+| **Agency**  | $249/mo | Agencies             | 500 articles/mo, Unlimited sites, White-label, Priority support |
 
 **All plans include:**
 

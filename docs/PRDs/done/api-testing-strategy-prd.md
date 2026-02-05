@@ -6,14 +6,14 @@
 
 ### 1.1 Files Analyzed
 
-- `/home/joao/projects/myimageupscaler.com/playwright.config.ts`
-- `/home/joao/projects/myimageupscaler.com/package.json`
-- `/home/joao/projects/myimageupscaler.com/app/api/health/route.ts`
-- `/home/joao/projects/myimageupscaler.com/app/api/checkout/route.ts`
-- `/home/joao/projects/myimageupscaler.com/app/api/webhooks/stripe/route.ts`
-- `/home/joao/projects/myimageupscaler.com/tests/e2e/auth.spec.ts`
-- `/home/joao/projects/myimageupscaler.com/docs/PRDs/cloudflare-migration-prd.md`
-- `/home/joao/projects/myimageupscaler.com/docs/PRDs/stripe-implementation-prd.md`
+- `/home/joao/projects/autopilotrank.com/playwright.config.ts`
+- `/home/joao/projects/autopilotrank.com/package.json`
+- `/home/joao/projects/autopilotrank.com/src/pages/api/health/route.ts`
+- `/home/joao/projects/autopilotrank.com/src/pages/api/checkout/route.ts`
+- `/home/joao/projects/autopilotrank.com/src/pages/api/webhooks/stripe/route.ts`
+- `/home/joao/projects/autopilotrank.com/tests/e2e/auth.spec.ts`
+- `/home/joao/projects/autopilotrank.com/docs/PRDs/cloudflare-migration-prd.md`
+- `/home/joao/projects/autopilotrank.com/docs/PRDs/stripe-implementation-prd.md`
 
 ### 1.2 Component & Dependency Overview
 
@@ -591,7 +591,7 @@ Add Vitest if/when:
 
 ```typescript
 import { describe, test, expect, vi } from 'vitest';
-import { createCheckoutSession } from '@/app/api/checkout/logic';
+import { createCheckoutSession } from '@/src/pages/api/checkout/logic';
 
 describe('createCheckoutSession', () => {
   test('should create session with correct parameters', async () => {

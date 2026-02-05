@@ -12,18 +12,18 @@
 ### 1.1 Files Analyzed
 
 ```
-/home/joao/projects/myimageupscaler.com/app/api/checkout/route.ts
-/home/joao/projects/myimageupscaler.com/app/api/portal/route.ts
-/home/joao/projects/myimageupscaler.com/app/api/webhooks/stripe/route.ts
-/home/joao/projects/myimageupscaler.com/app/pricing/page.tsx
-/home/joao/projects/myimageupscaler.com/app/dashboard/billing/page.tsx
-/home/joao/projects/myimageupscaler.com/client/components/stripe/PricingCard.tsx
-/home/joao/projects/myimageupscaler.com/client/components/stripe/SubscriptionStatus.tsx
-/home/joao/projects/myimageupscaler.com/client/services/stripeService.ts
-/home/joao/projects/myimageupscaler.com/server/stripe/stripeService.ts
-/home/joao/projects/myimageupscaler.com/shared/config/stripe.ts
-/home/joao/projects/myimageupscaler.com/supabase/migrations/20250120_create_subscriptions_table.sql
-/home/joao/projects/myimageupscaler.com/docs/technical/systems/subscription-gaps.md
+/home/joao/projects/autopilotrank.com/src/pages/api/checkout/route.ts
+/home/joao/projects/autopilotrank.com/src/pages/api/portal/route.ts
+/home/joao/projects/autopilotrank.com/src/pages/api/webhooks/stripe/route.ts
+/home/joao/projects/autopilotrank.com/src/pages/pricing/page.tsx
+/home/joao/projects/autopilotrank.com/src/pages/dashboard/billing/page.tsx
+/home/joao/projects/autopilotrank.com/src/components/stripe/PricingCard.tsx
+/home/joao/projects/autopilotrank.com/src/components/stripe/SubscriptionStatus.tsx
+/home/joao/projects/autopilotrank.com/src/services/stripeService.ts
+/home/joao/projects/autopilotrank.com/server/stripe/stripeService.ts
+/home/joao/projects/autopilotrank.com/shared/config/stripe.ts
+/home/joao/projects/autopilotrank.com/supabase/migrations/20250120_create_subscriptions_table.sql
+/home/joao/projects/autopilotrank.com/docs/technical/systems/subscription-gaps.md
 ```
 
 ### 1.2 Component & Dependency Overview

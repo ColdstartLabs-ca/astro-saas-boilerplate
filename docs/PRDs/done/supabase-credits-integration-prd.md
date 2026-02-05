@@ -663,7 +663,7 @@ $$;
 # ============================================================================
 # Supabase Complete Setup Script
 # ============================================================================
-# This script sets up all Supabase infrastructure for myimageupscaler.com
+# This script sets up all Supabase infrastructure for autopilotrank.com
 #
 # Usage:
 #   ./scripts/setup-supabase.sh [options]

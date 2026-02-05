@@ -246,7 +246,7 @@ import type { IUserProfile, ISubscription } from '@shared/types/stripe';
 import type { AuthChangeEvent, Session } from '@supabase/supabase-js';
 
 // Cache keys
-const USER_CACHE_KEY = 'myimageupscaler.com_user_cache';
+const USER_CACHE_KEY = 'autopilotrank.com_user_cache';
 const CACHE_VERSION = 1;
 const CACHE_MAX_AGE = 5 * 60 * 1000; // 5 minutes
 

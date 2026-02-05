@@ -4,6 +4,8 @@
 
 AutopilotRank generates revenue through a SaaS subscription model with tiered pricing based on usage (articles generated) and features. This document outlines all revenue streams, pricing strategy, and monetization approach.
 
+> **STATUS:** This document describes the **target pricing** for the AutopilotRank AI SEO product. The current codebase still contains boilerplate pricing ($9/$19/$49/$149) which will be replaced during Milestone 1 of the roadmap. See `docs/technical/systems/billing.md` for current implementation details.
+
 ---
 
 ## Primary Revenue Streams
@@ -14,45 +16,50 @@ The core revenue driver - recurring subscriptions for platform access.
 
 #### Competitive Pricing Landscape (Feb 2026)
 
-| Competitor | Lowest Tier | Articles | $/Article | Free Tier |
-|---|---|---|---|---|
-| Outrank.so | $99/mo | ~30/mo (1/day) | $3.30 | No (7-day trial) |
-| RankYak | $99/mo | ~30/mo (1/day) | $3.30 | No (3-day trial) |
-| Byword.ai | $99/mo (or $5 PAYG) | 25/mo | $3.96 | No (5 free articles) |
-| SEO.ai | $149/mo | Unspecified (1 site) | — | No (free SEO utilities only) |
-| Journalist AI | $39-69/mo | ~100/mo | $0.39-0.69 | No (3 free articles) |
-| Article Forge | $27/mo | ~16/mo (25K words) | $1.69 | No (5-day trial) |
-| ContentMonk | $49/mo | 5/mo | $9.80 | Basic (14-day Pro trial) |
+| Competitor    | Lowest Tier         | Articles             | $/Article  | Free Tier                    |
+| ------------- | ------------------- | -------------------- | ---------- | ---------------------------- |
+| Outrank.so    | $99/mo              | ~30/mo (1/day)       | $3.30      | No (7-day trial)             |
+| RankYak       | $99/mo              | ~30/mo (1/day)       | $3.30      | No (3-day trial)             |
+| Byword.ai     | $99/mo (or $5 PAYG) | 25/mo                | $3.96      | No (5 free articles)         |
+| SEO.ai        | $149/mo             | Unspecified (1 site) | —          | No (free SEO utilities only) |
+| Journalist AI | $39-69/mo           | ~100/mo              | $0.39-0.69 | No (3 free articles)         |
+| Article Forge | $27/mo              | ~16/mo (25K words)   | $1.69      | No (5-day trial)             |
+| ContentMonk   | $49/mo              | 5/mo                 | $9.80      | Basic (14-day Pro trial)     |
 
 **Key insight:** No serious competitor offers a permanent free tier. The market standard is a short trial (3-7 days) or a handful of free articles to try (3-5). $99/mo for ~30 articles is the established price anchor for autopilot tools.
 
 #### Pricing Tiers
 
-| Tier | Price/Month | Price/Year | Articles/Month | $/Article | Target |
-|---|---|---|---|---|---|
-| **Trial** | $0 | - | 3 articles (one-time) | - | Try before buying |
-| **Starter** | $49/mo | $468 ($39/mo) | 30 articles | $1.63 | Outrank switchers, solopreneurs |
-| **Growth** | $99/mo | $948 ($79/mo) | 100 articles | $0.99 | SMBs, content sites (core tier) |
-| **Agency** | $249/mo | $2,388 ($199/mo) | 500 articles | $0.50 | Agencies, teams, multi-site |
-| **Enterprise** | Custom | Custom | Unlimited | Negotiated | Enterprise, high-volume |
+| Tier           | Price/Month | Price/Year       | Articles/Month        | $/Article  | Target                          |
+| -------------- | ----------- | ---------------- | --------------------- | ---------- | ------------------------------- |
+| **Trial**      | $0          | -                | 3 articles (one-time) | -          | Try before buying               |
+| **Starter**    | $49/mo      | $468 ($39/mo)    | 30 articles           | $1.63      | Outrank switchers, solopreneurs |
+| **Growth**     | $99/mo      | $948 ($79/mo)    | 100 articles          | $0.99      | SMBs, content sites (core tier) |
+| **Agency**     | $249/mo     | $2,388 ($199/mo) | 500 articles          | $0.50      | Agencies, teams, multi-site     |
+| **Enterprise** | Custom      | Custom           | Unlimited             | Negotiated | Enterprise, high-volume         |
 
 **Annual Discount**: ~20% (effectively "2 months free" messaging)
 
 #### How We Beat Every Competitor
 
 **vs. Outrank ($99/mo, 30 articles, generic quality):**
+
 > "Get the same daily article output for $49/mo — or 3x the articles for the same $99/mo. With content that actually sounds human."
 
 **vs. Byword ($99/mo, 25 articles, no humanizer):**
+
 > "4x the articles at the same price. Plus a humanizer engine that passes AI detection."
 
 **vs. RankYak ($99/mo, 30 articles, small team):**
+
 > "Same daily output at half the price. Or scale to 100 articles/mo for the same $99."
 
 **vs. Journalist AI ($39-69/mo, ~100 articles, no CMS autopilot):**
+
 > "Same volume, same price range, but with native WordPress autopublishing and pre-publication QA that they don't have."
 
 **vs. Agencies ($3,000-5,000/mo for content):**
+
 > "Replace a $3,000/mo agency with a $99/mo subscription. Same output. Better consistency."
 
 #### Tier Rationale
@@ -100,12 +107,12 @@ For customers who need occasional bursts beyond their plan.
 
 #### Overage Pricing
 
-| Tier       | Overage Rate  | Explanation                                          |
-| ---------- | ------------- | ---------------------------------------------------- |
+| Tier       | Overage Rate  | Explanation                                           |
+| ---------- | ------------- | ----------------------------------------------------- |
 | Starter    | $2.00/article | Premium to per-article base, nudges upgrade to Growth |
-| Growth     | $1.50/article | 50% above per-article base rate                      |
-| Agency     | $0.75/article | Volume discount on overage                           |
-| Enterprise | Custom        | Negotiated based on volume                           |
+| Growth     | $1.50/article | 50% above per-article base rate                       |
+| Agency     | $0.75/article | Volume discount on overage                            |
+| Enterprise | Custom        | Negotiated based on volume                            |
 
 **Rationale**:
 
@@ -249,31 +256,31 @@ Aggregate, anonymized data products for SEO industry.
 
 #### Customer Metrics
 
-| Metric                        | Value                                |
-| ----------------------------- | ------------------------------------ |
-| **Average ARPU**              | $120/month (blended)                 |
-| **ARPA (Starter)**            | $39/month (after annual discount)    |
-| **ARPA (Growth)**             | $79/month (after annual discount)    |
-| **ARPA (Agency)**             | $199/month (after annual discount)   |
-| **ARPA (Enterprise)**         | $2,000/month (average)               |
-| **Average Customer Lifetime** | 24 months                            |
+| Metric                        | Value                              |
+| ----------------------------- | ---------------------------------- |
+| **Average ARPU**              | $120/month (blended)               |
+| **ARPA (Starter)**            | $39/month (after annual discount)  |
+| **ARPA (Growth)**             | $79/month (after annual discount)  |
+| **ARPA (Agency)**             | $199/month (after annual discount) |
+| **ARPA (Enterprise)**         | $2,000/month (average)             |
+| **Average Customer Lifetime** | 24 months                          |
 
 #### Cost Per Article (AI Generation)
 
-| Component | Cost | Notes |
-|---|---|---|
-| LLM generation (outline + draft) | $0.05-0.15 | Via OpenRouter, model-dependent |
-| Humanizer pass | $0.02-0.05 | Second LLM call for rewriting |
-| SEO scoring | $0.01 | Lightweight analysis |
-| **Total per article** | **$0.08-0.21** | Average ~$0.15 |
+| Component                        | Cost           | Notes                           |
+| -------------------------------- | -------------- | ------------------------------- |
+| LLM generation (outline + draft) | $0.05-0.15     | Via OpenRouter, model-dependent |
+| Humanizer pass                   | $0.02-0.05     | Second LLM call for rewriting   |
+| SEO scoring                      | $0.01          | Lightweight analysis            |
+| **Total per article**            | **$0.08-0.21** | Average ~$0.15                  |
 
 #### Margin by Tier
 
-| Tier | Revenue | Cost (at avg $0.15/article) | Gross Margin |
-|---|---|---|---|
-| **Starter** (30 articles) | $49/mo | $4.50 | 91% |
-| **Growth** (100 articles) | $99/mo | $15.00 | 85% |
-| **Agency** (500 articles) | $249/mo | $75.00 | 70% |
+| Tier                      | Revenue | Cost (at avg $0.15/article) | Gross Margin |
+| ------------------------- | ------- | --------------------------- | ------------ |
+| **Starter** (30 articles) | $49/mo  | $4.50                       | 91%          |
+| **Growth** (100 articles) | $99/mo  | $15.00                      | 85%          |
+| **Agency** (500 articles) | $249/mo | $75.00                      | 70%          |
 
 #### Acquisition & Retention
 
@@ -289,13 +296,13 @@ Aggregate, anonymized data products for SEO industry.
 
 #### LTV Calculations
 
-| Segment                  | ARPU   | Lifetime | LTV     | LTV:CAC |
-| ------------------------ | ------ | -------- | ------- | ------- |
-| **Solopreneur (Starter)**| $39    | 15 mo    | $585    | 7.3:1   |
-| **SMB (Growth)**         | $79    | 18 mo    | $1,422  | 17.8:1  |
-| **Agency**               | $199   | 24 mo    | $4,776  | 15.9:1  |
-| **Enterprise**           | $2,000 | 36 mo    | $72,000 | 48:1    |
-| **Blended**              | $120   | 20 mo    | $2,400  | 12:1    |
+| Segment                   | ARPU   | Lifetime | LTV     | LTV:CAC |
+| ------------------------- | ------ | -------- | ------- | ------- |
+| **Solopreneur (Starter)** | $39    | 15 mo    | $585    | 7.3:1   |
+| **SMB (Growth)**          | $79    | 18 mo    | $1,422  | 17.8:1  |
+| **Agency**                | $199   | 24 mo    | $4,776  | 15.9:1  |
+| **Enterprise**            | $2,000 | 36 mo    | $72,000 | 48:1    |
+| **Blended**               | $120   | 20 mo    | $2,400  | 12:1    |
 
 ### Revenue Projections
 

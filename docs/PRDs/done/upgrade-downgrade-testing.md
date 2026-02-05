@@ -12,22 +12,22 @@
 ### 1.1 Files Analyzed
 
 ```
-/home/joao/projects/myimageupscaler.com/app/api/subscription/change/route.ts
-/home/joao/projects/myimageupscaler.com/app/api/subscription/preview-change/route.ts
-/home/joao/projects/myimageupscaler.com/app/api/subscription/cancel-scheduled/route.ts
-/home/joao/projects/myimageupscaler.com/app/api/webhooks/stripe/route.ts
-/home/joao/projects/myimageupscaler.com/app/pricing/page.tsx
-/home/joao/projects/myimageupscaler.com/app/dashboard/billing/page.tsx
-/home/joao/projects/myimageupscaler.com/client/components/stripe/PricingCard.tsx
-/home/joao/projects/myimageupscaler.com/client/components/stripe/PlanChangeModal.tsx
-/home/joao/projects/myimageupscaler.com/client/services/stripeService.ts
-/home/joao/projects/myimageupscaler.com/shared/config/stripe.ts
-/home/joao/projects/myimageupscaler.com/shared/config/subscription.config.ts
-/home/joao/projects/myimageupscaler.com/server/services/SubscriptionCredits.ts
-/home/joao/projects/myimageupscaler.com/tests/api/subscription-change.test.ts
-/home/joao/projects/myimageupscaler.com/tests/e2e/billing.e2e.spec.ts
-/home/joao/projects/myimageupscaler.com/tests/helpers/test-context.ts
-/home/joao/projects/myimageupscaler.com/tests/helpers/api-client.ts
+/home/joao/projects/autopilotrank.com/src/pages/api/subscription/change/route.ts
+/home/joao/projects/autopilotrank.com/src/pages/api/subscription/preview-change/route.ts
+/home/joao/projects/autopilotrank.com/src/pages/api/subscription/cancel-scheduled/route.ts
+/home/joao/projects/autopilotrank.com/src/pages/api/webhooks/stripe/route.ts
+/home/joao/projects/autopilotrank.com/src/pages/pricing/page.tsx
+/home/joao/projects/autopilotrank.com/src/pages/dashboard/billing/page.tsx
+/home/joao/projects/autopilotrank.com/src/components/stripe/PricingCard.tsx
+/home/joao/projects/autopilotrank.com/src/components/stripe/PlanChangeModal.tsx
+/home/joao/projects/autopilotrank.com/src/services/stripeService.ts
+/home/joao/projects/autopilotrank.com/shared/config/stripe.ts
+/home/joao/projects/autopilotrank.com/shared/config/subscription.config.ts
+/home/joao/projects/autopilotrank.com/server/services/SubscriptionCredits.ts
+/home/joao/projects/autopilotrank.com/tests/api/subscription-change.test.ts
+/home/joao/projects/autopilotrank.com/tests/e2e/billing.e2e.spec.ts
+/home/joao/projects/autopilotrank.com/tests/helpers/test-context.ts
+/home/joao/projects/autopilotrank.com/tests/helpers/api-client.ts
 ```
 
 ### 1.2 Component & Dependency Overview

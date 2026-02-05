@@ -112,7 +112,7 @@ quadrantChart
     Remini: [0.70, 0.75]
     BigJPG: [0.15, 0.50]
     ImgUpscaler: [0.20, 0.40]
-    myimageupscaler.com: [0.10, 0.15]
+    autopilotrank.com: [0.10, 0.15]
 ```
 
 ### 1.2 Competitor Strategy Analysis
@@ -126,7 +126,7 @@ quadrantChart
 | **BigJPG**        | <5         | Brand Only          | Technical reputation | Zero pSEO implementation   |
 | **ImgUpscaler**   | <5         | Basic Product Pages | Simple UX            | No content strategy        |
 
-### 1.3 Competitive Gaps (Opportunities for myimageupscaler.com)
+### 1.3 Competitive Gaps (Opportunities for autopilotrank.com)
 
 1. **File Format Niche Pages**: Only Upscale.media targets this; opportunity for WebP, AVIF, RAW
 2. **Industry-Specific Landing Pages**: E-commerce, real estate, gaming - underserved
@@ -257,7 +257,7 @@ mindmap
 ### 3.1 URL Structure
 
 ```
-myimageupscaler.com pSEO URL Architecture
+autopilotrank.com pSEO URL Architecture
 ├── /tools/                           # Primary Tools Category
 │   ├── /tools/[tool-slug]/           # Individual tool pages
 │   │   ├── ai-image-upscaler
@@ -577,7 +577,7 @@ interface ComparisonPageData {
   // Content
   introduction: string;
 
-  myimageupscaler.comProfile: {
+  autopilotrank.comProfile: {
     overview: string;
     features: string[];
     pros: string[];
@@ -597,12 +597,12 @@ interface ComparisonPageData {
 
   comparisonTable: Array<{
     feature: string;
-    myimageupscaler.com: string | boolean;
+    autopilotrank.com: string | boolean;
     competitor: string | boolean;
   }>;
 
   verdict: {
-    winner: 'myimageupscaler.com' | 'competitor' | 'tie';
+    winner: 'autopilotrank.com' | 'competitor' | 'tie';
     summary: string;
     recommendation: string;
   };
@@ -616,18 +616,18 @@ interface ComparisonPageData {
 
 **Comparison Table Structure**:
 
-| Feature           | myimageupscaler.com | [Competitor] |
-| ----------------- | ------------------- | ------------ |
-| Free Tier         | 10 credits          | [Value]      |
-| Max Resolution    | 8x (16x Pro)        | [Value]      |
-| Text Preservation | Yes                 | [Value]      |
-| Batch Processing  | Yes                 | [Value]      |
-| API Access        | Pro Plan            | [Value]      |
-| No Watermarks     | Yes                 | [Value]      |
-| Processing Speed  | 30-60s              | [Value]      |
-| File Size Limit   | 25MB                | [Value]      |
-| Supported Formats | JPG/PNG/WebP        | [Value]      |
-| Starting Price    | Free/$19/mo         | [Value]      |
+| Feature           | autopilotrank.com | [Competitor] |
+| ----------------- | ----------------- | ------------ |
+| Free Tier         | 10 credits        | [Value]      |
+| Max Resolution    | 8x (16x Pro)      | [Value]      |
+| Text Preservation | Yes               | [Value]      |
+| Batch Processing  | Yes               | [Value]      |
+| API Access        | Pro Plan          | [Value]      |
+| No Watermarks     | Yes               | [Value]      |
+| Processing Speed  | 30-60s            | [Value]      |
+| File Size Limit   | 25MB              | [Value]      |
+| Supported Formats | JPG/PNG/WebP      | [Value]      |
+| Starting Price    | Free/$19/mo       | [Value]      |
 
 ### 4.4 Use Case Page Template
 
@@ -941,8 +941,8 @@ export interface ComparisonPage extends PSEOPage {
     {
       "slug": "ai-image-upscaler",
       "title": "AI Image Upscaler",
-      "metaTitle": "AI Image Upscaler - Enhance Photos to 4K Free | myimageupscaler.com",
-      "metaDescription": "Upscale images to 4K resolution with AI. Free online tool that preserves text and logos. No watermarks, fast processing. Try myimageupscaler.com now.",
+      "metaTitle": "AI Image Upscaler - Enhance Photos to 4K Free | autopilotrank.com",
+      "metaDescription": "Upscale images to 4K resolution with AI. Free online tool that preserves text and logos. No watermarks, fast processing. Try autopilotrank.com now.",
       "h1": "AI Image Upscaler - Enhance Photos to 4K Resolution Free",
       "primaryKeyword": "ai image upscaler",
       "secondaryKeywords": [
@@ -951,7 +951,7 @@ export interface ComparisonPage extends PSEOPage {
         "enhance image ai",
         "upscale image online"
       ],
-      "introduction": "Transform low-resolution images into stunning high-quality visuals with MyImageUpscaler's AI Image Upscaler. Our advanced neural network technology intelligently enhances your photos while preserving text, logos, and fine details that other upscalers blur or distort.",
+      "introduction": "Transform low-resolution images into stunning high-quality visuals with AutopilotRank's AI Image Upscaler. Our advanced neural network technology intelligently enhances your photos while preserving text, logos, and fine details that other upscalers blur or distort.",
       "whatIs": {
         "title": "What is an AI Image Upscaler?",
         "content": "An AI image upscaler uses artificial intelligence and deep learning algorithms to increase the resolution of images while maintaining or improving quality. Unlike traditional interpolation methods that simply duplicate pixels, AI upscalers analyze patterns in the image and intelligently generate new pixels that enhance detail and clarity..."

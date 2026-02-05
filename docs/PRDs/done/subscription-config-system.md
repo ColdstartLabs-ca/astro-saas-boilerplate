@@ -9,7 +9,7 @@
 
 ## Executive Summary
 
-This PRD defines a centralized configuration system for all subscription-related settings in myimageupscaler.com. The goal is to consolidate scattered configuration across multiple files into a single, type-safe configuration file that can be easily modified without code changes.
+This PRD defines a centralized configuration system for all subscription-related settings in autopilotrank.com. The goal is to consolidate scattered configuration across multiple files into a single, type-safe configuration file that can be easily modified without code changes.
 
 ### Goals
 
@@ -38,14 +38,14 @@ This PRD defines a centralized configuration system for all subscription-related
 ### 1.1 Files Analyzed
 
 ```
-/home/joao/projects/myimageupscaler.com/shared/config/stripe.ts
-/home/joao/projects/myimageupscaler.com/shared/constants/billing.ts
-/home/joao/projects/myimageupscaler.com/shared/types/stripe.ts
-/home/joao/projects/myimageupscaler.com/server/services/image-generation.service.ts
-/home/joao/projects/myimageupscaler.com/app/api/webhooks/stripe/route.ts
-/home/joao/projects/myimageupscaler.com/client/hooks/useLowCreditWarning.ts
-/home/joao/projects/myimageupscaler.com/docs/technical/systems/credits.md
-/home/joao/projects/myimageupscaler.com/docs/technical/systems/subscription-gaps.md
+/home/joao/projects/autopilotrank.com/shared/config/stripe.ts
+/home/joao/projects/autopilotrank.com/shared/constants/billing.ts
+/home/joao/projects/autopilotrank.com/shared/types/stripe.ts
+/home/joao/projects/autopilotrank.com/server/services/image-generation.service.ts
+/home/joao/projects/autopilotrank.com/src/pages/api/webhooks/stripe/route.ts
+/home/joao/projects/autopilotrank.com/src/hooks/useLowCreditWarning.ts
+/home/joao/projects/autopilotrank.com/docs/technical/systems/credits.md
+/home/joao/projects/autopilotrank.com/docs/technical/systems/subscription-gaps.md
 ```
 
 ### 1.2 Component & Dependency Overview

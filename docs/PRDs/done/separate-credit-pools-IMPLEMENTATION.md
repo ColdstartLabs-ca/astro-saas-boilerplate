@@ -352,5 +352,5 @@ Track these for 1 week post-deployment:
 
 ## Contact
 
-**Issue Tracker:** [GitHub Issues](https://github.com/yourusername/myimageupscaler.com/issues)
+**Issue Tracker:** [GitHub Issues](https://github.com/yourusername/autopilotrank.com/issues)
 **Documentation:** `docs/PRDs/separate-credit-pools.md`

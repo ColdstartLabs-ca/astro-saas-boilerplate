@@ -6,7 +6,7 @@
 
 **AutopilotRank** is an autonomous SEO content automation platform that combines programmatic SEO with AI-powered content generation to help businesses scale their organic search presence without manual content creation overhead.
 
-**Core Promise:** _"The only AI SEO platform that truly does it all – automating content creation, optimization, and backlink building with human-level quality and reliability. Scale your organic traffic on autopilot without the generic content or technical headaches."_
+**Core Promise:** _"The only AI SEO platform that truly does it all – automating content creation, optimization, and backlink building with human-level quality and reliability. Scale your organic traffic on autopilot without the generic content or technical headaches. Bonus: Demand Sniffer for opportunity discovery and Directory Submission for instant local SEO wins."_
 
 ---
 
@@ -49,29 +49,33 @@ we deliver true automation with Surfer-level quality and rock-solid reliability.
 
 ### Value Map (Left Side)
 
-| Products & Services                    | Pain Relievers                            | Gain Creators                      |
-| -------------------------------------- | ----------------------------------------- | ---------------------------------- |
-| Multi-model AI (GPT-4, Claude, Gemini) | Humanizer produces human-quality content  | 100+ articles/month automatically  |
-| Pre-publication QA checks              | Multi-layer validation catches issues     | Publish-ready, no editing needed   |
-| Native CMS integrations                | One-click publishing to WordPress/Webflow | Zero manual workflow               |
-| GSC integration                        | Data-driven keyword selection             | Rank for high-opportunity keywords |
-| Automated internal linking             | SEO structure handled automatically       | Better site architecture           |
+| Products & Services                    | Pain Relievers                             | Gain Creators                      |
+| -------------------------------------- | ------------------------------------------ | ---------------------------------- |
+| Multi-model AI (GPT-4, Claude, Gemini) | Humanizer produces human-quality content   | 100+ articles/month automatically  |
+| Pre-publication QA checks              | Multi-layer validation catches issues      | Publish-ready, no editing needed   |
+| Native CMS integrations                | One-click publishing to WordPress/Webflow  | Zero manual workflow               |
+| GSC integration                        | Data-driven keyword selection              | Rank for high-opportunity keywords |
+| Automated internal linking             | SEO structure handled automatically        | Better site architecture           |
+| **Demand Sniffer**                     | Auto-discovers content gaps from your data | Never run out of content ideas     |
+| **Directory Submission Tool**          | NAP consistency across 50+ directories     | Instant local SEO citations boost  |
 
 ---
 
 ## Kano Model Feature Classification
 
-| Feature                    | Category        | Strategy                            | Priority |
-| -------------------------- | --------------- | ----------------------------------- | -------- |
-| AI content generation      | **Must-Have**   | Ensure 100% reliable                | P0       |
-| CMS publishing             | **Must-Have**   | WordPress first, expand             | P0       |
-| Keyword research           | **Must-Have**   | Basic needs covered                 | P0       |
-| Humanizer engine           | **Performance** | Key differentiator - invest heavily | P1       |
-| Multi-model AI             | **Performance** | Quality + variety                   | P1       |
-| Pre-publication QA         | **Performance** | Reduce edit time to zero            | P1       |
-| AI detection scoring       | **Delighter**   | Unexpected value, WOW factor        | P2       |
-| Automated internal linking | **Delighter**   | Surprise feature                    | P2       |
-| Brand voice customization  | **Delighter**   | Enterprise upsell path              | P3       |
+| Feature                       | Category        | Strategy                            | Priority |
+| ----------------------------- | --------------- | ----------------------------------- | -------- |
+| AI content generation         | **Must-Have**   | Ensure 100% reliable                | P0       |
+| CMS publishing                | **Must-Have**   | WordPress first, expand             | P0       |
+| Keyword research              | **Must-Have**   | Basic needs covered                 | P0       |
+| Humanizer engine              | **Performance** | Key differentiator - invest heavily | P1       |
+| Multi-model AI                | **Performance** | Quality + variety                   | P1       |
+| Pre-publication QA            | **Performance** | Reduce edit time to zero            | P1       |
+| AI detection scoring          | **Delighter**   | Unexpected value, WOW factor        | P2       |
+| Automated internal linking    | **Delighter**   | Surprise feature                    | P2       |
+| **Demand Sniffer**            | **Delighter**   | Opportunity discovery automation    | P2       |
+| **Directory Submission Tool** | **Delighter**   | Easy wins for local SEO & citations | P2       |
+| Brand voice customization     | **Delighter**   | Enterprise upsell path              | P3       |
 
 ---
 
@@ -209,20 +213,31 @@ This gap represents a significant opportunity for AutopilotRank.
 | **Image Placement Control** | ✅            | ❌         | ❌      | ❌     | ❌     | ❌    | ❌     | ❌     |
 | **Stock Image Integration** | ✅            | ✅         | ❌      | ❌     | ❌     | ❌    | ❌     | ❌     |
 
+### SEO Tools & Automation (Bonus Features)
+
+| Feature                       | AutopilotRank | Outrank.so | RankYak | Byword | Surfer | Frase | Jasper | SEO.ai |
+| ----------------------------- | ------------- | ---------- | ------- | ------ | ------ | ----- | ------ | ------ |
+| **Demand Sniffer (GSC)**      | ✅            | ❌         | ❌      | ❌     | ❌     | ❌    | ❌     | ❌     |
+| **Opportunity Scoring**       | ✅            | ❌         | ❌      | ❌     | ❌     | ❌    | ❌     | ❌     |
+| **Trend Detection**           | ✅            | ❌         | ❌      | ❌     | ❌     | ❌    | ❌     | ❌     |
+| **CPC/Competition Analysis**  | ✅            | ❌         | ❌      | ❌     | ❌     | ❌    | ❌     | ❌     |
+| **Directory Submission Tool** | ✅            | ❌         | ❌      | ❌     | ❌     | ❌    | ❌     | ❌     |
+| **Citation Tracking**         | ✅            | ❌         | ❌      | ❌     | ❌     | ❌    | ❌     | ❌     |
+
 ---
 
 ## Pricing Comparison
 
-| Platform          | Entry Plan           | Mid-Tier              | Enterprise            | Cost/Article    | Notes                                   |
-| ----------------- | -------------------- | --------------------- | --------------------- | --------------- | --------------------------------------- |
-| **AutopilotRank** | $49/mo (30 articles) | $99/mo (100 articles) | $249/mo (500 articles)| $0.50-$1.63     | Usage-based tiers, 3 free articles trial |
-| **Outrank.so**    | $99/mo               | -                     | -                     | ~$12/article\*  | Single tier, 8+ articles/mo to justify  |
-| **RankYak**       | $99/mo               | Multi-site discount   | -                     | ~$3-4/article   | 3-day free trial                        |
-| **Byword**        | $99/mo (25 articles) | $299/mo (80 articles) | $2,499/mo (unlimited) | $3.74-$5.00     | Pay-as-you-go: $5/article               |
-| **Surfer SEO**    | $99/mo (15 credits)  | $219/mo (90 credits)  | Custom                | N/A             | Optimization only, not generation       |
-| **Frase.io**      | $45/mo (15 projects) | $115/mo (75 projects) | Custom                | ~$3.50/doc      | Pro add-on +$35/mo for AI writer        |
-| **SEO.ai**        | $49/mo               | -                     | -                     | Varies          | 46 free tools included                  |
-| **Jasper AI**     | $49/mo               | $99/mo                | Custom                | ~$10-20/article | General AI writer, not SEO-specific     |
+| Platform          | Entry Plan           | Mid-Tier              | Enterprise             | Cost/Article    | Notes                                    |
+| ----------------- | -------------------- | --------------------- | ---------------------- | --------------- | ---------------------------------------- |
+| **AutopilotRank** | $49/mo (30 articles) | $99/mo (100 articles) | $249/mo (500 articles) | $0.50-$1.63     | Usage-based tiers, 3 free articles trial |
+| **Outrank.so**    | $99/mo               | -                     | -                      | ~$12/article\*  | Single tier, 8+ articles/mo to justify   |
+| **RankYak**       | $99/mo               | Multi-site discount   | -                      | ~$3-4/article   | 3-day free trial                         |
+| **Byword**        | $99/mo (25 articles) | $299/mo (80 articles) | $2,499/mo (unlimited)  | $3.74-$5.00     | Pay-as-you-go: $5/article                |
+| **Surfer SEO**    | $99/mo (15 credits)  | $219/mo (90 credits)  | Custom                 | N/A             | Optimization only, not generation        |
+| **Frase.io**      | $45/mo (15 projects) | $115/mo (75 projects) | Custom                 | ~$3.50/doc      | Pro add-on +$35/mo for AI writer         |
+| **SEO.ai**        | $49/mo               | -                     | -                      | Varies          | 46 free tools included                   |
+| **Jasper AI**     | $49/mo               | $99/mo                | Custom                 | ~$10-20/article | General AI writer, not SEO-specific      |
 
 \*Based on estimated 8 articles/month usage
 
@@ -232,16 +247,18 @@ This gap represents a significant opportunity for AutopilotRank.
 
 ### Critical Pain Points Not Addressed by Competitors
 
-| Pain Point                 | Severity  | Market Gap                                        | AutopilotRank Solution                                        |
-| -------------------------- | --------- | ------------------------------------------------- | ------------------------------------------------------------- |
-| **Generic AI content**     | 🔴 High   | Outrank outputs require 2-4 hours editing         | Multi-model AI + Humanizer engine + brand voice customization |
-| **Platform instability**   | 🔴 High   | Outrank, Frase, Byword have bugs/crashes          | Rock-solid infrastructure, 99.9% uptime guarantee             |
-| **Poor support**           | 🔴 High   | "Support sucks" (Outrank), slow responses (Frase) | 24/7 support, dedicated success managers                      |
-| **No end-to-end solution** | 🔴 High   | Need 3-4 tools for complete SEO workflow          | All-in-one: research → write → optimize → publish → track     |
-| **Low-quality backlinks**  | 🟡 Medium | Outrank's links questioned in competitive niches  | AI-powered niche matching, quality filters (DR, traffic)      |
-| **CMS compatibility**      | 🟡 Medium | Byword blocked by some hosts                      | Native plugins + flexible webhooks + API                      |
-| **No GSC integration**     | 🟡 Medium | Most competitors lack direct GSC connection       | Native GSC integration for opportunity discovery              |
-| **AI detection risk**      | 🟡 Medium | Content penalties increasing                      | Built-in AI detection scoring + humanizer                     |
+| Pain Point                      | Severity  | Market Gap                                        | AutopilotRank Solution                                        |
+| ------------------------------- | --------- | ------------------------------------------------- | ------------------------------------------------------------- |
+| **Generic AI content**          | 🔴 High   | Outrank outputs require 2-4 hours editing         | Multi-model AI + Humanizer engine + brand voice customization |
+| **Platform instability**        | 🔴 High   | Outrank, Frase, Byword have bugs/crashes          | Rock-solid infrastructure, 99.9% uptime guarantee             |
+| **Poor support**                | 🔴 High   | "Support sucks" (Outrank), slow responses (Frase) | 24/7 support, dedicated success managers                      |
+| **No end-to-end solution**      | 🔴 High   | Need 3-4 tools for complete SEO workflow          | All-in-one: research → write → optimize → publish → track     |
+| **Low-quality backlinks**       | 🟡 Medium | Outrank's links questioned in competitive niches  | AI-powered niche matching, quality filters (DR, traffic)      |
+| **CMS compatibility**           | 🟡 Medium | Byword blocked by some hosts                      | Native plugins + flexible webhooks + API                      |
+| **No GSC integration**          | 🟡 Medium | Most competitors lack direct GSC connection       | Native GSC integration for opportunity discovery              |
+| **AI detection risk**           | 🟡 Medium | Content penalties increasing                      | Built-in AI detection scoring + humanizer                     |
+| **Content ideation bottleneck** | 🟡 Medium | No automated way to find high-value opportunities | Demand Sniffer auto-discovers gaps from your GSC data         |
+| **Local SEO manual work**       | 🟢 Low    | Manual directory submissions = hours of work      | One-click submission to 50+ directories with tracking         |
 
 ### Emotional Pain Points
 
@@ -334,7 +351,26 @@ Built specifically for pSEO with:
 - Custom keyword upload (CSV, Excel)
 - Approval workflows before publish
 
-### 6. Transparent & Fair Pricing
+### 6. Bonus Tools for SEO Wins
+
+#### Demand Sniffer
+
+- Automated opportunity discovery from your own GSC data
+- Analyzes keywords by: search volume, competition, CPC, and opportunity score
+- Identifies high-value content opportunities you're missing
+- Trend detection (gaining/losing interest)
+- Prioritizes keywords by commercial value and ranking feasibility
+- No more guessing what to write next—data-driven content roadmap
+
+#### Directory Submission Tool
+
+- One-click submissions to 50+ business directories and citation sites
+- Automated NAP (Name, Address, Phone) consistency across the web
+- Local SEO boost for location-based businesses
+- Track submission status and approval history
+- Built for easy wins that compound with your content strategy
+
+### 7. Transparent & Fair Pricing
 
 - Pay for results, not seat licenses or per-word charges
 - No hidden fees or surprise limits

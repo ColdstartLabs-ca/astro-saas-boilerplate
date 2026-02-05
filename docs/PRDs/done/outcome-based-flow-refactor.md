@@ -54,18 +54,18 @@ Refactor the core image processing flow from a technical, mode-based interface t
 ### 1.1 Files Analyzed
 
 ```
-/home/joao/projects/myimageupscaler.com/shared/types/myimageupscaler.com.ts
-/home/joao/projects/myimageupscaler.com/client/components/features/workspace/BatchSidebar.tsx
-/home/joao/projects/myimageupscaler.com/client/components/features/workspace/BatchSidebar/ModeSelector.tsx
-/home/joao/projects/myimageupscaler.com/client/components/features/workspace/BatchSidebar/ModelSelector.tsx
-/home/joao/projects/myimageupscaler.com/client/components/features/workspace/BatchSidebar/EnhancementPanel.tsx
-/home/joao/projects/myimageupscaler.com/client/components/features/workspace/BatchSidebar/FeatureToggles.tsx
-/home/joao/projects/myimageupscaler.com/client/components/features/workspace/Workspace.tsx
-/home/joao/projects/myimageupscaler.com/client/hooks/myimageupscaler.com/useBatchQueue.ts
-/home/joao/projects/myimageupscaler.com/app/api/upscale/route.ts
-/home/joao/projects/myimageupscaler.com/app/api/analyze-image/route.ts
-/home/joao/projects/myimageupscaler.com/server/services/model-registry.ts
-/home/joao/projects/myimageupscaler.com/shared/config/subscription.utils.ts
+/home/joao/projects/autopilotrank.com/shared/types/autopilotrank.com.ts
+/home/joao/projects/autopilotrank.com/src/components/features/workspace/BatchSidebar.tsx
+/home/joao/projects/autopilotrank.com/src/components/features/workspace/BatchSidebar/ModeSelector.tsx
+/home/joao/projects/autopilotrank.com/src/components/features/workspace/BatchSidebar/ModelSelector.tsx
+/home/joao/projects/autopilotrank.com/src/components/features/workspace/BatchSidebar/EnhancementPanel.tsx
+/home/joao/projects/autopilotrank.com/src/components/features/workspace/BatchSidebar/FeatureToggles.tsx
+/home/joao/projects/autopilotrank.com/src/components/features/workspace/Workspace.tsx
+/home/joao/projects/autopilotrank.com/src/hooks/autopilotrank.com/useBatchQueue.ts
+/home/joao/projects/autopilotrank.com/src/pages/api/upscale/route.ts
+/home/joao/projects/autopilotrank.com/src/pages/api/analyze-image/route.ts
+/home/joao/projects/autopilotrank.com/server/services/model-registry.ts
+/home/joao/projects/autopilotrank.com/shared/config/subscription.utils.ts
 ```
 
 ### 1.2 Component & Dependency Overview
@@ -174,7 +174,7 @@ flowchart TB
 
 ### 2.4 Data Model Changes
 
-**New Types (`shared/types/myimageupscaler.com.ts`):**
+**New Types (`shared/types/autopilotrank.com.ts`):**
 
 ```typescript
 // NEW: Quality tier replaces model selection in UI
@@ -367,7 +367,7 @@ sequenceDiagram
 
 ## 3. Detailed Implementation Spec
 
-### A. `shared/types/myimageupscaler.com.ts`
+### A. `shared/types/autopilotrank.com.ts`
 
 **Changes Needed:**
 
@@ -644,7 +644,7 @@ client/components/features/workspace/BatchSidebar/ModelSelector.tsx  (if separat
 
 ### Phase 1: Types & Config (Shared Layer)
 
-- [ ] Add `QualityTier` type to `myimageupscaler.com.ts` (includes `'auto'`)
+- [ ] Add `QualityTier` type to `autopilotrank.com.ts` (includes `'auto'`)
 - [ ] Add `QUALITY_TIER_CONFIG` constant with `smartAnalysisAlwaysOn` flag
 - [ ] Add `IAdditionalOptions` interface with `smartAnalysis` field
 - [ ] **Replace** `IUpscaleConfig` interface (not add new one)

@@ -11,18 +11,18 @@
 
 ### 1.1 Files Analyzed
 
-| Path | Purpose |
-|------|---------|
-| `/app/dashboard/layout.tsx` | Dashboard layout with sidebar |
-| `/client/components/dashboard/DashboardSidebar.tsx` | Sidebar navigation component |
-| `/supabase/migrations/20250120_create_profiles_table.sql` | User profiles schema |
-| `/supabase/migrations/20250120_create_subscriptions_table.sql` | Subscriptions schema |
-| `/supabase/migrations/20250121_create_credit_transactions_table.sql` | Credit transactions |
-| `/middleware.ts` | Route protection and auth |
-| `/server/middleware/getAuthenticatedUser.ts` | User authentication helper |
-| `/client/store/authStore.ts` | Auth state management |
-| `/shared/types/stripe.ts` | User profile types |
-| `/client/components/stripe/CreditHistory.tsx` | Table component pattern |
+| Path                                                                 | Purpose                       |
+| -------------------------------------------------------------------- | ----------------------------- |
+| `/src/pages/dashboard/layout.tsx`                                    | Dashboard layout with sidebar |
+| `/src/components/dashboard/DashboardSidebar.tsx`                     | Sidebar navigation component  |
+| `/supabase/migrations/20250120_create_profiles_table.sql`            | User profiles schema          |
+| `/supabase/migrations/20250120_create_subscriptions_table.sql`       | Subscriptions schema          |
+| `/supabase/migrations/20250121_create_credit_transactions_table.sql` | Credit transactions           |
+| `/middleware.ts`                                                     | Route protection and auth     |
+| `/server/middleware/getAuthenticatedUser.ts`                         | User authentication helper    |
+| `/src/store/authStore.ts`                                            | Auth state management         |
+| `/shared/types/stripe.ts`                                            | User profile types            |
+| `/src/components/stripe/CreditHistory.tsx`                           | Table component pattern       |
 
 ### 1.2 Component & Dependency Overview
 
@@ -82,12 +82,12 @@ The system lacks administrative capabilities for managing users, subscriptions, 
 
 **Alternatives Considered:**
 
-| Approach | Pros | Cons | Decision |
-|----------|------|------|----------|
-| **Role column in profiles (chosen)** | Simple, single table, fast queries | Limited to two roles | Chosen - sufficient for current needs |
-| Separate roles table with permissions | Flexible, granular permissions | Over-engineered for 2 roles | Rejected |
-| External auth provider roles | Centralized auth management | Adds dependency, complexity | Rejected |
-| Supabase Auth metadata | No migration needed | Harder to query, sync issues | Rejected |
+| Approach                              | Pros                               | Cons                         | Decision                              |
+| ------------------------------------- | ---------------------------------- | ---------------------------- | ------------------------------------- |
+| **Role column in profiles (chosen)**  | Simple, single table, fast queries | Limited to two roles         | Chosen - sufficient for current needs |
+| Separate roles table with permissions | Flexible, granular permissions     | Over-engineered for 2 roles  | Rejected                              |
+| External auth provider roles          | Centralized auth management        | Adds dependency, complexity  | Rejected                              |
+| Supabase Auth metadata                | No migration needed                | Harder to query, sync issues | Rejected                              |
 
 ### 2.2 Architecture Diagram
 
@@ -119,13 +119,13 @@ flowchart LR
 
 ### 2.3 Key Technical Decisions
 
-| Decision | Rationale |
-|----------|-----------|
-| **Role stored in `profiles` table** | Aligns with existing user data pattern; avoids joins |
-| **Admin check in middleware** | Centralized, consistent protection for all admin routes |
-| **Conditional sidebar rendering** | Clean UX - non-admins don't see admin menu |
-| **Reuse existing table patterns** | CreditHistory.tsx provides table component pattern |
-| **Server-side role verification** | Never trust client-side role checks for security |
+| Decision                            | Rationale                                               |
+| ----------------------------------- | ------------------------------------------------------- |
+| **Role stored in `profiles` table** | Aligns with existing user data pattern; avoids joins    |
+| **Admin check in middleware**       | Centralized, consistent protection for all admin routes |
+| **Conditional sidebar rendering**   | Clean UX - non-admins don't see admin menu              |
+| **Reuse existing table patterns**   | CreditHistory.tsx provides table component pattern      |
+| **Server-side role verification**   | Never trust client-side role checks for security        |
 
 ### 2.4 Data Model Changes
 
@@ -466,10 +466,7 @@ export async function requireAdmin(req: NextRequest): Promise<{
     return {
       isAdmin: false,
       userId: null,
-      error: NextResponse.json(
-        { error: 'Unauthorized', code: 'NO_USER' },
-        { status: 401 }
-      ),
+      error: NextResponse.json({ error: 'Unauthorized', code: 'NO_USER' }, { status: 401 }),
     };
   }
 
@@ -536,9 +533,11 @@ export async function GET(req: NextRequest) {
     query = query.ilike('auth.users.email', `%${search}%`);
   }
 
-  const { data: users, count, error: dbError } = await query
-    .range(offset, offset + limit - 1)
-    .order('created_at', { ascending: false });
+  const {
+    data: users,
+    count,
+    error: dbError,
+  } = await query.range(offset, offset + limit - 1).order('created_at', { ascending: false });
 
   if (dbError) {
     return NextResponse.json(
@@ -566,10 +565,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { requireAdmin } from '@/server/middleware/requireAdmin';
 import { supabaseAdmin } from '@/server/supabase/supabaseAdmin';
 
-export async function GET(
-  req: NextRequest,
-  { params }: { params: { userId: string } }
-) {
+export async function GET(req: NextRequest, { params }: { params: { userId: string } }) {
   const { isAdmin, error } = await requireAdmin(req);
   if (!isAdmin) return error;
 
@@ -588,10 +584,7 @@ export async function GET(
   ]);
 
   if (profileResult.error) {
-    return NextResponse.json(
-      { error: 'User not found' },
-      { status: 404 }
-    );
+    return NextResponse.json({ error: 'User not found' }, { status: 404 });
   }
 
   return NextResponse.json({
@@ -604,10 +597,7 @@ export async function GET(
   });
 }
 
-export async function PATCH(
-  req: NextRequest,
-  { params }: { params: { userId: string } }
-) {
+export async function PATCH(req: NextRequest, { params }: { params: { userId: string } }) {
   const { isAdmin, error } = await requireAdmin(req);
   if (!isAdmin) return error;
 
@@ -623,10 +613,7 @@ export async function PATCH(
   }
 
   if (Object.keys(updates).length === 0) {
-    return NextResponse.json(
-      { error: 'No valid fields to update' },
-      { status: 400 }
-    );
+    return NextResponse.json({ error: 'No valid fields to update' }, { status: 400 });
   }
 
   updates.updated_at = new Date().toISOString();
@@ -717,9 +704,7 @@ export async function GET(req: NextRequest) {
       .from('subscriptions')
       .select('id', { count: 'exact', head: true })
       .eq('status', 'active'),
-    supabaseAdmin
-      .from('credit_transactions')
-      .select('amount, type')
+    supabaseAdmin.from('credit_transactions').select('amount, type'),
   ]);
 
   const totalCreditsIssued = (creditsResult.data || [])
@@ -727,9 +712,7 @@ export async function GET(req: NextRequest) {
     .reduce((sum, t) => sum + t.amount, 0);
 
   const totalCreditsUsed = Math.abs(
-    (creditsResult.data || [])
-      .filter(t => t.type === 'usage')
-      .reduce((sum, t) => sum + t.amount, 0)
+    (creditsResult.data || []).filter(t => t.type === 'usage').reduce((sum, t) => sum + t.amount, 0)
   );
 
   return NextResponse.json({
@@ -783,7 +766,7 @@ const initializeAuth = async () => {
 };
 
 // Add isAdmin selector
-export const useIsAdmin = () => useAuthStore((state) => state.user?.role === 'admin');
+export const useIsAdmin = () => useAuthStore(state => state.user?.role === 'admin');
 ```
 
 ---
@@ -793,7 +776,7 @@ export const useIsAdmin = () => useAuthStore((state) => state.user?.role === 'ad
 **File:** `client/components/dashboard/DashboardSidebar.tsx` (Update)
 
 ```typescript
-import { useIsAdmin } from '@/client/store/authStore';
+import { useIsAdmin } from '@/src/store/authStore';
 import { Shield } from 'lucide-react';
 
 // Inside component:
@@ -862,7 +845,7 @@ export default async function AdminLayout({
 
 import { useEffect, useState } from 'react';
 import { Users, CreditCard, Coins, TrendingUp } from 'lucide-react';
-import { StatsCard } from '@/client/components/common/StatsCard';
+import { StatsCard } from '@/src/components/common/StatsCard';
 
 interface IAdminStats {
   totalUsers: number;
@@ -1568,28 +1551,28 @@ function CreditAdjustmentModal({
 
 ### Unit Tests
 
-| Function | Test Cases |
-|----------|------------|
-| `requireAdmin` | Returns error for unauthenticated, returns error for non-admin, allows admin |
-| `admin_adjust_credits` RPC | Rejects non-admin caller, updates balance correctly, logs transaction |
+| Function                   | Test Cases                                                                   |
+| -------------------------- | ---------------------------------------------------------------------------- |
+| `requireAdmin`             | Returns error for unauthenticated, returns error for non-admin, allows admin |
+| `admin_adjust_credits` RPC | Rejects non-admin caller, updates balance correctly, logs transaction        |
 
 ### Integration Tests
 
-| Flow | Expected Behavior |
-|------|-------------------|
-| Admin accesses `/dashboard/admin` | Page loads with stats |
-| Non-admin accesses `/dashboard/admin` | Redirects to `/dashboard` |
-| Admin adjusts credits | Balance updates, transaction logged |
-| Admin searches users | Filtered results returned |
+| Flow                                  | Expected Behavior                   |
+| ------------------------------------- | ----------------------------------- |
+| Admin accesses `/dashboard/admin`     | Page loads with stats               |
+| Non-admin accesses `/dashboard/admin` | Redirects to `/dashboard`           |
+| Admin adjusts credits                 | Balance updates, transaction logged |
+| Admin searches users                  | Filtered results returned           |
 
 ### Edge Cases
 
-| Scenario | Expected Behavior |
-|----------|-------------------|
-| Admin demotes themselves | Should work (consider warning) |
+| Scenario                              | Expected Behavior                                        |
+| ------------------------------------- | -------------------------------------------------------- |
+| Admin demotes themselves              | Should work (consider warning)                           |
 | Negative credit adjustment below zero | Allow (can result in negative balance for debt tracking) |
-| Search with special characters | Escaped properly, no SQL injection |
-| Very large user list | Pagination works correctly |
+| Search with special characters        | Escaped properly, no SQL injection                       |
+| Very large user list                  | Pagination works correctly                               |
 
 ---
 
@@ -1628,11 +1611,11 @@ function CreditAdjustmentModal({
 
 ## 8. Future Enhancements (Out of Scope)
 
-| Feature | Description | Priority |
-|---------|-------------|----------|
-| Activity audit log | Dedicated table for all admin actions | Medium |
-| Bulk operations | Select multiple users for batch actions | Low |
-| Export functionality | Export user list to CSV | Low |
-| Email impersonation | Log in as user for support | Low |
-| Subscription modification | Change user plan directly without Stripe portal | Medium |
-| Dashboard analytics | Charts for user growth, revenue, etc. | Medium |
+| Feature                   | Description                                     | Priority |
+| ------------------------- | ----------------------------------------------- | -------- |
+| Activity audit log        | Dedicated table for all admin actions           | Medium   |
+| Bulk operations           | Select multiple users for batch actions         | Low      |
+| Export functionality      | Export user list to CSV                         | Low      |
+| Email impersonation       | Log in as user for support                      | Low      |
+| Subscription modification | Change user plan directly without Stripe portal | Medium   |
+| Dashboard analytics       | Charts for user growth, revenue, etc.           | Medium   |

@@ -10,8 +10,9 @@ This guide will walk you through setting up Stripe payments and subscriptions fo
 4. [Stripe Configuration](#stripe-configuration)
 5. [Environment Variables](#environment-variables)
 6. [Webhook Setup](#webhook-setup)
-7. [Testing](#testing)
-8. [Production Deployment](#production-deployment)
+7. [Configuration](#configuration)
+8. [Testing](#testing)
+9. [Production Deployment](#production-deployment)
 
 ## Overview
 
@@ -26,7 +27,7 @@ The Stripe integration provides:
 ### Architecture
 
 ```
-Frontend → Next.js API Routes (Cloudflare Workers) → Stripe API
+Frontend → Astro API Routes (Cloudflare) → Stripe API
                 ↓
           Supabase Database
                 ↑
@@ -37,7 +38,7 @@ Frontend → Next.js API Routes (Cloudflare Workers) → Stripe API
 
 1. **Stripe Account**: [Sign up for Stripe](https://dashboard.stripe.com/register)
 2. **Supabase Project**: Active Supabase project with database access
-3. **Cloudflare Account**: For deploying Next.js API routes
+3. **Cloudflare Account**: For deploying Astro API routes
 
 ## Database Setup
 
@@ -46,20 +47,24 @@ Frontend → Next.js API Routes (Cloudflare Workers) → Stripe API
 Execute the SQL migrations in your Supabase SQL Editor in this order:
 
 1. **Profiles Table**
+
    ```bash
-   # File: supabase/migrations/20250120_create_profiles_table.sql
+   # File: supabase/migrations/20250120000000_create_profiles_table.sql
    ```
+
    This creates the `profiles` table with Stripe customer ID and credits tracking.
 
 2. **Subscriptions & Pricing Tables**
+
    ```bash
-   # File: supabase/migrations/20250120_create_subscriptions_table.sql
+   # File: supabase/migrations/20250120100000_create_subscriptions_table.sql
    ```
+
    This creates `subscriptions`, `products`, and `prices` tables.
 
 3. **RPC Functions**
    ```bash
-   # File: supabase/migrations/20250120_create_rpc_functions.sql
+   # File: supabase/migrations/20250120200000_create_rpc_functions.sql
    ```
    This creates secure functions for credit management.
 
@@ -102,7 +107,7 @@ AND table_name IN ('profiles', 'subscriptions', 'products', 'prices');
 # Create a one-time credit pack
 stripe products create \
   --name="100 Credits Pack" \
-  --description="100 credits for image processing"
+  --description="100 credits for processing"
 
 stripe prices create \
   --product=prod_XXX \
@@ -128,21 +133,22 @@ stripe prices create \
 
 This project uses a split environment variable structure:
 
-**`.env`** - Public variables (safe to commit examples):
+**`.env.client`** - Public variables:
 
 ```bash
 # Supabase
-NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
-NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
+PUBLIC_SUPABASE_URL=https://your-project.supabase.co
+PUBLIC_SUPABASE_ANON_KEY=your-anon-key
 
 # App
-NEXT_PUBLIC_BASE_URL=http://localhost:3000
+PUBLIC_BASE_URL=http://localhost:4321
+PUBLIC_APP_NAME=AutopilotRank
 
 # Stripe Price IDs are now configured in shared/config/stripe.ts
 # See shared/config/stripe.ts for Price ID configuration
 ```
 
-**`.env.prod`** - Server-side secrets (NEVER commit):
+**`.env.api`** - Server-side secrets (NEVER commit):
 
 ```bash
 # Supabase
@@ -154,9 +160,10 @@ STRIPE_WEBHOOK_SECRET=whsec_your-webhook-secret
 ```
 
 **Security Notes:**
-- ⚠️ **NEVER** commit `.env.prod` to version control
+
+- ⚠️ **NEVER** commit `.env.api` to version control
 - ⚠️ `SUPABASE_SERVICE_ROLE_KEY` and `STRIPE_SECRET_KEY` are server-side only
-- ⚠️ Only `NEXT_PUBLIC_*` variables are exposed to the client
+- ⚠️ Only `PUBLIC_*` variables are exposed to the client
 
 ### Cloudflare Pages Deployment
 
@@ -167,7 +174,7 @@ Set environment variables in Cloudflare Dashboard:
    - `SUPABASE_SERVICE_ROLE_KEY`
    - `STRIPE_SECRET_KEY`
    - `STRIPE_WEBHOOK_SECRET`
-   - `NEXT_PUBLIC_BASE_URL`
+   - `PUBLIC_BASE_URL`
 
 ## Webhook Setup
 
@@ -176,6 +183,7 @@ Webhooks ensure your database stays in sync with Stripe events.
 ### Local Development
 
 1. **Install Stripe CLI**
+
    ```bash
    # macOS
    brew install stripe/stripe-cli/stripe
@@ -186,13 +194,14 @@ Webhooks ensure your database stays in sync with Stripe events.
    ```
 
 2. **Login to Stripe**
+
    ```bash
    stripe login
    ```
 
 3. **Get Webhook Secret**
 
-   The first time you run `yarn dev`, the Stripe CLI will output a webhook signing secret (starts with `whsec_...`). Copy this and add it to `.env.prod`:
+   The first time you run `yarn dev`, the Stripe CLI will output a webhook signing secret (starts with `whsec_...`). Copy this and add it to `.env.api`:
 
    ```bash
    STRIPE_WEBHOOK_SECRET=whsec_your-webhook-secret
@@ -204,10 +213,9 @@ Webhooks ensure your database stays in sync with Stripe events.
    yarn dev
    ```
 
-   This runs Next.js, Wrangler, and Stripe CLI concurrently:
-   - `next dev` - Next.js development server
-   - `wrangler pages dev` - Cloudflare Pages proxy
-   - `stripe listen` - Forwards webhooks to `localhost:3000/api/webhooks/stripe`
+   This runs Astro and Stripe CLI concurrently:
+   - `astro dev` - Astro development server
+   - `stripe listen` - Forwards webhooks to `localhost:4321/api/webhooks/stripe`
 
 5. **Test a webhook**
    ```bash
@@ -232,26 +240,27 @@ Webhooks ensure your database stays in sync with Stripe events.
 
 ### Price IDs Configuration
 
-Stripe Price IDs are configured in `src/config/stripe.ts`. This file provides:
+Stripe Price IDs are configured in `shared/config/stripe.ts`. This file provides:
 
 - **`STRIPE_PRICES`** - Maps environment variables to price IDs
 - **`CREDIT_PACKS`** - Configuration for one-time credit purchases
 - **`SUBSCRIPTION_PLANS`** - Configuration for recurring subscriptions
 
-The pricing page (`app/pricing/page.tsx`) uses these configurations automatically.
+The pricing page uses these configurations automatically.
 
 ### Pages
 
-| Page | Path | Description |
-|------|------|-------------|
-| Pricing | `/pricing` | Displays all credit packs and subscription plans |
-| Success | `/success` | Landing page after successful payment |
-| Canceled | `/canceled` | Landing page after canceled payment |
-| Billing | `/dashboard/billing` | User's billing dashboard with credits and subscription info |
+| Page     | Path                 | Description                                                 |
+| -------- | -------------------- | ----------------------------------------------------------- |
+| Pricing  | `/pricing`           | Displays all credit packs and subscription plans            |
+| Success  | `/success`           | Landing page after successful payment                       |
+| Canceled | `/canceled`          | Landing page after canceled payment                         |
+| Billing  | `/dashboard/billing` | User's billing dashboard with credits and subscription info |
 
 ### Customer Portal
 
 The Stripe Customer Portal allows users to:
+
 - Update payment methods
 - View invoices
 - Cancel/modify subscriptions
@@ -263,7 +272,7 @@ Access it from the Billing page via "Manage Subscription" button.
 ### Test Credit Purchase
 
 ```typescript
-import { StripeService } from '@/lib/stripe';
+import { StripeService } from '@/server/stripe';
 
 // Create checkout session for 100 credits
 const { url } = await StripeService.createCheckoutSession('price_XXX', {
@@ -279,7 +288,7 @@ window.location.href = url;
 ### Test Subscription
 
 ```typescript
-import { StripeService } from '@/lib/stripe';
+import { StripeService } from '@/server/stripe';
 
 // Create subscription checkout
 await StripeService.redirectToCheckout('price_YYY');
@@ -319,103 +328,6 @@ SELECT * FROM subscriptions WHERE user_id = 'user-uuid';
 3. **Supabase Logs**: Monitor database operations and RPC calls
 4. **Cloudflare Logs**: Check API route performance
 
-## Usage Examples
-
-### Frontend: Buy Credits Button
-
-```tsx
-import { StripeService } from '@/lib/stripe';
-
-function BuyCreditsButton() {
-  const handleBuyCredits = async () => {
-    try {
-      await StripeService.redirectToCheckout('price_XXX', {
-        metadata: {
-          credits_amount: '100',
-        },
-        successUrl: `${window.location.origin}/success`,
-        cancelUrl: `${window.location.origin}/canceled`,
-      });
-    } catch (error) {
-      console.error('Checkout error:', error);
-    }
-  };
-
-  return <button onClick={handleBuyCredits}>Buy 100 Credits - $9.99</button>;
-}
-```
-
-### Frontend: Display User Credits
-
-```tsx
-import { StripeService } from '@/lib/stripe';
-import { useEffect, useState } from 'react';
-
-function CreditsDisplay() {
-  const [profile, setProfile] = useState(null);
-
-  useEffect(() => {
-    StripeService.getUserProfile().then(setProfile);
-  }, []);
-
-  return <div>Credits: {profile?.credits_balance || 0}</div>;
-}
-```
-
-### Frontend: Use Credits for Feature
-
-```tsx
-import { StripeService } from '@/lib/stripe';
-
-async function processImage() {
-  const hasCredits = await StripeService.hasSufficientCredits(1);
-
-  if (!hasCredits) {
-    alert('Insufficient credits. Please purchase more.');
-    return;
-  }
-
-  try {
-    // Perform the action
-    await performImageProcessing();
-
-    // Deduct credits
-    const newBalance = await StripeService.decrementCredits(1);
-    console.log(`New balance: ${newBalance} credits`);
-  } catch (error) {
-    console.error('Processing error:', error);
-  }
-}
-```
-
-### Frontend: Manage Subscription (Customer Portal)
-
-```tsx
-import { StripeService } from '@/lib/stripe';
-
-function ManageSubscriptionButton() {
-  const [loading, setLoading] = useState(false);
-
-  const handleManageSubscription = async () => {
-    try {
-      setLoading(true);
-      await StripeService.redirectToPortal();
-    } catch (error) {
-      console.error('Portal error:', error);
-      alert('Failed to open billing portal');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  return (
-    <button onClick={handleManageSubscription} disabled={loading}>
-      {loading ? 'Opening...' : 'Manage Subscription'}
-    </button>
-  );
-}
-```
-
 ## Troubleshooting
 
 ### Webhook signature verification failed
@@ -443,13 +355,3 @@ function ManageSubscriptionButton() {
 4. **Use RPC functions** - Secure credit operations with SECURITY DEFINER
 5. **Validate user input** - Always validate price IDs and amounts
 6. **Monitor webhook deliveries** - Set up alerts for failed webhooks
-
-## Support
-
-- **Stripe Docs**: https://stripe.com/docs
-- **Supabase Docs**: https://supabase.com/docs
-- **GitHub Issues**: [Report issues here]
-
-## License
-
-See main project LICENSE file.

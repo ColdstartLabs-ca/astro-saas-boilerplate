@@ -16,7 +16,7 @@ This guide walks you through setting up Google OAuth for authentication with Sup
 
 This app uses **Google Identity Services (GIS)** for native Google sign-in. This provides:
 
-- **Native App Branding** - Consent screen shows your domain (myimageupscaler.com) instead of Supabase's
+- **Native App Branding** - Consent screen shows your domain (autopilotrank.com) instead of Supabase's
 - **Better UX** - Popup-based flow keeps users on your site
 - **FedCM Ready** - Compatible with Chrome's third-party cookie phase-out
 - **Seamless Fallback** - Automatically falls back to redirect OAuth if GIS unavailable
@@ -27,7 +27,7 @@ This app uses **Google Identity Services (GIS)** for native Google sign-in. This
 User clicks "Sign in with Google"
     ↓
 Google Identity Services popup appears
-(Shows: "Continue to myimageupscaler.com")
+(Shows: "Continue to autopilotrank.com")
     ↓
 User selects Google account
     ↓
@@ -48,7 +48,7 @@ If GIS is unavailable (script blocked, browser incompatible), the app automatica
 User clicks "Sign in with Google"
     ↓
 Redirect to Google OAuth consent screen
-(Shows: "Continue to xqysaylskffsfwunczbd.supabase.co")
+(Shows: "Continue to xuuwrabuavfplyyolngf.supabase.co")
     ↓
 User grants permission
     ↓
@@ -63,7 +63,7 @@ App completes auth and redirects user
 
 1. **Google Account** with access to [Google Cloud Console](https://console.cloud.google.com/)
 2. **Supabase Project** - See [Supabase Setup Guide](./supabase-setup.md)
-3. **Your Supabase callback URL**: `https://xqysaylskffsfwunczbd.supabase.co/auth/v1/callback`
+3. **Your Supabase callback URL**: `https://xuuwrabuavfplyyolngf.supabase.co/auth/v1/callback`
 
 ## Google Cloud Console Setup
 
@@ -72,7 +72,7 @@ App completes auth and redirects user
 1. Go to [Google Cloud Console](https://console.cloud.google.com/)
 2. Click the project dropdown (top-left, next to "Google Cloud")
 3. Click **New Project** or select an existing one
-4. Enter a project name (e.g., `myimageupscaler-auth`)
+4. Enter a project name (e.g., `autopilotrank-auth`)
 5. Click **Create**
 
 ### Step 2: Configure OAuth Consent Screen
@@ -85,14 +85,14 @@ App completes auth and redirects user
 
 #### Fill in App Information:
 
-| Field              | Value                                       |
-| ------------------ | ------------------------------------------- |
-| App name           | Your app name (e.g., `MyImageUpscaler`)     |
-| User support email | Your email                                  |
-| App logo           | (Optional) Upload your logo                 |
-| App domain         | Your production domain                      |
-| Authorized domains | `myimageupscaler.com`, `supabase.co`        |
-| Developer contact  | Your email                                  |
+| Field              | Value                              |
+| ------------------ | ---------------------------------- |
+| App name           | `AutopilotRank`                    |
+| User support email | Your email                         |
+| App logo           | (Optional) Upload your logo        |
+| App domain         | Your production domain             |
+| Authorized domains | `autopilotrank.com`, `supabase.co` |
+| Developer contact  | Your email                         |
 
 4. Click **Save and Continue**
 
@@ -112,14 +112,14 @@ If your app is in "Testing" mode, add test user emails:
 
 1. Click **Add Users**
 2. Enter email addresses that can test the OAuth flow
-3. Click **Save and Continue**
+3. Click **Save**
 
 ### Step 3: Create OAuth Credentials
 
 1. Navigate to **APIs & Services** → **Credentials**
 2. Click **Create Credentials** → **OAuth client ID**
 3. Select **Application type**: `Web application`
-4. Enter a name (e.g., `MyImageUpscaler Web Client`)
+4. Enter a name (e.g., `AutopilotRank Web Client`)
 
 #### Configure Authorized JavaScript Origins:
 
@@ -127,14 +127,15 @@ If your app is in "Testing" mode, add test user emails:
 
 ```
 http://localhost
-http://localhost:3000
-https://myimageupscaler.com
-https://www.myimageupscaler.com
+http://localhost:4321
+https://autopilotrank.com
+https://www.autopilotrank.com
 ```
 
 > **Important:** For localhost development, you MUST add BOTH:
+>
 > - `http://localhost` (without port)
-> - `http://localhost:3000` (with port)
+> - `http://localhost:4321` (with port)
 >
 > GIS requires both origins to function correctly. Missing either will cause a 403 error.
 
@@ -143,7 +144,7 @@ https://www.myimageupscaler.com
 Add **only** your Supabase callback URL (used for fallback OAuth):
 
 ```
-https://xqysaylskffsfwunczbd.supabase.co/auth/v1/callback
+https://xuuwrabuavfplyyolngf.supabase.co/auth/v1/callback
 ```
 
 > **Note:** The GIS popup flow doesn't use redirect URIs - they're only needed for the fallback redirect OAuth flow.
@@ -189,13 +190,13 @@ These are used for the fallback OAuth flow:
 1. Navigate to **Authentication** → **URL Configuration**
 2. Set **Site URL** to your production URL:
    ```
-   https://myimageupscaler.com
+   https://autopilotrank.com
    ```
 3. Add **Redirect URLs** for all environments:
    ```
-   http://localhost:3000/**
-   https://myimageupscaler.com/**
-   https://www.myimageupscaler.com/**
+   http://localhost:4321/**
+   https://autopilotrank.com/**
+   https://www.autopilotrank.com/**
    ```
 
 ## Environment Variables
@@ -204,7 +205,7 @@ Ensure your `.env.client` has the Google Client ID:
 
 ```bash
 # .env.client
-NEXT_PUBLIC_GOOGLE_CLIENT_ID=756001348384-xxxxxxxxxx.apps.googleusercontent.com
+PUBLIC_GOOGLE_CLIENT_ID=756001348384-xxxxxxxxxx.apps.googleusercontent.com
 ```
 
 ## Content Security Policy
@@ -280,8 +281,8 @@ WHERE email = 'your-email@gmail.com';
 ### Production Checklist
 
 - [ ] Add all production domains to Authorized JavaScript Origins:
-  - `https://myimageupscaler.com`
-  - `https://www.myimageupscaler.com`
+  - `https://autopilotrank.com`
+  - `https://www.autopilotrank.com`
 - [ ] Verify Supabase callback URL in Authorized Redirect URIs
 - [ ] Add Client ID to Supabase's "Client IDs" field for ID token auth
 - [ ] Update Supabase Site URL to production domain
@@ -299,7 +300,7 @@ WHERE email = 'your-email@gmail.com';
 1. Go to Google Cloud Console → Credentials → Your OAuth Client
 2. Add ALL required origins to "Authorized JavaScript origins":
    - `http://localhost` (without port - **commonly missed!**)
-   - `http://localhost:3000` (with port)
+   - `http://localhost:4321` (with port)
    - Your production domains
 3. Wait 2-5 minutes for changes to propagate
 

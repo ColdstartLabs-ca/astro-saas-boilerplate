@@ -38,17 +38,17 @@
 ### 1.1 Files Analyzed
 
 ```
-/home/joao/projects/myimageupscaler.com/app/api/checkout/route.ts
-/home/joao/projects/myimageupscaler.com/app/api/webhooks/stripe/route.ts
-/home/joao/projects/myimageupscaler.com/shared/config/stripe.ts
-/home/joao/projects/myimageupscaler.com/shared/config/subscription.config.ts
-/home/joao/projects/myimageupscaler.com/shared/config/subscription.types.ts
-/home/joao/projects/myimageupscaler.com/shared/types/stripe.ts
-/home/joao/projects/myimageupscaler.com/supabase/migrations/20250121_enhanced_credit_functions.sql
-/home/joao/projects/myimageupscaler.com/client/services/stripeService.ts
-/home/joao/projects/myimageupscaler.com/client/components/stripe/CreditsDisplay.tsx
-/home/joao/projects/myimageupscaler.com/client/components/stripe/CreditHistory.tsx
-/home/joao/projects/myimageupscaler.com/docs/business-model-canvas/economics/pricing-proposal-v2.md
+/home/joao/projects/autopilotrank.com/src/pages/api/checkout/route.ts
+/home/joao/projects/autopilotrank.com/src/pages/api/webhooks/stripe/route.ts
+/home/joao/projects/autopilotrank.com/shared/config/stripe.ts
+/home/joao/projects/autopilotrank.com/shared/config/subscription.config.ts
+/home/joao/projects/autopilotrank.com/shared/config/subscription.types.ts
+/home/joao/projects/autopilotrank.com/shared/types/stripe.ts
+/home/joao/projects/autopilotrank.com/supabase/migrations/20250121_enhanced_credit_functions.sql
+/home/joao/projects/autopilotrank.com/src/services/stripeService.ts
+/home/joao/projects/autopilotrank.com/src/components/stripe/CreditsDisplay.tsx
+/home/joao/projects/autopilotrank.com/src/components/stripe/CreditHistory.tsx
+/home/joao/projects/autopilotrank.com/docs/business-model-canvas/economics/pricing-proposal-v2.md
 ```
 
 ### 1.2 Component & Dependency Overview
@@ -359,7 +359,7 @@ export function isPriceIdCreditPack(priceId: string): boolean {
 
 ---
 
-### C. `/app/api/checkout/route.ts`
+### C. `/src/pages/api/checkout/route.ts`
 
 **Changes Needed:**
 
@@ -454,7 +454,7 @@ if (uiMode === 'hosted') {
 
 ---
 
-### D. `/app/api/webhooks/stripe/route.ts`
+### D. `/src/pages/api/webhooks/stripe/route.ts`
 
 **Changes Needed:**
 
@@ -528,7 +528,7 @@ async function handleCreditPackPurchase(
 
 ---
 
-### E. `/client/services/stripeService.ts`
+### E. `/src/services/stripeService.ts`
 
 **New Method:**
 
@@ -571,7 +571,7 @@ static async purchaseCredits(
 
 ---
 
-### F. `/client/components/stripe/CreditPackSelector.tsx`
+### F. `/src/components/stripe/CreditPackSelector.tsx`
 
 **New Component:**
 
@@ -707,22 +707,22 @@ export function CreditPackSelector({
 
 ### 4.1 Where to Show Credit Top-Ups (All Users)
 
-| Location                   | Component                         | Priority | Visibility Rule                   | Purpose                                 |
-| -------------------------- | --------------------------------- | -------- | --------------------------------- | --------------------------------------- |
-| **Dashboard Billing Page** | `/app/dashboard/billing/page.tsx` | P0       | All authenticated users           | **Primary** purchase location           |
-| **Pricing Page**           | `/app/pricing/page.tsx`           | P1       | All visitors (unauthenticated OK) | **Secondary** - Alongside subscriptions |
-| **Low Credit Warning**     | `CreditsDisplay.tsx`              | P1       | All authenticated users           | Proactive upsell when credits < 5       |
-| **Out of Credits Modal**   | New component                     | P0       | All authenticated users           | Shown when balance = 0                  |
+| Location                   | Component                               | Priority | Visibility Rule                   | Purpose                                 |
+| -------------------------- | --------------------------------------- | -------- | --------------------------------- | --------------------------------------- |
+| **Dashboard Billing Page** | `/src/pages/dashboard/billing/page.tsx` | P0       | All authenticated users           | **Primary** purchase location           |
+| **Pricing Page**           | `/src/pages/pricing/page.tsx`           | P1       | All visitors (unauthenticated OK) | **Secondary** - Alongside subscriptions |
+| **Low Credit Warning**     | `CreditsDisplay.tsx`                    | P1       | All authenticated users           | Proactive upsell when credits < 5       |
+| **Out of Credits Modal**   | New component                           | P0       | All authenticated users           | Shown when balance = 0                  |
 
 **Key Strategy**: Credit packs are **available to everyone**, but pricing structure incentivizes subscription for regular users (11-58% cheaper per credit).
 
 ### 4.2 Detailed UI Changes
 
-#### A. `/app/dashboard/billing/page.tsx` (**PRIMARY LOCATION**)
+#### A. `/src/pages/dashboard/billing/page.tsx` (**PRIMARY LOCATION**)
 
 **Add Credit Top-Up Section between "Current Plan" and "Payment Methods":**
 
-**File**: `/home/joao/projects/myimageupscaler.com/app/dashboard/billing/page.tsx`
+**File**: `/home/joao/projects/autopilotrank.com/src/pages/dashboard/billing/page.tsx`
 **Position**: After line 242 (after Current Plan section, before Payment Methods)
 **Visibility**: All authenticated users
 
@@ -764,11 +764,11 @@ import { Plus } from 'lucide-react';
 </div>;
 ```
 
-#### B. `/app/pricing/page.tsx` (**SECONDARY LOCATION**)
+#### B. `/src/pages/pricing/page.tsx` (**SECONDARY LOCATION**)
 
 **Add Credit Packs Section after subscription plans:**
 
-**File**: `/home/joao/projects/myimageupscaler.com/app/pricing/page.tsx`
+**File**: `/home/joao/projects/autopilotrank.com/src/pages/pricing/page.tsx`
 **Position**: After line 165 (after subscription grid, before FAQ section)
 **Visibility**: All visitors (works for unauthenticated users)
 
@@ -809,7 +809,7 @@ import { CreditPackSelector } from '@client/components/stripe/CreditPackSelector
 
 **Add "Buy Credits" link when credits are low:**
 
-**File**: `/home/joao/projects/myimageupscaler.com/client/components/stripe/CreditsDisplay.tsx`
+**File**: `/home/joao/projects/autopilotrank.com/src/components/stripe/CreditsDisplay.tsx`
 **Position**: Modify lines 183-197 (tooltip section)
 
 ```tsx
@@ -848,7 +848,7 @@ import { CreditPackSelector } from '@client/components/stripe/CreditPackSelector
 
 **Create modal shown when user tries to upscale without credits:**
 
-**File**: `/home/joao/projects/myimageupscaler.com/client/components/stripe/OutOfCreditsModal.tsx` (NEW)
+**File**: `/home/joao/projects/autopilotrank.com/src/components/stripe/OutOfCreditsModal.tsx` (NEW)
 
 ```tsx
 'use client';
@@ -1138,27 +1138,27 @@ All components must be mobile-responsive:
 
 **New Components**:
 
-- [ ] Create `CreditPackSelector.tsx` in `/client/components/stripe/`
-- [ ] Create `OutOfCreditsModal.tsx` in `/client/components/stripe/`
-- [ ] Export both from `/client/components/stripe/index.ts`
+- [ ] Create `CreditPackSelector.tsx` in `/src/components/stripe/`
+- [ ] Create `OutOfCreditsModal.tsx` in `/src/components/stripe/`
+- [ ] Export both from `/src/components/stripe/index.ts`
 
 **UI Integrations**:
 
-- [ ] **Billing Page** (`/app/dashboard/billing/page.tsx`) - **ALL USERS**:
+- [ ] **Billing Page** (`/src/pages/dashboard/billing/page.tsx`) - **ALL USERS**:
   - Import `CreditPackSelector` and `Plus` icon
   - Add credit top-up section after line 242
   - Show `CreditPackSelector` for all authenticated users
   - Add tip banner showing subscription value (conditional based on `subscription`)
   - Wire up callbacks: `onPurchaseComplete={() => loadBillingData()}`
 
-- [ ] **Pricing Page** (`/app/pricing/page.tsx`) - **ALL VISITORS**:
+- [ ] **Pricing Page** (`/src/pages/pricing/page.tsx`) - **ALL VISITORS**:
   - Import `CreditPackSelector`
   - Add credit packs section after line 165 (after subscriptions, before FAQ)
   - Add border-t separator and "Need Credits Without a Subscription?" heading
   - Add value comparison tip linking back to subscriptions
   - Wire up callbacks: `onPurchaseComplete={() => window.location.reload()}`
 
-- [ ] **Credits Display** (`/client/components/stripe/CreditsDisplay.tsx`) - **ALL USERS**:
+- [ ] **Credits Display** (`/src/components/stripe/CreditsDisplay.tsx`) - **ALL USERS**:
   - Modify tooltip (lines 183-197) to add "Buy more credits →" link
   - Link points to `/dashboard/billing` for all users
   - Change `pointer-events-none` to `pointer-events-auto` on tooltip
@@ -1331,13 +1331,13 @@ Psychology: Heavy users save 22% by subscribing
 
 ### Competitive Positioning
 
-| Competitor              | One-Time Option     | Subscription Option     |
-| ----------------------- | ------------------- | ----------------------- |
-| Let's Enhance           | ✅ Credit packs     | ✅ Subscriptions        |
-| VanceAI                 | ✅ Pay-per-image    | ✅ Subscriptions        |
-| Topaz Labs              | ✅ One-time license | ✅ Cloud subscription   |
-| Upscale.media           | ✅ Annual payment   | ✅ Monthly subscription |
-| **myimageupscaler.com** | ✅ **Credit packs** | ✅ **Subscriptions**    |
+| Competitor            | One-Time Option     | Subscription Option     |
+| --------------------- | ------------------- | ----------------------- |
+| Let's Enhance         | ✅ Credit packs     | ✅ Subscriptions        |
+| VanceAI               | ✅ Pay-per-image    | ✅ Subscriptions        |
+| Topaz Labs            | ✅ One-time license | ✅ Cloud subscription   |
+| Upscale.media         | ✅ Annual payment   | ✅ Monthly subscription |
+| **autopilotrank.com** | ✅ **Credit packs** | ✅ **Subscriptions**    |
 
 **Result**: We match industry standard while maintaining subscription incentives through pricing structure.
 

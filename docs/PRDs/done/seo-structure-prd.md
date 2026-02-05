@@ -11,10 +11,10 @@ globs: app/**/*.tsx, app/**/*.ts, src/components/**/*.tsx
 
 ### 1.1 Files Analyzed
 
-- `file:///home/joao/projects/myimageupscaler.com/app/layout.tsx`
-- `file:///home/joao/projects/myimageupscaler.com/app/robots.ts`
-- `file:///home/joao/projects/myimageupscaler.com/app/sitemap.ts`
-- `file:///home/joao/projects/myimageupscaler.com/package.json`
+- `file:///home/joao/projects/autopilotrank.com/src/pages/layout.tsx`
+- `file:///home/joao/projects/autopilotrank.com/src/pages/robots.ts`
+- `file:///home/joao/projects/autopilotrank.com/src/pages/sitemap.ts`
+- `file:///home/joao/projects/autopilotrank.com/package.json`
 
 ### 1.2 Component & Dependency Overview
 
@@ -117,13 +117,13 @@ sequenceDiagram
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'),
   title: {
-    default: 'MyImageUpscaler - Image Upscaling & Enhancement',
-    template: '%s | MyImageUpscaler',
+    default: 'AutopilotRank - Image Upscaling & Enhancement',
+    template: '%s | AutopilotRank',
   },
   openGraph: {
     type: 'website',
     locale: 'en_US',
-    siteName: 'MyImageUpscaler',
+    siteName: 'AutopilotRank',
     // ...
   },
   // ...

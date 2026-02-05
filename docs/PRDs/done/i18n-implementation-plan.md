@@ -10,11 +10,11 @@
 
 **Files Analyzed:**
 
-- `/app/(pseo)/*/[slug]/page.tsx` - 12 pSEO route handlers
+- `/src/pages/(pseo)/*/[slug]/page.tsx` - 12 pSEO route handlers
 - `/lib/seo/data-loader.ts`, `metadata-factory.ts`, `pseo-types.ts`
-- `/app/seo/data/*.json` - 25 content data files
+- `/src/pages/seo/data/*.json` - 25 content data files
 - `/middleware.ts` - Current auth/redirect logic
-- `/client/components/**` - UI components with hardcoded strings
+- `/src/components/**` - UI components with hardcoded strings
 - `/locales/` - Empty placeholder directories (en/, es/)
 
 **Current Behavior:**
@@ -418,7 +418,7 @@ After EN/ES stable:
 ## 8. File Structure (Final State)
 
 ```
-/home/joao/projects/pixelperfect/
+/home/joao/projects/autopilotrank.com/
 ├── i18n/
 │   ├── config.ts           # Supported locales, default
 │   ├── request.ts          # Server-side locale handling

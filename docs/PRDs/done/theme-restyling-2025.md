@@ -12,17 +12,17 @@
 ### 1.1 Files Analyzed
 
 ```
-/home/joao/projects/pixelperfect/tailwind.config.js
-/home/joao/projects/pixelperfect/client/styles/index.css
-/home/joao/projects/pixelperfect/client/components/pages/HomePageClient.tsx
-/home/joao/projects/pixelperfect/client/components/features/landing/Features.tsx
-/home/joao/projects/pixelperfect/client/components/features/landing/CTASection.tsx
-/home/joao/projects/pixelperfect/client/components/features/landing/Pricing.tsx
-/home/joao/projects/pixelperfect/client/components/features/landing/HowItWorks.tsx
-/home/joao/projects/pixelperfect/client/components/features/workspace/Workspace.tsx
-/home/joao/projects/pixelperfect/client/components/landing/HeroBeforeAfter.tsx
-/home/joao/projects/pixelperfect/client/components/ui/BeforeAfterSlider.tsx
-/home/joao/projects/pixelperfect/docs/PRDs/done/dark-theme-system.md
+/home/joao/projects/autopilotrank.com/tailwind.config.js
+/home/joao/projects/autopilotrank.com/src/styles/index.css
+/home/joao/projects/autopilotrank.com/src/components/pages/HomePageClient.tsx
+/home/joao/projects/autopilotrank.com/src/components/features/landing/Features.tsx
+/home/joao/projects/autopilotrank.com/src/components/features/landing/CTASection.tsx
+/home/joao/projects/autopilotrank.com/src/components/features/landing/Pricing.tsx
+/home/joao/projects/autopilotrank.com/src/components/features/landing/HowItWorks.tsx
+/home/joao/projects/autopilotrank.com/src/components/features/workspace/Workspace.tsx
+/home/joao/projects/autopilotrank.com/src/components/landing/HeroBeforeAfter.tsx
+/home/joao/projects/autopilotrank.com/src/components/ui/BeforeAfterSlider.tsx
+/home/joao/projects/autopilotrank.com/docs/PRDs/done/dark-theme-system.md
 ```
 
 ### 1.2 Component & Dependency Overview

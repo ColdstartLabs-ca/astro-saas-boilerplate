@@ -12,15 +12,15 @@
 ### 1.1 Files Analyzed
 
 ```
-/home/joao/projects/pixelperfect/styling-guide-report.md          # Design specifications
-/home/joao/projects/pixelperfect/tailwind.config.js               # Current Tailwind config
-/home/joao/projects/pixelperfect/client/styles/index.css          # Current CSS variables
-/home/joao/projects/pixelperfect/app/page.tsx                     # Landing page entry
-/home/joao/projects/pixelperfect/client/components/pages/HomePageClient.tsx
-/home/joao/projects/pixelperfect/client/components/features/landing/Features.tsx
-/home/joao/projects/pixelperfect/client/components/features/landing/HowItWorks.tsx
-/home/joao/projects/pixelperfect/client/components/ui/BeforeAfterSlider.tsx
-/home/joao/projects/pixelperfect/client/components/features/workspace/PremiumUpsellModal.tsx
+/home/joao/projects/autopilotrank.com/styling-guide-report.md          # Design specifications
+/home/joao/projects/autopilotrank.com/tailwind.config.js               # Current Tailwind config
+/home/joao/projects/autopilotrank.com/src/styles/index.css          # Current CSS variables
+/home/joao/projects/autopilotrank.com/src/pages/page.tsx                     # Landing page entry
+/home/joao/projects/autopilotrank.com/src/components/pages/HomePageClient.tsx
+/home/joao/projects/autopilotrank.com/src/components/features/landing/Features.tsx
+/home/joao/projects/autopilotrank.com/src/components/features/landing/HowItWorks.tsx
+/home/joao/projects/autopilotrank.com/src/components/ui/BeforeAfterSlider.tsx
+/home/joao/projects/autopilotrank.com/src/components/features/workspace/PremiumUpsellModal.tsx
 ```
 
 ### 1.2 Component & Dependency Overview

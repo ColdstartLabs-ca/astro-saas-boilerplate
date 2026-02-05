@@ -6,11 +6,11 @@
 
 #### P3 - Internal Identifiers (Low Priority - Refactor Later):
 
-| Type          | Change To                                                           | Files                                                         |
-| ------------- | ------------------------------------------------------------------- | ------------------------------------------------------------- |
-| Cache keys    | `app_auth_cache`, `app_user_cache`                                  | `client/store/auth/authCache.ts`, `client/store/userStore.ts` |
-| Service names | Use env-based `${APP_ID}-api`, `${APP_ID}-cron`                     | `server/monitoring/logger.ts`, `workers/cron/index.ts`        |
-| Folder paths  | Rename `@shared/types/myimageupscaler.com` → `@shared/types/models` | Requires folder rename + import updates                       |
+| Type          | Change To                                                         | Files                                                         |
+| ------------- | ----------------------------------------------------------------- | ------------------------------------------------------------- |
+| Cache keys    | `app_auth_cache`, `app_user_cache`                                | `client/store/auth/authCache.ts`, `client/store/userStore.ts` |
+| Service names | Use env-based `${APP_ID}-api`, `${APP_ID}-cron`                   | `server/monitoring/logger.ts`, `workers/cron/index.ts`        |
+| Folder paths  | Rename `@shared/types/autopilotrank.com` → `@shared/types/models` | Requires folder rename + import updates                       |
 
 **Note**: Internal identifiers don't affect users but should be genericized. The folder rename requires updating all imports - consider as separate task.
 
@@ -69,7 +69,7 @@ graph TD
 
 **Already Centralized (no changes needed):**
 
-- `clientEnv.APP_NAME` - Application name (defaults to 'myimageupscaler.com')
+- `clientEnv.APP_NAME` - Application name (defaults to 'autopilotrank.com')
 - `clientEnv.BASE_URL` - Full URL with protocol (defaults to 'http://localhost:3000')
 - `clientEnv.ADMIN_EMAIL`, `SUPPORT_EMAIL`, `LEGAL_EMAIL`, `PRIVACY_EMAIL` - Contact emails
 
@@ -91,7 +91,7 @@ graph TD
 
 **This is a MINIMAL refactor - no new modules required.**
 
-- Replace hardcoded `'myimageupscaler.com'` strings with `clientEnv.APP_NAME`
+- Replace hardcoded `'autopilotrank.com'` strings with `clientEnv.APP_NAME`
 - Add `NEXT_PUBLIC_TWITTER_HANDLE` env var for social handles
 - Use existing `clientEnv` utilities - NO new domain.ts module needed
 
@@ -193,22 +193,22 @@ export function generateMetadata(page: PSEOPage, category: PSEOCategory): Metada
 
     openGraph: {
       // ...
-      siteName: APP_NAME, // was: 'myimageupscaler.com'
+      siteName: APP_NAME, // was: 'autopilotrank.com'
     },
 
     twitter: {
       // ...
-      creator: `@${TWITTER_HANDLE}`, // was: '@myimageupscaler.com'
+      creator: `@${TWITTER_HANDLE}`, // was: '@autopilotrank.com'
     },
 
-    authors: [{ name: APP_NAME, url: BASE_URL }], // was: 'myimageupscaler.com'
-    applicationName: APP_NAME, // was: 'myimageupscaler.com'
+    authors: [{ name: APP_NAME, url: BASE_URL }], // was: 'autopilotrank.com'
+    applicationName: APP_NAME, // was: 'autopilotrank.com'
   };
 }
 
 export function generateCategoryMetadata(category: PSEOCategory): Metadata {
-  // Same pattern - replace 'myimageupscaler.com' with APP_NAME
-  // Replace '@myimageupscaler.com' with `@${TWITTER_HANDLE}`
+  // Same pattern - replace 'autopilotrank.com' with APP_NAME
+  // Replace '@autopilotrank.com' with `@${TWITTER_HANDLE}`
 }
 ```
 
@@ -253,58 +253,58 @@ export function getCategoryDescription(category: PSEOCategory): string {
 ### Phase 2: Update SEO Infrastructure (P0)
 
 - [ ] `/lib/seo/metadata-factory.ts`:
-  - Replace all `'myimageupscaler.com'` → `APP_NAME`
-  - Replace `'@myimageupscaler.com'` → `` `@${TWITTER_HANDLE}` ``
+  - Replace all `'autopilotrank.com'` → `APP_NAME`
+  - Replace `'@autopilotrank.com'` → `` `@${TWITTER_HANDLE}` ``
 - [ ] `/lib/seo/schema-generator.ts`:
-  - Replace `name: 'myimageupscaler.com'` → `APP_NAME`
+  - Replace `name: 'autopilotrank.com'` → `APP_NAME`
   - Replace `ORGANIZATION_SCHEMA.sameAs` array - either:
     - Use env vars: `TWITTER_URL`, `LINKEDIN_URL` (requires new env vars)
     - Derive from TWITTER_HANDLE: `` `https://twitter.com/${TWITTER_HANDLE}` ``
     - Or remove `sameAs` if not needed
 - [ ] `/lib/seo/url-utils.ts`:
-  - Replace `'Compare myimageupscaler.com with...'` → `` `Compare ${APP_NAME} with...` ``
+  - Replace `'Compare autopilotrank.com with...'` → `` `Compare ${APP_NAME} with...` ``
 - [ ] `/lib/seo/meta-generator.ts`:
-  - Replace `'| myimageupscaler.com'` → `` `| ${APP_NAME}` ``
+  - Replace `'| autopilotrank.com'` → `` `| ${APP_NAME}` ``
 - [ ] `/lib/seo/data-loader.ts`:
   - Replace hardcoded brand in FAQ answers
-- [ ] `/app/layout.tsx`:
-  - Replace all hardcoded `'myimageupscaler.com AI'` strings
-- [ ] `/app/manifest.ts`:
+- [ ] `/src/pages/layout.tsx`:
+  - Replace all hardcoded `'autopilotrank.com AI'` strings
+- [ ] `/src/pages/manifest.ts`:
   - Replace hardcoded `name` and `short_name`
 
 ### Phase 3: Update Static Pages & Components (P1)
 
 **Static Pages:**
 
-- [ ] `/app/help/page.tsx` - Replace hardcoded emails → `clientEnv.SUPPORT_EMAIL`, brand text
-- [ ] `/app/terms/page.tsx` - Replace brand references
-- [ ] `/app/features/page.tsx`, `/app/how-it-works/page.tsx` - Replace metadata brand
-- [ ] `/app/verify-email/page.tsx` - Replace metadata brand
-- [ ] `/app/success/page.tsx`, `/app/canceled/page.tsx` - Replace emails
-- [ ] `/app/pricing/page.tsx` - Replace `sales@` email (add `SALES_EMAIL` env var)
+- [ ] `/src/pages/help/page.tsx` - Replace hardcoded emails → `clientEnv.SUPPORT_EMAIL`, brand text
+- [ ] `/src/pages/terms/page.tsx` - Replace brand references
+- [ ] `/src/pages/features/page.tsx`, `/src/pages/how-it-works/page.tsx` - Replace metadata brand
+- [ ] `/src/pages/verify-email/page.tsx` - Replace metadata brand
+- [ ] `/src/pages/success/page.tsx`, `/src/pages/canceled/page.tsx` - Replace emails
+- [ ] `/src/pages/pricing/page.tsx` - Replace `sales@` email (add `SALES_EMAIL` env var)
 
 **Landing Components:**
 
-- [ ] `/client/components/features/landing/Pricing.tsx` - Replace brand in schema
-- [ ] `/client/components/features/landing/CTASection.tsx` - Replace brand text
-- [ ] `/client/components/pages/HomePageClient.tsx` - Replace brand text
+- [ ] `/src/components/features/landing/Pricing.tsx` - Replace brand in schema
+- [ ] `/src/components/features/landing/CTASection.tsx` - Replace brand text
+- [ ] `/src/components/pages/HomePageClient.tsx` - Replace brand text
 
 **Dashboard & Layout:**
 
-- [ ] `/client/components/dashboard/DashboardSidebar.tsx` - Replace brand in sidebar
-- [ ] `/app/dashboard/support/page.tsx` - Replace brand text
-- [ ] `/client/components/layout/Footer.tsx` - Replace brand + email
+- [ ] `/src/components/dashboard/DashboardSidebar.tsx` - Replace brand in sidebar
+- [ ] `/src/pages/dashboard/support/page.tsx` - Replace brand text
+- [ ] `/src/components/layout/Footer.tsx` - Replace brand + email
 
 ### Phase 4: Update pSEO and Blog (P2)
 
-- [ ] `/app/(pseo)/**/*.tsx` - Parameterize brand references in templates
-- [ ] `/app/(pseo)/compare/page.tsx` - Replace "Compare X with..." text
-- [ ] `/app/blog/page.tsx`, `/app/blog/[slug]/page.tsx` - Update metadata + CTAs
+- [ ] `/src/pages/(pseo)/**/*.tsx` - Parameterize brand references in templates
+- [ ] `/src/pages/(pseo)/compare/page.tsx` - Replace "Compare X with..." text
+- [ ] `/src/pages/blog/page.tsx`, `/src/pages/blog/[slug]/page.tsx` - Update metadata + CTAs
 
 ### Phase 5: Validation
 
 - [ ] Run `yarn verify`
-- [ ] Grep for remaining `myimageupscaler.com` in user-facing strings
+- [ ] Grep for remaining `autopilotrank.com` in user-facing strings
 - [ ] Verify metadata renders correctly
 
 ---
@@ -320,10 +320,10 @@ export function getCategoryDescription(category: PSEOCategory): string {
 
 ### Edge Cases
 
-| Scenario                       | Expected Behavior                                    |
-| ------------------------------ | ---------------------------------------------------- |
-| Missing TWITTER_HANDLE env var | Default to 'myimageupscaler.com'                     |
-| APP_NAME not set               | Default to 'myimageupscaler.com' (existing behavior) |
+| Scenario                       | Expected Behavior                                  |
+| ------------------------------ | -------------------------------------------------- |
+| Missing TWITTER_HANDLE env var | Default to 'autopilotrank.com'                     |
+| APP_NAME not set               | Default to 'autopilotrank.com' (existing behavior) |
 
 ---
 
@@ -351,9 +351,9 @@ export function getCategoryDescription(category: PSEOCategory): string {
 
 ### Validation:
 
-- [ ] `grep -rE "(myimageupscaler.com|myimageupscaler.com\.(com|app))" --include="*.tsx" app/ lib/ client/` returns only:
-  - Cache keys (e.g., `myimageupscaler.com_auth_cache`)
-  - Import paths (e.g., `@shared/types/myimageupscaler.com`)
+- [ ] `grep -rE "(autopilotrank.com|autopilotrank.com\.(com|app))" --include="*.tsx" app/ lib/ client/` returns only:
+  - Cache keys (e.g., `autopilotrank.com_auth_cache`)
+  - Import paths (e.g., `@shared/types/autopilotrank.com`)
   - Env defaults in `env.ts`
 - [ ] Metadata renders correctly in browser dev tools
 

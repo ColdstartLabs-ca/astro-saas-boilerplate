@@ -6,15 +6,15 @@
 
 ## 1. Context
 
-**Problem:** Transform the MyImageUpscaler codebase into a reusable SaaS boilerplate by removing all project-specific functionality while preserving core infrastructure.
+**Problem:** Transform the AutopilotRank codebase into a reusable SaaS boilerplate by removing all project-specific functionality while preserving core infrastructure.
 
 **Files Analyzed:**
 
-- `/app/` - 90+ page files, API routes
-- `/client/components/` - 22 component directories
+- `/src/pages/` - 90+ page files, API routes
+- `/src/components/` - 22 component directories
 - `/server/services/` - 14 service files
 - `/lib/seo/` - 18 SEO-related files
-- `/app/seo/data/` - 28 pSEO data files
+- `/src/pages/seo/data/` - 28 pSEO data files
 - `/locales/` - 7 language directories (de, en, es, fr, it, ja, pt)
 - `/content/blog/` - 18 blog posts
 - `/tests/` - 11 test directories
@@ -33,7 +33,7 @@
 
 **Approach:**
 
-1. Remove all MyImageUpscaler-specific features (image processing, pSEO, blog)
+1. Remove all AutopilotRank-specific features (image processing, pSEO, blog)
 2. Keep only English locale (en) as the base template
 3. Preserve core SaaS infrastructure (auth, payments, credits, user management)
 4. Simplify to a "credits-based API SaaS" template
@@ -82,7 +82,7 @@ flowchart TB
 
 **Data Changes:**
 
-- Remove 28 pSEO data files from `/app/seo/data/`
+- Remove 28 pSEO data files from `/src/pages/seo/data/`
 - Remove 6 locale directories (keep `/locales/en/`)
 - Keep blog content and compiled data as template examples
 - Keep database migrations (they're infrastructure)
@@ -93,21 +93,21 @@ flowchart TB
 
 ### 3.1 Directories to REMOVE Completely
 
-| Directory                  | Size      | Reason                         |
-| -------------------------- | --------- | ------------------------------ |
-| `/app/(pseo)/`             | ~50 pages | pSEO routes for image upscaler |
-| `/app/[locale]/(pseo)/`    | ~40 pages | Localized pSEO routes          |
-| `/app/seo/data/`           | 28 files  | pSEO content data              |
-| `/locales/de/`             | ~25 files | German translations            |
-| `/locales/es/`             | ~25 files | Spanish translations           |
-| `/locales/fr/`             | ~25 files | French translations            |
-| `/locales/it/`             | ~25 files | Italian translations           |
-| `/locales/ja/`             | ~25 files | Japanese translations          |
-| `/locales/pt/`             | ~25 files | Portuguese translations        |
-| `/client/components/pseo/` | All       | pSEO UI components             |
-| `/lib/seo/`                | 18 files  | pSEO infrastructure            |
-| `/tests/pseo/`             | All       | pSEO tests                     |
-| `/tests/seo/`              | All       | SEO-specific tests             |
+| Directory                     | Size      | Reason                         |
+| ----------------------------- | --------- | ------------------------------ |
+| `/src/pages/(pseo)/`          | ~50 pages | pSEO routes for image upscaler |
+| `/src/pages/[locale]/(pseo)/` | ~40 pages | Localized pSEO routes          |
+| `/src/pages/seo/data/`        | 28 files  | pSEO content data              |
+| `/locales/de/`                | ~25 files | German translations            |
+| `/locales/es/`                | ~25 files | Spanish translations           |
+| `/locales/fr/`                | ~25 files | French translations            |
+| `/locales/it/`                | ~25 files | Italian translations           |
+| `/locales/ja/`                | ~25 files | Japanese translations          |
+| `/locales/pt/`                | ~25 files | Portuguese translations        |
+| `/src/components/pseo/`       | All       | pSEO UI components             |
+| `/lib/seo/`                   | 18 files  | pSEO infrastructure            |
+| `/tests/pseo/`                | All       | pSEO tests                     |
+| `/tests/seo/`                 | All       | SEO-specific tests             |
 
 ### 3.2 Files/Directories to REMOVE
 
@@ -126,50 +126,50 @@ flowchart TB
 
 #### API Routes (Image-Specific)
 
-| Directory                   | Reason                |
-| --------------------------- | --------------------- |
-| `/app/api/upscale/`         | Image upscale API     |
-| `/app/api/credit-estimate/` | Image cost estimation |
-| `/app/api/analyze-image/`   | Image analysis API    |
-| `/app/api/models/`          | AI model listing API  |
-| `/app/api/proxy-image/`     | Image proxy API       |
-| `/app/api/pseo/`            | pSEO health API       |
+| Directory                         | Reason                |
+| --------------------------------- | --------------------- |
+| `/src/pages/api/upscale/`         | Image upscale API     |
+| `/src/pages/api/credit-estimate/` | Image cost estimation |
+| `/src/pages/api/analyze-image/`   | Image analysis API    |
+| `/src/pages/api/models/`          | AI model listing API  |
+| `/src/pages/api/proxy-image/`     | Image proxy API       |
+| `/src/pages/api/pseo/`            | pSEO health API       |
 
 #### App Pages (Product-Specific)
 
-| Directory                     | Reason                |
-| ----------------------------- | --------------------- |
-| `/app/[locale]/how-it-works/` | Product-specific page |
-| `/app/[locale]/features/`     | Product-specific page |
+| Directory                           | Reason                |
+| ----------------------------------- | --------------------- |
+| `/src/pages/[locale]/how-it-works/` | Product-specific page |
+| `/src/pages/[locale]/features/`     | Product-specific page |
 
 #### Client Components (Image/Product-Specific)
 
-| Directory                                       | Reason                                 |
-| ----------------------------------------------- | -------------------------------------- |
-| `/client/components/pages/HomePageClient.tsx`   | Product-specific home                  |
-| `/client/components/tools/`                     | Image tools UI                         |
-| `/client/components/features/image-processing/` | Image dropzone, comparison             |
-| `/client/components/features/workspace/`        | Batch processing workspace             |
-| `/client/components/features/landing/`          | Product-specific landing sections      |
-| `/client/components/seo/`                       | SEO meta components (product-specific) |
+| Directory                                    | Reason                                 |
+| -------------------------------------------- | -------------------------------------- |
+| `/src/components/pages/HomePageClient.tsx`   | Product-specific home                  |
+| `/src/components/tools/`                     | Image tools UI                         |
+| `/src/components/features/image-processing/` | Image dropzone, comparison             |
+| `/src/components/features/workspace/`        | Batch processing workspace             |
+| `/src/components/features/landing/`          | Product-specific landing sections      |
+| `/src/components/seo/`                       | SEO meta components (product-specific) |
 
 #### Client Utilities (Image-Specific)
 
-| File                                   | Reason                               |
-| -------------------------------------- | ------------------------------------ |
-| `/client/utils/bulk-processing.ts`     | Batch image processing               |
-| `/client/utils/image-compression.ts`   | Image compression                    |
-| `/client/utils/image-preprocessing.ts` | Image preprocessing                  |
-| `/client/utils/file-validation.ts`     | Image file validation                |
-| `/client/utils/prompt-utils.ts`        | AI prompt utilities                  |
-| `/client/utils/zip-download.ts`        | Batch download (may keep simplified) |
+| File                                | Reason                               |
+| ----------------------------------- | ------------------------------------ |
+| `/src/utils/bulk-processing.ts`     | Batch image processing               |
+| `/src/utils/image-compression.ts`   | Image compression                    |
+| `/src/utils/image-preprocessing.ts` | Image preprocessing                  |
+| `/src/utils/file-validation.ts`     | Image file validation                |
+| `/src/utils/prompt-utils.ts`        | AI prompt utilities                  |
+| `/src/utils/zip-download.ts`        | Batch download (may keep simplified) |
 
 #### Client Hooks (Image-Specific)
 
-| File                                   | Reason            |
-| -------------------------------------- | ----------------- |
-| `/client/hooks/useBatchQueue.ts`       | Batch image queue |
-| `/client/hooks/useLowCreditWarning.ts` | Keep but simplify |
+| File                                | Reason            |
+| ----------------------------------- | ----------------- |
+| `/src/hooks/useBatchQueue.ts`       | Batch image queue |
+| `/src/hooks/useLowCreditWarning.ts` | Keep but simplify |
 
 #### Shared Config (Image-Specific)
 
@@ -190,7 +190,7 @@ flowchart TB
 
 | Pattern                                        | Reason            |
 | ---------------------------------------------- | ----------------- |
-| `/app/sitemap-*.xml`                           | All pSEO sitemaps |
+| `/src/pages/sitemap-*.xml`                     | All pSEO sitemaps |
 | Keep only: `sitemap.xml`, `sitemap-static.xml` | Core sitemaps     |
 
 #### Scripts (pSEO/Blog-Specific)
@@ -270,39 +270,39 @@ flowchart TB
 | `/shared/config/`                               | Configuration (mostly)  |
 | `/shared/repositories/`                         | Data access             |
 | `/shared/types/`                                | Type definitions        |
-| `/client/components/ui/`                        | UI library              |
-| `/client/components/common/`                    | Common components       |
-| `/client/components/auth/`                      | Auth components         |
-| `/client/components/dashboard/`                 | Dashboard (simplify)    |
-| `/client/components/admin/`                     | Admin panel             |
-| `/client/components/stripe/`                    | Payment components      |
-| `/client/components/modal/`                     | Modal system            |
-| `/client/components/form/`                      | Form components         |
-| `/client/components/layout/`                    | Layout components       |
-| `/client/components/navigation/`                | Navigation              |
-| `/client/components/errors/`                    | Error boundaries        |
-| `/client/store/`                                | State management        |
-| `/client/hooks/`                                | Custom hooks            |
-| `/client/components/blog/`                      | Blog components         |
+| `/src/components/ui/`                           | UI library              |
+| `/src/components/common/`                       | Common components       |
+| `/src/components/auth/`                         | Auth components         |
+| `/src/components/dashboard/`                    | Dashboard (simplify)    |
+| `/src/components/admin/`                        | Admin panel             |
+| `/src/components/stripe/`                       | Payment components      |
+| `/src/components/modal/`                        | Modal system            |
+| `/src/components/form/`                         | Form components         |
+| `/src/components/layout/`                       | Layout components       |
+| `/src/components/navigation/`                   | Navigation              |
+| `/src/components/errors/`                       | Error boundaries        |
+| `/src/store/`                                   | State management        |
+| `/src/hooks/`                                   | Custom hooks            |
+| `/src/components/blog/`                         | Blog components         |
 | `/i18n/`                                        | i18n infrastructure     |
 | `/locales/en/`                                  | English translations    |
 | `/content/blog/`                                | Blog content (template) |
 | `/supabase/migrations/`                         | Database schema         |
-| `/app/api/webhooks/stripe/`                     | Stripe webhooks         |
-| `/app/api/checkout/`                            | Checkout API            |
-| `/app/api/subscription/`                        | Subscription API        |
-| `/app/api/portal/`                              | Billing portal API      |
-| `/app/api/credits/`                             | Credit APIs             |
-| `/app/api/admin/`                               | Admin APIs              |
-| `/app/[locale]/dashboard/`                      | Dashboard pages         |
-| `/app/[locale]/pricing/`                        | Pricing page            |
-| `/app/[locale]/auth/`                           | Auth pages              |
-| `/app/[locale]/success/`                        | Checkout success        |
-| `/app/[locale]/canceled/`                       | Checkout canceled       |
-| `/app/[locale]/privacy/`                        | Privacy policy          |
-| `/app/[locale]/terms/`                          | Terms of service        |
-| `/app/[locale]/help/`                           | Help page               |
-| `/app/[locale]/blog/`                           | Blog pages              |
+| `/src/pages/api/webhooks/stripe/`               | Stripe webhooks         |
+| `/src/pages/api/checkout/`                      | Checkout API            |
+| `/src/pages/api/subscription/`                  | Subscription API        |
+| `/src/pages/api/portal/`                        | Billing portal API      |
+| `/src/pages/api/credits/`                       | Credit APIs             |
+| `/src/pages/api/admin/`                         | Admin APIs              |
+| `/src/pages/[locale]/dashboard/`                | Dashboard pages         |
+| `/src/pages/[locale]/pricing/`                  | Pricing page            |
+| `/src/pages/[locale]/auth/`                     | Auth pages              |
+| `/src/pages/[locale]/success/`                  | Checkout success        |
+| `/src/pages/[locale]/canceled/`                 | Checkout canceled       |
+| `/src/pages/[locale]/privacy/`                  | Privacy policy          |
+| `/src/pages/[locale]/terms/`                    | Terms of service        |
+| `/src/pages/[locale]/help/`                     | Help page               |
+| `/src/pages/[locale]/blog/`                     | Blog pages              |
 | `/tests/api/`                                   | API tests               |
 | `/tests/e2e/`                                   | E2E tests (filter)      |
 | `/tests/unit/`                                  | Unit tests (filter)     |
@@ -313,8 +313,8 @@ flowchart TB
 | File                               | Changes Needed             |
 | ---------------------------------- | -------------------------- |
 | `/shared/config/credits.config.ts` | Generic credit tiers       |
-| `/app/[locale]/page.tsx`           | Generic landing page       |
-| `/client/components/landing/`      | Generic hero, features     |
+| `/src/pages/[locale]/page.tsx`     | Generic landing page       |
+| `/src/components/landing/`         | Generic hero, features     |
 | `/locales/en/*.json`               | Remove image-specific text |
 | `/i18n/config.ts`                  | Only English locale        |
 | `/next.config.js`                  | Remove pSEO rewrites       |
@@ -331,19 +331,19 @@ flowchart TB
 
 **Files (5 directories):**
 
-- `/app/(pseo)/` - DELETE entirely
-- `/app/[locale]/(pseo)/` - DELETE entirely
-- `/app/seo/data/` - DELETE entirely
+- `/src/pages/(pseo)/` - DELETE entirely
+- `/src/pages/[locale]/(pseo)/` - DELETE entirely
+- `/src/pages/seo/data/` - DELETE entirely
 - `/lib/seo/` - DELETE entirely
-- `/client/components/pseo/` - DELETE entirely
+- `/src/components/pseo/` - DELETE entirely
 
 **Implementation:**
 
-- [ ] Remove `/app/(pseo)/` directory tree
-- [ ] Remove `/app/[locale]/(pseo)/` directory tree
-- [ ] Remove `/app/seo/data/` directory (28 JSON files)
+- [ ] Remove `/src/pages/(pseo)/` directory tree
+- [ ] Remove `/src/pages/[locale]/(pseo)/` directory tree
+- [ ] Remove `/src/pages/seo/data/` directory (28 JSON files)
 - [ ] Remove `/lib/seo/` directory (18 files)
-- [ ] Remove `/client/components/pseo/` directory
+- [ ] Remove `/src/components/pseo/` directory
 
 **Tests Required:**
 | Test File | Test Name | Assertion |
@@ -429,8 +429,8 @@ flowchart TB
 
 **Files (5):**
 
-- `/app/api/upscale/` - DELETE directory
-- `/app/api/credit-estimate/` - DELETE directory
+- `/src/pages/api/upscale/` - DELETE directory
+- `/src/pages/api/credit-estimate/` - DELETE directory
 - `/server/services/llm-image-analyzer.ts` - DELETE
 - `/server/services/llm-image-analyzer.types.ts` - DELETE
 - `/server/services/model-registry.types.ts` - DELETE
@@ -463,8 +463,8 @@ flowchart TB
 
 - `/content/blog/` - KEEP as template examples (18 MDX files)
 - `/content/blog-data.json` - KEEP as template structure
-- `/app/[locale]/blog/` - KEEP blog page routes
-- `/client/components/blog/` - KEEP blog components
+- `/src/pages/[locale]/blog/` - KEEP blog page routes
+- `/src/components/blog/` - KEEP blog components
 - `/scripts/build-blog.ts` - KEEP blog build system
 
 **Implementation:**
@@ -494,10 +494,10 @@ flowchart TB
 
 **Files (4):**
 
-- `/app/[locale]/features/` - DELETE
-- `/app/[locale]/how-it-works/` - DELETE
-- `/client/components/features/` - DELETE
-- `/client/components/tools/` - DELETE
+- `/src/pages/[locale]/features/` - DELETE
+- `/src/pages/[locale]/how-it-works/` - DELETE
+- `/src/components/features/` - DELETE
+- `/src/components/tools/` - DELETE
 
 **Implementation:**
 
@@ -678,9 +678,9 @@ export const CREDIT_COSTS = {
 
 **Files (3):**
 
-- `/app/[locale]/page.tsx` - MODIFY
-- `/client/components/pages/HomePageClient.tsx` - REPLACE
-- `/client/components/landing/` - MODIFY
+- `/src/pages/[locale]/page.tsx` - MODIFY
+- `/src/components/pages/HomePageClient.tsx` - REPLACE
+- `/src/components/landing/` - MODIFY
 
 **Implementation:**
 
@@ -764,8 +764,8 @@ Remove these dependencies:
 
 - [ ] Remove pSEO-related rewrites from next.config.js
 - [ ] Update `/shared/config/env.ts`:
-  - Change default APP_NAME from 'MyImageUpscaler' to 'SaaS Boilerplate'
-  - Change default domain from 'myimageupscaler.com' to 'example.com'
+  - Change default APP_NAME from 'AutopilotRank' to 'SaaS Boilerplate'
+  - Change default domain from 'autopilotrank.com' to 'example.com'
   - Remove REPLICATE_API_TOKEN, REPLICATE_MODEL_VERSION
   - Remove GEMINI_API_KEY
   - Remove QWEN_VL_MODEL_VERSION
@@ -808,7 +808,7 @@ Remove these dependencies:
 - [ ] Remove image-specific documentation
 - [ ] Update README with boilerplate instructions
 - [ ] Remove skills: pseo-system (or convert to generic)
-- [ ] Final grep for "upscale", "image", "myimageupscaler" references
+- [ ] Final grep for "upscale", "image", "autopilotrank" references
 - [ ] Remove or update any remaining references
 
 **Tests Required:**
@@ -816,11 +816,11 @@ Remove these dependencies:
 |-----------|-----------|-----------|
 | Manual | Full test suite | `yarn test` passes |
 | Manual | Full verify | `yarn verify` passes |
-| Manual | Grep check | No "myimageupscaler" references |
+| Manual | Grep check | No "autopilotrank" references |
 
 **User Verification:**
 
-- Action: Run `yarn verify && grep -r "myimageupscaler" --include="*.ts" --include="*.tsx" --include="*.json"`
+- Action: Run `yarn verify && grep -r "autopilotrank" --include="*.ts" --include="*.tsx" --include="*.json"`
 - Expected: Verify passes, grep returns empty
 
 ---
@@ -832,7 +832,7 @@ Binary done checks:
 - [ ] All 13 phases complete
 - [ ] `yarn verify` passes
 - [ ] `yarn test` passes (remaining tests)
-- [ ] No "myimageupscaler" references in code
+- [ ] No "autopilotrank" references in code
 - [ ] No "upscale" references in code (except generic)
 - [ ] Only English locale remains
 - [ ] No pSEO pages exist
@@ -1564,7 +1564,7 @@ export class CheckoutController extends BaseController {
 **Route handler pattern:**
 
 ```typescript
-// /app/api/checkout/route.ts
+// /src/pages/api/checkout/route.ts
 import { container } from '@server/di/container';
 import { CheckoutController } from '@server/controllers/checkout.controller';
 import { withErrorHandler } from '@server/utils/api-handler';
@@ -1611,7 +1611,7 @@ export const POST = withErrorHandler(req => controller.createSession(req));
 | --------------------------------------- | ------------------------------ |
 | `/server/middleware/auth.middleware.ts` | Throw errors instead of return |
 | `/server/services/*.ts`                 | Add DI decorators              |
-| `/app/api/*/route.ts`                   | Wire to controllers            |
+| `/src/pages/api/*/route.ts`             | Wire to controllers            |
 | `/tsconfig.json`                        | Enable decorators              |
 | `/package.json`                         | Add tsyringe                   |
 
@@ -1801,7 +1801,7 @@ export const openApiSpec = new OpenApiGeneratorV3(registry.definitions).generate
 **Route for spec:**
 
 ```typescript
-// /app/api/docs/openapi.json/route.ts
+// /src/pages/api/docs/openapi.json/route.ts
 export async function GET() {
   return NextResponse.json(openApiSpec);
 }

@@ -4,30 +4,30 @@
 
 ### 1.1 Files Analyzed
 
-| Path | Purpose |
-|------|---------|
-| `/.env` | Current public variables file (gitignored) |
-| `/.env.example` | Template for public variables |
-| `/.env.prod` | Current server secrets file (gitignored) |
-| `/.env.prod.example` | Template for server secrets |
-| `/.env.test` | E2E testing credentials (unchanged) |
-| `/.env.test.example` | Template for test credentials (unchanged) |
-| `/shared/config/env.ts` | Centralized env loader with Zod validation |
-| `/.gitignore` | Git exclusion patterns for env files |
-| `/scripts/setup/02-environment.sh` | Interactive env setup script |
-| `/scripts/setup/common.sh` | Shared utilities with `load_env()` function |
-| `/scripts/load-env.sh` | Generic bash env loader |
-| `/environment/configure.sh` | Quick environment configuration |
-| `/playwright.config.ts` | E2E config (loads `.env.test`) |
-| `/CLAUDE.md` | Project instructions referencing env structure |
-| `/.github/workflows/deploy.yml` | CI/CD deployment workflow |
-| `/app/api/checkout/route.ts` | Uses `NODE_ENV` for test detection |
-| `/app/api/portal/route.ts` | Uses `NODE_ENV` for test detection |
-| `/app/api/webhooks/stripe/route.ts` | Uses `serverEnv.NODE_ENV` |
-| `/app/api/pseo/health/route.ts` | Uses `process.env.NODE_ENV` |
-| `/middleware.ts` | Uses `serverEnv.NODE_ENV` |
-| `/server/analytics/analyticsService.ts` | Uses `serverEnv.NODE_ENV` |
-| `/client/utils/api-client.ts` | Uses `serverEnv.NODE_ENV` |
+| Path                                      | Purpose                                        |
+| ----------------------------------------- | ---------------------------------------------- |
+| `/.env`                                   | Current public variables file (gitignored)     |
+| `/.env.example`                           | Template for public variables                  |
+| `/.env.prod`                              | Current server secrets file (gitignored)       |
+| `/.env.prod.example`                      | Template for server secrets                    |
+| `/.env.test`                              | E2E testing credentials (unchanged)            |
+| `/.env.test.example`                      | Template for test credentials (unchanged)      |
+| `/shared/config/env.ts`                   | Centralized env loader with Zod validation     |
+| `/.gitignore`                             | Git exclusion patterns for env files           |
+| `/scripts/setup/02-environment.sh`        | Interactive env setup script                   |
+| `/scripts/setup/common.sh`                | Shared utilities with `load_env()` function    |
+| `/scripts/load-env.sh`                    | Generic bash env loader                        |
+| `/environment/configure.sh`               | Quick environment configuration                |
+| `/playwright.config.ts`                   | E2E config (loads `.env.test`)                 |
+| `/CLAUDE.md`                              | Project instructions referencing env structure |
+| `/.github/workflows/deploy.yml`           | CI/CD deployment workflow                      |
+| `/src/pages/api/checkout/route.ts`        | Uses `NODE_ENV` for test detection             |
+| `/src/pages/api/portal/route.ts`          | Uses `NODE_ENV` for test detection             |
+| `/src/pages/api/webhooks/stripe/route.ts` | Uses `serverEnv.NODE_ENV`                      |
+| `/src/pages/api/pseo/health/route.ts`     | Uses `process.env.NODE_ENV`                    |
+| `/middleware.ts`                          | Uses `serverEnv.NODE_ENV`                      |
+| `/server/analytics/analyticsService.ts`   | Uses `serverEnv.NODE_ENV`                      |
+| `/src/utils/api-client.ts`                | Uses `serverEnv.NODE_ENV`                      |
 
 ### 1.2 Component & Dependency Overview
 
@@ -101,6 +101,7 @@ graph TD
 ### 2.1 Architecture Summary
 
 **Local Development Files (renamed):**
+
 - **Rename `.env` → `.env.client`**: Contains only `NEXT_PUBLIC_*` prefixed variables (dev only)
 - **Rename `.env.prod` → `.env.api`**: Contains server-side secrets (dev only)
 - **Rename `.env.example` → `.env.client.example`**: Template for client variables
@@ -108,9 +109,11 @@ graph TD
 - **Keep `.env.test` unchanged**: Already clearly named for testing
 
 **Code Changes (everywhere):**
+
 - **Refactor `NODE_ENV` → `ENV`**: Update all references in code, shared/config/env.ts
 
 **Production (variable name only):**
+
 - No file renames in CI/CD - GitHub Actions and Cloudflare use environment variables directly
 - Code changes to use `ENV` instead of `NODE_ENV` apply to production runtime as well
 
@@ -151,12 +154,12 @@ flowchart LR
 
 ### 2.3 Key Technical Decisions
 
-| Decision | Rationale |
-|----------|-----------|
-| Use `ENV` instead of `NODE_ENV` | Cleaner naming, avoids confusion with Node.js internals |
-| Keep `.env.test` unchanged | Already clear, used by Playwright |
-| Update `.gitignore` patterns | Ensure new files are properly ignored |
-| Backwards compatibility period: None | Clean cut, update all references atomically |
+| Decision                             | Rationale                                               |
+| ------------------------------------ | ------------------------------------------------------- |
+| Use `ENV` instead of `NODE_ENV`      | Cleaner naming, avoids confusion with Node.js internals |
+| Keep `.env.test` unchanged           | Already clear, used by Playwright                       |
+| Update `.gitignore` patterns         | Ensure new files are properly ignored                   |
+| Backwards compatibility period: None | Clean cut, update all references atomically             |
 
 ### 2.4 Data Model Changes
 
@@ -194,10 +197,12 @@ sequenceDiagram
 ### A. `/.gitignore`
 
 **Changes Needed:**
+
 - Add `.env.client` and `.env.api` to ignored patterns
 - Remove `.env` and `.env.prod` patterns (cleanup after migration)
 
 **Current (lines 23-31):**
+
 ```gitignore
 # Environment variables
 .env
@@ -211,6 +216,7 @@ sequenceDiagram
 ```
 
 **New:**
+
 ```gitignore
 # Environment variables
 .env.client
@@ -226,11 +232,13 @@ sequenceDiagram
 ### B. `/shared/config/env.ts`
 
 **Changes Needed:**
+
 - Rename `NODE_ENV` → `ENV` in schema and loader
 - Update helper functions to use `serverEnv.ENV`
 - Update type `IServerEnv`
 
 **Pseudo-code:**
+
 ```typescript
 const serverEnvSchema = z.object({
   ENV: z.enum(['development', 'production', 'test']).default('development'),
@@ -265,10 +273,12 @@ export function isTest(): boolean {
 ### C. `/.env.client.example` (rename from `.env.example`)
 
 **Changes Needed:**
+
 - Rename file
 - Update header comment to reference new naming
 
 **New header:**
+
 ```bash
 # Client environment variables (.env.client)
 # These are NEXT_PUBLIC_* vars exposed to the browser
@@ -280,11 +290,13 @@ export function isTest(): boolean {
 ### D. `/.env.api.example` (rename from `.env.prod.example`)
 
 **Changes Needed:**
+
 - Rename file
 - Add `ENV` variable
 - Update header comment
 
 **New content:**
+
 ```bash
 # Server-side secrets (.env.api)
 # NEVER COMMIT THIS FILE - contains API keys and secrets
@@ -308,11 +320,13 @@ STRIPE_WEBHOOK_SECRET=whsec_xxx
 ### E. `/scripts/setup/02-environment.sh`
 
 **Changes Needed:**
+
 - Replace all `.env` references with `.env.client`
 - Replace all `.env.prod` references with `.env.api`
 - Update `.example` file references
 
 **Key changes:**
+
 ```bash
 # Line 22-36: Handle .env.client file
 if [[ -f ".env.client" ]]; then
@@ -341,9 +355,11 @@ sed -i "s|^SUPABASE_SERVICE_ROLE_KEY=.*|SUPABASE_SERVICE_ROLE_KEY=$SUPABASE_SERV
 ### F. `/scripts/setup/common.sh`
 
 **Changes Needed:**
+
 - Update `load_env()` function to source new file names
 
 **Pseudo-code:**
+
 ```bash
 load_env() {
     local project_root="$1"
@@ -367,9 +383,11 @@ load_env() {
 ### G. `/environment/configure.sh`
 
 **Changes Needed:**
+
 - Update all file references
 
 **Pseudo-code:**
+
 ```bash
 if [ ! -f .env.client ]; then
     if [ -f .env.client.example ]; then
@@ -395,9 +413,11 @@ echo "  2. Edit .env.api with your secret keys"
 ### H. `/CLAUDE.md`
 
 **Changes Needed:**
+
 - Update environment variable documentation section
 
 **New section:**
+
 ```markdown
 ## Environment Variables
 
@@ -430,15 +450,15 @@ This project uses a split environment variable structure:
 
 **Files to update:**
 
-| File | Change |
-|------|--------|
-| `app/api/webhooks/stripe/route.ts` | `serverEnv.NODE_ENV` → `serverEnv.ENV` |
-| `app/api/checkout/route.ts` | `process.env.NODE_ENV` → `serverEnv.ENV` |
-| `app/api/portal/route.ts` | `process.env.NODE_ENV` → `serverEnv.ENV` |
-| `app/api/pseo/health/route.ts` | `process.env.NODE_ENV` → `serverEnv.ENV` |
-| `middleware.ts` | `serverEnv.NODE_ENV` → `serverEnv.ENV` |
-| `server/analytics/analyticsService.ts` | `serverEnv.NODE_ENV` → `serverEnv.ENV` |
-| `client/utils/api-client.ts` | `serverEnv.NODE_ENV` → `serverEnv.ENV` |
+| File                                   | Change                                   |
+| -------------------------------------- | ---------------------------------------- |
+| `app/api/webhooks/stripe/route.ts`     | `serverEnv.NODE_ENV` → `serverEnv.ENV`   |
+| `app/api/checkout/route.ts`            | `process.env.NODE_ENV` → `serverEnv.ENV` |
+| `app/api/portal/route.ts`              | `process.env.NODE_ENV` → `serverEnv.ENV` |
+| `app/api/pseo/health/route.ts`         | `process.env.NODE_ENV` → `serverEnv.ENV` |
+| `middleware.ts`                        | `serverEnv.NODE_ENV` → `serverEnv.ENV`   |
+| `server/analytics/analyticsService.ts` | `serverEnv.NODE_ENV` → `serverEnv.ENV`   |
+| `client/utils/api-client.ts`           | `serverEnv.NODE_ENV` → `serverEnv.ENV`   |
 
 **Note:** Some files use `process.env.NODE_ENV` directly—these should be updated to use the centralized `serverEnv.ENV` for consistency.
 
@@ -448,13 +468,13 @@ This project uses a split environment variable structure:
 
 **Files to update:**
 
-| File | Change |
-|------|--------|
-| `tests/unit/api/stripe-webhooks.unit.spec.ts` | Mock `ENV` instead of `NODE_ENV` |
+| File                                                      | Change                           |
+| --------------------------------------------------------- | -------------------------------- |
+| `tests/unit/api/stripe-webhooks.unit.spec.ts`             | Mock `ENV` instead of `NODE_ENV` |
 | `tests/unit/bugfixes/billing-credit-renewal.unit.spec.ts` | Mock `ENV` instead of `NODE_ENV` |
-| `tests/unit/middleware.unit.spec.ts` | Mock `ENV` instead of `NODE_ENV` |
-| `tests/api/middleware-security.api.spec.ts` | Mock `ENV` instead of `NODE_ENV` |
-| `tests/api/webhooks.api.spec.ts` | Mock `ENV` instead of `NODE_ENV` |
+| `tests/unit/middleware.unit.spec.ts`                      | Mock `ENV` instead of `NODE_ENV` |
+| `tests/api/middleware-security.api.spec.ts`               | Mock `ENV` instead of `NODE_ENV` |
+| `tests/api/webhooks.api.spec.ts`                          | Mock `ENV` instead of `NODE_ENV` |
 
 ---
 
@@ -528,13 +548,13 @@ This project uses a split environment variable structure:
 
 ### Edge Cases
 
-| Scenario | Expected Behavior |
-|----------|-------------------|
-| Neither `ENV` nor `NODE_ENV` set | Default to `'development'` |
-| Both `ENV` and `NODE_ENV` set | Prefer `ENV` |
-| Invalid `ENV` value (e.g., `'staging'`) | Zod throws validation error |
-| Missing `.env.client` file | Use default values from schema |
-| Missing `.env.api` file | Use default values from schema |
+| Scenario                                | Expected Behavior              |
+| --------------------------------------- | ------------------------------ |
+| Neither `ENV` nor `NODE_ENV` set        | Default to `'development'`     |
+| Both `ENV` and `NODE_ENV` set           | Prefer `ENV`                   |
+| Invalid `ENV` value (e.g., `'staging'`) | Zod throws validation error    |
+| Missing `.env.client` file              | Use default values from schema |
+| Missing `.env.api` file                 | Use default values from schema |
 
 ---
 

@@ -105,7 +105,7 @@ sequenceDiagram
 ### B. `wrangler.toml` (New File)
 
 - **Content**:
-  - `name`: myimageupscaler.com
+  - `name`: autopilotrank.com
   - `compatibility_date`: "2024-01-01"
   - `compatibility_flags`: ["nodejs_compat"]
   - `pages_build_output_dir`: ".vercel/output/static"
