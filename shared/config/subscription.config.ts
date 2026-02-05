@@ -51,6 +51,7 @@ export const SUBSCRIPTION_CONFIG: ISubscriptionConfig = {
       displayOrder: 0,
       enabled: false, // Free tier is handled via freeUser config
       batchLimit: 1,
+      maxProjects: 1, // Free users get 1 project
     },
     {
       key: 'starter',
@@ -90,6 +91,7 @@ export const SUBSCRIPTION_CONFIG: ISubscriptionConfig = {
       displayOrder: 1,
       enabled: true,
       batchLimit: 5,
+      maxProjects: 1, // Starter: 1 WordPress site
     },
     {
       key: 'growth',
@@ -130,6 +132,7 @@ export const SUBSCRIPTION_CONFIG: ISubscriptionConfig = {
       displayOrder: 2,
       enabled: true,
       batchLimit: 25,
+      maxProjects: 3, // Growth: 3 CMS sites
     },
     {
       key: 'agency',
@@ -169,6 +172,7 @@ export const SUBSCRIPTION_CONFIG: ISubscriptionConfig = {
       displayOrder: 3,
       enabled: true,
       batchLimit: 100,
+      maxProjects: null, // Agency: unlimited projects
     },
   ],
 

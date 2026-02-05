@@ -306,10 +306,7 @@ export const onRequest = defineMiddleware(async (context, next) => {
       if (request.headers.get('Authorization')) {
         const authResult = await verifyApiAuth(request);
         if (!('error' in authResult)) {
-          context.locals = {
-            ...context.locals,
-            ...addUserContextLocals(authResult.user),
-          };
+          Object.assign(context.locals, addUserContextLocals(authResult.user));
         }
       }
 
@@ -330,10 +327,7 @@ export const onRequest = defineMiddleware(async (context, next) => {
     }
 
     // Add user context to locals
-    context.locals = {
-      ...context.locals,
-      ...addUserContextLocals(authResult.user),
-    };
+    Object.assign(context.locals, addUserContextLocals(authResult.user));
 
     // Apply security headers and rate limiting, then proceed
     const response = await next();
@@ -447,10 +441,7 @@ export const onRequest = defineMiddleware(async (context, next) => {
         }
 
         if (user) {
-          context.locals = {
-            ...context.locals,
-            ...addUserContextLocals({ id: user.id, email: user.email }),
-          };
+          Object.assign(context.locals, addUserContextLocals({ id: user.id, email: user.email }));
 
           // Check admin role for admin routes
           if (isAdminDashboardPath(pathname)) {
@@ -529,10 +520,7 @@ export const onRequest = defineMiddleware(async (context, next) => {
 
       // Add user to locals
       if (user) {
-        context.locals = {
-          ...context.locals,
-          ...addUserContextLocals({ id: user.id, email: user.email }),
-        };
+        Object.assign(context.locals, addUserContextLocals({ id: user.id, email: user.email }));
 
         // Check admin role for admin routes
         if (isAdminDashboardPath(pathname)) {

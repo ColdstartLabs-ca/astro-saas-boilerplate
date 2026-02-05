@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import {
   LayoutGrid,
   Layers,
@@ -16,7 +16,6 @@ import {
   Shield,
   X,
   Loader2,
-  ChevronDown,
 } from 'lucide-react';
 import { useUserStore, useIsAdmin, useSubscription } from '@client/store/userStore';
 import { CreditsDisplay } from '@client/components/stripe/CreditsDisplay';
@@ -25,8 +24,9 @@ import { getPlanDisplayName } from '@shared/config/stripe';
 import { useLogger } from '@client/utils/logger';
 import { cn } from '@client/utils/cn';
 import { getTranslations } from '@src/i18n/utils';
-import { useMemo, useState, useEffect } from 'react';
 import { LocaleSwitcher } from '@client/components/i18n/LocaleSwitcher';
+import { ProjectSelector } from '@client/components/projects/ProjectSelector';
+import { ProjectOnboarding } from '@client/components/projects/ProjectOnboarding';
 
 interface ISidebarItem {
   label: string;
@@ -61,8 +61,8 @@ export const DashboardSidebar: React.FC<IDashboardSidebarProps> = ({ isOpen, onC
     priceId: subscription?.price_id,
   });
 
-  // Active site name (placeholder — will be fetched from user data in future)
-  const [siteName] = useState('');
+  // Onboarding modal state
+  const [showOnboarding, setShowOnboarding] = useState(false);
 
   // Primary nav — AutopilotRank-specific views
   const primaryItems: ISidebarItem[] = [
@@ -160,30 +160,8 @@ export const DashboardSidebar: React.FC<IDashboardSidebarProps> = ({ isOpen, onC
           <LocaleSwitcher />
         </div>
 
-        {/* Active Site Selector */}
-        <div className="px-4 pt-4 pb-2">
-          <div className="text-xs font-semibold text-muted uppercase tracking-wider mb-2 px-2">
-            {t('sidebar.activeSite')}
-          </div>
-          <button
-            className="w-full bg-surface-light hover:bg-elevated transition-colors border border-border rounded-lg p-3 flex items-center justify-between group"
-          >
-            <div className="flex items-center gap-3 overflow-hidden">
-              <div className="w-8 h-8 rounded bg-accent/20 text-accent flex items-center justify-center font-bold text-sm shrink-0">
-                {siteName ? siteName.charAt(0) : '?'}
-              </div>
-              <div className="truncate text-left">
-                <div className="text-sm font-medium text-white truncate">
-                  {siteName || t('sidebar.noSiteConnected')}
-                </div>
-                <div className="text-xs text-muted group-hover:text-secondary">
-                  {t('sidebar.manageSites')}
-                </div>
-              </div>
-            </div>
-            <ChevronDown className="w-4 h-4 text-muted shrink-0" />
-          </button>
-        </div>
+        {/* Active Project Selector */}
+        <ProjectSelector onOpenOnboarding={() => setShowOnboarding(true)} />
 
         {/* User Info */}
         <div className="px-4 py-3 border-b border-border">
@@ -311,6 +289,9 @@ export const DashboardSidebar: React.FC<IDashboardSidebarProps> = ({ isOpen, onC
           </button>
         </div>
       </aside>
+
+      {/* Onboarding Modal */}
+      <ProjectOnboarding isOpen={showOnboarding} onClose={() => setShowOnboarding(false)} />
     </>
   );
 };

@@ -5,11 +5,20 @@ import { DashboardSidebar } from '@client/components/dashboard/DashboardSidebar'
 import { CreditsDisplay } from '@client/components/stripe/CreditsDisplay';
 import { useLowCreditWarning } from '@client/hooks/useLowCreditWarning';
 import { useUserStore } from '@client/store/userStore';
-import { useRouter } from 'next/navigation';
 import { Menu, Plus, Bell, User } from 'lucide-react';
 import React, { useMemo } from 'react';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { clientEnv, getAppLogoAbbr } from '@shared/config/env';
 import { getTranslations } from '@src/i18n/utils';
+
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 1000 * 60 * 5,
+      retry: 1,
+    },
+  },
+});
 
 // Grace period to allow auth state to settle after OAuth redirect
 const AUTH_GRACE_PERIOD_MS = 500;
@@ -72,7 +81,6 @@ function DashboardHeader(): JSX.Element {
 const DashboardLayout: React.FC<IDashboardLayoutProps> = ({ children }) => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const { isAuthenticated, isLoading, user, lastFetched, fetchUserData } = useUserStore();
-  const router = useRouter();
   const [authGracePeriodElapsed, setAuthGracePeriodElapsed] = useState(false);
 
   // Initialize low credit warning for authenticated users
@@ -103,9 +111,9 @@ const DashboardLayout: React.FC<IDashboardLayoutProps> = ({ children }) => {
   // Skip redirect in test environment - let tests handle navigation
   useEffect(() => {
     if (!isTestEnv && authGracePeriodElapsed && !isLoading && !isAuthenticated) {
-      router.push('/');
+      window.location.href = '/';
     }
-  }, [isAuthenticated, isLoading, router, authGracePeriodElapsed, isTestEnv]);
+  }, [isAuthenticated, isLoading, authGracePeriodElapsed, isTestEnv]);
 
   // In test environment, skip the loading check and render immediately
   // This allows tests to proceed without waiting for auth state
@@ -216,6 +224,14 @@ const DashboardLayout: React.FC<IDashboardLayoutProps> = ({ children }) => {
   );
 };
 
-export { DashboardLayout };
+function DashboardLayoutWithProviders({ children }: IDashboardLayoutProps): JSX.Element {
+  return (
+    <QueryClientProvider client={queryClient}>
+      <DashboardLayout>{children}</DashboardLayout>
+    </QueryClientProvider>
+  );
+}
+
+export { DashboardLayoutWithProviders as DashboardLayout };
 // eslint-disable-next-line import/no-default-export -- Required for Astro island import
-export default DashboardLayout;
+export default DashboardLayoutWithProviders;

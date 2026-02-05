@@ -97,6 +97,17 @@ Annual discount: 20% off (~2 months free).
 > **Why second:** This is the core product. Everything downstream (humanizer, campaigns, publishing) consumes its output.
 > **Depends on:** Milestone 1 (articles table must exist)
 
+**Project Management (first task — prerequisite for everything):**
+
+> Users need to register their website before generating content. PRD: `docs/PRDs/project-management.md`
+
+- [ ] DB migration: add `industry` and `content_preferences` columns to `projects` table
+- [ ] ProjectService: CRUD operations with plan-based project limits (Starter=1, Growth=3, Agency=unlimited)
+- [ ] API endpoints: `GET/POST /api/projects`, `GET/PUT/DELETE /api/projects/:id`
+- [ ] Project onboarding wizard: 3-step flow (basic info → CMS type → content preferences)
+- [ ] Project selector in dashboard sidebar (switch active project)
+- [ ] Auto-show onboarding when user has zero projects
+
 **OpenRouter Integration:**
 
 - [ ] Set up OpenRouter API client with auth, error handling, retries

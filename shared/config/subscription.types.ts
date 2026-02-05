@@ -83,6 +83,8 @@ export interface IPlanConfig {
   enabled: boolean;
   /** Maximum requests allowed in batch queue (null = unlimited) */
   batchLimit: number | null;
+  /** Maximum number of projects allowed (null = unlimited) */
+  maxProjects: number | null;
 }
 
 /**
