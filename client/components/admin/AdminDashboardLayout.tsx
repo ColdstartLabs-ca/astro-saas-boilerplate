@@ -6,7 +6,7 @@ interface IProps {
   children: ReactNode;
 }
 
-export default function AdminDashboardLayout({ children }: IProps): JSX.Element {
+export function AdminDashboardLayout({ children }: IProps): JSX.Element {
   return (
     <div className="space-y-6">
       <div className="border-b border-border pb-4">

@@ -2,7 +2,6 @@ import { createServerClient } from '@supabase/ssr';
 import { clientEnv } from '@shared/config/env';
 import type { User } from '@supabase/supabase-js';
 import type { AstroCookies } from 'astro';
-import type { Request as AstroRequest } from 'astro';
 
 interface IUpdateSessionResult {
   user: User | null;
@@ -32,7 +31,10 @@ function parseCookies(cookieHeader: string | null): Array<{ name: string; value:
  * Update Supabase session for Astro middleware
  * Works with Astro's cookies API which implements the same interface as @supabase/ssr expects
  */
-export async function updateSession(cookies: AstroCookies, request?: AstroRequest): Promise<IUpdateSessionResult> {
+export async function updateSession(
+  cookies: AstroCookies,
+  request?: Request
+): Promise<IUpdateSessionResult> {
   try {
     const supabase = createServerClient(clientEnv.SUPABASE_URL, clientEnv.SUPABASE_ANON_KEY, {
       cookies: {
@@ -58,9 +60,7 @@ export async function updateSession(cookies: AstroCookies, request?: AstroReques
           return cookieList;
         },
         setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value, options }) =>
-            cookies.set(name, value, options)
-          );
+          cookiesToSet.forEach(({ name, value, options }) => cookies.set(name, value, options));
         },
       },
     });
@@ -81,7 +81,10 @@ export async function updateSession(cookies: AstroCookies, request?: AstroReques
  * Check if the current user is an admin
  * For use in Astro layouts and pages
  */
-export async function requireAdmin(cookies: AstroCookies, request?: AstroRequest): Promise<IAdminCheckResult> {
+export async function requireAdmin(
+  cookies: AstroCookies,
+  request?: Request
+): Promise<IAdminCheckResult> {
   try {
     const supabase = createServerClient(clientEnv.SUPABASE_URL, clientEnv.SUPABASE_ANON_KEY, {
       cookies: {
