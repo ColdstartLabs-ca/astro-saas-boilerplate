@@ -6,7 +6,7 @@ import { clientEnv } from '@shared/config/env';
 import { EmbeddedCheckout, EmbeddedCheckoutProvider } from '@stripe/react-stripe-js';
 import { loadStripe, type StripeEmbeddedCheckoutOptions } from '@stripe/stripe-js';
 import { useEffect, useState } from 'react';
-import { useTranslations } from 'next-intl';
+import { useTranslations } from '@client/hooks/useTranslations';
 
 interface ICheckoutModalProps {
   priceId: string;

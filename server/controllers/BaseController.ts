@@ -1,5 +1,3 @@
-import type { NextRequest } from 'next/server';
-import { NextResponse } from 'next/server';
 import { withErrorHandler } from '../middleware/errorHandler';
 import { container } from '../di/container';
 
@@ -11,20 +9,22 @@ import { container } from '../di/container';
  * - Service resolution via DI container
  * - Abstract handle method for subclasses to implement
  *
+ * Works with standard Web API Request/Response (Next.js, Astro, Cloudflare Workers)
+ *
  * @example
  * ```ts
  * export class MyController extends BaseController {
- *   protected async handle(req: NextRequest): Promise<NextResponse> {
+ *   protected async handle(req: Request, context?: { locals?: AstroLocals }): Promise<Response> {
  *     // Your controller logic here
- *     return NextResponse.json({ success: true });
+ *     return this.json({ success: true });
  *   }
  * }
  *
- * // In route.ts:
+ * // In Astro route:
  * const controller = new MyController();
- * export async function POST(req: NextRequest) {
- *   return controller.execute(req);
- * }
+ * export const POST: APIRoute = async ({ request, locals }) => {
+ *   return controller.execute(request, { locals });
+ * };
  * ```
  */
 export abstract class BaseController {
@@ -32,15 +32,15 @@ export abstract class BaseController {
    * Handle the incoming request
    * Subclasses must implement this method with their logic
    */
-  protected abstract handle(req: NextRequest): Promise<NextResponse>;
+  protected abstract handle(req: Request, context?: { locals?: Record<string, unknown> }): Promise<Response>;
 
   /**
    * Execute the controller with error handling
    * This is the method that should be called from route handlers
    */
-  public async execute(req: NextRequest): Promise<NextResponse> {
+  public async execute(req: Request, context?: { locals?: Record<string, unknown> }): Promise<Response> {
     const wrappedHandler = withErrorHandler(this.handle.bind(this));
-    return wrappedHandler(req);
+    return wrappedHandler(req, context);
   }
 
   /**
@@ -61,7 +61,7 @@ export abstract class BaseController {
    *
    * @throws AuthError if X-User-Id header is missing
    */
-  protected getUserId(req: NextRequest): string {
+  protected getUserId(req: Request): string {
     const userId = req.headers.get('X-User-Id');
     if (!userId) {
       throw new Error('X-User-Id header is missing - this endpoint requires authentication');
@@ -72,23 +72,24 @@ export abstract class BaseController {
   /**
    * Get query parameter by name
    *
-   * @param req - The Next.js request object
+   * @param req - The Request object
    * @param name - The query parameter name
    * @returns The query parameter value or null if not found
    */
-  protected getQueryParam(req: NextRequest, name: string): string | null {
-    return req.nextUrl.searchParams.get(name);
+  protected getQueryParam(req: Request, name: string): string | null {
+    const url = new URL(req.url);
+    return url.searchParams.get(name);
   }
 
   /**
    * Get required query parameter
    *
-   * @param req - The Next.js request object
+   * @param req - The Request object
    * @param name - The query parameter name
    * @returns The query parameter value
    * @throws Error if the query parameter is missing
    */
-  protected getRequiredQueryParam(req: NextRequest, name: string): string {
+  protected getRequiredQueryParam(req: Request, name: string): string {
     const value = this.getQueryParam(req, name);
     if (!value) {
       throw new Error(`Missing required query parameter: ${name}`);
@@ -97,12 +98,23 @@ export abstract class BaseController {
   }
 
   /**
+   * Get the request path (pathname without query string)
+   *
+   * @param req - The Request object
+   * @returns The path
+   */
+  protected getPath(req: Request): string {
+    const url = new URL(req.url);
+    return url.pathname;
+  }
+
+  /**
    * Get the request body as JSON
    *
-   * @param req - The Next.js request object
+   * @param req - The Request object
    * @returns The parsed JSON body
    */
-  protected async getBody<T = unknown>(req: NextRequest): Promise<T> {
+  protected async getBody<T = unknown>(req: Request): Promise<T> {
     const text = await req.text();
     return (text ? JSON.parse(text) : {}) as T;
   }
@@ -110,35 +122,35 @@ export abstract class BaseController {
   /**
    * Check if the request is a GET request
    */
-  protected isGet(req: NextRequest): boolean {
+  protected isGet(req: Request): boolean {
     return req.method === 'GET';
   }
 
   /**
    * Check if the request is a POST request
    */
-  protected isPost(req: NextRequest): boolean {
+  protected isPost(req: Request): boolean {
     return req.method === 'POST';
   }
 
   /**
    * Check if the request is a PUT request
    */
-  protected isPut(req: NextRequest): boolean {
+  protected isPut(req: Request): boolean {
     return req.method === 'PUT';
   }
 
   /**
    * Check if the request is a DELETE request
    */
-  protected isDelete(req: NextRequest): boolean {
+  protected isDelete(req: Request): boolean {
     return req.method === 'DELETE';
   }
 
   /**
    * Check if the request is a PATCH request
    */
-  protected isPatch(req: NextRequest): boolean {
+  protected isPatch(req: Request): boolean {
     return req.method === 'PATCH';
   }
 
@@ -148,8 +160,11 @@ export abstract class BaseController {
    * @param data - The data to return
    * @param status - Optional status code (default: 200)
    */
-  protected json<T>(data: T, status = 200): NextResponse {
-    return NextResponse.json({ success: true, data }, { status });
+  protected json<T>(data: T, status = 200): Response {
+    return new Response(JSON.stringify({ success: true, data }), {
+      status,
+      headers: { 'Content-Type': 'application/json' },
+    });
   }
 
   /**
@@ -165,17 +180,20 @@ export abstract class BaseController {
     message: string,
     status: number,
     details?: Record<string, unknown>
-  ): NextResponse {
-    return NextResponse.json(
-      {
+  ): Response {
+    return new Response(
+      JSON.stringify({
         success: false,
         error: {
           code,
           message,
           ...(details && { details }),
         },
-      },
-      { status }
+      }),
+      {
+        status,
+        headers: { 'Content-Type': 'application/json' },
+      }
     );
   }
 }

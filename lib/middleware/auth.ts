@@ -1,7 +1,5 @@
-import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@supabase/ssr';
 import { clientEnv, serverEnv } from '@shared/config/env';
-import { updateSession } from '@shared/utils/supabase/middleware';
 
 /**
  * Validate JWT format using edge-compatible base64url validation
@@ -40,20 +38,20 @@ function isValidJwtFormat(token: string): boolean {
  * Returns the user if authenticated, or an error response
  */
 export async function verifyApiAuth(
-  req: NextRequest
-): Promise<{ user: { id: string; email?: string } } | { error: NextResponse }> {
+  req: Request
+): Promise<{ user: { id: string; email?: string } } | { error: Response }> {
   if (!clientEnv.SUPABASE_URL || !clientEnv.SUPABASE_ANON_KEY) {
     console.error('Missing Supabase environment variables');
     return {
-      error: NextResponse.json(
-        {
+      error: new Response(
+        JSON.stringify({
           success: false,
           error: {
             code: 'INTERNAL_ERROR',
             message: 'Server configuration error',
           },
-        },
-        { status: 500 }
+        }),
+        { status: 500, headers: { 'Content-Type': 'application/json' } }
       ),
     };
   }
@@ -62,15 +60,15 @@ export async function verifyApiAuth(
   const authHeader = req.headers.get('Authorization');
   if (!authHeader) {
     return {
-      error: NextResponse.json(
-        {
+      error: new Response(
+        JSON.stringify({
           success: false,
           error: {
             code: 'UNAUTHORIZED',
             message: 'Valid authentication token required',
           },
-        },
-        { status: 401 }
+        }),
+        { status: 401, headers: { 'Content-Type': 'application/json' } }
       ),
     };
   }
@@ -78,15 +76,15 @@ export async function verifyApiAuth(
   // Validate Authorization header format
   if (!authHeader.startsWith('Bearer ')) {
     return {
-      error: NextResponse.json(
-        {
+      error: new Response(
+        JSON.stringify({
           success: false,
           error: {
             code: 'UNAUTHORIZED',
             message: 'Valid authentication token required',
           },
-        },
-        { status: 401 }
+        }),
+        { status: 401, headers: { 'Content-Type': 'application/json' } }
       ),
     };
   }
@@ -155,15 +153,15 @@ export async function verifyApiAuth(
   // Validate JWT format for real tokens
   if (!isValidJwtFormat(token)) {
     return {
-      error: NextResponse.json(
-        {
+      error: new Response(
+        JSON.stringify({
           success: false,
           error: {
             code: 'UNAUTHORIZED',
             message: 'Valid authentication token required',
           },
-        },
-        { status: 401 }
+        }),
+        { status: 401, headers: { 'Content-Type': 'application/json' } }
       ),
     };
   }
@@ -190,15 +188,15 @@ export async function verifyApiAuth(
 
   if (error || !user) {
     return {
-      error: NextResponse.json(
-        {
+      error: new Response(
+        JSON.stringify({
           success: false,
           error: {
             code: 'UNAUTHORIZED',
             message: 'Valid authentication token required',
           },
-        },
-        { status: 401 }
+        }),
+        { status: 401, headers: { 'Content-Type': 'application/json' } }
       ),
     };
   }
@@ -207,35 +205,13 @@ export async function verifyApiAuth(
 }
 
 /**
- * Add user context headers to request for downstream route handlers
+ * Add user context to Astro locals for downstream route handlers
  */
-export function addUserContextHeaders(
-  req: NextRequest,
+export function addUserContextLocals(
   user: { id: string; email?: string }
-): NextResponse {
-  const requestHeaders = new Headers(req.headers);
-  requestHeaders.set('X-User-Id', user.id);
-  requestHeaders.set('X-User-Email', user.email ?? '');
-
-  return NextResponse.next({
-    request: {
-      headers: requestHeaders,
-    },
-  });
-}
-
-/**
- * Handle page route authentication
- * Refreshes session and returns user if authenticated
- */
-export async function handlePageAuth(req: NextRequest): Promise<{
-  user: { id: string; email?: string } | null;
-  response: NextResponse;
-}> {
-  const { user, supabaseResponse } = await updateSession(req);
-
+): { userId: string; userEmail: string } {
   return {
-    user: user ? { id: user.id, email: user.email } : null,
-    response: supabaseResponse,
+    userId: user.id,
+    userEmail: user.email ?? '',
   };
 }

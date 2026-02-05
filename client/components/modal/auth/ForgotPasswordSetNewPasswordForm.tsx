@@ -1,8 +1,8 @@
 import { InputField } from '@client/components/form/InputField';
 import { useUserStore } from '@client/store/userStore';
 import { useToastStore } from '@client/store/toastStore';
-import { useTranslations } from 'next-intl';
-import React from 'react';
+import { getTranslations } from '../../../../src/i18n/utils';
+import React, { useMemo } from 'react';
 import { useForm } from 'react-hook-form';
 
 interface ISetNewPasswordForm {
@@ -15,6 +15,7 @@ interface IProps {
 }
 
 export const ForgotPasswordSetNewPasswordForm: React.FC<IProps> = ({ onClose }) => {
+  const t = useMemo(() => getTranslations('auth.setNewPassword'), []);
   const {
     register,
     handleSubmit,
@@ -23,7 +24,6 @@ export const ForgotPasswordSetNewPasswordForm: React.FC<IProps> = ({ onClose }) 
   } = useForm<ISetNewPasswordForm>();
   const { updatePassword } = useUserStore();
   const { showToast } = useToastStore();
-  const t = useTranslations('auth.setNewPassword');
 
   const onSubmitHandler = async (data: ISetNewPasswordForm) => {
     try {

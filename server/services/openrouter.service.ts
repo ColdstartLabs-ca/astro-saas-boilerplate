@@ -98,8 +98,8 @@ export class OpenRouterService {
       headers: {
         Authorization: `Bearer ${this.apiKey}`,
         'Content-Type': 'application/json',
-        'HTTP-Referer': serverEnv.BASE_URL,
-        'X-Title': serverEnv.APP_NAME,
+        'HTTP-Referer': serverEnv.BASE_URL || '',
+        'X-Title': serverEnv.APP_NAME || '',
       },
       body: JSON.stringify(requestBody),
     });

@@ -1,0 +1,61 @@
+---
+import Layout from '../layouts/Layout.astro';
+import { clientEnv } from '@shared/config/env';
+
+// SEO metadata
+const title = 'Payment Canceled';
+const description = 'Your payment has been canceled. You can return to the pricing page to choose a different plan.';
+---
+
+<Layout title={title}>
+  <!-- SEO Meta Tags -->
+  <meta name="description" content={description} />
+  <meta property="og:title" content={title} />
+  <meta property="og:description" content={description} />
+  <meta property="og:type" content="website" />
+  <link rel="canonical" href={`${clientEnv.BASE_URL}/canceled`} />
+
+  <main class="flex-1 flex items-center justify-center min-h-[60vh]">
+    <div class="container mx-auto px-6">
+      <div class="max-w-lg mx-auto text-center">
+        {/* Canceled Icon */}
+        <div class="mb-8">
+          <div class="inline-flex items-center justify-center w-20 h-20 rounded-full bg-muted/20">
+            <svg class="h-12 w-12 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </div>
+        </div>
+
+        <h1 class="text-3xl font-bold text-primary mb-4">Payment Canceled</h1>
+        <p class="text-lg text-muted-foreground mb-8">
+          Your payment has been canceled. No charges were made.
+        </p>
+
+        <div class="flex flex-col sm:flex-row gap-4 justify-center">
+          <a
+            href="/pricing"
+            class="inline-flex items-center justify-center px-6 py-3 bg-accent text-white font-medium rounded-lg hover:bg-accent-hover transition-colors"
+          >
+            Return to Pricing
+          </a>
+          <a
+            href="/"
+            class="inline-flex items-center justify-center px-6 py-3 border border-border text-muted-foreground font-medium rounded-lg hover:bg-surface transition-colors"
+          >
+            Go to Homepage
+          </a>
+        </div>
+
+        <div class="mt-8 text-sm text-muted-foreground">
+          <p>
+            Need help?{' '}
+            <a href={`mailto:${clientEnv.SUPPORT_EMAIL}`} class="text-accent hover:underline">
+              Contact Support
+            </a>
+          </p>
+        </div>
+      </div>
+    </div>
+  </main>
+</Layout>

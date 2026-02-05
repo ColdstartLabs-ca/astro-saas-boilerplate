@@ -4,7 +4,7 @@ import { z } from 'zod';
  * Centralized environment variable configuration.
  *
  * All environment variables should be accessed through this module.
- * Direct usage of process.env is prohibited by ESLint rules.
+ * Direct usage of import.meta.env is prohibited by ESLint rules.
  *
  * Usage:
  * - Client-side: import { clientEnv } from '@shared/config/env'
@@ -12,14 +12,14 @@ import { z } from 'zod';
  */
 
 // =============================================================================
-// Client-side environment variables (NEXT_PUBLIC_*)
+// Client-side environment variables (PUBLIC_*)
 // These are safe to expose to the browser
 // =============================================================================
 
 const clientEnvSchema = z.object({
   APP_NAME: z.string().default('SaaS Boilerplate'),
   ENV: z.string().default('development'),
-  BASE_URL: z.string().url().default('http://localhost:3000'),
+  BASE_URL: z.string().url().default('http://localhost:4321'),
   SUPABASE_URL: z.string().url().default('https://example.supabase.co'),
   SUPABASE_ANON_KEY: z.string().default(''),
   GOOGLE_CLIENT_ID: z.string().default(''),
@@ -57,63 +57,60 @@ const clientEnvSchema = z.object({
   APP_DOMAIN: z.string().default('example.com'),
   // Stripe
   STRIPE_PUBLISHABLE_KEY: z.string().default(''),
-  // Stripe Credit Pack Price IDs
-  NEXT_PUBLIC_STRIPE_PRICE_CREDITS_SMALL: z.string().default('price_credits_small'),
-  NEXT_PUBLIC_STRIPE_PRICE_CREDITS_MEDIUM: z.string().default('price_credits_medium'),
-  NEXT_PUBLIC_STRIPE_PRICE_CREDITS_LARGE: z.string().default('price_credits_large'),
+  // Stripe Credit Pack Price IDs (renamed from NEXT_PUBLIC_* to STRIPE_*)
+  STRIPE_PRICE_CREDITS_SMALL: z.string().default('price_credits_small'),
+  STRIPE_PRICE_CREDITS_MEDIUM: z.string().default('price_credits_medium'),
+  STRIPE_PRICE_CREDITS_LARGE: z.string().default('price_credits_large'),
 });
 
 export type IClientEnv = z.infer<typeof clientEnvSchema>;
 
 function loadClientEnv(): IClientEnv {
   const env = {
-    APP_NAME: process.env.NEXT_PUBLIC_APP_NAME || 'SaaS Boilerplate',
-    ENV: process.env.NEXT_PUBLIC_ENV || 'development',
-    BASE_URL: process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000',
-    SUPABASE_URL: process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://example.supabase.co',
-    SUPABASE_ANON_KEY: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '',
-    GOOGLE_CLIENT_ID: process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || '',
-    FACEBOOK_CLIENT_ID: process.env.NEXT_PUBLIC_FACEBOOK_CLIENT_ID || '',
-    AZURE_CLIENT_ID: process.env.NEXT_PUBLIC_AZURE_CLIENT_ID || '',
-    BASELIME_KEY: process.env.NEXT_PUBLIC_BASELIME_KEY || '',
+    APP_NAME: import.meta.env.PUBLIC_APP_NAME || 'SaaS Boilerplate',
+    ENV: import.meta.env.PUBLIC_ENV || 'development',
+    BASE_URL: import.meta.env.PUBLIC_BASE_URL || 'http://localhost:4321',
+    SUPABASE_URL: import.meta.env.PUBLIC_SUPABASE_URL || 'https://example.supabase.co',
+    SUPABASE_ANON_KEY: import.meta.env.PUBLIC_SUPABASE_ANON_KEY || '',
+    GOOGLE_CLIENT_ID: import.meta.env.PUBLIC_GOOGLE_CLIENT_ID || '',
+    FACEBOOK_CLIENT_ID: import.meta.env.PUBLIC_FACEBOOK_CLIENT_ID || '',
+    AZURE_CLIENT_ID: import.meta.env.PUBLIC_AZURE_CLIENT_ID || '',
+    BASELIME_KEY: import.meta.env.PUBLIC_BASELIME_KEY || '',
     // Analytics
-    AMPLITUDE_API_KEY: process.env.NEXT_PUBLIC_AMPLITUDE_API_KEY || '',
-    GA_MEASUREMENT_ID: process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID || '',
-    AHREFS_ANALYTICS_KEY: process.env.NEXT_PUBLIC_AHREFS_ANALYTICS_KEY || '',
+    AMPLITUDE_API_KEY: import.meta.env.PUBLIC_AMPLITUDE_API_KEY || '',
+    GA_MEASUREMENT_ID: import.meta.env.PUBLIC_GA_MEASUREMENT_ID || '',
+    AHREFS_ANALYTICS_KEY: import.meta.env.PUBLIC_AHREFS_ANALYTICS_KEY || '',
     // OAuth Provider Toggles
-    ENABLE_GOOGLE_OAUTH: process.env.NEXT_PUBLIC_ENABLE_GOOGLE_OAUTH || 'true',
-    ENABLE_AZURE_OAUTH: process.env.NEXT_PUBLIC_ENABLE_AZURE_OAUTH || 'false',
+    ENABLE_GOOGLE_OAUTH: import.meta.env.PUBLIC_ENABLE_GOOGLE_OAUTH || 'true',
+    ENABLE_AZURE_OAUTH: import.meta.env.PUBLIC_ENABLE_AZURE_OAUTH || 'false',
     // Contact
-    ADMIN_EMAIL: process.env.NEXT_PUBLIC_ADMIN_EMAIL || 'admin@example.com',
-    SUPPORT_EMAIL: process.env.NEXT_PUBLIC_SUPPORT_EMAIL || 'support@example.com',
-    LEGAL_EMAIL: process.env.NEXT_PUBLIC_LEGAL_EMAIL || 'legal@example.com',
-    PRIVACY_EMAIL: process.env.NEXT_PUBLIC_PRIVACY_EMAIL || 'privacy@example.com',
-    SALES_EMAIL: process.env.NEXT_PUBLIC_SALES_EMAIL || 'sales@example.com',
-    TWITTER_HANDLE: process.env.NEXT_PUBLIC_TWITTER_HANDLE || 'example',
+    ADMIN_EMAIL: import.meta.env.PUBLIC_ADMIN_EMAIL || 'admin@example.com',
+    SUPPORT_EMAIL: import.meta.env.PUBLIC_SUPPORT_EMAIL || 'support@example.com',
+    LEGAL_EMAIL: import.meta.env.PUBLIC_LEGAL_EMAIL || 'legal@example.com',
+    PRIVACY_EMAIL: import.meta.env.PUBLIC_PRIVACY_EMAIL || 'privacy@example.com',
+    SALES_EMAIL: import.meta.env.PUBLIC_SALES_EMAIL || 'sales@example.com',
+    TWITTER_HANDLE: import.meta.env.PUBLIC_TWITTER_HANDLE || 'example',
     // App Configuration
-    APP_SLUG: process.env.NEXT_PUBLIC_APP_SLUG || 'saas-boilerplate',
-    DOWNLOAD_PREFIX: process.env.NEXT_PUBLIC_DOWNLOAD_PREFIX || 'saas-boilerplate',
-    BATCH_FOLDER_NAME: process.env.NEXT_PUBLIC_BATCH_FOLDER_NAME || 'saas-boilerplate_batch',
-    CACHE_USER_KEY_PREFIX: process.env.NEXT_PUBLIC_CACHE_USER_KEY_PREFIX || 'saas-boilerplate',
-    WEB_SERVICE_NAME: process.env.NEXT_PUBLIC_WEB_SERVICE_NAME || 'saas-boilerplate-web',
-    CRON_SERVICE_NAME: process.env.NEXT_PUBLIC_CRON_SERVICE_NAME || 'saas-boilerplate-cron',
+    APP_SLUG: import.meta.env.PUBLIC_APP_SLUG || 'saas-boilerplate',
+    DOWNLOAD_PREFIX: import.meta.env.PUBLIC_DOWNLOAD_PREFIX || 'saas-boilerplate',
+    BATCH_FOLDER_NAME: import.meta.env.PUBLIC_BATCH_FOLDER_NAME || 'saas-boilerplate_batch',
+    CACHE_USER_KEY_PREFIX: import.meta.env.PUBLIC_CACHE_USER_KEY_PREFIX || 'saas-boilerplate',
+    WEB_SERVICE_NAME: import.meta.env.PUBLIC_WEB_SERVICE_NAME || 'saas-boilerplate-web',
+    CRON_SERVICE_NAME: import.meta.env.PUBLIC_CRON_SERVICE_NAME || 'saas-boilerplate-cron',
     // GitHub
-    GITHUB_USER: process.env.NEXT_PUBLIC_GITHUB_USER || 'your-github-user',
-    GITHUB_REPO: process.env.NEXT_PUBLIC_GITHUB_REPO || 'saas-boilerplate',
+    GITHUB_USER: import.meta.env.PUBLIC_GITHUB_USER || 'your-github-user',
+    GITHUB_REPO: import.meta.env.PUBLIC_GITHUB_REPO || 'saas-boilerplate',
     // Legal
-    LAST_UPDATED_DATE: process.env.NEXT_PUBLIC_LAST_UPDATED_DATE || 'November 26, 2025',
+    LAST_UPDATED_DATE: import.meta.env.PUBLIC_LAST_UPDATED_DATE || 'November 26, 2025',
     // Domains and URLs
-    PRIMARY_DOMAIN: process.env.NEXT_PUBLIC_PRIMARY_DOMAIN || 'example.com',
-    APP_DOMAIN: process.env.NEXT_PUBLIC_APP_DOMAIN || 'example.com',
+    PRIMARY_DOMAIN: import.meta.env.PUBLIC_PRIMARY_DOMAIN || 'example.com',
+    APP_DOMAIN: import.meta.env.PUBLIC_APP_DOMAIN || 'example.com',
     // Stripe
-    STRIPE_PUBLISHABLE_KEY: process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY || '',
+    STRIPE_PUBLISHABLE_KEY: import.meta.env.PUBLIC_STRIPE_PUBLISHABLE_KEY || '',
     // Stripe Credit Pack Price IDs
-    NEXT_PUBLIC_STRIPE_PRICE_CREDITS_SMALL:
-      process.env.NEXT_PUBLIC_STRIPE_PRICE_CREDITS_SMALL || 'price_credits_small',
-    NEXT_PUBLIC_STRIPE_PRICE_CREDITS_MEDIUM:
-      process.env.NEXT_PUBLIC_STRIPE_PRICE_CREDITS_MEDIUM || 'price_credits_medium',
-    NEXT_PUBLIC_STRIPE_PRICE_CREDITS_LARGE:
-      process.env.NEXT_PUBLIC_STRIPE_PRICE_CREDITS_LARGE || 'price_credits_large',
+    STRIPE_PRICE_CREDITS_SMALL: import.meta.env.PUBLIC_STRIPE_PRICE_CREDITS_SMALL || 'price_credits_small',
+    STRIPE_PRICE_CREDITS_MEDIUM: import.meta.env.PUBLIC_STRIPE_PRICE_CREDITS_MEDIUM || 'price_credits_medium',
+    STRIPE_PRICE_CREDITS_LARGE: import.meta.env.PUBLIC_STRIPE_PRICE_CREDITS_LARGE || 'price_credits_large',
   };
 
   return clientEnvSchema.parse(env);
@@ -158,8 +155,8 @@ const serverEnvSchema = z.object({
   // Test flags
   PLAYWRIGHT_TEST: z.string().optional(),
   // Public URLs (for server-side use)
-  NEXT_PUBLIC_SUPABASE_URL: z.string().url().optional(),
-  NEXT_PUBLIC_BASE_URL: z.string().url().optional(),
+  SUPABASE_URL: z.string().url().optional(),
+  BASE_URL: z.string().url().optional(),
   // Supabase
   SUPABASE_SERVICE_ROLE_KEY: z.string().default(''),
   // Stripe
@@ -198,7 +195,6 @@ const serverEnvSchema = z.object({
   // Common email settings
   EMAIL_FROM_ADDRESS: z.string().email().default('noreply@example.com'),
   SUPPORT_EMAIL: z.string().email().default('support@example.com'),
-  BASE_URL: z.string().url().default('http://localhost:3000'),
   // Allow sending transactional emails in development (for testing)
   ALLOW_TRANSACTIONAL_EMAILS_IN_DEV: z.coerce.boolean().default(false),
 
@@ -214,60 +210,58 @@ export type IServerEnv = z.infer<typeof serverEnvSchema>;
 
 function loadServerEnv(): IServerEnv {
   const env = {
-    ENV: process.env.ENV || process.env.NODE_ENV || 'development',
+    ENV: import.meta.env.ENV || import.meta.env.NODE_ENV || 'development',
     // App Name
-    APP_NAME: process.env.APP_NAME || process.env.NEXT_PUBLIC_APP_NAME || 'SaaS Boilerplate',
+    APP_NAME: import.meta.env.APP_NAME || import.meta.env.PUBLIC_APP_NAME || 'SaaS Boilerplate',
     // Node environment
-    NODE_ENV: process.env.NODE_ENV,
+    NODE_ENV: import.meta.env.NODE_ENV,
     // Test flags
-    PLAYWRIGHT_TEST: process.env.PLAYWRIGHT_TEST,
+    PLAYWRIGHT_TEST: import.meta.env.PLAYWRIGHT_TEST,
     // Public URLs
-    NEXT_PUBLIC_SUPABASE_URL: process.env.NEXT_PUBLIC_SUPABASE_URL,
-    NEXT_PUBLIC_BASE_URL: process.env.NEXT_PUBLIC_BASE_URL,
+    SUPABASE_URL: import.meta.env.PUBLIC_SUPABASE_URL,
+    BASE_URL: import.meta.env.PUBLIC_BASE_URL,
     // Supabase
-    SUPABASE_SERVICE_ROLE_KEY: process.env.SUPABASE_SERVICE_ROLE_KEY || '',
+    SUPABASE_SERVICE_ROLE_KEY: import.meta.env.SUPABASE_SERVICE_ROLE_KEY || '',
     // Stripe
-    STRIPE_SECRET_KEY: process.env.STRIPE_SECRET_KEY || '',
-    STRIPE_WEBHOOK_SECRET: process.env.STRIPE_WEBHOOK_SECRET || '',
+    STRIPE_SECRET_KEY: import.meta.env.STRIPE_SECRET_KEY || '',
+    STRIPE_WEBHOOK_SECRET: import.meta.env.STRIPE_WEBHOOK_SECRET || '',
     // Stripe Price IDs
     STRIPE_STARTER_MONTHLYLY_PRICE_ID:
-      process.env.STRIPE_STARTER_MONTHLYLY_PRICE_ID || 'price_1Sq14eALMLhQocpf5CXIwYSv',
+      import.meta.env.STRIPE_STARTER_MONTHLYLY_PRICE_ID || 'price_1Sq14eALMLhQocpf5CXIwYSv',
     STRIPE_HOBBY_MONTHLYLY_PRICE_ID:
-      process.env.STRIPE_HOBBY_MONTHLYLY_PRICE_ID || 'price_1SZmVyALMLhQocpf0H7n5ls8',
+      import.meta.env.STRIPE_HOBBY_MONTHLYLY_PRICE_ID || 'price_1SZmVyALMLhQocpf0H7n5ls8',
     STRIPE_PRO_MONTHLYLY_PRICE_ID:
-      process.env.STRIPE_PRO_MONTHLYLY_PRICE_ID || 'price_1SZmVzALMLhQocpfPyRX2W8D',
+      import.meta.env.STRIPE_PRO_MONTHLYLY_PRICE_ID || 'price_1SZmVzALMLhQocpfPyRX2W8D',
     STRIPE_BUSINESS_MONTHLYLY_PRICE_ID:
-      process.env.STRIPE_BUSINESS_MONTHLYLY_PRICE_ID || 'price_1SZmVzALMLhQocpfqPk9spg4',
+      import.meta.env.STRIPE_BUSINESS_MONTHLYLY_PRICE_ID || 'price_1SZmVzALMLhQocpfqPk9spg4',
     // Baselime monitoring
-    BASELIME_API_KEY: process.env.BASELIME_API_KEY || '',
+    BASELIME_API_KEY: import.meta.env.BASELIME_API_KEY || '',
     // Analytics (server-side HTTP API)
-    AMPLITUDE_API_KEY: process.env.AMPLITUDE_API_KEY || '',
+    AMPLITUDE_API_KEY: import.meta.env.AMPLITUDE_API_KEY || '',
     // CORS
-    ALLOWED_ORIGIN: process.env.ALLOWED_ORIGIN || '*',
+    ALLOWED_ORIGIN: import.meta.env.ALLOWED_ORIGIN || '*',
     // Cloudflare
-    CF_PAGES_URL: process.env.CF_PAGES_URL,
-    CLOUDFLARE_API_TOKEN: process.env.CLOUDFLARE_API_TOKEN || '',
-    CLOUDFLARE_ACCOUNT_ID: process.env.CLOUDFLARE_ACCOUNT_ID || '',
-    CLOUDFLARE_ZONE_ID: process.env.CLOUDFLARE_ZONE_ID || '',
-    DOMAIN_NAME: process.env.DOMAIN_NAME || 'example.com',
-    WORKER_NAME: process.env.WORKER_NAME || 'saas-boilerplate',
+    CF_PAGES_URL: import.meta.env.CF_PAGES_URL,
+    CLOUDFLARE_API_TOKEN: import.meta.env.CLOUDFLARE_API_TOKEN || '',
+    CLOUDFLARE_ACCOUNT_ID: import.meta.env.CLOUDFLARE_ACCOUNT_ID || '',
+    CLOUDFLARE_ZONE_ID: import.meta.env.CLOUDFLARE_ZONE_ID || '',
+    DOMAIN_NAME: import.meta.env.DOMAIN_NAME || 'example.com',
+    WORKER_NAME: import.meta.env.WORKER_NAME || 'saas-boilerplate',
     // Cron Job Authentication
-    CRON_SECRET: process.env.CRON_SECRET || '',
+    CRON_SECRET: import.meta.env.CRON_SECRET || '',
     // Test Authentication
-    TEST_AUTH_TOKEN: process.env.TEST_AUTH_TOKEN,
+    TEST_AUTH_TOKEN: import.meta.env.TEST_AUTH_TOKEN,
 
     // Email Providers
-    BREVO_API_KEY: process.env.BREVO_API_KEY || '',
-    RESEND_API_KEY: process.env.RESEND_API_KEY || '',
-    EMAIL_FROM_ADDRESS: process.env.EMAIL_FROM_ADDRESS || 'noreply@example.com',
-    SUPPORT_EMAIL:
-      process.env.SUPPORT_EMAIL || process.env.NEXT_PUBLIC_SUPPORT_EMAIL || 'support@example.com',
-    BASE_URL: process.env.BASE_URL || process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000',
-    ALLOW_TRANSACTIONAL_EMAILS_IN_DEV: process.env.ALLOW_TRANSACTIONAL_EMAILS_IN_DEV ?? 'false',
+    BREVO_API_KEY: import.meta.env.BREVO_API_KEY || '',
+    RESEND_API_KEY: import.meta.env.RESEND_API_KEY || '',
+    EMAIL_FROM_ADDRESS: import.meta.env.EMAIL_FROM_ADDRESS || 'noreply@example.com',
+    SUPPORT_EMAIL: import.meta.env.SUPPORT_EMAIL || import.meta.env.PUBLIC_SUPPORT_EMAIL || 'support@example.com',
+    ALLOW_TRANSACTIONAL_EMAILS_IN_DEV: import.meta.env.ALLOW_TRANSACTIONAL_EMAILS_IN_DEV ?? 'false',
 
     // AI Providers
-    OPENROUTER_API_KEY: process.env.OPENROUTER_API_KEY || '',
-    OPENROUTER_VL_MODEL: process.env.OPENROUTER_VL_MODEL || 'google/gemini-2.0-flash-exp:free',
+    OPENROUTER_API_KEY: import.meta.env.OPENROUTER_API_KEY || '',
+    OPENROUTER_VL_MODEL: import.meta.env.OPENROUTER_VL_MODEL || 'google/gemini-2.0-flash-exp:free',
   };
 
   return serverEnvSchema.parse(env);
@@ -300,12 +294,12 @@ export function isDevelopment(): boolean {
 
 /**
  * Check if running in test environment
- * NOTE: Checks process.env directly to handle dynamic environment changes during tests
+ * NOTE: Checks import.meta.env directly to handle dynamic environment changes during tests
  */
 export function isTest(): boolean {
-  // Check both the cached serverEnv and the raw process.env for dynamic test detection
+  // Check both the cached serverEnv and the raw import.meta.env for dynamic test detection
   return (
-    serverEnv.ENV === 'test' || process.env.ENV === 'test' || process.env.PLAYWRIGHT_TEST === 'true'
+    serverEnv.ENV === 'test' || import.meta.env.ENV === 'test' || import.meta.env.PLAYWRIGHT_TEST === 'true'
   );
 }
 

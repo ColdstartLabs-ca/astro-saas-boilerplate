@@ -1,0 +1,36 @@
+---
+import DashboardLayout from '@client/components/dashboard/DashboardLayout';
+import { getUser } from '@shared/utils/supabase/server';
+
+// Auth check for dashboard routes
+const user = await getUser(Astro.cookies);
+
+if (!user) {
+  // Get the current URL to preserve query params
+  const url = new URL(Astro.url);
+  const urlWithLogin = new URL(url);
+  urlWithLogin.searchParams.set('login', '1');
+  urlWithLogin.searchParams.set('next', url.pathname);
+  return Astro.redirect(urlWithLogin.toString());
+}
+
+interface IProps {
+  title?: string;
+}
+
+const { title = 'Dashboard' } = Astro.props;
+---
+
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>{title}</title>
+  </head>
+  <body class="antialiased">
+    <DashboardLayout client:load>
+      <slot />
+    </DashboardLayout>
+  </body>
+</html>

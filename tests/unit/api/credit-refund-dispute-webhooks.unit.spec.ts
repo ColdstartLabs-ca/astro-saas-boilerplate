@@ -1,6 +1,6 @@
 import { describe, test, expect, vi, beforeEach, afterEach } from 'vitest';
-import { PaymentHandler } from '../../../app/api/webhooks/stripe/handlers/payment.handler';
-import { DisputeHandler } from '../../../app/api/webhooks/stripe/handlers/dispute.handler';
+import { PaymentHandler } from '../../../server/webhooks/stripe/handlers/payment.handler';
+import { DisputeHandler } from '../../../server/webhooks/stripe/handlers/dispute.handler';
 import Stripe from 'stripe';
 
 // Mock dependencies

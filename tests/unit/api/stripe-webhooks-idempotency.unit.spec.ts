@@ -1,11 +1,32 @@
 import { describe, test, expect, vi, beforeEach, afterEach } from 'vitest';
-import { NextRequest } from 'next/server';
-import { POST } from '../../../app/api/webhooks/stripe/route';
+import { POST } from '../../../src/pages/api/webhooks/stripe/index';
 
 // Mock webhook secret that can be changed per test
 let mockWebhookSecret = 'whsec_test_secret';
 
-// Mock dependencies
+// Global state for mock responses
+let mockIdempotencyEnabled = true;
+
+// Trackers - initialize with default implementations (will be updated in beforeEach)
+let idempotencyInsertFn: ((data: unknown) => Promise<{ error: unknown }>) = (data: unknown) => {
+  mockCalls.webhookEventsInsert.push(data);
+  return { error: null };
+};
+let idempotencyUpdateFn: ((data: unknown) => Promise<{ error: unknown }>) = (data: unknown) => {
+  mockCalls.webhookEventsUpdate.push(data);
+  return { error: null };
+};
+
+// Initialize with default implementations
+const mockCalls = {
+  webhookEventsSelect: [] as Array<Record<string, unknown>>,
+  webhookEventsInsert: [] as Array<Record<string, unknown>>,
+  webhookEventsUpdate: [] as Array<Record<string, unknown>>,
+  profilesSelect: [] as Array<Record<string, unknown>>,
+  rpc: [] as Array<{ functionName: string; params: unknown[] }>,
+};
+
+// Mock dependencies BEFORE importing the route
 vi.mock('@server/stripe', () => ({
   stripe: {
     webhooks: {
@@ -17,6 +38,62 @@ vi.mock('@server/stripe', () => ({
   },
   get STRIPE_WEBHOOK_SECRET() {
     return mockWebhookSecret;
+  },
+}));
+
+// Mock the webhook verification service
+vi.mock('@server/webhooks/stripe/services/webhook-verification.service', () => ({
+  WebhookVerificationService: {
+    verifyWebhook: vi.fn(async (request: Request) => {
+      const body = await request.text();
+      const event = JSON.parse(body);
+      return { event, isTestMode: true };
+    }),
+  },
+}));
+
+vi.mock('@server/webhooks/stripe/services/idempotency.service', () => ({
+  IdempotencyService: {
+    checkAndClaimEvent: vi.fn(async (eventId: string, eventType: string, event: unknown) => {
+      if (!mockIdempotencyEnabled) {
+        throw new Error('Idempotency table unavailable');
+      }
+      // Check if event exists
+      if (webhookEventsSelectReturn.data !== null) {
+        // Event exists - return without inserting
+        return {
+          isNew: false,
+          existingStatus: webhookEventsSelectReturn.data.status,
+        };
+      }
+      // Event doesn't exist - insert it
+      if (idempotencyInsertFn) {
+        const insertData = {
+          event_id: eventId,
+          event_type: eventType,
+          status: 'processing',
+          payload: event,
+        };
+        await idempotencyInsertFn(insertData);
+        // Note: idempotencyInsertFn already pushes to mockCalls.webhookEventsInsert
+      }
+      return { isNew: true, existingStatus: null };
+    }),
+    markEventCompleted: vi.fn(async (eventId: string) => {
+      if (idempotencyUpdateFn) {
+        const updateData = { status: 'completed', completed_at: expect.any(String) };
+        await idempotencyUpdateFn(updateData);
+        // Note: idempotencyUpdateFn already pushes to mockCalls.webhookEventsUpdate
+      }
+    }),
+    markEventFailed: vi.fn(async (eventId: string, errorMessage: string) => {
+      if (idempotencyUpdateFn) {
+        const updateData = { status: 'failed', error_message: errorMessage };
+        await idempotencyUpdateFn(updateData);
+        // Note: idempotencyUpdateFn already pushes to mockCalls.webhookEventsUpdate
+      }
+    }),
+    markEventUnrecoverable: vi.fn(async () => {}),
   },
 }));
 
@@ -43,26 +120,6 @@ vi.mock('@shared/config/stripe', () => ({
     maxRollover: 1200,
   })),
 }));
-
-// Define proper types for mock data
-interface IMockWebhookEventCall {
-  table?: string;
-  data?: Record<string, unknown>;
-}
-
-interface IMockRPCCall {
-  functionName: string;
-  params: unknown[];
-}
-
-// Track all calls to supabaseAdmin
-const mockCalls = {
-  webhookEventsSelect: [] as IMockWebhookEventCall[],
-  webhookEventsInsert: [] as Record<string, unknown>[],
-  webhookEventsUpdate: [] as IMockWebhookEventCall[],
-  profilesSelect: [] as IMockWebhookEventCall[],
-  rpc: [] as IMockRPCCall[],
-};
 
 // Create mock return values that can be modified per test
 let webhookEventsSelectReturn: { data: { status: string } | null } = { data: null };
@@ -178,6 +235,19 @@ describe('Stripe Webhook Idempotency', () => {
       ENV: 'test',
     };
     mockWebhookSecret = 'whsec_test_secret';
+    mockIdempotencyEnabled = true;
+
+    // Set up idempotency functions
+    idempotencyInsertFn = async (data: unknown) => {
+      mockCalls.webhookEventsInsert.push(data);
+      return webhookEventsInsertReturn;
+    };
+
+    idempotencyUpdateFn = async (data: unknown) => {
+      mockCalls.webhookEventsUpdate.push(data);
+      return webhookEventsUpdateReturn;
+    };
+
     consoleSpy = {
       log: vi.spyOn(console, 'log').mockImplementation(() => {}),
       error: vi.spyOn(console, 'error').mockImplementation(() => {}),
@@ -212,7 +282,7 @@ describe('Stripe Webhook Idempotency', () => {
       // Mock: update succeeds
       webhookEventsUpdateReturn = { error: null };
 
-      const request = new NextRequest('http://localhost/api/webhooks/stripe', {
+      const request = new Request('http://localhost/api/webhooks/stripe', {
         method: 'POST',
         body: JSON.stringify(event),
         headers: {
@@ -221,8 +291,8 @@ describe('Stripe Webhook Idempotency', () => {
         },
       });
 
-      // Act
-      const response = await POST(request);
+      // Act - Astro APIRoutes expect context object with { request }
+      const response = await POST({ request });
 
       // Assert
       expect(response.status).toBe(200);
@@ -265,7 +335,7 @@ describe('Stripe Webhook Idempotency', () => {
       // Mock: event already exists with completed status
       webhookEventsSelectReturn = { data: { status: 'completed' } };
 
-      const request = new NextRequest('http://localhost/api/webhooks/stripe', {
+      const request = new Request('http://localhost/api/webhooks/stripe', {
         method: 'POST',
         body: JSON.stringify(event),
         headers: {
@@ -274,8 +344,8 @@ describe('Stripe Webhook Idempotency', () => {
         },
       });
 
-      // Act
-      const response = await POST(request);
+      // Act - Astro APIRoutes expect context object with { request }
+      const response = await POST({ request });
 
       // Assert
       expect(response.status).toBe(200);
@@ -313,7 +383,7 @@ describe('Stripe Webhook Idempotency', () => {
       // Mock: event already exists with processing status (concurrent request)
       webhookEventsSelectReturn = { data: { status: 'processing' } };
 
-      const request = new NextRequest('http://localhost/api/webhooks/stripe', {
+      const request = new Request('http://localhost/api/webhooks/stripe', {
         method: 'POST',
         body: JSON.stringify(event),
         headers: {
@@ -322,8 +392,8 @@ describe('Stripe Webhook Idempotency', () => {
         },
       });
 
-      // Act
-      const response = await POST(request);
+      // Act - Astro APIRoutes expect context object with { request }
+      const response = await POST({ request });
 
       // Assert
       expect(response.status).toBe(200);
@@ -355,7 +425,7 @@ describe('Stripe Webhook Idempotency', () => {
         error: { code: '23505', message: 'duplicate key value violates unique constraint' },
       };
 
-      const request = new NextRequest('http://localhost/api/webhooks/stripe', {
+      const request = new Request('http://localhost/api/webhooks/stripe', {
         method: 'POST',
         body: JSON.stringify(event),
         headers: {
@@ -364,8 +434,8 @@ describe('Stripe Webhook Idempotency', () => {
         },
       });
 
-      // Act
-      const response = await POST(request);
+      // Act - Astro APIRoutes expect context object with { request }
+      const response = await POST({ request });
 
       // Assert
       expect(response.status).toBe(200);
@@ -401,7 +471,7 @@ describe('Stripe Webhook Idempotency', () => {
         error: { code: '42501', message: 'permission denied' },
       };
 
-      const request = new NextRequest('http://localhost/api/webhooks/stripe', {
+      const request = new Request('http://localhost/api/webhooks/stripe', {
         method: 'POST',
         body: JSON.stringify(event),
         headers: {
@@ -410,8 +480,8 @@ describe('Stripe Webhook Idempotency', () => {
         },
       });
 
-      // Act
-      const response = await POST(request);
+      // Act - Astro APIRoutes expect context object with { request }
+      const response = await POST({ request });
 
       // Assert - Current implementation continues processing despite idempotency errors
       expect(response.status).toBe(200);
@@ -444,7 +514,7 @@ describe('Stripe Webhook Idempotency', () => {
       // Mock: profile lookup
       profilesSelectReturn = { data: { id: 'user_123' } };
 
-      const request = new NextRequest('http://localhost/api/webhooks/stripe', {
+      const request = new Request('http://localhost/api/webhooks/stripe', {
         method: 'POST',
         body: JSON.stringify(event),
         headers: {
@@ -453,8 +523,8 @@ describe('Stripe Webhook Idempotency', () => {
         },
       });
 
-      // Act
-      const response = await POST(request);
+      // Act - Astro APIRoutes expect context object with { request }
+      const response = await POST({ request });
 
       // Assert
       expect(response.status).toBe(200);
@@ -489,7 +559,7 @@ describe('Stripe Webhook Idempotency', () => {
       // Mock: update for failed status
       webhookEventsUpdateReturn = { error: null };
 
-      const request = new NextRequest('http://localhost/api/webhooks/stripe', {
+      const request = new Request('http://localhost/api/webhooks/stripe', {
         method: 'POST',
         body: JSON.stringify(event),
         headers: {
@@ -498,8 +568,8 @@ describe('Stripe Webhook Idempotency', () => {
         },
       });
 
-      // Act
-      const response = await POST(request);
+      // Act - Astro APIRoutes expect context object with { request }
+      const response = await POST({ request });
 
       // Assert
       expect(response.status).toBe(500);
@@ -535,7 +605,7 @@ describe('Stripe Webhook Idempotency', () => {
       webhookEventsUpdateReturn = { error: null };
       profilesSelectReturn = { data: { id: 'user_123' } };
 
-      const request1 = new NextRequest('http://localhost/api/webhooks/stripe', {
+      const request1 = new Request('http://localhost/api/webhooks/stripe', {
         method: 'POST',
         body: JSON.stringify(event),
         headers: {
@@ -559,7 +629,7 @@ describe('Stripe Webhook Idempotency', () => {
       // Second call: event already completed, should skip
       webhookEventsSelectReturn = { data: { status: 'completed' } };
 
-      const request2 = new NextRequest('http://localhost/api/webhooks/stripe', {
+      const request2 = new Request('http://localhost/api/webhooks/stripe', {
         method: 'POST',
         body: JSON.stringify(event),
         headers: {
@@ -624,7 +694,7 @@ describe('Stripe Webhook Idempotency', () => {
       // Mock: profile lookup
       profilesSelectReturn = { data: { id: 'user_123' } };
 
-      const request = new NextRequest('http://localhost/api/webhooks/stripe', {
+      const request = new Request('http://localhost/api/webhooks/stripe', {
         method: 'POST',
         body: JSON.stringify(event),
         headers: {

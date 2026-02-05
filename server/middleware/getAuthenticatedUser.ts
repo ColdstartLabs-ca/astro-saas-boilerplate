@@ -1,6 +1,5 @@
 import { supabaseAdmin } from '@server/supabase/supabaseAdmin';
 import { UserRepository } from '@shared/repositories';
-import { NextRequest } from 'next/server';
 import { CREDIT_COSTS } from '@shared/config/credits.config';
 
 /**
@@ -10,12 +9,12 @@ import { CREDIT_COSTS } from '@shared/config/credits.config';
  * This helper retrieves the user ID from that header and fetches
  * the full user profile from Supabase.
  *
- * @param req - Next.js request object with X-User-Id header
+ * @param req - Request object with X-User-Id header
  * @returns User profile object or null if not authenticated
  *
  * @example
  * ```ts
- * export async function GET(req: NextRequest) {
+ * export async function GET(req: Request) {
  *   const user = await getAuthenticatedUser(req);
  *   if (!user) {
  *     return Response.json({ error: 'Unauthorized' }, { status: 401 });
@@ -24,7 +23,7 @@ import { CREDIT_COSTS } from '@shared/config/credits.config';
  * }
  * ```
  */
-export async function getAuthenticatedUser(req: NextRequest): Promise<IUserProfile | null> {
+export async function getAuthenticatedUser(req: Request): Promise<IUserProfile | null> {
   const userId = req.headers.get('X-User-Id');
 
   if (!userId) {

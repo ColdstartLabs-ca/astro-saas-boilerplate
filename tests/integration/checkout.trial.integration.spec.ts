@@ -1,6 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { NextRequest } from 'next/server';
-import { POST as checkoutHandler } from '@app/api/checkout/route';
+import { CheckoutController } from '@server/controllers/CheckoutController';
 import { supabaseAdmin } from '@server/supabase/supabaseAdmin';
 import { stripe } from '@server/stripe';
 import { getTrialConfig, getPlanConfig } from '@shared/config/subscription.config';
@@ -34,7 +33,7 @@ const mockGetTrialConfig = vi.mocked(getTrialConfig);
 const mockGetPlanConfig = vi.mocked(getPlanConfig);
 
 describe('Checkout API - Trial Integration', () => {
-  let mockRequest: (body: Record<string, unknown>, headers?: Record<string, string>) => NextRequest;
+  let mockRequest: (body: Record<string, unknown>, headers?: Record<string, string>) => Request;
 
   // Helper function to create typed mocks
   const createMockStripe = () =>
@@ -110,7 +109,7 @@ describe('Checkout API - Trial Integration', () => {
     });
 
     mockRequest = (body: Record<string, unknown>, headers: Record<string, string> = {}) => {
-      return new NextRequest('http://localhost:3000/api/checkout', {
+      return new Request('http://localhost:3000/api/checkout', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -178,7 +177,7 @@ describe('Checkout API - Trial Integration', () => {
         }
       );
 
-      const response = await checkoutHandler(request);
+      const response = await new CheckoutController().execute(request);
       const data = await response.json();
 
       expect(mockStripe.checkout.sessions.create).toHaveBeenCalledWith(
@@ -243,7 +242,7 @@ describe('Checkout API - Trial Integration', () => {
         }
       );
 
-      const response = await checkoutHandler(request);
+      const response = await new CheckoutController().execute(request);
       const data = await response.json();
 
       expect(mockStripe.checkout.sessions.create).toHaveBeenCalledWith(
@@ -313,7 +312,7 @@ describe('Checkout API - Trial Integration', () => {
         }
       );
 
-      const response = await checkoutHandler(request);
+      const response = await new CheckoutController().execute(request);
       const data = await response.json();
 
       expect(mockStripe.checkout.sessions.create).toHaveBeenCalledWith(
@@ -384,7 +383,7 @@ describe('Checkout API - Trial Integration', () => {
         }
       );
 
-      const response = await checkoutHandler(request);
+      const response = await new CheckoutController().execute(request);
       const data = await response.json();
 
       expect(mockStripe.checkout.sessions.create).toHaveBeenCalledWith(
@@ -454,7 +453,7 @@ describe('Checkout API - Trial Integration', () => {
         }
       );
 
-      await checkoutHandler(request);
+      await new CheckoutController().execute(request);
 
       expect(mockStripe.checkout.sessions.create).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -494,7 +493,7 @@ describe('Checkout API - Trial Integration', () => {
         }
       );
 
-      const response = await checkoutHandler(request);
+      const response = await new CheckoutController().execute(request);
       const data = await response.json();
 
       expect(response.status).toBe(400);
@@ -552,7 +551,7 @@ describe('Checkout API - Trial Integration', () => {
         }
       );
 
-      const response = await checkoutHandler(request);
+      const response = await new CheckoutController().execute(request);
       const data = await response.json();
 
       expect(response.status).toBe(500);

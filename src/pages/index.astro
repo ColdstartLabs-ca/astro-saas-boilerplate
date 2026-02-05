@@ -1,0 +1,29 @@
+---
+import Layout from '../layouts/Layout.astro';
+import { clientEnv } from '@shared/config/env';
+import HomePageClient from '@client/components/pages/HomePageClient';
+
+// SEO metadata
+const title = `${clientEnv.APP_NAME} - Build Your SaaS Faster`;
+const description = `Powerful API platform for developers. Start building with ${clientEnv.APP_NAME} - simple, fast, and reliable infrastructure for your next project.`;---
+
+<Layout title={title}>
+  <!-- SEO Meta Tags -->
+  <meta name="description" content={description} />
+  <meta property="og:title" content={title} />
+  <meta property="og:description" content={description} />
+  <meta property="og:type" content="website" />
+  <meta property="og:url" content={`${clientEnv.BASE_URL}/`} />
+  <meta property="og:site_name" content={clientEnv.APP_NAME} />
+  <meta property="og:image" content={`${clientEnv.BASE_URL}/og-image.png`} />
+  <meta property="og:image:width" content="1200" />
+  <meta property="og:image:height" content="630" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content={title} />
+  <meta name="twitter:description" content={description} />
+  <meta name="twitter:image" content={`${clientEnv.BASE_URL}/og-image.png`} />
+  <link rel="canonical" href={`${clientEnv.BASE_URL}/`} />
+
+  <!-- React island for interactive landing page -->
+  <HomePageClient client:load />
+</Layout>

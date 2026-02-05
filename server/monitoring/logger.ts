@@ -41,11 +41,7 @@ export function createLogger(
     service: 'saas-boilerplate-api',
     namespace,
     apiKey: apiKey || '',
-    ctx: {
-      url: request.url,
-      method: request.method,
-      ...context,
-    },
+    ctx: (context || {}) as never,
     isLocalDev: !apiKey || isDevelopment(),
   });
 

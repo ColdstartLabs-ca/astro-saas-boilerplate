@@ -1,12 +1,9 @@
-import type { NextRequest } from 'next/server';
-import { NextResponse } from 'next/server';
 import { BaseController } from './BaseController';
 import { requireAdmin, type IAdminCheckResult } from '../middleware/requireAdmin';
 import { supabaseAdmin } from '../supabase/supabaseAdmin';
 import { stripe } from '../stripe';
 import { getPlanForPriceId } from '@shared/config/stripe';
 import dayjs from 'dayjs';
-import type { z } from 'zod';
 
 /**
  * Schema for credit adjustment request
@@ -35,15 +32,6 @@ interface IUpdateProfileRequest {
 }
 
 /**
- * Pagination and search parameters for user list
- */
-interface IUserListQuery {
-  page?: string;
-  limit?: string;
-  search?: string;
-}
-
-/**
  * Admin Controller
  *
  * Handles admin-only API endpoints:
@@ -61,15 +49,15 @@ export class AdminController extends BaseController {
    * Verify admin access
    * Returns admin check result with error response if not authorized
    */
-  private async checkAdminAccess(req: NextRequest): Promise<IAdminCheckResult> {
+  private async checkAdminAccess(req: Request): Promise<IAdminCheckResult> {
     return requireAdmin(req);
   }
 
   /**
    * Handle incoming request
    */
-  protected async handle(req: NextRequest): Promise<NextResponse> {
-    const path = req.nextUrl.pathname;
+  protected async handle(req: Request): Promise<Response> {
+    const path = this.getPath(req);
 
     // Route to appropriate method based on path and method
     if (path.endsWith('/stats') && this.isGet(req)) {
@@ -104,7 +92,7 @@ export class AdminController extends BaseController {
    * GET /api/admin/stats
    * Get admin statistics (total users, active subscriptions, credits issued/used)
    */
-  private async getStats(req: NextRequest): Promise<NextResponse> {
+  private async getStats(req: Request): Promise<Response> {
     const { isAdmin, error } = await this.checkAdminAccess(req);
     if (!isAdmin) return error || this.error('UNAUTHORIZED', 'Unauthorized', 401);
 
@@ -139,7 +127,7 @@ export class AdminController extends BaseController {
    * POST /api/admin/credits/adjust
    * Adjust user credits to a new balance
    */
-  private async adjustCredits(req: NextRequest): Promise<NextResponse> {
+  private async adjustCredits(req: Request): Promise<Response> {
     const { isAdmin, userId: adminId, error } = await this.checkAdminAccess(req);
     if (!isAdmin) return error || this.error('UNAUTHORIZED', 'Unauthorized', 401);
 
@@ -191,7 +179,7 @@ export class AdminController extends BaseController {
    * GET /api/admin/users
    * List users with pagination and optional search
    */
-  private async listUsers(req: NextRequest): Promise<NextResponse> {
+  private async listUsers(req: Request): Promise<Response> {
     const { isAdmin, error } = await this.checkAdminAccess(req);
     if (!isAdmin) return error || this.error('UNAUTHORIZED', 'Unauthorized', 401);
 
@@ -270,12 +258,13 @@ export class AdminController extends BaseController {
    * GET /api/admin/users/[userId]
    * Get detailed user information including subscription and recent transactions
    */
-  private async getUserById(req: NextRequest): Promise<NextResponse> {
+  private async getUserById(req: Request): Promise<Response> {
     const { isAdmin, error } = await this.checkAdminAccess(req);
     if (!isAdmin) return error || this.error('UNAUTHORIZED', 'Unauthorized', 401);
 
     // Extract userId from path
-    const pathParts = req.nextUrl.pathname.split('/');
+    const path = this.getPath(req);
+    const pathParts = path.split('/');
     const userId = pathParts[pathParts.length - 1];
 
     // Validate UUID format
@@ -316,12 +305,13 @@ export class AdminController extends BaseController {
    * PATCH /api/admin/users/[userId]
    * Update user profile (role, subscription_tier, subscription_status)
    */
-  private async updateUser(req: NextRequest): Promise<NextResponse> {
+  private async updateUser(req: Request): Promise<Response> {
     const { isAdmin, error } = await this.checkAdminAccess(req);
     if (!isAdmin) return error || this.error('UNAUTHORIZED', 'Unauthorized', 401);
 
     // Extract userId from path
-    const pathParts = req.nextUrl.pathname.split('/');
+    const path = this.getPath(req);
+    const pathParts = path.split('/');
     const userId = pathParts[pathParts.length - 1];
 
     // Validate UUID format
@@ -376,12 +366,13 @@ export class AdminController extends BaseController {
    * DELETE /api/admin/users/[userId]
    * Delete a user and all their data
    */
-  private async deleteUser(req: NextRequest): Promise<NextResponse> {
+  private async deleteUser(req: Request): Promise<Response> {
     const { isAdmin, error } = await this.checkAdminAccess(req);
     if (!isAdmin) return error || this.error('UNAUTHORIZED', 'Unauthorized', 401);
 
     // Extract userId from path
-    const pathParts = req.nextUrl.pathname.split('/');
+    const path = this.getPath(req);
+    const pathParts = path.split('/');
     const userId = pathParts[pathParts.length - 1];
 
     // Validate UUID format
@@ -431,7 +422,7 @@ export class AdminController extends BaseController {
    * GET /api/admin/subscription
    * Get subscription details from Stripe and database
    */
-  private async getSubscription(req: NextRequest): Promise<NextResponse> {
+  private async getSubscription(req: Request): Promise<Response> {
     const { isAdmin, error } = await this.checkAdminAccess(req);
     if (!isAdmin) return error || this.error('UNAUTHORIZED', 'Unauthorized', 401);
 
@@ -481,7 +472,7 @@ export class AdminController extends BaseController {
    * POST /api/admin/subscription
    * Update or cancel a user's subscription
    */
-  private async updateSubscription(req: NextRequest): Promise<NextResponse> {
+  private async updateSubscription(req: Request): Promise<Response> {
     const { isAdmin, error } = await this.checkAdminAccess(req);
     if (!isAdmin) return error || this.error('UNAUTHORIZED', 'Unauthorized', 401);
 

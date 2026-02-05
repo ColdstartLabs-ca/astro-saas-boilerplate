@@ -3,8 +3,10 @@
  * This file extends the global Locals type for middleware-set properties
  */
 
+/* eslint-disable @typescript-eslint/naming-convention */
+
 declare global {
-  // eslint-disable-next-line @typescript-eslint/naming-convention
+   
   interface Locals {
     userId?: string;
     userEmail?: string;

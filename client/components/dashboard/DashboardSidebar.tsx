@@ -1,9 +1,6 @@
 'use client';
 
 import React from 'react';
-import Link from 'next/link';
-import Image from 'next/image';
-import { usePathname, useRouter } from 'next/navigation';
 import {
   LayoutDashboard,
   CreditCard,
@@ -20,7 +17,8 @@ import { getPlanDisplayName } from '@shared/config/stripe';
 import { useLogger } from '@client/utils/logger';
 import { cn } from '@client/utils/cn';
 import { clientEnv } from '@shared/config/env';
-import { useTranslations } from 'next-intl';
+import { getTranslations } from '../../../src/i18n/utils';
+import { useMemo, useState, useEffect } from 'react';
 import { LocaleSwitcher } from '@client/components/i18n/LocaleSwitcher';
 
 interface ISidebarItem {
@@ -35,13 +33,17 @@ interface IDashboardSidebarProps {
 }
 
 export const DashboardSidebar: React.FC<IDashboardSidebarProps> = ({ isOpen, onClose }) => {
-  const pathname = usePathname();
-  const router = useRouter();
+  const t = useMemo(() => getTranslations('dashboard.sidebar'), []);
   const { signOut, user, isLoading, error } = useUserStore();
   const isAdmin = useIsAdmin();
   const subscription = useSubscription();
   const logger = useLogger('DashboardSidebar');
-  const t = useTranslations('dashboard.sidebar');
+
+  // Get current pathname from window.location
+  const [pathname, setPathname] = useState('');
+  useEffect(() => {
+    setPathname(window.location.pathname);
+  }, []);
 
   // Check if profile data is still loading (but not if there's an error)
   const isProfileLoading = isLoading || (user && !user.profile && !error);
@@ -88,7 +90,7 @@ export const DashboardSidebar: React.FC<IDashboardSidebarProps> = ({ isOpen, onC
   };
 
   const handleNavigation = (href: string) => {
-    router.push(href);
+    window.location.href = href;
     // Close drawer on mobile after navigation
     if (onClose) {
       onClose();
@@ -132,16 +134,13 @@ export const DashboardSidebar: React.FC<IDashboardSidebarProps> = ({ isOpen, onC
 
         {/* Logo/Brand */}
         <div className="p-6 border-b border-border flex items-center justify-between">
-          <Link href="/" className="flex items-center">
-            <Image
+          <a href="/" className="flex items-center">
+            <img
               src="/logo/horizontal-logo-compact.png"
               alt={clientEnv.APP_NAME}
-              width={120}
-              height={40}
               className="h-8 w-auto"
-              priority
             />
-          </Link>
+          </a>
           <LocaleSwitcher />
         </div>
 

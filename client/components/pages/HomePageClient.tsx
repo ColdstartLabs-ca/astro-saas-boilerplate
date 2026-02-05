@@ -6,11 +6,11 @@ import { useModalStore } from '@client/store/modalStore';
 import { useToastStore } from '@client/store/toastStore';
 import { prepareAuthRedirect } from '@client/utils/authRedirectManager';
 import { getSubscriptionConfig } from '@shared/config/subscription.config';
+import { getTranslations } from '../../../src/i18n/utils';
 import { motion } from 'framer-motion';
 import { ArrowRight, Rocket, Zap, Shield, CheckCircle } from 'lucide-react';
-import { useTranslations } from 'next-intl';
-import { useSearchParams } from 'next/navigation';
-import { lazy, Suspense, useEffect } from 'react';
+
+import { lazy, Suspense, useEffect, useMemo } from 'react';
 
 // Lazy load FAQ component
 const FAQ = lazy(() => import('@client/components/ui/FAQ').then(m => ({ default: m.FAQ })));
@@ -42,8 +42,12 @@ const heroItemVariants = {
 export function HomePageClient(): JSX.Element {
   const { openAuthModal } = useModalStore();
   const { showToast } = useToastStore();
-  const searchParams = useSearchParams();
-  const t = useTranslations('homepage');
+
+  // Use Astro i18n helper instead of next-intl's useTranslations
+  const t = useMemo(() => getTranslations('homepage'), []);
+
+  // Get URL params from window.location
+  const searchParams = new URLSearchParams(typeof window !== 'undefined' ? window.location.search : '');
 
   // Check if any plan has trial enabled
   const config = getSubscriptionConfig();
@@ -331,3 +335,6 @@ export function HomePageClient(): JSX.Element {
     </div>
   );
 }
+
+// Default export for Astro component import
+export default HomePageClient;

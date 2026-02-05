@@ -1,9 +1,8 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
-import { useRouter } from 'next/navigation';
-import { useTranslations } from 'next-intl';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { TrendingUp, TrendingDown, Calendar, Info } from 'lucide-react';
+import { getTranslations } from '../../../src/i18n/utils';
 import { StripeService } from '@client/services/stripeService';
 import { getPlanForPriceId } from '@shared/config/stripe';
 import { ModalHeader } from './ModalHeader';
@@ -61,8 +60,7 @@ export function PlanChangeModal({
   currentPriceId,
   onComplete,
 }: IPlanChangeModalProps): JSX.Element {
-  const router = useRouter();
-  const t = useTranslations('stripe.planChange');
+  const t = useMemo(() => getTranslations('stripe.planChange'), []);
   const [preview, setPreview] = useState<IPreviewData | null>(null);
   const [loading, setLoading] = useState(false);
   const [changing, setChanging] = useState(false);
@@ -117,7 +115,7 @@ export function PlanChangeModal({
       // Close modal and redirect to confirmation page
       onClose();
       onComplete?.();
-      router.push(`/subscription/confirmed?${params.toString()}`);
+      window.location.href = `/subscription/confirmed?${params.toString()}`;
     } catch (err: unknown) {
       const errorMessage = t('failedToChange');
       setError(errorMessage);

@@ -12,9 +12,11 @@ export default [
   // Global ignores must be in their own object with only ignores property
   {
     ignores: [
+      'app/**', // Old Next.js app directory - being migrated to Astro
       '.next/**',
       '.next-test-*/**', // Parallel test instance build directories
       '.open-next/**',
+      '.astro/**', // Auto-generated Astro files
       'node_modules/**',
       'out/**',
       'dist/**',
@@ -27,6 +29,8 @@ export default [
       'next-env.d.ts',
       'next.config.js', // Next.js config file
       'open-next.config.ts', // OpenNext config file
+      'astro.config.mjs', // Astro config file
+      'middleware.ts', // Old Next.js middleware - being migrated
     ],
   },
   {
@@ -94,6 +98,14 @@ export default [
           selector: 'interface',
           format: ['PascalCase'],
           prefix: ['I'],
+        },
+      ],
+      '@typescript-eslint/no-unused-vars': [
+        'error',
+        {
+          argsIgnorePattern: '^_',
+          varsIgnorePattern: '^_',
+          caughtErrorsIgnorePattern: '^_',
         },
       ],
       'import/no-default-export': 'error',

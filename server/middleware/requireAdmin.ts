@@ -1,22 +1,21 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { supabaseAdmin } from '@/server/supabase/supabaseAdmin';
-import { verifyApiAuth } from '@/lib/middleware/auth';
+import { supabaseAdmin } from '@server/supabase/supabaseAdmin';
+import { verifyApiAuth } from '@lib/middleware/auth';
 
 export interface IAdminCheckResult {
   isAdmin: boolean;
   userId: string | null;
-  error?: NextResponse;
+  error?: Response;
 }
 
 /**
  * Middleware to verify the requesting user has admin role
- * @param req - Next.js request object
+ * @param req - Request object
  * @returns Admin check result with error response if not authorized
  *
  * SECURITY: Always verifies JWT token directly. Does NOT trust X-User-Id header
  * as it could be forged by attackers bypassing middleware.
  */
-export async function requireAdmin(req: NextRequest): Promise<IAdminCheckResult> {
+export async function requireAdmin(req: Request): Promise<IAdminCheckResult> {
   try {
     // SECURITY FIX: Always verify JWT token directly
     // Never trust X-User-Id header alone as it could be forged
@@ -34,7 +33,10 @@ export async function requireAdmin(req: NextRequest): Promise<IAdminCheckResult>
       return {
         isAdmin: false,
         userId: null,
-        error: NextResponse.json({ error: 'Unauthorized', code: 'NO_USER' }, { status: 401 }),
+        error: new Response(
+          JSON.stringify({ error: 'Unauthorized', code: 'NO_USER' }),
+          { status: 401, headers: { 'Content-Type': 'application/json' } }
+        ),
       };
     }
 
@@ -53,9 +55,9 @@ export async function requireAdmin(req: NextRequest): Promise<IAdminCheckResult>
       return {
         isAdmin: false,
         userId,
-        error: NextResponse.json(
-          { error: 'User not found', code: 'USER_NOT_FOUND' },
-          { status: 404 }
+        error: new Response(
+          JSON.stringify({ error: 'User not found', code: 'USER_NOT_FOUND' }),
+          { status: 404, headers: { 'Content-Type': 'application/json' } }
         ),
       };
     }
@@ -64,9 +66,9 @@ export async function requireAdmin(req: NextRequest): Promise<IAdminCheckResult>
       return {
         isAdmin: false,
         userId,
-        error: NextResponse.json(
-          { error: 'User not found', code: 'USER_NOT_FOUND' },
-          { status: 404 }
+        error: new Response(
+          JSON.stringify({ error: 'User not found', code: 'USER_NOT_FOUND' }),
+          { status: 404, headers: { 'Content-Type': 'application/json' } }
         ),
       };
     }
@@ -75,9 +77,9 @@ export async function requireAdmin(req: NextRequest): Promise<IAdminCheckResult>
       return {
         isAdmin: false,
         userId,
-        error: NextResponse.json(
-          { error: 'Forbidden: Admin access required', code: 'NOT_ADMIN' },
-          { status: 403 }
+        error: new Response(
+          JSON.stringify({ error: 'Forbidden: Admin access required', code: 'NOT_ADMIN' }),
+          { status: 403, headers: { 'Content-Type': 'application/json' } }
         ),
       };
     }
@@ -89,9 +91,9 @@ export async function requireAdmin(req: NextRequest): Promise<IAdminCheckResult>
     return {
       isAdmin: false,
       userId: null,
-      error: NextResponse.json(
-        { error: 'User not found', code: 'USER_NOT_FOUND' },
-        { status: 404 }
+      error: new Response(
+        JSON.stringify({ error: 'User not found', code: 'USER_NOT_FOUND' }),
+        { status: 404, headers: { 'Content-Type': 'application/json' } }
       ),
     };
   }

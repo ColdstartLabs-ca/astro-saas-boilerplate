@@ -1,7 +1,12 @@
 'use client';
 
-import { HTMLMotionProps, motion, useInView, Variants } from 'framer-motion';
-import { ReactElement, ReactNode, useRef } from 'react';
+import { motion, useInView } from 'framer-motion';
+import React, { useRef } from 'react';
+
+// Types from CommonJS React module - use React namespace
+type ReactNode = React.ReactNode;
+type ReactElement = React.ReactElement;
+type HTMLAttributes<T> = React.HTMLAttributes<T>;
 
 // Smooth easing for professional feel
 const smoothEasing: [number, number, number, number] = [0.25, 0.4, 0.25, 1];
@@ -18,7 +23,7 @@ interface IFadeInProps {
   once?: boolean;
 }
 
-const fadeInVariants: Variants = {
+const fadeInVariants = {
   hidden: (direction: string) => ({
     opacity: 0,
     y: direction === 'up' ? 40 : direction === 'down' ? -40 : 0,
@@ -71,7 +76,7 @@ interface IStaggerContainerProps {
   once?: boolean;
 }
 
-const containerVariants: Variants = {
+const containerVariants = {
   hidden: { opacity: 1 },
   visible: (staggerDelay: number) => ({
     opacity: 1,
@@ -108,12 +113,12 @@ export function StaggerContainer({
 // ============================================
 // StaggerItem - Individual items within stagger container
 // ============================================
-interface IStaggerItemProps extends HTMLMotionProps<'div'> {
+interface IStaggerItemProps extends HTMLAttributes<'div'> {
   children: ReactNode;
   className?: string;
 }
 
-const itemVariants: Variants = {
+const itemVariants = {
   hidden: { opacity: 0, y: 30 },
   visible: {
     opacity: 1,
@@ -301,6 +306,7 @@ export function GlowPulse({ children, className = '' }: IGlowPulseProps): ReactE
     </motion.div>
   );
 }
+
 // ============================================
 // ScaleIn - Scale in from center on scroll
 // ============================================

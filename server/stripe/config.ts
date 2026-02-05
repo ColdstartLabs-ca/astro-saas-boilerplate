@@ -9,7 +9,7 @@ if (!serverEnv.STRIPE_SECRET_KEY) {
 // This avoids the Node.js HTTP/TLS stack which isn't available in Workers
 // See: https://github.com/stripe/stripe-node#usage-with-cloudflare-workers
 export const stripe = new Stripe(serverEnv.STRIPE_SECRET_KEY || 'sk_test_dummy_key_for_build', {
-  apiVersion: '2025-12-15.clover',
+  apiVersion: '2026-01-28.clover',
   typescript: true,
   httpClient: Stripe.createFetchHttpClient(),
   telemetry: false, // Disable telemetry for edge environments

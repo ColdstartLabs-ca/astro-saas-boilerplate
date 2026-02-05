@@ -1,4 +1,3 @@
-import { NextRequest, NextResponse } from 'next/server';
 import { rateLimit, publicRateLimit } from '@server/rateLimit';
 import { serverEnv } from '@shared/config/env';
 
@@ -11,7 +10,7 @@ const USER_RATE_LIMIT = 50;
 /**
  * Get the client IP address from the request, prioritizing Cloudflare headers
  */
-export function getClientIp(req: NextRequest): string {
+export function getClientIp(req: Request): string {
   // Cloudflare-specific header (most reliable on Cloudflare)
   const cfConnectingIp = req.headers.get('cf-connecting-ip');
   if (cfConnectingIp) return cfConnectingIp;
@@ -70,9 +69,9 @@ export function isTestEnvironment(): boolean {
  * Returns null if the request should proceed, or a response if rate limited
  */
 export async function applyPublicRateLimit(
-  req: NextRequest,
-  res: NextResponse
-): Promise<NextResponse | null> {
+  req: Request,
+  res: Response
+): Promise<Response | null> {
   // Skip rate limiting in test environment
   if (isTestEnvironment()) {
     return null;
@@ -83,18 +82,22 @@ export async function applyPublicRateLimit(
   const rateLimitHeaders = createRateLimitHeaders(PUBLIC_RATE_LIMIT, remaining, reset);
 
   if (!success) {
-    return NextResponse.json(
-      {
+    const errorResponse = new Response(
+      JSON.stringify({
         error: 'Too many requests',
         details: {
           retryAfter: Math.ceil((reset - Date.now()) / 1000),
         },
-      },
+      }),
       {
         status: 429,
-        headers: rateLimitHeaders,
+        headers: {
+          'Content-Type': 'application/json',
+          ...rateLimitHeaders,
+        },
       }
     );
+    return errorResponse;
   }
 
   // Add rate limit headers to successful responses
@@ -113,8 +116,8 @@ export async function applyPublicRateLimit(
  */
 export async function applyUserRateLimit(
   userId: string,
-  res: NextResponse
-): Promise<NextResponse | null> {
+  res: Response
+): Promise<Response | null> {
   let success, remaining, reset;
 
   // Skip rate limiting in test environment but still add headers
@@ -132,16 +135,19 @@ export async function applyUserRateLimit(
   const rateLimitHeaders = createRateLimitHeaders(USER_RATE_LIMIT, remaining, reset);
 
   if (!success) {
-    return NextResponse.json(
-      {
+    return new Response(
+      JSON.stringify({
         error: 'Too many requests',
         details: {
           retryAfter: Math.ceil((reset - Date.now()) / 1000),
         },
-      },
+      }),
       {
         status: 429,
-        headers: rateLimitHeaders,
+        headers: {
+          'Content-Type': 'application/json',
+          ...rateLimitHeaders,
+        },
       }
     );
   }

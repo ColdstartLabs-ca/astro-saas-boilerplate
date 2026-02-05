@@ -4,21 +4,73 @@ import { useClickOutside } from '@/client/hooks/useClickOutside';
 import { adminFetch } from '@/client/utils/admin-api-client';
 import { IAdminUserProfile } from '@/shared/types/admin.types';
 import { Coins, CreditCard, Eye, MoreVertical, Shield, ShieldOff, Trash2 } from 'lucide-react';
-import { useRouter } from 'next/navigation';
 import React, { useCallback, useRef, useState } from 'react';
-import { useTranslations } from 'next-intl';
+
+// Simple translation helper
+const t = (key: string, params?: Record<string, string | number>) => {
+  const translations: Record<string, string> = {
+    'admin.aria.userActions': 'User actions',
+    'admin.users.viewDetails': 'View Details',
+    'admin.users.removeAdmin': 'Remove Admin',
+    'admin.users.makeAdmin': 'Make Admin',
+    'admin.users.adjustCredits': 'Adjust Credits',
+    'admin.users.changeSubscription': 'Change Subscription',
+    'admin.users.deleteUser': 'Delete User',
+    'admin.setCredits': 'Set Credits',
+    'admin.fields.user': 'User',
+    'admin.creditsBalance': 'Credits Balance',
+    'admin.current': 'Current',
+    'admin.save': 'Save',
+    'admin.failedToSetCredits': 'Failed to set credits',
+    'admin.manageSubscription': 'Manage Subscription',
+    'admin.loading': 'Loading...',
+    'admin.profileTier': 'Profile Tier',
+    'admin.free': 'Free',
+    'admin.stripeStatus': 'Stripe Status',
+    'admin.noSubscription': 'No Subscription',
+    'admin.renews': 'Renews',
+    'admin.changeTo': 'Change To',
+    'admin.cancel': 'Cancel',
+    'admin.saving': 'Saving...',
+    'admin.failedToLoad': 'Failed to load',
+    'admin.failedToUpdate': 'Failed to update',
+    'admin.immediatelyCancel': 'This will immediately cancel their Stripe subscription.',
+    'admin.removeAccess': 'This will remove access to paid features.',
+    'admin.grantAccessWithoutStripe': 'This will grant {planName} access without a Stripe subscription.',
+    'admin.changeToPlan': 'This will change their plan to {planName}.',
+    'admin.grantAdminTitle': 'Grant Admin Access',
+    'admin.removeAdminTitle': 'Remove Admin Access',
+    'admin.grantAdminButton': 'Grant Admin',
+    'admin.removeAdminButton': 'Remove Admin',
+    'admin.deleteUserTitle': 'Delete User',
+    'admin.warning': 'Warning',
+    'admin.irreversible': 'This action cannot be undone.',
+    'admin.typeEmailToConfirm': 'Type {email} to confirm',
+    'admin.deleteUserButton': 'Delete User',
+    'admin.failedToDelete': 'Failed to delete user',
+    'admin.processing': 'Processing...',
+  };
+
+  let result = translations[key] || key;
+  if (params) {
+    Object.entries(params).forEach(([param, value]) => {
+      result = result.replace(`{${param}}`, String(value));
+    });
+  }
+  return result;
+};
 
 interface IUserActionsDropdownProps {
   user: IAdminUserProfile;
   onUpdate: () => void;
+  navigate: (href: string) => void;
 }
 
 export function UserActionsDropdown({
   user,
   onUpdate,
+  navigate,
 }: IUserActionsDropdownProps): React.ReactElement {
-  const t = useTranslations();
-  const router = useRouter();
   const [isOpen, setIsOpen] = useState(false);
   const [activeModal, setActiveModal] = useState<
     'credits' | 'subscription' | 'delete' | 'role' | null
@@ -31,7 +83,7 @@ export function UserActionsDropdown({
   const handleAction = (action: 'credits' | 'subscription' | 'delete' | 'role' | 'view') => {
     setIsOpen(false);
     if (action === 'view') {
-      router.push(`/dashboard/admin/users/${user.id}`);
+      navigate(`/dashboard/admin/users/${user.id}`);
     } else {
       setActiveModal(action);
     }
@@ -141,7 +193,6 @@ interface IModalProps {
 }
 
 function CreditAdjustmentModal({ user, onClose, onSuccess }: IModalProps) {
-  const t = useTranslations('admin');
   const totalBalance =
     (user.subscription_credits_balance ?? 0) + (user.purchased_credits_balance ?? 0);
   const [newBalance, setNewBalance] = useState(totalBalance.toString());
@@ -164,25 +215,25 @@ function CreditAdjustmentModal({ user, onClose, onSuccess }: IModalProps) {
       onSuccess();
       onClose();
     } catch (err) {
-      setError(err instanceof Error ? err.message : t('failedToSetCredits'));
+      setError(err instanceof Error ? err.message : t('admin.failedToSetCredits'));
     } finally {
       setSubmitting(false);
     }
   };
 
   return (
-    <Modal title={t('setCredits')} onClose={onClose}>
+    <Modal title={t('admin.setCredits')} onClose={onClose}>
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
           <label className="block text-sm font-medium text-muted-foreground">
-            {t('fields.user')}
+            {t('admin.fields.user')}
           </label>
           <p className="mt-1 text-sm text-primary">{user.email}</p>
         </div>
 
         <div>
           <label className="block text-sm font-medium text-muted-foreground">
-            {t('creditsBalance')}
+            {t('admin.creditsBalance')}
           </label>
           <input
             type="number"
@@ -193,14 +244,14 @@ function CreditAdjustmentModal({ user, onClose, onSuccess }: IModalProps) {
             required
           />
           <p className="mt-1 text-sm text-muted-foreground">
-            {t('current')}{' '}
+            {t('admin.current')}{' '}
             {(user.subscription_credits_balance ?? 0) + (user.purchased_credits_balance ?? 0)}
           </p>
         </div>
 
         {error && <p className="text-sm text-error">{error}</p>}
 
-        <ModalActions onClose={onClose} submitLabel={t('save')} submitting={submitting} />
+        <ModalActions onClose={onClose} submitLabel={t('admin.save')} submitting={submitting} />
       </form>
     </Modal>
   );
@@ -223,7 +274,6 @@ interface IStripeSubData {
 }
 
 function SubscriptionModal({ user, onClose, onSuccess }: IModalProps) {
-  const t = useTranslations('admin');
   const [loading, setLoading] = useState(true);
   const [stripeData, setStripeData] = useState<IStripeSubData | null>(null);
   const [selectedPlan, setSelectedPlan] = useState('');
@@ -244,13 +294,13 @@ function SubscriptionModal({ user, onClose, onSuccess }: IModalProps) {
         );
         setSelectedPlan(current?.id || '');
       } catch {
-        setError(t('failedToLoad'));
+        setError(t('admin.failedToLoad'));
       } finally {
         setLoading(false);
       }
     };
     fetchData();
-  }, [user.id, user.subscription_tier, t]);
+  }, [user.id, user.subscription_tier]);
 
   const hasActiveStripeSubscription =
     stripeData?.stripeSubscription && stripeData.stripeSubscription.status === 'active';
@@ -281,7 +331,7 @@ function SubscriptionModal({ user, onClose, onSuccess }: IModalProps) {
       onSuccess();
       onClose();
     } catch (err) {
-      setError(err instanceof Error ? err.message : t('failedToUpdate'));
+      setError(err instanceof Error ? err.message : t('admin.failedToUpdate'));
     } finally {
       setSubmitting(false);
     }
@@ -298,22 +348,22 @@ function SubscriptionModal({ user, onClose, onSuccess }: IModalProps) {
       if (hasActiveStripeSubscription) {
         return {
           type: 'warning',
-          text: t('immediatelyCancel'),
+          text: t('admin.immediatelyCancel'),
         };
       }
-      return { type: 'info', text: t('removeAccess') };
+      return { type: 'info', text: t('admin.removeAccess') };
     }
 
     if (hasActiveStripeSubscription) {
       return {
         type: 'info',
-        text: t('changeToPlan', { planName: selectedPlanName }),
+        text: t('admin.changeToPlan', { planName: selectedPlanName }),
       };
     }
 
     return {
       type: 'warning',
-      text: t('grantAccessWithoutStripe', { planName: selectedPlanName }),
+      text: t('admin.grantAccessWithoutStripe', { planName: selectedPlanName }),
     };
   };
 
@@ -321,18 +371,18 @@ function SubscriptionModal({ user, onClose, onSuccess }: IModalProps) {
 
   if (loading) {
     return (
-      <Modal title={t('manageSubscription')} onClose={onClose}>
-        <p className="text-sm text-muted-foreground">{t('loading')}</p>
+      <Modal title={t('admin.manageSubscription')} onClose={onClose}>
+        <p className="text-sm text-muted-foreground">{t('admin.loading')}</p>
       </Modal>
     );
   }
 
   return (
-    <Modal title={t('manageSubscription')} onClose={onClose}>
+    <Modal title={t('admin.manageSubscription')} onClose={onClose}>
       <div className="space-y-4">
         <div>
           <label className="block text-sm font-medium text-muted-foreground">
-            {t('fields.user')}
+            {t('admin.fields.user')}
           </label>
           <p className="mt-1 text-sm text-primary">{user.email}</p>
         </div>
@@ -340,20 +390,20 @@ function SubscriptionModal({ user, onClose, onSuccess }: IModalProps) {
         {/* Current State */}
         <div className="p-3 bg-surface border border-border rounded-lg space-y-1">
           <div className="flex justify-between text-sm">
-            <span className="text-muted-foreground">{t('profileTier')}</span>
-            <span className="font-medium">{user.subscription_tier || t('free')}</span>
+            <span className="text-muted-foreground">{t('admin.profileTier')}</span>
+            <span className="font-medium">{user.subscription_tier || t('admin.free')}</span>
           </div>
           <div className="flex justify-between text-sm">
-            <span className="text-muted-foreground">{t('stripeStatus')}</span>
+            <span className="text-muted-foreground">{t('admin.stripeStatus')}</span>
             <span
               className={`font-medium ${hasActiveStripeSubscription ? 'text-success' : 'text-muted-foreground'}`}
             >
-              {stripeData?.stripeSubscription?.status || t('noSubscription')}
+              {stripeData?.stripeSubscription?.status || t('admin.noSubscription')}
             </span>
           </div>
           {stripeData?.stripeSubscription?.current_period_end && (
             <div className="flex justify-between text-sm">
-              <span className="text-muted-foreground">{t('renews')}</span>
+              <span className="text-muted-foreground">{t('admin.renews')}</span>
               <span className="font-medium">
                 {new Date(
                   stripeData.stripeSubscription.current_period_end * 1000
@@ -366,7 +416,7 @@ function SubscriptionModal({ user, onClose, onSuccess }: IModalProps) {
         {/* Plan Selection */}
         <div>
           <label className="block text-sm font-medium text-muted-foreground mb-2">
-            {t('changeTo')}
+            {t('admin.changeTo')}
           </label>
           <div className="space-y-2">
             {PLANS.map(plan => (
@@ -416,7 +466,7 @@ function SubscriptionModal({ user, onClose, onSuccess }: IModalProps) {
             onClick={onClose}
             className="px-4 py-2 text-sm font-medium text-muted-foreground hover:bg-surface-light rounded-lg transition-colors"
           >
-            {t('cancel')}
+            {t('admin.cancel')}
           </button>
           <button
             type="button"
@@ -424,7 +474,7 @@ function SubscriptionModal({ user, onClose, onSuccess }: IModalProps) {
             disabled={submitting || !hasChanged}
             className="px-4 py-2 text-sm font-medium text-white bg-accent hover:bg-accent-hover rounded-lg transition-colors disabled:opacity-50"
           >
-            {submitting ? t('saving') : t('save')}
+            {submitting ? t('admin.saving') : t('admin.save')}
           </button>
         </div>
       </div>
@@ -433,7 +483,6 @@ function SubscriptionModal({ user, onClose, onSuccess }: IModalProps) {
 }
 
 function RoleChangeModal({ user, onClose, onSuccess }: IModalProps) {
-  const t = useTranslations();
   const newRole = user.role === 'admin' ? 'user' : 'admin';
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
@@ -459,7 +508,9 @@ function RoleChangeModal({ user, onClose, onSuccess }: IModalProps) {
   return (
     <Modal
       title={
-        newRole === 'admin' ? t('admin.users.grantAdminTitle') : t('admin.users.removeAdminTitle')
+        newRole === 'admin'
+          ? t('admin.grantAdminTitle')
+          : t('admin.removeAdminTitle')
       }
       onClose={onClose}
     >
@@ -491,8 +542,8 @@ function RoleChangeModal({ user, onClose, onSuccess }: IModalProps) {
           onClose={onClose}
           submitLabel={
             newRole === 'admin'
-              ? t('admin.users.grantAdminButton')
-              : t('admin.users.removeAdminButton')
+              ? t('admin.grantAdminButton')
+              : t('admin.removeAdminButton')
           }
           submitting={submitting}
           onSubmit={handleConfirm}
@@ -504,7 +555,6 @@ function RoleChangeModal({ user, onClose, onSuccess }: IModalProps) {
 }
 
 function DeleteUserModal({ user, onClose, onSuccess }: IModalProps) {
-  const t = useTranslations('admin');
   const [confirmEmail, setConfirmEmail] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
@@ -523,24 +573,24 @@ function DeleteUserModal({ user, onClose, onSuccess }: IModalProps) {
       onSuccess();
       onClose();
     } catch (err) {
-      setError(err instanceof Error ? err.message : t('failedToDelete'));
+      setError(err instanceof Error ? err.message : t('admin.failedToDelete'));
     } finally {
       setSubmitting(false);
     }
   };
 
   return (
-    <Modal title={t('deleteUserTitle')} onClose={onClose}>
+    <Modal title={t('admin.deleteUserTitle')} onClose={onClose}>
       <div className="space-y-4">
         <div className="p-3 bg-error/10 border border-error/20 rounded-lg">
           <p className="text-sm text-error">
-            <strong>{t('warning')}</strong> {t('irreversible')}
+            <strong>{t('admin.warning')}</strong> {t('admin.irreversible')}
           </p>
         </div>
 
         <div>
           <label className="block text-sm font-medium text-muted-foreground">
-            {t('typeEmailToConfirm', { email: user.email })}
+            {t('admin.typeEmailToConfirm', { email: user.email })}
           </label>
           <input
             type="text"
@@ -555,7 +605,7 @@ function DeleteUserModal({ user, onClose, onSuccess }: IModalProps) {
 
         <ModalActions
           onClose={onClose}
-          submitLabel={t('deleteUserButton')}
+          submitLabel={t('admin.deleteUserButton')}
           submitting={submitting}
           onSubmit={handleDelete}
           variant="danger"
@@ -609,7 +659,6 @@ function ModalActions({
   variant = 'primary',
   disabled,
 }: IModalActionsProps) {
-  const t = useTranslations('admin');
   const buttonClass =
     variant === 'danger'
       ? 'bg-error hover:bg-error/90 focus:ring-error'
@@ -622,7 +671,7 @@ function ModalActions({
         onClick={onClose}
         className="px-4 py-2 text-sm font-medium text-muted-foreground hover:bg-surface-light rounded-lg transition-colors"
       >
-        {t('cancel')}
+        {t('admin.cancel')}
       </button>
       {onSubmit ? (
         <button
@@ -631,7 +680,7 @@ function ModalActions({
           disabled={submitting || disabled}
           className={`px-4 py-2 text-sm font-medium text-white rounded-lg transition-colors disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-offset-2 ${buttonClass}`}
         >
-          {submitting ? t('processing') : submitLabel}
+          {submitting ? t('admin.processing') : submitLabel}
         </button>
       ) : (
         <button
@@ -639,7 +688,7 @@ function ModalActions({
           disabled={submitting || disabled}
           className={`px-4 py-2 text-sm font-medium text-white rounded-lg transition-colors disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-offset-2 ${buttonClass}`}
         >
-          {submitting ? t('processing') : submitLabel}
+          {submitting ? t('admin.processing') : submitLabel}
         </button>
       )}
     </div>

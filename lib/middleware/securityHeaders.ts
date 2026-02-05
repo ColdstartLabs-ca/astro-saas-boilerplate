@@ -1,5 +1,4 @@
-/* eslint-disable no-restricted-syntax */
-import { NextResponse, NextRequest } from 'next/server';
+ 
 import { getSecurityHeaders, buildCspHeader } from '@shared/config/security';
 import { clientEnv, serverEnv } from '@shared/config/env';
 
@@ -8,11 +7,11 @@ import { clientEnv, serverEnv } from '@shared/config/env';
  * In test mode, includes the test server port (random port like 3100-4000)
  */
 function getAllowedOrigins(): string[] {
-  const origins = ['http://localhost:3000', 'https://localhost:3000', clientEnv.BASE_URL];
+  const origins = ['http://localhost:4321', 'https://localhost:4321', clientEnv.BASE_URL];
 
   // In test environment, add the test server port
-  if (serverEnv.ENV === 'test' && process.env.TEST_PORT) {
-    origins.push(`http://localhost:${process.env.TEST_PORT}`);
+  if (serverEnv.ENV === 'test' && globalThis.process?.env?.TEST_PORT) {
+    origins.push(`http://localhost:${globalThis.process.env.TEST_PORT}`);
   }
 
   return origins.filter(Boolean) as string[];
@@ -26,10 +25,10 @@ export function refreshAllowedOrigins(): void {
 refreshAllowedOrigins();
 
 /**
- * Apply security headers to a NextResponse
+ * Apply security headers to a Response
  * Includes standard security headers and Content Security Policy
  */
-export function applySecurityHeaders(res: NextResponse): void {
+export function applySecurityHeaders(res: Response): void {
   // Apply standard security headers (environment-aware)
   Object.entries(getSecurityHeaders()).forEach(([key, value]) => {
     res.headers.set(key, value);
@@ -44,7 +43,7 @@ export function applySecurityHeaders(res: NextResponse): void {
  * SECURITY FIX: Don't allow wildcard for missing Origin
  * Browsers always send Origin header. No header means non-browser request (e.g., webhook) which doesn't need CORS.
  */
-export function applyCorsHeaders(res: NextResponse, origin?: string): void {
+export function applyCorsHeaders(res: Response, origin?: string): void {
   // Only set CORS headers if origin is provided and allowed
   if (origin && ALLOWED_ORIGINS.includes(origin)) {
     res.headers.set('Access-Control-Allow-Origin', origin);
@@ -63,9 +62,9 @@ export function applyCorsHeaders(res: NextResponse, origin?: string): void {
 /**
  * Handle OPTIONS preflight requests
  */
-export function handleOptionsRequest(req: NextRequest): NextResponse | null {
+export function handleOptionsRequest(req: Request): Response | null {
   if (req.method === 'OPTIONS') {
-    const res = new NextResponse(null, { status: 200 });
+    const res = new Response(null, { status: 200 });
     applyCorsHeaders(res, req.headers.get('origin') || undefined);
     return res;
   }

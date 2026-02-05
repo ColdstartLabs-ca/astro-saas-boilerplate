@@ -2,8 +2,7 @@
 import '../bugfixes/dayjs-mock.setup';
 
 import { describe, test, expect, vi, beforeEach, afterEach } from 'vitest';
-import { NextRequest } from 'next/server';
-import { POST } from '../../../app/api/webhooks/stripe/route';
+import { POST } from '../../../src/pages/api/webhooks/stripe/index';
 import { supabaseAdmin } from '../../../server/supabase/supabaseAdmin';
 import { stripe } from '../../../server/stripe';
 import { getPlanForPriceId } from '@shared/config/stripe';
@@ -182,7 +181,7 @@ describe('Stripe Webhook Handler', () => {
   describe('Signature validation', () => {
     test('should reject requests without stripe-signature header', async () => {
       // Arrange
-      const request = new NextRequest('http://localhost/api/webhooks/stripe', {
+      const request = new Request('http://localhost/api/webhooks/stripe', {
         method: 'POST',
         body: JSON.stringify({ type: 'test' }),
         headers: {
@@ -191,7 +190,8 @@ describe('Stripe Webhook Handler', () => {
       });
 
       // Act
-      const response = await POST(request);
+      // Astro APIRoutes expect context object with { request }
+      const response = await POST({ request });
 
       // Assert
       expect(response.status).toBe(400);
@@ -206,7 +206,7 @@ describe('Stripe Webhook Handler', () => {
         data: { object: { id: 'cs_test_123' } },
       };
 
-      const request = new NextRequest('http://localhost/api/webhooks/stripe', {
+      const request = new Request('http://localhost/api/webhooks/stripe', {
         method: 'POST',
         body: JSON.stringify(event),
         headers: {
@@ -219,7 +219,8 @@ describe('Stripe Webhook Handler', () => {
       vi.mocked(supabaseAdmin.rpc).mockResolvedValue({ error: null } as never);
 
       // Act
-      const response = await POST(request);
+      // Astro APIRoutes expect context object with { request }
+      const response = await POST({ request });
 
       // Assert
       expect(response.status).toBe(200);
@@ -229,7 +230,7 @@ describe('Stripe Webhook Handler', () => {
 
     test('should handle invalid JSON in test mode', async () => {
       // Arrange
-      const request = new NextRequest('http://localhost/api/webhooks/stripe', {
+      const request = new Request('http://localhost/api/webhooks/stripe', {
         method: 'POST',
         body: 'invalid json',
         headers: {
@@ -239,7 +240,8 @@ describe('Stripe Webhook Handler', () => {
       });
 
       // Act
-      const response = await POST(request);
+      // Astro APIRoutes expect context object with { request }
+      const response = await POST({ request });
 
       // Assert
       expect(response.status).toBe(400);
@@ -258,7 +260,7 @@ describe('Stripe Webhook Handler', () => {
         data: { object: { id: 'evt_test_123' } },
       };
 
-      const request = new NextRequest('http://localhost/api/webhooks/stripe', {
+      const request = new Request('http://localhost/api/webhooks/stripe', {
         method: 'POST',
         body: JSON.stringify(event),
         headers: {
@@ -271,7 +273,8 @@ describe('Stripe Webhook Handler', () => {
       vi.mocked(stripe.webhooks.constructEventAsync).mockResolvedValue(event as never);
 
       // Act
-      const response = await POST(request);
+      // Astro APIRoutes expect context object with { request }
+      const response = await POST({ request });
 
       // Assert
       expect(stripe.webhooks.constructEventAsync).toHaveBeenCalledWith(
@@ -288,7 +291,7 @@ describe('Stripe Webhook Handler', () => {
       mockEnv.ENV = 'production';
       mockWebhookSecret = 'whsec_prod_real_secret';
 
-      const request = new NextRequest('http://localhost/api/webhooks/stripe', {
+      const request = new Request('http://localhost/api/webhooks/stripe', {
         method: 'POST',
         body: JSON.stringify({ type: 'test' }),
         headers: {
@@ -303,7 +306,8 @@ describe('Stripe Webhook Handler', () => {
       );
 
       // Act
-      const response = await POST(request);
+      // Astro APIRoutes expect context object with { request }
+      const response = await POST({ request });
 
       // Assert
       expect(response.status).toBe(400);
@@ -342,7 +346,7 @@ describe('Stripe Webhook Handler', () => {
         data: { object: sessionWithCredits },
       };
 
-      const request = new NextRequest('http://localhost/api/webhooks/stripe', {
+      const request = new Request('http://localhost/api/webhooks/stripe', {
         method: 'POST',
         body: JSON.stringify(event),
         headers: {
@@ -352,7 +356,8 @@ describe('Stripe Webhook Handler', () => {
       });
 
       // Act
-      const response = await POST(request);
+      // Astro APIRoutes expect context object with { request }
+      const response = await POST({ request });
 
       // Assert
       expect(response.status).toBe(200);
@@ -390,7 +395,7 @@ describe('Stripe Webhook Handler', () => {
         data: { object: sessionWithSubscription },
       };
 
-      const request = new NextRequest('http://localhost/api/webhooks/stripe', {
+      const request = new Request('http://localhost/api/webhooks/stripe', {
         method: 'POST',
         body: JSON.stringify(event),
         headers: {
@@ -405,7 +410,8 @@ describe('Stripe Webhook Handler', () => {
       } as never);
 
       // Act
-      const response = await POST(request);
+      // Astro APIRoutes expect context object with { request }
+      const response = await POST({ request });
 
       // Assert
       expect(response.status).toBe(200); // Still returns 200 as webhook was processed
@@ -429,7 +435,7 @@ describe('Stripe Webhook Handler', () => {
         data: { object: sessionWithZeroCredits },
       };
 
-      const request = new NextRequest('http://localhost/api/webhooks/stripe', {
+      const request = new Request('http://localhost/api/webhooks/stripe', {
         method: 'POST',
         body: JSON.stringify(event),
         headers: {
@@ -439,7 +445,8 @@ describe('Stripe Webhook Handler', () => {
       });
 
       // Act
-      const response = await POST(request);
+      // Astro APIRoutes expect context object with { request }
+      const response = await POST({ request });
 
       // Assert
       expect(response.status).toBe(200);
@@ -463,7 +470,7 @@ describe('Stripe Webhook Handler', () => {
         data: { object: sessionWithSubscription },
       };
 
-      const request = new NextRequest('http://localhost/api/webhooks/stripe', {
+      const request = new Request('http://localhost/api/webhooks/stripe', {
         method: 'POST',
         body: JSON.stringify(event),
         headers: {
@@ -476,7 +483,8 @@ describe('Stripe Webhook Handler', () => {
       vi.mocked(supabaseAdmin.rpc).mockResolvedValue({ error: null } as never);
 
       // Act
-      const response = await POST(request);
+      // Astro APIRoutes expect context object with { request }
+      const response = await POST({ request });
 
       // Assert
       expect(response.status).toBe(200);
@@ -503,7 +511,7 @@ describe('Stripe Webhook Handler', () => {
         data: { object: sessionWithoutUserId },
       };
 
-      const request = new NextRequest('http://localhost/api/webhooks/stripe', {
+      const request = new Request('http://localhost/api/webhooks/stripe', {
         method: 'POST',
         body: JSON.stringify(event),
         headers: {
@@ -513,7 +521,8 @@ describe('Stripe Webhook Handler', () => {
       });
 
       // Act
-      const response = await POST(request);
+      // Astro APIRoutes expect context object with { request }
+      const response = await POST({ request });
 
       // Assert
       expect(response.status).toBe(200);
@@ -562,7 +571,7 @@ describe('Stripe Webhook Handler', () => {
         data: { object: subscriptionData },
       };
 
-      const request = new NextRequest('http://localhost/api/webhooks/stripe', {
+      const request = new Request('http://localhost/api/webhooks/stripe', {
         method: 'POST',
         body: JSON.stringify(event),
         headers: {
@@ -617,7 +626,8 @@ describe('Stripe Webhook Handler', () => {
       });
 
       // Act
-      const response = await POST(request);
+      // Astro APIRoutes expect context object with { request }
+      const response = await POST({ request });
 
       // Assert
       expect(response.status).toBe(200);
@@ -643,7 +653,7 @@ describe('Stripe Webhook Handler', () => {
         data: { object: subscriptionData },
       };
 
-      const request = new NextRequest('http://localhost/api/webhooks/stripe', {
+      const request = new Request('http://localhost/api/webhooks/stripe', {
         method: 'POST',
         body: JSON.stringify(event),
         headers: {
@@ -684,7 +694,8 @@ describe('Stripe Webhook Handler', () => {
       });
 
       // Act
-      const response = await POST(request);
+      // Astro APIRoutes expect context object with { request }
+      const response = await POST({ request });
 
       // Assert
       expect(response.status).toBe(200);
@@ -704,7 +715,7 @@ describe('Stripe Webhook Handler', () => {
         data: { object: subscriptionData },
       };
 
-      const request = new NextRequest('http://localhost/api/webhooks/stripe', {
+      const request = new Request('http://localhost/api/webhooks/stripe', {
         method: 'POST',
         body: JSON.stringify(event),
         headers: {
@@ -744,7 +755,8 @@ describe('Stripe Webhook Handler', () => {
       });
 
       // Act
-      const response = await POST(request);
+      // Astro APIRoutes expect context object with { request }
+      const response = await POST({ request });
 
       // Assert - In test mode, webhook returns 200 (not 500) to avoid test failures
       expect(response.status).toBe(200);
@@ -776,7 +788,7 @@ describe('Stripe Webhook Handler', () => {
         data: { object: subscriptionData },
       };
 
-      const request = new NextRequest('http://localhost/api/webhooks/stripe', {
+      const request = new Request('http://localhost/api/webhooks/stripe', {
         method: 'POST',
         body: JSON.stringify(event),
         headers: {
@@ -831,7 +843,8 @@ describe('Stripe Webhook Handler', () => {
       });
 
       // Act
-      const response = await POST(request);
+      // Astro APIRoutes expect context object with { request }
+      const response = await POST({ request });
 
       // Assert
       expect(response.status).toBe(200);
@@ -903,7 +916,7 @@ describe('Stripe Webhook Handler', () => {
         data: { object: invoiceData },
       };
 
-      const request = new NextRequest('http://localhost/api/webhooks/stripe', {
+      const request = new Request('http://localhost/api/webhooks/stripe', {
         method: 'POST',
         body: JSON.stringify(event),
         headers: {
@@ -947,7 +960,8 @@ describe('Stripe Webhook Handler', () => {
       vi.mocked(supabaseAdmin.rpc).mockResolvedValue({ error: null } as never);
 
       // Act
-      const response = await POST(request);
+      // Astro APIRoutes expect context object with { request }
+      const response = await POST({ request });
 
       // Assert
       expect(response.status).toBe(200);
@@ -976,7 +990,7 @@ describe('Stripe Webhook Handler', () => {
         data: { object: invoiceData },
       };
 
-      const request = new NextRequest('http://localhost/api/webhooks/stripe', {
+      const request = new Request('http://localhost/api/webhooks/stripe', {
         method: 'POST',
         body: JSON.stringify(event),
         headers: {
@@ -1009,7 +1023,8 @@ describe('Stripe Webhook Handler', () => {
       });
 
       // Act
-      const response = await POST(request);
+      // Astro APIRoutes expect context object with { request }
+      const response = await POST({ request });
 
       // Assert
       expect(response.status).toBe(200);
@@ -1033,7 +1048,7 @@ describe('Stripe Webhook Handler', () => {
         data: { object: invoiceData },
       };
 
-      const request = new NextRequest('http://localhost/api/webhooks/stripe', {
+      const request = new Request('http://localhost/api/webhooks/stripe', {
         method: 'POST',
         body: JSON.stringify(event),
         headers: {
@@ -1062,7 +1077,8 @@ describe('Stripe Webhook Handler', () => {
       });
 
       // Act
-      const response = await POST(request);
+      // Astro APIRoutes expect context object with { request }
+      const response = await POST({ request });
 
       // Assert - In test mode, webhook returns 200 (not 500) to avoid test failures
       expect(response.status).toBe(200);
@@ -1090,7 +1106,7 @@ describe('Stripe Webhook Handler', () => {
         data: { object: invoiceData },
       };
 
-      const request = new NextRequest('http://localhost/api/webhooks/stripe', {
+      const request = new Request('http://localhost/api/webhooks/stripe', {
         method: 'POST',
         body: JSON.stringify(event),
         headers: {
@@ -1100,7 +1116,8 @@ describe('Stripe Webhook Handler', () => {
       });
 
       // Act
-      const response = await POST(request);
+      // Astro APIRoutes expect context object with { request }
+      const response = await POST({ request });
 
       // Assert
       expect(response.status).toBe(200);
@@ -1116,7 +1133,7 @@ describe('Stripe Webhook Handler', () => {
         data: { object: { id: 'acct_test_123' } },
       };
 
-      const request = new NextRequest('http://localhost/api/webhooks/stripe', {
+      const request = new Request('http://localhost/api/webhooks/stripe', {
         method: 'POST',
         body: JSON.stringify(event),
         headers: {
@@ -1126,7 +1143,8 @@ describe('Stripe Webhook Handler', () => {
       });
 
       // Act
-      const response = await POST(request);
+      // Astro APIRoutes expect context object with { request }
+      const response = await POST({ request });
 
       // Assert
       expect(response.status).toBe(200);
@@ -1145,7 +1163,7 @@ describe('Stripe Webhook Handler', () => {
         data: { object: null }, // This should cause an error
       };
 
-      const request = new NextRequest('http://localhost/api/webhooks/stripe', {
+      const request = new Request('http://localhost/api/webhooks/stripe', {
         method: 'POST',
         body: JSON.stringify(event),
         headers: {
@@ -1155,7 +1173,8 @@ describe('Stripe Webhook Handler', () => {
       });
 
       // Act
-      const response = await POST(request);
+      // Astro APIRoutes expect context object with { request }
+      const response = await POST({ request });
 
       // Assert
       expect(response.status).toBe(500);

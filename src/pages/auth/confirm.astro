@@ -1,0 +1,7 @@
+---
+// Auth confirm page - handles email confirmation tokens
+// This must be a React-only client component due to heavy use of React hooks
+import AuthConfirmClient from '@client/components/pages/AuthConfirmClient';
+---
+
+<AuthConfirmClient client:only="react" />

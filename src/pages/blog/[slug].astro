@@ -1,0 +1,40 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import { getPostBySlug, getAllPosts } from '@server/blog';
+
+export function getStaticPaths() {
+  const posts = getAllPosts();
+  return posts.map(post => ({
+    params: { slug: post.slug },
+  }));
+}
+
+const { slug } = Astro.params;
+const post = getPostBySlug(slug);
+
+if (!post) {
+  return Astro.redirect('/404');
+}
+
+const title = post.title;
+const description = post.description;
+---
+
+<Layout title={title}>
+  <article class="min-h-screen bg-main p-8">
+    <a href="/blog" class="text-accent hover:underline">← Back to Blog</a>
+
+    <h1 class="text-3xl font-bold text-white mt-4">{post.title}</h1>
+    <p class="text-xl text-muted-foreground mt-2">{post.description}</p>
+
+    <p class="text-sm text-muted-foreground mt-4">
+      By {post.author} • {post.date}
+    </p>
+
+    {post.image && (
+      <img src={post.image} alt={post.title} class="mt-8 rounded-lg" />
+    )}
+
+    <div class="prose prose-invert mt-8" set:html={post.content} />
+  </article>
+</Layout>

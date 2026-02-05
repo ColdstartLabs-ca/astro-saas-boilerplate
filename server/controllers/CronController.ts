@@ -1,5 +1,3 @@
-import type { NextRequest } from 'next/server';
-import { NextResponse } from 'next/server';
 import { BaseController } from './BaseController';
 import { supabaseAdmin } from '../supabase/supabaseAdmin';
 import { stripe } from '../stripe/config';
@@ -50,12 +48,12 @@ export class CronController extends BaseController {
   /**
    * Handle incoming request
    */
-  protected async handle(req: NextRequest): Promise<NextResponse> {
-    const path = req.nextUrl.pathname;
+  protected async handle(req: Request): Promise<Response> {
+    const path = this.getPath(req);
 
     // Verify cron secret for all requests
     const authResult = this.verifyCronSecret(req);
-    if (authResult instanceof NextResponse) return authResult;
+    if (authResult instanceof Response) return authResult;
 
     // Route to appropriate method based on path
     if (path.endsWith('/check-expirations') && this.isPost(req)) {
@@ -74,7 +72,7 @@ export class CronController extends BaseController {
   /**
    * Verify cron secret for authentication
    */
-  private verifyCronSecret(req: NextRequest): NextResponse | null {
+  private verifyCronSecret(req: Request): Response | null {
     const cronSecret = req.headers.get('x-cron-secret');
     if (cronSecret !== serverEnv.CRON_SECRET) {
       console.error('Unauthorized cron request - invalid CRON_SECRET');
@@ -87,7 +85,7 @@ export class CronController extends BaseController {
    * POST /api/cron/check-expirations
    * Check subscriptions past their billing period and sync with Stripe
    */
-  private async checkExpirations(req: NextRequest): Promise<NextResponse> {
+  private async checkExpirations(_req: Request): Promise<Response> {
     console.log('[CRON] Starting expiration check...');
 
     let syncRunId: string | null = null;
@@ -201,7 +199,7 @@ export class CronController extends BaseController {
    * POST /api/cron/reconcile
    * Full subscription reconciliation with Stripe
    */
-  private async reconcile(req: NextRequest): Promise<NextResponse> {
+  private async reconcile(_req: Request): Promise<Response> {
     console.log('[CRON] Starting full subscription reconciliation...');
 
     let syncRunId: string | null = null;
@@ -426,7 +424,7 @@ export class CronController extends BaseController {
    * POST /api/cron/recover-webhooks
    * Retry processing failed webhook events
    */
-  private async recoverWebhooks(req: NextRequest): Promise<NextResponse> {
+  private async recoverWebhooks(_req: Request): Promise<Response> {
     console.log('[CRON] Starting webhook recovery...');
 
     let syncRunId: string | null = null;

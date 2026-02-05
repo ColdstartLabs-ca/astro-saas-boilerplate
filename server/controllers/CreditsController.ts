@@ -1,10 +1,5 @@
-import type { NextRequest } from 'next/server';
-import { NextResponse } from 'next/server';
-import type { z } from 'zod';
 import { BaseController } from './BaseController';
-import { validateRequest } from '../middleware/validation';
 import { supabaseAdmin } from '@server/supabase/supabaseAdmin';
-import { NotFoundError } from '../errors';
 
 /**
  * Credit transaction type
@@ -36,7 +31,7 @@ export class CreditsController extends BaseController {
   /**
    * Authenticate user from Authorization header
    */
-  private async authenticateUser(req: NextRequest): Promise<{ userId: string } | NextResponse> {
+  private async authenticateUser(req: Request): Promise<{ userId: string } | Response> {
     const authHeader = req.headers.get('authorization');
     if (!authHeader) {
       return this.error('UNAUTHORIZED', 'Unauthorized', 401);
@@ -58,7 +53,7 @@ export class CreditsController extends BaseController {
   /**
    * Handle incoming request
    */
-  protected async handle(req: NextRequest): Promise<NextResponse> {
+  protected async handle(req: Request): Promise<Response> {
     if (this.isGet(req)) {
       return this.getHistory(req);
     }
@@ -70,9 +65,9 @@ export class CreditsController extends BaseController {
    * GET /api/credits/history
    * Get user's credit transaction history with pagination
    */
-  private async getHistory(req: NextRequest): Promise<NextResponse> {
+  private async getHistory(req: Request): Promise<Response> {
     const authResult = await this.authenticateUser(req);
-    if (authResult instanceof NextResponse) return authResult;
+    if (authResult instanceof Response) return authResult;
     const { userId } = authResult;
 
     // Get pagination parameters with bounds checking
@@ -120,7 +115,7 @@ export class CreditsController extends BaseController {
    * POST /api/credits/history
    * Alternative method to get history with POST (for clients that can't send query params)
    */
-  private async getHistoryPost(req: NextRequest): Promise<NextResponse> {
+  private async getHistoryPost(req: Request): Promise<Response> {
     const userId = this.getUserId(req);
     const body = await this.getBody<ICreditHistoryQuery>(req);
 

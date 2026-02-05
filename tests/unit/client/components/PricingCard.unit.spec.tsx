@@ -1,8 +1,13 @@
+import React from 'react';
 import { render, screen, waitFor, cleanup } from '@testing-library/react';
 import { userEvent } from '@testing-library/user-event';
 import { vi, describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { NextIntlClientProvider } from 'next-intl';
 import { PricingCard } from '@client/components/stripe/PricingCard';
+
+// Simple translation context mock to replace next-intl
+const TranslationContext = React.createContext<{ t: (key: string) => string }>({
+  t: (key: string) => key,
+});
 
 // Mock translations for stripe.checkout (used by CheckoutModal)
 const mockTranslations = {
@@ -13,17 +18,19 @@ const mockTranslations = {
 };
 
 function renderWithTranslations(ui: React.ReactElement) {
+  const t = (key: string) => {
+    const keys = key.split('.');
+    let value: unknown = mockTranslations;
+    for (const k of keys) {
+      value = (value as Record<string, unknown>)[k];
+    }
+    return typeof value === 'string' ? value : key;
+  };
+
   return render(
-    <NextIntlClientProvider
-      locale="en"
-      messages={{
-        stripe: {
-          checkout: mockTranslations,
-        },
-      }}
-    >
+    <TranslationContext.Provider value={{ t }}>
       {ui}
-    </NextIntlClientProvider>
+    </TranslationContext.Provider>
   );
 }
 

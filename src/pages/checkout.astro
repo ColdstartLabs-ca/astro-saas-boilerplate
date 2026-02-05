@@ -1,0 +1,7 @@
+---
+// Checkout page with Stripe embedded checkout
+// This must be a React-only client component due to heavy use of React hooks and Stripe integration
+import CheckoutPageClient from '@client/components/pages/CheckoutPageClient';
+---
+
+<CheckoutPageClient client:only="react" />

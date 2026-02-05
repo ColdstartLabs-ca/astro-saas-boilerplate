@@ -44,10 +44,10 @@ export abstract class BaseEmailProviderAdapter implements IEmailProviderAdapter 
   constructor(config: IEmailProviderConfig) {
     // Deep clone the config to avoid mutations affecting the original constant
     this.config = JSON.parse(JSON.stringify(config));
-    this.fromAddress = serverEnv.EMAIL_FROM_ADDRESS;
-    this.baseUrl = serverEnv.BASE_URL;
-    this.supportEmail = serverEnv.SUPPORT_EMAIL;
-    this.appName = serverEnv.APP_NAME;
+    this.fromAddress = serverEnv.EMAIL_FROM_ADDRESS || '';
+    this.baseUrl = serverEnv.BASE_URL || '';
+    this.supportEmail = serverEnv.SUPPORT_EMAIL || '';
+    this.appName = serverEnv.APP_NAME || '';
   }
 
   /**

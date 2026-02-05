@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { useTranslations } from 'next-intl';
+import { useTranslations } from '@client/hooks/useTranslations';
 import { AlertTriangle } from 'lucide-react';
 import dayjs from 'dayjs';
 import { ModalHeader } from './ModalHeader';

@@ -1,0 +1,7 @@
+---
+// Auth callback page - handles OAuth redirects from Supabase
+// This must be a React-only client component due to heavy use of React hooks
+import AuthCallbackClient from '@client/components/pages/AuthCallbackClient';
+---
+
+<AuthCallbackClient client:only="react" />

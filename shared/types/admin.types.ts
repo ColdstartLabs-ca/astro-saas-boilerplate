@@ -1,6 +1,6 @@
 // Admin panel TypeScript types
 
-import { IUserProfile, UserRole } from './stripe.types';
+import type { IUserProfile, UserRole } from './stripe.types';
 
 export interface IAdminUserProfile extends IUserProfile {
   email: string;

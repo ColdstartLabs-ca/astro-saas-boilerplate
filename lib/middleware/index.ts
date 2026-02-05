@@ -15,4 +15,4 @@ export {
   applyPublicRateLimit,
   applyUserRateLimit,
 } from './rateLimit';
-export { verifyApiAuth, addUserContextHeaders, handlePageAuth } from './auth';
+export { verifyApiAuth, addUserContextLocals } from './auth';

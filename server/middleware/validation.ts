@@ -1,11 +1,10 @@
-import { NextRequest } from 'next/server';
 import type { z } from 'zod';
 import { ValidationError } from '../errors';
 
 /**
  * Validates a request body against a Zod schema
  *
- * @param request - The Next.js request object
+ * @param request - The Request object
  * @param schema - The Zod schema to validate against
  * @returns The validated and typed data
  * @throws ValidationError if JSON is invalid or schema validation fails
@@ -17,7 +16,7 @@ import { ValidationError } from '../errors';
  * ```
  */
 export async function validateRequest<T>(
-  request: NextRequest,
+  request: Request,
   schema: z.ZodSchema<T>
 ): Promise<T> {
   try {
@@ -45,7 +44,7 @@ export async function validateRequest<T>(
 /**
  * Validates query parameters against a Zod schema
  *
- * @param request - The Next.js request object
+ * @param request - The Request object
  * @param schema - The Zod schema to validate against
  * @returns The validated and typed query parameters
  * @throws ValidationError if query validation fails
@@ -56,10 +55,11 @@ export async function validateRequest<T>(
  * ```
  */
 export function validateQuery<T>(
-  request: NextRequest,
+  request: Request,
   schema: z.ZodSchema<T>
 ): T {
-  const result = schema.safeParse(request.nextUrl.searchParams);
+  const url = new URL(request.url);
+  const result = schema.safeParse(url.searchParams);
   if (!result.success) {
     throw new ValidationError('Invalid query parameters', {
       errors: result.error.errors,

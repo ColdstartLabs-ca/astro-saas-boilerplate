@@ -1,0 +1,207 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import { clientEnv } from '@shared/config/env';
+import { getAllPosts } from '@server/blog';
+import { getTranslations } from '../../i18n/utils';
+
+const t = getTranslations('blog');
+const allPosts = getAllPosts();
+const [featuredPost, ...otherPosts] = allPosts;
+
+// SEO metadata
+const title = `Blog - Image Enhancement Tips & Guides`;
+const description = `Learn about AI image upscaling, photo enhancement techniques, and tips for e-commerce product photography. Expert guides from ${clientEnv.APP_NAME}.`;
+---
+
+<Layout title={title}>
+  <!-- SEO Meta Tags -->
+  <meta name="description" content={description} />
+  <meta property="og:title" content={`${title} | ${clientEnv.APP_NAME}`} />
+  <meta property="og:description" content={description} />
+  <meta property="og:type" content="website" />
+  <meta property="og:url" content={`${clientEnv.BASE_URL}/blog`} />
+  <link rel="canonical" href={`${clientEnv.BASE_URL}/blog`} />
+
+  <div class="min-h-screen bg-main">
+    <!-- Hero Section -->
+    <section class="relative py-20 md:py-32 overflow-hidden">
+      <div class="container mx-auto px-4 max-w-5xl text-center relative z-10">
+        <div class="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-accent/10 border border-accent/20 text-accent text-sm font-medium mb-6">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-9.714 5.143L13 21l-2.286-6.857L5 9l9.714-5.143L11 3z" />
+          </svg>
+          Tips, Tutorials & Guides
+        </div>
+        <h1 class="font-display text-4xl md:text-6xl font-bold text-white mb-6 tracking-tight">
+          Image Enhancement
+          <span class="block bg-gradient-to-r from-accent via-secondary to-tertiary bg-clip-text text-transparent">
+            Insights & Expertise
+          </span>
+        </h1>
+        <p class="text-lg md:text-xl text-text-secondary max-w-2xl mx-auto leading-relaxed mb-8">
+          Master the art of AI image upscaling, photo restoration, and professional photography
+          optimization with our in-depth guides.
+        </p>
+      </div>
+    </section>
+
+    <!-- Featured Post -->
+    {featuredPost && (
+      <section class="pb-12">
+        <div class="container mx-auto px-4 max-w-6xl">
+          <a href={`/blog/${featuredPost.slug}`} class="group block">
+            <article class="relative bg-gradient-to-br from-surface via-surface to-surface-light rounded-3xl border border-border overflow-hidden hover:border-accent/50 transition-all duration-500 hover:shadow-card-hover">
+              <div class="grid md:grid-cols-5 gap-0">
+                <!-- Cover Image -->
+                <div class="md:col-span-2 aspect-[4/3] md:aspect-auto min-h-[280px] relative overflow-hidden">
+                  {featuredPost.image ? (
+                    <img
+                      src={featuredPost.image}
+                      alt={featuredPost.title}
+                      class="object-cover group-hover:scale-105 transition-transform duration-500 w-full h-full"
+                    />
+                  ) : (
+                    <div class="absolute inset-0 bg-gradient-to-br from-accent/20 via-secondary/10 to-tertiary/20 flex items-center justify-center">
+                      <svg class="w-8 h-8 text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-9.714 5.143L13 21l-2.286-6.857L5 9l9.714-5.143L11 3z" />
+                      </svg>
+                    </div>
+                  )}
+                  <div class="absolute top-4 left-4 z-10">
+                    <span class="px-3 py-1.5 rounded-full text-xs font-semibold bg-accent text-white shadow-lg">
+                      Featured
+                    </span>
+                  </div>
+                </div>
+                <!-- Content -->
+                <div class="md:col-span-3 p-8 md:p-10 flex flex-col justify-center">
+                  <div class="flex items-center gap-3 mb-4">
+                    <span class="px-3 py-1 rounded-full text-xs font-medium bg-accent/10 text-accent border border-accent/20">
+                      {featuredPost.category}
+                    </span>
+                    <span class="text-sm text-muted-foreground flex items-center gap-1.5">
+                      <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                      {featuredPost.readingTime}
+                    </span>
+                  </div>
+                  <h2 class="font-display text-2xl md:text-3xl font-bold text-white mb-4 group-hover:text-accent transition-colors leading-tight">
+                    {featuredPost.title}
+                  </h2>
+                  <p class="text-text-secondary mb-6 line-clamp-2 text-lg leading-relaxed">
+                    {featuredPost.description}
+                  </p>
+                  <div class="flex items-center justify-between">
+                    <span class="text-sm text-text-secondary flex items-center gap-1.5">
+                      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                      </svg>
+                      {new Date(featuredPost.date).toLocaleDateString('en-US', {
+                        year: 'numeric',
+                        month: 'long',
+                        day: 'numeric',
+                      })}
+                    </span>
+                    <span class="inline-flex items-center gap-2 text-accent font-semibold group-hover:gap-3 transition-all">
+                      Read Article
+                      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3" />
+                      </svg>
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </article>
+          </a>
+        </div>
+      </section>
+    )}
+
+    <!-- Blog Posts Grid -->
+    <section class="pb-24">
+      <div class="container mx-auto px-4 max-w-6xl">
+        {otherPosts.length > 0 ? (
+          <>
+            <h2 class="font-display text-2xl font-bold text-white mb-8">
+              More Articles
+            </h2>
+            <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {otherPosts.map(post => (
+                <a href={`/blog/${post.slug}`} class="group">
+                  <article class="h-full bg-surface rounded-2xl border border-border overflow-hidden hover:border-accent/50 transition-all duration-300 hover:shadow-lg hover:-translate-y-1">
+                    <!-- Cover Image -->
+                    <div class="aspect-[16/9] relative overflow-hidden">
+                      {post.image ? (
+                        <img
+                          src={post.image}
+                          alt={post.title}
+                          class="object-cover group-hover:scale-105 transition-transform duration-500 w-full h-full"
+                        />
+                      ) : (
+                        <div class="absolute inset-0 bg-gradient-to-br from-accent/10 via-secondary/5 to-surface-light flex items-center justify-center">
+                          <svg class="w-5 h-5 text-accent opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-9.714 5.143L13 21l-2.286-6.857L5 9l9.714-5.143L11 3z" />
+                          </svg>
+                        </div>
+                      )}
+                      <div class="absolute inset-0 bg-gradient-to-t from-surface via-transparent to-transparent" />
+                    </div>
+                    <div class="p-6">
+                      <!-- Category & Reading Time -->
+                      <div class="flex items-center gap-3 mb-3">
+                        <span class="px-2.5 py-1 rounded-full text-xs font-medium bg-accent/10 text-accent">
+                          {post.category}
+                        </span>
+                        <span class="text-xs text-muted-foreground flex items-center gap-1">
+                          <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                          </svg>
+                          {post.readingTime}
+                        </span>
+                      </div>
+
+                      <!-- Title -->
+                      <h3 class="font-display text-lg font-semibold text-white mb-2 group-hover:text-accent transition-colors line-clamp-2 leading-snug">
+                        {post.title}
+                      </h3>
+
+                      <!-- Description -->
+                      <p class="text-sm text-text-secondary mb-4 line-clamp-2 leading-relaxed">
+                        {post.description}
+                      </p>
+
+                      <!-- Footer -->
+                      <div class="flex items-center justify-between pt-4 border-t border-border/50">
+                        <span class="text-xs text-text-secondary">
+                          {new Date(post.date).toLocaleDateString('en-US', {
+                            month: 'short',
+                            day: 'numeric',
+                            year: 'numeric',
+                          })}
+                        </span>
+                        <span class="text-sm text-accent font-medium flex items-center gap-1 group-hover:gap-2 transition-all">
+                          Read
+                          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3" />
+                          </svg>
+                        </span>
+                      </div>
+                    </div>
+                  </article>
+                </a>
+              ))}
+            </div>
+          </>
+        ) : (
+          <div class="text-center py-20 bg-surface rounded-3xl border border-border">
+            <svg class="w-12 h-12 text-accent/50 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-9.714 5.143L13 21l-2.286-6.857L5 9l9.714-5.143L11 3z" />
+            </svg>
+            <p class="text-text-secondary text-lg">No blog posts yet. Check back soon!</p>
+          </div>
+        )}
+      </div>
+    </section>
+  </div>
+</Layout>

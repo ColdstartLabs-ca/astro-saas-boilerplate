@@ -1,7 +1,7 @@
 'use client';
 
-import React, { useState } from 'react';
-import { useTranslations } from 'next-intl';
+import React, { useState, useMemo } from 'react';
+import { getTranslations } from '../../../src/i18n/utils';
 import { CreditPackSelector } from './CreditPackSelector';
 import { AlertCircle, X } from 'lucide-react';
 
@@ -17,7 +17,7 @@ export function OutOfCreditsModal({
   onPurchaseComplete,
 }: IOutOfCreditsModalProps): JSX.Element | null {
   const [showSubscriptionCTA, setShowSubscriptionCTA] = useState(false);
-  const t = useTranslations('stripe.outOfCredits');
+  const t = useMemo(() => getTranslations('stripe.outOfCredits'), []);
 
   if (!isOpen) return null;
 

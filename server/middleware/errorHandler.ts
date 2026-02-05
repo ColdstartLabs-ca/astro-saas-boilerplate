@@ -1,12 +1,11 @@
-import { NextResponse } from 'next/server';
-import type { NextRequest } from 'next/server';
 import { createErrorResponse, serializeError } from '@shared/utils/errors';
 import { AppError } from '@shared/utils/errors';
 
 /**
  * Type for API route handler functions
+ * Works with standard Web API Request/Response (Next.js, Astro, Cloudflare Workers)
  */
-export type ApiHandler = (req: NextRequest) => Promise<NextResponse>;
+export type ApiHandler = (req: Request, context?: { locals?: Record<string, unknown> }) => Promise<Response>;
 
 /**
  * Higher-order function that wraps API handlers with consistent error handling
@@ -18,14 +17,16 @@ export type ApiHandler = (req: NextRequest) => Promise<NextResponse>;
  * ```ts
  * export const GET = withErrorHandler(async (req) => {
  *   // Your handler logic
- *   return NextResponse.json({ success: true, data: result });
+ *   return new Response(JSON.stringify({ success: true, data: result }), {
+ *     headers: { 'Content-Type': 'application/json' }
+ *   });
  * });
  * ```
  */
 export function withErrorHandler(handler: ApiHandler): ApiHandler {
-  return async (req: NextRequest) => {
+  return async (req: Request, context?: { locals?: Record<string, unknown> }) => {
     try {
-      return await handler(req);
+      return await handler(req, context);
     } catch (error) {
       console.error('API Error:', error);
 
@@ -37,13 +38,19 @@ export function withErrorHandler(handler: ApiHandler): ApiHandler {
           error.statusCode,
           error.details
         );
-        return NextResponse.json(body, { status });
+        return new Response(JSON.stringify(body), {
+          status,
+          headers: { 'Content-Type': 'application/json' },
+        });
       }
 
       // Handle unknown errors
       const message = serializeError(error);
       const { body, status } = createErrorResponse('INTERNAL_ERROR', message, 500);
-      return NextResponse.json(body, { status });
+      return new Response(JSON.stringify(body), {
+        status,
+        headers: { 'Content-Type': 'application/json' },
+      });
     }
   };
 }

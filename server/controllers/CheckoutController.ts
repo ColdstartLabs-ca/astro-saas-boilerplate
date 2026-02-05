@@ -1,5 +1,3 @@
-import type { NextRequest } from 'next/server';
-import { NextResponse } from 'next/server';
 import { BaseController } from './BaseController';
 import { supabaseAdmin } from '../supabase/supabaseAdmin';
 import { stripe } from '../stripe';
@@ -28,8 +26,8 @@ export class CheckoutController extends BaseController {
   /**
    * Handle incoming request
    */
-  protected async handle(req: NextRequest): Promise<NextResponse> {
-    const path = req.nextUrl.pathname;
+  protected async handle(req: Request): Promise<Response> {
+    const path = this.getPath(req);
 
     // Route to appropriate method based on path
     if (path.endsWith('/checkout') && this.isPost(req)) {
@@ -47,8 +45,8 @@ export class CheckoutController extends BaseController {
    * Supports both real auth and test mode
    */
   private async authenticateUser(
-    req: NextRequest
-  ): Promise<{ user: { id: string; email?: string } | null; error?: NextResponse }> {
+    req: Request
+  ): Promise<{ user: { id: string; email?: string } | null; error?: Response }> {
     const authHeader = req.headers.get('authorization');
     if (!authHeader) {
       return { user: null, error: this.error('UNAUTHORIZED', 'Missing authorization header', 401) };
@@ -87,7 +85,7 @@ export class CheckoutController extends BaseController {
    * POST /api/checkout
    * Create Stripe checkout session for subscriptions or credit packs
    */
-  private async checkout(req: NextRequest): Promise<NextResponse> {
+  private async checkout(req: Request): Promise<Response> {
     // 1. Parse and validate request body
     let body: ICheckoutSessionRequest;
     try {
@@ -332,7 +330,7 @@ export class CheckoutController extends BaseController {
    * POST /api/portal
    * Create Stripe customer portal session for billing management
    */
-  private async portal(req: NextRequest): Promise<NextResponse> {
+  private async portal(req: Request): Promise<Response> {
     // 1. Authenticate user
     const { user, error: authError } = await this.authenticateUser(req);
     if (authError) return authError;

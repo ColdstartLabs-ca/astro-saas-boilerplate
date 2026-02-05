@@ -1,0 +1,88 @@
+---
+import Layout from '../layouts/Layout.astro';
+import { clientEnv } from '@shared/config/env';
+import { getTranslations } from '../i18n/utils';
+
+const t = getTranslations('help');
+
+// SEO metadata
+const title = t('page.title');
+const description = t('page.subtitle', { appName: clientEnv.APP_NAME });
+---
+
+<Layout title={title}>
+  <!-- SEO Meta Tags -->
+  <meta name="description" content={description} />
+  <meta property="og:title" content={title} />
+  <meta property="og:description" content={description} />
+  <meta property="og:type" content="website" />
+  <meta property="og:url" content={`${clientEnv.BASE_URL}/help`} />
+  <link rel="canonical" href={`${clientEnv.BASE_URL}/help`} />
+
+  <main class="min-h-screen bg-main">
+    <!-- Hero Section -->
+    <section class="relative py-20 md:py-32 overflow-hidden">
+      <div class="container mx-auto px-4 max-w-5xl text-center relative z-10">
+        <h1 class="font-display text-4xl md:text-6xl font-bold text-white mb-6 tracking-tight">
+          {title}
+        </h1>
+        <p class="text-lg md:text-xl text-text-secondary max-w-2xl mx-auto leading-relaxed">
+          {description}
+        </p>
+      </div>
+    </section>
+
+    <!-- Quick Links -->
+    <section class="py-12">
+      <div class="container mx-auto px-4 max-w-6xl">
+        <div class="grid md:grid-cols-3 gap-6">
+          <a href="#getting-started" class="block bg-surface rounded-2xl p-6 border border-border hover:border-accent/50 transition-all">
+            <h3 class="font-semibold text-primary mb-2">{t('quickLinks.gettingStarted')}</h3>
+            <p class="text-sm text-muted-foreground">{t('quickLinks.gettingStartedDesc')}</p>
+          </a>
+          <a href="#credits-billing" class="block bg-surface rounded-2xl p-6 border border-border hover:border-accent/50 transition-all">
+            <h3 class="font-semibold text-primary mb-2">{t('quickLinks.creditsBilling')}</h3>
+            <p class="text-sm text-muted-foreground">{t('quickLinks.creditsBillingDesc')}</p>
+          </a>
+          <a href="#technical" class="block bg-surface rounded-2xl p-6 border border-border hover:border-accent/50 transition-all">
+            <h3 class="font-semibold text-primary mb-2">{t('quickLinks.technicalSupport')}</h3>
+            <p class="text-sm text-muted-foreground">{t('quickLinks.technicalSupportDesc')}</p>
+          </a>
+        </div>
+      </div>
+    </section>
+
+    <!-- Getting Started Section -->
+    <section id="getting-started" class="py-12">
+      <div class="container mx-auto px-4 max-w-4xl">
+        <h2 class="font-display text-3xl font-bold text-white mb-8">
+          {t('gettingStarted.title')}
+        </h2>
+
+        <!-- FAQ items would go here - for now showing placeholder -->
+        <div class="bg-surface rounded-2xl p-8 border border-border text-center">
+          <p class="text-text-secondary">Help content coming soon. For support, please contact us.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Contact CTA -->
+    <section class="relative py-20 overflow-hidden">
+      <div class="absolute inset-0 bg-gradient-to-br from-accent via-tertiary to-accent" />
+      <div class="container mx-auto px-4 max-w-4xl text-center relative z-10">
+        <h2 class="font-display text-3xl md:text-4xl font-bold text-white mb-4">
+          Still Need Help?
+        </h2>
+        <p class="text-white/80 mb-8 text-lg max-w-xl mx-auto">
+          Our support team is here to assist you with any questions.
+        </p>
+        <a
+          href="mailto:{clientEnv.SUPPORT_EMAIL}"
+          class="inline-flex items-center gap-2 px-8 py-4 bg-white text-accent font-semibold rounded-xl hover:bg-white/90 hover:shadow-lg transition-all duration-300"
+        >
+          Contact Support
+        </a>
+      </div>
+    </section>
+  </main>
+</Layout>

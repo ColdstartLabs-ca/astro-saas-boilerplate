@@ -1,0 +1,8 @@
+---
+import AdminDashboardLayout from '../../../layouts/AdminDashboardLayout.astro';
+import AdminDashboardPageClient from '@client/components/pages/AdminDashboardPageClient';
+---
+
+<AdminDashboardLayout title="Admin Dashboard">
+  <AdminDashboardPageClient client:load />
+</AdminDashboardLayout>

@@ -1,0 +1,38 @@
+---
+import AdminDashboardLayout from '@client/components/admin/AdminDashboardLayout';
+import { getUser } from '@shared/utils/supabase/server';
+import { requireAdmin } from '@shared/utils/supabase/middleware';
+
+// Auth check for admin routes
+const user = await getUser(Astro.cookies);
+
+if (!user) {
+  return Astro.redirect('/?login=1&next=/dashboard/admin');
+}
+
+// Admin check
+const adminCheck = await requireAdmin(Astro.cookies);
+if ('error' in adminCheck && adminCheck.error) {
+  return Astro.redirect(adminCheck.error.headers.get('location') || '/');
+}
+
+interface IProps {
+  title?: string;
+}
+
+const { title = 'Admin Dashboard' } = Astro.props;
+---
+
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>{title}</title>
+  </head>
+  <body class="antialiased">
+    <AdminDashboardLayout client:load>
+      <slot />
+    </AdminDashboardLayout>
+  </body>
+</html>

@@ -1,0 +1,31 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import { clientEnv } from '@shared/config/env';
+
+// SEO metadata
+const title = 'Subscription Confirmed';
+const description = 'Your subscription has been successfully confirmed. Thank you for joining!';
+---
+
+<Layout title={title}>
+  <!-- SEO Meta Tags -->
+  <meta name="description" content={description} />
+  <meta property="og:title" content={title} />
+  <meta property="og:description" content={description} />
+  <meta property="og:type" content="website" />
+  <link rel="canonical" href={`${clientEnv.BASE_URL}/subscription/confirmed`} />
+
+  <!-- Subscription confirmed client component -->
+  <div id="subscription-confirmed-root"></div>
+  <script type="module">
+    import { createRoot } from 'react-dom/client';
+    import SubscriptionConfirmedClient from '@client/components/pages/SubscriptionConfirmedClient';
+
+    const root = document.getElementById('subscription-confirmed-root');
+    if (root) {
+      createRoot(root).render(
+        React.createElement(SubscriptionConfirmedClient)
+      );
+    }
+  </script>
+</Layout>

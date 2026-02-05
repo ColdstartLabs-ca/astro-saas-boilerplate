@@ -2,6 +2,34 @@
 
 **Complexity: 10 → HIGH mode**
 
+**Goal: Preserve all existing Next.js behavior. Switch the framework, don't introduce regressions.**
+
+---
+
+## Migration Status (Updated: 2026-02-04)
+
+### ✅ Completed Phases
+
+- **Phase 1: Project Scaffolding** - Astro installed, configured, building
+- **Phase 2: Middleware Migration** - `src/middleware.ts` functional with all auth/security logic
+- **Phase 3: API Endpoints** - All 22 route endpoints migrated to `src/pages/api/`
+- **Phase 4: Static Pages** - Landing, blog, pricing, legal, help all ported
+- **Phase 5: Auth & Payment Pages** - Auth callback/confirm/reset, checkout, success, canceled, subscription confirmed
+
+### 🚧 Remaining Work
+
+- **Phase 6: Dashboard Pages & Layouts** - DashboardLayout, dashboard home, billing, history, settings, support, admin, verify-email (10 pages + 1 layout)
+- **Phase 7: SEO, Sitemaps & Manifest** - robots.txt, sitemaps, manifest.json, meta tags (4 files)
+- **Phase 8: Error Pages, Cleanup & Tests** - 404/500 pages, remove Next.js files, fix test suite
+
+### 🧹 Cleanup (Phase 8 — only after all tests pass)
+
+- `next.config.js`
+- `open-next.config.ts`
+- `i18n.config.ts`
+- `middleware.ts` (root) — replaced by `src/middleware.ts`
+- `app/` directory (71 files) — replaced by `src/pages/`
+
 ---
 
 ## 1. Context
@@ -122,447 +150,220 @@ sequenceDiagram
 
 ---
 
-## 4. Execution Phases
+## 4. Complete Source → Target File Mapping
 
-### Integration Points Checklist
+### Page Routes
 
-```markdown
-**How will this feature be reached?**
+| Status | Next.js Source (`app/[locale]/`) | Astro Target (`src/pages/`) |
+|--------|--------------------------------|---------------------------|
+| ✅ | `page.tsx` (landing) | `index.astro` |
+| ✅ | `pricing/page.tsx` | `pricing.astro` |
+| ✅ | `privacy/page.tsx` | `privacy.astro` |
+| ✅ | `terms/page.tsx` | `terms.astro` |
+| ✅ | `help/page.tsx` | `help.astro` |
+| ✅ | `blog/page.tsx` | `blog/index.astro` |
+| ✅ | `blog/[slug]/page.tsx` | `blog/[slug].astro` |
+| ✅ | `auth/callback/page.tsx` | `auth/callback.astro` |
+| ✅ | `auth/confirm/page.tsx` | `auth/confirm.astro` |
+| ✅ | `auth/reset-password/page.tsx` | `auth/reset-password.astro` |
+| ✅ | `checkout/page.tsx` | `checkout.astro` |
+| ✅ | `success/page.tsx` | `success.astro` |
+| ✅ | `canceled/page.tsx` | `canceled.astro` |
+| ✅ | `subscription/confirmed/page.tsx` | `subscription/confirmed.astro` |
+| ❌ | `verify-email/page.tsx` | `verify-email.astro` |
+| ❌ | `dashboard/page.tsx` | `dashboard/index.astro` |
+| ❌ | `dashboard/billing/page.tsx` | `dashboard/billing.astro` |
+| ❌ | `dashboard/history/page.tsx` | `dashboard/history.astro` |
+| ❌ | `dashboard/settings/page.tsx` | `dashboard/settings.astro` |
+| ❌ | `dashboard/support/page.tsx` | `dashboard/support.astro` |
+| ❌ | `dashboard/admin/page.tsx` | `dashboard/admin/index.astro` |
+| ❌ | `dashboard/admin/users/page.tsx` | `dashboard/admin/users/index.astro` |
+| ❌ | `dashboard/admin/users/[userId]/page.tsx` | `dashboard/admin/users/[userId].astro` |
 
-- [x] Entry point: All HTTP requests hit Astro middleware → pages/API
-- [x] Caller: Browser requests, Stripe webhooks, cron jobs
-- [x] Registration: Astro config (astro.config.mjs) wires adapters, integrations, i18n
+### Layouts
 
-**Is this user-facing?**
+| Status | Next.js Source | Astro Target |
+|--------|---------------|-------------|
+| ✅ | `app/layout.tsx` + `app/[locale]/layout.tsx` | `src/layouts/Layout.astro` |
+| ❌ | `app/[locale]/dashboard/layout.tsx` | `src/layouts/DashboardLayout.astro` |
+| ❌ | `app/[locale]/dashboard/admin/layout.tsx` | Handled within admin pages or shared layout |
 
-- [x] YES → All existing UI is migrated (landing, dashboard, blog, auth, checkout)
+### API Routes
 
-**Full user flow:**
+| Status | Next.js Source (`app/api/`) | Astro Target (`src/pages/api/`) |
+|--------|---------------------------|-------------------------------|
+| ✅ | `health/route.ts` | `health/index.ts` |
+| ✅ | `health/stripe/route.ts` | `health/stripe/index.ts` |
+| ✅ | `checkout/route.ts` | `checkout/index.ts` |
+| ✅ | `portal/route.ts` | `portal/index.ts` |
+| ✅ | `analytics/event/route.ts` | `analytics/event/index.ts` |
+| ✅ | `credits/history/route.ts` | `credits/history/index.ts` |
+| ✅ | `subscription/change/route.ts` | `subscription/change/index.ts` |
+| ✅ | `subscription/preview-change/route.ts` | `subscription/preview-change/index.ts` |
+| ✅ | `subscription/cancel-scheduled/route.ts` | `subscription/cancel-scheduled/index.ts` |
+| ✅ | `subscriptions/cancel/route.ts` | `subscriptions/cancel/index.ts` |
+| ✅ | `support/contact/route.ts` | `support/contact/index.ts` |
+| ✅ | `email/send/route.ts` | `email/send/index.ts` |
+| ✅ | `email/preferences/route.ts` | `email/preferences/index.ts` |
+| ✅ | `cron/check-expirations/route.ts` | `cron/check-expirations/index.ts` |
+| ✅ | `cron/reconcile/route.ts` | `cron/reconcile/index.ts` |
+| ✅ | `cron/recover-webhooks/route.ts` | `cron/recover-webhooks/index.ts` |
+| ✅ | `webhooks/stripe/route.ts` | `webhooks/stripe/index.ts` |
+| ✅ | `admin/stats/route.ts` | `admin/stats/index.ts` |
+| ✅ | `admin/credits/adjust/route.ts` | `admin/credits/adjust/index.ts` |
+| ✅ | `admin/subscription/route.ts` | `admin/subscription/index.ts` |
+| ✅ | `admin/users/route.ts` | `admin/users/index.ts` |
+| ✅ | `admin/users/[userId]/route.ts` | `admin/users/[userId]/index.ts` |
+| ✅ | `protected/example/route.ts` | `protected/example/index.ts` |
 
-1. User navigates to any URL
-2. Astro middleware processes request (auth, locale, security)
-3. Static pages served directly; SSR pages rendered on Cloudflare
-4. React islands hydrate for interactive parts (dashboard, forms, Stripe)
-5. API calls from islands hit Astro API endpoints → server services → Supabase
-```
+Webhook handlers (`server/webhooks/stripe/handlers/` and `server/webhooks/stripe/services/`) are framework-agnostic and require no migration.
+
+### Special Files
+
+| Status | Next.js Source | Astro Target |
+|--------|---------------|-------------|
+| ❌ | `app/not-found.tsx` | `src/pages/404.astro` |
+| ❌ | `app/error.tsx` / `app/global-error.tsx` | `src/pages/500.astro` |
+| ❌ | `app/manifest.ts` | `src/pages/manifest.json.ts` |
+| ❌ | `app/robots.ts` | `src/pages/robots.txt.ts` |
+| ❌ | `app/sitemap-blog.xml/route.ts` | `src/pages/sitemap-blog.xml.ts` |
+| ❌ | `app/sitemap-static.xml/route.ts` | `src/pages/sitemap-static.xml.ts` |
 
 ---
 
-#### Phase 1: Project Scaffolding and Build Pipeline
+## 5. Execution Phases (Remaining Work)
 
-**User-visible outcome:** `yarn dev` starts an Astro dev server; `yarn build` produces a Cloudflare-deployable build; all existing shared/server code compiles.
+Phases 1–5 are complete. The remaining work is organized below.
 
-**Files (max 5):**
+---
 
-- `astro.config.mjs` - NEW: Astro configuration (adapter, integrations, i18n, Tailwind)
-- `src/env.d.ts` - NEW: Astro environment type declarations
-- `package.json` - UPDATE: Replace Next.js deps with Astro deps; update scripts
-- `tsconfig.json` - UPDATE: Astro-compatible TS config with path aliases
-- `shared/config/env.ts` - UPDATE: Replace `process.env` + `NEXT_PUBLIC_*` with `import.meta.env` + `PUBLIC_*`
+#### Phase 6: Dashboard Pages
+
+**Goal:** Port all dashboard pages. Use `client:only="react"` to wrap existing React page components as full islands initially — preserving exact behavior. Optimize to partial islands later if desired.
+
+**Source → Target:**
+
+| Source | Target |
+|--------|--------|
+| `app/[locale]/verify-email/page.tsx` | `src/pages/verify-email.astro` |
+| `app/[locale]/dashboard/page.tsx` | `src/pages/dashboard/index.astro` |
+| `app/[locale]/dashboard/layout.tsx` | `src/layouts/DashboardLayout.astro` |
+| `app/[locale]/dashboard/billing/page.tsx` | `src/pages/dashboard/billing.astro` |
+| `app/[locale]/dashboard/history/page.tsx` | `src/pages/dashboard/history.astro` |
+| `app/[locale]/dashboard/settings/page.tsx` | `src/pages/dashboard/settings.astro` |
+| `app/[locale]/dashboard/support/page.tsx` | `src/pages/dashboard/support.astro` |
+| `app/[locale]/dashboard/admin/page.tsx` | `src/pages/dashboard/admin/index.astro` |
+| `app/[locale]/dashboard/admin/layout.tsx` | (merged into admin pages or DashboardLayout) |
+| `app/[locale]/dashboard/admin/users/page.tsx` | `src/pages/dashboard/admin/users/index.astro` |
+| `app/[locale]/dashboard/admin/users/[userId]/page.tsx` | `src/pages/dashboard/admin/users/[userId].astro` |
 
 **Implementation:**
 
-- [ ] Install Astro 5, `@astrojs/react`, `@astrojs/cloudflare`, `@astrojs/tailwind`, `@astrojs/mdx`
-- [ ] Remove `next`, `next-intl`, `next-mdx-remote`, `@opennextjs/cloudflare`
-- [ ] Create `astro.config.mjs` with `output: 'server'`, Cloudflare adapter, React integration, Tailwind, i18n config (locales: ['en'], defaultLocale: 'en', routing: { prefixDefaultLocale: false })
-- [ ] Update `tsconfig.json` to extend `astro/tsconfigs/strict`; preserve path aliases (`@shared/*`, `@server/*`, `@client/*`, `@lib/*`)
-- [ ] Create `src/env.d.ts` with `/// <reference types="astro/client" />` and `ImportMetaEnv` interface
-- [ ] Update `shared/config/env.ts`: replace `process.env.NEXT_PUBLIC_*` with `import.meta.env.PUBLIC_*`; replace `process.env.*` server vars with `import.meta.env.*` (Astro exposes server vars to server code)
-- [ ] Update `.env.client` variable names: `NEXT_PUBLIC_*` → `PUBLIC_*`
-- [ ] Update package.json scripts: `dev` → `astro dev`, `build` → `astro build`, `preview` → `astro preview`
-- [ ] Remove `next.config.js`, `open-next.config.ts`
-- [ ] Update `wrangler.toml` `pages_build_output_dir` to `dist/` (Astro default output)
+- [ ] Create `src/layouts/DashboardLayout.astro` — read the existing `app/[locale]/dashboard/layout.tsx`, replicate its structure as an `.astro` layout that wraps the existing React `DashboardLayout` component with `client:only="react"`
+- [ ] Port `ClientProviders.tsx` (Zustand, Supabase context) — wrap all dashboard islands so client state works
+- [ ] For each dashboard page: create `.astro` file that imports the existing React page component and renders it with `client:only="react"`. This preserves exact behavior without rewriting any React code
+- [ ] Admin pages: check `locals.isAdmin` in the `.astro` page frontmatter, return 403 if not admin
+- [ ] Port `verify-email/page.tsx` → `src/pages/verify-email.astro`
+- [ ] Update `shared/utils/supabase/server.ts` to work with Astro cookies API if not already done
 
-**Tests Required:**
-| Test File | Test Name | Assertion |
-|-----------|-----------|-----------|
-| Manual | `yarn dev` starts | Dev server starts without errors |
-| Manual | `yarn build` completes | Build produces `dist/` output |
-| `__tests__/config/env.test.ts` | `should load client env vars` | `clientEnv.APP_NAME` resolves correctly |
-| `__tests__/config/env.test.ts` | `should load server env vars` | `serverEnv.STRIPE_SECRET_KEY` resolves correctly |
+**Testing:** Run existing test suite (`yarn test`, `yarn test:e2e`) — fix any failures caused by framework switch. Do not write new test files for behavior that is already covered.
 
 **User Verification:**
 
-- Action: Run `yarn dev`
-- Expected: Astro dev server starts on localhost:4321 (or configured port)
+- Navigate to `/dashboard` without auth → redirected to `/` with `?login=1`
+- Navigate to `/dashboard/billing` as authenticated user → billing page renders
 
 ---
 
-#### Phase 2: Middleware Migration
+#### Phase 7: SEO, Sitemaps & Manifest
 
-**User-visible outcome:** All request processing (auth, locale, security headers, rate limiting, redirects) works identically to the Next.js middleware.
+**Goal:** Port robots.txt, sitemaps, manifest.json, and ensure meta tags match existing behavior.
 
-**Files (max 5):**
+**Source → Target:**
 
-- `src/middleware.ts` - NEW: Astro middleware replicating all logic from root `middleware.ts`
-- `lib/middleware/index.ts` - UPDATE: Replace `NextRequest`/`NextResponse` types with Astro's `APIContext`
-- `lib/middleware/rateLimit.ts` - UPDATE: Adapt to Astro request/response types
-- `lib/middleware/errorHandler.ts` - UPDATE: Adapt to Astro request/response types
-- `shared/config/security.ts` - UPDATE: Verify public routes still match (paths unchanged)
+| Source | Target |
+|--------|--------|
+| `app/robots.ts` | `src/pages/robots.txt.ts` |
+| `app/manifest.ts` | `src/pages/manifest.json.ts` |
+| `app/sitemap-blog.xml/route.ts` | `src/pages/sitemap-blog.xml.ts` |
+| `app/sitemap-static.xml/route.ts` | `src/pages/sitemap-static.xml.ts` |
 
 **Implementation:**
 
-- [ ] Create `src/middleware.ts` using Astro's `defineMiddleware` from `astro:middleware`
-- [ ] Port WWW redirect logic using `context.url` and `context.redirect()`
-- [ ] Port legacy redirect logic
-- [ ] Port tracking parameter cleanup
-- [ ] Port locale detection (cookie, CF-IPCountry, Accept-Language)
-- [ ] Port API auth flow: JWT verification via `Authorization` header, set `X-User-Id` on `context.locals`
-- [ ] Port page auth flow: session refresh via cookies, dashboard redirect for unauthenticated users
-- [ ] Port security headers: apply via `context.response.headers` or middleware response
-- [ ] Port rate limiting with adapted request/response interfaces
-- [ ] Port CORS handling
-- [ ] Update `lib/middleware/` helpers to accept Astro-compatible `Request`/`Response` types (or create adapter layer)
+- [ ] Port `app/robots.ts` → Astro API endpoint returning `text/plain`
+- [ ] Port `app/manifest.ts` → Astro API endpoint returning `application/json`
+- [ ] Port `app/sitemap-blog.xml/route.ts` → Astro API endpoint returning `application/xml`
+- [ ] Port `app/sitemap-static.xml/route.ts` → Astro API endpoint returning `application/xml`
+- [ ] Verify all `.astro` pages have correct `<head>` meta tags (title, description, OG, canonical) — compare against the `generateMetadata` output from each Next.js page
 
-**Tests Required:**
-| Test File | Test Name | Assertion |
-|-----------|-----------|-----------|
-| `__tests__/middleware/www-redirect.test.ts` | `should redirect www to non-www` | 301 redirect |
-| `__tests__/middleware/locale-detection.test.ts` | `should detect locale from cookie` | Returns correct locale |
-| `__tests__/middleware/api-auth.test.ts` | `should reject unauthenticated API requests` | 401 response |
-| `__tests__/middleware/security-headers.test.ts` | `should apply all security headers` | Headers present |
+**Testing:** Compare output of each endpoint against current Next.js output. Sitemaps should contain the same URLs. Meta tags should match.
 
 **User Verification:**
 
-- Action: Visit `/api/health` in browser
-- Expected: 200 response with security headers applied
+- `curl /robots.txt` → valid robots.txt with sitemap URL
+- `curl /sitemap-static.xml` → valid XML with all static page URLs
 
 ---
 
-#### Phase 3: API Endpoints Migration
+#### Phase 8: Error Pages, Cleanup & Tests
 
-**User-visible outcome:** All API endpoints (`/api/health`, `/api/webhooks/stripe`, `/api/checkout`, `/api/admin/*`, etc.) respond identically.
+**Goal:** Add error pages, remove all Next.js artifacts, ensure full test suite passes.
 
-**Files (max 5):**
+**IMPORTANT: Do not delete `app/` directory until all existing tests pass against the Astro build.**
 
-- `src/pages/api/health/index.ts` - NEW: Health check endpoint
-- `src/pages/api/webhooks/stripe/index.ts` - NEW: Stripe webhook handler
-- `src/pages/api/checkout/index.ts` - NEW: Checkout session endpoint
-- `src/pages/api/portal/index.ts` - NEW: Stripe portal endpoint
-- `src/pages/api/[...rest].ts` - Template for remaining API endpoints
+**Source → Target:**
 
-**Implementation:**
+| Source | Target |
+|--------|--------|
+| `app/not-found.tsx` | `src/pages/404.astro` |
+| `app/error.tsx` / `app/global-error.tsx` | `src/pages/500.astro` |
 
-- [ ] Create Astro API endpoint pattern:
-  ```typescript
-  // src/pages/api/health/index.ts
-  import type { APIRoute } from 'astro';
-  export const GET: APIRoute = async ({ request, locals }) => {
-    return new Response(JSON.stringify({ status: 'ok' }), { status: 200 });
-  };
-  ```
-- [ ] Migrate all 25+ API routes from `app/api/` to `src/pages/api/` using Astro's `APIRoute` type
-- [ ] Replace `NextRequest`/`NextResponse` with standard `Request`/`Response` (Astro uses web standard APIs)
-- [ ] Access authenticated user via `locals.userId` (set by middleware) instead of `request.headers.get('X-User-Id')`
-- [ ] Stripe webhook: keep signature verification logic, adapt to `Request` body parsing
-- [ ] Cron endpoints: keep `x-cron-secret` header authentication
-- [ ] Admin endpoints: keep `requireAdmin` middleware check
+**Implementation — Error Pages:**
 
-**Note:** This phase covers the core API routes. Remaining routes (subscription/_, credits/_, email/_, admin/_) follow the same pattern and can be migrated incrementally.
+- [ ] Port `app/not-found.tsx` → `src/pages/404.astro` — replicate the same UI
+- [ ] Port `app/error.tsx` → `src/pages/500.astro` — replicate the same UI
 
-**Tests Required:**
-| Test File | Test Name | Assertion |
-|-----------|-----------|-----------|
-| `tests/api/health.api.spec.ts` | `should return 200 for health check` | Status 200, JSON body |
-| `tests/api/webhooks.api.spec.ts` | `should reject invalid Stripe signature` | Status 400 |
-| `tests/api/checkout.api.spec.ts` | `should require authentication` | Status 401 without token |
-| `tests/api/admin.api.spec.ts` | `should require admin role` | Status 403 for non-admin |
+**Implementation — Test Suite:**
 
-**User Verification:**
+- [ ] Run `yarn test` — fix all unit test failures
+- [ ] Run `yarn test:e2e` — fix all E2E test failures (update port if Astro uses 4321 instead of 3000)
+- [ ] Run `yarn verify` — fix TypeScript and lint errors
 
-- Action: `curl http://localhost:4321/api/health`
-- Expected: `{"status":"ok"}` with 200
+**Implementation — Cleanup (only after tests pass):**
 
----
-
-#### Phase 4: Static Pages (Landing, Blog, Legal, Pricing)
-
-**User-visible outcome:** Landing page, blog listing, blog posts, pricing, privacy, terms, help pages render as static Astro pages with React islands where interactive.
-
-**Files (max 5):**
-
-- `src/pages/index.astro` - NEW: Landing page (Astro component, imports React HomePageClient island)
-- `src/pages/blog/index.astro` - NEW: Blog listing page
-- `src/pages/blog/[slug].astro` - NEW: Individual blog post (Content Collections)
-- `src/pages/pricing.astro` - NEW: Pricing page with React PricingPageClient island
-- `src/content/config.ts` - NEW: Astro Content Collections config for blog
-
-**Implementation:**
-
-- [ ] Create `src/content/config.ts` defining a `blog` collection with Zod schema (title, description, publishedAt, author, tags, featured, image)
-- [ ] Move `content/blog/*.md` files to `src/content/blog/`
-- [ ] Create landing page as `.astro` component; embed `HomePageClient` React component with `client:load`
-- [ ] Create blog listing: use `getCollection('blog')` to list posts
-- [ ] Create blog post page: use `getEntry('blog', slug)` with `<Content />` component
-- [ ] Create pricing page: static layout with `<PricingPageClient client:load />` for plan selection
-- [ ] Create legal pages (privacy, terms) as pure `.astro` static pages
-- [ ] Create help page with `<HelpClient client:load />` island
-- [ ] Migrate SEO metadata: use Astro's `<head>` directly instead of Next.js `generateMetadata`
-- [ ] Migrate sitemaps: `src/pages/sitemap-blog.xml.ts` and `src/pages/sitemap-static.xml.ts` as API routes returning XML
-
-**Tests Required:**
-| Test File | Test Name | Assertion |
-|-----------|-----------|-----------|
-| `tests/e2e/landing.e2e.spec.ts` | `should render landing page` | Page loads, CTA visible |
-| `tests/e2e/blog.e2e.spec.ts` | `should list blog posts` | Blog listing renders posts |
-| `tests/e2e/blog.e2e.spec.ts` | `should render blog post` | Post content visible, reading time shown |
-| `tests/e2e/pricing.e2e.spec.ts` | `should render pricing plans` | All plan cards visible |
-
-**User Verification:**
-
-- Action: Navigate to `http://localhost:4321/`
-- Expected: Landing page renders with hero section, features, CTAs
-
----
-
-#### Phase 5: Authentication Pages and Dashboard Shell
-
-**User-visible outcome:** Login, register, password reset flows work; dashboard layout renders for authenticated users with sidebar, navigation, and session management.
-
-**Files (max 5):**
-
-- `src/pages/auth/callback.astro` - NEW: OAuth callback page
-- `src/pages/auth/confirm.astro` - NEW: Email confirmation page
-- `src/pages/auth/reset-password.astro` - NEW: Password reset page
-- `src/pages/dashboard/index.astro` - NEW: Dashboard home (SSR, authenticated)
-- `src/layouts/DashboardLayout.astro` - NEW: Dashboard layout wrapping React DashboardLayout island
-
-**Implementation:**
-
-- [ ] Create auth callback page: handles Supabase OAuth redirect, sets cookies
-- [ ] Create auth confirm page: handles email confirmation tokens
-- [ ] Create password reset page: renders `ChangePasswordForm` React island
-- [ ] Create dashboard layout as `.astro` wrapper that checks `locals.user` and renders React `DashboardLayout` with `client:load`
-- [ ] Dashboard pages use the layout and pass server-fetched data as props to React islands
-- [ ] Port `ClientProviders.tsx` (Zustand, Supabase context) - wrap dashboard islands
-- [ ] Update `shared/utils/supabase/server.ts` to work with Astro cookies API (`Astro.cookies` or `context.cookies`)
-- [ ] Update `shared/utils/supabase/client.ts` - no changes needed (browser-only)
-
-**Tests Required:**
-| Test File | Test Name | Assertion |
-|-----------|-----------|-----------|
-| `tests/e2e/auth.e2e.spec.ts` | `should show login form` | Login form renders |
-| `tests/e2e/auth.e2e.spec.ts` | `should redirect unauthenticated to landing` | 302 to `/` |
-| `tests/e2e/dashboard.e2e.spec.ts` | `should render dashboard for authenticated user` | Dashboard sidebar visible |
-| `tests/api/auth.api.spec.ts` | `should handle auth callback` | Sets session cookie |
-
-**User Verification:**
-
-- Action: Navigate to `/dashboard` without auth
-- Expected: Redirected to `/` with `?login=1` query param
-
----
-
-#### Phase 6: Dashboard Feature Pages
-
-**User-visible outcome:** Billing, history, settings, support, and admin pages function within the dashboard.
-
-**Files (max 5):**
-
-- `src/pages/dashboard/billing.astro` - NEW: Billing/subscription management
-- `src/pages/dashboard/history.astro` - NEW: Credit/transaction history
-- `src/pages/dashboard/settings.astro` - NEW: User settings
-- `src/pages/dashboard/support.astro` - NEW: Support/contact form
-- `src/pages/dashboard/admin/index.astro` - NEW: Admin dashboard
-
-**Implementation:**
-
-- [ ] Each dashboard page: `.astro` shell fetches server data, passes to React island
-- [ ] Billing page: renders `StripeBillingManager` React island with `client:load`
-- [ ] History page: renders `CreditHistory` React island with `client:load`
-- [ ] Settings page: renders `UserSettings` React island with `client:load`
-- [ ] Support page: renders `SupportForm` React island with `client:load`
-- [ ] Admin section: separate `src/pages/dashboard/admin/` directory with admin-only pages
-- [ ] Admin users list: `src/pages/dashboard/admin/users/index.astro`
-- [ ] Admin user detail: `src/pages/dashboard/admin/users/[userId].astro`
-- [ ] Admin stats: `src/pages/dashboard/admin/stats.astro` (or inline in admin index)
-- [ ] All admin pages check `locals.isAdmin` in middleware or page-level guard
-
-**Tests Required:**
-| Test File | Test Name | Assertion |
-|-----------|-----------|-----------|
-| `tests/e2e/billing.e2e.spec.ts` | `should render billing page` | Subscription status visible |
-| `tests/e2e/admin.e2e.spec.ts` | `should require admin role` | Non-admin gets 403 |
-| `tests/e2e/settings.e2e.spec.ts` | `should render settings form` | Profile form visible |
-| `tests/e2e/support.e2e.spec.ts` | `should submit support form` | Success message |
-
-**User Verification:**
-
-- Action: Navigate to `/dashboard/billing` as authenticated user
-- Expected: Billing page shows current subscription and usage
-
----
-
-#### Phase 7: Checkout and Payment Flow
-
-**User-visible outcome:** Subscription checkout, credit pack purchase, success/canceled pages, and Stripe portal access all work end-to-end.
-
-**Files (max 5):**
-
-- `src/pages/checkout.astro` - NEW: Checkout page with Stripe Elements React island
-- `src/pages/success.astro` - NEW: Payment success page
-- `src/pages/canceled.astro` - NEW: Payment canceled page
-- `src/pages/subscription/confirmed.astro` - NEW: Subscription confirmation
-- `client/components/stripe/` - UPDATE: Minimal changes (React components stay the same)
-
-**Implementation:**
-
-- [ ] Checkout page: `.astro` shell loads Stripe publishable key from `clientEnv`, renders `CheckoutForm` React island with `client:load`
-- [ ] Success page: static `.astro` page with success messaging, optional React island for dynamic content
-- [ ] Canceled page: static `.astro` page
-- [ ] Subscription confirmed: `.astro` page rendering `SubscriptionConfirmedClient` React island
-- [ ] Verify Stripe Elements React components work unchanged (they should - pure client-side React)
-- [ ] Ensure `@stripe/react-stripe-js` and `@stripe/stripe-js` load correctly in Astro React islands
-
-**Tests Required:**
-| Test File | Test Name | Assertion |
-|-----------|-----------|-----------|
-| `tests/e2e/checkout.e2e.spec.ts` | `should render checkout form` | Stripe Elements loads |
-| `tests/e2e/checkout.e2e.spec.ts` | `should redirect to success after payment` | Success page renders |
-| `tests/api/checkout.api.spec.ts` | `should create Stripe checkout session` | Returns sessionId |
-| `tests/api/portal.api.spec.ts` | `should return portal URL` | Valid Stripe portal URL |
-
-**User Verification:**
-
-- Action: Click "Subscribe" on pricing page
-- Expected: Redirected to Stripe Checkout; after test payment, redirected to success page
-
----
-
-#### Phase 8: i18n, SEO, and Sitemaps
-
-**User-visible outcome:** Locale detection works (English default, URL prefix for non-default locales), sitemaps are generated, robots.txt serves correctly, meta tags are correct.
-
-**Files (max 5):**
-
-- `astro.config.mjs` - UPDATE: Finalize i18n config
-- `src/i18n/utils.ts` - NEW: Translation utility (replaces next-intl's `useTranslations`)
-- `src/pages/robots.txt.ts` - NEW: Dynamic robots.txt API route
-- `src/pages/sitemap-static.xml.ts` - NEW: Static sitemap
-- `src/pages/sitemap-blog.xml.ts` - NEW: Blog sitemap
-
-**Implementation:**
-
-- [ ] Configure Astro i18n: `i18n: { defaultLocale: 'en', locales: ['en'], routing: { prefixDefaultLocale: false } }`
-- [ ] Create translation utility: load JSON files from `locales/en/*.json`, provide `t(key)` function
-- [ ] For React islands: pass translations as props from `.astro` parent, or create a `useTranslations` hook that imports JSON directly
-- [ ] Migrate `robots.txt` generation to Astro API endpoint
-- [ ] Migrate sitemap generation to Astro API endpoints returning XML
-- [ ] Update all `<head>` meta tags in `.astro` pages (title, description, Open Graph, canonical URLs)
-- [ ] Add `<link rel="alternate" hreflang="en" />` tags
-- [ ] Migrate `app/manifest.ts` to `src/pages/manifest.json.ts`
-- [ ] Ensure pSEO paths (`/tools/*`, `/formats/*`, etc.) still work with Astro routing
-
-**Tests Required:**
-| Test File | Test Name | Assertion |
-|-----------|-----------|-----------|
-| `tests/api/sitemap.api.spec.ts` | `should return valid XML sitemap` | Valid XML with expected URLs |
-| `tests/api/robots.api.spec.ts` | `should serve robots.txt` | Contains sitemap URL |
-| `tests/e2e/seo.e2e.spec.ts` | `should have correct meta tags` | OG image, title, description |
-| `tests/e2e/i18n.e2e.spec.ts` | `should detect locale from cookie` | Page renders in correct locale |
-
-**User Verification:**
-
-- Action: Visit `/sitemap-static.xml`
-- Expected: Valid XML sitemap with all static page URLs
-
----
-
-#### Phase 9: Monitoring, Analytics, Error Pages, and Cleanup
-
-**User-visible outcome:** Error pages (404, 500) render, analytics events fire, monitoring works, all dead Next.js code is removed.
-
-**Files (max 5):**
-
-- `src/pages/404.astro` - NEW: Custom 404 page
-- `src/pages/500.astro` - NEW: Custom 500 page
-- `client/analytics/` - UPDATE: Verify analytics initialization works in Astro (should be unchanged)
-- `package.json` - UPDATE: Remove all remaining Next.js-specific deps
-- Root cleanup - DELETE: `next.config.js`, `open-next.config.ts`, `i18n.config.ts`, `app/` directory
-
-**Implementation:**
-
-- [ ] Create styled 404 and 500 error pages
-- [ ] Verify Baselime RUM (`@baselime/react-rum`) works in Astro React islands
-- [ ] Verify Amplitude analytics initialization in client-side React providers
-- [ ] Verify Google Analytics script loads (add to base layout `<head>`)
-- [ ] Remove all Next.js-specific files: `next.config.js`, `open-next.config.ts`, `i18n.config.ts`, entire `app/` directory
-- [ ] Remove Next.js-specific dependencies from `package.json`
-- [ ] Update ESLint config: remove Next.js-specific rules/plugins
+- [ ] Delete `next.config.js`
+- [ ] Delete `open-next.config.ts`
+- [ ] Delete `i18n.config.ts`
+- [ ] Delete root `middleware.ts` (replaced by `src/middleware.ts`)
+- [ ] Delete entire `app/` directory
+- [ ] Remove Next.js deps from `package.json`: `next`, `next-intl`, `next-mdx-remote`, `@opennextjs/cloudflare`
+- [ ] Update ESLint config: remove Next.js rules/plugins
 - [ ] Update `.gitignore`: replace `.next/` with `.astro/`, `dist/`
-- [ ] Update `README.md` with new development and deployment instructions
 - [ ] Update `CLAUDE.md` boilerplate instructions for Astro
-- [ ] Update Playwright config: change base URL port if needed (Astro default: 4321)
-- [ ] Update Vitest config if needed for new file locations
-
-**Tests Required:**
-| Test File | Test Name | Assertion |
-|-----------|-----------|-----------|
-| `tests/e2e/errors.e2e.spec.ts` | `should render 404 for unknown routes` | 404 page content visible |
-| `tests/e2e/errors.e2e.spec.ts` | `should render 500 page on error` | Error page renders gracefully |
-| Manual | `yarn verify` | TypeScript, lint, and i18n checks pass |
-| Manual | `yarn build` | Production build succeeds |
+- [ ] Run `yarn verify` again after cleanup to confirm nothing broke
 
 **User Verification:**
 
-- Action: Visit `/nonexistent-page`
-- Expected: Custom 404 page with navigation back to home
+- Visit `/nonexistent-page` → custom 404 page
+- `yarn verify` passes
+- `yarn build` succeeds
 
 ---
 
-#### Phase 10: Deployment and Production Validation
-
-**User-visible outcome:** The Astro app deploys to Cloudflare Pages and works in production.
-
-**Files (max 5):**
-
-- `wrangler.toml` - UPDATE: Point to Astro's `dist/` output
-- `scripts/deploy/deploy.sh` - UPDATE: Use Astro build commands
-- `astro.config.mjs` - UPDATE: Finalize production settings
-- `scripts/build-blog.ts` - UPDATE or DELETE: May not be needed with Content Collections
-- `.github/workflows/` - UPDATE: CI pipeline for Astro build
-
-**Implementation:**
-
-- [ ] Update `wrangler.toml`: `pages_build_output_dir = "dist"` (or `dist/_worker.js` depending on adapter output)
-- [ ] Update deploy script to run `astro build` instead of `next build`
-- [ ] Test Cloudflare Pages deployment with `wrangler pages deploy`
-- [ ] Verify environment variables work in Cloudflare Pages environment
-- [ ] Verify Stripe webhook endpoint is accessible
-- [ ] Verify cron job endpoints work
-- [ ] Performance testing: measure TTFB, LCP, CLS against Next.js baseline
-- [ ] If `build-blog.ts` is no longer needed (Content Collections handles it), remove it and the `prebuild` script
-
-**Tests Required:**
-| Test File | Test Name | Assertion |
-|-----------|-----------|-----------|
-| `tests/preview/health.preview.spec.ts` | `should respond to health check on Cloudflare` | 200 from preview |
-| `tests/preview/stripe-webhook.preview.spec.ts` | `should accept Stripe webhook` | 200 with valid signature |
-| Manual | Deploy to staging | All pages load, auth works, payments work |
-| Manual | Lighthouse audit | Performance score >= 90 |
-
-**User Verification:**
-
-- Action: Deploy to Cloudflare Pages staging environment
-- Expected: All routes work, auth flows complete, Stripe payments process
-
----
-
-## 5. Risk Assessment
+## 6. Risk Assessment
 
 | Risk                                           | Impact | Mitigation                                                                                                     |
 | ---------------------------------------------- | ------ | -------------------------------------------------------------------------------------------------------------- |
-| React islands hydration mismatch               | HIGH   | Test all interactive components thoroughly; use `client:only="react"` for Stripe Elements if SSR causes issues |
-| Supabase SSR cookie handling differs in Astro  | MEDIUM | `@supabase/ssr` supports generic cookie adapters; implement Astro cookie adapter early                         |
+| React islands hydration mismatch               | HIGH   | Use `client:only="react"` for dashboard pages initially — avoids SSR mismatch entirely. Migrate to `client:load` only after verifying behavior |
+| Supabase SSR cookie handling differs in Astro  | MEDIUM | `@supabase/ssr` supports generic cookie adapters; Astro cookie adapter already wired in middleware (Phase 2) |
 | Cloudflare Workers 10ms CPU limit              | HIGH   | Astro SSR is lighter than Next.js; monitor CPU time in staging                                                 |
-| `import.meta.env` vs `process.env` differences | MEDIUM | Phase 1 handles this; run full env test suite after migration                                                  |
-| pSEO dynamic routes complexity                 | MEDIUM | Map all pSEO patterns to Astro `[...slug]` catch-all or explicit routes                                        |
-| Breaking changes in existing test suites       | MEDIUM | Update tests phase-by-phase; each phase includes test migration                                                |
+| `import.meta.env` vs `process.env` differences | LOW    | Already handled in Phase 1; `shared/config/env.ts` updated                                                     |
+| Breaking changes in existing test suites       | MEDIUM | Run existing tests against Astro build; fix failures before cleanup. Don't delete `app/` until tests pass     |
 | Email templates use `@react-email/components`  | LOW    | These render server-side only; no framework dependency                                                         |
 
 ---
 
-## 6. What Stays Unchanged
+## 7. What Stays Unchanged
 
 These directories/files require **zero or minimal changes**:
 
@@ -585,18 +386,16 @@ These directories/files require **zero or minimal changes**:
 
 ---
 
-## 7. Acceptance Criteria
+## 8. Acceptance Criteria
 
-- [ ] All phases complete with checkpoint reviews passed
-- [ ] All existing Playwright E2E tests pass (adapted for Astro)
+- [ ] All pages from the file mapping (Section 4) are ported — every ❌ becomes ✅
+- [ ] All existing Playwright E2E tests pass against the Astro build
 - [ ] All existing Vitest unit tests pass
-- [ ] `yarn verify` passes (TypeScript, ESLint, i18n)
-- [ ] Landing page, blog, pricing, legal pages render as static HTML (no JS by default)
-- [ ] Dashboard, auth, checkout work as React islands
-- [ ] All API endpoints respond correctly
+- [ ] `yarn verify` passes (TypeScript, ESLint)
+- [ ] All API endpoints respond identically to Next.js versions
 - [ ] Stripe webhooks process payments
 - [ ] Auth flow works (login, register, OAuth, password reset)
-- [ ] Deployed to Cloudflare Pages successfully
-- [ ] Performance: Lighthouse score >= 90 on static pages
-- [ ] Bundle size smaller than Next.js baseline for static pages
-- [ ] No `next`, `next-intl`, or `@opennextjs/cloudflare` in final `package.json`
+- [ ] Dashboard pages render for authenticated users
+- [ ] `app/` directory and all Next.js config files deleted
+- [ ] No `next`, `next-intl`, `next-mdx-remote`, or `@opennextjs/cloudflare` in final `package.json`
+- [ ] `yarn build` produces deployable output

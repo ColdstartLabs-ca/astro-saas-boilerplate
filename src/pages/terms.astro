@@ -1,0 +1,87 @@
+---
+import Layout from '../layouts/Layout.astro';
+import { clientEnv } from '@shared/config/env';
+import { getTranslations } from '../i18n/utils';
+
+const t = getTranslations('terms');
+const lastUpdated = clientEnv.LAST_UPDATED_DATE;
+
+// SEO metadata
+const title = t('meta.title');
+const description = t('meta.description', { APP_NAME: clientEnv.APP_NAME });
+---
+
+<Layout title={title}>
+  <!-- SEO Meta Tags -->
+  <meta name="description" content={description} />
+  <meta property="og:title" content={title} />
+  <meta property="og:description" content={description} />
+  <meta property="og:type" content="website" />
+  <meta property="og:url" content={`${clientEnv.BASE_URL}/terms`} />
+  <link rel="canonical" href={`${clientEnv.BASE_URL}/terms`} />
+
+  <main class="flex-1">
+    <div class="container mx-auto py-16 px-6 max-w-4xl">
+      <h1 class="text-4xl font-bold text-primary mb-4">{t('title')}</h1>
+      <p class="text-muted-foreground mb-8">{t('lastUpdated', { date: lastUpdated })}</p>
+
+      <div class="prose prose-slate max-w-none">
+        <section class="mb-8">
+          <h2 class="text-2xl font-semibold text-primary mb-4">{t('acceptance.title')}</h2>
+          <p class="text-muted-foreground mb-4">
+            {t('acceptance.paragraph1', { APP_NAME: clientEnv.APP_NAME })}
+          </p>
+          <p class="text-muted-foreground">
+            {t('acceptance.paragraph2', { APP_NAME: clientEnv.APP_NAME })}
+          </p>
+        </section>
+
+        <section class="mb-8">
+          <h2 class="text-2xl font-semibold text-primary mb-4">{t('description.title')}</h2>
+          <p class="text-muted-foreground mb-4">
+            {t('description.intro', { APP_NAME: clientEnv.APP_NAME })}
+          </p>
+          <ul class="list-disc pl-6 mb-4 text-muted-foreground">
+            <li>{t('description.features.0')}</li>
+            <li>{t('description.features.1')}</li>
+            <li>{t('description.features.2')}</li>
+            <li>{t('description.features.3')}</li>
+          </ul>
+        </section>
+
+        <section class="mb-8">
+          <h2 class="text-2xl font-semibold text-primary mb-4">{t('registration.title')}</h2>
+          <p class="text-muted-foreground mb-4">{t('registration.intro')}</p>
+          <ul class="list-disc pl-6 mb-4 text-muted-foreground">
+            <li>{t('registration.requirements.0')}</li>
+            <li>{t('registration.requirements.1')}</li>
+            <li>{t('registration.requirements.2')}</li>
+            <li>{t('registration.requirements.3')}</li>
+          </ul>
+          <p class="text-muted-foreground">{t('registration.responsibility')}</p>
+        </section>
+
+        <section class="mb-8">
+          <h2 class="text-2xl font-semibold text-primary mb-4">{t('credits.title')}</h2>
+
+          <h3 class="text-xl font-medium text-primary mb-3">{t('credits.system.title')}</h3>
+          <p class="text-muted-foreground mb-4">{t('credits.system.description')}</p>
+
+          <h3 class="text-xl font-medium text-primary mb-3">{t('credits.free.title')}</h3>
+          <p class="text-muted-foreground mb-4">{t('credits.free.description')}</p>
+
+          <h3 class="text-xl font-medium text-primary mb-3">{t('credits.subscription.title')}</h3>
+          <p class="text-muted-foreground mb-4">{t('credits.subscription.features.0')}</p>
+          <p class="text-muted-foreground mb-4">{t('credits.subscription.features.1')}</p>
+          <p class="text-muted-foreground mb-4">{t('credits.subscription.features.2')}</p>
+        </section>
+
+        <div class="mt-12 pt-8 border-t border-border">
+          <a href="/privacy" class="text-accent hover:underline">
+            {t('viewPrivacy')} &rarr;
+          </a>
+        </div>
+      </div>
+    </div>
+  </main>
+</Layout>

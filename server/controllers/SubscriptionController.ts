@@ -1,10 +1,8 @@
-import type { NextRequest } from 'next/server';
-import { NextResponse } from 'next/server';
 import { BaseController } from './BaseController';
 import { supabaseAdmin } from '../supabase/supabaseAdmin';
 import { stripe } from '../stripe';
 import { serverEnv } from '@shared/config/env';
-import { getPlanForPriceId, assertKnownPriceId, resolvePlanOrPack } from '@shared/config/stripe';
+import { getPlanForPriceId, assertKnownPriceId } from '@shared/config/stripe';
 import { getPlanByPriceId } from '@shared/config/subscription.utils';
 import dayjs from 'dayjs';
 import type Stripe from 'stripe';
@@ -62,8 +60,8 @@ export class SubscriptionController extends BaseController {
   /**
    * Handle incoming request
    */
-  protected async handle(req: NextRequest): Promise<NextResponse> {
-    const path = req.nextUrl.pathname;
+  protected async handle(req: Request): Promise<Response> {
+    const path = this.getPath(req);
 
     // Route to appropriate method based on path
     if (path.endsWith('/change') && this.isPost(req)) {
@@ -85,7 +83,7 @@ export class SubscriptionController extends BaseController {
   /**
    * Authenticate user from Authorization header
    */
-  private async authenticateUser(req: NextRequest): Promise<{ userId: string; email?: string } | NextResponse> {
+  private async authenticateUser(req: Request): Promise<{ userId: string; email?: string } | Response> {
     const authHeader = req.headers.get('authorization');
     if (!authHeader) {
       return this.error('UNAUTHORIZED', 'Missing authorization header', 401);
@@ -107,7 +105,7 @@ export class SubscriptionController extends BaseController {
   /**
    * Validate price ID and resolve to plan
    */
-  private validatePriceId(targetPriceId: string): { plan: ReturnType<typeof getPlanForPriceId>; error?: NextResponse } {
+  private validatePriceId(targetPriceId: string): { plan: ReturnType<typeof getPlanForPriceId>; error?: Response } {
     try {
       const resolved = assertKnownPriceId(targetPriceId);
       if (resolved.type !== 'plan') {
@@ -154,10 +152,10 @@ export class SubscriptionController extends BaseController {
    * POST /api/subscription/change
    * Change subscription plan (upgrade/downgrade)
    */
-  private async change(req: NextRequest): Promise<NextResponse> {
+  private async change(req: Request): Promise<Response> {
     // 1. Authenticate user
     const authResult = await this.authenticateUser(req);
-    if (authResult instanceof NextResponse) return authResult;
+    if (authResult instanceof Response) return authResult;
     const { userId } = authResult;
 
     // 2. Parse and validate request body
@@ -408,10 +406,10 @@ export class SubscriptionController extends BaseController {
    * POST /api/subscription/preview-change
    * Preview proration for plan change
    */
-  private async previewChange(req: NextRequest): Promise<NextResponse> {
+  private async previewChange(req: Request): Promise<Response> {
     // 1. Authenticate user
     const authResult = await this.authenticateUser(req);
-    if (authResult instanceof NextResponse) return authResult;
+    if (authResult instanceof Response) return authResult;
     const { userId } = authResult;
 
     // 2. Parse and validate request body
@@ -608,10 +606,10 @@ export class SubscriptionController extends BaseController {
    * POST /api/subscription/cancel-scheduled
    * Cancel a scheduled subscription change (downgrade)
    */
-  private async cancelScheduled(req: NextRequest): Promise<NextResponse> {
+  private async cancelScheduled(req: Request): Promise<Response> {
     // 1. Authenticate user
     const authResult = await this.authenticateUser(req);
-    if (authResult instanceof NextResponse) return authResult;
+    if (authResult instanceof Response) return authResult;
     const { userId } = authResult;
 
     // 2. Get user's current subscription
@@ -683,10 +681,10 @@ export class SubscriptionController extends BaseController {
    * POST /api/subscriptions/cancel
    * Cancel subscription at period end
    */
-  private async cancel(req: NextRequest): Promise<NextResponse> {
+  private async cancel(req: Request): Promise<Response> {
     // 1. Authenticate user
     const authResult = await this.authenticateUser(req);
-    if (authResult instanceof NextResponse) return authResult;
+    if (authResult instanceof Response) return authResult;
     const { userId } = authResult;
 
     // 2. Parse request body for optional cancellation reason

@@ -2,8 +2,7 @@
 import './dayjs-mock.setup';
 
 import { describe, test, expect, vi, beforeEach, afterEach } from 'vitest';
-import { NextRequest } from 'next/server';
-import { POST } from '../../../app/api/webhooks/stripe/route';
+import { POST } from '../../../src/pages/api/webhooks/stripe/index';
 import { supabaseAdmin } from '../../../server/supabase/supabaseAdmin';
 import {
   getPlanByPriceId,
@@ -22,6 +21,70 @@ vi.mock('@server/stripe', () => ({
     },
   },
   STRIPE_WEBHOOK_SECRET: 'whsec_test_secret',
+}));
+
+// Mock the webhook verification service - bypasses signature verification in tests
+vi.mock('@server/webhooks/stripe/services/webhook-verification.service', () => ({
+  WebhookVerificationService: {
+    verifyWebhook: vi.fn(async (request: Request) => {
+      try {
+        const body = await request.json();
+        return { event: body, isTestMode: true };
+      } catch (e) {
+        // If JSON parsing fails, return a minimal mock event
+        return {
+          event: {
+            id: 'evt_test',
+            type: 'invoice.payment_succeeded',
+            data: { object: {} },
+          },
+          isTestMode: true,
+        };
+      }
+    }),
+  },
+}));
+
+// Mock the idempotency service - allows events through in tests
+vi.mock('@server/webhooks/stripe/services/idempotency.service', () => ({
+  IdempotencyService: {
+    checkAndClaimEvent: vi.fn(() =>
+      Promise.resolve({
+        isNew: true,
+        existingStatus: undefined,
+      })
+    ),
+    markEventCompleted: vi.fn(() => Promise.resolve()),
+    markEventFailed: vi.fn(() => Promise.resolve()),
+    markEventUnrecoverable: vi.fn(() => Promise.resolve()),
+  },
+}));
+
+// Mock other handlers to prevent errors (but NOT InvoiceHandler - we want to test its logic)
+vi.mock('@server/webhooks/stripe/handlers/payment.handler', () => ({
+  PaymentHandler: {
+    handleCheckoutSessionCompleted: vi.fn(() => Promise.resolve()),
+    handleChargeRefunded: vi.fn(() => Promise.resolve()),
+    handleInvoicePaymentRefunded: vi.fn(() => Promise.resolve()),
+  },
+}));
+
+vi.mock('@server/webhooks/stripe/handlers/subscription.handler', () => ({
+  SubscriptionHandler: {
+    handleCustomerCreated: vi.fn(() => Promise.resolve()),
+    handleSubscriptionUpdate: vi.fn(() => Promise.resolve()),
+    handleSubscriptionDeleted: vi.fn(() => Promise.resolve()),
+    handleTrialWillEnd: vi.fn(() => Promise.resolve()),
+    handleSubscriptionScheduleCompleted: vi.fn(() => Promise.resolve()),
+  },
+}));
+
+vi.mock('@server/webhooks/stripe/handlers/dispute.handler', () => ({
+  DisputeHandler: {
+    handleChargeDisputeCreated: vi.fn(() => Promise.resolve()),
+    handleChargeDisputeUpdated: vi.fn(() => Promise.resolve()),
+    handleChargeDisputeClosed: vi.fn(() => Promise.resolve()),
+  },
 }));
 
 // Helper to create a webhook_events mock that allows events through (for idempotency)
@@ -77,20 +140,56 @@ vi.mock('@shared/config/subscription.utils', async importOriginal => {
     getPlanByPriceId: vi.fn(priceId => {
       // Mock implementation that returns plan data for known price IDs
       const plans = {
-        price_starter_monthly: { creditsPerMonth: 100 },
-        price_hobby_monthly: { creditsPerMonth: 200 },
-        price_pro_monthly: { creditsPerMonth: 1000 },
-        price_business_monthly: { creditsPerMonth: 5000 },
+        price_starter_monthly: {
+          creditsPerMonth: 100,
+          creditsPerCycle: 100,
+          creditsExpiration: { mode: 'never' },
+        },
+        price_hobby_monthly: {
+          creditsPerMonth: 200,
+          creditsPerCycle: 200,
+          creditsExpiration: { mode: 'never' },
+        },
+        price_pro_monthly: {
+          creditsPerMonth: 1000,
+          creditsPerCycle: 1000,
+          creditsExpiration: { mode: 'never' },
+        },
+        price_business_monthly: {
+          creditsPerMonth: 5000,
+          creditsPerCycle: 5000,
+          creditsExpiration: { mode: 'never' },
+        },
       };
       return plans[priceId] || null;
     }),
     resolvePlanOrPack: vi.fn(priceId => {
       // Mock implementation that returns plan data for known price IDs
       const plans = {
-        price_starter_monthly: { type: 'plan', credits: 100 },
-        price_hobby_monthly: { type: 'plan', credits: 200 },
-        price_pro_monthly: { type: 'plan', credits: 1000 },
-        price_business_monthly: { type: 'plan', credits: 5000 },
+        price_starter_monthly: {
+          type: 'plan',
+          name: 'Starter',
+          creditsPerCycle: 100,
+          maxRollover: 600,
+        },
+        price_hobby_monthly: {
+          type: 'plan',
+          name: 'Hobby',
+          creditsPerCycle: 200,
+          maxRollover: 1200,
+        },
+        price_pro_monthly: {
+          type: 'plan',
+          name: 'Professional',
+          creditsPerCycle: 1000,
+          maxRollover: 6000,
+        },
+        price_business_monthly: {
+          type: 'plan',
+          name: 'Business',
+          creditsPerCycle: 5000,
+          maxRollover: 30000,
+        },
       };
       return plans[priceId] || null;
     }),
@@ -288,6 +387,8 @@ describe('Bug Fix: Billing Credit Renewal on invoice.payment_succeeded', () => {
       subscription: 'sub_test_hobby',
       paid: true,
       status: 'paid',
+      period_end: Math.floor(Date.now() / 1000) + 2592000, // 30 days from now
+      billing_reason: 'subscription_cycle', // Not the first invoice
       lines: {
         data: [
           {
@@ -299,11 +400,12 @@ describe('Bug Fix: Billing Credit Renewal on invoice.payment_succeeded', () => {
     };
 
     const event = {
+      id: `evt_test_${invoiceId}`,
       type: 'invoice.payment_succeeded',
       data: { object: invoiceData },
     };
 
-    const request = new NextRequest('http://localhost/api/webhooks/stripe', {
+    const request = new Request('http://localhost/api/webhooks/stripe', {
       method: 'POST',
       body: JSON.stringify(event),
       headers: {
@@ -350,7 +452,19 @@ describe('Bug Fix: Billing Credit Renewal on invoice.payment_succeeded', () => {
     });
 
     // Act
-    const response = await POST(request);
+    // Astro APIRoutes expect context object with { request }
+    const response = await POST({ request });
+
+    // Debug - check response body for error details
+    console.log('[DEBUG] Response status:', response.status);
+    if (response.status === 500) {
+      try {
+        const text = await response.text();
+        console.log('[DEBUG] Response body:', text);
+      } catch (e) {
+        console.log('[DEBUG] Failed to read response body:', e);
+      }
+    }
 
     // Assert
     expect(response.status).toBe(200);
@@ -377,6 +491,8 @@ describe('Bug Fix: Billing Credit Renewal on invoice.payment_succeeded', () => {
       subscription: 'sub_test_pro',
       paid: true,
       status: 'paid',
+      period_end: Math.floor(Date.now() / 1000) + 2592000, // 30 days from now
+      billing_reason: 'subscription_cycle', // Not the first invoice
       lines: {
         data: [
           {
@@ -388,11 +504,12 @@ describe('Bug Fix: Billing Credit Renewal on invoice.payment_succeeded', () => {
     };
 
     const event = {
+      id: `evt_test_${invoiceId}`,
       type: 'invoice.payment_succeeded',
       data: { object: invoiceData },
     };
 
-    const request = new NextRequest('http://localhost/api/webhooks/stripe', {
+    const request = new Request('http://localhost/api/webhooks/stripe', {
       method: 'POST',
       body: JSON.stringify(event),
       headers: {
@@ -439,7 +556,19 @@ describe('Bug Fix: Billing Credit Renewal on invoice.payment_succeeded', () => {
     });
 
     // Act
-    const response = await POST(request);
+    // Astro APIRoutes expect context object with { request }
+    const response = await POST({ request });
+
+    // Debug - check response body for error details
+    console.log('[DEBUG] Response status:', response.status);
+    if (response.status === 500) {
+      try {
+        const text = await response.text();
+        console.log('[DEBUG] Response body:', text);
+      } catch (e) {
+        console.log('[DEBUG] Failed to read response body:', e);
+      }
+    }
 
     // Assert
     expect(response.status).toBe(200);
@@ -463,6 +592,8 @@ describe('Bug Fix: Billing Credit Renewal on invoice.payment_succeeded', () => {
       subscription: 'sub_test_business',
       paid: true,
       status: 'paid',
+      period_end: Math.floor(Date.now() / 1000) + 2592000, // 30 days from now
+      billing_reason: 'subscription_cycle', // Not the first invoice
       lines: {
         data: [
           {
@@ -474,11 +605,12 @@ describe('Bug Fix: Billing Credit Renewal on invoice.payment_succeeded', () => {
     };
 
     const event = {
+      id: `evt_test_${invoiceId}`,
       type: 'invoice.payment_succeeded',
       data: { object: invoiceData },
     };
 
-    const request = new NextRequest('http://localhost/api/webhooks/stripe', {
+    const request = new Request('http://localhost/api/webhooks/stripe', {
       method: 'POST',
       body: JSON.stringify(event),
       headers: {
@@ -525,7 +657,19 @@ describe('Bug Fix: Billing Credit Renewal on invoice.payment_succeeded', () => {
     });
 
     // Act
-    const response = await POST(request);
+    // Astro APIRoutes expect context object with { request }
+    const response = await POST({ request });
+
+    // Debug - check response body for error details
+    console.log('[DEBUG] Response status:', response.status);
+    if (response.status === 500) {
+      try {
+        const text = await response.text();
+        console.log('[DEBUG] Response body:', text);
+      } catch (e) {
+        console.log('[DEBUG] Failed to read response body:', e);
+      }
+    }
 
     // Assert
     expect(response.status).toBe(200);
@@ -539,8 +683,9 @@ describe('Bug Fix: Billing Credit Renewal on invoice.payment_succeeded', () => {
 
   test('should skip credit addition for non-subscription invoice', async () => {
     // Arrange
+    const invoiceId = 'in_test_no_sub';
     const invoiceData = {
-      id: 'in_test_no_sub',
+      id: invoiceId,
       customer: 'cus_test',
       subscription: null, // No subscription
       paid: true,
@@ -548,11 +693,12 @@ describe('Bug Fix: Billing Credit Renewal on invoice.payment_succeeded', () => {
     };
 
     const event = {
+      id: `evt_test_${invoiceId}`,
       type: 'invoice.payment_succeeded',
       data: { object: invoiceData },
     };
 
-    const request = new NextRequest('http://localhost/api/webhooks/stripe', {
+    const request = new Request('http://localhost/api/webhooks/stripe', {
       method: 'POST',
       body: JSON.stringify(event),
       headers: {
@@ -562,7 +708,19 @@ describe('Bug Fix: Billing Credit Renewal on invoice.payment_succeeded', () => {
     });
 
     // Act
-    const response = await POST(request);
+    // Astro APIRoutes expect context object with { request }
+    const response = await POST({ request });
+
+    // Debug - check response body for error details
+    console.log('[DEBUG] Response status:', response.status);
+    if (response.status === 500) {
+      try {
+        const text = await response.text();
+        console.log('[DEBUG] Response body:', text);
+      } catch (e) {
+        console.log('[DEBUG] Failed to read response body:', e);
+      }
+    }
 
     // Assert
     expect(response.status).toBe(200);
@@ -571,12 +729,15 @@ describe('Bug Fix: Billing Credit Renewal on invoice.payment_succeeded', () => {
 
   test('should handle missing profile gracefully', async () => {
     // Arrange
+    const invoiceId = 'in_test_no_profile';
     const invoiceData = {
-      id: 'in_test_no_profile',
+      id: invoiceId,
       customer: 'cus_unknown',
       subscription: 'sub_test',
       paid: true,
       status: 'paid',
+      period_end: Math.floor(Date.now() / 1000) + 2592000, // 30 days from now
+      billing_reason: 'subscription_cycle', // Not the first invoice
       lines: {
         data: [
           {
@@ -588,11 +749,12 @@ describe('Bug Fix: Billing Credit Renewal on invoice.payment_succeeded', () => {
     };
 
     const event = {
+      id: `evt_test_${invoiceId}`,
       type: 'invoice.payment_succeeded',
       data: { object: invoiceData },
     };
 
-    const request = new NextRequest('http://localhost/api/webhooks/stripe', {
+    const request = new Request('http://localhost/api/webhooks/stripe', {
       method: 'POST',
       body: JSON.stringify(event),
       headers: {
@@ -628,7 +790,8 @@ describe('Bug Fix: Billing Credit Renewal on invoice.payment_succeeded', () => {
     });
 
     // Act
-    const response = await POST(request);
+    // Astro APIRoutes expect context object with { request }
+    const response = await POST({ request });
 
     // Assert - In test mode, webhook returns 200 (not 500) to avoid test failures
     expect(response.status).toBe(200);

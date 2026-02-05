@@ -1,13 +1,11 @@
 'use client';
 
-import { useLocale } from 'next-intl';
-import { usePathname } from 'next/navigation';
-import { useState, useRef } from 'react';
+import { useState, useRef, useMemo, useEffect } from 'react';
 import { US, ES, BR, DE, FR, IT, JP } from 'country-flag-icons/react/3x2';
 import { ChevronDown } from 'lucide-react';
 import { useClickOutside } from '@client/hooks/useClickOutside';
-import { SUPPORTED_LOCALES, DEFAULT_LOCALE, locales, type Locale } from '@/i18n/config';
-import { useTranslations } from 'next-intl';
+import { SUPPORTED_LOCALES, DEFAULT_LOCALE, locales, type Locale } from '../../../i18n/config';
+import { getTranslations } from '../../../src/i18n/utils';
 
 /** Map locale country codes to flag components */
 const FlagComponents = {
@@ -26,11 +24,20 @@ const FlagComponents = {
  * Compact flag dropdown for switching languages.
  */
 export function LocaleSwitcher(): JSX.Element {
-  const t = useTranslations();
-  const locale = useLocale() as Locale;
-  const pathname = usePathname();
+  const t = useMemo(() => getTranslations(), []);
+  const [locale, setLocale] = useState<Locale>(DEFAULT_LOCALE as Locale);
+  const [pathname, setPathname] = useState('/');
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+
+  // Get current locale and pathname from browser
+  useEffect(() => {
+    setPathname(window.location.pathname);
+    // Get locale from cookie or use default
+    const localeMatch = document.cookie.match(/locale=([^;]+)/);
+    const currentLocale = (localeMatch ? localeMatch[1] : DEFAULT_LOCALE) as Locale;
+    setLocale(currentLocale);
+  }, []);
 
   useClickOutside(dropdownRef, () => setIsOpen(false));
 

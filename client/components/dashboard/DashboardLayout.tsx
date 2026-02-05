@@ -55,3 +55,6 @@ export const DashboardLayout: React.FC<IDashboardLayoutProps> = ({ children }) =
     </div>
   );
 };
+
+// Default export for Astro compatibility
+export default DashboardLayout;

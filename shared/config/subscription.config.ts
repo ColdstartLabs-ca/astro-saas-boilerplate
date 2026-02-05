@@ -291,36 +291,9 @@ export const SUBSCRIPTION_CONFIG: ISubscriptionConfig = {
 
 /**
  * Get the complete subscription configuration
- * Use this function instead of directly accessing SUBSCRIPTION_CONFIG
- * to allow for future environment overrides
+ * Returns the subscription config - use this instead of directly accessing SUBSCRIPTION_CONFIG
  */
 export function getSubscriptionConfig(): ISubscriptionConfig {
-  // Check for environment variable overrides
-  // Note: This is an optional environment variable that may not be defined in the type system
-  const configOverride = (process.env as unknown as { SUBSCRIPTION_CONFIG_OVERRIDE?: string })
-    .SUBSCRIPTION_CONFIG_OVERRIDE;
-
-  if (configOverride) {
-    try {
-      const override = JSON.parse(configOverride);
-      // Merge with base config to ensure all required fields exist
-      return {
-        ...SUBSCRIPTION_CONFIG,
-        ...override,
-        // Ensure nested objects are properly merged
-        plans: override.plans || SUBSCRIPTION_CONFIG.plans,
-        creditPacks: override.creditPacks || SUBSCRIPTION_CONFIG.creditPacks,
-        creditCosts: { ...SUBSCRIPTION_CONFIG.creditCosts, ...override.creditCosts },
-        freeUser: { ...SUBSCRIPTION_CONFIG.freeUser, ...override.freeUser },
-        warnings: { ...SUBSCRIPTION_CONFIG.warnings, ...override.warnings },
-        defaults: { ...SUBSCRIPTION_CONFIG.defaults, ...override.defaults },
-      };
-    } catch (error) {
-      console.error('Failed to parse SUBSCRIPTION_CONFIG_OVERRIDE:', error);
-      // Fall back to default config if override is invalid
-      return SUBSCRIPTION_CONFIG;
-    }
-  }
   return SUBSCRIPTION_CONFIG;
 }
 

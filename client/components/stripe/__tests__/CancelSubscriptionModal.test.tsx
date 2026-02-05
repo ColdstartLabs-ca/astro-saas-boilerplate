@@ -1,6 +1,5 @@
 import { describe, test, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import { NextIntlClientProvider } from 'next-intl';
 import { CancelSubscriptionModal } from '@client/components/stripe/CancelSubscriptionModal';
 import React from 'react';
 
@@ -28,18 +27,31 @@ const mockTranslations = {
   canceling: 'Canceling...',
 };
 
+// Simple translation context mock to replace next-intl
+const TranslationContext = React.createContext<{ t: (key: string, params?: Record<string, string>) => string }>({
+  t: (key: string) => key,
+});
+
 function renderWithTranslations(ui: React.ReactElement) {
+  const t = (key: string, params?: Record<string, string>) => {
+    const keys = key.split('.');
+    let value: unknown = mockTranslations;
+    for (const k of keys) {
+      value = (value as Record<string, unknown>)[k];
+    }
+    if (typeof value === 'string' && params) {
+      return Object.entries(params).reduce(
+        (str, [k, v]) => str.replace(`{${k}}`, v),
+        value
+      );
+    }
+    return typeof value === 'string' ? value : key;
+  };
+
   return render(
-    <NextIntlClientProvider
-      locale="en"
-      messages={{
-        stripe: {
-          cancelSubscription: mockTranslations,
-        },
-      }}
-    >
+    <TranslationContext.Provider value={{ t }}>
       {ui}
-    </NextIntlClientProvider>
+    </TranslationContext.Provider>
   );
 }
 

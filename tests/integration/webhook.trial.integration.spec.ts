@@ -1,6 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { NextRequest } from 'next/server';
-import { POST as webhookHandler } from '@app/api/webhooks/stripe/route';
+import { POST as webhookHandler } from '@src/pages/api/webhooks/stripe/index';
 import { supabaseAdmin } from '@server/supabase/supabaseAdmin';
 import { getTrialConfig, getPlanConfig } from '@shared/config/subscription.config';
 
@@ -25,7 +24,7 @@ const mockGetTrialConfig = vi.mocked(getTrialConfig);
 const mockGetPlanConfig = vi.mocked(getPlanConfig);
 
 describe('Webhook Handler - Trial Integration', () => {
-  let mockRequest: (event: Record<string, unknown>) => NextRequest;
+  let mockRequest: (event: Record<string, unknown>) => Request;
 
   beforeEach(() => {
     vi.clearAllMocks();
@@ -89,7 +88,7 @@ describe('Webhook Handler - Trial Integration', () => {
       const body = JSON.stringify(event);
       const signature = 'stripe-signature';
 
-      return new NextRequest('http://localhost:3000/api/webhooks/stripe', {
+      return new Request('http://localhost:3000/api/webhooks/stripe', {
         method: 'POST',
         headers: {
           'stripe-signature': signature,
