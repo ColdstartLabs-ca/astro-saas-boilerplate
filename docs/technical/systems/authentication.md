@@ -282,18 +282,21 @@ flowchart TD
 
 ### Route Protection Matrix
 
-| Path              | Auth Required | Description       |
-| ----------------- | ------------- | ----------------- |
-| `/`               | No            | Landing page      |
-| `/login`          | No            | Login page        |
-| `/signup`         | No            | Registration page |
-| `/pricing`        | No            | Pricing page      |
-| `/dashboard`      | Yes           | User dashboard    |
-| `/upscaler`       | Yes           | Processing page   |
-| `/api/upscale`    | Yes           | Processing API    |
-| `/api/checkout`   | Yes           | Billing API       |
-| `/api/profile`    | Yes           | User API          |
-| `/api/webhooks/*` | No            | Stripe webhooks   |
+| Path              | Auth Required | Description             |
+| ----------------- | ------------- | ----------------------- |
+| `/`               | No            | Landing page            |
+| `/login`          | No            | Login page              |
+| `/signup`         | No            | Registration page       |
+| `/pricing`        | No            | Pricing page            |
+| `/blog/*`         | No            | Blog posts              |
+| `/dashboard`      | Yes           | User dashboard          |
+| `/dashboard/*`    | Yes           | All dashboard routes    |
+| `/api/campaigns`  | Yes           | Campaign management API |
+| `/api/articles`   | Yes           | Article generation API  |
+| `/api/checkout`   | Yes           | Billing API             |
+| `/api/profile`    | Yes           | User API                |
+| `/api/webhooks/*` | No            | Stripe webhooks         |
+| `/api/health`     | No            | Health check            |
 
 ## Security Considerations
 

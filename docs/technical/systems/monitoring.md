@@ -71,8 +71,8 @@ sequenceDiagram
 
 ```typescript
 interface ILoggerConfig {
-  service: string; // 'myimageupscaler.com-api'
-  namespace: string; // Specific API endpoint or feature
+  service: string; // 'autopilotrank-api'
+  namespace: string; // Specific API endpoint or feature (e.g., 'article-generation', 'wordpress-publish')
   apiKey: string; // Baselime API key
   isLocalDev: boolean; // Skip external calls in development
   ctx: {
@@ -80,6 +80,8 @@ interface ILoggerConfig {
     method: string; // HTTP method
     requestId?: string; // Unique request identifier
     userId?: string; // Authenticated user ID
+    campaignId?: string; // Campaign ID for content generation
+    articleId?: string; // Article ID being processed
     [key: string]: unknown; // Additional context
   };
 }
@@ -99,7 +101,7 @@ export function createLogger(
   const apiKey = serverEnv.BASELIME_API_KEY;
 
   const logger = new BaselimeLogger({
-    service: 'myimageupscaler.com-api',
+    service: 'autopilotrank-api',
     namespace,
     apiKey: apiKey || '',
     ctx: {

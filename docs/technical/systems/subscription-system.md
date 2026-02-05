@@ -1,89 +1,70 @@
 # Subscription System Architecture
 
-**Version:** 2.0 (Subscription-Only Model)
-**Last Updated:** December 2, 2025
-**Status:** Production
+**Version:** 3.0 (AutopilotRank)
+**Last Updated:** February 5, 2026
+**Status:** Partially stale — boilerplate sections being refactored
+
+> **⚠️ DEPRECATION NOTICE:** This document describes the old MyImageUpscaler product. Most sections reference image processing, Next.js, and old plan names (Hobby/Professional/Business). See **[Pricing](#pricing)** section below for AutopilotRank specifics. Comprehensive refactor in progress.
 
 ---
 
-## Table of Contents
+## Quick Reference
 
-1. [Overview](#1-overview)
-2. [Implementation Status](#2-implementation-status)
-3. [System Architecture](#3-system-architecture)
-4. [Database Schema](#4-database-schema)
-5. [API Endpoints](#5-api-endpoints)
-6. [Webhook Processing](#6-webhook-processing)
-7. [Credit System](#7-credit-system)
-8. [Client Components](#8-client-components)
-9. [Configuration](#9-configuration)
-10. [Security Model](#10-security-model)
-11. [Testing Strategy](#11-testing-strategy)
-12. [Deployment](#12-deployment)
-13. [Troubleshooting](#13-troubleshooting)
-14. [Future Roadmap](#14-future-roadmap)
+**For AutopilotRank pricing & plans:** See [Revenue Streams](../../business/business-model-canvas/revenue-streams.md)
+
+**For implementation details:** This document. Sections marked "OLD" need refactoring.
 
 ---
 
-## 1. Overview
+## Pricing
 
-### 1.1 Business Model
+### AutopilotRank Plans (MVP)
 
-myimageupscaler.com uses a **subscription-only payment model** where users pay monthly for a fixed allocation of credits. Credits are used to process images.
+| Plan       | Price   | Articles/Month | Key Features                          |
+| ---------- | ------- | -------------- | ------------------------------------- |
+| Trial      | $0      | 3 (one-time)   | Try before buying, no CC required     |
+| Starter    | $49/mo  | 30             | All core features, 1 WordPress site   |
+| Growth     | $99/mo  | 100            | GSC integration, 3 CMS sites          |
+| Agency     | $249/mo | 500            | White-label, team (5), API            |
 
 **Key Principles:**
+- **1 Credit = 1 Article Generation** (approx 1,500 words)
+- **Rollover:** Unused credits roll over up to 2x monthly allowance
+- **Annual billing:** 20% off (2 months free)
+- **Overage charges** (Post-MVP): Starter $2.00/article, Growth $1.50/article, Agency $0.75/article
 
-- No one-time credit purchases
-- Monthly credit allocation with rollover
-- Rollover capped at 6x monthly allocation
-- Free tier: 10 credits on signup (no renewal)
-
-### 1.2 Subscription Plans
-
-| Plan         | Price   | Credits/Month | Max Rollover | Target User       |
-| ------------ | ------- | ------------- | ------------ | ----------------- |
-| Free         | $0      | 10 (once)     | N/A          | Testing           |
-| Hobby        | $19/mo  | 200           | 1,200        | Personal projects |
-| Professional | $49/mo  | 1,000         | 6,000        | Professionals     |
-| Business     | $149/mo | 5,000         | 30,000       | Teams/Agencies    |
-
-### 1.3 Technology Stack
+### Technology Stack
 
 - **Payment Provider:** Stripe (Checkout, Customer Portal, Webhooks)
 - **Database:** Supabase (PostgreSQL)
-- **Backend:** Next.js 15 Edge Runtime
-- **Frontend:** React 18 with Stripe.js
+- **Backend:** Astro 5 SSR + Cloudflare Workers
+- **Frontend:** Astro 5 + React 18 (islands architecture)
 - **Hosting:** Cloudflare Pages
 
 ---
 
 ## 2. Implementation Status
 
-### 2.1 Feature Matrix
+### 2.1 Feature Matrix (AutopilotRank MVP)
 
-| Feature                        | Status              | Notes                                                               |
-| ------------------------------ | ------------------- | ------------------------------------------------------------------- |
-| New subscription purchase      | Implemented         | Embedded & hosted checkout                                          |
-| Monthly credit allocation      | Implemented         | With rollover cap                                                   |
-| Subscription cancellation      | Implemented         | Via API + Stripe Portal                                             |
-| Billing page                   | Implemented         | Shows plan & credits                                                |
-| Pricing page                   | Implemented         | 3 subscription tiers                                                |
-| Success/cancel pages           | Implemented         | Post-checkout flow                                                  |
-| Webhook signature verification | Implemented         | Production-ready                                                    |
-| Credit transaction logging     | Implemented         | Full audit trail                                                    |
-| Upgrade/downgrade flow         | Implemented         | `/api/subscription/change` with proration                           |
-| Webhook idempotency            | Implemented         | `webhook_events` table with atomic claims                           |
-| **Scheduled Stripe sync**      | **Implemented**     | ✅ Cron jobs for webhook recovery, expiration check, reconciliation |
-| **Webhook recovery**           | **Implemented**     | ✅ Automatic retry of failed webhooks (every 15 min)                |
-| **Expiration detection**       | **Implemented**     | ✅ Hourly check for expired subscriptions                           |
-| **Full reconciliation**        | **Implemented**     | ✅ Daily sync with Stripe (3 AM UTC)                                |
-| **Credit usage history UI**    | **NOT IMPLEMENTED** | Data exists, no UI                                                  |
-| **Low credit warning**         | **NOT IMPLEMENTED** | No notifications                                                    |
-| **Trial period support**       | **NOT IMPLEMENTED** | Schema ready, no UI                                                 |
-| **Annual billing**             | **NOT IMPLEMENTED** | Monthly only                                                        |
-| **Proration preview**          | **NOT IMPLEMENTED** | No in-app preview                                                   |
-| **Refund webhook handling**    | **PARTIAL**         | Logged, no credit clawback                                          |
-| **Subscription pause**         | **NOT IMPLEMENTED** | Not supported                                                       |
+| Feature                        | Status              | Notes                                                      |
+| ------------------------------ | ------------------- | ---------------------------------------------------------- |
+| Subscription purchase          | ✅ Implemented      | Stripe Checkout (ready to reconfigure for new plans)       |
+| Monthly credit allocation      | ✅ Implemented      | With 2x rollover cap                                       |
+| Subscription cancellation      | ✅ Implemented      | Via API + Stripe Portal                                    |
+| Billing page                   | ✅ Implemented      | Shell exists, needs article-specific content               |
+| Pricing page                   | ✅ Implemented      | Shell exists, needs AutopilotRank tiers + comparison table |
+| Webhook signature verification | ✅ Implemented      | Production-ready                                           |
+| Credit transaction logging     | ✅ Implemented      | Full audit trail                                           |
+| Upgrade/downgrade flow         | ✅ Implemented      | `/api/subscription/change` with proration                  |
+| Webhook idempotency            | ✅ Implemented      | `webhook_events` table with atomic claims                  |
+| Scheduled Stripe sync          | ✅ Implemented      | Cron jobs for webhook recovery, expiration check           |
+| **Reconfigure plans**          | 🔄 To Do           | Update Stripe products/prices for Starter/Growth/Agency    |
+| **Trial articles**             | 🔄 To Do           | Add 3 free articles on signup (trial signup flow)          |
+| **Recalculate rollover**       | 🔄 To Do           | Verify 2x rollover cap is correct for articles             |
+| **Annual billing**             | 🔄 Post-MVP Phase 1 | UI + logic for annual discount                             |
+| **Overage charges**            | 🔄 Post-MVP Phase 1 | Hard block at plan limit + overage pricing                 |
+| **Low credit warning**         | 🔄 Post-MVP Phase 1 | Email alert at 80% usage                                   |
 
 ### 2.2 API Coverage
 

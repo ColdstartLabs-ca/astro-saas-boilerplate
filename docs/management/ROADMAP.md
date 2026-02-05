@@ -2,32 +2,32 @@
 
 > AI SEO Content Automation Platform - "Outrank's Automation + Surfer's Quality. Finally."
 
-**Last Updated:** 2026-02-04
-**Launch Target:** Early March 2026 (4 weeks)
+**Last Updated:** 2026-02-05
+**Launch Target:** Early March 2026
 
 ---
 
 ## Current State
 
-The codebase has a production-tested SaaS boilerplate with:
+**Done (from boilerplate):**
+- [x] Auth: Email/password, Google OAuth (Supabase)
+- [x] Billing: Stripe subscriptions + one-time credit packs
+- [x] Credit system: Per-user balance, transaction history, rollover
+- [x] Dashboard shell: Main dashboard, billing, history, settings, support, admin panel
+- [x] Monitoring: Baselime error tracking, Amplitude analytics, GA4
+- [x] Email: Brevo (primary) + Resend (fallback)
+- [x] Deployment: Cloudflare Pages + Workers
+- [x] Blog: MDX-based system (structure exists, no content)
+- [x] Legal: Privacy policy, terms of service, help/FAQ
+- [x] Landing page: Rebranded hero, pain points, solution, features, pricing, FAQ
 
-- **Auth**: Email/password, Google OAuth (Supabase)
-- **Billing**: Stripe subscriptions + one-time credit packs
-- **Credit System**: Per-user balance, transaction history, rollover
-- **Dashboard Shell**: Main dashboard, billing, history, settings, support, admin panel
-- **Monitoring**: Baselime error tracking, Amplitude analytics, GA4
-- **Email**: Brevo (primary) + Resend (fallback)
-- **Deployment**: Cloudflare Pages + Workers
-- **Blog**: MDX-based system (structure exists, no content)
-- **Legal**: Privacy policy, terms of service, help/FAQ
-
-**What does NOT exist yet:** Content generation, keyword research, campaign management, CMS publishing, humanizer, SEO scoring - all core AutopilotRank functionality.
+**Not built yet:** Content generation, campaign management, CMS publishing, humanizer, SEO scoring — all core product functionality.
 
 ---
 
 ## Vision
 
-Build the only AI SEO platform that combines full content automation with human-level quality. Target SMB owners and agencies who need organic traffic growth without the overhead of hiring writers or managing freelancers.
+Build the only AI SEO platform that combines full content automation with human-level quality. Target SMB owners and agencies who need organic traffic growth without hiring writers or managing freelancers.
 
 **Core Differentiators:**
 1. Multi-model AI engine (GPT-4, Claude, Gemini) for content variety
@@ -38,20 +38,9 @@ Build the only AI SEO platform that combines full content automation with human-
 
 ---
 
-## MVP (4 Weeks - Launch by Early March 2026)
+## Pricing
 
-**Goal:** Ship a working product that generates SEO articles from keywords, lets users review/edit, and publishes to WordPress. Validate with 50 beta users.
-
-**Target Metrics:**
-- 50 trial users (3 free articles each)
-- 10-20 paying customers
-- $500-$1,500 MRR
-- <2 min article generation time
-- Content passes AI detection >80% of the time
-
-### Pricing (MVP)
-
-No free tier. 3 free articles on signup (no credit card) to try the product.
+No free tier. 3 free articles on signup (no credit card required).
 
 | Tier | Price | Articles/Month | $/Article | Key Features |
 |------|-------|----------------|-----------|--------------|
@@ -60,116 +49,159 @@ No free tier. 3 free articles on signup (no credit card) to try the product.
 | Growth | $99/mo | 100 | $0.99 | GSC integration, 3 CMS sites, advanced humanizer |
 | Agency | $249/mo | 500 | $0.50 | White-label, team (5), API, unlimited sites |
 
-**Competitive positioning:**
-- **Starter at $49** = Outrank's daily output (30/mo) at half their $99 price
-- **Growth at $99** = 3x Outrank's output at the same $99 price point
-- **Agency at $249** = 500 articles vs. hiring an agency at $3,000-5,000/mo
+Annual discount: 20% off (~2 months free).
 
-Annual discount: 20% off (~2 months free). See [Revenue Streams](../business/business-model-canvas/revenue-streams.md) for full pricing rationale.
+**Competitive positioning:** Starter at $49 = Outrank's output at half their $99. Growth at $99 = 3x Outrank's output at the same price. Agency at $249 = replaces a $3K-5K/mo agency.
 
-### Week 1: Rebrand + AI Integration
+> Full competitive analysis, overage pricing, add-ons, unit economics, and revenue projections are in [Revenue Streams](../business/business-model-canvas/revenue-streams.md) — that is the **source of truth** for all pricing decisions.
 
-**Rebrand & Landing Page**
+---
 
-- [x] Update app name, logos, meta tags from boilerplate to AutopilotRank
-- [x] Rewrite landing page: hero, pain points, solution, features, pricing, FAQ
-- [ ] Update pricing page with new tiers (Starter/Growth/Agency) + competitor comparison
-- [ ] Update Stripe products and price IDs for article-based plans
+## MVP — Implementation Order
+
+**Goal:** Ship a working product that generates SEO articles from keywords, lets users review/edit, and publishes to WordPress. Validate with 50 beta users.
+
+**Target Metrics:** 50 trial users, 10-20 paying, $500-$1.5K MRR, <2 min generation, >80% AI detection pass rate.
+
+> Each milestone depends on the previous one. Complete them in order.
+> Tasks within a milestone can be parallelized.
+
+---
+
+### Milestone 1: Foundation (Database + Billing Reconfiguration)
+
+> **Why first:** Everything else depends on having the right DB schema and billing configured.
+
+**Database Schema** — Create migrations for the core domain tables:
+
+- [ ] `projects` table — user's connected sites (name, domain, CMS type, credentials)
+- [ ] `campaigns` table — keyword groups with settings (name, project_id, model, tone, word count, status)
+- [ ] `articles` table — generated content (campaign_id, title, content, keyword, status, model_used, seo_score, ai_detection_score, word_count, published_url)
+- [ ] `keywords` table — campaign keywords (campaign_id, keyword, search_volume, status)
+
+**Billing Reconfiguration:**
+
+- [ ] Update Stripe products and price IDs for Starter/Growth/Agency tiers
 - [ ] Reconfigure credit system: 1 credit = 1 article generation
+- [ ] Update pricing page with new tiers + competitor comparison
 
-**AI Content Generation Foundation**
+---
 
-- [ ] Set up OpenRouter integration for multi-model access (GPT-4, Claude, Gemini)
-- [ ] Build article generation pipeline: keyword + parameters -> structured outline -> full article
-- [ ] Implement model selection (auto-route by content type, or user choice)
-- [ ] Basic prompt engineering for SEO-optimized articles (headings, keyword placement, meta description)
-- [ ] Article storage schema: campaigns, articles (title, content, status, keyword, model used, SEO score)
+### Milestone 2: AI Content Generation Engine
 
-### Week 2: Campaign System + Humanizer
+> **Why second:** This is the core product. Everything downstream (humanizer, campaigns, publishing) consumes its output.
+> **Depends on:** Milestone 1 (articles table must exist)
 
-**Campaign Management**
+**OpenRouter Integration:**
 
-- [ ] Campaign CRUD: name, target keywords (manual input + CSV upload), settings (model, tone, word count)
-- [ ] Campaign dashboard: list campaigns, article counts, status overview
-- [ ] Article queue: generate articles from campaign keywords (sequential, credit-deducted)
-- [ ] Article status flow: `queued` -> `generating` -> `draft` -> `reviewed` -> `published`
+- [ ] Set up OpenRouter API client with auth, error handling, retries
+- [ ] Implement model selection: GPT-4, Claude, Gemini (auto-route or user choice)
 
-**Humanizer Engine (v1)**
+**Article Generation Pipeline:**
+
+- [ ] Build pipeline: keyword + parameters → structured outline → full article
+- [ ] Prompt engineering for SEO-optimized output (headings, keyword placement, meta description)
+- [ ] Store generated articles with metadata (model used, generation time, token count)
+- [ ] Credit deduction on generation start, refund on failure
+- [ ] Async generation with status polling (don't block the UI)
+
+---
+
+### Milestone 3: Humanizer Engine (v1)
+
+> **Why third:** Runs as a post-processing step on generated articles. Can be built independently once generation works.
+> **Depends on:** Milestone 2 (needs generated articles to process)
 
 - [ ] Post-generation rewriting pass to remove AI patterns
 - [ ] Remove common AI phrases ("In today's digital landscape", "It's important to note", etc.)
 - [ ] Vary sentence structure, add natural transitions
 - [ ] AI detection scoring integration (GPTZero or Originality.ai API)
-- [ ] Display AI detection score on article detail page
+- [ ] Store AI detection score on article record
 
-### Week 3: Dashboard + WordPress Publishing
+---
 
-**Dashboard - Content Management**
+### Milestone 4: Campaign Management UI
+
+> **Why fourth:** Users need a way to organize keywords and trigger generation in bulk.
+> **Depends on:** Milestone 2 (generation pipeline must work)
+
+- [ ] Campaign CRUD: name, target keywords (manual input + CSV upload), settings (model, tone, word count)
+- [ ] Campaign dashboard: list campaigns, article counts, status overview
+- [ ] Article queue: generate articles from campaign keywords (sequential, credit-deducted)
+- [ ] Article status flow: `queued` → `generating` → `draft` → `reviewed` → `published`
+
+---
+
+### Milestone 5: Article Management Dashboard
+
+> **Why fifth:** Users need to review, edit, and approve articles before publishing.
+> **Depends on:** Milestone 4 (needs campaigns and articles to display)
 
 - [ ] Article list view: filter by campaign, status, date
-- [ ] Article detail view: full content with inline editing
+- [ ] Article detail view: full content with inline editing (rich text or Markdown)
 - [ ] Basic SEO score display (keyword density, heading structure, word count, meta description)
+- [ ] AI detection score display
 - [ ] Approve/reject workflow before publishing
 - [ ] Credit usage tracking per campaign
 
-**WordPress Publishing**
+---
+
+### Milestone 6: WordPress Publishing
+
+> **Why sixth:** Publishing is the final step in the user flow. Can be built in parallel with Milestone 5.
+> **Depends on:** Milestone 1 (projects table), Milestone 2 (articles exist)
+> **Can parallelize with:** Milestone 5
 
 - [ ] WordPress REST API integration (Application Passwords auth)
-- [ ] Connect WordPress site flow: URL + credentials, test connection
+- [ ] Connect WordPress site flow: URL + credentials, test connection, save to `projects`
 - [ ] Publish article as draft or published post
 - [ ] Map article metadata (title, slug, categories, tags, featured image, meta description)
 - [ ] Publishing status sync (reflect WordPress status back in dashboard)
 
-### Week 4: Polish + Launch
+---
 
-**Landing Page & Content**
+### Milestone 7: Polish, Emails & Onboarding
 
-- [ ] Final landing page polish: competitor comparison table, testimonials (placeholder), trust badges
-- [ ] Features page with screenshots/GIFs of actual product
-- [ ] Write 2-3 launch blog posts (MDX): "Why AI SEO Content", "AutopilotRank vs Outrank", product announcement
-- [ ] Update help/FAQ for new product
+> **Why last:** Polish comes after core functionality works end-to-end.
+> **Depends on:** Milestones 1-6 complete
 
-**Email & Onboarding**
+**Emails:**
 
 - [ ] Welcome email template (quick start guide)
 - [ ] Article generation complete notification
 - [ ] Low credits alert (80% threshold)
-- [ ] Simple in-app onboarding: connect WordPress -> enter keywords -> generate first article
 
-**Testing & Deployment**
+**Onboarding:**
 
-- [ ] End-to-end flow testing: signup -> create campaign -> generate article -> review -> publish to WordPress
+- [ ] Simple in-app onboarding: connect WordPress → enter keywords → generate first article
+
+**Landing Page & Content:**
+
+- [ ] Final landing page polish: competitor comparison table, testimonials (placeholder), trust badges
+- [ ] Features page with screenshots/GIFs of actual product
+- [ ] Write 2-3 launch blog posts: "Why AI SEO Content", "AutopilotRank vs Outrank", product announcement
+- [ ] Update help/FAQ for new product
+
+**Testing:**
+
+- [ ] End-to-end flow: signup → create campaign → generate article → review → publish to WordPress
 - [ ] Credit deduction and billing flow verification
 - [ ] Mobile responsive check on all new pages
-- [ ] Production environment setup and deployment
 - [ ] Monitoring alerts for generation failures
 
-**Launch**
+---
 
-- [ ] Recruit 50 beta users (Reddit r/SEO, r/content_marketing, r/Entrepreneur, Indie Hackers)
-- [ ] Product Hunt launch prep (listing, assets, description)
-- [ ] Social media announcements
-- [ ] Launch day monitoring
+### MVP Dependency Graph
 
-### MVP Feature Summary
-
-| Feature | Priority | Status |
-|---------|----------|--------|
-| Auth (email + Google) | P0 | Done (boilerplate) |
-| Stripe billing (subscriptions) | P0 | Done (boilerplate) |
-| Credit system (article-based) | P0 | Done (needs reconfig) |
-| Dashboard shell | P0 | Done (boilerplate) |
-| Monitoring & analytics | P1 | Done (boilerplate) |
-| Landing page (AutopilotRank) | P0 | To build |
-| Multi-model AI generation | P0 | To build |
-| Campaign management | P0 | To build |
-| Article editor/review | P0 | To build |
-| Humanizer engine (v1) | P1 | To build |
-| AI detection scoring | P1 | To build |
-| WordPress publishing | P0 | To build |
-| Basic SEO scoring | P1 | To build |
-| Blog posts (launch) | P2 | To build |
-| Onboarding flow | P1 | To build |
+```
+M1 Foundation
+├── M2 AI Generation Engine
+│   ├── M3 Humanizer
+│   ├── M4 Campaign Management UI
+│   │   └── M5 Article Dashboard
+│   └── M6 WordPress Publishing (parallel with M5)
+└────────── M7 Polish & Launch (after M1-M6)
+```
 
 ### MVP Risk Mitigation
 
@@ -181,250 +213,129 @@ Annual discount: 20% off (~2 months free). See [Revenue Streams](../business/bus
 | Slow generation time | Medium | Async generation with notification when complete |
 | Low beta signups | Medium | Personal outreach, SEO communities, free tier as hook |
 
+### Launch Checklist (after all milestones complete)
+
+- [ ] Recruit 50 beta users (Reddit r/SEO, r/content_marketing, r/Entrepreneur, Indie Hackers)
+- [ ] Product Hunt launch prep (listing, assets, description)
+- [ ] Social media announcements
+- [ ] Launch day monitoring
+
 ---
 
 ## Post-MVP Phase 1: Product-Market Fit (Months 2-3)
 
-**Goal:** Iterate based on beta feedback. Reach 200 users, 50 paying customers, validate PMF with Sean Ellis test (40%+ "very disappointed").
+**Goal:** Iterate based on beta feedback. Reach 200 users, 50 paying, validate PMF (Sean Ellis 40%+).
 
-### Content Quality Improvements
+> Priority order: Quality first (what users complain about), then features that drive upgrades.
+
+### P0 — Content Quality (build confidence in the product)
 
 - [ ] Advanced humanizer engine (multi-pass rewriting, style variation)
 - [ ] AI detection pass rate target: 95%+
 - [ ] Pre-publication QA: plagiarism check, readability score, fact-checking flags
-- [ ] Brand voice customization (tone, style, vocabulary preferences)
 - [ ] Article templates: listicle, how-to, comparison, product review, pillar content
-- [ ] Image generation for articles (DALL-E/Stability AI integration)
-- [ ] Internal linking suggestions within campaigns
 
-### Keyword Research
+### P1 — Monetization & Retention
 
-- [ ] Keyword research API integration (DataForSEO or Keywords Everywhere)
-- [ ] Search volume and keyword difficulty display
-- [ ] Keyword clustering (group related keywords into campaigns)
-- [ ] Competitor keyword gap analysis (basic)
-- [ ] Keyword suggestions based on seed keywords
+- [ ] Annual billing option (20% off — "2 months free")
+- [ ] Overage charges: Starter $2.00, Growth $1.50, Agency $0.75 (see [Revenue Streams](../business/business-model-canvas/revenue-streams.md))
+- [ ] Upgrade prompts when approaching plan limits (80% threshold)
+- [ ] Scheduled publishing (queue articles for future dates)
+- [ ] Bulk actions: approve all, publish all, regenerate
 
-### Google Search Console Integration
+### P1 — Google Search Console Integration
 
 - [ ] OAuth flow for GSC connection
 - [ ] Import existing keyword performance data
 - [ ] Identify content opportunities (keywords ranking 5-20 with low impressions)
 - [ ] Auto-suggest article topics from GSC data
-- [ ] Track ranking changes for published articles
 
-### Dashboard Enhancements
+### P2 — Nice to Have
 
-- [ ] Article performance tracking (if GSC connected)
-- [ ] Campaign analytics: articles generated, published, credits used
-- [ ] Content calendar view (scheduled publications)
-- [ ] Bulk actions: approve all, publish all, regenerate
+- [ ] Brand voice customization (tone, style, vocabulary preferences)
+- [ ] Image generation for articles (DALL-E/Stability AI integration)
+- [ ] Internal linking suggestions within campaigns
+- [ ] Keyword research API integration (DataForSEO or Keywords Everywhere)
+- [ ] Keyword clustering (group related keywords into campaigns)
+- [ ] Campaign analytics dashboard
+- [ ] Content calendar view
 - [ ] Export articles (Markdown, HTML, DOCX)
-
-### Publishing Expansion
-
 - [ ] Webflow CMS API publishing
 - [ ] Shopify blog publishing
-- [ ] Webhook publishing (generic - for any CMS with webhook support)
-- [ ] Scheduled publishing (queue articles for future dates)
-- [ ] Draft review mode (push as draft, user approves in CMS)
-
-### Billing & Growth
-
-- [ ] Annual billing option (20% off — "2 months free")
-- [ ] Overage charges: Starter $2.00, Growth $1.50, Agency $0.75 (nudges upgrades)
-- [ ] Upgrade prompts when approaching plan limits (80% threshold)
 - [ ] Referral program (give 3 free articles, get 3 free articles)
 
 ---
 
-## Post-MVP Phase 2: Growth (Months 4-6)
+## Post-MVP Phase 2: Scaling (Months 4-6)
 
 **Goal:** 600 customers, $30K-50K MRR, build competitive moat.
 
-### Programmatic SEO at Scale
-
-- [ ] Bulk generation: 100-1000 articles from keyword list + template
-- [ ] Template system: define article structure, vary by keyword
-- [ ] Dynamic schema markup generation (FAQ, HowTo, Article)
-- [ ] Automated internal linking across campaign articles
-- [ ] Topical authority mapping (cluster content around pillar pages)
-
-### Advanced SEO Tools
-
-- [ ] On-page SEO audit for generated articles (detailed scoring)
-- [ ] SERP analysis: top 10 content analysis for target keyword
-- [ ] Content optimization suggestions (NLP-based keyword recommendations)
-- [ ] Rank tracking (basic): monitor positions for published article keywords
-- [ ] Automated content refresh recommendations (when rankings drop)
-
-### SEO Content & Comparison Pages
-
-- [ ] "AutopilotRank vs Outrank.so" comparison page
-- [ ] "AutopilotRank vs Surfer SEO" comparison page
-- [ ] "AutopilotRank vs Byword" comparison page
-- [ ] "AutopilotRank vs Jasper" comparison page
-- [ ] "Best AI SEO Tools 2026" roundup page
-- [ ] Use case landing pages: SMBs, agencies, e-commerce, content sites
-- [ ] Consistent blog cadence: 2-4 posts/week
-
-### Platform Reliability
+### P0 — Scale & Reliability
 
 - [ ] Article generation queue with retry logic and dead-letter handling
 - [ ] Rate limiting per tier for API and generation
-- [ ] Generation time monitoring and alerting
 - [ ] Automatic failover between AI models on errors
-- [ ] 99.9% uptime target with status page
+- [ ] Bulk generation: 100-1000 articles from keyword list + template
+- [ ] Template system: define article structure, vary by keyword
 
-### Email & Notifications
+### P1 — SEO Tools & Content Marketing
 
-- [ ] Weekly content digest email (articles generated, published, performance)
-- [ ] Credit expiration warnings (7 days before)
-- [ ] Monthly usage summary
+- [ ] On-page SEO audit for generated articles (detailed scoring)
+- [ ] SERP analysis: top 10 content analysis for target keyword
+- [ ] Rank tracking (basic): monitor positions for published article keywords
+- [ ] "AutopilotRank vs Outrank.so" comparison page
+- [ ] "AutopilotRank vs Surfer SEO" / Byword / Jasper comparison pages
+- [ ] "Best AI SEO Tools 2026" roundup page
+
+### P2 — Engagement & Retention
+
 - [ ] Drip onboarding sequence (7 emails over 14 days)
+- [ ] Weekly content digest email
+- [ ] Monthly usage summary email
 - [ ] Win-back campaigns for churned users
+- [ ] Dynamic schema markup generation (FAQ, HowTo, Article)
+- [ ] Automated internal linking across campaign articles
 
 ---
 
 ## Growth Phase (Months 7-12)
 
-**Goal:** 2,500 customers, $200K+ MRR, agency partner program, marketplace presence.
+**Goal:** 2,500 customers, $200K+ MRR, agency partner program.
 
-### Agency & Team Features
+### P0 — Agency & Team (unlock Agency tier value)
 
 - [ ] Team accounts: invite members, role-based permissions (Admin, Editor, Viewer)
 - [ ] White-label: remove AutopilotRank branding, custom domain
 - [ ] Client management: separate workspaces per client
-- [ ] Agency pricing tier (custom)
 - [ ] Agency partner program: 20-30% revenue share for resellers
-- [ ] Shared credit pools with allocation per team member
 
-### WordPress Plugin
+### P1 — Platform Distribution
 
 - [ ] WordPress.org plugin (manage campaigns from WP admin)
-- [ ] Media Library integration for AI-generated images
-- [ ] Gutenberg block for inline content generation
-- [ ] Plugin distribution via WordPress.org repository
-
-### Shopify App
-
-- [ ] Shopify OAuth integration
-- [ ] Product description generation at scale
-- [ ] Blog post publishing to Shopify
 - [ ] Shopify App Store listing
-
-### API Access
-
-- [ ] Public REST API for content generation
-- [ ] API key management portal
-- [ ] Developer documentation
+- [ ] Public REST API + API key management + developer docs
 - [ ] Webhook callbacks for async generation
-- [ ] API pricing tiers (Developer free 100/mo, Starter $49/2000, Pro $199/10000)
 
-### Enterprise Readiness
+### P2 — Enterprise & Paid Acquisition
 
 - [ ] SSO (SAML/OIDC)
-- [ ] Custom integrations consulting
-- [ ] SLA agreements
-- [ ] Dedicated CSM for Enterprise accounts
-- [ ] Advanced compliance (SOC 2 readiness)
-- [ ] Custom AI model fine-tuning per customer
-
-### Paid Acquisition
-
-- [ ] Google Search Ads for high-intent keywords ($5-10K/mo)
-- [ ] LinkedIn Ads targeting agency owners ($3-5K/mo)
-- [ ] Retargeting campaigns
+- [ ] SLA agreements, dedicated CSM
+- [ ] Google Search Ads ($5-10K/mo), LinkedIn Ads ($3-5K/mo)
 - [ ] AppSumo lifetime deal for awareness burst
 
 ---
 
 ## Scale Phase (Months 13-24)
 
-**Goal:** 8,000 customers, $1M+ MRR, market leadership, Series A readiness.
+**Goal:** 8,000 customers, $1M+ MRR, Series A readiness.
 
-### Advanced AI Features
-
-- [ ] Brand voice fine-tuning (learn from existing content)
 - [ ] Multi-language content generation (Spanish, French, German, Portuguese)
-- [ ] AI-powered content refresh (automatically update aging articles)
-- [ ] Competitive content analysis (analyze why competitor content ranks)
-- [ ] Predictive keyword targeting (ML model for ranking probability)
-
-### Backlink Network
-
-- [ ] AI-powered niche matching for link exchanges
-- [ ] Quality filters (DR, traffic thresholds)
-- [ ] Outreach email templates for link building
-- [ ] Backlink tracking and monitoring
-
-### Marketplace & Integrations
-
-- [ ] Zapier/Make integration
-- [ ] HubSpot CRM integration
-- [ ] Google Docs export
-- [ ] Notion publishing
-- [ ] Ghost CMS publishing
-- [ ] Custom webhook system for any platform
-
-### Data & Insights Products
-
-- [ ] Industry benchmark reports (anonymized, aggregated)
-- [ ] Content performance prediction scoring
-- [ ] Keyword opportunity database
-
-### International Expansion
-
-- [ ] Multi-language dashboard (i18n)
-- [ ] Region-specific keyword databases
-- [ ] Local payment methods
-- [ ] Localized landing pages
-
----
-
-## Revenue Projections
-
-| Quarter | Paying Customers | ARPU | MRR | ARR (run rate) |
-|---------|------------------|------|-----|----------------|
-| Q1 Y1 (Launch) | 50 | $120 | $6K | $72K |
-| Q2 Y1 | 150 | $130 | $19.5K | $234K |
-| Q3 Y1 | 350 | $140 | $49K | $588K |
-| Q4 Y1 | 600 | $150 | $90K | $1.08M |
-| Q2 Y2 | 1,300 | $160 | $208K | $2.5M |
-| Q4 Y2 | 2,500 | $170 | $425K | $5.1M |
-
-**Break-even:** ~15 Starter customers ($49 x 15 = $735 MRR vs ~$300-500/mo infrastructure at early stage)
-
----
-
-## Unit Economics
-
-| Metric | Target |
-|--------|--------|
-| Cost per article (AI) | $0.08-0.21 (avg ~$0.15) |
-| Gross margin (Starter) | 91% |
-| Gross margin (Growth) | 85% |
-| Gross margin (Agency) | 70% |
-| CAC (self-serve) | <$80 |
-| CAC (sales-assisted) | <$300 |
-| LTV (Starter) | $585 (15 mo x $39/mo annual) |
-| LTV (Growth) | $1,422 (18 mo x $79/mo annual) |
-| LTV (Agency) | $4,776 (24 mo x $199/mo annual) |
-| LTV:CAC (blended) | >12:1 |
-| Monthly churn | <5% |
-| Trial-to-paid conversion | 20-25% |
-
----
-
-## PMF Validation Metrics
-
-| Metric | Weak | Approaching | Strong | Target |
-|--------|------|-------------|--------|--------|
-| Sean Ellis Test | <30% | 30-39% | 40%+ | 40% |
-| 30-day Retention | <20% | 20-40% | 40%+ | 45% |
-| NPS | <0 | 0-30 | 30+ | 40 |
-| Trial-to-Paid | <10% | 10-15% | 15%+ | 15% |
-| Organic Growth | <10% | 10-25% | 25%+ | 20% |
+- [ ] AI-powered content refresh (auto-update aging articles)
+- [ ] Brand voice fine-tuning (learn from existing content)
+- [ ] Competitive content analysis (why competitor content ranks)
+- [ ] Backlink network: AI-powered niche matching, outreach templates
+- [ ] Marketplace integrations: Zapier/Make, HubSpot, Google Docs, Notion, Ghost
+- [ ] International expansion: i18n dashboard, localized landing pages, local payments
 
 ---
 
@@ -447,12 +358,14 @@ Annual discount: 20% off (~2 months free). See [Revenue Streams](../business/bus
 
 ## Key References
 
-- [Lean Product Playbook](../business/business-model-canvas/lean-product-playbook.md) - PMF strategy
-- [Value Proposition](../business/business-model-canvas/value-proposition.md) - Competitive positioning
-- [Customer Segments](../business/business-model-canvas/customer-segments.md) - Target personas
-- [Revenue Streams](../business/business-model-canvas/revenue-streams.md) - Pricing and unit economics
-- [Landing Page Spec](../business/landing-page.md) - Landing page design specification
-- [Cost Structure](../business/business-model-canvas/cost-structure.md) - Infrastructure costs
+> Financial details (revenue projections, unit economics, LTV, CAC, margins) live in [Revenue Streams](../business/business-model-canvas/revenue-streams.md) — **single source of truth** for all numbers.
+
+- [Revenue Streams](../business/business-model-canvas/revenue-streams.md) — Pricing, unit economics, revenue projections, LTV/CAC
+- [Value Proposition](../business/business-model-canvas/value-proposition.md) — Competitive positioning
+- [Customer Segments](../business/business-model-canvas/customer-segments.md) — Target personas
+- [Lean Product Playbook](../business/business-model-canvas/lean-product-playbook.md) — PMF strategy
+- [Cost Structure](../business/business-model-canvas/cost-structure.md) — Infrastructure costs
+- [Landing Page Spec](../business/landing-page.md) — Landing page design specification
 
 ---
 
@@ -460,4 +373,5 @@ Annual discount: 20% off (~2 months free). See [Revenue Streams](../business/bus
 
 | Date | Change |
 |------|--------|
+| 2026-02-05 | Restructured MVP into 7 ordered milestones with dependency graph; consolidated pricing/financials to revenue-streams.md; added priority levels to post-MVP phases |
 | 2026-02-04 | Created unified roadmap for AutopilotRank pivot, split into MVP (4 weeks) and Post-MVP phases |

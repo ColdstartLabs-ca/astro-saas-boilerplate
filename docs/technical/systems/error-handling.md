@@ -1,16 +1,17 @@
 # Error Handling System
 
-**Last Updated:** December 2, 2025
+**Last Updated:** February 5, 2026
+**Framework:** Astro 5 + React 18 (islands)
 
 ## Overview
 
-The application implements a comprehensive error handling system using React Error Boundaries and Next.js error pages to prevent blank screens and provide user-friendly error messages.
+The application implements a comprehensive error handling system using React Error Boundaries (for client-side React components) and Astro error pages (for server-side routing) to prevent blank screens and provide user-friendly error messages.
 
 ## Error Boundary Architecture
 
 ### 1. Reusable ErrorBoundary Component
 
-**Location:** `client/components/errors/ErrorBoundary.tsx`
+**Location:** `src/client/components/errors/ErrorBoundary.tsx`
 
 A class-based React component that catches JavaScript errors anywhere in the child component tree.
 
@@ -41,13 +42,13 @@ import { ErrorBoundary } from '@/client/components/errors/ErrorBoundary';
 </ErrorBoundary>
 ```
 
-### 2. Next.js App Router Error Pages
+### 2. Astro Error Pages
 
-Next.js 15 App Router uses special `error.tsx` files for route-level error handling.
+Astro uses special file conventions for error handling:
 
 #### Global Error Page
 
-**Location:** `app/error.tsx`
+**Location:** `src/pages/error.astro`
 
 - Catches errors at the root level
 - Full-screen error page
@@ -56,7 +57,7 @@ Next.js 15 App Router uses special `error.tsx` files for route-level error handl
 
 #### Dashboard Error Page
 
-**Location:** `app/dashboard/error.tsx`
+**Location:** `src/pages/dashboard/error.astro`
 
 - Catches errors in `/dashboard/*` routes
 - Contextual dashboard error UI
@@ -65,7 +66,7 @@ Next.js 15 App Router uses special `error.tsx` files for route-level error handl
 
 #### Admin Panel Error Page
 
-**Location:** `app/dashboard/admin/error.tsx`
+**Location:** `src/pages/dashboard/admin/error.astro`
 
 - Catches errors in `/dashboard/admin/*` routes
 - Admin-specific error styling
@@ -76,7 +77,7 @@ Next.js 15 App Router uses special `error.tsx` files for route-level error handl
 
 ### Global 404 Page
 
-**Location:** `app/not-found.tsx`
+**Location:** `src/pages/404.astro`
 
 - Shown when route doesn't exist
 - Large "404" display with search icon

@@ -8,24 +8,30 @@ Stripe is the single source of truth for subscriptions. Supabase handles the loc
 
 ## Pricing Tiers
 
-### Monthly Subscriptions
+**See [Revenue Streams](../../business/business-model-canvas/revenue-streams.md) for complete pricing details, competitive analysis, and rationale.**
 
-| Plan        | Price   | Credits/Month | Features                                   |
-| ----------- | ------- | ------------- | ------------------------------------------ |
-| **Starter** | $29/mo  | 30            | 30 Articles, 1 Website                     |
-| **Growth**  | $79/mo  | 100           | 100 Articles, 5 Websites, GSC Sync         |
-| **Agency**  | $249/mo | 500           | 500 Articles, Unlimited Sites, White-label |
+### Monthly Subscriptions (MVP)
 
-- **1 Credit = 1 Standard Article** (approx 1500 words).
-- **Rollover:** Unused credits roll over up to 2x the monthly allowance.
+| Plan        | Price   | Articles/Month | Features                                   |
+| ----------- | ------- | -------------- | ------------------------------------------ |
+| **Trial**   | $0      | 3 (one-time)   | Try before buying, no CC required          |
+| **Starter** | $49/mo  | 30             | All core features, 1 WordPress site        |
+| **Growth**  | $99/mo  | 100            | GSC integration, 3 CMS sites               |
+| **Agency**  | $249/mo | 500            | White-label, team (5), API, unlimited sites |
 
-### Pay-as-you-go Packs
+- **1 Credit = 1 Standard Article** (approx 1,500 words)
+- **Rollover:** Unused credits roll over up to 2x the monthly allowance
+- **Annual billing:** 20% off (2 months free)
 
-| Pack      | Price | Credits | Cost/Article |
-| --------- | ----- | ------- | ------------ |
-| **Pilot** | $15   | 10      | $1.50        |
-| **Scale** | $50   | 50      | $1.00        |
-| **Bulk**  | $200  | 250     | $0.80        |
+### Overage Charges (Post-MVP Phase 1)
+
+| Tier       | Overage Rate | Rationale                                              |
+| ---------- | ------------ | ------------------------------------------------------ |
+| **Starter** | $2.00/article | Nudges upgrade to Growth ($0.99/article at $99/mo)    |
+| **Growth**  | $1.50/article | Nudges upgrade to Agency ($0.50/article at $249/mo)   |
+| **Agency**  | $0.75/article | Volume discount on occasional overage                 |
+
+See [Revenue Streams](../../business/business-model-canvas/revenue-streams.md) for detailed overage strategy and examples.
 
 ## Webhook Handling
 

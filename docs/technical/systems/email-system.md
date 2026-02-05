@@ -2,39 +2,40 @@
 
 ## Overview
 
-The email system provides transactional and marketing email capabilities via **Resend** with React Email templates. It integrates with Stripe webhooks for payment notifications, enforces user preferences for marketing opt-outs, and maintains an audit trail of all sent emails.
+The email system provides transactional and marketing email capabilities via **Brevo** (primary) and **Resend** (fallback) with React Email templates. It integrates with Stripe webhooks for payment notifications, enforces user preferences for marketing opt-outs, and maintains an audit trail of all sent emails.
 
 ### Key Features
 
-- Transactional emails (payment confirmations, password resets)
+- Transactional emails (payment confirmations, password resets, article generation complete, low credits alert)
 - Marketing preference enforcement with opt-out support
 - User lookup by email address for preference checking
 - React Email templates with consistent branding
 - Comprehensive audit logging in `email_logs` table
 - Integration with Stripe webhooks for payment events
+- Multi-provider failover (Brevo → Resend)
 - **Development mode**: Skips actual email sending and logs payload instead
 
 ### Development Mode
 
-When `ENV=development`, the email service skips actual Resend API calls and instead:
+When `ENV=development`, the email service skips actual API calls and instead:
 
 1. Logs the complete email payload to console with `[EMAIL_DEV_MODE]` prefix
 2. Records the email in `email_logs` with `{ dev_mode: true }` in `provider_response`
 3. Returns a success response with a mock message ID (`dev-{timestamp}`)
 
-This allows testing email flows without sending real emails or consuming Resend quota.
+This allows testing email flows without sending real emails or consuming quota.
 
 **Console output example:**
 
 ```
 [EMAIL_DEV_MODE] Email would be sent: {
-  from: 'noreply@myimageupscaler.com',
+  from: 'noreply@autopilotrank.com',
   to: 'user@example.com',
-  subject: 'Payment Confirmed - $50',
-  template: 'payment-success',
+  subject: 'Your article is ready!',
+  template: 'article-complete',
   type: 'transactional',
   userId: 'user-123',
-  templateData: { amount: '$50', credits: 100, ... }
+  templateData: { articleTitle: 'Best AI SEO Tools 2026', credits: 29, ... }
 }
 ```
 

@@ -67,12 +67,12 @@ export const rateLimit = {
 
 ### Rate Limit Rules
 
-| User Type        | Limit | Window     | Use Case                  |
-| ---------------- | ----- | ---------- | ------------------------- |
-| Authenticated    | 50    | 10 seconds | General API usage         |
-| Public/Anonymous | 10    | 10 seconds | Unauthenticated endpoints |
-| Image Processing | 5     | 1 minute   | Heavy operations          |
-| Stripe Webhooks  | 100   | 1 minute   | Payment event processing  |
+| User Type          | Limit | Window     | Use Case                                  |
+| ------------------ | ----- | ---------- | ----------------------------------------- |
+| Authenticated      | 50    | 10 seconds | General API usage (dashboard, articles)   |
+| Public/Anonymous   | 10    | 10 seconds | Unauthenticated endpoints (signup, login) |
+| Article Generation | 5     | 1 minute   | Heavy operations (generation, humanizer)  |
+| Stripe Webhooks    | 100   | 1 minute   | Payment event processing                  |
 
 ### Memory Management
 
@@ -105,9 +105,7 @@ flowchart TD
 // middleware.ts
 import { rateLimit, publicRateLimit } from '@/server/rateLimit';
 
-export async function middleware(request: NextRequest) {
-  const response = NextResponse.next();
-
+export async function middleware(request: AstroMiddlewareNext) {
   // Get identifier
   const user = await getUser(request);
   const identifier = user?.id || getClientIP(request);
@@ -130,6 +128,8 @@ export async function middleware(request: NextRequest) {
     });
   }
 
+  // Continue to next middleware/route
+  const response = await next();
   return response;
 }
 ```
@@ -137,17 +137,17 @@ export async function middleware(request: NextRequest) {
 ### API Route Integration
 
 ```typescript
-// app/api/upscale/route.ts
+// src/api/articles/generate.ts
 import { rateLimit } from '@/server/rateLimit';
 
-export async function POST(request: Request) {
-  const user = await getUser(request);
+export async function POST({ request, locals }: APIContext) {
+  const user = locals.user;
 
   if (!user) {
     const result = await publicRateLimit.limit(getClientIP(request));
     if (!result.success) {
-      return new Response(
-        JSON.stringify({
+      return json(
+        {
           success: false,
           error: {
             code: 'RATE_LIMITED',

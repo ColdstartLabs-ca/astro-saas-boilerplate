@@ -2,6 +2,8 @@
 
 AutopilotRank uses PostgreSQL (Supabase) with strict RLS policies.
 
+> **Status:** This document describes the **target schema for Post-MVP Phase 1**. The MVP (Milestone 1) creates only these 4 tables. Most tables below do not exist yet — see `supabase/migrations/` for the actual current schema.
+
 ## Entity Relationship Diagram
 
 ```mermaid
@@ -61,52 +63,86 @@ erDiagram
     }
 ```
 
-## Tables
+## Existing Tables (Current MVP)
 
-### profiles
+These tables exist in migrations and are used by the current boilerplate:
 
-Extends Supabase `auth.users`.
+- **profiles** — User profile + subscription tier
+- **subscriptions** — Stripe subscription tracking
+- **credit_transactions** — Credit ledger (usage, purchases, expiration)
+- **webhook_events** — Stripe webhook audit trail
+- **email_preferences** — User opt-in/opt-out preferences
+- **email_logs** — Email audit trail
+- **credit_expiration_events** — Credit expiration tracking
+- **provider_usage** — Email provider usage stats
 
-- `credits_balance`: Current available credits for content generation.
-- `subscription_tier`: 'starter', 'growth', 'agency'.
+## Target Tables (MVP Milestone 1 + Post-MVP)
 
-### projects
+These tables will be created in the MVP and Post-MVP phases:
 
-Represents a website or client.
+### projects (MVP Milestone 1)
 
-- `domain`: The target domain (e.g., `example.com`).
-- `brand_voice_settings`: JSON blob containing tone, excluded words, persona details.
-- `autopilot_enabled`: Boolean, if true, system auto-generates from GSC opportunities.
+Represents a website or client. Stores connection credentials for CMS platforms.
 
-### integrations
+- `user_id`: FK to profiles
+- `name`: User-friendly site name
+- `domain`: The target domain (e.g., `example.com`)
+- `cms_type`: 'wordpress', 'webflow', 'shopify', 'gsc'
+- `credentials`: **Encrypted** JSON blob with API keys/passwords
+- `connected_at`: Timestamp of successful connection test
 
-Stores connection details for external services.
-
-- `type`: 'wordpress', 'webflow', 'shopify', 'gsc'.
-- `credentials`: **Encrypted** storage of API keys/Passwords. Use Postgres pgcrypto or application-level encryption.
-
-### campaigns
+### campaigns (MVP Milestone 1)
 
 A batch of content generation tasks.
 
-- `settings`: specific generation parameters for this batch (e.g., "Use GPT-4, Aggressive SEO, Long-form").
+- `user_id`: FK to profiles
+- `project_id`: FK to projects
+- `name`: Campaign name (e.g., "SEO Content Nov 2026")
+- `model`: LLM choice ('gpt-4', 'claude-3', 'gemini-pro')
+- `tone`: 'professional', 'casual', 'technical'
+- `word_count_target`: Integer (e.g., 1500)
+- `settings`: JSONB for future expansion
+- `status`: 'draft', 'running', 'paused', 'completed'
+- `created_at`, `updated_at`
 
-### articles
+### articles (MVP Milestone 1)
 
 The core content unit.
 
-- `target_keyword`: Primary keyword.
-- `content_html`: Final generic HTML.
-- `seo_score`: Internal calculation (0-100).
-- `status`: Lifecycle state.
-- `cms_post_id`: ID returned from the CMS after publishing.
+- `user_id`: FK to profiles
+- `campaign_id`: FK to campaigns
+- `project_id`: FK to projects
+- `target_keyword`: Primary keyword
+- `title`: Generated article title
+- `content`: Full article content (Markdown)
+- `seo_score`: Internal calculation (0-100) based on keyword density, structure, word count
+- `ai_detection_score`: Percentage from GPTZero/Originality.ai (0-100, higher = more human)
+- `status`: 'queued', 'generating', 'draft', 'reviewed', 'published', 'failed'
+- `model_used`: Which LLM generated it
+- `humanizer_pass`: Boolean (whether humanizer was applied)
+- `cms_post_id`: ID returned from the CMS after publishing
+- `published_url`: Full URL to published article
+- `created_at`, `updated_at`, `published_at`
 
-### credit_transactions
+### keywords (Post-MVP Phase 1)
 
-Ledger for credit usage.
+Individual keywords tracked per campaign.
 
-- `amount`: Negative for usage, positive for purchase.
-- `resource_id`: FK to `articles.id` (if usage) or `stripe_payment_id`.
+- `campaign_id`: FK to campaigns
+- `keyword`: The search term
+- `status`: 'pending', 'in_progress', 'completed'
+- `article_id`: FK to articles (if generated)
+- `created_at`
+
+### integrations (Post-MVP Phase 1)
+
+Stores connection details for external services (keyword research, SERP analysis, GSC).
+
+- `user_id`: FK to profiles
+- `type`: 'wordpress', 'webflow', 'shopify', 'gsc', 'serp_api', 'keyword_research'
+- `credentials`: **Encrypted** JSON with API keys
+- `active`: Boolean
+- `last_tested_at`: Timestamp of last successful connection
 
 ## RLS Policies
 
