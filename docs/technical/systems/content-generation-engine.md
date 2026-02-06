@@ -2,7 +2,52 @@
 
 The core AI pipeline for AutopilotRank that transforms keywords into high-ranking SEO content.
 
-## Pipeline Overview
+> **Implementation Status:** This document describes both the **current implementation** and the **target architecture**. See [Capability Status Matrix](../capability-status-matrix.md) for detailed status.
+
+---
+
+## Current Implementation
+
+**Status:** Basic article generation via OpenRouter
+
+The current system implements a simplified generation pipeline:
+
+```mermaid
+flowchart TD
+    KW[Keyword/Topic] --> OUT[Outline Generator]
+    OUT --> DRAFT[Article Draft]
+    DRAFT --> FINAL[Final Article]
+```
+
+### Flow
+
+1. **User Request** → `POST /api/articles/generate` with keyword, projectId, options
+2. **Credit Check** → Verify sufficient credits, deduct 1 credit
+3. **Outline Generation** → LLM creates article structure (headings, key points)
+4. **Article Generation** → LLM writes full content based on outline
+5. **Storage** → Save to `articles` table with status
+6. **Response** → Return 202 with article ID for polling
+
+**Code Reference:** `src/pages/api/articles/generate.ts`, `server/services/article-generation.service.ts`
+
+**Supported Options:**
+
+- AI model selection (via OpenRouter)
+- Tone: professional, casual, witty, academic
+- Target word count: 800-3000 (default 1500)
+
+**Not Yet Implemented:**
+
+- Research Agent (SERP scraping, competitor analysis)
+- Humanizer Engine (AI detection bypass)
+- SEO Optimizer (keyword injection, schema markup)
+- QA System (plagiarism, AI score checks)
+
+---
+
+## Target Architecture (Planned)
+
+The full multi-stage pipeline for production-quality SEO content:
 
 ```mermaid
 flowchart TD
@@ -15,7 +60,7 @@ flowchart TD
     QA --> FINAL[Final Article]
 ```
 
-## 1. Research Agent (Perplexity/Serper)
+### 1. Research Agent (Perplexity/Serper)
 
 **Goal:** Gather factual data and analyze search intent.
 

@@ -64,22 +64,22 @@ export function QuickGenerate({ onGenerateComplete }: IQuickGenerateProps): JSX.
     defaultValues: {
       keyword: '',
       model: 'openrouter/auto',
-      tone: activeProject?.content_preferences?.tone ?? 'professional',
-      targetWordCount: activeProject?.content_preferences?.targetWordCount ?? 1500,
+      tone: 'professional',
+      targetWordCount: 1500,
     },
   });
 
-  // Update tone default when active project changes
+  // Update form default when active project changes
   useEffect(() => {
-    if (activeProject?.content_preferences?.tone) {
+    if (activeProject) {
       resetForm({
         keyword: watch('keyword'),
         model: watch('model'),
-        tone: activeProject.content_preferences.tone,
+        tone: watch('tone'),
         targetWordCount: watch('targetWordCount'),
       });
     }
-  }, [activeProject?.content_preferences?.tone, resetForm, watch]);
+  }, [activeProject, resetForm, watch]);
 
   // Handle generation complete
   useEffect(() => {

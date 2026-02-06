@@ -318,3 +318,199 @@ The Content Security Policy allows Baselime and Amplitude:
 ```
 
 See `/home/joao/projects/autopilotrank.com/shared/config/security.ts` for full CSP configuration.
+
+---
+
+## Reliability: SLOs, SLIs & Error Budgets
+
+> **Business Commitment:** AutopilotRank targets **99.9% uptime** (see [landing page](../../business/landing-page.md:392)). This section documents the technical implementation to support that commitment.
+
+### Service Level Objectives (SLOs)
+
+| Service                | SLO                | Measurement Period | Error Budget             |
+| ---------------------- | ------------------ | ------------------ | ------------------------ |
+| **API Availability**   | 99.9% uptime       | Rolling 30 days    | 43.2 minutes/month       |
+| **Article Generation** | 99% success rate   | Rolling 7 days     | 1.68 hours/week          |
+| **Payment Processing** | 99.9% success rate | Rolling 30 days    | 43.2 minutes/month       |
+| **Data Persistence**   | 99.99% durability  | Calendar month     | ~4.3 minutes/year credit |
+
+### Service Level Indicators (SLIs)
+
+#### API Availability
+
+```typescript
+// Metric: (Successful requests / Total requests) * 100
+// Target: >= 99.9%
+// Source: Baselime request成功率 aggregation
+
+interface IAvailabilitySLI {
+  total_requests: number;
+  successful_requests: number; // HTTP 2xx-3xx
+  failed_requests: number; // HTTP 4xx-5xx
+  availability_percentage: number;
+}
+```
+
+**Alert Thresholds:**
+
+- **Warning:** Availability < 99.5% for 5 minutes
+- **Critical:** Availability < 99% for 2 minutes
+- **Page:** Availability < 95% for 1 minute
+
+#### Article Generation Success Rate
+
+```typescript
+// Metric: (Completed articles / Started articles) * 100
+// Target: >= 99%
+// Source: Amplitude `article_generated` event success property
+
+interface IGenerationSLI {
+  articles_started: number;
+  articles_completed: number;
+  articles_failed: number;
+  success_rate: number;
+  average_duration_ms: number;
+}
+```
+
+**Alert Thresholds:**
+
+- **Warning:** Success rate < 98% over 1 hour
+- **Critical:** Success rate < 95% over 15 minutes
+
+#### Payment Processing
+
+```typescript
+// Metric: (Successful payments / Attempted payments) * 100
+// Target: >= 99.9%
+// Source: Stripe webhook success rate + Baselime checkout API monitoring
+
+interface IPaymentSLI {
+  checkout_attempts: number;
+  checkout_success: number;
+  webhook_received: number;
+  webhook_processed: number;
+  end_to_end_success_rate: number;
+}
+```
+
+**Alert Thresholds:**
+
+- **Warning:** Success rate < 99.5% for 10 minutes
+- **Critical:** Success rate < 99% for 5 minutes
+
+### Error Budget Calculation
+
+**Monthly Error Budget (99.9% uptime target):**
+
+- Total time: 30 days × 24 hours × 60 minutes = 43,200 minutes
+- Allowed downtime: 43,200 × 0.001 = 43.2 minutes
+- Error budget: 43.2 minutes per month
+
+**Error Budget Burn Rate:**
+
+| Burn Rate | Description                            | Action                        |
+| --------- | -------------------------------------- | ----------------------------- |
+| **1x**    | Normal consumption within budget       | Monitor                       |
+| **2x**    | Consuming budget 2x faster than normal | Investigate                   |
+| **10x**   | Rapid burn - major incident            | Page on-call, halt releases   |
+| **100x**  | Complete service outage                | Emergency response, all-hands |
+
+### Incident Response
+
+#### Severity Levels
+
+| Severity  | Description                                 | Response Time | Example                              |
+| --------- | ------------------------------------------- | ------------- | ------------------------------------ |
+| **SEV-1** | Complete service outage, all users affected | 15 minutes    | API returning 500 for all requests   |
+| **SEV-2** | Major feature broken, most users affected   | 1 hour        | Article generation completely failed |
+| **SEV-3** | Minor feature broken, some users affected   | 4 hours       | Single CMS integration failing       |
+| **SEV-4** | Cosmetic issue, no user impact              | 1 day         | Typos in UI                          |
+
+#### On-Call Ownership
+
+| Role                 | Responsibilities                         | Escalation                    |
+| -------------------- | ---------------------------------------- | ----------------------------- |
+| **On-Call Engineer** | Initial response, triage, assessment     | → Engineering Lead if >30 min |
+| **Engineering Lead** | Coordination, communication, resolution  | → CTO if SEV-1                |
+| **CTO**              | SEV-1 incidents, executive communication | → All-hands if needed         |
+
+#### Incident Runbook Template
+
+```markdown
+# Incident [SEV-X]: [Brief Description]
+
+**Started:** [Timestamp]
+**Owner:** [Name]
+**Severity:** [SEV-1/2/3/4]
+
+## Status
+
+[One-line status update]
+
+## Impact
+
+- [ ] Users affected: [estimate]
+- [ ] Services affected: [list]
+- [ ] Error budget impact: [calculation]
+
+## Timeline
+
+- [HH:MM] [What happened]
+- [HH:MM] [Action taken]
+
+## Next Steps
+
+1. [ ] [Immediate action]
+2. [ ] [Follow-up action]
+
+## Links
+
+- [Incident channel](#)
+- [Dashboard](#)
+- [Runbook](#)
+```
+
+### Monitoring Dashboards
+
+**Key Dashboards:**
+
+1. **Service Health** (Baselime)
+   - Request rate, error rate, latency (p50, p95, p99)
+   - Real-time alert status
+   - Link: [Baselime Dashboard](https://app.baselime.io)
+
+2. **Article Generation** (Amplitude)
+   - Generation success rate
+   - Average generation time
+   - Failure reasons breakdown
+   - Link: [Amplitude Dashboard](https://app.amplitude.com)
+
+3. **Business Metrics** (Stripe + Custom)
+   - Trial-to-paid conversion
+   - MRR/churn
+   - Active users
+   - Link: [Stripe Dashboard](https://dashboard.stripe.com)
+
+### Runbook: Common Incidents
+
+#### High Error Rate
+
+1. **Check Baselime** for error spike pattern and correlation
+2. **Check recent deployments** - rollback if needed
+3. **Check dependency status** (Supabase, Stripe, OpenRouter)
+4. **Check rate limits** - are we hitting API quotas?
+
+#### Payment Processing Failures
+
+1. **Check Stripe Status** - [stripe.status](https://status.stripe.com)
+2. **Review webhook logs** - are webhooks being received?
+3. **Check idempotency** - duplicate events causing issues?
+4. **Verify API keys** - rotation needed?
+
+#### Article Generation Failures
+
+1. **Check OpenRouter status** and API key
+2. **Review recent generation logs** - specific error patterns?
+3. **Check credit balances** - are users running out?
+4. **Monitor token usage** - hitting rate limits?

@@ -1,157 +1,423 @@
 'use client';
 
 import { useState } from 'react';
-import { X, ArrowRight, Loader2, Zap, FileSpreadsheet, Cpu } from 'lucide-react';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
+import { X, ArrowRight, Loader2, Zap, Upload } from 'lucide-react';
 import { DashboardButton } from '../ui/DashboardButton';
+import { AI_MODELS } from '@shared/config/ai-models.config';
+import { useUserStore } from '@client/store/userStore';
+import { useTranslations } from '@client/hooks/useTranslations';
+import type { CampaignTone } from '@shared/types/campaign.types';
 
 interface INewCampaignModalProps {
+  isOpen: boolean;
   onClose: () => void;
+  onSubmit: (input: {
+    name: string;
+    projectId: string;
+    keywords: string[];
+    model?: string;
+    tone?: CampaignTone;
+    targetWordCount?: number;
+  }) => Promise<void>;
+  projectId: string;
 }
 
-export function NewCampaignModal({ onClose }: INewCampaignModalProps): JSX.Element {
+// Validation schema
+const campaignSchema = z.object({
+  name: z
+    .string()
+    .min(1, 'Campaign name is required')
+    .max(100, 'Campaign name must be 100 characters or less'),
+  keywords: z.string().min(1, 'At least one keyword is required'),
+  model: z.string().optional(),
+  tone: z.enum(['professional', 'casual', 'witty', 'academic']).optional(),
+  targetWordCount: z.number().int().min(800).max(3000).optional(),
+});
+
+type CampaignFormData = z.infer<typeof campaignSchema>;
+
+const TONE_OPTIONS = [
+  { value: 'professional', label: 'Professional' },
+  { value: 'casual', label: 'Casual' },
+  { value: 'witty', label: 'Witty' },
+  { value: 'academic', label: 'Academic' },
+] as const;
+
+const WORD_COUNT_OPTIONS = [
+  { value: 800, label: '~800 words' },
+  { value: 1500, label: '~1500 words' },
+  { value: 2500, label: '~2500 words' },
+] as const;
+
+export function NewCampaignModal({
+  isOpen,
+  onClose,
+  onSubmit,
+  projectId,
+}: INewCampaignModalProps): JSX.Element | null {
+  const t = useTranslations('dashboard');
+  const { user } = useUserStore();
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
-  const [keywords, setKeywords] = useState("");
+  const [keywordInputTab, setKeywordInputTab] = useState<'manual' | 'csv'>('manual');
 
-  const handleLaunch = async () => {
-      setLoading(true);
-      // Simulate API call
-      await new Promise(r => setTimeout(r, 2000));
-      setLoading(false);
-      onClose();
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+    watch,
+    setValue,
+    trigger,
+  } = useForm<CampaignFormData>({
+    resolver: zodResolver(campaignSchema),
+    defaultValues: {
+      name: '',
+      keywords: '',
+      model: 'openrouter/auto',
+      tone: 'professional',
+      targetWordCount: 1500,
+    },
+  });
+
+  const watchedKeywords = watch('keywords');
+  const watchedTone = watch('tone');
+
+  // Parse keywords from textarea (one per line, trimmed, filtered)
+  const parsedKeywords = watchedKeywords
+    .split('\n')
+    .map(k => k.trim())
+    .filter(k => k.length > 0);
+
+  const keywordCount = parsedKeywords.length;
+  const creditCost = keywordCount;
+
+  // Check if user has enough credits (from subscription + purchased)
+  const userCredits =
+    (user?.profile?.subscription_credits_balance ?? 0) +
+    (user?.profile?.purchased_credits_balance ?? 0);
+  const hasEnoughCredits = userCredits >= creditCost;
+
+  // Handle CSV file upload
+  const handleCsvUpload = (file: File) => {
+    const reader = new FileReader();
+    reader.onload = e => {
+      const text = e.target?.result as string;
+      // Parse CSV (one keyword per line, or single column)
+      const lines = text
+        .split('\n')
+        .map(l => l.trim())
+        .filter(l => l.length > 0 && !l.toLowerCase().startsWith('keyword'));
+      setValue('keywords', lines.join('\n'));
+    };
+    reader.readAsText(file);
   };
+
+  const handleStep1Next = async () => {
+    const valid = await trigger(['name', 'keywords']);
+    if (valid) {
+      setStep(2);
+    }
+  };
+
+  const handleLaunch = async (data: CampaignFormData) => {
+    if (!hasEnoughCredits) {
+      return;
+    }
+
+    setLoading(true);
+    try {
+      await onSubmit({
+        name: data.name,
+        projectId,
+        keywords: parsedKeywords,
+        model: data.model,
+        tone: data.tone,
+        targetWordCount: data.targetWordCount,
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm animate-fadeIn p-4">
-       <div className="bg-surface border border-border rounded-xl w-full max-w-2xl shadow-2xl flex flex-col max-h-[90vh]">
-          {/* Header */}
-          <div className="flex justify-between items-center p-6 border-b border-border">
-             <div>
-                <h2 className="text-xl font-bold text-white">Create New Campaign</h2>
-                <p className="text-secondary text-sm mt-1">Step {step} of 2</p>
-             </div>
-             <button onClick={onClose} className="text-muted hover:text-white"><X className="w-5 h-5"/></button>
+      <div className="bg-surface border border-border rounded-xl w-full max-w-2xl shadow-2xl flex flex-col max-h-[90vh]">
+        {/* Header */}
+        <div className="flex justify-between items-center p-6 border-b border-border">
+          <div>
+            <h2 className="text-xl font-bold text-white">{t('campaigns.newCampaign.title')}</h2>
+            <p className="text-secondary text-sm mt-1">
+              {t('campaigns.newCampaign.stepOf', { current: step, total: 2 })}
+            </p>
           </div>
+          <button onClick={onClose} className="text-muted hover:text-white">
+            <X className="w-5 h-5" />
+          </button>
+        </div>
 
-          {/* Content */}
-          <div className="p-6 md:p-8 flex-1 overflow-y-auto">
-             {step === 1 && (
-                <div className="space-y-6 animate-fadeIn">
-                    <div>
-                        <label className="block text-sm font-medium text-secondary mb-2">Campaign Name</label>
-                        <input
-                           type="text"
-                           placeholder="e.g. Best Coffee Machines Q4"
-                           className="w-full bg-main border border-border rounded-lg px-4 py-2.5 text-white focus:ring-1 focus:ring-accent outline-none"
-                           autoFocus
-                        />
-                    </div>
+        {/* Content */}
+        <div className="p-6 md:p-8 flex-1 overflow-y-auto">
+          {step === 1 && (
+            <div className="space-y-6 animate-fadeIn">
+              {/* Campaign Name */}
+              <div>
+                <label
+                  htmlFor="campaign-name"
+                  className="block text-sm font-medium text-secondary mb-2"
+                >
+                  {t('campaigns.newCampaign.name')}
+                </label>
+                <input
+                  {...register('name')}
+                  id="campaign-name"
+                  type="text"
+                  placeholder={t('campaigns.newCampaign.namePlaceholder')}
+                  className={`w-full bg-main border border-border rounded-lg px-4 py-2.5 text-white focus:ring-1 focus:ring-accent outline-none ${
+                    errors.name ? 'border-red-500' : ''
+                  }`}
+                  autoFocus
+                />
+                {errors.name && <p className="text-red-400 text-xs mt-1">{errors.name.message}</p>}
+              </div>
 
-                    <div>
-                        <label className="block text-sm font-medium text-secondary mb-2">Target Keywords</label>
-                        <div className="space-y-4">
-                            {/* Tabs for Input Method */}
-                            <div className="flex border-b border-border">
-                                <button className="px-4 py-2 text-sm text-accent-hover border-b-2 border-accent font-medium">Manual Input</button>
-                                <button className="px-4 py-2 text-sm text-muted hover:text-secondary">CSV Upload</button>
-                            </div>
+              {/* Keywords Input */}
+              <div>
+                <label
+                  htmlFor="keywords-textarea"
+                  className="block text-sm font-medium text-secondary mb-2"
+                >
+                  {t('campaigns.newCampaign.keywords')}
+                </label>
+                <div className="space-y-4">
+                  {/* Tabs */}
+                  <div className="flex border-b border-border">
+                    <button
+                      type="button"
+                      onClick={() => setKeywordInputTab('manual')}
+                      className={`px-4 py-2 text-sm border-b-2 transition-colors ${
+                        keywordInputTab === 'manual'
+                          ? 'text-accent-hover border-accent font-medium'
+                          : 'text-muted hover:text-secondary border-transparent'
+                      }`}
+                    >
+                      {t('campaigns.newCampaign.keywordsManual')}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setKeywordInputTab('csv')}
+                      className={`px-4 py-2 text-sm border-b-2 transition-colors ${
+                        keywordInputTab === 'csv'
+                          ? 'text-accent-hover border-accent font-medium'
+                          : 'text-muted hover:text-secondary border-transparent'
+                      }`}
+                    >
+                      {t('campaigns.newCampaign.keywordsCsv')}
+                    </button>
+                  </div>
 
-                            <textarea
-                               className="w-full h-32 bg-main border border-border rounded-lg p-4 text-white focus:ring-1 focus:ring-accent outline-none resize-none font-mono text-sm"
-                               placeholder={"Enter one keyword per line...\nbest espresso machine\nhow to clean coffee maker"}
-                               value={keywords}
-                               onChange={(e) => setKeywords(e.target.value)}
-                            ></textarea>
+                  {/* Manual Input - Textarea */}
+                  {keywordInputTab === 'manual' && (
+                    <>
+                      <textarea
+                        {...register('keywords')}
+                        id="keywords-textarea"
+                        className={`w-full h-32 bg-main border border-border rounded-lg p-4 text-white focus:ring-1 focus:ring-accent outline-none resize-none font-mono text-sm ${
+                          errors.keywords ? 'border-red-500' : ''
+                        }`}
+                        placeholder={t('campaigns.newCampaign.keywordsPlaceholder')}
+                      ></textarea>
+                      {errors.keywords && (
+                        <p className="text-red-400 text-xs mt-1">{errors.keywords.message}</p>
+                      )}
 
-                            <div className="flex items-center justify-center border-2 border-dashed border-border rounded-lg p-6 hover:border-border transition-colors cursor-pointer bg-surface/50">
-                                <div className="text-center">
-                                    <FileSpreadsheet className="w-8 h-8 text-muted mx-auto mb-2" />
-                                    <span className="text-sm text-secondary block">Drag &amp; drop CSV file here</span>
-                                    <span className="text-xs text-muted block mt-1">or click to browse</span>
-                                </div>
-                            </div>
+                      {/* Keyword count badge */}
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs text-muted">
+                          {t('campaigns.newCampaign.keywordsCount', { count: keywordCount })}
+                        </span>
+                      </div>
+                    </>
+                  )}
+
+                  {/* CSV Upload */}
+                  {keywordInputTab === 'csv' && (
+                    <div className="relative">
+                      <input
+                        type="file"
+                        accept=".csv,.txt"
+                        onChange={e => {
+                          const file = e.target.files?.[0];
+                          if (file) handleCsvUpload(file);
+                        }}
+                        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                      />
+                      <div className="flex items-center justify-center border-2 border-dashed border-border rounded-lg p-6 hover:border-accent/50 transition-colors cursor-pointer bg-surface/50">
+                        <div className="text-center">
+                          <Upload className="w-8 h-8 text-muted mx-auto mb-2" />
+                          <span className="text-sm text-secondary block">
+                            {t('campaigns.newCampaign.csvDrop')}
+                          </span>
+                          <span className="text-xs text-muted block mt-1">
+                            {t('campaigns.newCampaign.csvBrowse')}
+                          </span>
                         </div>
-                        <p className="text-xs text-muted mt-2 flex items-center">
-                            <Zap className="w-3 h-3 mr-1 text-accent" />
-                            We&#39;ll automatically cluster keywords to prevent cannibalization.
-                        </p>
+                      </div>
                     </div>
+                  )}
                 </div>
-             )}
+                <p className="text-xs text-muted mt-2 flex items-center">
+                  <Zap className="w-3 h-3 mr-1 text-accent" />
+                  We&apos;ll automatically cluster keywords to prevent cannibalization.
+                </p>
+              </div>
+            </div>
+          )}
 
-             {step === 2 && (
-                 <div className="space-y-6 animate-fadeIn">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                         <div>
-                            <label className="block text-sm font-medium text-secondary mb-2">AI Model</label>
-                            <select className="w-full bg-main border border-border rounded-lg px-3 py-2.5 text-white focus:ring-1 focus:ring-accent outline-none">
-                                <option value="gpt-4o">GPT-4o (Best Overall)</option>
-                                <option value="claude-3-5">Claude 3.5 Sonnet (More Human)</option>
-                                <option value="gpt-4-turbo">GPT-4 Turbo</option>
-                            </select>
-                         </div>
-                         <div>
-                            <label className="block text-sm font-medium text-secondary mb-2">Word Count Target</label>
-                            <select className="w-full bg-main border border-border rounded-lg px-3 py-2.5 text-white focus:ring-1 focus:ring-accent outline-none">
-                                <option value="auto">Auto (Based on SERP)</option>
-                                <option value="short">Short (~800 words)</option>
-                                <option value="medium">Medium (~1500 words)</option>
-                                <option value="long">Long (~2500+ words)</option>
-                            </select>
-                         </div>
-                    </div>
+          {step === 2 && (
+            <div className="space-y-6 animate-fadeIn">
+              {/* AI Model */}
+              <div>
+                <label className="block text-sm font-medium text-secondary mb-2">
+                  {t('campaigns.newCampaign.model')}
+                </label>
+                <select
+                  {...register('model')}
+                  className="w-full bg-main border border-border rounded-lg px-3 py-2.5 text-white focus:ring-1 focus:ring-accent outline-none"
+                >
+                  {Object.entries(AI_MODELS).map(([id, model]) => (
+                    <option key={id} value={id}>
+                      {model.name} ({model.provider})
+                    </option>
+                  ))}
+                </select>
+              </div>
 
-                    <div>
-                        <label className="block text-sm font-medium text-secondary mb-2">Tone of Voice</label>
-                        <div className="grid grid-cols-2 gap-3">
-                            {['Professional', 'Conversational', 'Witty', 'First-Person POV'].map((t, i) => (
-                                <label key={i} className="flex items-center p-3 bg-main border border-border rounded-lg cursor-pointer hover:border-border hover:bg-surface transition-colors">
-                                    <input type="radio" name="tone" defaultChecked={i===0} className="mr-3 text-accent focus:ring-accent"/>
-                                    <span className="text-sm text-secondary">{t}</span>
-                                </label>
-                            ))}
-                        </div>
-                    </div>
+              {/* Word Count Target */}
+              <div>
+                <label className="block text-sm font-medium text-secondary mb-2">
+                  {t('campaigns.newCampaign.wordCount')}
+                </label>
+                <select
+                  {...register('targetWordCount', { valueAsNumber: true })}
+                  className="w-full bg-main border border-border rounded-lg px-3 py-2.5 text-white focus:ring-1 focus:ring-accent outline-none"
+                >
+                  {WORD_COUNT_OPTIONS.map(opt => (
+                    <option key={opt.value} value={opt.value}>
+                      {opt.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
 
-                    <div className="p-4 bg-blue-900/10 border border-blue-500/20 rounded-lg">
-                        <div className="flex items-start gap-3">
-                            <Cpu className="w-5 h-5 text-blue-400 mt-0.5" />
-                            <div>
-                                <h4 className="text-sm font-medium text-blue-200">Autopilot Settings</h4>
-                                <div className="mt-2 space-y-2">
-                                    <label className="flex items-center text-xs text-secondary cursor-pointer">
-                                        <input type="checkbox" defaultChecked className="mr-2 rounded border-border bg-surface text-accent focus:ring-0" />
-                                        Auto-insert internal links
-                                    </label>
-                                    <label className="flex items-center text-xs text-secondary cursor-pointer">
-                                        <input type="checkbox" defaultChecked className="mr-2 rounded border-border bg-surface text-accent focus:ring-0" />
-                                        Add AI-generated featured images
-                                    </label>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                 </div>
-             )}
-          </div>
+              {/* Tone of Voice */}
+              <div>
+                <label className="block text-sm font-medium text-secondary mb-2">
+                  {t('campaigns.newCampaign.tone')}
+                </label>
+                <div className="grid grid-cols-2 gap-3">
+                  {TONE_OPTIONS.map(tone => (
+                    <label
+                      key={tone.value}
+                      className={`flex items-center p-3 bg-main border rounded-lg cursor-pointer hover:border-border hover:bg-surface transition-colors ${
+                        watchedTone === tone.value ? 'border-accent bg-accent/10' : 'border-border'
+                      }`}
+                    >
+                      <input
+                        {...register('tone')}
+                        type="radio"
+                        value={tone.value}
+                        className="sr-only"
+                      />
+                      <span className="text-sm text-secondary">{tone.label}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
 
-          {/* Footer */}
-          <div className="p-6 border-t border-border bg-main/30 rounded-b-xl flex justify-between">
-              {step === 1 ? (
-                 <DashboardButton variant="ghost" onClick={onClose}>Cancel</DashboardButton>
+              {/* Credit Cost */}
+              <div
+                className={`p-4 rounded-lg border ${
+                  hasEnoughCredits
+                    ? 'bg-blue-900/10 border-blue-500/20'
+                    : 'bg-red-900/10 border-red-500/20'
+                }`}
+              >
+                <div className="flex items-start gap-3">
+                  <Zap
+                    className={`w-5 h-5 mt-0.5 ${hasEnoughCredits ? 'text-blue-400' : 'text-red-400'}`}
+                  />
+                  <div>
+                    <h4
+                      className={`text-sm font-medium ${hasEnoughCredits ? 'text-blue-200' : 'text-red-200'}`}
+                    >
+                      {hasEnoughCredits
+                        ? t('campaigns.newCampaign.creditCost')
+                        : t('campaigns.newCampaign.insufficientCredits')}
+                    </h4>
+                    <p
+                      className={`text-xs mt-1 ${hasEnoughCredits ? 'text-secondary' : 'text-red-300'}`}
+                    >
+                      {t('campaigns.newCampaign.creditCostDetail', {
+                        count: creditCost,
+                        plural: creditCost !== 1 ? 's' : '',
+                      })}
+                      {!hasEnoughCredits && (
+                        <span className="block mt-1">
+                          {t('campaigns.newCampaign.insufficientCreditsDetail', {
+                            required: creditCost,
+                            available: userCredits,
+                          })}
+                        </span>
+                      )}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Footer */}
+        <div className="p-6 border-t border-border bg-main/30 rounded-b-xl flex justify-between">
+          {step === 1 ? (
+            <DashboardButton variant="ghost" onClick={onClose}>
+              {t('campaigns.newCampaign.cancel')}
+            </DashboardButton>
+          ) : (
+            <DashboardButton variant="ghost" onClick={() => setStep(1)} disabled={loading}>
+              {t('campaigns.newCampaign.back')}
+            </DashboardButton>
+          )}
+
+          {step === 1 ? (
+            <DashboardButton onClick={handleStep1Next}>
+              {t('campaigns.newCampaign.next')} <ArrowRight className="w-4 h-4 ml-2" />
+            </DashboardButton>
+          ) : (
+            <DashboardButton
+              onClick={handleSubmit(handleLaunch)}
+              disabled={loading || !hasEnoughCredits}
+              className="min-w-[140px]"
+            >
+              {loading ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />{' '}
+                  {t('campaigns.newCampaign.creating')}
+                </>
               ) : (
-                 <DashboardButton variant="ghost" onClick={() => setStep(1)} disabled={loading}>Back</DashboardButton>
+                <>
+                  <Zap className="w-4 h-4 mr-2" /> {t('campaigns.newCampaign.create')}
+                </>
               )}
-
-              {step === 1 ? (
-                 <DashboardButton onClick={() => setStep(2)}>Next Step <ArrowRight className="w-4 h-4 ml-2"/></DashboardButton>
-              ) : (
-                 <DashboardButton onClick={handleLaunch} disabled={loading} className="min-w-[140px]">
-                    {loading ? <><Loader2 className="w-4 h-4 mr-2 animate-spin"/> Processing...</> : <><Zap className="w-4 h-4 mr-2"/> Launch Campaign</>}
-                 </DashboardButton>
-              )}
-          </div>
-       </div>
+            </DashboardButton>
+          )}
+        </div>
+      </div>
     </div>
   );
 }

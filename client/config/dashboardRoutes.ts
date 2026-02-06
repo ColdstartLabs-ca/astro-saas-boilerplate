@@ -102,8 +102,18 @@ export const DASHBOARD_ROUTES: readonly IDashboardRoute[] = [
     labelKey: 'sidebar.campaigns',
     icon: Layers,
     component: CampaignsPage,
-    enabled: false, // Disabled until implemented
+    enabled: true,
     group: 'primary',
+    children: [
+      {
+        path: '/dashboard/campaigns/:campaignId',
+        labelKey: 'sidebar.campaigns',
+        icon: Layers,
+        component: CampaignsPage,
+        enabled: true,
+        group: 'primary',
+      },
+    ],
   },
   {
     path: '/dashboard/keywords',

@@ -13,6 +13,7 @@ import { z } from 'zod';
 // Query params schema
 const listQuerySchema = z.object({
   projectId: z.string().uuid().optional(),
+  campaignId: z.string().uuid().optional(),
   status: z.enum(['queued', 'generating', 'draft', 'reviewed', 'published', 'failed']).optional(),
   limit: z.coerce.number().int().min(1).max(100).optional().default(20),
   offset: z.coerce.number().int().min(0).optional().default(0),
@@ -48,6 +49,9 @@ export const GET: APIRoute = async ({ url, locals }) => {
     // Apply optional filters
     if (query.projectId) {
       dbQuery = dbQuery.eq('project_id', query.projectId);
+    }
+    if (query.campaignId) {
+      dbQuery = dbQuery.eq('campaign_id', query.campaignId);
     }
     if (query.status) {
       dbQuery = dbQuery.eq('status', query.status);

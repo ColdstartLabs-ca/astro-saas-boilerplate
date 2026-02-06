@@ -9,7 +9,7 @@ import React, { useState } from 'react';
 import { X, Loader2 } from 'lucide-react';
 import type { IProject, IUpdateProjectInput } from '@shared/types/project.types';
 import type { IContentPreferences } from '@shared/types/project.types';
-import { CMS_PLATFORMS, INDUSTRIES, TONES, FREQUENCIES } from '@shared/validation/project.schema';
+import { CMS_PLATFORMS, INDUSTRIES, FREQUENCIES } from '@shared/validation/project.schema';
 
 interface IProjectEditModalProps {
   project: IProject;
@@ -38,28 +38,24 @@ const INDUSTRY_LABELS: Record<string, string> = {
   other: 'Other',
 };
 
-const TONE_LABELS: Record<string, string> = {
-  professional: 'Professional & Authoritative',
-  casual: 'Casual & Friendly',
-  witty: 'Witty & Humorous',
-  academic: 'Academic & Technical',
-};
-
 const FREQUENCY_LABELS: Record<string, string> = {
   daily: 'Daily',
   '3x_week': '3x / Week',
   weekly: 'Weekly',
 };
 
-export function ProjectEditModal({ project, onSave, onClose, isSaving = false }: IProjectEditModalProps): JSX.Element {
+export function ProjectEditModal({
+  project,
+  onSave,
+  onClose,
+  isSaving = false,
+}: IProjectEditModalProps): JSX.Element {
   const [formData, setFormData] = useState({
     name: project.name,
     domain: project.domain || '',
     industry: project.industry || '',
     cms_type: project.cms_type,
-    tone: project.content_preferences?.tone || 'professional',
     frequency: project.content_preferences?.frequency || 'weekly',
-    targetWordCount: project.content_preferences?.targetWordCount?.toString() || '1000',
   });
 
   const handleChange = (field: keyof typeof formData, value: string) => {
@@ -75,9 +71,7 @@ export function ProjectEditModal({ project, onSave, onClose, isSaving = false }:
       industry: formData.industry || undefined,
       cms_type: formData.cms_type,
       content_preferences: {
-        tone: formData.tone as IContentPreferences['tone'],
         frequency: formData.frequency as IContentPreferences['frequency'],
-        targetWordCount: parseInt(formData.targetWordCount, 10),
       },
     };
 
@@ -113,7 +107,9 @@ export function ProjectEditModal({ project, onSave, onClose, isSaving = false }:
         <form onSubmit={handleSubmit} className="p-6 space-y-6 max-h-[60vh] overflow-y-auto">
           {/* Basic Info Section */}
           <div className="space-y-4">
-            <h3 className="text-sm font-semibold text-accent uppercase tracking-wider">Basic Information</h3>
+            <h3 className="text-sm font-semibold text-accent uppercase tracking-wider">
+              Basic Information
+            </h3>
 
             {/* Project Name */}
             <div>
@@ -163,7 +159,9 @@ export function ProjectEditModal({ project, onSave, onClose, isSaving = false }:
               >
                 <option value="">Select an industry...</option>
                 {INDUSTRIES.map(ind => (
-                  <option key={ind} value={ind}>{INDUSTRY_LABELS[ind] || ind}</option>
+                  <option key={ind} value={ind}>
+                    {INDUSTRY_LABELS[ind] || ind}
+                  </option>
                 ))}
               </select>
             </div>
@@ -182,9 +180,10 @@ export function ProjectEditModal({ project, onSave, onClose, isSaving = false }:
                     key={platform}
                     className={`
                       flex items-center justify-center gap-2 px-4 py-3 rounded-lg border cursor-pointer transition-all
-                      ${formData.cms_type === platform
-                        ? 'bg-accent/20 border-accent text-accent'
-                        : 'bg-elevated border-border text-secondary hover:border-muted'
+                      ${
+                        formData.cms_type === platform
+                          ? 'bg-accent/20 border-accent text-accent'
+                          : 'bg-elevated border-border text-secondary hover:border-muted'
                       }
                     `}
                   >
@@ -206,54 +205,27 @@ export function ProjectEditModal({ project, onSave, onClose, isSaving = false }:
 
           {/* Content Preferences Section */}
           <div className="space-y-4">
-            <h3 className="text-sm font-semibold text-accent uppercase tracking-wider">Content Preferences</h3>
+            <h3 className="text-sm font-semibold text-accent uppercase tracking-wider">
+              Content Preferences
+            </h3>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              {/* Tone */}
-              <div>
-                <label className="block text-sm font-medium text-white mb-2">Tone of Voice</label>
-                <select
-                  value={formData.tone}
-                  onChange={e => handleChange('tone', e.target.value)}
-                  disabled={isSaving}
-                  className="w-full px-3 py-2 bg-elevated border border-border rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-accent disabled:opacity-50"
-                >
-                  {TONES.map(tone => (
-                    <option key={tone} value={tone}>{TONE_LABELS[tone]}</option>
-                  ))}
-                </select>
-              </div>
-
-              {/* Frequency */}
-              <div>
-                <label className="block text-sm font-medium text-white mb-2">Publishing Frequency</label>
-                <select
-                  value={formData.frequency}
-                  onChange={e => handleChange('frequency', e.target.value)}
-                  disabled={isSaving}
-                  className="w-full px-3 py-2 bg-elevated border border-border rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-accent disabled:opacity-50"
-                >
-                  {FREQUENCIES.map(freq => (
-                    <option key={freq} value={freq}>{FREQUENCY_LABELS[freq]}</option>
-                  ))}
-                </select>
-              </div>
-            </div>
-
-            {/* Target Word Count */}
+            {/* Frequency */}
             <div>
-              <label className="block text-sm font-medium text-white mb-2">Target Word Count</label>
-              <input
-                type="number"
-                value={formData.targetWordCount}
-                onChange={e => handleChange('targetWordCount', e.target.value)}
+              <label className="block text-sm font-medium text-white mb-2">
+                Publishing Frequency
+              </label>
+              <select
+                value={formData.frequency}
+                onChange={e => handleChange('frequency', e.target.value)}
                 disabled={isSaving}
-                min={100}
-                max={10000}
-                className="w-full px-3 py-2 bg-elevated border border-border rounded-lg text-white placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-accent disabled:opacity-50"
-                placeholder="1000"
-              />
-              <p className="text-xs text-muted mt-1">Average length for generated articles (100-10,000 words)</p>
+                className="w-full px-3 py-2 bg-elevated border border-border rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-accent disabled:opacity-50"
+              >
+                {FREQUENCIES.map(freq => (
+                  <option key={freq} value={freq}>
+                    {FREQUENCY_LABELS[freq]}
+                  </option>
+                ))}
+              </select>
             </div>
           </div>
         </form>

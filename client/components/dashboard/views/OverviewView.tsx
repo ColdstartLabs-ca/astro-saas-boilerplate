@@ -150,7 +150,7 @@ export function OverviewView(): JSX.Element {
           </div>
 
           {/* Project Details */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 pt-4 border-t border-border">
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 pt-4 border-t border-border">
             {activeProject.industry && (
               <div>
                 <div className="text-xs text-muted uppercase tracking-wider mb-1">
@@ -167,16 +167,6 @@ export function OverviewView(): JSX.Element {
                 {activeProject.cms_type}
               </div>
             </div>
-            {activeProject.content_preferences?.tone && (
-              <div>
-                <div className="text-xs text-muted uppercase tracking-wider mb-1">
-                  {t('overview.tone')}
-                </div>
-                <div className="text-sm font-medium text-white capitalize">
-                  {activeProject.content_preferences.tone}
-                </div>
-              </div>
-            )}
             {activeProject.content_preferences?.frequency && (
               <div>
                 <div className="text-xs text-muted uppercase tracking-wider mb-1">

@@ -8,14 +8,11 @@ export type SubscriptionTier = 'free' | 'starter' | 'growth' | 'agency';
 
 /**
  * Content generation preferences for a project
+ * Note: Tone and word count are now set per Campaign, not per Project
  */
 export interface IContentPreferences {
-  /** Tone of voice for generated content */
-  tone?: 'professional' | 'casual' | 'witty' | 'academic';
-  /** Publishing frequency */
+  /** Publishing frequency for content scheduling */
   frequency?: 'daily' | '3x_week' | 'weekly';
-  /** Target word count per article */
-  targetWordCount?: number;
 }
 
 /**

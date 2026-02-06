@@ -74,9 +74,7 @@ export function useProjectOnboarding(): IUseProjectOnboardingReturn {
       domain: '',
       industry: undefined,
       cmsType: 'wordpress',
-      tone: 'professional',
       frequency: 'weekly',
-      targetWordCount: '1000',
     },
     mode: 'onTouched',
   });
@@ -89,7 +87,7 @@ export function useProjectOnboarding(): IUseProjectOnboardingReturn {
     const stepFields: Record<number, (keyof IProjectOnboardingInput)[]> = {
       0: ['name', 'domain', 'industry'],
       1: ['cmsType'],
-      2: ['tone', 'frequency', 'targetWordCount'],
+      2: ['frequency'],
     };
 
     const fieldsToValidate = stepFields[currentStep] || [];

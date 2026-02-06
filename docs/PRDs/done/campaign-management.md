@@ -139,14 +139,17 @@ sequenceDiagram
 
 ```markdown
 **How will this feature be reached?**
+
 - [x] Entry point: /dashboard/campaigns route (sidebar nav click)
 - [x] Caller: DashboardRouter renders CampaignsPage → CampaignsView
 - [x] Registration: Enable route in dashboardRoutes.ts (set enabled: true)
 
 **Is this user-facing?**
+
 - [x] YES → CampaignsView (list/detail), NewCampaignModal (create form)
 
 **Full user flow:**
+
 1. User clicks "Campaigns" in sidebar → sees campaign list
 2. User clicks "New Campaign" → modal with name, keywords (manual/CSV), settings
 3. User launches campaign → keywords queued, generation starts in background
@@ -228,6 +231,7 @@ sequenceDiagram
 - [ ] `GET /api/campaigns?projectId=X` — List campaigns for project (require projectId query param). Use `CampaignService.listByProject()`. Return `{ campaigns: ICampaignWithStats[] }`.
 
 - [ ] `POST /api/campaigns` — Create campaign. Zod validation:
+
   ```
   name: string min(1) max(100)
   projectId: string uuid
@@ -236,6 +240,7 @@ sequenceDiagram
   tone: enum optional
   targetWordCount: number int min(800) max(3000) optional
   ```
+
   Verify project ownership. Return 201 `{ campaign }`.
 
 - [ ] `GET /api/campaigns/:campaignId` — Get campaign detail with keywords and article stats. Ownership check. Return `{ campaign, keywords, articleStats }`.
@@ -265,6 +270,7 @@ sequenceDiagram
 
 1. **Unit Tests:** Service layer already tested in Phase 1
 2. **API Proof (curl commands):**
+
    ```bash
    # Create campaign
    curl -X POST http://localhost:4321/api/campaigns \
@@ -290,6 +296,7 @@ sequenceDiagram
      -H "Authorization: Bearer $TOKEN"
    # Expected: 202 { success: true, data: { queued: 4, creditsRequired: 4 } }
    ```
+
 3. **Evidence Required:**
    - [ ] All curl commands return expected responses
    - [ ] `yarn verify` passes
@@ -453,6 +460,7 @@ sequenceDiagram
 - [ ] CSV parsing: Use simple native parsing (split by newline, trim, filter empty). No library needed for single-column CSV.
 
 - [ ] Add i18n strings:
+
   ```json
   "newCampaign": {
     "title": "Create New Campaign",

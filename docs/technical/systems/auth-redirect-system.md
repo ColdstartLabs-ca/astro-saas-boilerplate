@@ -45,7 +45,7 @@ The `handlePostAuthRedirect()` now delegates to the unified redirect manager, en
 
 ### Entry Point Updates
 
-#### 1. Pricing Page (`client/components/myimageupscaler.com/Pricing.tsx`)
+#### 1. Pricing Page (`src/components/pricing/PricingPage.tsx`)
 
 ```typescript
 // Before: setPendingCheckout(tier.priceId)

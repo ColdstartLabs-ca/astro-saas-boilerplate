@@ -47,8 +47,52 @@ export interface IApiCallProperties {
   creditsCost?: number;
 }
 
-// TODO: Add your own event properties specific to your SaaS product
-// Example: export interface IYourOperationProperties { ... }
+// =============================================================================
+// PMF & Revenue Events (AutopilotRank specific)
+// =============================================================================
+
+export interface IArticleGeneratedProperties {
+  article_id: string;
+  user_id: string;
+  keyword: string;
+  word_count: number;
+  seo_score?: number;
+  credits_used: number;
+  model_used: string;
+  duration_ms: number;
+  success: boolean;
+  error_message?: string;
+}
+
+export interface IArticlePublishedProperties {
+  article_id: string;
+  user_id: string;
+  cms_type: 'wordpress' | 'shopify' | 'webflow' | 'manual';
+  status: 'success' | 'failed';
+  url?: string;
+}
+
+export interface IProjectCreatedProperties {
+  project_id: string;
+  domain?: string;
+  industry?: string;
+  cms_type: 'wordpress' | 'shopify' | 'webflow' | 'other';
+  gsc_connected: boolean;
+}
+
+export interface ISeanEllisResponseProperties {
+  response: 'very_disappointed' | 'somewhat_disappointed' | 'not_disappointed';
+  days_as_user: number;
+  articles_published: number;
+}
+
+export interface ISubscriptionExpansionProperties {
+  previous_plan: 'trial' | 'starter' | 'growth' | 'agency';
+  new_plan: 'starter' | 'growth' | 'agency';
+  previous_amount_cents: number;
+  new_amount_cents: number;
+  trigger: 'usage_limit' | 'feature_request' | 'downgrade';
+}
 
 // =============================================================================
 // Event Types
@@ -66,11 +110,24 @@ export type IAnalyticsEventName =
   | 'subscription_created'
   | 'subscription_canceled'
   | 'subscription_renewed'
+  | 'subscription_upgraded'
+  | 'subscription_downgraded'
   | 'upgrade_started'
   // Credit events
   | 'credit_pack_purchased'
   | 'credits_deducted'
   | 'credits_refunded'
+  | 'credits_low_warning'
+  // Content/Article events (AutopilotRank)
+  | 'project_created'
+  | 'article_generation_started'
+  | 'article_generated'
+  | 'article_published'
+  | 'campaign_created'
+  // PMF events
+  | 'sean_ellis_survey_shown'
+  | 'sean_ellis_survey_completed'
+  | 'onboarding_completed'
   // Generic API operation events (replace with your specific events)
   | 'api_call_completed'
   | 'content_downloaded'

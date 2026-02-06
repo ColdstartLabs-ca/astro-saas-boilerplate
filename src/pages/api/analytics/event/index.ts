@@ -22,12 +22,27 @@ const ALLOWED_EVENTS = [
   'subscription_created',
   'subscription_canceled',
   'subscription_renewed',
+  'subscription_upgraded',
+  'subscription_downgraded',
   'upgrade_started',
 
   // Credit events
   'credit_pack_purchased',
   'credits_deducted',
   'credits_refunded',
+  'credits_low_warning',
+
+  // Content/Article events (AutopilotRank)
+  'project_created',
+  'article_generation_started',
+  'article_generated',
+  'article_published',
+  'campaign_created',
+
+  // PMF events
+  'sean_ellis_survey_shown',
+  'sean_ellis_survey_completed',
+  'onboarding_completed',
 
   // Generic API operation events
   'api_call_completed',
@@ -238,19 +253,19 @@ export const POST: APIRoute = async ({ request }) => {
 
     logger.info('Event tracked', { eventName, userId: userId || 'anonymous' });
 
-    return new Response(
-      JSON.stringify({ success: true }),
-      { status: 200, headers: { 'Content-Type': 'application/json' } }
-    );
+    return new Response(JSON.stringify({ success: true }), {
+      status: 200,
+      headers: { 'Content-Type': 'application/json' },
+    });
   } catch (error) {
     logger.error('Analytics event error', {
       error: serializeError(error),
     });
     // Return success even on error - don't block user actions
-    return new Response(
-      JSON.stringify({ success: true }),
-      { status: 200, headers: { 'Content-Type': 'application/json' } }
-    );
+    return new Response(JSON.stringify({ success: true }), {
+      status: 200,
+      headers: { 'Content-Type': 'application/json' },
+    });
   } finally {
     await logger.flush();
   }

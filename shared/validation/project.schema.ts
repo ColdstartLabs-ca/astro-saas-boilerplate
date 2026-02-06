@@ -13,7 +13,7 @@ import { z } from 'zod';
  * CMS platform options
  */
 export const CMS_PLATFORMS = ['wordpress', 'webflow', 'shopify', 'other'] as const;
-export type CMSPlatform = (typeof CMS_PLATFORMS)[number];  
+export type CMSPlatform = (typeof CMS_PLATFORMS)[number];
 
 /**
  * Industry options
@@ -33,12 +33,6 @@ export const INDUSTRIES = [
 export type Industry = (typeof INDUSTRIES)[number];
 
 /**
- * Tone options
- */
-export const TONES = ['professional', 'casual', 'witty', 'academic'] as const;
-export type Tone = (typeof TONES)[number];
-
-/**
  * Frequency options
  */
 export const FREQUENCIES = ['daily', '3x_week', 'weekly'] as const;
@@ -49,13 +43,9 @@ export type Frequency = (typeof FREQUENCIES)[number];
 // =============================================================================
 
 export const contentPreferencesSchema = z.object({
-  tone: z.enum(TONES, {
-    errorMap: () => ({ message: 'Please select a tone' }),
-  }),
   frequency: z.enum(FREQUENCIES, {
     errorMap: () => ({ message: 'Please select a frequency' }),
   }),
-  targetWordCount: z.number().int().min(100).max(10000).optional(),
 });
 
 export type IContentPreferences = z.infer<typeof contentPreferencesSchema>;
@@ -94,22 +84,9 @@ export const projectOnboardingSchema = z.object({
   }),
 
   // Step 3: Content Preferences
-  tone: z.enum(TONES, {
-    errorMap: () => ({ message: 'Please select a tone' }),
-  }),
   frequency: z.enum(FREQUENCIES, {
     errorMap: () => ({ message: 'Please select a frequency' }),
   }),
-  targetWordCount: z
-    .string()
-    .min(1, 'Word count is required')
-    .refine(
-      val => {
-        const num = parseInt(val, 10);
-        return !isNaN(num) && num >= 100 && num <= 10000;
-      },
-      { message: 'Word count must be between 100 and 10,000' }
-    ),
 });
 
 /**
@@ -135,9 +112,7 @@ export function transformProjectOnboardingInput(
     industry: data.industry,
     cms_type: data.cmsType,
     content_preferences: {
-      tone: data.tone,
       frequency: data.frequency,
-      targetWordCount: parseInt(data.targetWordCount, 10),
     },
   };
 }

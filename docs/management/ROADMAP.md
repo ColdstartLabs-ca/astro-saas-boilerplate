@@ -2,7 +2,7 @@
 
 > AI SEO Content Automation Platform - "Outrank's Automation + Surfer's Quality. Finally."
 
-**Last Updated:** 2026-02-05
+**Last Updated:** 2026-02-06
 **Launch Target:** Early March 2026
 
 ---
@@ -125,28 +125,47 @@ Annual discount: 20% off (~2 months free).
 
 ---
 
-### Milestone 3: Humanizer Engine (v1)
+### Milestone 3: Humanizer Engine (v1) ✅
 
 > **Why third:** Runs as a post-processing step on generated articles. Can be built independently once generation works.
 > **Depends on:** Milestone 2 (needs generated articles to process)
+> **Completed:** 2026-02-06
 
-- [ ] Post-generation rewriting pass to remove AI patterns
-- [ ] Remove common AI phrases ("In today's digital landscape", "It's important to note", etc.)
-- [ ] Vary sentence structure, add natural transitions
-- [ ] AI detection scoring integration (GPTZero or Originality.ai API)
-- [ ] Store AI detection score on article record
+- [x] Humanizer instructions integrated into article generation prompt
+- [x] Comprehensive AI pattern avoidance (24+ patterns from Wikipedia's "Signs of AI writing")
+- [x] Sentence variation, personality injection, soulful writing guidance
+- [x] Forbidden words/phrases list (additionally, serves as, underscores, crucial, pivotal, etc.)
+- [x] Forbidden patterns (em dashes, rule of three, "-ing" phrases, promotional language, etc.)
+- [x] Natural writing techniques (contractions, conjunctions at start, specific details, opinions)
+
+**Note:** Implemented as prompt engineering rather than post-processing — more efficient, no extra API calls, better results.
 
 ---
 
-### Milestone 4: Campaign Management UI
+### Milestone 4: Campaign Management UI ✅
 
 > **Why fourth:** Users need a way to organize keywords and trigger generation in bulk.
 > **Depends on:** Milestone 2 (generation pipeline must work)
+> **Completed:** 2026-02-06
 
-- [ ] Campaign CRUD: name, target keywords (manual input + CSV upload), settings (model, tone, word count)
-- [ ] Campaign dashboard: list campaigns, article counts, status overview
-- [ ] Article queue: generate articles from campaign keywords (sequential, credit-deducted)
-- [ ] Article status flow: `queued` → `generating` → `draft` → `reviewed` → `published`
+**Backend:**
+
+- [x] Campaign CRUD: name, target keywords (manual input + CSV upload), settings (model, tone, word count)
+- [x] CampaignService: full CRUD + keyword management + bulk generation orchestration
+- [x] API endpoints: GET/POST/PUT/DELETE `/api/campaigns`, keywords, start generation
+- [x] React Query hooks: `useCampaigns`, `useCampaignDetail`
+- [x] Campaign types: `shared/types/campaign.types.ts`
+- [x] 20+ unit tests for service layer
+
+**Frontend:**
+
+- [x] Campaign list view with cards, empty state, loading skeleton
+- [x] Campaign detail view with stats grid, article queue table, search, progress bar
+- [x] New Campaign modal with 2-step form (info + settings), working tabs, CSV upload
+- [x] i18n wired for all user-facing text
+- [x] Sequential generation with proper keyword status updates
+- [x] Credit refunds on generation failure
+- [x] Campaign auto-completes when all keywords processed
 
 ---
 
@@ -389,10 +408,12 @@ M1 Foundation
 
 ## Changelog
 
-| Date       | Change                                                                                                                                                                                                                                                                           |
-| ---------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 2026-02-05 | **Milestone 2 AI Content Engine completed!** OpenRouter integration (GPT-4o, Claude, Gemini), 2-step article generation pipeline (outline→article), Quick Generate UI, credit deduction/refund, async via `waitUntil()`, 41 new tests. PRD moved to `docs/PRDs/done/`.           |
-| 2026-02-05 | **Test refactoring complete!** Fixed old plan references across all tests (hobby→starter, business→agency, pro→growth). Updated credit amounts (30/100/500) and rollover (3x). Created `tests/fixtures/plan-fixtures.ts` for DRY test configuration. All 616 unit tests passing. |
-| 2026-02-05 | **Milestone 1 Foundation completed!** Database tables created (projects, campaigns, articles, keywords), billing reconfigured (3 plans: Starter $49/30cr, Growth $99/100cr, Agency $249/500cr), credit system updated to article-based. PRD moved to `docs/PRDs/done/`.          |
-| 2026-02-05 | Restructured MVP into 7 ordered milestones with dependency graph; consolidated pricing/financials to revenue-streams.md; added priority levels to post-MVP phases                                                                                                                |
-| 2026-02-04 | Created unified roadmap for AutopilotRank pivot, split into MVP (4 weeks) and Post-MVP phases                                                                                                                                                                                    |
+| Date       | Change                                                                                                                                                                                                                                                                                                                                                                                                                            |
+| ---------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 2026-02-06 | **Milestone 3 Humanizer completed!** Integrated comprehensive AI pattern avoidance into article generation prompt (24+ patterns from Wikipedia's "Signs of AI writing"). Forbidden words/phrases, sentence variation, personality injection. Prompt-based approach (no post-processing needed).                                                                                                                                   |
+| 2026-02-06 | **Milestone 4 Campaign Management completed!** Full campaign CRUD with keywords, bulk generation (sequential), CampaignService, API endpoints, React Query hooks. UI: CampaignsView (list), CampaignDetailView (detail with stats/table), NewCampaignModal (2-step + CSV + tabs). All gaps fixed: progress tracking, sequential gen, keyword status updates, campaign completion, credit refunds. PRD moved to `docs/PRDs/done/`. |
+| 2026-02-05 | **Milestone 2 AI Content Engine completed!** OpenRouter integration (GPT-4o, Claude, Gemini), 2-step article generation pipeline (outline→article), Quick Generate UI, credit deduction/refund, async via `waitUntil()`, 41 new tests. PRD moved to `docs/PRDs/done/`.                                                                                                                                                            |
+| 2026-02-05 | **Test refactoring complete!** Fixed old plan references across all tests (hobby→starter, business→agency, pro→growth). Updated credit amounts (30/100/500) and rollover (3x). Created `tests/fixtures/plan-fixtures.ts` for DRY test configuration. All 616 unit tests passing.                                                                                                                                                  |
+| 2026-02-05 | **Milestone 1 Foundation completed!** Database tables created (projects, campaigns, articles, keywords), billing reconfigured (3 plans: Starter $49/30cr, Growth $99/100cr, Agency $249/500cr), credit system updated to article-based. PRD moved to `docs/PRDs/done/`.                                                                                                                                                           |
+| 2026-02-05 | Restructured MVP into 7 ordered milestones with dependency graph; consolidated pricing/financials to revenue-streams.md; added priority levels to post-MVP phases                                                                                                                                                                                                                                                                 |
+| 2026-02-04 | Created unified roadmap for AutopilotRank pivot, split into MVP (4 weeks) and Post-MVP phases                                                                                                                                                                                                                                                                                                                                     |

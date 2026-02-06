@@ -25,6 +25,7 @@ Check `.claude/skills/` for relevant patterns.
 - **Colors**: Never hardcode - use Tailwind config tokens only.
 - **Docs**: No auto-generated .md files unless explicitly requested.
 - **Environment Variables**: NEVER use `process.env` directly. Use `clientEnv` or `serverEnv` from `@shared/config/env`.
+- **Code Quality Principles**: SOLID, SRP, KISS, DRY, YAGNI.
 
 ## Before Starting
 

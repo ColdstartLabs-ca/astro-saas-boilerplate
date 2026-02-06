@@ -352,5 +352,105 @@
       "published": "Published",
       "failed": "Failed"
     }
+  },
+  "campaigns": {
+    "title": "Campaigns",
+    "subtitle": "Manage your content generation queues.",
+    "newCampaign": "New Campaign",
+    "empty": "No campaigns yet. Create your first campaign to start generating content.",
+    "emptyTitle": "No campaigns yet",
+    "createFirst": "Create Your First Campaign",
+    "status": {
+      "draft": "Draft",
+      "active": "Active",
+      "paused": "Paused",
+      "completed": "Completed",
+      "resume": "Resume"
+    },
+    "card": {
+      "progress": "Progress",
+      "lastUpdated": "Updated",
+      "model": "Model",
+      "keywords": "keywords"
+    },
+    "delete": {
+      "button": "Delete Campaign",
+      "confirm": "Delete this campaign? All keywords and generated articles will be permanently removed.",
+      "success": "Campaign deleted successfully.",
+      "error": "Failed to delete campaign."
+    },
+    "detail": {
+      "addKeywords": "Add Keywords",
+      "startGeneration": "Start Generation",
+      "generationProgress": "Generation Progress",
+      "articles": "articles",
+      "articleQueue": "Article Queue",
+      "searchPlaceholder": "Search keywords...",
+      "noArticles": "No articles yet. Add keywords and start generation.",
+      "wordCount": "Word Count",
+      "generated": "Generated",
+      "actions": "Actions",
+      "startConfirm": "Generate {count} article{plural} using {count} credit{plural}?",
+      "startConfirmDetail": "This will queue article generation for all pending keywords. Credits will be deducted for each keyword.",
+      "cancel": "Cancel",
+      "start": "Start",
+      "starting": "Starting..."
+    },
+    "errors": {
+      "createFailed": "Failed to create campaign. Please try again.",
+      "updateFailed": "Failed to update campaign. Please try again.",
+      "startFailed": "Failed to start campaign. Please try again.",
+      "insufficientCredits": "Insufficient credits. You need {required} but have {available}."
+    },
+    "success": {
+      "created": "Campaign created successfully.",
+      "updated": "Campaign updated successfully."
+    },
+    "keywords": {
+      "added": "Added {added} keywords ({duplicates} duplicates skipped).",
+      "removed": "Keyword removed.",
+      "error": "Failed to update keywords. Please try again.",
+      "title": "Add Keywords",
+      "placeholder": "Enter one keyword per line...",
+      "cancel": "Cancel",
+      "add": "Add Keywords"
+    },
+    "generation": {
+      "started": "Generation started for {count} keywords.",
+      "starting": "Starting generation...",
+      "queued": "{count} articles queued for generation."
+    },
+    "newCampaign": {
+      "title": "Create New Campaign",
+      "step1": "Campaign Info",
+      "step2": "Generation Settings",
+      "stepOf": "Step {current} of {total}",
+      "name": "Campaign Name",
+      "namePlaceholder": "e.g. Best Coffee Machines Q4",
+      "keywords": "Target Keywords",
+      "keywordsManual": "Manual Input",
+      "keywordsCsv": "CSV Upload",
+      "keywordsPlaceholder": "Enter one keyword per line...",
+      "keywordsCount": "{count} keywords",
+      "csvDrop": "Drag & drop CSV file here",
+      "csvBrowse": "or click to browse",
+      "model": "AI Model",
+      "wordCount": "Word Count Target",
+      "tone": "Tone of Voice",
+      "creditCost": "Credit Cost",
+      "creditCostDetail": "This will use {count} credit{plural} ({count} keywords × 1 credit each)",
+      "insufficientCredits": "Insufficient Credits",
+      "insufficientCreditsDetail": "Not enough credits. You need {required} but have {available}.",
+      "cancel": "Cancel",
+      "back": "Back",
+      "next": "Next Step",
+      "create": "Create Campaign",
+      "creating": "Creating...",
+      "success": "Campaign created with {count} keywords!",
+      "error": "Failed to create campaign."
+    }
+  },
+  "common": {
+    "resume": "Resume"
   }
 }
