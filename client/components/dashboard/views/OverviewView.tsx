@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import {
   Globe,
   Plus,
@@ -33,6 +33,13 @@ export function OverviewView(): JSX.Element {
   });
 
   const displayName = user?.name || user?.email?.split('@')[0] || 'there';
+
+  // Auto-show onboarding modal for first-time users
+  useEffect(() => {
+    if (!isLoading && projects.length === 0 && !showOnboarding) {
+      setShowOnboarding(true);
+    }
+  }, [isLoading, projects.length, showOnboarding]);
 
   if (isLoading) {
     return (

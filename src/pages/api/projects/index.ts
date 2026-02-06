@@ -9,6 +9,7 @@ import { getUserIdFromLocals } from '../_utils';
 import { projectService } from '@server/services/project.service';
 import { ProjectLimitError } from '@shared/types/project.types';
 import type { IProjectsResponse, IProjectResponse } from '@shared/types/project.types';
+import { z } from 'zod';
 
 /**
  * GET /api/projects
@@ -88,8 +89,8 @@ export const POST: APIRoute = async ({ request, locals }) => {
     }
 
     // Handle validation errors
-    if (error instanceof Error && error.message.includes('validation')) {
-      return new Response(JSON.stringify({ error: error.message }), {
+    if (error instanceof z.ZodError) {
+      return new Response(JSON.stringify({ error: error.errors[0]?.message ?? 'Validation failed' }), {
         status: 400,
         headers: { 'Content-Type': 'application/json' },
       });

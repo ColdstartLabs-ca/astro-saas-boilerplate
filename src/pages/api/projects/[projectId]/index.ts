@@ -9,6 +9,7 @@ import type { APIRoute } from 'astro';
 import { getUserIdFromLocals } from '../../_utils';
 import { projectService } from '@server/services/project.service';
 import type { IProjectResponse, IDeleteProjectResponse } from '@shared/types/project.types';
+import { z } from 'zod';
 
 /**
  * GET /api/projects/:projectId
@@ -103,8 +104,8 @@ export const PUT: APIRoute = async ({ request, params, locals }) => {
     }
 
     // Handle validation errors
-    if (error instanceof Error && error.message.includes('validation')) {
-      return new Response(JSON.stringify({ error: error.message }), {
+    if (error instanceof z.ZodError) {
+      return new Response(JSON.stringify({ error: error.errors[0]?.message ?? 'Validation failed' }), {
         status: 400,
         headers: { 'Content-Type': 'application/json' },
       });

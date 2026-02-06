@@ -21,14 +21,23 @@ import { z } from 'zod';
 
 // =============================================================================
 // Validation Schemas
-// =============================================================================
+// ============================================================================
+
+/**
+ * Normalize domain by auto-prepending https:// if missing
+ */
+function normalizeDomain(domain: string | undefined | null): string | null {
+  if (!domain || domain === '') return null;
+  if (/^https?:\/\//i.test(domain)) return domain;
+  return `https://${domain}`;
+}
 
 /**
  * Zod schema for project creation input
  */
 const createProjectSchema = z.object({
   name: z.string().min(1, 'Project name is required').max(100, 'Project name must be 100 characters or less').trim(),
-  domain: z.string().url('Invalid URL format').optional().or(z.literal('')),
+  domain: z.string().max(255, 'Domain URL is too long').optional().or(z.literal('')),
   industry: z.string().max(50, 'Industry must be 50 characters or less').optional(),
   cms_type: z.enum(['wordpress', 'webflow', 'shopify', 'other']).optional(),
   content_preferences: z
@@ -45,7 +54,7 @@ const createProjectSchema = z.object({
  */
 const updateProjectSchema = z.object({
   name: z.string().min(1).max(100).trim().optional(),
-  domain: z.string().url().optional().or(z.literal('')),
+  domain: z.string().max(255).optional().or(z.literal('')),
   industry: z.string().max(50).optional(),
   cms_type: z.enum(['wordpress', 'webflow', 'shopify', 'other']).optional(),
   content_preferences: z
@@ -152,7 +161,7 @@ export class ProjectService {
       .insert({
         user_id: userId,
         name: validated.name,
-        domain: validated.domain || null,
+        domain: normalizeDomain(validated.domain),
         industry: validated.industry || null,
         cms_type: validated.cms_type || 'wordpress',
         content_preferences: validated.content_preferences || {},
@@ -179,7 +188,7 @@ export class ProjectService {
     const updates: Record<string, unknown> = {};
 
     if (validated.name !== undefined) updates.name = validated.name;
-    if (validated.domain !== undefined) updates.domain = validated.domain || null;
+    if (validated.domain !== undefined) updates.domain = normalizeDomain(validated.domain);
     if (validated.industry !== undefined) updates.industry = validated.industry || null;
     if (validated.cms_type !== undefined) updates.cms_type = validated.cms_type;
     if (validated.content_preferences !== undefined) updates.content_preferences = validated.content_preferences;

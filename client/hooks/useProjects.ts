@@ -21,7 +21,9 @@ import type {
 import { useLogger } from '@client/utils/logger';
 import { useUserStore } from '@client/store/userStore';
 import { useProjectStore } from '@client/store/projectStore';
+import { useToastStore } from '@client/store/toastStore';
 import { createClient } from '@shared/utils/supabase/client';
+import { getTranslations } from '@src/i18n/utils';
 
 // =============================================================================
 // Constants
@@ -159,6 +161,8 @@ export function useProjects(): IUseProjectsReturn {
   const queryClient = useQueryClient();
   const { user } = useUserStore();
   const { activeProjectId, setActiveProjectId: setActiveProjectStore } = useProjectStore();
+  const { showToast } = useToastStore();
+  const t = useMemo(() => getTranslations('dashboard'), []);
 
   // Fetch projects query - scoped by user ID to prevent cross-account stale data
   const {
@@ -193,10 +197,14 @@ export function useProjects(): IUseProjectsReturn {
   // Create project mutation
   const createMutation = useMutation({
     mutationFn: createProject,
-    onSuccess: newProject => {
+    onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['projects', user?.id] });
       // Auto-select newly created project
-      setActiveProjectStore(newProject.id);
+      // (Note: we can't access the new project here directly, but the query will update)
+      showToast({
+        message: t('projects.success.created'),
+        type: 'success',
+      });
     },
   });
 
@@ -206,6 +214,10 @@ export function useProjects(): IUseProjectsReturn {
       updateProject(projectId, input),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['projects', user?.id] });
+      showToast({
+        message: t('projects.success.updated'),
+        type: 'success',
+      });
     },
   });
 
@@ -218,6 +230,10 @@ export function useProjects(): IUseProjectsReturn {
       if (activeProjectId === deletedProjectId) {
         setActiveProjectStore(null);
       }
+      showToast({
+        message: t('projects.success.deleted'),
+        type: 'success',
+      });
     },
   });
 
@@ -239,10 +255,14 @@ export function useProjects(): IUseProjectsReturn {
         logger.error('Failed to create project', {
           error: error instanceof Error ? error.message : 'Unknown error',
         });
+        showToast({
+          message: t('projects.errors.createFailed'),
+          type: 'error',
+        });
         throw error;
       }
     },
-    [createMutation, logger]
+    [createMutation, logger, showToast, t]
   );
 
   const handleUpdateProject = useCallback(
@@ -254,10 +274,14 @@ export function useProjects(): IUseProjectsReturn {
           error: error instanceof Error ? error.message : 'Unknown error',
           projectId,
         });
+        showToast({
+          message: t('projects.errors.updateFailed'),
+          type: 'error',
+        });
         throw error;
       }
     },
-    [updateMutation, logger]
+    [updateMutation, logger, showToast, t]
   );
 
   const handleDeleteProject = useCallback(
@@ -269,10 +293,14 @@ export function useProjects(): IUseProjectsReturn {
           error: error instanceof Error ? error.message : 'Unknown error',
           projectId,
         });
+        showToast({
+          message: t('projects.errors.deleteFailed'),
+          type: 'error',
+        });
         throw error;
       }
     },
-    [deleteMutation, logger]
+    [deleteMutation, logger, showToast, t]
   );
 
   return {

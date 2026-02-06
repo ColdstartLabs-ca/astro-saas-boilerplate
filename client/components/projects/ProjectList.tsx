@@ -13,13 +13,15 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Plus, Trash2, Globe } from 'lucide-react';
+import { Plus, Trash2, Globe, Edit2 } from 'lucide-react';
 import { useProjects } from '@client/hooks/useProjects';
 import { useLogger } from '@client/utils/logger';
+import type { IProject, IUpdateProjectInput } from '@shared/types/project.types';
 import { getTranslations } from '@src/i18n/utils';
 import { useMemo } from 'react';
 import { cn } from '@client/utils/cn';
 import { ProjectOnboarding } from './ProjectOnboarding';
+import { ProjectEditModal } from './ProjectEditModal';
 
 interface IProjectListProps {
   onProjectUpdated?: () => void;
@@ -41,11 +43,13 @@ const STATUS_BADGES = {
 export function ProjectList({ onProjectUpdated }: IProjectListProps): JSX.Element {
   const t = useMemo(() => getTranslations('dashboard'), []);
   const logger = useLogger('ProjectList');
-  const { projects, activeProjectId, setActiveProject, deleteProject } = useProjects();
+  const { projects, activeProjectId, setActiveProject, deleteProject, updateProject } = useProjects();
 
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [projectToDelete, setProjectToDelete] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [projectToEdit, setProjectToEdit] = useState<IProject | null>(null);
+  const [isEditing, setIsEditing] = useState(false);
 
   const handleDeleteClick = (projectId: string) => {
     setProjectToDelete(projectId);
@@ -68,6 +72,34 @@ export function ProjectList({ onProjectUpdated }: IProjectListProps): JSX.Elemen
     } finally {
       setIsDeleting(false);
     }
+  };
+
+  const handleEditClick = (project: IProject) => {
+    setProjectToEdit(project);
+  };
+
+  const handleSaveEdit = async (updates: IUpdateProjectInput) => {
+    if (!projectToEdit) return;
+
+    setIsEditing(true);
+    try {
+      await updateProject(projectToEdit.id, updates);
+      logger.info('Project updated', { projectId: projectToEdit.id });
+      setProjectToEdit(null);
+      onProjectUpdated?.();
+    } catch (error) {
+      logger.error('Failed to update project', {
+        error: error instanceof Error ? error.message : 'Unknown error',
+        projectId: projectToEdit.id,
+      });
+      throw error;
+    } finally {
+      setIsEditing(false);
+    }
+  };
+
+  const handleCloseEdit = () => {
+    setProjectToEdit(null);
   };
 
   const getStatusLabel = (status: string) => {
@@ -127,7 +159,7 @@ export function ProjectList({ onProjectUpdated }: IProjectListProps): JSX.Elemen
               <div
                 key={project.id}
                 className={cn(
-                  'bg-surface border rounded-xl p-5 transition-all',
+                  'bg-surface border rounded-xl p-5 transition-all flex flex-col',
                   activeProjectId === project.id
                     ? 'border-accent shadow-lg shadow-accent/10'
                     : 'border-border hover:border-muted hover:bg-surface-light'
@@ -135,18 +167,18 @@ export function ProjectList({ onProjectUpdated }: IProjectListProps): JSX.Elemen
               >
                 {/* Header */}
                 <div className="flex items-start justify-between mb-4">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-lg bg-accent/20 text-accent flex items-center justify-center font-bold text-lg">
+                  <div className="flex items-center gap-3 min-w-0 flex-1">
+                    <div className="w-10 h-10 rounded-lg bg-accent/20 text-accent flex items-center justify-center font-bold text-lg shrink-0">
                       {project.name.charAt(0).toUpperCase()}
                     </div>
-                    <div>
-                      <h3 className="font-semibold text-white">{project.name}</h3>
+                    <div className="min-w-0 flex-1">
+                      <h3 className="font-semibold text-white truncate">{project.name}</h3>
                       {project.domain && (
                         <a
                           href={project.domain}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="text-xs text-accent hover:underline"
+                          className="text-xs text-accent hover:underline block truncate"
                         >
                           {project.domain}
                         </a>
@@ -164,21 +196,21 @@ export function ProjectList({ onProjectUpdated }: IProjectListProps): JSX.Elemen
                 </div>
 
                 {/* Details */}
-                <div className="space-y-2 mb-4">
+                <div className="space-y-2 mb-4 flex-1">
                   {project.industry && (
                     <div className="flex items-center justify-between text-sm">
                       <span className="text-secondary">Industry</span>
-                      <span className="text-white font-medium">{project.industry}</span>
+                      <span className="text-white font-medium truncate ml-2">{project.industry}</span>
                     </div>
                   )}
                   <div className="flex items-center justify-between text-sm">
                     <span className="text-secondary">Platform</span>
-                    <span className="text-white font-medium">{getCmsLabel(project.cms_type)}</span>
+                    <span className="text-white font-medium truncate ml-2">{getCmsLabel(project.cms_type)}</span>
                   </div>
                 </div>
 
                 {/* Actions */}
-                <div className="flex items-center gap-2 pt-4 border-t border-border">
+                <div className="flex items-center gap-2 pt-4 border-t border-border mt-auto">
                   <button
                     onClick={() => setActiveProject(project.id)}
                     className={cn(
@@ -189,6 +221,12 @@ export function ProjectList({ onProjectUpdated }: IProjectListProps): JSX.Elemen
                     )}
                   >
                     {activeProjectId === project.id ? 'Active' : 'Switch'}
+                  </button>
+                  <button
+                    onClick={() => handleEditClick(project)}
+                    className="p-2 text-secondary hover:text-accent hover:bg-accent/10 rounded-lg transition-colors"
+                  >
+                    <Edit2 className="w-4 h-4" />
                   </button>
                   <button
                     onClick={() => handleDeleteClick(project.id)}
@@ -232,6 +270,16 @@ export function ProjectList({ onProjectUpdated }: IProjectListProps): JSX.Elemen
             </div>
           </div>
         </div>
+      )}
+
+      {/* Edit Project Modal */}
+      {projectToEdit && (
+        <ProjectEditModal
+          project={projectToEdit}
+          onSave={handleSaveEdit}
+          onClose={handleCloseEdit}
+          isSaving={isEditing}
+        />
       )}
     </>
   );

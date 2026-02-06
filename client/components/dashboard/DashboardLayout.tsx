@@ -15,6 +15,7 @@ import { clientEnv, getAppLogoAbbr } from '@shared/config/env';
 import { getTranslations } from '@src/i18n/utils';
 import { LocaleSwitcher } from '@client/components/i18n/LocaleSwitcher';
 import { getBreadcrumbLabelKey } from '@client/config/dashboardRoutes';
+import { Toast } from '@client/components/common/Toast';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -219,6 +220,9 @@ function DashboardLayout(): JSX.Element {
 
   return (
     <div className="flex min-h-screen bg-main">
+      {/* Toast Notifications */}
+      <Toast vertical="bottom" horizontal="end" />
+
       {/* Mobile Header */}
       <header className="md:hidden fixed top-0 left-0 right-0 z-40 bg-surface border-b border-border">
         <div className="flex items-center justify-between gap-3 px-4 h-16">
