@@ -2,7 +2,9 @@
 
 High-level architecture for **AutopilotRank**, an Astro 5 + React 18 SaaS boilerplate with Supabase, Stripe, and Cloudflare Pages deployment.
 
-> **Status:** This document describes the **current production architecture**. The system is fully deployed and operational. The future SEO content automation features described in the original design document have not yet been implemented.
+> **Status:** This document describes the **current production architecture**. The system is fully deployed and operational.
+>
+> **Feature Implementation Status:** SEO content automation capabilities are in **Beta**. For a complete breakdown of what is implemented vs. planned, see the [Capability Status Matrix](./capability-status-matrix.md).
 
 ## Architecture Overview
 

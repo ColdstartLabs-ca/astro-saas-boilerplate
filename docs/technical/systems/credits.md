@@ -6,6 +6,8 @@ Credit-based usage tracking for content generation.
 
 AutopilotRank uses a simple credit system. 1 Credit is generally equal to 1 Article.
 
+> **Canonical Pricing:** For subscription tiers, credit allocation, and pricing details, see [Revenue Streams](../../business/business-model-canvas/revenue-streams.md).
+
 ```mermaid
 graph TD
     subgraph "Credit Sources"
@@ -41,11 +43,12 @@ graph TD
 
 ## Credit Allocation by Tier
 
-| Tier        | Monthly Credits | Rollover Cap |
-| ----------- | --------------- | ------------ |
-| **Starter** | 30              | 60           |
-| **Growth**  | 100             | 200          |
-| **Agency**  | 500             | 1000         |
+| Tier        | Monthly Articles | Rollover Cap | Notes                      |
+| ----------- | ---------------- | ------------ | --------------------------- |
+| **Trial**   | 3 (one-time)     | 3            | No monthly refresh          |
+| **Starter** | 30               | 90           | 3x rollover                 |
+| **Growth**  | 100              | 300          | 3x rollover                 |
+| **Agency**  | 500              | 0            | No rollover - use or lose   |
 
 ## Deduction Flow
 

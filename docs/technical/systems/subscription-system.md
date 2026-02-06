@@ -23,23 +23,24 @@
 
 ## Pricing Tiers
 
+> **Canonical Source:** All pricing is defined in [Revenue Streams](../../business/business-model-canvas/revenue-streams.md). Technical implementation uses `shared/config/subscription.config.ts`.
+
 ### Monthly Subscriptions
 
-| Plan         | Price   | Credits/Month | Rollover Cap    | Batch Limit |
-| ------------ | ------- | ------------- | --------------- | ----------- |
-| **Free**     | $0      | 10 (one-time) | N/A             | 1           |
-| **Starter**  | $9/mo   | 100           | 300 (3x)        | 5           |
-| **Hobby**    | $19/mo  | 200           | 1200 (6x)       | 10          |
-| **Pro**      | $49/mo  | 1000          | 6000 (6x)       | 50          |
-| **Business** | $149/mo | 5000          | 0 (no rollover) | 500         |
+| Tier        | Price/Month | Articles/Month | Rollover Cap | Batch Limit |
+| ----------- | ----------- | -------------- | ------------ | ----------- |
+| **Trial**   | $0 (one-time) | 3 | No refresh | 1 |
+| **Starter** | $49 | 30 | 90 (3x) | 5 |
+| **Growth**  | $99 | 100 | 300 (3x) | 25 |
+| **Agency**  | $249 | 500 | 0 (no rollover) | 100 |
 
 ### Credit Packs
 
-| Pack   | Price  | Credits |
-| ------ | ------ | ------- |
-| Small  | $4.99  | 50      |
-| Medium | $14.99 | 200     |
-| Large  | $39.99 | 600     |
+| Pack   | Price  | Articles |
+| ------ | ------ | -------- |
+| Small  | $9.99  | 10       |
+| Medium | $19.99 | 25       |
+| Large  | $34.99 | 50       |
 
 ---
 

@@ -16,8 +16,13 @@ erDiagram
     PROFILES ||--o{ DISPUTE_EVENTS : "involved in"
     PROFILES ||--o{ PRODUCTS : "subscribes to"
     PROFILES ||--o{ PRICES : "pays"
+    PROFILES ||--o{ PROJECTS : "owns"
 
     SUBSCRIPTIONS ||--o{ SYNC_RUNS : "synchronized in"
+
+    PROJECTS ||--o{ CAMPAIGNS : "contains"
+    CAMPAIGNS ||--o{ ARTICLES : "generates"
+    CAMPAIGNS ||--o{ KEYWORDS : "targets"
 
     PRODUCTS ||--o{ PRICES : "has pricing for"
 
@@ -171,6 +176,73 @@ erDiagram
         text status
         text reason
         timestamptz evidence_due_at
+        timestamptz created_at
+        timestamptz updated_at
+    }
+
+    PROJECTS {
+        uuid id PK
+        uuid user_id FK
+        text name
+        text domain
+        text industry
+        text cms_type
+        jsonb cms_credentials
+        jsonb content_preferences
+        text status
+        timestamptz created_at
+        timestamptz updated_at
+    }
+
+    CAMPAIGNS {
+        uuid id PK
+        uuid user_id FK
+        uuid project_id FK
+        text name
+        text status
+        text ai_model
+        text tone
+        int target_word_count
+        jsonb settings
+        timestamptz created_at
+        timestamptz updated_at
+    }
+
+    ARTICLES {
+        uuid id PK
+        uuid campaign_id FK
+        uuid user_id FK
+        uuid project_id FK
+        text title
+        text content
+        text primary_keyword
+        jsonb outline
+        text status
+        text ai_model_used
+        int seo_score
+        int ai_detection_score
+        int word_count
+        int token_count
+        int generation_time_ms
+        text meta_description
+        text published_url
+        text slug
+        int credits_used
+        text generation_error
+        timestamptz generated_at
+        timestamptz published_at
+        timestamptz created_at
+        timestamptz updated_at
+    }
+
+    KEYWORDS {
+        uuid id PK
+        uuid campaign_id FK
+        text keyword
+        int search_volume
+        text difficulty
+        text status
+        int priority
         timestamptz created_at
         timestamptz updated_at
     }
@@ -538,6 +610,143 @@ Stripe dispute tracking with credit holds.
 - `idx_dispute_events_dispute_id`
 - `idx_dispute_events_status`
 
+## AutopilotRank Content Tables
+
+### projects
+
+User projects for content organization and CMS integration.
+
+| Column               | Type          | Description                                                    |
+| -------------------- | ------------- | -------------------------------------------------------------- |
+| `id`                 | UUID (PK)     | Project ID                                                     |
+| `user_id`            | UUID (FK)     | References `profiles(id)`                                      |
+| `name`               | TEXT          | Project name                                                   |
+| `domain`             | TEXT          | Website domain (optional)                                      |
+| `industry`           | TEXT          | Industry category (optional)                                   |
+| `cms_type`           | TEXT          | CMS platform: `wordpress`, `webflow`, `shopify`, `other`        |
+| `cms_credentials`    | JSONB         | Encrypted CMS connection details                               |
+| `content_preferences`| JSONB         | Content settings (tone, style, etc.)                           |
+| `status`             | TEXT          | `active`, `inactive`, `error`                                  |
+| `created_at`         | TIMESTAMPTZ   | Creation timestamp                                             |
+| `updated_at`         | TIMESTAMPTZ   | Last update timestamp                                          |
+
+**Constraints:**
+- `cms_type` must be one of the allowed values
+- `status` must be one of the allowed values
+
+**RLS Policies:**
+- Users can CRUD own projects
+- Service role has full access
+
+**Indexes:**
+- `idx_projects_user_id`
+- `idx_projects_status`
+
+### campaigns
+
+Content generation campaigns with settings and AI parameters.
+
+| Column               | Type          | Description                                                    |
+| -------------------- | ------------- | -------------------------------------------------------------- |
+| `id`                 | UUID (PK)     | Campaign ID                                                    |
+| `user_id`            | UUID (FK)     | References `profiles(id)`                                      |
+| `project_id`         | UUID (FK)     | References `projects(id)` (nullable)                           |
+| `name`               | TEXT          | Campaign name                                                  |
+| `status`             | TEXT          | `draft`, `active`, `paused`, `completed`                       |
+| `ai_model`           | TEXT          | AI model to use (default: `auto`)                              |
+| `tone`               | TEXT          | Content tone (default: `professional`)                         |
+| `target_word_count`  | INTEGER       | Target article length (default: 1500)                          |
+| `settings`           | JSONB         | Additional campaign settings                                   |
+| `created_at`         | TIMESTAMPTZ   | Creation timestamp                                             |
+| `updated_at`         | TIMESTAMPTZ   | Last update timestamp                                          |
+
+**Constraints:**
+- `status` must be one of the allowed values
+
+**RLS Policies:**
+- Users can CRUD own campaigns
+- Service role has full access
+
+**Indexes:**
+- `idx_campaigns_user_id`
+- `idx_campaigns_project_id`
+- `idx_campaigns_status`
+
+### articles
+
+Generated SEO articles with content and metadata.
+
+| Column               | Type          | Description                                                    |
+| -------------------- | ------------- | -------------------------------------------------------------- |
+| `id`                 | UUID (PK)     | Article ID                                                     |
+| `campaign_id`        | UUID (FK)     | References `campaigns(id)`                                     |
+| `user_id`            | UUID (FK)     | References `profiles(id)`                                      |
+| `project_id`         | UUID (FK)     | References `projects(id)` (for quick-generate)                 |
+| `title`              | TEXT          | Article title                                                  |
+| `content`            | TEXT          | Article body content                                           |
+| `primary_keyword`    | TEXT          | Target keyword                                                 |
+| `outline`            | JSONB         | Structured outline from LLM (headings, key points)            |
+| `status`             | TEXT          | `queued`, `generating`, `draft`, `reviewed`, `published`, `failed` |
+| `ai_model_used`      | TEXT          | AI model used for generation                                   |
+| `seo_score`          | INTEGER       | SEO quality score (0-100)                                      |
+| `ai_detection_score` | INTEGER       | AI detection score (0-100, lower is more human)                |
+| `word_count`         | INTEGER       | Actual word count                                              |
+| `token_count`        | INTEGER       | Total tokens used across all LLM calls                         |
+| `generation_time_ms` | INTEGER       | Total generation time in milliseconds                          |
+| `meta_description`   | TEXT          | SEO meta description                                           |
+| `published_url`      | TEXT          | URL where article was published                                |
+| `slug`               | TEXT          | URL slug for the article                                       |
+| `credits_used`       | INTEGER       | Credits consumed (default: 1)                                  |
+| `generation_error`   | TEXT          | Error message if generation failed                             |
+| `generated_at`       | TIMESTAMPTZ   | Generation completion timestamp                                |
+| `published_at`       | TIMESTAMPTZ   | Publication timestamp                                          |
+| `created_at`         | TIMESTAMPTZ   | Creation timestamp                                             |
+| `updated_at`         | TIMESTAMPTZ   | Last update timestamp                                          |
+
+**Constraints:**
+- `seo_score` and `ai_detection_score` must be 0-100
+- `word_count`, `token_count`, `generation_time_ms` must be >= 0
+
+**RLS Policies:**
+- Users can CRUD own articles
+- Service role has full access
+
+**Indexes:**
+- `idx_articles_user_id`
+- `idx_articles_campaign_id`
+- `idx_articles_project_id`
+- `idx_articles_status`
+- `idx_articles_campaign_status`
+
+### keywords
+
+Target keywords for campaign generation.
+
+| Column         | Type          | Description                                                    |
+| -------------- | ------------- | -------------------------------------------------------------- |
+| `id`            | UUID (PK)     | Keyword ID                                                     |
+| `campaign_id`   | UUID (FK)     | References `campaigns(id)`                                     |
+| `keyword`       | TEXT          | Target keyword text                                            |
+| `search_volume` | INTEGER       | Monthly search volume (optional)                               |
+| `difficulty`    | TEXT          | SEO difficulty: `easy`, `medium`, `hard`, `unknown`            |
+| `status`        | TEXT          | `pending`, `queued`, `generating`, `generated`, `failed`       |
+| `priority`      | INTEGER       | Generation priority (default: 0)                               |
+| `created_at`    | TIMESTAMPTZ   | Creation timestamp                                             |
+| `updated_at`    | TIMESTAMPTZ   | Last update timestamp                                          |
+
+**Constraints:**
+- Unique combination of `(campaign_id, keyword)`
+- `difficulty` must be one of the allowed values
+- `status` must be one of the allowed values
+
+**RLS Policies:**
+- Users can access keywords through their campaigns (indirect access)
+- Service role has full access
+
+**Indexes:**
+- `idx_keywords_campaign_id`
+- `idx_keywords_status`
+
 ## Views
 
 ### user_credits
@@ -629,3 +838,9 @@ Schema is defined in the following migration files (in execution order):
 - `20260120010000_fix_function_search_paths.sql` - Fix function security
 - `20260120020000_fix_signup_trigger.sql` - Fix signup trigger
 - `20260205000000_enable_missing_rls.sql` - Enable RLS on system tables
+- `20260205100000_create_projects_table.sql` - Projects for content organization
+- `20260205100100_create_campaigns_table.sql` - Campaigns with AI settings
+- `20260205100200_create_articles_table.sql` - Generated SEO articles
+- `20260205100300_create_keywords_table.sql` - Target keywords
+- `20260205200000_add_project_details_columns.sql` - Additional project metadata
+- `20260206100000_add_article_generation_columns.sql` - Generation tracking (outline, token_count, generation_time_ms, project_id)

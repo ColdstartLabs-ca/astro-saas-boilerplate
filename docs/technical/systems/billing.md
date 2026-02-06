@@ -8,43 +8,30 @@ Stripe is the single source of truth for subscriptions. Supabase handles the loc
 
 ## Pricing Tiers
 
-**IMPORTANT:** There are TWO pricing structures in this codebase:
+> **Canonical Source:** All pricing is defined in [Revenue Streams](../../business/business-model-canvas/revenue-streams.md). Technical implementation uses `shared/config/subscription.config.ts` which should always match the business documentation.
 
-### 1. Target Pricing (Future AutopilotRank Product)
-
-For the AI SEO content automation platform (see [ROADMAP](../../management/ROADMAP.md)):
-
-- **Source:** [Revenue Streams](../../business/business-model-canvas/revenue-streams.md)
-- **Tiers:** Starter $49/mo (30 articles), Growth $99/mo (100 articles), Agency $249/mo (500 articles)
-- **Implementation:** Not yet implemented - planned for Milestone 1
-
-### 2. Current Pricing (Boilerplate Credits System)
-
-Generic SaaS pricing currently in `subscription.config.ts`:
-
-| Plan         | Price   | Credits/Month | Key Features                          |
-| ------------ | ------- | ------------- | ------------------------------------- |
-| **Free**     | $0      | 10 (one-time) | Try before buying, no CC required     |
-| **Starter**  | $9/mo   | 100           | All core features, batch up to 5      |
-| **Hobby**    | $19/mo  | 200           | For personal projects, batch up to 10 |
-| **Pro**      | $49/mo  | 1000          | For professionals, batch up to 50     |
-| **Business** | $149/mo | 5000          | For teams, batch up to 500            |
-
-**Note:** These tiers will be replaced with the target pricing when the AutopilotRank product is built.
+| Tier        | Price/Month | Articles/Month | Rollover Cap |
+| ----------- | ----------- | -------------- | ------------ |
+| **Trial**   | $0 (one-time) | 3 | No refresh |
+| **Starter** | $49 | 30 | 90 (3x) |
+| **Growth**  | $99 | 100 | 300 (3x) |
+| **Agency**  | $249 | 500 | 0 (use it or lose it) |
 
 ### Credit Packs (One-Time Purchase)
 
-| Pack       | Price  | Credits | Description        |
-| ---------- | ------ | ------- | ------------------ |
-| **Small**  | $4.99  | 50      | For occasional use |
-| **Medium** | $14.99 | 200     | Best value         |
-| **Large**  | $39.99 | 600     | For power users    |
+| Pack       | Price  | Articles | Description        |
+| ---------- | ------ | -------- | ------------------ |
+| **Small**  | $9.99  | 10       | For occasional use |
+| **Medium** | $19.99 | 25       | Best value         |
+| **Large**  | $34.99 | 50       | For power users    |
 
 ### Credit Rollover Rules
 
-- **Free/Startup**: Credits roll over up to 3x monthly allowance (300 max)
-- **Hobby/Pro**: Credits roll over up to 6x monthly allowance (1200/6000 max)
-- **Business**: No rollover - use it or lose it each month
+- **Starter/Growth**: Credits roll over up to 3x monthly allowance
+- **Agency**: No rollover - use it or lose it each month
+- **Trial**: One-time 3 articles, no monthly refresh
+
+**See also:** [Credit System](./credits.md) for detailed credit management.
 
 ## Webhook Handling
 

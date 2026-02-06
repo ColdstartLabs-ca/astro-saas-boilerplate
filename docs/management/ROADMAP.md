@@ -92,34 +92,36 @@ Annual discount: 20% off (~2 months free).
 
 ---
 
-### Milestone 2: AI Content Generation Engine
+### Milestone 2: AI Content Generation Engine ✅
 
 > **Why second:** This is the core product. Everything downstream (humanizer, campaigns, publishing) consumes its output.
-> **Depends on:** Milestone 1 (articles table must exist)
+> **Completed:** 2026-02-05
 
-**Project Management (first task — prerequisite for everything):**
+**Project Management:** PRD: `docs/PRDs/done/project-management.md`
 
-> Users need to register their website before generating content. PRD: `docs/PRDs/project-management.md`
-
-- [ ] DB migration: add `industry` and `content_preferences` columns to `projects` table
-- [ ] ProjectService: CRUD operations with plan-based project limits (Starter=1, Growth=3, Agency=unlimited)
-- [ ] API endpoints: `GET/POST /api/projects`, `GET/PUT/DELETE /api/projects/:id`
-- [ ] Project onboarding wizard: 3-step flow (basic info → CMS type → content preferences)
-- [ ] Project selector in dashboard sidebar (switch active project)
-- [ ] Auto-show onboarding when user has zero projects
+- [x] DB migration: add `industry` and `content_preferences` columns to `projects` table
+- [x] ProjectService: CRUD operations with plan-based project limits (Starter=1, Growth=3, Agency=unlimited)
+- [x] API endpoints: `GET/POST /api/projects`, `GET/PUT/DELETE /api/projects/:id`
+- [x] Project onboarding wizard: 3-step flow (basic info → CMS type → content preferences)
+- [x] Project selector in dashboard sidebar (switch active project)
+- [x] Auto-show onboarding when user has zero projects
 
 **OpenRouter Integration:**
 
-- [ ] Set up OpenRouter API client with auth, error handling, retries
-- [ ] Implement model selection: GPT-4, Claude, Gemini (auto-route or user choice)
+- [x] Set up OpenRouter API client with auth, error handling, retries
+- [x] Implement model selection: GPT-4o, Claude Sonnet, Gemini Flash (auto-route or user choice)
 
-**Article Generation Pipeline:**
+**Article Generation Pipeline:** PRD: `docs/PRDs/done/ai-content-engine.md`
 
-- [ ] Build pipeline: keyword + parameters → structured outline → full article
-- [ ] Prompt engineering for SEO-optimized output (headings, keyword placement, meta description)
-- [ ] Store generated articles with metadata (model used, generation time, token count)
-- [ ] Credit deduction on generation start, refund on failure
-- [ ] Async generation with status polling (don't block the UI)
+- [x] Build pipeline: keyword + parameters → structured outline → full article (2-step LLM pipeline)
+- [x] Prompt engineering for SEO-optimized output (headings, keyword placement, meta description)
+- [x] Store generated articles with metadata (model used, generation time, token count)
+- [x] Credit deduction on generation start, refund on failure
+- [x] Async generation with `ctx.waitUntil()` + client polling every 3s
+- [x] Quick Generate UI in dashboard (React Hook Form + Zod)
+- [x] API endpoints: `POST /api/articles/generate`, `GET /api/articles/:id`, `GET /api/articles`
+- [x] i18n strings for all user-facing text (52 keys)
+- [x] 41 tests passing (OpenRouter, ArticleGeneration, QuickGenerate component)
 
 ---
 
@@ -389,6 +391,7 @@ M1 Foundation
 
 | Date       | Change                                                                                                                                                                                                                                                                           |
 | ---------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 2026-02-05 | **Milestone 2 AI Content Engine completed!** OpenRouter integration (GPT-4o, Claude, Gemini), 2-step article generation pipeline (outline→article), Quick Generate UI, credit deduction/refund, async via `waitUntil()`, 41 new tests. PRD moved to `docs/PRDs/done/`.           |
 | 2026-02-05 | **Test refactoring complete!** Fixed old plan references across all tests (hobby→starter, business→agency, pro→growth). Updated credit amounts (30/100/500) and rollover (3x). Created `tests/fixtures/plan-fixtures.ts` for DRY test configuration. All 616 unit tests passing. |
 | 2026-02-05 | **Milestone 1 Foundation completed!** Database tables created (projects, campaigns, articles, keywords), billing reconfigured (3 plans: Starter $49/30cr, Growth $99/100cr, Agency $249/500cr), credit system updated to article-based. PRD moved to `docs/PRDs/done/`.          |
 | 2026-02-05 | Restructured MVP into 7 ordered milestones with dependency graph; consolidated pricing/financials to revenue-streams.md; added priority levels to post-MVP phases                                                                                                                |

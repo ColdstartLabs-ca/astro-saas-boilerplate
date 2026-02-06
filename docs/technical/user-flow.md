@@ -2,6 +2,12 @@
 
 Detailed user journeys for **AutopilotRank**.
 
+> **Implementation Status:** This document describes both implemented and planned user flows. For current capability status, see the [Capability Status Matrix](./capability-status-matrix.md).
+>
+> **Currently Implemented:** Onboarding, Project creation, Quick Generate (single articles)
+> **In Beta:** Campaign creation, Article generation API
+> **Planned:** GSC integration flows, CMS publishing, Autopilot mode
+
 ## 1. Onboarding & Setup
 
 ```mermaid
