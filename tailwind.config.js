@@ -87,6 +87,8 @@ export default {
         'glow-green-light': '0 0 20px rgba(74, 222, 128, 0.3)',
         'glow-green-mixed': '0 0 30px rgba(34, 197, 94, 0.2), 0 0 30px rgba(74, 222, 128, 0.2)',
         'card-hover': '0 20px 40px rgba(0, 0, 0, 0.2), 0 0 40px rgba(34, 197, 94, 0.1)',
+        // UI_TEMPLATE shadow for active nav items (brand-900/20)
+        'brand-900': '0 10px 15px -3px rgba(20, 83, 45, 0.2), 0 4px 6px -2px rgba(20, 83, 45, 0.2)',
       },
       keyframes: {
         'fade-in': {

@@ -35,10 +35,13 @@
     --color-tertiary: 22 163 74;
     /* #16a34a - brand-600 */
 
-    /* === TEXT COLORS === */
-    --color-text-primary: 255 255 255;
-    --color-text-secondary: 160 160 192;
-    --color-text-muted: 107 107 141;
+    /* === TEXT COLORS (matching UI_TEMPLATE slate colors) === */
+    --color-text-primary: 226 232 240;
+    /* #e2e8f0 - slate-200 (primary text) */
+    --color-text-secondary: 148 163 184;
+    /* #94a3b8 - slate-400 (secondary text) */
+    --color-text-muted: 100 116 139;
+    /* #64748b - slate-500 (muted text) */
 
     /* === SEMANTIC === */
     --color-success: 16 185 129;
@@ -52,7 +55,8 @@
     --color-muted-foreground: var(--color-text-secondary);
     --color-background: var(--color-bg-base);
     --color-card: var(--color-bg-surface);
-    --color-border: 255 255 255 / 0.08;
+    --color-border: 30 41 59;
+    /* #1e293b - slate-800 (borders, matching UI_TEMPLATE) */
   }
 
   /* Force dark mode */

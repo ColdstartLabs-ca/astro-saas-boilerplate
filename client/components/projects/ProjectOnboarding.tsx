@@ -4,7 +4,7 @@
  *
  * Step 1: Basic Info (name, domain, industry)
  * Step 2: Platform Selection (CMS type - no credentials)
- * Step 3: Content Preferences (tone, frequency)
+ * Step 3: Content Preferences (tone, frequency, targetWordCount)
  */
 
 'use client';
@@ -43,6 +43,7 @@ interface IFormData {
   // Step 3
   tone: 'professional' | 'casual' | 'witty' | 'academic';
   frequency: 'daily' | '3x_week' | 'weekly';
+  targetWordCount: string;
 }
 
 const CMS_OPTIONS = [
@@ -96,6 +97,7 @@ export function ProjectOnboarding({
     cmsType: 'wordpress',
     tone: 'professional',
     frequency: 'weekly',
+    targetWordCount: '1000',
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -111,6 +113,7 @@ export function ProjectOnboarding({
         cmsType: 'wordpress',
         tone: 'professional',
         frequency: 'weekly',
+        targetWordCount: '1000',
       });
       setError(null);
     }
@@ -131,6 +134,9 @@ export function ProjectOnboarding({
     setError(null);
 
     try {
+      const wordCount = parseInt(formData.targetWordCount, 10);
+      const validWordCount = !isNaN(wordCount) && wordCount > 0 ? wordCount : undefined;
+
       await createProject({
         name: formData.name.trim(),
         domain: formData.domain.trim() || undefined,
@@ -139,6 +145,7 @@ export function ProjectOnboarding({
         content_preferences: {
           tone: formData.tone,
           frequency: formData.frequency,
+          targetWordCount: validWordCount,
         },
       });
 
@@ -348,6 +355,29 @@ export function ProjectOnboarding({
                         </option>
                       ))}
                     </select>
+                  </div>
+
+                  {/* Target Word Count */}
+                  <div>
+                    <label className="text-sm font-medium text-secondary block mb-2">
+                      {onb('step3.targetWordCount')}
+                    </label>
+                    <div className="relative">
+                      <input
+                        type="number"
+                        min="100"
+                        max="10000"
+                        step="50"
+                        placeholder={onb('step3.targetWordCountPlaceholder')}
+                        className="w-full bg-elevated border border-border rounded-lg px-4 py-2.5 text-white focus:ring-2 focus:ring-accent focus:border-transparent outline-none transition-all pr-16"
+                        value={formData.targetWordCount}
+                        onChange={e => setFormData({ ...formData, targetWordCount: e.target.value })}
+                      />
+                      <span className="absolute right-4 top-1/2 -translate-y-1/2 text-secondary text-sm pointer-events-none">
+                        words
+                      </span>
+                    </div>
+                    <p className="text-xs text-muted mt-1.5">{onb('step3.wordCountHelp')}</p>
                   </div>
                 </div>
               </div>

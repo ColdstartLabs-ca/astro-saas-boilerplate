@@ -1,33 +1,14 @@
 'use client';
 
-import React, { lazy, Suspense, useState, useEffect } from 'react';
+import React, { Suspense, useState, useEffect } from 'react';
 import { onDashboardNavigate } from '@client/utils/dashboardNavigation';
 import { useIsAdmin } from '@client/store/userStore';
-
-// Lazy-load all dashboard page components
-const DashboardPage = lazy(() => import('@client/components/pages/DashboardPageClient'));
-const CampaignsPage = lazy(() => import('@client/components/pages/CampaignsPageClient'));
-const KeywordsPage = lazy(() => import('@client/components/pages/KeywordsPageClient'));
-const OptimizationPage = lazy(() => import('@client/components/pages/OptimizationPageClient'));
-const CalendarPage = lazy(() => import('@client/components/pages/CalendarPageClient'));
-const BacklinksPage = lazy(() => import('@client/components/pages/BacklinksPageClient'));
-const AnalyticsPage = lazy(() => import('@client/components/pages/AnalyticsPageClient'));
-const SettingsPage = lazy(() => import('@client/components/pages/SettingsPageClient'));
-const BillingPage = lazy(() => import('@client/components/pages/BillingPageClient'));
-const HistoryPage = lazy(() => import('@client/components/pages/HistoryPageClient'));
-const SupportPage = lazy(() => import('@client/components/pages/SupportPageClient'));
-
-// Admin pages
-const AdminDashboardLayout = lazy(() =>
-  import('@client/components/admin/AdminDashboardLayout').then(m => ({
-    default: m.AdminDashboardLayout,
-  }))
-);
-const AdminDashboardPage = lazy(() => import('@client/components/pages/AdminDashboardPageClient'));
-const AdminUsersPage = lazy(() => import('@client/components/pages/AdminUsersPageClient'));
-const AdminUserDetailPage = lazy(
-  () => import('@client/components/pages/AdminUserDetailPageClient')
-);
+import {
+  getRouteByPath,
+  matchDynamicRoute,
+  DASHBOARD_ROUTES,
+  type IDashboardRoute,
+} from '@client/config/dashboardRoutes';
 
 function LoadingSpinner(): JSX.Element {
   return (
@@ -58,76 +39,70 @@ function AdminGuard({ children }: { children: React.ReactNode }): JSX.Element {
 }
 
 /**
- * Resolve a pathname to the correct page component.
+ * Resolve a pathname to the correct page component using centralized route config.
  */
 function getRouteElement(pathname: string): JSX.Element {
   // Normalize: strip trailing slash
   const path = pathname.length > 1 && pathname.endsWith('/') ? pathname.slice(0, -1) : pathname;
 
-  // Admin routes
-  if (path.startsWith('/dashboard/admin')) {
-    const adminPath = path.replace('/dashboard/admin', '') || '/';
-
-    // /dashboard/admin/users/:userId
-    const userDetailMatch = adminPath.match(/^\/users\/([^/]+)$/);
-    if (userDetailMatch) {
+  // Check for dynamic admin routes first: /dashboard/admin/users/:userId
+  const userDetailParams = matchDynamicRoute(path, '/dashboard/admin/users/:userId');
+  if (userDetailParams) {
+    const adminRoute = getRouteByPath('/dashboard/admin');
+    if (adminRoute?.layout) {
+      const Layout = adminRoute.layout;
+      const AdminUserDetailPage = React.lazy(
+        () => import('@client/components/pages/AdminUserDetailPageClient')
+      );
       return (
         <AdminGuard>
-          <AdminDashboardLayout>
-            <AdminUserDetailPage userId={userDetailMatch[1]} />
-          </AdminDashboardLayout>
+          <Layout>
+            <AdminUserDetailPage userId={userDetailParams.userId} />
+          </Layout>
         </AdminGuard>
       );
     }
+  }
 
-    // /dashboard/admin/users
-    if (adminPath === '/users') {
-      return (
-        <AdminGuard>
-          <AdminDashboardLayout>
-            <AdminUsersPage />
-          </AdminDashboardLayout>
-        </AdminGuard>
-      );
-    }
+  // Look up route in centralized config
+  const route = getRouteByPath(path);
 
-    // /dashboard/admin
+  if (!route) {
+    return <NotFound />;
+  }
+
+  // Check enabled flag
+  if (route.enabled === false) {
+    return <NotFound />;
+  }
+
+  // Check admin guard
+  if (route.guard === 'admin') {
+    const Component = route.component;
+    const Layout = route.layout;
     return (
       <AdminGuard>
-        <AdminDashboardLayout>
-          <AdminDashboardPage />
-        </AdminDashboardLayout>
+        {Layout ? (
+          <Layout>
+            <Component />
+          </Layout>
+        ) : (
+          <Component />
+        )}
       </AdminGuard>
     );
   }
 
-  // Main dashboard routes
-  switch (path) {
-    case '/dashboard':
-      return <DashboardPage />;
-    case '/dashboard/campaigns':
-      return <CampaignsPage />;
-    case '/dashboard/keywords':
-      return <KeywordsPage />;
-    case '/dashboard/optimization':
-      return <OptimizationPage />;
-    case '/dashboard/calendar':
-      return <CalendarPage />;
-    case '/dashboard/backlinks':
-      return <BacklinksPage />;
-    case '/dashboard/analytics':
-      return <AnalyticsPage />;
-    case '/dashboard/settings':
-      return <SettingsPage />;
-    case '/dashboard/billing':
-      return <BillingPage />;
-    case '/dashboard/history':
-      return <HistoryPage />;
-    case '/dashboard/support':
-      return <SupportPage />;
-    default:
-      return <NotFound />;
-  }
+  // Regular route
+  const Component = route.component;
+  const Layout = route.layout;
+  return Layout ? (
+    <Layout>
+      <Component />
+    </Layout>
+  ) : (
+    <Component />
+  );
 }
 
 export function DashboardRouter(): JSX.Element {

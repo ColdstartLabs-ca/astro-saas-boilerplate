@@ -1,41 +1,73 @@
 'use client';
 
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
-import {
-  LayoutGrid,
-  Layers,
-  Search,
-  CheckCircle2,
-  Calendar as CalendarIcon,
-  Link2,
-  BarChart2,
-  CreditCard,
-  Settings,
-  HelpCircle,
-  LogOut,
-  Shield,
-  X,
-} from 'lucide-react';
+import { LogOut, X } from 'lucide-react';
 import { dashboardNavigate, onDashboardNavigate } from '@client/utils/dashboardNavigation';
 import { useUserStore, useIsAdmin } from '@client/store/userStore';
 import { Logo } from '@client/components/logo/Logo';
 import { useLogger } from '@client/utils/logger';
 import { cn } from '@client/utils/cn';
-import { getTranslations } from '@src/i18n/utils';
-import { LocaleSwitcher } from '@client/components/i18n/LocaleSwitcher';
+import { getTranslations, type TFunction } from '@src/i18n/utils';
 import { ProjectSelector } from '@client/components/projects/ProjectSelector';
 import { ProjectOnboarding } from '@client/components/projects/ProjectOnboarding';
-
-interface ISidebarItem {
-  label: string;
-  href: string;
-  icon: React.ElementType;
-  disabled?: boolean;
-}
+import { getRoutesByGroup, isPathActive, type IDashboardRoute } from '@client/config/dashboardRoutes';
 
 interface IDashboardSidebarProps {
   isOpen?: boolean;
   onClose?: () => void;
+}
+
+/**
+ * Render a single sidebar menu item
+ */
+function SidebarItem({
+  route,
+  pathname,
+  onNavigate,
+  t,
+}: {
+  route: IDashboardRoute;
+  pathname: string;
+  onNavigate: (href: string) => void;
+  t: TFunction;
+}): JSX.Element {
+  const Icon = route.icon;
+  const isActive = isPathActive(pathname, route.path);
+  const isEnabled = route.enabled !== false;
+  const label = t(route.labelKey);
+
+  if (!isEnabled) {
+    return (
+      <span className="flex items-center justify-between px-3 py-2.5 rounded-lg text-sm font-medium text-muted cursor-not-allowed opacity-50">
+        <span className="flex items-center space-x-3">
+          <Icon className="w-5 h-5 text-muted" />
+          <span>{label}</span>
+        </span>
+        <span className="text-[10px] uppercase tracking-wider font-semibold text-muted bg-surface-light px-1.5 py-0.5 rounded">
+          Soon
+        </span>
+      </span>
+    );
+  }
+
+  return (
+    <a
+      href={route.path}
+      onClick={e => {
+        e.preventDefault();
+        onNavigate(route.path);
+      }}
+      className={cn(
+        'flex items-center space-x-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors w-full text-left',
+        isActive
+          ? 'bg-secondary text-white shadow-lg shadow-brand-900'
+          : 'text-secondary hover:bg-surface-light hover:text-white'
+      )}
+    >
+      <Icon className={cn('w-5 h-5', isActive ? 'text-white' : 'text-secondary')} />
+      <span>{label}</span>
+    </a>
+  );
 }
 
 export const DashboardSidebar: React.FC<IDashboardSidebarProps> = ({ isOpen, onClose }) => {
@@ -54,44 +86,14 @@ export const DashboardSidebar: React.FC<IDashboardSidebarProps> = ({ isOpen, onC
   // Onboarding modal state
   const [showOnboarding, setShowOnboarding] = useState(false);
 
-  // Primary nav — AutopilotRank-specific views
-  const primaryItems: ISidebarItem[] = [
-    { label: t('sidebar.overview'), href: '/dashboard', icon: LayoutGrid },
-    { label: t('sidebar.campaigns'), href: '/dashboard/campaigns', icon: Layers, disabled: true },
-    { label: t('sidebar.keywords'), href: '/dashboard/keywords', icon: Search, disabled: true },
-    { label: t('sidebar.optimization'), href: '/dashboard/optimization', icon: CheckCircle2, disabled: true },
-    { label: t('sidebar.calendar'), href: '/dashboard/calendar', icon: CalendarIcon, disabled: true },
-    { label: t('sidebar.backlinks'), href: '/dashboard/backlinks', icon: Link2, disabled: true },
-    { label: t('sidebar.analytics'), href: '/dashboard/analytics', icon: BarChart2, disabled: true },
-  ];
-
-  // Secondary nav — account management
-  const secondaryItems: ISidebarItem[] = [
-    { label: t('sidebar.billing'), href: '/dashboard/billing', icon: CreditCard },
-    { label: t('sidebar.settings'), href: '/dashboard/settings', icon: Settings },
-  ];
-
-  if (isAdmin) {
-    secondaryItems.push({ label: t('sidebar.admin'), href: '/dashboard/admin', icon: Shield });
-  }
-
-  const bottomMenuItems: ISidebarItem[] = [
-    { label: t('sidebar.helpSupport'), href: '/dashboard/support', icon: HelpCircle },
-  ];
-
-  const normalizedPathname =
-    pathname.length > 1 && pathname.endsWith('/') ? pathname.slice(0, -1) : pathname;
-
-  const isActive = (href: string) => {
-    if (href === '/dashboard') {
-      return normalizedPathname === '/dashboard';
-    }
-    return normalizedPathname.startsWith(href);
-  };
+  // Get routes from centralized config
+  const primaryItems = useMemo(() => getRoutesByGroup('primary'), []);
+  const secondaryItems = useMemo(() => getRoutesByGroup('secondary'), []);
+  const bottomItems = useMemo(() => getRoutesByGroup('bottom'), []);
+  const adminItems = useMemo(() => (isAdmin ? getRoutesByGroup('admin') : []), [isAdmin]);
 
   const handleNavigation = useCallback(
-    (e: React.MouseEvent<HTMLAnchorElement>, href: string) => {
-      e.preventDefault();
+    (href: string) => {
       onClose?.();
       // Non-dashboard links get a full page load
       if (!href.startsWith('/dashboard')) {
@@ -151,12 +153,9 @@ export const DashboardSidebar: React.FC<IDashboardSidebarProps> = ({ isOpen, onC
 
         {/* Logo/Brand */}
         <div className="p-6 border-b border-border">
-          <a href="/" className="flex items-center" onClick={e => handleNavigation(e, '/')}>
+          <a href="/" className="flex items-center gap-2" onClick={e => handleNavigation('/')}>
             <Logo variant="full" />
           </a>
-          <div className="mt-3 flex justify-end">
-            <LocaleSwitcher />
-          </div>
         </div>
 
         {/* Active Project Selector */}
@@ -164,103 +163,32 @@ export const DashboardSidebar: React.FC<IDashboardSidebarProps> = ({ isOpen, onC
 
         {/* Primary Navigation */}
         <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
-          {primaryItems.map(item => {
-            const Icon = item.icon;
-            const active = !item.disabled && isActive(item.href);
-
-            if (item.disabled) {
-              return (
-                <span
-                  key={item.href}
-                  className="flex items-center justify-between px-3 py-2.5 rounded-lg text-sm font-medium text-muted cursor-not-allowed opacity-50"
-                >
-                  <span className="flex items-center">
-                    <Icon size={20} className="mr-3 text-muted" />
-                    {item.label}
-                  </span>
-                  <span className="text-[10px] uppercase tracking-wider font-semibold text-muted bg-surface-light px-1.5 py-0.5 rounded">
-                    Soon
-                  </span>
-                </span>
-              );
-            }
-
-            return (
-              <a
-                key={item.href}
-                href={item.href}
-                onClick={e => handleNavigation(e, item.href)}
-                className={cn(
-                  'flex items-center px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 w-full text-left',
-                  active
-                    ? 'bg-accent text-white shadow-lg shadow-accent/20'
-                    : 'text-secondary hover:bg-surface-light hover:text-white'
-                )}
-              >
-                <Icon size={20} className={cn('mr-3', active ? 'text-white' : 'text-secondary')} />
-                {item.label}
-              </a>
-            );
-          })}
+          {primaryItems.map(item => (
+            <SidebarItem key={item.path} route={item} pathname={pathname} onNavigate={handleNavigation} t={t} />
+          ))}
 
           {/* Separator */}
           <div className="border-t border-border my-2" />
 
           {/* Secondary Navigation */}
-          {secondaryItems.map(item => {
-            const Icon = item.icon;
-            const active = isActive(item.href);
-
-            return (
-              <a
-                key={item.href}
-                href={item.href}
-                onClick={e => handleNavigation(e, item.href)}
-                className={cn(
-                  'flex items-center px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 w-full text-left',
-                  active
-                    ? 'bg-accent/10 text-accent'
-                    : 'text-secondary hover:bg-surface-light hover:text-white'
-                )}
-              >
-                <Icon size={20} className={cn('mr-3', active ? 'text-accent' : 'text-secondary')} />
-                {item.label}
-              </a>
-            );
-          })}
+          {[...secondaryItems, ...adminItems].map(item => (
+            <SidebarItem key={item.path} route={item} pathname={pathname} onNavigate={handleNavigation} t={t} />
+          ))}
         </nav>
 
         {/* Bottom Navigation */}
         <div className="px-3 py-4 border-t border-border space-y-1">
-          {bottomMenuItems.map(item => {
-            const Icon = item.icon;
-            const active = isActive(item.href);
-
-            return (
-              <a
-                key={item.href}
-                href={item.href}
-                onClick={e => handleNavigation(e, item.href)}
-                className={cn(
-                  'flex items-center px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 w-full text-left',
-                  active
-                    ? 'bg-accent/10 text-accent'
-                    : 'text-secondary hover:bg-surface-light hover:text-white'
-                )}
-              >
-                <Icon size={20} className={cn('mr-3', active ? 'text-accent' : 'text-secondary')} />
-                {item.label}
-              </a>
-            );
-          })}
+          {bottomItems.map(item => (
+            <SidebarItem key={item.path} route={item} pathname={pathname} onNavigate={handleNavigation} t={t} />
+          ))}
 
           {/* Sign Out Button */}
           <button
             onClick={handleSignOut}
-            className="w-full flex items-center px-3 py-2.5 rounded-lg text-sm font-medium text-secondary hover:bg-red-500/10 hover:text-red-500 transition-all duration-200"
+            className="w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg text-sm font-medium text-secondary hover:bg-red-500/10 hover:text-red-500 transition-colors"
           >
-            <LogOut size={20} className="mr-3 text-secondary" />
-            {t('sidebar.signOut')}
+            <LogOut className="w-5 h-5 text-secondary" />
+            <span>{t('sidebar.signOut')}</span>
           </button>
         </div>
       </aside>

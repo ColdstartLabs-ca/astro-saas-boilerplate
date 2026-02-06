@@ -74,7 +74,7 @@ export function ProjectSelector({ onOpenOnboarding }: IProjectSelectorProps): JS
             <div className="w-8 h-8 rounded bg-accent/20 text-accent-light flex items-center justify-center font-bold text-sm shrink-0">
               {activeProject ? getProjectInitial(activeProject.name) : '?'}
             </div>
-            <div className="truncate text-left">
+            <div className="truncate">
               <div className="text-sm font-medium text-white truncate">
                 {activeProject?.name || t('projects.noProjectSelected')}
               </div>

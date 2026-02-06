@@ -13,6 +13,8 @@ import React from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { clientEnv, getAppLogoAbbr } from '@shared/config/env';
 import { getTranslations } from '@src/i18n/utils';
+import { LocaleSwitcher } from '@client/components/i18n/LocaleSwitcher';
+import { getBreadcrumbLabelKey } from '@client/config/dashboardRoutes';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -28,11 +30,13 @@ const AUTH_GRACE_PERIOD_MS = 500;
 // Minimum interval between credit refreshes (30 seconds)
 const MIN_REFRESH_INTERVAL_MS = 30_000;
 
-// Derive breadcrumb label from pathname
+// Derive breadcrumb label from pathname using centralized route config
 function getBreadcrumbLabel(pathname: string, t: ReturnType<typeof getTranslations>): string {
-  const segment = pathname.replace('/dashboard', '').replace(/^\//, '') || 'overview';
-  const label = t(`header.breadcrumb.${segment}`);
-  if (label === `header.breadcrumb.${segment}`) {
+  const labelKey = getBreadcrumbLabelKey(pathname);
+  const label = t(labelKey);
+  // Fallback to capitalized segment if translation missing
+  if (label === labelKey) {
+    const segment = pathname.replace('/dashboard', '').replace(/^\//, '') || 'overview';
     return segment.charAt(0).toUpperCase() + segment.slice(1);
   }
   return label;
@@ -80,13 +84,14 @@ function DashboardHeader(): JSX.Element {
   const breadcrumb = getBreadcrumbLabel(pathname, t);
 
   return (
-    <header className="hidden md:flex h-14 border-b border-border bg-surface/50 backdrop-blur-sm items-center justify-between px-8 shrink-0 relative z-10">
+    <header className="hidden md:flex h-16 border-b border-border bg-surface/50 backdrop-blur-sm items-center justify-between px-6 shrink-0 relative z-10">
       <div className="flex text-sm text-secondary">
         <span className="text-muted mr-2">/</span>
         <span>{breadcrumb}</span>
       </div>
 
       <div className="flex items-center space-x-4">
+        <LocaleSwitcher />
         <button className="text-secondary hover:text-white relative transition-colors">
           <Bell className="w-5 h-5" />
           <span className="absolute top-0 right-0 w-2 h-2 bg-red-500 rounded-full" />
@@ -216,7 +221,7 @@ function DashboardLayout(): JSX.Element {
     <div className="flex min-h-screen bg-main">
       {/* Mobile Header */}
       <header className="md:hidden fixed top-0 left-0 right-0 z-40 bg-surface border-b border-border">
-        <div className="flex items-center justify-between gap-3 px-4 h-14">
+        <div className="flex items-center justify-between gap-3 px-4 h-16">
           <div className="flex items-center space-x-2">
             <div className="w-8 h-8 bg-accent rounded-lg flex items-center justify-center">
               <span className="text-white font-bold text-sm">{getAppLogoAbbr()}</span>
@@ -240,7 +245,7 @@ function DashboardLayout(): JSX.Element {
 
       <DashboardSidebar isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} />
 
-      <main className="flex-1 flex flex-col min-h-0 pt-14 md:pt-0">
+      <main className="flex-1 flex flex-col min-h-0 pt-16 md:pt-0">
         <DashboardHeader />
         <div className="flex-1 overflow-y-auto overflow-x-hidden p-4 md:p-8">
           <div className="max-w-7xl mx-auto">

@@ -247,6 +247,9 @@
           "witty": "Witty & Humorous",
           "academic": "Academic & Technical"
         },
+        "targetWordCount": "Target Word Count",
+        "targetWordCountPlaceholder": "e.g., 1000",
+        "wordCountHelp": "Average length for generated articles",
         "confirmationNote": "You can change these settings anytime",
         "completeSetup": "Complete Setup"
       },
