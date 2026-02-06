@@ -20,6 +20,7 @@ import type {
 } from '@shared/types/project.types';
 import { useLogger } from '@client/utils/logger';
 import { useUserStore } from '@client/store/userStore';
+import { createClient } from '@shared/utils/supabase/client';
 
 // =============================================================================
 // Constants
@@ -33,14 +34,36 @@ const PROJECTS_QUERY_KEY = ['projects'];
 // =============================================================================
 
 /**
+ * Get the current user's access token for API requests
+ */
+async function getAccessToken(): Promise<string | null> {
+  const supabase = createClient();
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
+  return session?.access_token ?? null;
+}
+
+/**
+ * Build auth headers for API requests
+ */
+async function getAuthHeaders(): Promise<Record<string, string>> {
+  const accessToken = await getAccessToken();
+  const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+  if (accessToken) {
+    headers.Authorization = `Bearer ${accessToken}`;
+  }
+  return headers;
+}
+
+/**
  * Fetch user's projects from API
  */
 async function fetchProjects(): Promise<IProject[]> {
+  const headers = await getAuthHeaders();
   const response = await fetch('/api/projects', {
     method: 'GET',
-    headers: {
-      'Content-Type': 'application/json',
-    },
+    headers,
   });
 
   if (!response.ok) {
@@ -56,11 +79,10 @@ async function fetchProjects(): Promise<IProject[]> {
  * Create a new project
  */
 async function createProject(input: ICreateProjectInput): Promise<IProject> {
+  const headers = await getAuthHeaders();
   const response = await fetch('/api/projects', {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
+    headers,
     body: JSON.stringify(input),
   });
 
@@ -77,11 +99,10 @@ async function createProject(input: ICreateProjectInput): Promise<IProject> {
  * Update an existing project
  */
 async function updateProject(projectId: string, input: IUpdateProjectInput): Promise<IProject> {
+  const headers = await getAuthHeaders();
   const response = await fetch(`/api/projects/${projectId}`, {
     method: 'PUT',
-    headers: {
-      'Content-Type': 'application/json',
-    },
+    headers,
     body: JSON.stringify(input),
   });
 
@@ -98,11 +119,10 @@ async function updateProject(projectId: string, input: IUpdateProjectInput): Pro
  * Delete a project
  */
 async function deleteProject(projectId: string): Promise<{ success: boolean }> {
+  const headers = await getAuthHeaders();
   const response = await fetch(`/api/projects/${projectId}`, {
     method: 'DELETE',
-    headers: {
-      'Content-Type': 'application/json',
-    },
+    headers,
   });
 
   if (!response.ok) {
@@ -181,7 +201,6 @@ export function useProjects(): IUseProjectsReturn {
     data: projects = [],
     isLoading,
     error,
-    refetch,
   } = useQuery({
     queryKey: PROJECTS_QUERY_KEY,
     queryFn: fetchProjects,

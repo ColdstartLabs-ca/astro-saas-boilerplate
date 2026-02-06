@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import {
   LayoutGrid,
   Layers,
@@ -14,6 +14,7 @@ import {
   Shield,
   X,
 } from 'lucide-react';
+import { dashboardNavigate, onDashboardNavigate } from '@client/utils/dashboardNavigation';
 import { useUserStore, useIsAdmin } from '@client/store/userStore';
 import { useLogger } from '@client/utils/logger';
 import { cn } from '@client/utils/cn';
@@ -38,18 +39,11 @@ export const DashboardSidebar: React.FC<IDashboardSidebarProps> = ({ isOpen, onC
   const isAdmin = useIsAdmin();
   const logger = useLogger('DashboardSidebar');
 
-  const [pathname, setPathname] = useState('');
+  const [pathname, setPathname] = useState(() =>
+    typeof window !== 'undefined' ? window.location.pathname : '/dashboard'
+  );
   useEffect(() => {
-    const updatePathname = (_event?: Event) => setPathname(window.location.pathname);
-    updatePathname();
-
-    window.addEventListener('popstate', updatePathname);
-    document.addEventListener('astro:after-swap', updatePathname);
-
-    return () => {
-      window.removeEventListener('popstate', updatePathname);
-      document.removeEventListener('astro:after-swap', updatePathname);
-    };
+    return onDashboardNavigate(setPathname);
   }, []);
 
   // Onboarding modal state
@@ -82,6 +76,20 @@ export const DashboardSidebar: React.FC<IDashboardSidebarProps> = ({ isOpen, onC
     }
     return normalizedPathname.startsWith(href);
   };
+
+  const handleNavigation = useCallback(
+    (e: React.MouseEvent<HTMLAnchorElement>, href: string) => {
+      e.preventDefault();
+      onClose?.();
+      // Non-dashboard links get a full page load
+      if (!href.startsWith('/dashboard')) {
+        window.location.href = href;
+        return;
+      }
+      dashboardNavigate(href);
+    },
+    [onClose]
+  );
 
   const handleSignOut = async () => {
     try {
@@ -132,7 +140,7 @@ export const DashboardSidebar: React.FC<IDashboardSidebarProps> = ({ isOpen, onC
 
         {/* Logo/Brand */}
         <div className="px-4 py-5 border-b border-border">
-          <a href="/" className="inline-flex items-center" onClick={() => onClose?.()}>
+          <a href="/" className="inline-flex items-center" onClick={e => handleNavigation(e, '/')}>
             <img
               src="/logo/horizontal-logo-compact.png"
               alt="AutopilotRank"
@@ -156,8 +164,7 @@ export const DashboardSidebar: React.FC<IDashboardSidebarProps> = ({ isOpen, onC
               <a
                 key={item.href}
                 href={item.href}
-                data-astro-prefetch="hover"
-                onClick={() => onClose?.()}
+                onClick={e => handleNavigation(e, item.href)}
                 className={cn(
                   'flex items-center px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 w-full text-left',
                   active
@@ -182,8 +189,7 @@ export const DashboardSidebar: React.FC<IDashboardSidebarProps> = ({ isOpen, onC
               <a
                 key={item.href}
                 href={item.href}
-                data-astro-prefetch="hover"
-                onClick={() => onClose?.()}
+                onClick={e => handleNavigation(e, item.href)}
                 className={cn(
                   'flex items-center px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 w-full text-left',
                   active

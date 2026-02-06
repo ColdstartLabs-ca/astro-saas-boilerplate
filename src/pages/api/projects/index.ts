@@ -5,7 +5,7 @@
  */
 
 import type { APIRoute } from 'astro';
-import { getAuthenticatedUser } from '@server/middleware/getAuthenticatedUser';
+import { getUserIdFromLocals } from '../_utils';
 import { projectService } from '@server/services/project.service';
 import { ProjectLimitError } from '@shared/types/project.types';
 import type { IProjectsResponse, IProjectResponse } from '@shared/types/project.types';
@@ -14,10 +14,11 @@ import type { IProjectsResponse, IProjectResponse } from '@shared/types/project.
  * GET /api/projects
  * List all projects for the authenticated user
  */
-export const GET: APIRoute = async ({ request }) => {
-  const user = await getAuthenticatedUser(request);
-
-  if (!user) {
+export const GET: APIRoute = async ({ locals }) => {
+  let userId: string;
+  try {
+    userId = getUserIdFromLocals(locals);
+  } catch {
     return new Response(JSON.stringify({ error: 'Unauthorized' }), {
       status: 401,
       headers: { 'Content-Type': 'application/json' },
@@ -25,7 +26,7 @@ export const GET: APIRoute = async ({ request }) => {
   }
 
   try {
-    const projects = await projectService.listByUser(user.id);
+    const projects = await projectService.listByUser(userId);
 
     const response: IProjectsResponse = { projects };
     return new Response(JSON.stringify(response), {
@@ -45,10 +46,11 @@ export const GET: APIRoute = async ({ request }) => {
  * POST /api/projects
  * Create a new project for the authenticated user
  */
-export const POST: APIRoute = async ({ request }) => {
-  const user = await getAuthenticatedUser(request);
-
-  if (!user) {
+export const POST: APIRoute = async ({ request, locals }) => {
+  let userId: string;
+  try {
+    userId = getUserIdFromLocals(locals);
+  } catch {
     return new Response(JSON.stringify({ error: 'Unauthorized' }), {
       status: 401,
       headers: { 'Content-Type': 'application/json' },
@@ -59,7 +61,7 @@ export const POST: APIRoute = async ({ request }) => {
     const text = await request.text();
     const body = text ? JSON.parse(text) : {};
 
-    const project = await projectService.create(user.id, body);
+    const project = await projectService.create(userId, body);
 
     const response: IProjectResponse = { project };
     return new Response(JSON.stringify(response), {

@@ -1,5 +1,5 @@
 /* eslint-disable no-undef */
-import { IStore } from '@client/store/createStore';
+import type { IStore } from '@client/store/createStore';
 
 export type Middleware<T> = (store: IStore<T>) => IStore<T>;
 

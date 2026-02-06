@@ -1,7 +1,6 @@
 ---
 import DashboardLayout from '@client/components/dashboard/DashboardLayout';
 import GlobalUI from '@client/components/GlobalUI';
-import { ClientRouter } from 'astro:transitions';
 import '@client/styles/index.css';
 
 // Auth is handled by middleware (src/middleware.ts) for all /dashboard/* routes
@@ -19,12 +18,9 @@ const { title = 'Dashboard' } = Astro.props;
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>{title}</title>
-    <ClientRouter />
   </head>
   <body class="antialiased">
-    <DashboardLayout client:only="react">
-      <slot />
-    </DashboardLayout>
+    <DashboardLayout client:only="react" />
     <GlobalUI client:only="react" />
   </body>
 </html>

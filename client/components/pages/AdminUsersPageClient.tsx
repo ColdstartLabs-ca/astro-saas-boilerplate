@@ -2,7 +2,7 @@
 
 import { UserActionsDropdown } from '@client/components/admin/UserActionsDropdown';
 import { adminFetch } from '@client/utils/admin-api-client';
-import { IAdminUserProfile } from '@shared/types/admin.types';
+import type { IAdminUserProfile } from '@shared/types/admin.types';
 import dayjs from 'dayjs';
 import { ChevronLeft, ChevronRight, Search } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';

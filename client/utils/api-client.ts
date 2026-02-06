@@ -1,4 +1,4 @@
-import { IUpscaleConfig, ProcessingStage } from '@/shared/types/coreflow.types';
+import { type IUpscaleConfig, ProcessingStage } from '@/shared/types/coreflow.types';
 import { TIMEOUTS } from '@shared/config/timeouts.config';
 import { createClient } from '@shared/utils/supabase/client';
 

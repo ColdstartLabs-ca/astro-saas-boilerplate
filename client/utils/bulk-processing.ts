@@ -3,7 +3,7 @@
  * Provides progress tracking, error handling, and parallel processing capabilities
  */
 
-import { IBatchItem } from '@/shared/types/coreflow.types';
+import type { IBatchItem } from '@/shared/types/coreflow.types';
 
 export interface IProcessBatchOptions {
   concurrency?: number; // Number of items to process in parallel (default: 3)

@@ -43,7 +43,7 @@ export function SolutionSection({ className = '' }: IProps): JSX.Element {
             {steps.map((step, idx) => (
               <div key={idx} className="flex flex-col items-center group cursor-default">
                 <div className={`w-20 h-20 rounded-2xl flex items-center justify-center border-2 shadow-xl mb-6 relative transition-all duration-300 ${idx === 2 ? 'bg-slate-900 border-brand-500 text-brand-400 shadow-brand-500/20 scale-110' : 'bg-slate-900 border-slate-800 text-slate-500 hover:border-slate-600 hover:text-slate-300'}`}>
-                  {React.cloneElement(step.icon as React.ReactElement<unknown>, { size: 32 })}
+                  {React.cloneElement(step.icon as React.ReactElement<{ size?: number }>, { size: 32 })}
 
                   {/* Pulse effect for middle step */}
                   {idx === 2 && (

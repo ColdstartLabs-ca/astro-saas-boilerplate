@@ -1,7 +1,7 @@
 'use client';
 
 import { adminFetch } from '@/client/utils/admin-api-client';
-import { IAdminStats } from '@/shared/types/admin.types';
+import type { IAdminStats } from '@/shared/types/admin.types';
 import { useTranslations } from '@src/i18n/utils';
 import { Coins, CreditCard, TrendingUp, Users } from 'lucide-react';
 

@@ -6,7 +6,7 @@
  */
 
 import type { APIRoute } from 'astro';
-import { getAuthenticatedUser } from '@server/middleware/getAuthenticatedUser';
+import { getUserIdFromLocals } from '../../_utils';
 import { projectService } from '@server/services/project.service';
 import type { IProjectResponse, IDeleteProjectResponse } from '@shared/types/project.types';
 
@@ -14,10 +14,11 @@ import type { IProjectResponse, IDeleteProjectResponse } from '@shared/types/pro
  * GET /api/projects/:projectId
  * Get a single project by ID
  */
-export const GET: APIRoute = async ({ request, params }) => {
-  const user = await getAuthenticatedUser(request);
-
-  if (!user) {
+export const GET: APIRoute = async ({ params, locals }) => {
+  let userId: string;
+  try {
+    userId = getUserIdFromLocals(locals);
+  } catch {
     return new Response(JSON.stringify({ error: 'Unauthorized' }), {
       status: 401,
       headers: { 'Content-Type': 'application/json' },
@@ -33,7 +34,7 @@ export const GET: APIRoute = async ({ request, params }) => {
   }
 
   try {
-    const project = await projectService.getById(projectId, user.id);
+    const project = await projectService.getById(projectId, userId);
 
     if (!project) {
       return new Response(JSON.stringify({ error: 'Project not found' }), {
@@ -60,10 +61,11 @@ export const GET: APIRoute = async ({ request, params }) => {
  * PUT /api/projects/:projectId
  * Update a project
  */
-export const PUT: APIRoute = async ({ request, params }) => {
-  const user = await getAuthenticatedUser(request);
-
-  if (!user) {
+export const PUT: APIRoute = async ({ request, params, locals }) => {
+  let userId: string;
+  try {
+    userId = getUserIdFromLocals(locals);
+  } catch {
     return new Response(JSON.stringify({ error: 'Unauthorized' }), {
       status: 401,
       headers: { 'Content-Type': 'application/json' },
@@ -82,7 +84,7 @@ export const PUT: APIRoute = async ({ request, params }) => {
     const text = await request.text();
     const body = text ? JSON.parse(text) : {};
 
-    const project = await projectService.update(projectId, user.id, body);
+    const project = await projectService.update(projectId, userId, body);
 
     const response: IProjectResponse = { project };
     return new Response(JSON.stringify(response), {
@@ -119,10 +121,11 @@ export const PUT: APIRoute = async ({ request, params }) => {
  * DELETE /api/projects/:projectId
  * Delete a project
  */
-export const DELETE: APIRoute = async ({ request, params }) => {
-  const user = await getAuthenticatedUser(request);
-
-  if (!user) {
+export const DELETE: APIRoute = async ({ params, locals }) => {
+  let userId: string;
+  try {
+    userId = getUserIdFromLocals(locals);
+  } catch {
     return new Response(JSON.stringify({ error: 'Unauthorized' }), {
       status: 401,
       headers: { 'Content-Type': 'application/json' },
@@ -138,7 +141,7 @@ export const DELETE: APIRoute = async ({ request, params }) => {
   }
 
   try {
-    await projectService.delete(projectId, user.id);
+    await projectService.delete(projectId, userId);
 
     const response: IDeleteProjectResponse = { success: true };
     return new Response(JSON.stringify(response), {

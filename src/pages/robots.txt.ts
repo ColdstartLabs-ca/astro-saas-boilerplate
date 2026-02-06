@@ -18,7 +18,6 @@ Disallow: /api/
 Disallow: /dashboard/
 Disallow: /admin/
 Disallow: /_astro/
-Disallow: /_next/
 Disallow: /private/
 Disallow: /*.json$
 Disallow: /success

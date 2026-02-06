@@ -37,12 +37,12 @@ export const CSP_POLICY = {
     'https://accounts.google.com',
     'https://staticimgly.com', // @imgly/background-removal WASM model
   ],
-  'frame-src': ['https://js.stripe.com', 'https://accounts.google.com'],
+  'frame-src': ["'self'", 'https://js.stripe.com', 'https://accounts.google.com'],
   'worker-src': ["'self'", 'blob:'], // Web Workers for @imgly/background-removal
   'object-src': ["'none'"],
   'base-uri': ["'self'"],
   'form-action': ["'self'"],
-  'frame-ancestors': ["'none'"],
+  'frame-ancestors': ["'self'"],
   'upgrade-insecure-requests': [],
 } as const;
 
@@ -75,7 +75,7 @@ export function buildCspHeader(): string {
  * - Production (HTTPS): 'strict-origin-when-cross-origin' for security
  */
 export const getSecurityHeaders = (): Record<string, string> => ({
-  'X-Frame-Options': 'DENY',
+  'X-Frame-Options': 'SAMEORIGIN',
   'X-Content-Type-Options': 'nosniff',
   'X-XSS-Protection': '1; mode=block',
   'Referrer-Policy': isDevelopment()
@@ -88,7 +88,7 @@ export const getSecurityHeaders = (): Record<string, string> => ({
  * @deprecated Use getSecurityHeaders() instead for environment-aware headers
  */
 export const SECURITY_HEADERS = {
-  'X-Frame-Options': 'DENY',
+  'X-Frame-Options': 'SAMEORIGIN',
   'X-Content-Type-Options': 'nosniff',
   'X-XSS-Protection': '1; mode=block',
   'Referrer-Policy': 'strict-origin-when-cross-origin',
