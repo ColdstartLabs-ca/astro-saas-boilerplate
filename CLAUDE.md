@@ -47,6 +47,15 @@ Check `.claude/skills/` for relevant patterns.
 - Dates: dayjs
 - Logging: `server/monitoring/logger.ts` | `client/utils/logger.ts`
 
+### React Code Quality
+
+When working with React files that violate code quality principles (SRP, DRY, KISS, etc.), use `/react-refactoring` for systematic refactoring patterns. This skill provides guidance on:
+
+- Promoting Single Responsibility Principle
+- Eliminating code duplication
+- Simplifying complex logic
+- Extracting reusable components
+
 ## Key Paths
 
 - PRDs: `docs/PRDs/` → move to `done/` when complete
