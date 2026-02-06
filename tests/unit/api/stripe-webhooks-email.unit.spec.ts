@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
-import { PaymentHandler } from '@/app/api/webhooks/stripe/handlers/payment.handler';
+import { PaymentHandler } from '@server/webhooks/stripe/handlers/payment.handler';
 import Stripe from 'stripe';
 import { getEmailService } from '@server/services/email.service';
 

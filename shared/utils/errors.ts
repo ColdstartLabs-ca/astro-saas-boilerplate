@@ -10,6 +10,7 @@
 export const ErrorCodes = {
   // 4xx Client Errors
   INVALID_REQUEST: 'INVALID_REQUEST',
+  INVALID_INPUT: 'INVALID_INPUT',
   INVALID_FILE: 'INVALID_FILE',
   FILE_TOO_LARGE: 'FILE_TOO_LARGE',
   INVALID_DIMENSIONS: 'INVALID_DIMENSIONS',
@@ -117,6 +118,10 @@ export const ErrorStatusMap: Record<ErrorCode, { status: number; defaultMessage:
   [ErrorCodes.INVALID_REQUEST]: {
     status: 400,
     defaultMessage: 'The request is invalid or malformed.',
+  },
+  [ErrorCodes.INVALID_INPUT]: {
+    status: 400,
+    defaultMessage: 'The input provided is invalid.',
   },
   [ErrorCodes.INVALID_FILE]: {
     status: 400,

@@ -21,38 +21,36 @@ const mockTranslations = {
   continue: 'Continue',
   keepSubscription: 'Keep Subscription',
   confirmationTitle: 'Are you sure?',
-  confirmationText: 'Once canceled, you will lose access to all premium features on {formattedEndDate}.',
+  confirmationText:
+    'Once canceled, you will lose access to all premium features on {formattedEndDate}.',
   goBack: 'Go Back',
   yesCancel: 'Yes, Cancel Subscription',
   canceling: 'Canceling...',
 };
 
-// Simple translation context mock to replace next-intl
-const TranslationContext = React.createContext<{ t: (key: string, params?: Record<string, string>) => string }>({
-  t: (key: string) => key,
-});
+// Mock the useTranslations hook
+vi.mock('@client/hooks/useTranslations', () => ({
+  useTranslations: vi.fn((_namespace: string) => {
+    const t = (key: string, params?: Record<string, string | number>) => {
+      const keys = key.split('.');
+      let value: unknown = mockTranslations;
+      for (const k of keys) {
+        value = (value as Record<string, unknown>)[k];
+      }
+      if (typeof value === 'string' && params) {
+        return Object.entries(params).reduce(
+          (str, [k, v]) => str.replace(`{${k}}`, String(v)),
+          value
+        );
+      }
+      return typeof value === 'string' ? value : key;
+    };
+    return t;
+  }),
+}));
 
 function renderWithTranslations(ui: React.ReactElement) {
-  const t = (key: string, params?: Record<string, string>) => {
-    const keys = key.split('.');
-    let value: unknown = mockTranslations;
-    for (const k of keys) {
-      value = (value as Record<string, unknown>)[k];
-    }
-    if (typeof value === 'string' && params) {
-      return Object.entries(params).reduce(
-        (str, [k, v]) => str.replace(`{${k}}`, v),
-        value
-      );
-    }
-    return typeof value === 'string' ? value : key;
-  };
-
-  return render(
-    <TranslationContext.Provider value={{ t }}>
-      {ui}
-    </TranslationContext.Provider>
-  );
+  return render(ui);
 }
 
 describe('CancelSubscriptionModal', () => {

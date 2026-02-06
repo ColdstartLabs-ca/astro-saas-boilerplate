@@ -300,5 +300,57 @@
       "updated": "Project updated successfully",
       "deleted": "Project deleted successfully"
     }
+  },
+  "articles": {
+    "title": "Article Generation",
+    "generate": "Generate Article",
+    "generating": "Generating your article...",
+    "generationTime": "This usually takes 30-60 seconds",
+    "generateAnother": "Generate Another",
+    "editArticle": "Edit Article",
+    "editComingSoon": "Edit Article (Coming Soon)",
+    "keyword": "Keyword or Topic",
+    "keywordPlaceholder": "e.g., best project management tools 2026",
+    "aiModel": "AI Model",
+    "tone": "Tone",
+    "targetWordCount": "Target Word Count",
+    "words": "words",
+    "generatedIn": "Generated in",
+    "tokens": "tokens",
+    "createProjectFirst": "Create a project first to generate articles",
+    "createProjectButton": "Create Project",
+    "generationFailed": "Generation Failed",
+    "creditRefunded": "Your credit has been refunded",
+    "tryAgain": "Try Again",
+    "tones": {
+      "professional": "Professional",
+      "casual": "Casual",
+      "witty": "Witty",
+      "academic": "Academic"
+    },
+    "wordCounts": {
+      "800": "~800 words",
+      "1200": "~1200 words",
+      "1500": "~1500 words",
+      "2000": "~2000 words",
+      "2500": "~2500 words",
+      "3000": "~3000 words"
+    },
+    "errors": {
+      "keywordRequired": "Keyword is required",
+      "keywordTooLong": "Keyword is too long (max 200 characters)",
+      "insufficientCredits": "Insufficient credits for article generation",
+      "projectNotFound": "Project not found",
+      "generationFailed": "Failed to generate article. Please try again.",
+      "fetchFailed": "Failed to fetch article details"
+    },
+    "status": {
+      "queued": "Queued",
+      "generating": "Generating",
+      "draft": "Draft",
+      "reviewed": "Reviewed",
+      "published": "Published",
+      "failed": "Failed"
+    }
   }
 }

@@ -10,6 +10,33 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ProjectOnboarding } from './ProjectOnboarding';
 import * as useProjectOnboardingHook from '@client/hooks/useProjectOnboarding';
 
+// Mock lucide-react icons - return empty spans so they don't affect text matching
+vi.mock('lucide-react', () => ({
+  Globe: ({ className }: { className?: string }) => (
+    <span className={className} data-icon="Globe" />
+  ),
+  Code: ({ className }: { className?: string }) => <span className={className} data-icon="Code" />,
+  ShoppingBag: ({ className }: { className?: string }) => (
+    <span className={className} data-icon="ShoppingBag" />
+  ),
+  Database: ({ className }: { className?: string }) => (
+    <span className={className} data-icon="Database" />
+  ),
+  Check: ({ className }: { className?: string }) => (
+    <span className={className} data-icon="Check" />
+  ),
+  ChevronRight: ({ className }: { className?: string }) => (
+    <span className={className} data-icon="ChevronRight" />
+  ),
+  X: ({ className }: { className?: string }) => <span className={className} data-icon="X" />,
+  Loader2: ({ className }: { className?: string }) => (
+    <span className={className} data-icon="Loader2" />
+  ),
+  ArrowRight: ({ className }: { className?: string }) => (
+    <span className={className} data-icon="ArrowRight" />
+  ),
+}));
+
 // Mock the hook
 const mockSubmit = vi.fn();
 const mockNextStep = vi.fn();
@@ -20,6 +47,18 @@ const mockForm = {
   watch: vi.fn(),
   reset: vi.fn(),
   handleSubmit: vi.fn(),
+  register: vi.fn(),
+  control: {
+    _names: { array: [] },
+    _subjects: { values: { next: vi.fn() }, array: { next: vi.fn() } },
+    _getWatch: vi.fn(),
+    _getValues: vi.fn(),
+    _getFieldState: vi.fn(),
+  },
+  formState: { errors: {} },
+  getValues: vi.fn(),
+  setValue: vi.fn(),
+  trigger: vi.fn(),
 };
 
 const mockStepper = {
@@ -45,6 +84,40 @@ vi.mock('@client/hooks/useProjectOnboarding', () => ({
   })),
 }));
 
+// Mock react-hook-form - we need to use real FormProvider but mock useFormContext
+vi.mock('react-hook-form', async () => {
+  const actual = await vi.importActual<typeof import('react-hook-form')>('react-hook-form');
+  return {
+    ...actual,
+    useFormContext: vi.fn(() => mockForm),
+    Controller: ({
+      render,
+    }: {
+      render: (props: { field: unknown; fieldState: unknown }) => React.ReactNode;
+    }) => render({ field: {}, fieldState: {} }),
+  };
+});
+
+// Mock useTranslations
+vi.mock('@client/hooks/useTranslations', () => ({
+  useTranslations: vi.fn(() => (key: string) => {
+    const translations: Record<string, string> = {
+      'projects.onboarding.title': 'Create New Project',
+      'projects.onboarding.step1.projectName': 'Project Name',
+      'projects.onboarding.step1.projectNamePlaceholder': 'My Awesome Project',
+      'projects.onboarding.step1.domainUrl': 'Domain URL',
+      'projects.onboarding.step1.industry': 'Industry',
+      'projects.onboarding.step1.industryPlaceholder': 'Select an industry',
+      'projects.onboarding.nextStep': 'Next Step',
+      'projects.onboarding.back': 'Back',
+      'projects.onboarding.cancel': 'Cancel',
+      'projects.onboarding.completeSetup': 'Complete Setup',
+      'projects.onboarding.creating': 'Creating...',
+    };
+    return translations[key] || key;
+  }),
+}));
+
 describe('ProjectOnboarding', () => {
   let queryClient: QueryClient;
 
@@ -56,6 +129,10 @@ describe('ProjectOnboarding', () => {
       },
     });
     vi.clearAllMocks();
+    // Reset stepper state
+    mockStepper.currentStep = 0;
+    mockStepper.isFirstStep = true;
+    mockStepper.isLastStep = false;
   });
 
   const wrapper = ({ children }: { children: React.ReactNode }) => (
@@ -67,7 +144,8 @@ describe('ProjectOnboarding', () => {
       render(<ProjectOnboarding isOpen={true} onClose={() => {}} />, { wrapper });
 
       expect(screen.getByText('Create New Project')).toBeInTheDocument();
-      expect(screen.getByText(/Step 1 of 3/i)).toBeInTheDocument();
+      // There are two "Step 1 of 3" elements (header and progress bar), use getAllByText
+      expect(screen.getAllByText(/Step 1 of 3/i)).toHaveLength(2);
     });
 
     it('should not render when isOpen is false', () => {

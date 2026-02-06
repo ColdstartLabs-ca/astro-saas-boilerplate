@@ -29,6 +29,7 @@ export default defineConfig({
       '@client': path.resolve(__dirname, './client'),
       '@server': path.resolve(__dirname, './server'),
       '@shared': path.resolve(__dirname, './shared'),
+      '@src': path.resolve(__dirname, './src'),
       '@app': path.resolve(__dirname, './app'),
       '@lib': path.resolve(__dirname, './lib'),
       '@locales': path.resolve(__dirname, './locales'),

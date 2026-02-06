@@ -6,7 +6,11 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { ProjectService } from '../project.service';
 import { ProjectLimitError } from '@shared/types/project.types';
-import type { IProject, ICreateProjectInput, IUpdateProjectInput } from '@shared/types/project.types';
+import type {
+  IProject,
+  ICreateProjectInput,
+  IUpdateProjectInput,
+} from '@shared/types/project.types';
 
 // Mock Supabase admin client
 vi.mock('@server/supabase/supabaseAdmin', () => ({
@@ -131,16 +135,14 @@ describe('ProjectService', () => {
         })),
       });
 
-      // Mock insert
-      const mockInsertReturn = {
-        select: vi.fn(() => ({
-          single: vi.fn(() => ({
-            data: { ...mockProject, name: input.name },
-            error: null,
-          })),
-        })),
-      };
-      mockSupabaseAdmin.from.mockReturnValueOnce(mockInsertReturn);
+      // Mock insert - need to return an object with insert property
+      const mockSingle = vi.fn(() => ({
+        data: { ...mockProject, name: input.name },
+        error: null,
+      }));
+      const mockSelect = vi.fn(() => ({ single: mockSingle }));
+      const mockInsert = vi.fn(() => ({ select: mockSelect }));
+      mockSupabaseAdmin.from.mockReturnValueOnce({ insert: mockInsert });
 
       const result = await projectService.create(mockUserId, input);
 
@@ -203,19 +205,21 @@ describe('ProjectService', () => {
         name: 'Updated Project Name',
       };
 
-      const mockUpdateReturn = {
-        select: vi.fn(() => ({
-          single: vi.fn(() => ({
-            data: { ...mockProject, name: input.name },
-            error: null,
-          })),
-        })),
-      };
-      mockSupabaseAdmin.from.mockReturnValueOnce(mockUpdateReturn);
+      const mockSingle = vi.fn(() => ({
+        data: { ...mockProject, name: input.name },
+        error: null,
+      }));
+      const mockSelect = vi.fn(() => ({ single: mockSingle }));
+      const mockEq2 = vi.fn(() => ({ select: mockSelect }));
+      const mockEq1 = vi.fn(() => ({ eq: mockEq2 }));
+      const mockUpdate = vi.fn(() => ({ eq: mockEq1 }));
+      mockSupabaseAdmin.from.mockReturnValueOnce({ update: mockUpdate });
 
       const result = await projectService.update(mockProjectId, mockUserId, input);
 
       expect(result.name).toBe(input.name);
+      expect(mockSupabaseAdmin.from).toHaveBeenCalledWith('projects');
+      expect(mockUpdate).toHaveBeenCalled();
     });
 
     it('should throw not found error for unowned project', async () => {
@@ -223,22 +227,19 @@ describe('ProjectService', () => {
         name: 'Updated Name',
       };
 
-      mockSupabaseAdmin.from.mockReturnValueOnce({
-        update: vi.fn(() => ({
-          eq: vi.fn(() => ({
-            select: vi.fn(() => ({
-              single: vi.fn(() => ({
-                data: null,
-                error: { code: 'PGRST116' },
-              })),
-            })),
-          })),
-        })),
-      });
+      const mockSingle = vi.fn(() => ({
+        data: null,
+        error: { code: 'PGRST116' },
+      }));
+      const mockSelect = vi.fn(() => ({ single: mockSingle }));
+      const mockEq2 = vi.fn(() => ({ select: mockSelect }));
+      const mockEq1 = vi.fn(() => ({ eq: mockEq2 }));
+      const mockUpdate = vi.fn(() => ({ eq: mockEq1 }));
+      mockSupabaseAdmin.from.mockReturnValueOnce({ update: mockUpdate });
 
-      await expect(
-        projectService.update(mockProjectId, 'other-user-id', input)
-      ).rejects.toThrow('Project not found');
+      await expect(projectService.update(mockProjectId, 'other-user-id', input)).rejects.toThrow(
+        'Project not found'
+      );
     });
 
     it('should throw not found error when project does not exist', async () => {
@@ -246,69 +247,55 @@ describe('ProjectService', () => {
         name: 'Updated Name',
       };
 
-      mockSupabaseAdmin.from.mockReturnValueOnce({
-        update: vi.fn(() => ({
-          eq: vi.fn(() => ({
-            select: vi.fn(() => ({
-              single: vi.fn(() => ({
-                data: null,
-                error: { code: 'PGRST116' },
-              })),
-            })),
-          })),
-        })),
-      });
+      const mockSingle = vi.fn(() => ({
+        data: null,
+        error: { code: 'PGRST116' },
+      }));
+      const mockSelect = vi.fn(() => ({ single: mockSingle }));
+      const mockEq2 = vi.fn(() => ({ select: mockSelect }));
+      const mockEq1 = vi.fn(() => ({ eq: mockEq2 }));
+      const mockUpdate = vi.fn(() => ({ eq: mockEq1 }));
+      mockSupabaseAdmin.from.mockReturnValueOnce({ update: mockUpdate });
 
-      await expect(
-        projectService.update('non-existent-id', mockUserId, input)
-      ).rejects.toThrow('Project not found');
+      await expect(projectService.update('non-existent-id', mockUserId, input)).rejects.toThrow(
+        'Project not found'
+      );
     });
   });
 
   describe('delete', () => {
     it('should delete project on happy path', async () => {
-      mockSupabaseAdmin.from.mockReturnValueOnce({
-        delete: vi.fn(() => ({
-          eq: vi.fn(() => ({
-            error: null,
-          })),
-        })),
-      });
+      const mockEq2 = vi.fn(() => ({ error: null }));
+      const mockEq1 = vi.fn(() => ({ eq: mockEq2 }));
+      const mockDelete = vi.fn(() => ({ eq: mockEq1 }));
+      mockSupabaseAdmin.from.mockReturnValueOnce({ delete: mockDelete });
 
-      await expect(
-        projectService.delete(mockProjectId, mockUserId)
-      ).resolves.not.toThrow();
+      await expect(projectService.delete(mockProjectId, mockUserId)).resolves.not.toThrow();
     });
 
     it('should handle delete error gracefully', async () => {
-      mockSupabaseAdmin.from.mockReturnValueOnce({
-        delete: vi.fn(() => ({
-          eq: vi.fn(() => ({
-            error: { message: 'Database error' },
-          })),
-        })),
-      });
+      const mockEq2 = vi.fn(() => ({ error: { message: 'Database error' } }));
+      const mockEq1 = vi.fn(() => ({ eq: mockEq2 }));
+      const mockDelete = vi.fn(() => ({ eq: mockEq1 }));
+      mockSupabaseAdmin.from.mockReturnValueOnce({ delete: mockDelete });
 
-      await expect(
-        projectService.delete(mockProjectId, mockUserId)
-      ).rejects.toThrow('Failed to delete project');
+      await expect(projectService.delete(mockProjectId, mockUserId)).rejects.toThrow(
+        'Failed to delete project'
+      );
     });
 
     it('should only delete user-owned projects via WHERE clause', async () => {
-      const mockDelete = vi.fn(() => ({
-        eq: vi.fn(() => ({
-          error: null,
-        })),
-      }));
-
-      mockSupabaseAdmin.from.mockReturnValueOnce({
-        delete: mockDelete,
-      });
+      const mockEq2 = vi.fn(() => ({ error: null }));
+      const mockEq1 = vi.fn(() => ({ eq: mockEq2 }));
+      const mockDelete = vi.fn(() => ({ eq: mockEq1 }));
+      mockSupabaseAdmin.from.mockReturnValueOnce({ delete: mockDelete });
 
       await projectService.delete(mockProjectId, mockUserId);
 
       // Verify both ID and user_id are used in WHERE clause
       expect(mockDelete).toHaveBeenCalled();
+      expect(mockEq1).toHaveBeenCalledWith('id', mockProjectId);
+      expect(mockEq2).toHaveBeenCalledWith('user_id', mockUserId);
     });
   });
 });
