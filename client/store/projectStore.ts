@@ -47,7 +47,7 @@ export interface IProjectState {
   clearActiveProjectId: () => void;
 }
 
-export const useProjectStore = create<IProjectState>((set, get) => ({
+export const useProjectStore = create<IProjectState>((set, _get) => ({
   // Initialize from localStorage
   activeProjectId: getActiveProjectIdFromStorage(),
 

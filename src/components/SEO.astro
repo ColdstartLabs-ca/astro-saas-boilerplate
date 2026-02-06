@@ -1,0 +1,105 @@
+---
+/**
+ * SEO Component
+ *
+ * Standardized SEO metadata injection for Astro pages.
+ * Consistently generates meta tags for search engines and social media.
+ *
+ * @example
+ * ---
+ * import SEO from '@src/components/SEO.astro';
+ * import Layout from '@src/layouts/Layout.astro';
+ *
+ * const title = 'Simple, Transparent Pricing';
+ * const description = 'Choose the subscription plan that fits your needs.';
+ * ---
+ *
+ * <Layout title={title}>
+ *   <SEO title={title} description={description} path="/pricing" />
+ *   <PageContent />
+ * </Layout>
+ */
+
+import { clientEnv } from '@shared/config/env';
+
+interface ISEOProps {
+  /** Page title (will be appended with APP_NAME for OG) */
+  title: string;
+  /** Page description for SEO */
+  description: string;
+  /** Current path (defaults to '/') */
+  path?: string;
+  /** Override OG image URL (defaults to /og-image.png) */
+  ogImage?: string;
+  /** OG image width (defaults to 1200) */
+  ogImageWidth?: number;
+  /** OG image height (defaults to 630) */
+  ogImageHeight?: number;
+  /** Override OG type (defaults to 'website') */
+  ogType?: string;
+  /** Canonical URL (auto-generated if not provided) */
+  canonicalUrl?: string;
+  /** Additional meta tags to include */
+  additionalMeta?: {
+    name?: string;
+    property?: string;
+    content: string;
+  }[];
+}
+
+const {
+  title,
+  description,
+  path = '/',
+  ogImage,
+  ogImageWidth = 1200,
+  ogImageHeight = 630,
+  ogType = 'website',
+  canonicalUrl,
+  additionalMeta = [],
+} = Astro.props;
+
+// Generate full URL for the page
+const fullUrl = `${clientEnv.BASE_URL}${path}`;
+
+// Use provided ogImage or default to /og-image.png
+const finalOgImage = ogImage || `/og-image${path === '/' ? '' : `-${path.replace(/^\//, '')}`}.png`;
+
+// Use provided canonicalUrl or generate from path
+const finalCanonicalUrl = canonicalUrl || fullUrl;
+
+// OG title with APP_NAME suffix (unless title already includes it)
+const ogTitle = title.includes(clientEnv.APP_NAME)
+  ? title
+  : `${title} - ${clientEnv.APP_NAME}`;
+---
+
+<!-- Primary Meta Tags -->
+<meta name="description" content={description} />
+
+<!-- Open Graph / Facebook -->
+<meta property="og:type" content={ogType} />
+<meta property="og:url" content={fullUrl} />
+<meta property="og:title" content={ogTitle} />
+<meta property="og:description" content={description} />
+<meta property="og:site_name" content={clientEnv.APP_NAME} />
+<meta property="og:image" content={`${clientEnv.BASE_URL}${finalOgImage}`} />
+<meta property="og:image:width" content={ogImageWidth} />
+<meta property="og:image:height" content={ogImageHeight} />
+
+<!-- Twitter Card -->
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:title" content={ogTitle} />
+<meta name="twitter:description" content={description} />
+<meta name="twitter:image" content={`${clientEnv.BASE_URL}${finalOgImage}`} />
+
+<!-- Canonical URL -->
+<link rel="canonical" href={finalCanonicalUrl} />
+
+<!-- Additional Meta Tags -->
+{additionalMeta.map(meta => (
+  <>
+    {meta.name && <meta name={meta.name} content={meta.content} />}
+    {meta.property && <meta property={meta.property} content={meta.content} />}
+  </>
+))}

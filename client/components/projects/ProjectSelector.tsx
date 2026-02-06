@@ -11,9 +11,10 @@
 
 'use client';
 
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef } from 'react';
 import { ChevronDown, Plus } from 'lucide-react';
 import { useProjects } from '@client/hooks/useProjects';
+import { useClickOutside } from '@client/hooks/useClickOutside';
 import { useLogger } from '@client/utils/logger';
 import { getTranslations } from '@src/i18n/utils';
 import { useMemo } from 'react';
@@ -31,17 +32,8 @@ export function ProjectSelector({ onOpenOnboarding }: IProjectSelectorProps): JS
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  // Close dropdown when clicking outside
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
-        setIsOpen(false);
-      }
-    };
-
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
+  // Close dropdown when clicking outside using shared hook
+  useClickOutside(dropdownRef, () => setIsOpen(false));
 
   const handleSelectProject = (projectId: string) => {
     setActiveProject(projectId);

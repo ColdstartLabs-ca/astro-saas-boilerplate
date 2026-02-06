@@ -3,12 +3,7 @@
 import React, { Suspense, useState, useEffect } from 'react';
 import { onDashboardNavigate } from '@client/utils/dashboardNavigation';
 import { useIsAdmin } from '@client/store/userStore';
-import {
-  getRouteByPath,
-  matchDynamicRoute,
-  DASHBOARD_ROUTES,
-  type IDashboardRoute,
-} from '@client/config/dashboardRoutes';
+import { getRouteByPath, matchDynamicRoute } from '@client/config/dashboardRoutes';
 
 function LoadingSpinner(): JSX.Element {
   return (

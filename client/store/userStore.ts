@@ -5,7 +5,7 @@ import { clientEnv } from '@shared/config/env';
 import type { AuthChangeEvent, Session } from '@supabase/supabase-js';
 import { create } from 'zustand';
 import { useShallow } from 'zustand/react/shallow';
-import { handlePostAuthRedirect } from './auth/postAuthRedirect';
+import { handleAuthRedirect } from '@client/utils/authRedirectManager';
 
 // Cache keys
 const USER_CACHE_KEY = `${clientEnv.CACHE_USER_KEY_PREFIX}_user_cache`;
@@ -353,8 +353,8 @@ if (typeof window !== 'undefined') {
         name: session.user.user_metadata?.name,
         provider: session.user.app_metadata?.provider ?? 'email',
         role: isSameUser ? (currentUser?.role ?? 'user') : 'user',
-        profile: isSameUser ? currentUser?.profile ?? null : null,
-        subscription: isSameUser ? currentUser?.subscription ?? null : null,
+        profile: isSameUser ? (currentUser?.profile ?? null) : null,
+        subscription: isSameUser ? (currentUser?.subscription ?? null) : null,
       };
 
       // NON-BLOCKING: Show UI immediately with user data
@@ -380,7 +380,7 @@ if (typeof window !== 'undefined') {
       // OAuth redirects directly to /dashboard via redirectTo option
       if (shouldRedirectToDashboard) {
         shouldRedirectToDashboard = false;
-        handlePostAuthRedirect();
+        handleAuthRedirect();
       }
     }
   });

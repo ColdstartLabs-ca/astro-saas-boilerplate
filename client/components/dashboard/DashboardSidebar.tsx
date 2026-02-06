@@ -10,7 +10,11 @@ import { cn } from '@client/utils/cn';
 import { getTranslations, type TFunction } from '@src/i18n/utils';
 import { ProjectSelector } from '@client/components/projects/ProjectSelector';
 import { ProjectOnboarding } from '@client/components/projects/ProjectOnboarding';
-import { getRoutesByGroup, isPathActive, type IDashboardRoute } from '@client/config/dashboardRoutes';
+import {
+  getRoutesByGroup,
+  isPathActive,
+  type IDashboardRoute,
+} from '@client/config/dashboardRoutes';
 
 interface IDashboardSidebarProps {
   isOpen?: boolean;
@@ -153,7 +157,7 @@ export const DashboardSidebar: React.FC<IDashboardSidebarProps> = ({ isOpen, onC
 
         {/* Logo/Brand */}
         <div className="p-6 border-b border-border">
-          <a href="/" className="flex items-center gap-2" onClick={e => handleNavigation('/')}>
+          <a href="/" className="flex items-center gap-2" onClick={() => handleNavigation('/')}>
             <Logo variant="full" />
           </a>
         </div>
@@ -164,7 +168,13 @@ export const DashboardSidebar: React.FC<IDashboardSidebarProps> = ({ isOpen, onC
         {/* Primary Navigation */}
         <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
           {primaryItems.map(item => (
-            <SidebarItem key={item.path} route={item} pathname={pathname} onNavigate={handleNavigation} t={t} />
+            <SidebarItem
+              key={item.path}
+              route={item}
+              pathname={pathname}
+              onNavigate={handleNavigation}
+              t={t}
+            />
           ))}
 
           {/* Separator */}
@@ -172,14 +182,26 @@ export const DashboardSidebar: React.FC<IDashboardSidebarProps> = ({ isOpen, onC
 
           {/* Secondary Navigation */}
           {[...secondaryItems, ...adminItems].map(item => (
-            <SidebarItem key={item.path} route={item} pathname={pathname} onNavigate={handleNavigation} t={t} />
+            <SidebarItem
+              key={item.path}
+              route={item}
+              pathname={pathname}
+              onNavigate={handleNavigation}
+              t={t}
+            />
           ))}
         </nav>
 
         {/* Bottom Navigation */}
         <div className="px-3 py-4 border-t border-border space-y-1">
           {bottomItems.map(item => (
-            <SidebarItem key={item.path} route={item} pathname={pathname} onNavigate={handleNavigation} t={t} />
+            <SidebarItem
+              key={item.path}
+              route={item}
+              pathname={pathname}
+              onNavigate={handleNavigation}
+              t={t}
+            />
           ))}
 
           {/* Sign Out Button */}

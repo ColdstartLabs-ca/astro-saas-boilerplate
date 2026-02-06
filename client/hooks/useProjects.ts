@@ -27,7 +27,7 @@ import { createClient } from '@shared/utils/supabase/client';
 // Constants
 // =============================================================================
 
-const ACTIVE_PROJECT_KEY = 'autopilotrank_active_project_id';
+const _ACTIVE_PROJECT_KEY = 'autopilotrank_active_project_id';
 
 // =============================================================================
 // API Functions

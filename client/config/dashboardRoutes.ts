@@ -9,7 +9,7 @@
 
 'use client';
 
-import { lazy } from 'react';
+import React, { lazy } from 'react';
 import type { ComponentType } from 'react';
 import {
   LayoutGrid,
@@ -35,7 +35,7 @@ const BacklinksPage = lazy(() => import('@client/components/pages/BacklinksPageC
 const AnalyticsPage = lazy(() => import('@client/components/pages/AnalyticsPageClient'));
 const SettingsPage = lazy(() => import('@client/components/pages/SettingsPageClient'));
 const BillingPage = lazy(() => import('@client/components/pages/BillingPageClient'));
-const HistoryPage = lazy(() => import('@client/components/pages/HistoryPageClient'));
+const _HistoryPage = lazy(() => import('@client/components/pages/HistoryPageClient'));
 const SupportPage = lazy(() => import('@client/components/pages/SupportPageClient'));
 
 // Admin pages
@@ -46,7 +46,7 @@ const AdminDashboardLayout = lazy(() =>
 );
 const AdminDashboardPage = lazy(() => import('@client/components/pages/AdminDashboardPageClient'));
 const AdminUsersPage = lazy(() => import('@client/components/pages/AdminUsersPageClient'));
-const AdminUserDetailPage = lazy(
+const _AdminUserDetailPage = lazy(
   () => import('@client/components/pages/AdminUserDetailPageClient')
 );
 
@@ -203,7 +203,8 @@ export const DASHBOARD_ROUTES: readonly IDashboardRoute[] = [
  * Get route by path
  */
 export function getRouteByPath(pathname: string): IDashboardRoute | undefined {
-  const normalizedPath = pathname.endsWith('/') && pathname !== '/' ? pathname.slice(0, -1) : pathname;
+  const normalizedPath =
+    pathname.endsWith('/') && pathname !== '/' ? pathname.slice(0, -1) : pathname;
 
   // First try exact match
   for (const route of DASHBOARD_ROUTES) {
