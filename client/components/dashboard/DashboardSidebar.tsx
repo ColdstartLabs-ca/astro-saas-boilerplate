@@ -64,7 +64,7 @@ function SidebarItem({
       className={cn(
         'flex items-center space-x-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors w-full text-left',
         isActive
-          ? 'bg-secondary text-white shadow-lg shadow-brand-900'
+          ? 'bg-brand-600 text-white shadow-lg shadow-brand-900'
           : 'text-secondary hover:bg-surface-light hover:text-white'
       )}
     >

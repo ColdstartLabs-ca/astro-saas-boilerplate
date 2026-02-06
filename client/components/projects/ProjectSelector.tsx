@@ -11,14 +11,13 @@
 
 'use client';
 
-import React, { useState, useRef } from 'react';
-import { ChevronDown, Plus } from 'lucide-react';
-import { useProjects } from '@client/hooks/useProjects';
 import { useClickOutside } from '@client/hooks/useClickOutside';
+import { useProjects } from '@client/hooks/useProjects';
+import { cn } from '@client/utils/cn';
 import { useLogger } from '@client/utils/logger';
 import { getTranslations } from '@src/i18n/utils';
-import { useMemo } from 'react';
-import { cn } from '@client/utils/cn';
+import { ChevronDown, FolderOpen, Plus } from 'lucide-react';
+import { useMemo, useRef, useState } from 'react';
 
 interface IProjectSelectorProps {
   onOpenOnboarding?: () => void;
@@ -52,8 +51,8 @@ export function ProjectSelector({ onOpenOnboarding }: IProjectSelectorProps): JS
   };
 
   return (
-    <div className="mb-6 px-2" ref={dropdownRef}>
-      <div className="text-xs font-semibold text-muted uppercase tracking-wider mb-2">
+    <div className="px-3 py-3 border-b border-border" ref={dropdownRef}>
+      <div className="text-[10px] font-semibold text-muted uppercase tracking-wider mb-2">
         {t('projects.activeProject')}
       </div>
       <div className="relative">
@@ -63,8 +62,12 @@ export function ProjectSelector({ onOpenOnboarding }: IProjectSelectorProps): JS
           className="w-full bg-surface-light hover:bg-elevated transition-colors border border-border rounded-lg p-3 flex items-center justify-between group"
         >
           <div className="flex items-center gap-3 overflow-hidden">
-            <div className="w-8 h-8 rounded bg-accent/20 text-accent-light flex items-center justify-center font-bold text-sm shrink-0">
-              {activeProject ? getProjectInitial(activeProject.name) : '?'}
+            <div className="w-8 h-8 rounded bg-accent/20 text-accent flex items-center justify-center shrink-0">
+              {activeProject ? (
+                <span className="font-bold text-sm">{getProjectInitial(activeProject.name)}</span>
+              ) : (
+                <FolderOpen className="w-4 h-4" />
+              )}
             </div>
             <div className="truncate">
               <div className="text-sm font-medium text-white truncate">

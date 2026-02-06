@@ -21,9 +21,9 @@ export const CSP_POLICY = {
     'https://js.stripe.com',
     'https://accounts.google.com',
   ],
-  'style-src': ["'self'", "'unsafe-inline'", 'https://accounts.google.com'],
+  'style-src': ["'self'", "'unsafe-inline'", 'https://accounts.google.com', 'https://fonts.googleapis.com'],
   'img-src': ["'self'", 'blob:', 'data:', 'https:'],
-  'font-src': ["'self'"],
+  'font-src': ["'self'", 'https://fonts.gstatic.com'],
   'connect-src': [
     "'self'",
     'blob:',

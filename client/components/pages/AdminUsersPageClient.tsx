@@ -126,7 +126,7 @@ export default function AdminUsersPageClient(): JSX.Element {
                     <span
                       className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${
                         user.role === 'admin'
-                          ? 'bg-secondary/20 text-secondary'
+                          ? 'bg-brand-600/20 text-brand-600'
                           : 'bg-surface-light text-primary'
                       }`}
                     >

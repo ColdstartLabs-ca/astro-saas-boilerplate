@@ -13,7 +13,7 @@ export function Logo({ className = '', variant = 'full' }: IProps): JSX.Element 
   return (
     <div className={`flex items-center gap-2 ${className}`}>
       {/* Green square icon with white lightning bolt/arrow */}
-      <div className="bg-secondary p-1.5 rounded-lg">
+      <div className="bg-brand-600 p-1.5 rounded-lg">
         <svg
           width="20"
           height="20"

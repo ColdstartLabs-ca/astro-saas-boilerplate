@@ -48,11 +48,9 @@ export default {
           light: 'rgb(var(--color-accent-light) / <alpha-value>)',
         },
 
-        // NEW: Secondary accent
+        // Secondary = slate-400 (body text). Green brand accent lives in `brand-600`.
         secondary: {
-          DEFAULT: 'rgb(var(--color-secondary) / <alpha-value>)',
-          hover: 'rgb(var(--color-secondary-hover) / <alpha-value>)',
-          light: 'rgb(var(--color-secondary-light) / <alpha-value>)',
+          DEFAULT: 'rgb(var(--color-text-secondary) / <alpha-value>)',
         },
 
         // NEW: Tertiary for gradients
@@ -67,10 +65,12 @@ export default {
           hover: 'rgb(var(--color-primary-hover) / <alpha-value>)',
         },
         foreground: 'rgb(var(--color-foreground) / <alpha-value>)',
+        // Muted = slate-500 (dimmer text, placeholders)
         muted: {
+          DEFAULT: 'rgb(var(--color-text-muted) / <alpha-value>)',
           foreground: 'rgb(var(--color-muted-foreground) / <alpha-value>)',
         },
-        // Text colors
+        // Text color aliases (produces text-text-primary, etc. for legacy usage)
         'text-primary': 'rgb(var(--color-text-primary) / <alpha-value>)',
         'text-secondary': 'rgb(var(--color-text-secondary) / <alpha-value>)',
         'text-muted': 'rgb(var(--color-text-muted) / <alpha-value>)',
