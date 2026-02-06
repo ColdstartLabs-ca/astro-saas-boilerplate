@@ -2,22 +2,22 @@
 
 import React, { useState, useMemo, useEffect } from 'react';
 import {
-  CreditCard,
+  LayoutGrid,
+  Layers,
+  Search,
+  CheckCircle2,
+  Calendar as CalendarIcon,
+  Link2,
+  BarChart2,
   Settings,
-  HelpCircle,
   LogOut,
   Shield,
   X,
-  Loader2,
 } from 'lucide-react';
-import { useUserStore, useIsAdmin, useSubscription } from '@client/store/userStore';
-import { CreditsDisplay } from '@client/components/stripe/CreditsDisplay';
-import { Logo } from '@client/components/logo/Logo';
-import { getPlanDisplayName } from '@shared/config/stripe';
+import { useUserStore, useIsAdmin } from '@client/store/userStore';
 import { useLogger } from '@client/utils/logger';
 import { cn } from '@client/utils/cn';
 import { getTranslations } from '@src/i18n/utils';
-import { LocaleSwitcher } from '@client/components/i18n/LocaleSwitcher';
 import { ProjectSelector } from '@client/components/projects/ProjectSelector';
 import { ProjectOnboarding } from '@client/components/projects/ProjectOnboarding';
 
@@ -34,49 +34,53 @@ interface IDashboardSidebarProps {
 
 export const DashboardSidebar: React.FC<IDashboardSidebarProps> = ({ isOpen, onClose }) => {
   const t = useMemo(() => getTranslations('dashboard'), []);
-  const { signOut, user, isLoading, error } = useUserStore();
+  const { signOut, user } = useUserStore();
   const isAdmin = useIsAdmin();
-  const subscription = useSubscription();
   const logger = useLogger('DashboardSidebar');
 
-  // Get current pathname from window.location
   const [pathname, setPathname] = useState('');
   useEffect(() => {
-    setPathname(window.location.pathname);
+    const updatePathname = (_event?: Event) => setPathname(window.location.pathname);
+    updatePathname();
+
+    window.addEventListener('popstate', updatePathname);
+    document.addEventListener('astro:after-swap', updatePathname);
+
+    return () => {
+      window.removeEventListener('popstate', updatePathname);
+      document.removeEventListener('astro:after-swap', updatePathname);
+    };
   }, []);
-
-  // Check if profile data is still loading (but not if there's an error)
-  const isProfileLoading = isLoading || (user && !user.profile && !error);
-
-  // Resolve subscription to plan name - prioritize profile's subscription_tier
-  const planDisplayName = getPlanDisplayName({
-    subscriptionTier: user?.profile?.subscription_tier,
-    priceId: subscription?.price_id,
-  });
 
   // Onboarding modal state
   const [showOnboarding, setShowOnboarding] = useState(false);
 
-  // Secondary nav — account management
-  const secondaryItems: ISidebarItem[] = [
-    { label: t('sidebar.billing'), href: '/dashboard/billing', icon: CreditCard },
+  const primaryItems: ISidebarItem[] = [
+    { label: t('sidebar.overview'), href: '/dashboard', icon: LayoutGrid },
+    { label: t('sidebar.campaigns'), href: '/dashboard/campaigns', icon: Layers },
+    { label: t('sidebar.keywords'), href: '/dashboard/keywords', icon: Search },
+    { label: t('sidebar.optimization'), href: '/dashboard/optimization', icon: CheckCircle2 },
+    { label: t('sidebar.calendar'), href: '/dashboard/calendar', icon: CalendarIcon },
+    { label: t('sidebar.backlinks'), href: '/dashboard/backlinks', icon: Link2 },
+    { label: t('sidebar.analytics'), href: '/dashboard/analytics', icon: BarChart2 },
+  ];
+
+  const accountItems: ISidebarItem[] = [
     { label: t('sidebar.settings'), href: '/dashboard/settings', icon: Settings },
   ];
 
-  // Add Admin menu item if user is admin
   if (isAdmin) {
-    secondaryItems.push({ label: t('sidebar.admin'), href: '/dashboard/admin', icon: Shield });
+    accountItems.push({ label: t('sidebar.admin'), href: '/dashboard/admin', icon: Shield });
   }
 
-  const bottomMenuItems: ISidebarItem[] = [
-    { label: t('sidebar.helpSupport'), href: '/help', icon: HelpCircle },
-  ];
+  const normalizedPathname =
+    pathname.length > 1 && pathname.endsWith('/') ? pathname.slice(0, -1) : pathname;
 
   const isActive = (href: string) => {
     if (href === '/dashboard') {
-      return pathname === '/dashboard';
+      return normalizedPathname === '/dashboard';
     }
-    return pathname.startsWith(href);
+    return normalizedPathname.startsWith(href);
   };
 
   const handleSignOut = async () => {
@@ -88,14 +92,6 @@ export const DashboardSidebar: React.FC<IDashboardSidebarProps> = ({ isOpen, onC
         error: error instanceof Error ? error.message : 'Unknown error',
         userEmail: user?.email,
       });
-    }
-  };
-
-  const handleNavigation = (href: string) => {
-    window.location.href = href;
-    // Close drawer on mobile after navigation
-    if (onClose) {
-      onClose();
     }
   };
 
@@ -135,60 +131,59 @@ export const DashboardSidebar: React.FC<IDashboardSidebarProps> = ({ isOpen, onC
         )}
 
         {/* Logo/Brand */}
-        <div className="p-4 border-b border-border flex items-center justify-between">
-          <a href="/" className="flex items-center">
-            <Logo variant="compact" />
+        <div className="px-4 py-5 border-b border-border">
+          <a href="/" className="inline-flex items-center" onClick={() => onClose?.()}>
+            <img
+              src="/logo/horizontal-logo-compact.png"
+              alt="AutopilotRank"
+              className="h-8 w-auto"
+            />
           </a>
-          <LocaleSwitcher />
         </div>
 
-        {/* Project & User Section - Combined */}
-        <div className="p-4 border-b border-border space-y-4">
-          {/* Active Project Selector */}
+        {/* Active Project */}
+        <div className="border-b border-border pb-2">
           <ProjectSelector onOpenOnboarding={() => setShowOnboarding(true)} />
-
-          {/* Credits Display */}
-          <CreditsDisplay />
         </div>
 
-        {/* Navigation */}
+        {/* Primary Navigation */}
         <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
-          {/* Secondary Navigation - Account Management */}
-          {secondaryItems.map(item => {
+          {primaryItems.map(item => {
             const Icon = item.icon;
             const active = isActive(item.href);
 
             return (
-              <button
+              <a
                 key={item.href}
-                onClick={() => handleNavigation(item.href)}
+                href={item.href}
+                data-astro-prefetch="hover"
+                onClick={() => onClose?.()}
                 className={cn(
                   'flex items-center px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 w-full text-left',
                   active
-                    ? 'bg-accent/10 text-accent'
+                    ? 'bg-accent text-white shadow-lg shadow-accent/20'
                     : 'text-secondary hover:bg-surface-light hover:text-white'
                 )}
               >
-                <Icon
-                  size={20}
-                  className={cn('mr-3', active ? 'text-accent' : 'text-secondary')}
-                />
+                <Icon size={20} className={cn('mr-3', active ? 'text-white' : 'text-secondary')} />
                 {item.label}
-              </button>
+              </a>
             );
           })}
         </nav>
 
-        {/* Bottom Navigation */}
+        {/* Account Navigation */}
         <div className="px-3 py-4 border-t border-border space-y-1">
-          {bottomMenuItems.map(item => {
+          {accountItems.map(item => {
             const Icon = item.icon;
             const active = isActive(item.href);
 
             return (
-              <button
+              <a
                 key={item.href}
-                onClick={() => handleNavigation(item.href)}
+                href={item.href}
+                data-astro-prefetch="hover"
+                onClick={() => onClose?.()}
                 className={cn(
                   'flex items-center px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 w-full text-left',
                   active
@@ -196,39 +191,18 @@ export const DashboardSidebar: React.FC<IDashboardSidebarProps> = ({ isOpen, onC
                     : 'text-secondary hover:bg-surface-light hover:text-white'
                 )}
               >
-                <Icon
-                  size={20}
-                  className={cn('mr-3', active ? 'text-accent' : 'text-secondary')}
-                />
+                <Icon size={20} className={cn('mr-3', active ? 'text-accent' : 'text-secondary')} />
                 {item.label}
-              </button>
+              </a>
             );
           })}
-
-          {/* User Info & Sign Out */}
-          <div className="border-t border-border my-2 pt-3">
-            {/* User Info - Compact */}
-            <div className="flex items-center gap-2 px-1 mb-2">
-              <div className="w-7 h-7 rounded-full bg-gradient-to-br from-accent/30 to-tertiary/30 flex items-center justify-center shrink-0">
-                <span className="text-accent font-semibold text-xs">
-                  {user?.email?.charAt(0).toUpperCase() || 'U'}
-                </span>
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-xs font-medium text-white truncate">{user?.name || 'User'}</p>
-                <p className="text-xs text-muted truncate">{planDisplayName}</p>
-              </div>
-            </div>
-
-            {/* Sign Out Button */}
-            <button
-              onClick={handleSignOut}
-              className="w-full flex items-center px-3 py-2 rounded-lg text-sm font-medium text-secondary hover:bg-red-500/10 hover:text-red-500 transition-all duration-200"
-            >
-              <LogOut size={16} className="mr-2" />
-              {t('sidebar.signOut')}
-            </button>
-          </div>
+          <button
+            onClick={handleSignOut}
+            className="w-full flex items-center px-3 py-2.5 rounded-lg text-sm font-medium text-secondary hover:bg-red-500/10 hover:text-red-500 transition-all duration-200"
+          >
+            <LogOut size={20} className="mr-3" />
+            {t('sidebar.signOut')}
+          </button>
         </div>
       </aside>
 

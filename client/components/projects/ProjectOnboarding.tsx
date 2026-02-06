@@ -78,8 +78,13 @@ const FREQUENCY_OPTIONS = [
   { value: 'weekly', label: 'Weekly' },
 ] as const;
 
-export function ProjectOnboarding({ isOpen, onClose }: IProjectOnboardingProps): JSX.Element | null {
-  const t = useMemo(() => getTranslations('dashboard.projects.onboarding'), []);
+export function ProjectOnboarding({
+  isOpen,
+  onClose,
+}: IProjectOnboardingProps): JSX.Element | null {
+  const t = useMemo(() => getTranslations('dashboard'), []);
+  const onb = (key: string, params?: Record<string, string | number>) =>
+    t(`projects.onboarding.${key}`, params);
   const logger = useLogger('ProjectOnboarding');
   const { createProject } = useProjects();
 
@@ -163,8 +168,8 @@ export function ProjectOnboarding({ isOpen, onClose }: IProjectOnboardingProps):
         {/* Header */}
         <div className="p-6 border-b border-border flex justify-between items-center bg-elevated/30 rounded-t-2xl">
           <div>
-            <h2 className="text-xl font-bold text-white">{t('title')}</h2>
-            <p className="text-secondary text-sm mt-1">{t('stepOf', { step })}</p>
+            <h2 className="text-xl font-bold text-white">{onb('title')}</h2>
+            <p className="text-secondary text-sm mt-1">{onb('stepOf', { step })}</p>
           </div>
           <button
             onClick={onClose}
@@ -198,11 +203,11 @@ export function ProjectOnboarding({ isOpen, onClose }: IProjectOnboardingProps):
               <div className="space-y-4">
                 <div>
                   <label className="block text-sm font-medium text-secondary mb-1.5">
-                    {t('step1.websiteName')}
+                    {onb('step1.websiteName')}
                   </label>
                   <input
                     type="text"
-                    placeholder={t('step1.websiteNamePlaceholder')}
+                    placeholder={onb('step1.websiteNamePlaceholder')}
                     className="w-full bg-elevated border border-border rounded-lg px-4 py-2.5 text-white focus:ring-2 focus:ring-accent focus:border-transparent outline-none transition-all"
                     value={formData.name}
                     onChange={e => setFormData({ ...formData, name: e.target.value })}
@@ -211,11 +216,11 @@ export function ProjectOnboarding({ isOpen, onClose }: IProjectOnboardingProps):
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-secondary mb-1.5">
-                    {t('step1.domainUrl')}
+                    {onb('step1.domainUrl')}
                   </label>
                   <input
                     type="text"
-                    placeholder={t('step1.domainUrlPlaceholder')}
+                    placeholder={onb('step1.domainUrlPlaceholder')}
                     className="w-full bg-elevated border border-border rounded-lg px-4 py-2.5 text-white focus:ring-2 focus:ring-accent focus:border-transparent outline-none transition-all"
                     value={formData.domain}
                     onChange={e => setFormData({ ...formData, domain: e.target.value })}
@@ -223,17 +228,17 @@ export function ProjectOnboarding({ isOpen, onClose }: IProjectOnboardingProps):
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-secondary mb-1.5">
-                    {t('step1.industry')}
+                    {onb('step1.industry')}
                   </label>
                   <select
                     className="w-full bg-elevated border border-border rounded-lg px-4 py-2.5 text-white focus:ring-2 focus:ring-accent focus:border-transparent outline-none transition-all"
                     value={formData.industry}
                     onChange={e => setFormData({ ...formData, industry: e.target.value })}
                   >
-                    <option value="">{t('step1.industryPlaceholder')}</option>
+                    <option value="">{onb('step1.industryPlaceholder')}</option>
                     {INDUSTRY_OPTIONS.map(ind => (
                       <option key={ind.value} value={ind.value}>
-                        {t(`step1.industries.${ind.value}`)}
+                        {onb(`step1.industries.${ind.value}`)}
                       </option>
                     ))}
                   </select>
@@ -247,7 +252,7 @@ export function ProjectOnboarding({ isOpen, onClose }: IProjectOnboardingProps):
             <div className="space-y-6 animate-fadeIn">
               <div>
                 <label className="block text-sm font-medium text-secondary mb-4">
-                  {t('step2.choosePlatform')}
+                  {onb('step2.choosePlatform')}
                 </label>
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
                   {CMS_OPTIONS.map(cms => {
@@ -264,17 +269,19 @@ export function ProjectOnboarding({ isOpen, onClose }: IProjectOnboardingProps):
                             : 'bg-elevated border-border hover:border-muted hover:bg-surface'
                         )}
                       >
-                        <Icon className={cn(
-                          'w-8 h-8 mb-2',
-                          formData.cmsType === cms.id ? 'text-accent' : 'text-secondary'
-                        )} />
+                        <Icon
+                          className={cn(
+                            'w-8 h-8 mb-2',
+                            formData.cmsType === cms.id ? 'text-accent' : 'text-secondary'
+                          )}
+                        />
                         <span
                           className={cn(
                             'text-sm font-medium',
                             formData.cmsType === cms.id ? 'text-accent-light' : 'text-secondary'
                           )}
                         >
-                          {t(`step2.${cms.id}`)}
+                          {onb(`step2.${cms.id}`)}
                         </span>
                       </button>
                     );
@@ -285,7 +292,7 @@ export function ProjectOnboarding({ isOpen, onClose }: IProjectOnboardingProps):
               {/* Info Note */}
               <div className="flex items-start gap-3 p-4 bg-blue-500/10 border border-blue-500/20 rounded-lg">
                 <Zap className="w-5 h-5 shrink-0 text-blue-400 mt-0.5" />
-                <p className="text-sm text-blue-200">{t('step2.cmsNote')}</p>
+                <p className="text-sm text-blue-200">{onb('step2.cmsNote')}</p>
               </div>
             </div>
           )}
@@ -294,13 +301,15 @@ export function ProjectOnboarding({ isOpen, onClose }: IProjectOnboardingProps):
           {step === 3 && (
             <div className="space-y-6 animate-fadeIn">
               <div className="bg-elevated/50 border border-border rounded-xl p-6">
-                <h3 className="text-lg font-medium text-white mb-4">{t('step3.contentStrategy')}</h3>
+                <h3 className="text-lg font-medium text-white mb-4">
+                  {onb('step3.contentStrategy')}
+                </h3>
 
                 <div className="space-y-5">
                   {/* Publishing Frequency */}
                   <div>
                     <label className="text-sm font-medium text-secondary block mb-2">
-                      {t('step3.publishingFrequency')}
+                      {onb('step3.publishingFrequency')}
                     </label>
                     <div className="grid grid-cols-3 gap-3">
                       {FREQUENCY_OPTIONS.map(freq => (
@@ -315,7 +324,7 @@ export function ProjectOnboarding({ isOpen, onClose }: IProjectOnboardingProps):
                               : 'bg-elevated text-secondary border-border hover:border-muted'
                           )}
                         >
-                          {t(`step3.frequencies.${freq.value}`)}
+                          {onb(`step3.frequencies.${freq.value}`)}
                         </button>
                       ))}
                     </div>
@@ -324,16 +333,18 @@ export function ProjectOnboarding({ isOpen, onClose }: IProjectOnboardingProps):
                   {/* Tone of Voice */}
                   <div>
                     <label className="text-sm font-medium text-secondary block mb-2">
-                      {t('step3.toneOfVoice')}
+                      {onb('step3.toneOfVoice')}
                     </label>
                     <select
                       className="w-full bg-elevated border border-border rounded-lg px-4 py-2.5 text-white focus:ring-2 focus:ring-accent focus:border-transparent outline-none"
                       value={formData.tone}
-                      onChange={e => setFormData({ ...formData, tone: e.target.value as IFormData['tone'] })}
+                      onChange={e =>
+                        setFormData({ ...formData, tone: e.target.value as IFormData['tone'] })
+                      }
                     >
                       {TONE_OPTIONS.map(tone => (
                         <option key={tone.value} value={tone.value}>
-                          {t(`step3.tones.${tone.value}`)}
+                          {onb(`step3.tones.${tone.value}`)}
                         </option>
                       ))}
                     </select>
@@ -342,7 +353,7 @@ export function ProjectOnboarding({ isOpen, onClose }: IProjectOnboardingProps):
               </div>
 
               {/* Confirmation Note */}
-              <p className="text-sm text-muted">{t('step3.confirmationNote')}</p>
+              <p className="text-sm text-muted">{onb('step3.confirmationNote')}</p>
             </div>
           )}
         </div>
@@ -354,7 +365,7 @@ export function ProjectOnboarding({ isOpen, onClose }: IProjectOnboardingProps):
             onClick={step === 1 ? onClose : () => setStep(step - 1)}
             disabled={isSubmitting}
           >
-            {t(`buttons.${step === 1 ? 'cancel' : 'back'}`)}
+            {onb(`buttons.${step === 1 ? 'cancel' : 'back'}`)}
           </Button>
 
           <Button
@@ -364,15 +375,15 @@ export function ProjectOnboarding({ isOpen, onClose }: IProjectOnboardingProps):
           >
             {isSubmitting ? (
               <>
-                <Loader2 className="w-4 h-4 mr-2 animate-spin" /> {t('buttons.settingUp')}
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" /> {onb('buttons.settingUp')}
               </>
             ) : step === 3 ? (
               <>
-                {t('step3.completeSetup')} <Check className="w-4 h-4 ml-2" />
+                {onb('step3.completeSetup')} <Check className="w-4 h-4 ml-2" />
               </>
             ) : (
               <>
-                {t('buttons.nextStep')} <ArrowRight className="w-4 h-4 ml-2" />
+                {onb('buttons.nextStep')} <ArrowRight className="w-4 h-4 ml-2" />
               </>
             )}
           </Button>

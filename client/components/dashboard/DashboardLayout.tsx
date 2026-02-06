@@ -5,7 +5,7 @@ import { DashboardSidebar } from '@client/components/dashboard/DashboardSidebar'
 import { CreditsDisplay } from '@client/components/stripe/CreditsDisplay';
 import { useLowCreditWarning } from '@client/hooks/useLowCreditWarning';
 import { useUserStore } from '@client/store/userStore';
-import { Menu, User } from 'lucide-react';
+import { Menu, Plus, Bell, User } from 'lucide-react';
 import React, { useMemo } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { clientEnv, getAppLogoAbbr } from '@shared/config/env';
@@ -46,7 +46,16 @@ function DashboardHeader(): JSX.Element {
   const [pathname, setPathname] = useState('');
 
   useEffect(() => {
-    setPathname(window.location.pathname);
+    const updatePathname = (_event?: Event) => setPathname(window.location.pathname);
+    updatePathname();
+
+    window.addEventListener('popstate', updatePathname);
+    document.addEventListener('astro:after-swap', updatePathname);
+
+    return () => {
+      window.removeEventListener('popstate', updatePathname);
+      document.removeEventListener('astro:after-swap', updatePathname);
+    };
   }, []);
 
   const breadcrumb = getBreadcrumbLabel(pathname, t);
@@ -59,6 +68,19 @@ function DashboardHeader(): JSX.Element {
       </div>
 
       <div className="flex items-center space-x-4">
+        <a
+          href="/dashboard/campaigns"
+          data-astro-prefetch="hover"
+          className="hidden sm:inline-flex items-center px-4 py-2 rounded-lg text-sm font-medium bg-accent hover:bg-accent-hover text-white transition-colors shadow-lg shadow-accent/20"
+        >
+          <Plus className="w-4 h-4 mr-2" />
+          {t('header.newCampaign')}
+        </a>
+        <div className="w-px h-6 bg-border mx-2" />
+        <button className="text-secondary hover:text-white relative transition-colors">
+          <Bell className="w-5 h-5" />
+          <span className="absolute top-0 right-0 w-2 h-2 bg-red-500 rounded-full" />
+        </button>
         <div className="w-8 h-8 bg-surface-light rounded-full border border-border flex items-center justify-center text-secondary">
           <User className="w-4 h-4" />
         </div>

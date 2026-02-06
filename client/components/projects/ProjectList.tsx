@@ -13,7 +13,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Plus, Edit2, Trash2, Globe, MoreVertical } from 'lucide-react';
+import { Plus, Trash2, Globe } from 'lucide-react';
 import { useProjects } from '@client/hooks/useProjects';
 import { useLogger } from '@client/utils/logger';
 import { getTranslations } from '@src/i18n/utils';
@@ -39,9 +39,9 @@ const STATUS_BADGES = {
 };
 
 export function ProjectList({ onProjectUpdated }: IProjectListProps): JSX.Element {
-  const t = useMemo(() => getTranslations('dashboard.projects'), []);
+  const t = useMemo(() => getTranslations('dashboard'), []);
   const logger = useLogger('ProjectList');
-  const { projects, activeProject, activeProjectId, setActiveProject, deleteProject } = useProjects();
+  const { projects, activeProjectId, setActiveProject, deleteProject } = useProjects();
 
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [projectToDelete, setProjectToDelete] = useState<string | null>(null);
@@ -71,11 +71,15 @@ export function ProjectList({ onProjectUpdated }: IProjectListProps): JSX.Elemen
   };
 
   const getStatusLabel = (status: string) => {
-    return t(`list.status.${status}`) ?? status;
+    const translated = t(`projects.list.status.${status}`);
+    return translated === `projects.list.status.${status}` ? status : translated;
   };
 
   const getCmsLabel = (cmsType: string) => {
-    return t(`list.cmsTypes.${cmsType}`) ?? CMS_LABELS[cmsType] ?? cmsType;
+    const translated = t(`projects.list.cmsTypes.${cmsType}`);
+    return translated === `projects.list.cmsTypes.${cmsType}`
+      ? (CMS_LABELS[cmsType] ?? cmsType)
+      : translated;
   };
 
   return (
@@ -84,10 +88,10 @@ export function ProjectList({ onProjectUpdated }: IProjectListProps): JSX.Elemen
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
-            <h2 className="text-2xl font-bold text-white">{t('title')}</h2>
+            <h2 className="text-2xl font-bold text-white">{t('projects.title')}</h2>
             <p className="text-secondary text-sm mt-1">
               {projects.length === 0
-                ? t('noProjectsDescription')
+                ? t('projects.noProjectsDescription')
                 : `${projects.length} ${projects.length === 1 ? 'project' : 'projects'}`}
             </p>
           </div>
@@ -96,7 +100,7 @@ export function ProjectList({ onProjectUpdated }: IProjectListProps): JSX.Elemen
             className="flex items-center gap-2 bg-accent hover:bg-accent-hover text-white px-4 py-2 rounded-lg transition-colors"
           >
             <Plus className="w-4 h-4" />
-            {t('addNew')}
+            {t('projects.addNew')}
           </button>
         </div>
 
@@ -106,14 +110,14 @@ export function ProjectList({ onProjectUpdated }: IProjectListProps): JSX.Elemen
             <div className="w-16 h-16 bg-surface-light rounded-full flex items-center justify-center mx-auto mb-4">
               <Globe className="w-8 h-8 text-muted" />
             </div>
-            <h3 className="text-lg font-semibold text-white mb-2">{t('noProjects')}</h3>
-            <p className="text-secondary mb-6">{t('noProjectsDescription')}</p>
+            <h3 className="text-lg font-semibold text-white mb-2">{t('projects.noProjects')}</h3>
+            <p className="text-secondary mb-6">{t('projects.noProjectsDescription')}</p>
             <button
               onClick={() => setShowOnboarding(true)}
               className="inline-flex items-center gap-2 bg-accent hover:bg-accent-hover text-white px-6 py-2.5 rounded-lg transition-colors"
             >
               <Plus className="w-4 h-4" />
-              {t('createFirst')}
+              {t('projects.createFirst')}
             </button>
           </div>
         ) : (
@@ -206,22 +210,24 @@ export function ProjectList({ onProjectUpdated }: IProjectListProps): JSX.Elemen
       {projectToDelete && (
         <div className="fixed inset-0 bg-main/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="bg-surface border border-border rounded-xl p-6 max-w-md w-full">
-            <h3 className="text-lg font-semibold text-white mb-2">{t('list.deleteConfirmTitle')}</h3>
-            <p className="text-secondary mb-6">{t('list.deleteConfirm')}</p>
+            <h3 className="text-lg font-semibold text-white mb-2">
+              {t('projects.list.deleteConfirmTitle')}
+            </h3>
+            <p className="text-secondary mb-6">{t('projects.list.deleteConfirm')}</p>
             <div className="flex gap-3">
               <button
                 onClick={() => setProjectToDelete(null)}
                 disabled={isDeleting}
                 className="flex-1 py-2.5 text-sm font-medium text-secondary hover:text-white bg-elevated hover:bg-surface-light rounded-lg transition-colors"
               >
-                {t('list.cancel')}
+                {t('projects.list.cancel')}
               </button>
               <button
                 onClick={handleConfirmDelete}
                 disabled={isDeleting}
                 className="flex-1 py-2.5 text-sm font-medium text-white bg-red-500 hover:bg-red-600 rounded-lg transition-colors disabled:opacity-50"
               >
-                {isDeleting ? 'Deleting...' : t('list.confirm')}
+                {isDeleting ? 'Deleting...' : t('projects.list.confirm')}
               </button>
             </div>
           </div>

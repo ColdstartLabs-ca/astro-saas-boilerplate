@@ -24,7 +24,7 @@ interface IProjectSelectorProps {
 }
 
 export function ProjectSelector({ onOpenOnboarding }: IProjectSelectorProps): JSX.Element {
-  const t = useMemo(() => getTranslations('dashboard.projects'), []);
+  const t = useMemo(() => getTranslations('dashboard'), []);
   const logger = useLogger('ProjectSelector');
   const { projects, activeProject, activeProjectId, setActiveProject } = useProjects();
 
@@ -62,7 +62,7 @@ export function ProjectSelector({ onOpenOnboarding }: IProjectSelectorProps): JS
   return (
     <div className="px-4 pt-4 pb-2" ref={dropdownRef}>
       <div className="text-xs font-semibold text-muted uppercase tracking-wider mb-2 px-2">
-        {t('activeSite')}
+        {t('projects.activeSite')}
       </div>
       <div className="relative">
         {/* Trigger Button */}
@@ -76,17 +76,19 @@ export function ProjectSelector({ onOpenOnboarding }: IProjectSelectorProps): JS
             </div>
             <div className="truncate text-left">
               <div className="text-sm font-medium text-white truncate">
-                {activeProject?.name || t('noSiteConnected')}
+                {activeProject?.name || t('projects.noSiteConnected')}
               </div>
               <div className="text-xs text-muted group-hover:text-secondary">
-                {t('manageSites')}
+                {t('projects.manageSites')}
               </div>
             </div>
           </div>
-          <ChevronDown className={cn(
-            'w-4 h-4 text-muted shrink-0 transition-transform',
-            isOpen && 'rotate-180'
-          )} />
+          <ChevronDown
+            className={cn(
+              'w-4 h-4 text-muted shrink-0 transition-transform',
+              isOpen && 'rotate-180'
+            )}
+          />
         </button>
 
         {/* Dropdown Menu */}
@@ -106,10 +108,12 @@ export function ProjectSelector({ onOpenOnboarding }: IProjectSelectorProps): JS
                   {getProjectInitial(project.name)}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <div className={cn(
-                    'text-sm font-medium truncate',
-                    activeProjectId === project.id ? 'text-accent' : 'text-secondary'
-                  )}>
+                  <div
+                    className={cn(
+                      'text-sm font-medium truncate',
+                      activeProjectId === project.id ? 'text-accent' : 'text-secondary'
+                    )}
+                  >
                     {project.name}
                   </div>
                   {project.domain && (
@@ -127,7 +131,9 @@ export function ProjectSelector({ onOpenOnboarding }: IProjectSelectorProps): JS
               <div className="w-8 h-8 rounded bg-accent/20 text-accent flex items-center justify-center shrink-0">
                 <Plus className="w-4 h-4" />
               </div>
-              <span className="text-sm font-medium text-accent">{t('addNew')}</span>
+              <span className="text-sm font-medium text-accent">
+                {t('projects.selector.addNew')}
+              </span>
             </button>
           </div>
         )}
