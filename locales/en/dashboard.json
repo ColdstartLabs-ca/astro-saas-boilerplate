@@ -165,6 +165,27 @@
     "loadingStats": "Loading stats...",
     "errorLoadingStats": "Error loading stats"
   },
+  "overview": {
+    "welcomeBack": "Welcome back, {name}",
+    "managing": "Managing {project}",
+    "getStarted": "Get started by creating your first project",
+    "currentPlan": "Current Plan",
+    "upgrade": "Upgrade",
+    "credits": "Credits",
+    "projects": "Projects",
+    "add": "Add",
+    "industry": "Industry",
+    "platform": "Platform",
+    "tone": "Tone",
+    "frequency": "Frequency",
+    "quickActions": "Quick Actions",
+    "newProject": "New Project",
+    "addWebsite": "Add a website",
+    "billing": "Billing",
+    "manageSubscription": "Manage subscription",
+    "settings": "Settings",
+    "accountPreferences": "Account preferences"
+  },
   "loading": "Loading...",
   "planUnavailable": "Plan unavailable",
   "projects": {

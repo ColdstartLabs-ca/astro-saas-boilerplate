@@ -1,167 +1,255 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { ArrowUpRight, Clock, FileText, Loader2, Check } from 'lucide-react';
+import { useMemo, useState } from 'react';
+import { Globe, Plus, Settings, CreditCard, FolderOpen, ExternalLink, ArrowRight } from 'lucide-react';
+import { useProjects } from '@client/hooks/useProjects';
+import { useUserStore, useSubscription } from '@client/store/userStore';
+import { CreditsDisplay } from '@client/components/stripe/CreditsDisplay';
+import { ProjectOnboarding } from '@client/components/projects/ProjectOnboarding';
+import { ProjectList } from '@client/components/projects/ProjectList';
+import { getPlanDisplayName } from '@shared/config/stripe';
+import { dashboardNavigate } from '@client/utils/dashboardNavigation';
+import { getTranslations } from '@src/i18n/utils';
+import { cn } from '@client/utils/cn';
 
 export function OverviewView(): JSX.Element {
-  const fullText = "generative search experiences (SGE).";
-  const [typedText, setTypedText] = useState("");
-  const [cursorVisible, setCursorVisible] = useState(true);
+  const t = useMemo(() => getTranslations('dashboard'), []);
+  const { user } = useUserStore();
+  const subscription = useSubscription();
+  const { projects, activeProject, isLoading } = useProjects();
+  const [showOnboarding, setShowOnboarding] = useState(false);
 
-  useEffect(() => {
-    let index = 0;
-    const typeInterval = setInterval(() => {
-      if (index <= fullText.length) {
-        setTypedText(fullText.slice(0, index));
-        index++;
-      } else {
-        clearInterval(typeInterval);
-      }
-    }, 50);
+  const planDisplayName = getPlanDisplayName({
+    subscriptionTier: user?.profile?.subscription_tier,
+    priceId: subscription?.price_id,
+  });
 
-    const blinkInterval = setInterval(() => {
-      setCursorVisible(v => !v);
-    }, 500);
+  const displayName = user?.name || user?.email?.split('@')[0] || 'there';
 
-    return () => {
-      clearInterval(typeInterval);
-      clearInterval(blinkInterval);
-    };
-  }, []);
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-accent" />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6 animate-fadeIn">
-      {/* Stats Row */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        {[
-          { label: "Articles Published", val: "128", change: "+12%", trend: "up" },
-          { label: "Words Generated", val: "452k", change: "+24%", trend: "up" },
-          { label: "Time Saved", val: "186h", change: "This Month", trend: "neutral" },
-        ].map((stat, i) => (
-          <div key={i} className="bg-surface border border-border p-4 rounded-xl">
-             <div className="text-secondary text-xs font-medium uppercase tracking-wider mb-1">{stat.label}</div>
-             <div className="flex items-end justify-between">
-                <div className="text-3xl font-bold text-white">{stat.val}</div>
-                <div className={`flex items-center text-xs font-medium px-2 py-1 rounded ${stat.trend === 'up' ? 'text-green-400 bg-green-400/10' : 'text-secondary bg-surface-light'}`}>
-                   {stat.trend === 'up' ? <ArrowUpRight className="w-3 h-3 mr-1" /> : <Clock className="w-3 h-3 mr-1" />}
-                   {stat.change}
-                </div>
-             </div>
-          </div>
-        ))}
+      {/* Welcome Header */}
+      <div>
+        <h1 className="text-2xl font-bold text-white">
+          {t('overview.welcomeBack', { name: displayName })}
+        </h1>
+        <p className="text-secondary text-sm mt-1">
+          {activeProject
+            ? t('overview.managing', { project: activeProject.name })
+            : t('overview.getStarted')}
+        </p>
       </div>
 
-      {/* Active Job Card */}
-      <div className="bg-surface rounded-xl border border-border p-6 relative overflow-hidden">
-        <div className="absolute top-0 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-accent to-transparent animate-progress"></div>
-
-        <div className="flex flex-col md:flex-row gap-6">
-          {/* Main Content Preview */}
-          <div className="flex-1">
-             <div className="flex justify-between items-center mb-4">
-                <div className="flex items-center gap-3">
-                   <div className="p-2 rounded bg-blue-500/10 text-blue-400">
-                     <FileText className="w-5 h-5" />
-                   </div>
-                   <div>
-                     <h3 className="text-lg font-medium text-white">The Future of AI SEO</h3>
-                     <div className="text-xs text-muted flex items-center gap-2">
-                        <span className="flex items-center gap-1.5">
-                            <span className="w-1.5 h-1.5 rounded-full bg-accent animate-pulse"></span>
-                            Generating Content
-                        </span>
-                        <span>&#8226;</span>
-                        <span>GPT-4o Model</span>
-                     </div>
-                   </div>
-                </div>
-                <div className="text-xs font-mono text-secondary bg-main border border-border rounded px-3 py-1.5">
-                  03:42 elapsed
-                </div>
-             </div>
-
-             {/* Editor Window */}
-             <div className="bg-main rounded-lg border border-border p-6 font-mono text-sm text-secondary leading-relaxed min-h-[200px] shadow-inner">
-               <p className="mb-4 opacity-50">
-                 Search engines are evolving rapidly. To stay ahead, brands must adapt to new paradigms where answers are synthesized directly on the results page.
-               </p>
-               <p>
-                 <span className="opacity-50">This shift requires a fundamental rethink of content strategy. It&#39;s no longer just about keywords; it&#39;s about owning the entire topic cluster and preparing for </span>
-                 <span className="text-accent-light">{typedText}</span>
-                 <span className={`inline-block w-2 h-4 bg-accent ml-1 align-middle transition-opacity duration-100 ${cursorVisible ? 'opacity-100' : 'opacity-0'}`}></span>
-               </p>
-             </div>
+      {/* Quick Stats Row */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        {/* Plan */}
+        <div className="bg-surface border border-border p-4 rounded-xl">
+          <div className="text-secondary text-xs font-medium uppercase tracking-wider mb-1">
+            {t('overview.currentPlan')}
           </div>
+          <div className="flex items-end justify-between">
+            <div className="text-xl font-bold text-white">{planDisplayName}</div>
+            {!user?.profile?.subscription_tier && (
+              <button
+                onClick={() => dashboardNavigate('/dashboard/billing')}
+                className="text-xs font-medium text-accent hover:text-accent-light transition-colors"
+              >
+                {t('overview.upgrade')}
+              </button>
+            )}
+          </div>
+        </div>
 
-          {/* Sidebar Steps */}
-          <div className="w-full md:w-64 flex flex-col gap-4 border-t md:border-t-0 md:border-l border-border pt-4 md:pt-0 md:pl-6">
-             <div className="text-xs font-semibold text-muted uppercase tracking-wider">Workflow Progress</div>
-             <div className="space-y-4 relative">
-                <div className="absolute left-[11px] top-2 bottom-2 w-[1px] bg-border -z-10"></div>
-                {[
-                  { label: 'Keyword Research', status: 'done', time: '10:42 AM' },
-                  { label: 'Outline Generation', status: 'done', time: '10:43 AM' },
-                  { label: 'Drafting Content', status: 'active', time: 'Running...' },
-                  { label: 'SEO Optimization', status: 'pending', time: 'Est. 2m' },
-                  { label: 'Publish to WordPress', status: 'pending', time: 'Pending' },
-                ].map((step, i) => (
-                  <div key={i} className="flex items-start gap-3">
-                    <div className={`w-6 h-6 rounded-full flex items-center justify-center border text-[10px] shrink-0 bg-surface ${
-                        step.status === 'done' ? 'border-green-500 text-green-500' :
-                        step.status === 'active' ? 'border-accent text-accent' :
-                        'border-border text-muted'
-                    }`}>
-                        {step.status === 'done' && <Check className="w-3 h-3" />}
-                        {step.status === 'active' && <Loader2 className="w-3 h-3 animate-spin" />}
-                        {step.status === 'pending' && <span className="w-1.5 h-1.5 rounded-full bg-muted"></span>}
-                    </div>
-                    <div>
-                        <div className={`text-sm font-medium ${step.status === 'active' ? 'text-white' : 'text-secondary'}`}>{step.label}</div>
-                        <div className="text-[10px] text-muted">{step.time}</div>
-                    </div>
-                  </div>
-                ))}
-             </div>
+        {/* Credits */}
+        <div className="bg-surface border border-border p-4 rounded-xl">
+          <div className="text-secondary text-xs font-medium uppercase tracking-wider mb-1">
+            {t('overview.credits')}
+          </div>
+          <div className="mt-0.5">
+            <CreditsDisplay />
+          </div>
+        </div>
+
+        {/* Projects Count */}
+        <div className="bg-surface border border-border p-4 rounded-xl">
+          <div className="text-secondary text-xs font-medium uppercase tracking-wider mb-1">
+            {t('overview.projects')}
+          </div>
+          <div className="flex items-end justify-between">
+            <div className="text-xl font-bold text-white">{projects.length}</div>
+            <button
+              onClick={() => setShowOnboarding(true)}
+              className="text-xs font-medium text-accent hover:text-accent-light transition-colors flex items-center gap-1"
+            >
+              <Plus className="w-3 h-3" />
+              {t('overview.add')}
+            </button>
           </div>
         </div>
       </div>
 
-      {/* Recent Queue */}
-      <div>
-          <h3 className="text-white font-semibold mb-4">Recent Campaigns</h3>
-          <div className="bg-surface border border-border rounded-xl overflow-hidden">
-              <table className="w-full text-sm text-left">
-                  <thead className="bg-main/50 text-muted font-medium">
-                      <tr>
-                          <th className="px-4 py-3">Topic</th>
-                          <th className="px-4 py-3">Status</th>
-                          <th className="px-4 py-3">Platform</th>
-                          <th className="px-4 py-3 text-right">Date</th>
-                      </tr>
-                  </thead>
-                  <tbody className="divide-y divide-border">
-                      {[
-                          { title: "Top 10 CRM Tools 2024", status: "Published", platform: "WordPress", date: "Today, 9:00 AM" },
-                          { title: "Email Marketing Guide", status: "Scheduled", platform: "Webflow", date: "Oct 24, 10:00 AM" },
-                          { title: "How to Scale SEO", status: "Draft", platform: "Ghost", date: "Oct 23, 4:15 PM" },
-                      ].map((row, i) => (
-                          <tr key={i} className="hover:bg-surface-light/50 transition-colors">
-                              <td className="px-4 py-3 font-medium text-secondary">{row.title}</td>
-                              <td className="px-4 py-3">
-                                  <span className={`px-2 py-1 rounded text-xs font-medium ${
-                                      row.status === 'Published' ? 'bg-green-500/10 text-green-400' :
-                                      row.status === 'Scheduled' ? 'bg-purple-500/10 text-purple-400' :
-                                      'bg-surface-light/30 text-secondary'
-                                  }`}>{row.status}</span>
-                              </td>
-                              <td className="px-4 py-3 text-secondary">{row.platform}</td>
-                              <td className="px-4 py-3 text-right text-muted">{row.date}</td>
-                          </tr>
-                      ))}
-                  </tbody>
-              </table>
+      {/* Active Project Card */}
+      {activeProject ? (
+        <div className="bg-surface border border-accent/30 rounded-xl p-6">
+          <div className="flex items-start justify-between mb-4">
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 rounded-lg bg-accent/20 text-accent flex items-center justify-center font-bold text-xl">
+                {activeProject.name.charAt(0).toUpperCase()}
+              </div>
+              <div>
+                <h2 className="text-lg font-semibold text-white">{activeProject.name}</h2>
+                <div className="flex items-center gap-3 mt-0.5">
+                  {activeProject.domain && (
+                    <a
+                      href={activeProject.domain}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-sm text-accent hover:underline flex items-center gap-1"
+                    >
+                      {activeProject.domain}
+                      <ExternalLink className="w-3 h-3" />
+                    </a>
+                  )}
+                  <span className={cn(
+                    'px-2 py-0.5 rounded text-xs font-medium',
+                    activeProject.status === 'active'
+                      ? 'bg-green-500/10 text-green-400'
+                      : 'bg-secondary/10 text-secondary'
+                  )}>
+                    {t(`projects.list.status.${activeProject.status}`)}
+                  </span>
+                </div>
+              </div>
+            </div>
           </div>
+
+          {/* Project Details */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 pt-4 border-t border-border">
+            {activeProject.industry && (
+              <div>
+                <div className="text-xs text-muted uppercase tracking-wider mb-1">{t('overview.industry')}</div>
+                <div className="text-sm font-medium text-white">{activeProject.industry}</div>
+              </div>
+            )}
+            <div>
+              <div className="text-xs text-muted uppercase tracking-wider mb-1">{t('overview.platform')}</div>
+              <div className="text-sm font-medium text-white capitalize">{activeProject.cms_type}</div>
+            </div>
+            {activeProject.content_preferences?.tone && (
+              <div>
+                <div className="text-xs text-muted uppercase tracking-wider mb-1">{t('overview.tone')}</div>
+                <div className="text-sm font-medium text-white capitalize">
+                  {activeProject.content_preferences.tone}
+                </div>
+              </div>
+            )}
+            {activeProject.content_preferences?.frequency && (
+              <div>
+                <div className="text-xs text-muted uppercase tracking-wider mb-1">{t('overview.frequency')}</div>
+                <div className="text-sm font-medium text-white capitalize">
+                  {activeProject.content_preferences.frequency.replace('_', ' ')}
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      ) : (
+        /* Empty State - No Project */
+        <div className="bg-surface border border-border rounded-xl p-12 text-center">
+          <div className="w-16 h-16 bg-surface-light rounded-full flex items-center justify-center mx-auto mb-4">
+            <Globe className="w-8 h-8 text-muted" />
+          </div>
+          <h3 className="text-lg font-semibold text-white mb-2">
+            {t('projects.noProjects')}
+          </h3>
+          <p className="text-secondary mb-6 max-w-md mx-auto">
+            {t('projects.noProjectsDescription')}
+          </p>
+          <button
+            onClick={() => setShowOnboarding(true)}
+            className="inline-flex items-center gap-2 bg-accent hover:bg-accent-hover text-white px-6 py-2.5 rounded-lg transition-colors"
+          >
+            <Plus className="w-4 h-4" />
+            {t('projects.createFirst')}
+          </button>
+        </div>
+      )}
+
+      {/* Quick Actions */}
+      <div>
+        <h3 className="text-white font-semibold mb-3">{t('overview.quickActions')}</h3>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <button
+            onClick={() => setShowOnboarding(true)}
+            className="bg-surface border border-border hover:border-muted rounded-xl p-4 text-left transition-all group"
+          >
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-lg bg-accent/10 text-accent">
+                  <FolderOpen className="w-5 h-5" />
+                </div>
+                <div>
+                  <div className="text-sm font-medium text-white">{t('overview.newProject')}</div>
+                  <div className="text-xs text-muted">{t('overview.addWebsite')}</div>
+                </div>
+              </div>
+              <ArrowRight className="w-4 h-4 text-muted group-hover:text-accent transition-colors" />
+            </div>
+          </button>
+
+          <button
+            onClick={() => dashboardNavigate('/dashboard/billing')}
+            className="bg-surface border border-border hover:border-muted rounded-xl p-4 text-left transition-all group"
+          >
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-lg bg-blue-500/10 text-blue-400">
+                  <CreditCard className="w-5 h-5" />
+                </div>
+                <div>
+                  <div className="text-sm font-medium text-white">{t('overview.billing')}</div>
+                  <div className="text-xs text-muted">{t('overview.manageSubscription')}</div>
+                </div>
+              </div>
+              <ArrowRight className="w-4 h-4 text-muted group-hover:text-accent transition-colors" />
+            </div>
+          </button>
+
+          <button
+            onClick={() => dashboardNavigate('/dashboard/settings')}
+            className="bg-surface border border-border hover:border-muted rounded-xl p-4 text-left transition-all group"
+          >
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-lg bg-purple-500/10 text-purple-400">
+                  <Settings className="w-5 h-5" />
+                </div>
+                <div>
+                  <div className="text-sm font-medium text-white">{t('overview.settings')}</div>
+                  <div className="text-xs text-muted">{t('overview.accountPreferences')}</div>
+                </div>
+              </div>
+              <ArrowRight className="w-4 h-4 text-muted group-hover:text-accent transition-colors" />
+            </div>
+          </button>
+        </div>
       </div>
+
+      {/* Project List (if user has projects) */}
+      {projects.length > 0 && (
+        <ProjectList />
+      )}
+
+      {/* Onboarding Modal */}
+      <ProjectOnboarding isOpen={showOnboarding} onClose={() => setShowOnboarding(false)} />
     </div>
   );
 }

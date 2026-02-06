@@ -35,7 +35,7 @@ export function Logo({ className = '', variant = 'full' }: IProps): JSX.Element 
       {/* AutopilotRank text */}
       {!isCompact && (
         <span className="text-white font-bold text-lg tracking-tight">
-          AutopilotRank
+          Autopilot<span className="text-accent">Rank</span>
         </span>
       )}
     </div>

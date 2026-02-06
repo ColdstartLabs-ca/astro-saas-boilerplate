@@ -8,7 +8,7 @@ import { useLowCreditWarning } from '@client/hooks/useLowCreditWarning';
 import { useUserStore, useSubscription } from '@client/store/userStore';
 import { getPlanDisplayName } from '@shared/config/stripe';
 import { dashboardNavigate, onDashboardNavigate } from '@client/utils/dashboardNavigation';
-import { Menu, Plus, Bell, User, Settings, CreditCard, LogOut, Sparkles } from 'lucide-react';
+import { Menu, Bell, User, Settings, CreditCard, LogOut, Sparkles } from 'lucide-react';
 import React from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { clientEnv, getAppLogoAbbr } from '@shared/config/env';
@@ -87,14 +87,6 @@ function DashboardHeader(): JSX.Element {
       </div>
 
       <div className="flex items-center space-x-4">
-        <button
-          onClick={() => dashboardNavigate('/dashboard/campaigns')}
-          className="hidden sm:inline-flex items-center px-4 py-2 rounded-lg text-sm font-medium bg-accent hover:bg-accent-hover text-white transition-colors shadow-lg shadow-accent/20"
-        >
-          <Plus className="w-4 h-4 mr-2" />
-          {t('header.newCampaign')}
-        </button>
-        <div className="w-px h-6 bg-border mx-2" />
         <button className="text-secondary hover:text-white relative transition-colors">
           <Bell className="w-5 h-5" />
           <span className="absolute top-0 right-0 w-2 h-2 bg-red-500 rounded-full" />

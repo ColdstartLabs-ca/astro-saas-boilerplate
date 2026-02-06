@@ -30,6 +30,7 @@ interface ISidebarItem {
   label: string;
   href: string;
   icon: React.ElementType;
+  disabled?: boolean;
 }
 
 interface IDashboardSidebarProps {
@@ -56,12 +57,12 @@ export const DashboardSidebar: React.FC<IDashboardSidebarProps> = ({ isOpen, onC
   // Primary nav — AutopilotRank-specific views
   const primaryItems: ISidebarItem[] = [
     { label: t('sidebar.overview'), href: '/dashboard', icon: LayoutGrid },
-    { label: t('sidebar.campaigns'), href: '/dashboard/campaigns', icon: Layers },
-    { label: t('sidebar.keywords'), href: '/dashboard/keywords', icon: Search },
-    { label: t('sidebar.optimization'), href: '/dashboard/optimization', icon: CheckCircle2 },
-    { label: t('sidebar.calendar'), href: '/dashboard/calendar', icon: CalendarIcon },
-    { label: t('sidebar.backlinks'), href: '/dashboard/backlinks', icon: Link2 },
-    { label: t('sidebar.analytics'), href: '/dashboard/analytics', icon: BarChart2 },
+    { label: t('sidebar.campaigns'), href: '/dashboard/campaigns', icon: Layers, disabled: true },
+    { label: t('sidebar.keywords'), href: '/dashboard/keywords', icon: Search, disabled: true },
+    { label: t('sidebar.optimization'), href: '/dashboard/optimization', icon: CheckCircle2, disabled: true },
+    { label: t('sidebar.calendar'), href: '/dashboard/calendar', icon: CalendarIcon, disabled: true },
+    { label: t('sidebar.backlinks'), href: '/dashboard/backlinks', icon: Link2, disabled: true },
+    { label: t('sidebar.analytics'), href: '/dashboard/analytics', icon: BarChart2, disabled: true },
   ];
 
   // Secondary nav — account management
@@ -149,11 +150,13 @@ export const DashboardSidebar: React.FC<IDashboardSidebarProps> = ({ isOpen, onC
         )}
 
         {/* Logo/Brand */}
-        <div className="p-6 border-b border-border flex items-center justify-between">
+        <div className="p-6 border-b border-border">
           <a href="/" className="flex items-center" onClick={e => handleNavigation(e, '/')}>
-            <Logo variant="compact" />
+            <Logo variant="full" />
           </a>
-          <LocaleSwitcher />
+          <div className="mt-3 flex justify-end">
+            <LocaleSwitcher />
+          </div>
         </div>
 
         {/* Active Project Selector */}
@@ -163,7 +166,24 @@ export const DashboardSidebar: React.FC<IDashboardSidebarProps> = ({ isOpen, onC
         <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
           {primaryItems.map(item => {
             const Icon = item.icon;
-            const active = isActive(item.href);
+            const active = !item.disabled && isActive(item.href);
+
+            if (item.disabled) {
+              return (
+                <span
+                  key={item.href}
+                  className="flex items-center justify-between px-3 py-2.5 rounded-lg text-sm font-medium text-muted cursor-not-allowed opacity-50"
+                >
+                  <span className="flex items-center">
+                    <Icon size={20} className="mr-3 text-muted" />
+                    {item.label}
+                  </span>
+                  <span className="text-[10px] uppercase tracking-wider font-semibold text-muted bg-surface-light px-1.5 py-0.5 rounded">
+                    Soon
+                  </span>
+                </span>
+              );
+            }
 
             return (
               <a
