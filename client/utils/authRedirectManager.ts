@@ -119,16 +119,6 @@ export async function handleAuthRedirect(): Promise<void> {
         // Invalid URL - fall through to dashboard redirect
       }
     }
-
-    // Check for pending checkout in the store (backward compatibility)
-    try {
-      const { useCheckoutStore } = await import('@client/store/checkoutStore');
-      if (useCheckoutStore.getState().processPendingCheckout()) {
-        return;
-      }
-    } catch {
-      // Fall through to dashboard redirect
-    }
   } catch {
     // Fall through to dashboard redirect
   }

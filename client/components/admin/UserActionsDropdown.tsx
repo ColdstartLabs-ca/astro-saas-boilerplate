@@ -2,7 +2,7 @@
 
 import { useClickOutside } from '@/client/hooks/useClickOutside';
 import { adminFetch } from '@/client/utils/admin-api-client';
-import { IAdminUserProfile } from '@/shared/types/admin.types';
+import type { IAdminUserProfile } from '@/shared/types/admin.types';
 import { Coins, CreditCard, Eye, MoreVertical, Shield, ShieldOff, Trash2 } from 'lucide-react';
 import React, { useCallback, useRef, useState } from 'react';
 

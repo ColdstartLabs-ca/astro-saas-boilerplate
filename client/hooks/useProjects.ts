@@ -12,7 +12,7 @@
 'use client';
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { useMemo, useState, useCallback, useEffect } from 'react';
+import { useMemo, useCallback, useEffect } from 'react';
 import type {
   IProject,
   ICreateProjectInput,
@@ -20,27 +20,52 @@ import type {
 } from '@shared/types/project.types';
 import { useLogger } from '@client/utils/logger';
 import { useUserStore } from '@client/store/userStore';
+import { useProjectStore } from '@client/store/projectStore';
+import { useToastStore } from '@client/store/toastStore';
+import { createClient } from '@shared/utils/supabase/client';
+import { getTranslations } from '@src/i18n/utils';
 
 // =============================================================================
 // Constants
 // =============================================================================
 
-const ACTIVE_PROJECT_KEY = 'autopilotrank_active_project_id';
-const PROJECTS_QUERY_KEY = ['projects'];
+const _ACTIVE_PROJECT_KEY = 'autopilotrank_active_project_id';
 
 // =============================================================================
 // API Functions
 // =============================================================================
 
 /**
+ * Get the current user's access token for API requests
+ */
+async function getAccessToken(): Promise<string | null> {
+  const supabase = createClient();
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
+  return session?.access_token ?? null;
+}
+
+/**
+ * Build auth headers for API requests
+ */
+async function getAuthHeaders(): Promise<Record<string, string>> {
+  const accessToken = await getAccessToken();
+  const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+  if (accessToken) {
+    headers.Authorization = `Bearer ${accessToken}`;
+  }
+  return headers;
+}
+
+/**
  * Fetch user's projects from API
  */
 async function fetchProjects(): Promise<IProject[]> {
+  const headers = await getAuthHeaders();
   const response = await fetch('/api/projects', {
     method: 'GET',
-    headers: {
-      'Content-Type': 'application/json',
-    },
+    headers,
   });
 
   if (!response.ok) {
@@ -56,11 +81,10 @@ async function fetchProjects(): Promise<IProject[]> {
  * Create a new project
  */
 async function createProject(input: ICreateProjectInput): Promise<IProject> {
+  const headers = await getAuthHeaders();
   const response = await fetch('/api/projects', {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
+    headers,
     body: JSON.stringify(input),
   });
 
@@ -77,11 +101,10 @@ async function createProject(input: ICreateProjectInput): Promise<IProject> {
  * Update an existing project
  */
 async function updateProject(projectId: string, input: IUpdateProjectInput): Promise<IProject> {
+  const headers = await getAuthHeaders();
   const response = await fetch(`/api/projects/${projectId}`, {
     method: 'PUT',
-    headers: {
-      'Content-Type': 'application/json',
-    },
+    headers,
     body: JSON.stringify(input),
   });
 
@@ -98,11 +121,10 @@ async function updateProject(projectId: string, input: IUpdateProjectInput): Pro
  * Delete a project
  */
 async function deleteProject(projectId: string): Promise<{ success: boolean }> {
+  const headers = await getAuthHeaders();
   const response = await fetch(`/api/projects/${projectId}`, {
     method: 'DELETE',
-    headers: {
-      'Content-Type': 'application/json',
-    },
+    headers,
   });
 
   if (!response.ok) {
@@ -111,38 +133,6 @@ async function deleteProject(projectId: string): Promise<{ success: boolean }> {
   }
 
   return { success: true };
-}
-
-// =============================================================================
-// Helper Functions
-// =============================================================================
-
-/**
- * Get active project ID from localStorage
- */
-function getActiveProjectId(): string | null {
-  if (typeof window === 'undefined') return null;
-  try {
-    return localStorage.getItem(ACTIVE_PROJECT_KEY);
-  } catch {
-    return null;
-  }
-}
-
-/**
- * Set active project ID in localStorage
- */
-function setActiveProjectId(projectId: string | null): void {
-  if (typeof window === 'undefined') return;
-  try {
-    if (projectId) {
-      localStorage.setItem(ACTIVE_PROJECT_KEY, projectId);
-    } else {
-      localStorage.removeItem(ACTIVE_PROJECT_KEY);
-    }
-  } catch {
-    // Fail silently
-  }
 }
 
 // =============================================================================
@@ -170,20 +160,17 @@ export function useProjects(): IUseProjectsReturn {
   const logger = useLogger('useProjects');
   const queryClient = useQueryClient();
   const { user } = useUserStore();
+  const { activeProjectId, setActiveProjectId: setActiveProjectStore } = useProjectStore();
+  const { showToast } = useToastStore();
+  const t = useMemo(() => getTranslations('dashboard'), []);
 
-  // Local state for active project ID
-  const [activeProjectId, setActiveProjectIdState] = useState<string | null>(() =>
-    getActiveProjectId()
-  );
-
-  // Fetch projects query
+  // Fetch projects query - scoped by user ID to prevent cross-account stale data
   const {
     data: projects = [],
     isLoading,
     error,
-    refetch,
   } = useQuery({
-    queryKey: PROJECTS_QUERY_KEY,
+    queryKey: ['projects', user?.id],
     queryFn: fetchProjects,
     enabled: !!user, // Only fetch if authenticated
     staleTime: 1000 * 60 * 5, // 5 minutes
@@ -199,24 +186,25 @@ export function useProjects(): IUseProjectsReturn {
   useEffect(() => {
     if (!activeProjectId && projects.length > 0 && !isLoading) {
       const firstProject = projects[0];
-      setActiveProjectId(firstProject.id);
-      setActiveProjectIdState(firstProject.id);
+      setActiveProjectStore(firstProject.id);
     }
     // If active project ID is set but project no longer exists, clear it
     if (activeProjectId && !activeProject && projects.length > 0) {
-      setActiveProjectId(null);
-      setActiveProjectIdState(null);
+      setActiveProjectStore(null);
     }
-  }, [activeProjectId, activeProject, projects, isLoading]);
+  }, [activeProjectId, activeProject, projects, isLoading, setActiveProjectStore]);
 
   // Create project mutation
   const createMutation = useMutation({
     mutationFn: createProject,
-    onSuccess: newProject => {
-      queryClient.invalidateQueries({ queryKey: PROJECTS_QUERY_KEY });
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['projects', user?.id] });
       // Auto-select newly created project
-      setActiveProjectId(newProject.id);
-      setActiveProjectIdState(newProject.id);
+      // (Note: we can't access the new project here directly, but the query will update)
+      showToast({
+        message: t('projects.success.created'),
+        type: 'success',
+      });
     },
   });
 
@@ -225,7 +213,11 @@ export function useProjects(): IUseProjectsReturn {
     mutationFn: ({ projectId, input }: { projectId: string; input: IUpdateProjectInput }) =>
       updateProject(projectId, input),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: PROJECTS_QUERY_KEY });
+      queryClient.invalidateQueries({ queryKey: ['projects', user?.id] });
+      showToast({
+        message: t('projects.success.updated'),
+        type: 'success',
+      });
     },
   });
 
@@ -233,23 +225,25 @@ export function useProjects(): IUseProjectsReturn {
   const deleteMutation = useMutation({
     mutationFn: deleteProject,
     onSuccess: (_, deletedProjectId) => {
-      queryClient.invalidateQueries({ queryKey: PROJECTS_QUERY_KEY });
+      queryClient.invalidateQueries({ queryKey: ['projects', user?.id] });
       // If deleted project was active, clear active project
       if (activeProjectId === deletedProjectId) {
-        setActiveProjectId(null);
-        setActiveProjectIdState(null);
+        setActiveProjectStore(null);
       }
+      showToast({
+        message: t('projects.success.deleted'),
+        type: 'success',
+      });
     },
   });
 
   // Set active project action
   const setActiveProject = useCallback(
     (projectId: string | null) => {
-      setActiveProjectId(projectId);
-      setActiveProjectIdState(projectId);
+      setActiveProjectStore(projectId);
       logger.info('Active project changed', { projectId });
     },
-    [logger]
+    [setActiveProjectStore, logger]
   );
 
   // Wrapped mutation functions with error handling
@@ -261,10 +255,14 @@ export function useProjects(): IUseProjectsReturn {
         logger.error('Failed to create project', {
           error: error instanceof Error ? error.message : 'Unknown error',
         });
+        showToast({
+          message: t('projects.errors.createFailed'),
+          type: 'error',
+        });
         throw error;
       }
     },
-    [createMutation, logger]
+    [createMutation, logger, showToast, t]
   );
 
   const handleUpdateProject = useCallback(
@@ -276,10 +274,14 @@ export function useProjects(): IUseProjectsReturn {
           error: error instanceof Error ? error.message : 'Unknown error',
           projectId,
         });
+        showToast({
+          message: t('projects.errors.updateFailed'),
+          type: 'error',
+        });
         throw error;
       }
     },
-    [updateMutation, logger]
+    [updateMutation, logger, showToast, t]
   );
 
   const handleDeleteProject = useCallback(
@@ -291,10 +293,14 @@ export function useProjects(): IUseProjectsReturn {
           error: error instanceof Error ? error.message : 'Unknown error',
           projectId,
         });
+        showToast({
+          message: t('projects.errors.deleteFailed'),
+          type: 'error',
+        });
         throw error;
       }
     },
-    [deleteMutation, logger]
+    [deleteMutation, logger, showToast, t]
   );
 
   return {
@@ -311,6 +317,6 @@ export function useProjects(): IUseProjectsReturn {
     createProject: handleCreateProject,
     updateProject: handleUpdateProject,
     deleteProject: handleDeleteProject,
-    refetch: () => queryClient.invalidateQueries({ queryKey: PROJECTS_QUERY_KEY }),
+    refetch: () => queryClient.invalidateQueries({ queryKey: ['projects', user?.id] }),
   };
 }

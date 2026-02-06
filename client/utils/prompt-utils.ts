@@ -1,4 +1,4 @@
-import { DEFAULT_ENHANCEMENT_SETTINGS, IUpscaleConfig } from '@/shared/types/coreflow.types';
+import { DEFAULT_ENHANCEMENT_SETTINGS, type IUpscaleConfig } from '@/shared/types/coreflow.types';
 
 /**
  * Generates enhancement prompt based on selected aspects.

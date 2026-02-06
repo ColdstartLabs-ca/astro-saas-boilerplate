@@ -1,6 +1,7 @@
 ---
 import Layout from '../../layouts/Layout.astro';
 import { clientEnv } from '@shared/config/env';
+import SubscriptionConfirmedClient from '@client/components/pages/SubscriptionConfirmedClient';
 
 // SEO metadata
 const title = 'Subscription Confirmed';
@@ -18,16 +19,5 @@ const description = 'Your subscription has been successfully confirmed. Thank yo
   </Fragment>
 
   <!-- Subscription confirmed client component -->
-  <div id="subscription-confirmed-root"></div>
-  <script type="module">
-    import { createRoot } from 'react-dom/client';
-    import SubscriptionConfirmedClient from '@client/components/pages/SubscriptionConfirmedClient';
-
-    const root = document.getElementById('subscription-confirmed-root');
-    if (root) {
-      createRoot(root).render(
-        React.createElement(SubscriptionConfirmedClient)
-      );
-    }
-  </script>
+  <SubscriptionConfirmedClient client:load />
 </Layout>

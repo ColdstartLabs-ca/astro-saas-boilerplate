@@ -1,4 +1,4 @@
-import { IBatchItem } from '@/shared/types/coreflow.types';
+import type { IBatchItem } from '@/shared/types/coreflow.types';
 import JSZip from 'jszip';
 import { clientEnv } from '@shared/config/env';
 import { analytics } from '@client/analytics';

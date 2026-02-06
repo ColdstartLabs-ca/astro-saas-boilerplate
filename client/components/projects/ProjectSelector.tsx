@@ -11,37 +11,28 @@
 
 'use client';
 
-import React, { useState, useRef, useEffect } from 'react';
-import { ChevronDown, Plus } from 'lucide-react';
+import { useClickOutside } from '@client/hooks/useClickOutside';
 import { useProjects } from '@client/hooks/useProjects';
+import { cn } from '@client/utils/cn';
 import { useLogger } from '@client/utils/logger';
 import { getTranslations } from '@src/i18n/utils';
-import { useMemo } from 'react';
-import { cn } from '@client/utils/cn';
+import { ChevronDown, FolderOpen, Plus } from 'lucide-react';
+import { useMemo, useRef, useState } from 'react';
 
 interface IProjectSelectorProps {
   onOpenOnboarding?: () => void;
 }
 
 export function ProjectSelector({ onOpenOnboarding }: IProjectSelectorProps): JSX.Element {
-  const t = useMemo(() => getTranslations('dashboard.projects'), []);
+  const t = useMemo(() => getTranslations('dashboard'), []);
   const logger = useLogger('ProjectSelector');
   const { projects, activeProject, activeProjectId, setActiveProject } = useProjects();
 
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  // Close dropdown when clicking outside
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
-        setIsOpen(false);
-      }
-    };
-
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
+  // Close dropdown when clicking outside using shared hook
+  useClickOutside(dropdownRef, () => setIsOpen(false));
 
   const handleSelectProject = (projectId: string) => {
     setActiveProject(projectId);
@@ -60,9 +51,9 @@ export function ProjectSelector({ onOpenOnboarding }: IProjectSelectorProps): JS
   };
 
   return (
-    <div className="px-4 pt-4 pb-2" ref={dropdownRef}>
-      <div className="text-xs font-semibold text-muted uppercase tracking-wider mb-2 px-2">
-        {t('activeSite')}
+    <div className="px-3 py-3 border-b border-border" ref={dropdownRef}>
+      <div className="text-[10px] font-semibold text-muted uppercase tracking-wider mb-2">
+        {t('projects.activeProject')}
       </div>
       <div className="relative">
         {/* Trigger Button */}
@@ -71,22 +62,28 @@ export function ProjectSelector({ onOpenOnboarding }: IProjectSelectorProps): JS
           className="w-full bg-surface-light hover:bg-elevated transition-colors border border-border rounded-lg p-3 flex items-center justify-between group"
         >
           <div className="flex items-center gap-3 overflow-hidden">
-            <div className="w-8 h-8 rounded bg-accent/20 text-accent flex items-center justify-center font-bold text-sm shrink-0">
-              {activeProject ? getProjectInitial(activeProject.name) : '?'}
+            <div className="w-8 h-8 rounded bg-accent/20 text-accent flex items-center justify-center shrink-0">
+              {activeProject ? (
+                <span className="font-bold text-sm">{getProjectInitial(activeProject.name)}</span>
+              ) : (
+                <FolderOpen className="w-4 h-4" />
+              )}
             </div>
-            <div className="truncate text-left">
+            <div className="truncate">
               <div className="text-sm font-medium text-white truncate">
-                {activeProject?.name || t('noSiteConnected')}
+                {activeProject?.name || t('projects.noProjectSelected')}
               </div>
               <div className="text-xs text-muted group-hover:text-secondary">
-                {t('manageSites')}
+                {t('projects.manageProjects')}
               </div>
             </div>
           </div>
-          <ChevronDown className={cn(
-            'w-4 h-4 text-muted shrink-0 transition-transform',
-            isOpen && 'rotate-180'
-          )} />
+          <ChevronDown
+            className={cn(
+              'w-4 h-4 text-muted shrink-0 transition-transform',
+              isOpen && 'rotate-180'
+            )}
+          />
         </button>
 
         {/* Dropdown Menu */}
@@ -106,10 +103,12 @@ export function ProjectSelector({ onOpenOnboarding }: IProjectSelectorProps): JS
                   {getProjectInitial(project.name)}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <div className={cn(
-                    'text-sm font-medium truncate',
-                    activeProjectId === project.id ? 'text-accent' : 'text-secondary'
-                  )}>
+                  <div
+                    className={cn(
+                      'text-sm font-medium truncate',
+                      activeProjectId === project.id ? 'text-accent' : 'text-secondary'
+                    )}
+                  >
                     {project.name}
                   </div>
                   {project.domain && (
@@ -127,7 +126,9 @@ export function ProjectSelector({ onOpenOnboarding }: IProjectSelectorProps): JS
               <div className="w-8 h-8 rounded bg-accent/20 text-accent flex items-center justify-center shrink-0">
                 <Plus className="w-4 h-4" />
               </div>
-              <span className="text-sm font-medium text-accent">{t('addNew')}</span>
+              <span className="text-sm font-medium text-accent">
+                {t('projects.selector.addNew')}
+              </span>
             </button>
           </div>
         )}

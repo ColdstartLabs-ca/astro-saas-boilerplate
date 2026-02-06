@@ -109,7 +109,7 @@ const PipelineView: React.FC<IPipelineViewProps> = ({ typedText, cursorVisible }
     <div className="space-y-2">
       {[
         { title: 'Top 10 CRM Tools 2024', status: 'Queued', badge: 'bg-main text-text-muted' },
-        { title: 'Email Marketing Guide', status: 'Scheduled', badge: 'bg-secondary/10 text-secondary' },
+        { title: 'Email Marketing Guide', status: 'Scheduled', badge: 'bg-brand-600/10 text-brand-600' },
       ].map((item, i) => (
         <div key={i} className="flex items-center justify-between p-2.5 rounded-lg border border-border bg-elevated/40 text-xs">
           <div className="flex items-center gap-3">
@@ -336,7 +336,7 @@ const CalendarView: React.FC = () => (
               <span className={`text-[9px] ${isToday ? 'text-accent font-bold' : 'text-text-muted'} mb-1`}>{day}</span>
 
               {scheduled && (
-                <div className="mt-0.5 bg-secondary/30 border border-accent/20 rounded-[2px] p-0.5 mb-0.5">
+                <div className="mt-0.5 bg-brand-600/30 border border-accent/20 rounded-[2px] p-0.5 mb-0.5">
                   <div className="h-1 w-full bg-accent/50 rounded-full"></div>
                 </div>
               )}

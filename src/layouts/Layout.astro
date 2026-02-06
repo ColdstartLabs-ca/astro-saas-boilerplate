@@ -51,6 +51,12 @@ const organizationJsonLd = {
     <link rel="dns-prefetch" href="https://analytics.ahrefs.com" />
     <link rel="preconnect" href="https://js.stripe.com" />
     <link rel="dns-prefetch" href="https://js.stripe.com" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700;800&family=Inter:wght@300;400;500;600;700;800&display=swap"
+    />
  
     <!-- JSON-LD structured data -->
     <script type="application/ld+json" set:html={JSON.stringify(websiteJsonLd)} />
@@ -63,7 +69,7 @@ const organizationJsonLd = {
     <!-- Page-specific head content -->
     <slot name="head" />
   </head>
-  <body class="antialiased">
+  <body class="font-sans antialiased">
     <div class="min-h-screen bg-main flex flex-col overflow-x-hidden">
       <NavBarAstro client:load />
       <main class="flex-1 w-full">

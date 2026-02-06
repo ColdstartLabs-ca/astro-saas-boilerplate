@@ -6,7 +6,6 @@ import React, { useRef } from 'react';
 // Types from CommonJS React module - use React namespace
 type ReactNode = React.ReactNode;
 type ReactElement = React.ReactElement;
-type HTMLAttributes<T> = React.HTMLAttributes<T>;
 
 // Smooth easing for professional feel
 const smoothEasing: [number, number, number, number] = [0.25, 0.4, 0.25, 1];
@@ -117,7 +116,7 @@ export function StaggerContainer({
 // ============================================
 // StaggerItem - Individual items within stagger container
 // ============================================
-interface IStaggerItemProps extends HTMLAttributes<'div'> {
+interface IStaggerItemProps {
   children: ReactNode;
   className?: string;
 }
@@ -137,10 +136,9 @@ const itemVariants = {
 export function StaggerItem({
   children,
   className = '',
-  ...props
 }: IStaggerItemProps): ReactElement {
   return (
-    <motion.div variants={itemVariants} className={className} {...props}>
+    <motion.div variants={itemVariants} className={className}>
       {children}
     </motion.div>
   );

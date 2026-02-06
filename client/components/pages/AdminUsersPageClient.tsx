@@ -2,12 +2,14 @@
 
 import { UserActionsDropdown } from '@client/components/admin/UserActionsDropdown';
 import { adminFetch } from '@client/utils/admin-api-client';
-import { IAdminUserProfile } from '@shared/types/admin.types';
+import type { IAdminUserProfile } from '@shared/types/admin.types';
+import { useTranslations } from '@client/hooks/useTranslations';
 import dayjs from 'dayjs';
 import { ChevronLeft, ChevronRight, Search } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
 
 export default function AdminUsersPageClient(): JSX.Element {
+  const t = useTranslations('admin');
   const [users, setUsers] = useState<IAdminUserProfile[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -16,34 +18,6 @@ export default function AdminUsersPageClient(): JSX.Element {
   const [total, setTotal] = useState(0);
   const [refreshKey, setRefreshKey] = useState(0);
   const limit = 20;
-
-  const t = (key: string, params?: Record<string, string | number>) => {
-    // Simple translation function - replace with proper i18n
-    const translations: Record<string, string> = {
-      'admin.users.title': 'Users',
-      'admin.users.searchPlaceholder': 'Search by email...',
-      'admin.users.error': 'Failed to load users',
-      'admin.users.loading': 'Loading...',
-      'admin.users.noUsersFound': 'No users found',
-      'admin.users.table.email': 'Email',
-      'admin.users.table.role': 'Role',
-      'admin.users.table.credits': 'Credits',
-      'admin.users.table.subscription': 'Subscription',
-      'admin.users.table.joined': 'Joined',
-      'admin.users.table.actions': 'Actions',
-      'admin.users.table.free': 'Free',
-      'admin.users.pagination.showing': 'Showing {from} to {to} of {total}',
-      'admin.users.pagination.pageOf': 'Page {current} of {total}',
-    };
-
-    let result = translations[key] || key;
-    if (params) {
-      Object.entries(params).forEach(([param, value]) => {
-        result = result.replace(`{${param}}`, String(value));
-      });
-    }
-    return result;
-  };
 
   const fetchUsers = useCallback(async () => {
     setLoading(true);
@@ -64,11 +38,11 @@ export default function AdminUsersPageClient(): JSX.Element {
       }
     } catch (err) {
       console.error('Failed to fetch users:', err);
-      setError(err instanceof Error ? err.message : t('admin.users.error'));
+      setError(err instanceof Error ? err.message : t('users.error'));
     } finally {
       setLoading(false);
     }
-  }, [page, search]);
+  }, [page, search, t]);
 
   useEffect(() => {
     fetchUsers();
@@ -84,12 +58,12 @@ export default function AdminUsersPageClient(): JSX.Element {
     <div className="space-y-4">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <h2 className="text-lg font-medium text-primary">{t('admin.users.title')}</h2>
+        <h2 className="text-lg font-medium text-primary">{t('users.title')}</h2>
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <input
             type="text"
-            placeholder={t('admin.users.searchPlaceholder')}
+            placeholder={t('users.searchPlaceholder')}
             value={search}
             onChange={e => {
               setSearch(e.target.value);
@@ -106,22 +80,22 @@ export default function AdminUsersPageClient(): JSX.Element {
           <thead className="bg-surface">
             <tr>
               <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider rounded-tl-lg">
-                {t('admin.users.table.email')}
+                {t('users.table.email')}
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                {t('admin.users.table.role')}
+                {t('users.table.role')}
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                {t('admin.users.table.credits')}
+                {t('users.table.credits')}
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                {t('admin.users.table.subscription')}
+                {t('users.table.subscription')}
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                {t('admin.users.table.joined')}
+                {t('users.table.joined')}
               </th>
               <th className="px-6 py-3 text-right text-xs font-medium text-muted-foreground uppercase tracking-wider rounded-tr-lg">
-                {t('admin.users.table.actions')}
+                {t('users.table.actions')}
               </th>
             </tr>
           </thead>
@@ -129,7 +103,7 @@ export default function AdminUsersPageClient(): JSX.Element {
             {loading ? (
               <tr>
                 <td colSpan={6} className="px-6 py-4 text-center text-muted-foreground">
-                  {t('admin.users.loading')}
+                  {t('users.loading')}
                 </td>
               </tr>
             ) : error ? (
@@ -141,7 +115,7 @@ export default function AdminUsersPageClient(): JSX.Element {
             ) : users.length === 0 ? (
               <tr>
                 <td colSpan={6} className="px-6 py-4 text-center text-muted-foreground">
-                  {t('admin.users.noUsersFound')}
+                  {t('users.noUsersFound')}
                 </td>
               </tr>
             ) : (
@@ -152,7 +126,7 @@ export default function AdminUsersPageClient(): JSX.Element {
                     <span
                       className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${
                         user.role === 'admin'
-                          ? 'bg-secondary/20 text-secondary'
+                          ? 'bg-brand-600/20 text-brand-600'
                           : 'bg-surface-light text-primary'
                       }`}
                     >
@@ -169,7 +143,7 @@ export default function AdminUsersPageClient(): JSX.Element {
                         {user.subscription_tier}
                       </span>
                     ) : (
-                      <span className="text-sm text-muted-foreground">{t('admin.users.table.free')}</span>
+                      <span className="text-sm text-muted-foreground">{t('users.table.free')}</span>
                     )}
                   </td>
                   <td className="px-6 py-4 text-sm text-muted-foreground">
@@ -194,7 +168,7 @@ export default function AdminUsersPageClient(): JSX.Element {
         {totalPages > 1 && (
           <div className="px-6 py-3 border-t border-border flex items-center justify-between">
             <div className="text-sm text-muted-foreground">
-              {t('admin.users.pagination.showing', {
+              {t('users.pagination.showing', {
                 from: (page - 1) * limit + 1,
                 to: Math.min(page * limit, total),
                 total,
@@ -209,7 +183,7 @@ export default function AdminUsersPageClient(): JSX.Element {
                 <ChevronLeft className="h-5 w-5" />
               </button>
               <span className="text-sm text-muted-foreground">
-                {t('admin.users.pagination.pageOf', { current: page, total: totalPages })}
+                {t('users.pagination.pageOf', { current: page, total: totalPages })}
               </span>
               <button
                 onClick={() => setPage(p => Math.min(totalPages, p + 1))}

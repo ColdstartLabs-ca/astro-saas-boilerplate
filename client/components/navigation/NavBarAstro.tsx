@@ -63,14 +63,6 @@ export function NavBarAstro(): JSX.Element {
         </a>
 
         <nav className="hidden lg:flex items-center gap-2 xl:gap-4 ml-6 xl:ml-10">
-          {isAuthenticated && (
-            <a
-              href={localizedPath('/dashboard')}
-              className={`text-sm font-bold transition-colors pb-1 ${isActive('/dashboard') ? 'text-white border-b-2 border-accent' : 'text-text-muted hover:text-white border-b-2 border-transparent'}`}
-            >
-              {t('dashboard')}
-            </a>
-          )}
           <a
             href={localizedPath('/#comparison')}
             className="text-sm font-bold transition-colors pb-1 text-text-muted hover:text-white border-b-2 border-transparent"
@@ -137,6 +129,12 @@ export function NavBarAstro(): JSX.Element {
             </>
           ) : (
             <>
+              <a
+                href={localizedPath('/dashboard')}
+                className={`hidden md:inline-flex items-center justify-center rounded-xl text-sm font-bold transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring h-10 px-4 ${isActive('/dashboard') ? 'bg-accent/20 text-accent' : 'text-text-muted hover:text-white hover:bg-white/5'}`}
+              >
+                {t('dashboard')}
+              </a>
               <div className="relative" ref={dropdownRef}>
                 <button
                   onClick={() => setIsDropdownOpen(!isDropdownOpen)}

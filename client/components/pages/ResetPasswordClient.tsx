@@ -125,3 +125,6 @@ export function ResetPasswordClient(): JSX.Element {
     </Suspense>
   );
 }
+
+// Default export for Astro client:only directive
+export default ResetPasswordClient;

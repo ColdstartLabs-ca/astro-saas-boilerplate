@@ -1,119 +1,122 @@
 'use client';
 
-import React, { useState, useMemo, useEffect } from 'react';
-import {
-  LayoutGrid,
-  Layers,
-  Search,
-  CheckCircle2,
-  Calendar as CalendarIcon,
-  Link2,
-  BarChart2,
-  CreditCard,
-  Settings,
-  HelpCircle,
-  LogOut,
-  Shield,
-  X,
-  Loader2,
-} from 'lucide-react';
-import { useUserStore, useIsAdmin, useSubscription } from '@client/store/userStore';
-import { CreditsDisplay } from '@client/components/stripe/CreditsDisplay';
+import React, { useState, useMemo, useEffect, useCallback } from 'react';
+import { LogOut, X } from 'lucide-react';
+import { dashboardNavigate, onDashboardNavigate } from '@client/utils/dashboardNavigation';
+import { useUserStore, useIsAdmin } from '@client/store/userStore';
 import { Logo } from '@client/components/logo/Logo';
-import { getPlanDisplayName } from '@shared/config/stripe';
 import { useLogger } from '@client/utils/logger';
 import { cn } from '@client/utils/cn';
-import { getTranslations } from '@src/i18n/utils';
-import { LocaleSwitcher } from '@client/components/i18n/LocaleSwitcher';
+import { getTranslations, type TFunction } from '@src/i18n/utils';
 import { ProjectSelector } from '@client/components/projects/ProjectSelector';
 import { ProjectOnboarding } from '@client/components/projects/ProjectOnboarding';
-
-interface ISidebarItem {
-  label: string;
-  href: string;
-  icon: React.ElementType;
-}
+import {
+  getRoutesByGroup,
+  isPathActive,
+  type IDashboardRoute,
+} from '@client/config/dashboardRoutes';
 
 interface IDashboardSidebarProps {
   isOpen?: boolean;
   onClose?: () => void;
 }
 
+/**
+ * Render a single sidebar menu item
+ */
+function SidebarItem({
+  route,
+  pathname,
+  onNavigate,
+  t,
+}: {
+  route: IDashboardRoute;
+  pathname: string;
+  onNavigate: (href: string) => void;
+  t: TFunction;
+}): JSX.Element {
+  const Icon = route.icon;
+  const isActive = isPathActive(pathname, route.path);
+  const isEnabled = route.enabled !== false;
+  const label = t(route.labelKey);
+
+  if (!isEnabled) {
+    return (
+      <span className="flex items-center justify-between px-3 py-2.5 rounded-lg text-sm font-medium text-muted cursor-not-allowed opacity-50">
+        <span className="flex items-center space-x-3">
+          <Icon className="w-5 h-5 text-muted" />
+          <span>{label}</span>
+        </span>
+        <span className="text-[10px] uppercase tracking-wider font-semibold text-muted bg-surface-light px-1.5 py-0.5 rounded">
+          Soon
+        </span>
+      </span>
+    );
+  }
+
+  return (
+    <a
+      href={route.path}
+      onClick={e => {
+        e.preventDefault();
+        onNavigate(route.path);
+      }}
+      className={cn(
+        'flex items-center space-x-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors w-full text-left',
+        isActive
+          ? 'bg-brand-600 text-white shadow-lg shadow-brand-900'
+          : 'text-secondary hover:bg-surface-light hover:text-white'
+      )}
+    >
+      <Icon className={cn('w-5 h-5', isActive ? 'text-white' : 'text-secondary')} />
+      <span>{label}</span>
+    </a>
+  );
+}
+
 export const DashboardSidebar: React.FC<IDashboardSidebarProps> = ({ isOpen, onClose }) => {
   const t = useMemo(() => getTranslations('dashboard'), []);
-  const { signOut, user, isLoading, error } = useUserStore();
+  const { signOut, user } = useUserStore();
   const isAdmin = useIsAdmin();
-  const subscription = useSubscription();
   const logger = useLogger('DashboardSidebar');
 
-  // Get current pathname from window.location
-  const [pathname, setPathname] = useState('');
+  const [pathname, setPathname] = useState(() =>
+    typeof window !== 'undefined' ? window.location.pathname : '/dashboard'
+  );
   useEffect(() => {
-    setPathname(window.location.pathname);
+    return onDashboardNavigate(setPathname);
   }, []);
-
-  // Check if profile data is still loading (but not if there's an error)
-  const isProfileLoading = isLoading || (user && !user.profile && !error);
-
-  // Resolve subscription to plan name - prioritize profile's subscription_tier
-  const planDisplayName = getPlanDisplayName({
-    subscriptionTier: user?.profile?.subscription_tier,
-    priceId: subscription?.price_id,
-  });
 
   // Onboarding modal state
   const [showOnboarding, setShowOnboarding] = useState(false);
 
-  // Primary nav — AutopilotRank-specific views
-  const primaryItems: ISidebarItem[] = [
-    { label: t('sidebar.overview'), href: '/dashboard', icon: LayoutGrid },
-    { label: t('sidebar.campaigns'), href: '/dashboard/campaigns', icon: Layers },
-    { label: t('sidebar.keywords'), href: '/dashboard/keywords', icon: Search },
-    { label: t('sidebar.optimization'), href: '/dashboard/optimization', icon: CheckCircle2 },
-    { label: t('sidebar.calendar'), href: '/dashboard/calendar', icon: CalendarIcon },
-    { label: t('sidebar.backlinks'), href: '/dashboard/backlinks', icon: Link2 },
-    { label: t('sidebar.analytics'), href: '/dashboard/analytics', icon: BarChart2 },
-  ];
+  // Get routes from centralized config
+  const primaryItems = useMemo(() => getRoutesByGroup('primary'), []);
+  const secondaryItems = useMemo(() => getRoutesByGroup('secondary'), []);
+  const bottomItems = useMemo(() => getRoutesByGroup('bottom'), []);
+  const adminItems = useMemo(() => (isAdmin ? getRoutesByGroup('admin') : []), [isAdmin]);
 
-  // Secondary nav — account management
-  const secondaryItems: ISidebarItem[] = [
-    { label: t('sidebar.billing'), href: '/dashboard/billing', icon: CreditCard },
-    { label: t('sidebar.settings'), href: '/dashboard/settings', icon: Settings },
-  ];
-
-  // Add Admin menu item if user is admin
-  if (isAdmin) {
-    secondaryItems.push({ label: t('sidebar.admin'), href: '/dashboard/admin', icon: Shield });
-  }
-
-  const bottomMenuItems: ISidebarItem[] = [
-    { label: t('sidebar.helpSupport'), href: '/help', icon: HelpCircle },
-  ];
-
-  const isActive = (href: string) => {
-    if (href === '/dashboard') {
-      return pathname === '/dashboard';
-    }
-    return pathname.startsWith(href);
-  };
+  const handleNavigation = useCallback(
+    (href: string) => {
+      onClose?.();
+      // Non-dashboard links get a full page load
+      if (!href.startsWith('/dashboard')) {
+        window.location.href = href;
+        return;
+      }
+      dashboardNavigate(href);
+    },
+    [onClose]
+  );
 
   const handleSignOut = async () => {
     try {
       await signOut();
-      // Redirect is handled by auth state change listener in userStore.ts
     } catch (error) {
       logger.error('Error signing out', {
         error: error instanceof Error ? error.message : 'Unknown error',
         userEmail: user?.email,
       });
-    }
-  };
-
-  const handleNavigation = (href: string) => {
-    window.location.href = href;
-    // Close drawer on mobile after navigation
-    if (onClose) {
-      onClose();
     }
   };
 
@@ -153,139 +156,61 @@ export const DashboardSidebar: React.FC<IDashboardSidebarProps> = ({ isOpen, onC
         )}
 
         {/* Logo/Brand */}
-        <div className="p-6 border-b border-border flex items-center justify-between">
-          <a href="/" className="flex items-center">
-            <Logo variant="compact" />
+        <div className="p-6 border-b border-border">
+          <a href="/" className="flex items-center gap-2" onClick={() => handleNavigation('/')}>
+            <Logo variant="full" />
           </a>
-          <LocaleSwitcher />
         </div>
 
         {/* Active Project Selector */}
         <ProjectSelector onOpenOnboarding={() => setShowOnboarding(true)} />
 
-        {/* User Info */}
-        <div className="px-4 py-3 border-b border-border">
-          <div className="flex items-center space-x-3">
-            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-accent/30 to-tertiary/30 flex items-center justify-center ring-1 ring-accent/20">
-              <span className="text-accent font-semibold text-sm">
-                {user?.email?.charAt(0).toUpperCase() || 'U'}
-              </span>
-            </div>
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2">
-                <p className="text-sm font-medium text-white truncate">{user?.name || 'User'}</p>
-                {isAdmin && (
-                  <span className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-accent/20 text-accent">
-                    {t('sidebar.admin')}
-                  </span>
-                )}
-              </div>
-              <p className="text-xs text-muted-foreground truncate">{user?.email}</p>
-              <span className="inline-flex items-center mt-1 px-2 py-0.5 rounded-full text-xs font-medium bg-accent/10 text-accent">
-                {isProfileLoading ? (
-                  <Loader2 className="h-3 w-3 animate-spin" />
-                ) : error ? (
-                  t('planUnavailable')
-                ) : (
-                  planDisplayName
-                )}
-              </span>
-            </div>
-          </div>
-          {/* Credits Display */}
-          <div className="mt-3">
-            <CreditsDisplay />
-          </div>
-        </div>
-
         {/* Primary Navigation */}
         <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
-          {primaryItems.map(item => {
-            const Icon = item.icon;
-            const active = isActive(item.href);
-
-            return (
-              <button
-                key={item.href}
-                onClick={() => handleNavigation(item.href)}
-                className={cn(
-                  'flex items-center px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 w-full text-left',
-                  active
-                    ? 'bg-accent text-white shadow-lg shadow-accent/20'
-                    : 'text-secondary hover:bg-surface-light hover:text-white'
-                )}
-              >
-                <Icon
-                  size={20}
-                  className={cn('mr-3', active ? 'text-white' : 'text-secondary')}
-                />
-                {item.label}
-              </button>
-            );
-          })}
+          {primaryItems.map(item => (
+            <SidebarItem
+              key={item.path}
+              route={item}
+              pathname={pathname}
+              onNavigate={handleNavigation}
+              t={t}
+            />
+          ))}
 
           {/* Separator */}
           <div className="border-t border-border my-2" />
 
           {/* Secondary Navigation */}
-          {secondaryItems.map(item => {
-            const Icon = item.icon;
-            const active = isActive(item.href);
-
-            return (
-              <button
-                key={item.href}
-                onClick={() => handleNavigation(item.href)}
-                className={cn(
-                  'flex items-center px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 w-full text-left',
-                  active
-                    ? 'bg-accent/10 text-accent'
-                    : 'text-secondary hover:bg-surface-light hover:text-white'
-                )}
-              >
-                <Icon
-                  size={20}
-                  className={cn('mr-3', active ? 'text-accent' : 'text-secondary')}
-                />
-                {item.label}
-              </button>
-            );
-          })}
+          {[...secondaryItems, ...adminItems].map(item => (
+            <SidebarItem
+              key={item.path}
+              route={item}
+              pathname={pathname}
+              onNavigate={handleNavigation}
+              t={t}
+            />
+          ))}
         </nav>
 
         {/* Bottom Navigation */}
         <div className="px-3 py-4 border-t border-border space-y-1">
-          {bottomMenuItems.map(item => {
-            const Icon = item.icon;
-            const active = isActive(item.href);
-
-            return (
-              <button
-                key={item.href}
-                onClick={() => handleNavigation(item.href)}
-                className={cn(
-                  'flex items-center px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 w-full text-left',
-                  active
-                    ? 'bg-accent/10 text-accent'
-                    : 'text-secondary hover:bg-surface-light hover:text-white'
-                )}
-              >
-                <Icon
-                  size={20}
-                  className={cn('mr-3', active ? 'text-accent' : 'text-secondary')}
-                />
-                {item.label}
-              </button>
-            );
-          })}
+          {bottomItems.map(item => (
+            <SidebarItem
+              key={item.path}
+              route={item}
+              pathname={pathname}
+              onNavigate={handleNavigation}
+              t={t}
+            />
+          ))}
 
           {/* Sign Out Button */}
           <button
             onClick={handleSignOut}
-            className="w-full flex items-center px-3 py-2.5 rounded-lg text-sm font-medium text-secondary hover:bg-red-500/10 hover:text-red-500 transition-all duration-200"
+            className="w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg text-sm font-medium text-secondary hover:bg-red-500/10 hover:text-red-500 transition-colors"
           >
-            <LogOut size={20} className="mr-3 text-secondary" />
-            {t('sidebar.signOut')}
+            <LogOut className="w-5 h-5 text-secondary" />
+            <span>{t('sidebar.signOut')}</span>
           </button>
         </div>
       </aside>

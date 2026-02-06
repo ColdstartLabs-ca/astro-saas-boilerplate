@@ -3,7 +3,7 @@
 import { useToastStore } from '@client/store/toastStore';
 import { useUserStore } from '@client/store/userStore';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { contactFormSchema, IContactFormInput } from '@shared/validation/support.schema';
+import { contactFormSchema, type IContactFormInput } from '@shared/validation/support.schema';
 import { CheckCircle, Send } from 'lucide-react';
 import { useTranslations } from '@client/hooks/useTranslations';
 import React, { useEffect, useState } from 'react';

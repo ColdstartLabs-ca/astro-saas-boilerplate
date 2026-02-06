@@ -34,6 +34,7 @@
     "shared/**/*",
     "lib/**/*",
     "src/**/*",
+    "client/**/*",
     ".astro/types.d.ts"
   ],
   "exclude": [
@@ -49,7 +50,6 @@
     ".astro",
     "app",
     "middleware.ts",
-    "client",
     "server/controllers",
     "server/middleware"
   ]

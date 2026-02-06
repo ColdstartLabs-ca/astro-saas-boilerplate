@@ -12,10 +12,6 @@ export default [
   // Global ignores must be in their own object with only ignores property
   {
     ignores: [
-      'app/**', // Old Next.js app directory - being migrated to Astro
-      '.next/**',
-      '.next-test-*/**', // Parallel test instance build directories
-      '.open-next/**',
       '.astro/**', // Auto-generated Astro files
       'node_modules/**',
       'out/**',
@@ -26,7 +22,6 @@ export default [
       '.wrangler/**',
       'playwright-report/**',
       'test-results/**',
-      'next-env.d.ts',
       'astro.config.mjs', // Astro config file
       'src/middleware.ts', // Astro middleware
       'UI_TEMPLATE/**', // Template files - not part of main codebase
@@ -149,88 +144,10 @@ export default [
     },
   },
   {
-    files: ['app/**/*'],
-    plugins: {
-      react: reactPlugin,
-      'react-hooks': reactHooks,
-      '@typescript-eslint': typescriptEslint,
-      i18next: i18nextPlugin,
-    },
-    languageOptions: {
-      parser: typescriptParser,
-      parserOptions: {
-        ecmaVersion: 'latest',
-        sourceType: 'module',
-        ecmaFeatures: {
-          jsx: true,
-        },
-      },
-      globals: {
-        ...globals.browser,
-        ...globals.es2021,
-        ...globals.node,
-        JSX: true,
-      },
-    },
-    settings: {
-      react: {
-        version: 'detect',
-      },
-    },
+    files: ['src/pages/**/*', 'src/layouts/**/*'],
     rules: {
-      // Prevent inline require/import - must be at module top level
-      'no-restricted-syntax': [
-        'error',
-        {
-          selector: 'CallExpression[callee.name="require"]',
-          message: 'Inline require() is forbidden. Use static imports at the top of the file.',
-        },
-        {
-          selector: 'ImportExpression',
-          message: 'Dynamic import() is forbidden. Use static imports at the top of the file.',
-        },
-        {
-          selector: 'MemberExpression[object.object.name="process"][object.property.name="env"]',
-          message:
-            'Direct process.env access is forbidden. Import from "@shared/config/env" instead: `import { clientEnv, serverEnv } from "@shared/config/env"`',
-        },
-      ],
-      ...js.configs.recommended.rules,
-      ...typescriptEslint.configs.recommended.rules,
-      ...reactPlugin.configs.recommended.rules,
-      ...reactHooks.configs.recommended.rules,
-      'import/no-default-export': 'off', // Astro pages require default exports
+      'import/no-default-export': 'off', // Astro pages/layouts require default exports
       '@typescript-eslint/explicit-module-boundary-types': 'off',
-      'react/react-in-jsx-scope': 'off',
-      'react/jsx-uses-react': 'off',
-      // i18n: Flag hardcoded strings that should use i18n
-      'i18next/no-literal-string': [
-        'warn',
-        {
-          markupOnly: true,
-          ignoreAttribute: [
-            'data-testid',
-            'data-cy',
-            'className',
-            'style',
-            'styleName',
-            'type',
-            'id',
-            'aria-label',
-            'placeholder',
-            'alt',
-            'key',
-            'name',
-            'role',
-            'src',
-            'href',
-            'target',
-          ],
-          ignoreCallee: ['console.log', 'console.warn', 'console.error'],
-          ignoreProperty: ['key'],
-          ignoreTag: ['Styled', 'styled', 'Script', 'Link', 'Image'],
-        },
-      ],
     },
   },
   // OVERRIDES - These MUST come after main config to take precedence

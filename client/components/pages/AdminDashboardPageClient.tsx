@@ -1,7 +1,7 @@
 'use client';
 
 import { adminFetch } from '@/client/utils/admin-api-client';
-import { IAdminStats } from '@/shared/types/admin.types';
+import type { IAdminStats } from '@/shared/types/admin.types';
 import { useTranslations } from '@src/i18n/utils';
 import { Coins, CreditCard, TrendingUp, Users } from 'lucide-react';
 
@@ -79,8 +79,8 @@ export default function AdminDashboard(): JSX.Element {
           title={t('stats.creditsUsed')}
           value={stats?.totalCreditsUsed || 0}
           icon={TrendingUp}
-          iconBg="bg-secondary/20"
-          iconColor="text-secondary"
+          iconBg="bg-brand-600/20"
+          iconColor="text-brand-600"
         />
       </div>
 

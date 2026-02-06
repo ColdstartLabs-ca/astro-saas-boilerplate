@@ -1,6 +1,6 @@
 import {
-  IBatchItem,
-  IUpscaleConfig,
+  type IBatchItem,
+  type IUpscaleConfig,
   ProcessingStage,
   ProcessingStatus,
 } from '@/shared/types/coreflow.types';

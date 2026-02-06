@@ -48,11 +48,9 @@ export default {
           light: 'rgb(var(--color-accent-light) / <alpha-value>)',
         },
 
-        // NEW: Secondary accent
+        // Secondary = slate-400 (body text). Green brand accent lives in `brand-600`.
         secondary: {
-          DEFAULT: 'rgb(var(--color-secondary) / <alpha-value>)',
-          hover: 'rgb(var(--color-secondary-hover) / <alpha-value>)',
-          light: 'rgb(var(--color-secondary-light) / <alpha-value>)',
+          DEFAULT: 'rgb(var(--color-text-secondary) / <alpha-value>)',
         },
 
         // NEW: Tertiary for gradients
@@ -67,10 +65,12 @@ export default {
           hover: 'rgb(var(--color-primary-hover) / <alpha-value>)',
         },
         foreground: 'rgb(var(--color-foreground) / <alpha-value>)',
+        // Muted = slate-500 (dimmer text, placeholders)
         muted: {
+          DEFAULT: 'rgb(var(--color-text-muted) / <alpha-value>)',
           foreground: 'rgb(var(--color-muted-foreground) / <alpha-value>)',
         },
-        // Text colors
+        // Text color aliases (produces text-text-primary, etc. for legacy usage)
         'text-primary': 'rgb(var(--color-text-primary) / <alpha-value>)',
         'text-secondary': 'rgb(var(--color-text-secondary) / <alpha-value>)',
         'text-muted': 'rgb(var(--color-text-muted) / <alpha-value>)',
@@ -87,6 +87,8 @@ export default {
         'glow-green-light': '0 0 20px rgba(74, 222, 128, 0.3)',
         'glow-green-mixed': '0 0 30px rgba(34, 197, 94, 0.2), 0 0 30px rgba(74, 222, 128, 0.2)',
         'card-hover': '0 20px 40px rgba(0, 0, 0, 0.2), 0 0 40px rgba(34, 197, 94, 0.1)',
+        // UI_TEMPLATE shadow for active nav items (brand-900/20)
+        'brand-900': '0 10px 15px -3px rgba(20, 83, 45, 0.2), 0 4px 6px -2px rgba(20, 83, 45, 0.2)',
       },
       keyframes: {
         'fade-in': {

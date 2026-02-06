@@ -1,13 +1,13 @@
-# SaaS Boilerplate
+# AutopilotRank
 
-A production-ready Next.js SaaS boilerplate with authentication, payments, credits system, and all the essential features you need to launch your SaaS product quickly.
+A production-ready Astro 5 + React 18 (islands architecture) SaaS application deployed on Cloudflare Pages. Provides core infrastructure for building credits-based SaaS products.
 
 ## Tech Stack
 
-- **Frontend**: Next.js 15 (App Router), React 18, Tailwind CSS, DaisyUI
-- **Backend**: Next.js API Routes (Cloudflare Workers)
+- **Frontend**: Astro 5 (SSR + Islands), React 18, Tailwind CSS
+- **Backend**: Astro API Routes (Cloudflare Workers)
 - **Database**: Supabase (PostgreSQL)
-- **Authentication**: Supabase Auth (Email, Google, GitHub OAuth)
+- **Authentication**: Supabase Auth (Email, Google, Azure OAuth)
 - **Payments**: Stripe (Subscriptions & One-time Credits)
 - **Deployment**: Cloudflare Pages
 - **Monitoring**: Baselime
@@ -45,23 +45,24 @@ yarn dev
 
 This project uses a split environment variable structure:
 
-| File        | Purpose          | Contains                                               |
-| ----------- | ---------------- | ------------------------------------------------------ |
-| `.env`      | Public variables | `NEXT_PUBLIC_*` prefixed variables                     |
-| `.env.prod` | Server secrets   | `SUPABASE_SERVICE_ROLE_KEY`, `STRIPE_SECRET_KEY`, etc. |
+| File          | Purpose          | Contains                                               |
+| ------------- | ---------------- | ------------------------------------------------------ |
+| `.env.client` | Public variables | `PUBLIC_*` prefixed variables                          |
+| `.env.api`    | Server secrets   | `SUPABASE_SERVICE_ROLE_KEY`, `STRIPE_SECRET_KEY`, etc. |
 
 See [Supabase Setup Guide](docs/guides/supabase-setup.md) for details.
 
 ## Available Scripts
 
-| Command         | Description                                                |
-| --------------- | ---------------------------------------------------------- |
-| `yarn dev`      | Start development server (Next.js + Wrangler + Stripe CLI) |
-| `yarn build`    | Build for production                                       |
-| `yarn verify`   | Run TypeScript, ESLint, and all tests                      |
-| `yarn test:e2e` | Run E2E browser tests                                      |
-| `yarn test:api` | Run API tests                                              |
-| `yarn test:all` | Run all Playwright tests                                   |
+| Command                | Description                                               |
+| ---------------------- | --------------------------------------------------------- |
+| `yarn dev`             | Start development server (Astro + Stripe webhook forward) |
+| `yarn dev:no-webhooks` | Start development server without Stripe webhooks          |
+| `yarn build`           | Build for production                                      |
+| `yarn verify`          | Run TypeScript, ESLint, and all tests                     |
+| `yarn test:e2e`        | Run E2E browser tests                                     |
+| `yarn test:api`        | Run API tests                                             |
+| `yarn test:all`        | Run all Playwright tests                                  |
 
 ## Documentation
 
@@ -73,13 +74,25 @@ See [Supabase Setup Guide](docs/guides/supabase-setup.md) for details.
 ## Project Structure
 
 ```
-├── app/                    # Next.js App Router pages
 ├── src/
-│   ├── components/         # React components
-│   ├── config/             # App configuration
-│   ├── lib/                # Utility libraries
+│   ├── pages/              # Astro pages (SSR)
+│   ├── layouts/            # Astro layouts
+│   ├── components/         # Astro components (analytics, etc.)
+│   └── i18n/               # i18n utilities
+├── client/
+│   ├── components/         # React island components
+│   ├── hooks/              # React hooks
 │   ├── store/              # Zustand stores
-│   └── types/              # TypeScript types
+│   └── styles/             # Global styles
+├── server/
+│   ├── blog.ts             # Blog data service
+│   ├── services/           # Business logic services
+│   └── controllers/        # API route handlers
+├── shared/
+│   ├── config/             # Shared configuration
+│   ├── types/              # Shared TypeScript types
+│   ├── utils/              # Shared utilities
+│   └── validation/         # Zod schemas
 ├── supabase/
 │   └── migrations/         # Database migrations
 ├── tests/

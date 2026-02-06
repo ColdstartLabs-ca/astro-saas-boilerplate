@@ -2,6 +2,8 @@
 import Layout from '../../layouts/Layout.astro';
 import { getPostBySlug, getAllPosts } from '@server/blog';
 
+export const prerender = true;
+
 export function getStaticPaths() {
   const posts = getAllPosts();
   return posts.map(post => ({
