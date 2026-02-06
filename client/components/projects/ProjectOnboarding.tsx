@@ -203,11 +203,11 @@ export function ProjectOnboarding({
               <div className="space-y-4">
                 <div>
                   <label className="block text-sm font-medium text-secondary mb-1.5">
-                    {onb('step1.websiteName')}
+                    {onb('step1.projectName')}
                   </label>
                   <input
                     type="text"
-                    placeholder={onb('step1.websiteNamePlaceholder')}
+                    placeholder={onb('step1.projectNamePlaceholder')}
                     className="w-full bg-elevated border border-border rounded-lg px-4 py-2.5 text-white focus:ring-2 focus:ring-accent focus:border-transparent outline-none transition-all"
                     value={formData.name}
                     onChange={e => setFormData({ ...formData, name: e.target.value })}

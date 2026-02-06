@@ -1,7 +1,15 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import { Globe, Plus, Settings, CreditCard, FolderOpen, ExternalLink, ArrowRight } from 'lucide-react';
+import {
+  Globe,
+  Plus,
+  Settings,
+  CreditCard,
+  FolderOpen,
+  ExternalLink,
+  ArrowRight,
+} from 'lucide-react';
 import { useProjects } from '@client/hooks/useProjects';
 import { useUserStore, useSubscription } from '@client/store/userStore';
 import { CreditsDisplay } from '@client/components/stripe/CreditsDisplay';
@@ -38,7 +46,7 @@ export function OverviewView(): JSX.Element {
     <div className="space-y-6 animate-fadeIn">
       {/* Welcome Header */}
       <div>
-        <h1 className="text-2xl font-bold text-white">
+        <h1 className="text-xl font-bold text-white">
           {t('overview.welcomeBack', { name: displayName })}
         </h1>
         <p className="text-secondary text-sm mt-1">
@@ -56,7 +64,7 @@ export function OverviewView(): JSX.Element {
             {t('overview.currentPlan')}
           </div>
           <div className="flex items-end justify-between">
-            <div className="text-xl font-bold text-white">{planDisplayName}</div>
+            <div className="text-2xl font-bold text-white">{planDisplayName}</div>
             {!user?.profile?.subscription_tier && (
               <button
                 onClick={() => dashboardNavigate('/dashboard/billing')}
@@ -105,7 +113,7 @@ export function OverviewView(): JSX.Element {
                 {activeProject.name.charAt(0).toUpperCase()}
               </div>
               <div>
-                <h2 className="text-lg font-semibold text-white">{activeProject.name}</h2>
+                <h2 className="text-base font-semibold text-white">{activeProject.name}</h2>
                 <div className="flex items-center gap-3 mt-0.5">
                   {activeProject.domain && (
                     <a
@@ -118,12 +126,14 @@ export function OverviewView(): JSX.Element {
                       <ExternalLink className="w-3 h-3" />
                     </a>
                   )}
-                  <span className={cn(
-                    'px-2 py-0.5 rounded text-xs font-medium',
-                    activeProject.status === 'active'
-                      ? 'bg-green-500/10 text-green-400'
-                      : 'bg-secondary/10 text-secondary'
-                  )}>
+                  <span
+                    className={cn(
+                      'px-2 py-0.5 rounded text-xs font-medium',
+                      activeProject.status === 'active'
+                        ? 'bg-green-500/10 text-green-400'
+                        : 'bg-secondary/10 text-secondary'
+                    )}
+                  >
                     {t(`projects.list.status.${activeProject.status}`)}
                   </span>
                 </div>
@@ -135,17 +145,25 @@ export function OverviewView(): JSX.Element {
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 pt-4 border-t border-border">
             {activeProject.industry && (
               <div>
-                <div className="text-xs text-muted uppercase tracking-wider mb-1">{t('overview.industry')}</div>
+                <div className="text-xs text-muted uppercase tracking-wider mb-1">
+                  {t('overview.industry')}
+                </div>
                 <div className="text-sm font-medium text-white">{activeProject.industry}</div>
               </div>
             )}
             <div>
-              <div className="text-xs text-muted uppercase tracking-wider mb-1">{t('overview.platform')}</div>
-              <div className="text-sm font-medium text-white capitalize">{activeProject.cms_type}</div>
+              <div className="text-xs text-muted uppercase tracking-wider mb-1">
+                {t('overview.platform')}
+              </div>
+              <div className="text-sm font-medium text-white capitalize">
+                {activeProject.cms_type}
+              </div>
             </div>
             {activeProject.content_preferences?.tone && (
               <div>
-                <div className="text-xs text-muted uppercase tracking-wider mb-1">{t('overview.tone')}</div>
+                <div className="text-xs text-muted uppercase tracking-wider mb-1">
+                  {t('overview.tone')}
+                </div>
                 <div className="text-sm font-medium text-white capitalize">
                   {activeProject.content_preferences.tone}
                 </div>
@@ -153,7 +171,9 @@ export function OverviewView(): JSX.Element {
             )}
             {activeProject.content_preferences?.frequency && (
               <div>
-                <div className="text-xs text-muted uppercase tracking-wider mb-1">{t('overview.frequency')}</div>
+                <div className="text-xs text-muted uppercase tracking-wider mb-1">
+                  {t('overview.frequency')}
+                </div>
                 <div className="text-sm font-medium text-white capitalize">
                   {activeProject.content_preferences.frequency.replace('_', ' ')}
                 </div>
@@ -163,13 +183,11 @@ export function OverviewView(): JSX.Element {
         </div>
       ) : (
         /* Empty State - No Project */
-        <div className="bg-surface border border-border rounded-xl p-12 text-center">
+        <div className="bg-surface border border-border rounded-xl p-8 text-center">
           <div className="w-16 h-16 bg-surface-light rounded-full flex items-center justify-center mx-auto mb-4">
             <Globe className="w-8 h-8 text-muted" />
           </div>
-          <h3 className="text-lg font-semibold text-white mb-2">
-            {t('projects.noProjects')}
-          </h3>
+          <h3 className="text-base font-semibold text-white mb-2">{t('projects.noProjects')}</h3>
           <p className="text-secondary mb-6 max-w-md mx-auto">
             {t('projects.noProjectsDescription')}
           </p>
@@ -198,7 +216,7 @@ export function OverviewView(): JSX.Element {
                 </div>
                 <div>
                   <div className="text-sm font-medium text-white">{t('overview.newProject')}</div>
-                  <div className="text-xs text-muted">{t('overview.addWebsite')}</div>
+                  <div className="text-xs text-muted">{t('overview.addProject')}</div>
                 </div>
               </div>
               <ArrowRight className="w-4 h-4 text-muted group-hover:text-accent transition-colors" />
@@ -244,9 +262,7 @@ export function OverviewView(): JSX.Element {
       </div>
 
       {/* Project List (if user has projects) */}
-      {projects.length > 0 && (
-        <ProjectList />
-      )}
+      {projects.length > 0 && <ProjectList />}
 
       {/* Onboarding Modal */}
       <ProjectOnboarding isOpen={showOnboarding} onClose={() => setShowOnboarding(false)} />
