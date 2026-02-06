@@ -2,13 +2,6 @@
 
 import React, { useState, useMemo, useEffect } from 'react';
 import {
-  LayoutGrid,
-  Layers,
-  Search,
-  CheckCircle2,
-  Calendar as CalendarIcon,
-  Link2,
-  BarChart2,
   CreditCard,
   Settings,
   HelpCircle,
@@ -63,17 +56,6 @@ export const DashboardSidebar: React.FC<IDashboardSidebarProps> = ({ isOpen, onC
 
   // Onboarding modal state
   const [showOnboarding, setShowOnboarding] = useState(false);
-
-  // Primary nav — AutopilotRank-specific views
-  const primaryItems: ISidebarItem[] = [
-    { label: t('sidebar.overview'), href: '/dashboard', icon: LayoutGrid },
-    { label: t('sidebar.campaigns'), href: '/dashboard/campaigns', icon: Layers },
-    { label: t('sidebar.keywords'), href: '/dashboard/keywords', icon: Search },
-    { label: t('sidebar.optimization'), href: '/dashboard/optimization', icon: CheckCircle2 },
-    { label: t('sidebar.calendar'), href: '/dashboard/calendar', icon: CalendarIcon },
-    { label: t('sidebar.backlinks'), href: '/dashboard/backlinks', icon: Link2 },
-    { label: t('sidebar.analytics'), href: '/dashboard/analytics', icon: BarChart2 },
-  ];
 
   // Secondary nav — account management
   const secondaryItems: ISidebarItem[] = [
@@ -153,81 +135,25 @@ export const DashboardSidebar: React.FC<IDashboardSidebarProps> = ({ isOpen, onC
         )}
 
         {/* Logo/Brand */}
-        <div className="p-6 border-b border-border flex items-center justify-between">
+        <div className="p-4 border-b border-border flex items-center justify-between">
           <a href="/" className="flex items-center">
             <Logo variant="compact" />
           </a>
           <LocaleSwitcher />
         </div>
 
-        {/* Active Project Selector */}
-        <ProjectSelector onOpenOnboarding={() => setShowOnboarding(true)} />
+        {/* Project & User Section - Combined */}
+        <div className="p-4 border-b border-border space-y-4">
+          {/* Active Project Selector */}
+          <ProjectSelector onOpenOnboarding={() => setShowOnboarding(true)} />
 
-        {/* User Info */}
-        <div className="px-4 py-3 border-b border-border">
-          <div className="flex items-center space-x-3">
-            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-accent/30 to-tertiary/30 flex items-center justify-center ring-1 ring-accent/20">
-              <span className="text-accent font-semibold text-sm">
-                {user?.email?.charAt(0).toUpperCase() || 'U'}
-              </span>
-            </div>
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2">
-                <p className="text-sm font-medium text-white truncate">{user?.name || 'User'}</p>
-                {isAdmin && (
-                  <span className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-accent/20 text-accent">
-                    {t('sidebar.admin')}
-                  </span>
-                )}
-              </div>
-              <p className="text-xs text-muted-foreground truncate">{user?.email}</p>
-              <span className="inline-flex items-center mt-1 px-2 py-0.5 rounded-full text-xs font-medium bg-accent/10 text-accent">
-                {isProfileLoading ? (
-                  <Loader2 className="h-3 w-3 animate-spin" />
-                ) : error ? (
-                  t('planUnavailable')
-                ) : (
-                  planDisplayName
-                )}
-              </span>
-            </div>
-          </div>
           {/* Credits Display */}
-          <div className="mt-3">
-            <CreditsDisplay />
-          </div>
+          <CreditsDisplay />
         </div>
 
-        {/* Primary Navigation */}
+        {/* Navigation */}
         <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
-          {primaryItems.map(item => {
-            const Icon = item.icon;
-            const active = isActive(item.href);
-
-            return (
-              <button
-                key={item.href}
-                onClick={() => handleNavigation(item.href)}
-                className={cn(
-                  'flex items-center px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 w-full text-left',
-                  active
-                    ? 'bg-accent text-white shadow-lg shadow-accent/20'
-                    : 'text-secondary hover:bg-surface-light hover:text-white'
-                )}
-              >
-                <Icon
-                  size={20}
-                  className={cn('mr-3', active ? 'text-white' : 'text-secondary')}
-                />
-                {item.label}
-              </button>
-            );
-          })}
-
-          {/* Separator */}
-          <div className="border-t border-border my-2" />
-
-          {/* Secondary Navigation */}
+          {/* Secondary Navigation - Account Management */}
           {secondaryItems.map(item => {
             const Icon = item.icon;
             const active = isActive(item.href);
@@ -279,14 +205,30 @@ export const DashboardSidebar: React.FC<IDashboardSidebarProps> = ({ isOpen, onC
             );
           })}
 
-          {/* Sign Out Button */}
-          <button
-            onClick={handleSignOut}
-            className="w-full flex items-center px-3 py-2.5 rounded-lg text-sm font-medium text-secondary hover:bg-red-500/10 hover:text-red-500 transition-all duration-200"
-          >
-            <LogOut size={20} className="mr-3 text-secondary" />
-            {t('sidebar.signOut')}
-          </button>
+          {/* User Info & Sign Out */}
+          <div className="border-t border-border my-2 pt-3">
+            {/* User Info - Compact */}
+            <div className="flex items-center gap-2 px-1 mb-2">
+              <div className="w-7 h-7 rounded-full bg-gradient-to-br from-accent/30 to-tertiary/30 flex items-center justify-center shrink-0">
+                <span className="text-accent font-semibold text-xs">
+                  {user?.email?.charAt(0).toUpperCase() || 'U'}
+                </span>
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-xs font-medium text-white truncate">{user?.name || 'User'}</p>
+                <p className="text-xs text-muted truncate">{planDisplayName}</p>
+              </div>
+            </div>
+
+            {/* Sign Out Button */}
+            <button
+              onClick={handleSignOut}
+              className="w-full flex items-center px-3 py-2 rounded-lg text-sm font-medium text-secondary hover:bg-red-500/10 hover:text-red-500 transition-all duration-200"
+            >
+              <LogOut size={16} className="mr-2" />
+              {t('sidebar.signOut')}
+            </button>
+          </div>
         </div>
       </aside>
 
