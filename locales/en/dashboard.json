@@ -4,6 +4,7 @@
   "sidebar": {
     "dashboard": "Dashboard",
     "overview": "Overview",
+    "articles": "Articles",
     "campaigns": "Campaigns",
     "keywords": "Keyword Research",
     "optimization": "Optimization",
@@ -27,6 +28,7 @@
     "upgradeToPro": "Upgrade to Pro",
     "breadcrumb": {
       "overview": "Overview",
+      "articles": "Articles",
       "campaigns": "Campaigns",
       "keywords": "Keyword Research",
       "optimization": "Optimization",
@@ -302,7 +304,12 @@
     }
   },
   "articles": {
-    "title": "Article Generation",
+    "title": "Articles",
+    "description": "Generate and manage articles for {project}",
+    "noProject": "Create a project to start generating articles",
+    "recent": "Recent Articles",
+    "empty": "Your generated articles will appear here.",
+    "generation": "Article Generation",
     "generate": "Generate Article",
     "generating": "Generating your article...",
     "generationTime": "This usually takes 30-60 seconds",

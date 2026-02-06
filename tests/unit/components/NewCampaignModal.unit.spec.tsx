@@ -257,6 +257,7 @@ describe('NewCampaignModal', () => {
         model: 'openrouter/auto',
         tone: 'professional',
         targetWordCount: 1500,
+        imagePreset: '', // Default value from form
       });
     });
   });

@@ -36,6 +36,7 @@ export interface ICampaign {
   tone: CampaignTone;
   target_word_count: number;
   settings: Record<string, unknown>;
+  image_preset: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -83,6 +84,8 @@ export interface ICreateCampaignInput {
   tone?: CampaignTone;
   /** Target word count (optional, 800-3000, default 1500) */
   targetWordCount?: number;
+  /** Image generation preset key (optional, no images if not specified) */
+  imagePreset?: string;
 }
 
 /**
@@ -99,6 +102,8 @@ export interface IUpdateCampaignInput {
   tone?: CampaignTone;
   /** Target word count */
   targetWordCount?: number;
+  /** Image generation preset key */
+  imagePreset?: string;
 }
 
 /**

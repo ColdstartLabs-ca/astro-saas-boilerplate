@@ -7,6 +7,12 @@ export const CREDIT_COSTS = {
   // Base cost - 1 credit = 1 article
   API_CALL: 1,
 
+  // Image generation costs (per article)
+  // Standard/enhanced presets are bundled (no extra cost)
+  // Premium presets cost 1 additional credit
+  IMAGE_GENERATION_FREE: 0, // blog-hero, social-card, product-shot
+  IMAGE_GENERATION_PREMIUM: 1, // premium-hero, photorealistic, illustration
+
   // Free tier default credits (trial articles)
   DEFAULT_FREE_CREDITS: 3, // 3 trial articles on signup
   DEFAULT_TRIAL_CREDITS: 0,

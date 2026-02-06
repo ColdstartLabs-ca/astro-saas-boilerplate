@@ -38,10 +38,16 @@ export const GET: APIRoute = async ({ url, locals }) => {
     const queryParams = Object.fromEntries(url.searchParams.entries());
     const query = listQuerySchema.parse(queryParams);
 
-    // Build query
+    // Build query - include campaign information
     let dbQuery = supabaseAdmin
       .from('articles')
-      .select('*', { count: 'exact' })
+      .select(`
+        *,
+        campaigns (
+          id,
+          name
+        )
+      `, { count: 'exact' })
       .eq('user_id', userId)
       .order('created_at', { ascending: false })
       .range(query.offset, query.offset + query.limit - 1);
@@ -64,7 +70,7 @@ export const GET: APIRoute = async ({ url, locals }) => {
     }
 
     const response: IArticlesListResponse = {
-      articles: articles ?? [],
+      articles: (articles ?? []) as any,
       total: count ?? 0,
     };
 

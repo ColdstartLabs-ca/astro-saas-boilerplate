@@ -251,7 +251,7 @@ describe('QuickGenerate', () => {
       const form = container.querySelector('form');
       if (form) {
         // Trigger form submission which will validate
-        await user.click(screen.getByRole('button'));
+        await user.click(screen.getByRole('button', { name: /generate article/i }));
 
         // After validation attempt, the input should show some indication of error
         // The form prevents submission when invalid
@@ -275,7 +275,7 @@ describe('QuickGenerate', () => {
 
       // The word count field has a min of 800, but it's optional
       // So validation should pass with just the keyword
-      const generateButton = screen.getByRole('button');
+      const generateButton = screen.getByRole('button', { name: /generate article/i });
       await user.click(generateButton);
 
       // Should not have a word count error since it's optional
@@ -334,7 +334,7 @@ describe('QuickGenerate', () => {
       );
 
       // Submit
-      const generateButton = screen.getByRole('button');
+      const generateButton = screen.getByRole('button', { name: /generate article/i });
       await user.click(generateButton);
 
       await waitFor(() => {
@@ -344,6 +344,7 @@ describe('QuickGenerate', () => {
           model: 'openai/gpt-4o',
           tone: 'professional',
           targetWordCount: 1500, // Default from form
+          imagePreset: undefined, // No image preset selected
         });
       });
     });
@@ -412,7 +413,7 @@ describe('QuickGenerate', () => {
       );
 
       // Step 2: Submit form
-      const generateButton = screen.getByRole('button');
+      const generateButton = screen.getByRole('button', { name: /generate article/i });
       await user.click(generateButton);
 
       // Verify generate was called with correct params
@@ -423,6 +424,7 @@ describe('QuickGenerate', () => {
           model: 'anthropic/claude-sonnet-4-5',
           tone: 'professional', // From project default
           targetWordCount: 1500, // From form default
+          imagePreset: undefined, // No image preset selected
         });
       });
     });

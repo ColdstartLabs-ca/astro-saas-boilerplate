@@ -23,6 +23,7 @@ import {
   NoPendingKeywordsError,
 } from '@shared/types/campaign.types';
 import { z } from 'zod';
+import { isValidImagePreset, getImagePresetCreditCost } from '@shared/config/image-models.config';
 
 // =============================================================================
 // Validation Schemas
@@ -45,6 +46,10 @@ const createCampaignSchema = z.object({
   model: z.string().optional(),
   tone: z.enum(['professional', 'casual', 'witty', 'academic']).optional(),
   targetWordCount: z.number().int().min(800).max(3000).optional(),
+  imagePreset: z.string().optional().refine(
+    val => !val || isValidImagePreset(val),
+    { message: 'Invalid image preset' }
+  ),
 });
 
 /**
@@ -56,6 +61,10 @@ const updateCampaignSchema = z.object({
   model: z.string().optional(),
   tone: z.enum(['professional', 'casual', 'witty', 'academic']).optional(),
   targetWordCount: z.number().int().min(800).max(3000).optional(),
+  imagePreset: z.string().optional().refine(
+    val => !val || isValidImagePreset(val),
+    { message: 'Invalid image preset' }
+  ),
 });
 
 /**
@@ -272,6 +281,7 @@ export class CampaignService {
         tone: validated.tone || 'professional',
         target_word_count: validated.targetWordCount || 1500,
         settings: {},
+        image_preset: validated.imagePreset || null,
       })
       .select()
       .single();
@@ -319,6 +329,7 @@ export class CampaignService {
     if (validated.tone !== undefined) updates.tone = validated.tone;
     if (validated.targetWordCount !== undefined)
       updates.target_word_count = validated.targetWordCount;
+    if (validated.imagePreset !== undefined) updates.image_preset = validated.imagePreset;
 
     // Update campaign with ownership check
     const { data, error } = await supabaseAdmin
@@ -495,6 +506,11 @@ export class CampaignService {
 
     const keywordCount = pendingKeywords.length;
 
+    // Calculate credits per keyword (1 base + optional image cost)
+    const imageCreditCost = getImagePresetCreditCost(campaign.image_preset);
+    const creditsPerKeyword = 1 + imageCreditCost;
+    const totalCreditsNeeded = keywordCount * creditsPerKeyword;
+
     // Check user has enough credits
     const { data: profile } = await supabaseAdmin
       .from('user_credits')
@@ -502,8 +518,8 @@ export class CampaignService {
       .eq('user_id', userId)
       .single();
 
-    if (!profile || profile.total_credits_balance < keywordCount) {
-      throw new InsufficientCreditsError(keywordCount, profile?.total_credits_balance ?? 0);
+    if (!profile || profile.total_credits_balance < totalCreditsNeeded) {
+      throw new InsufficientCreditsError(totalCreditsNeeded, profile?.total_credits_balance ?? 0);
     }
 
     // Update campaign status to active
@@ -520,7 +536,7 @@ export class CampaignService {
       project_id: campaign.project_id,
       primary_keyword: keyword.keyword,
       status: 'queued' as const,
-      credits_used: 1,
+      credits_used: creditsPerKeyword,
     }));
 
     const { data: articles, error: articlesError } = await supabaseAdmin
@@ -538,17 +554,17 @@ export class CampaignService {
     const keywordIds = pendingKeywords.map(k => k.id);
     await supabaseAdmin.from('keywords').update({ status: 'queued' }).in('id', keywordIds);
 
-    // Deduct credits (batch)
+    // Deduct total credits (batch)
     await supabaseAdmin.rpc('consume_credits_v2', {
       target_user_id: userId,
-      amount: keywordCount,
+      amount: totalCreditsNeeded,
       ref_id: campaignId,
       description: `Campaign generation: ${campaign.name}`,
     });
 
     return {
       queued: keywordCount,
-      creditsRequired: keywordCount,
+      creditsRequired: totalCreditsNeeded,
     };
   }
 }

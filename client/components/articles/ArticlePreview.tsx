@@ -52,6 +52,11 @@ export function ArticlePreview({ article, onGenerateAnother }: IArticlePreviewPr
             {article.word_count} words
           </span>
         )}
+        {article.image_count && article.image_count > 0 && (
+          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-10 text-green-600 dark:text-green-400">
+            {article.image_count} image{article.image_count > 1 ? 's' : ''}
+          </span>
+        )}
         {article.ai_model_used && (
           <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-surface border border-border text-text-secondary">
             {article.ai_model_used}
@@ -73,7 +78,7 @@ export function ArticlePreview({ article, onGenerateAnother }: IArticlePreviewPr
       <div className="px-6 py-4 max-h-96 overflow-y-auto">
         {sanitizedHtml ? (
           <div
-            className="prose prose-sm max-w-none text-text-primary"
+            className="prose prose-sm max-w-none text-text-primary prose-img:rounded-lg prose-img:shadow-md prose-img:mx-auto prose-img:max-w-full prose-img:my-4"
             dangerouslySetInnerHTML={{ __html: sanitizedHtml }}
           />
         ) : (

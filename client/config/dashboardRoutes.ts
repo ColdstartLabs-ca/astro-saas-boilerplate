@@ -14,6 +14,7 @@ import type { ComponentType } from 'react';
 import {
   LayoutGrid,
   Layers,
+  FileText,
   Search,
   CheckCircle2,
   Calendar as CalendarIcon,
@@ -28,6 +29,7 @@ import {
 // Lazy-load page components
 const DashboardPage = lazy(() => import('@client/components/pages/DashboardPageClient'));
 const CampaignsPage = lazy(() => import('@client/components/pages/CampaignsPageClient'));
+const ArticlesPage = lazy(() => import('@client/components/pages/ArticlesPageClient'));
 const KeywordsPage = lazy(() => import('@client/components/pages/KeywordsPageClient'));
 const OptimizationPage = lazy(() => import('@client/components/pages/OptimizationPageClient'));
 const CalendarPage = lazy(() => import('@client/components/pages/CalendarPageClient'));
@@ -94,6 +96,14 @@ export const DASHBOARD_ROUTES: readonly IDashboardRoute[] = [
     labelKey: 'sidebar.overview',
     icon: LayoutGrid,
     component: DashboardPage,
+    enabled: true,
+    group: 'primary',
+  },
+  {
+    path: '/dashboard/articles',
+    labelKey: 'sidebar.articles',
+    icon: FileText,
+    component: ArticlesPage,
     enabled: true,
     group: 'primary',
   },

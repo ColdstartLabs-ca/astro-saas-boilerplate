@@ -1,0 +1,108 @@
+/**
+ * useArticles Hook
+ *
+ * Hook for fetching articles for the current user/project.
+ */
+
+'use client';
+
+import { useQuery } from '@tanstack/react-query';
+import { useCallback } from 'react';
+import type { IArticleWithCampaign } from '@shared/types/article.types';
+import { createClient } from '@shared/utils/supabase/client';
+
+// =============================================================================
+// API Functions
+// =============================================================================
+
+/**
+ * Get the current user's access token for API requests
+ */
+async function getAccessToken(): Promise<string | null> {
+  const supabase = createClient();
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
+  return session?.access_token ?? null;
+}
+
+/**
+ * Build auth headers for API requests
+ */
+async function getAuthHeaders(): Promise<Record<string, string>> {
+  const accessToken = await getAccessToken();
+  const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+  if (accessToken) {
+    headers.Authorization = `Bearer ${accessToken}`;
+  }
+  return headers;
+}
+
+/**
+ * Fetch articles from API
+ */
+async function fetchArticles(params: {
+  projectId?: string;
+  campaignId?: string;
+  limit?: number;
+  offset?: number;
+}): Promise<{ articles: IArticleWithCampaign[]; total: number }> {
+  const headers = await getAuthHeaders();
+  const queryParams = new URLSearchParams();
+  if (params.projectId) queryParams.set('projectId', params.projectId);
+  if (params.campaignId) queryParams.set('campaignId', params.campaignId);
+  if (params.limit) queryParams.set('limit', params.limit.toString());
+  if (params.offset) queryParams.set('offset', params.offset.toString());
+
+  const response = await fetch(`/api/articles?${queryParams.toString()}`, {
+    method: 'GET',
+    headers,
+  });
+
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({ error: 'Unknown error' }));
+    throw new Error(error.error?.message || 'Failed to fetch articles');
+  }
+
+  const data = await response.json();
+  return data.data;
+}
+
+// =============================================================================
+// Hook
+// =============================================================================
+
+interface IUseArticlesOptions {
+  projectId?: string;
+  campaignId?: string;
+  limit?: number;
+  enabled?: boolean;
+}
+
+export function useArticles({
+  projectId,
+  campaignId,
+  limit = 20,
+  enabled = true,
+}: IUseArticlesOptions = {}) {
+  // Fetch articles query
+  const {
+    data: { articles = [], total = 0 } = {},
+    isLoading,
+    error,
+    refetch,
+  } = useQuery({
+    queryKey: ['articles', projectId, campaignId, limit],
+    queryFn: () => fetchArticles({ projectId, campaignId, limit }),
+    enabled,
+    staleTime: 1000 * 30, // 30 seconds
+  });
+
+  return {
+    articles,
+    total,
+    isLoading,
+    error,
+    refetch,
+  };
+}

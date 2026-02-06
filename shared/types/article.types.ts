@@ -37,6 +37,9 @@ export interface IArticle {
   published_at: string | null;
   created_at: string;
   updated_at: string;
+  // Image generation fields
+  image_preset: string | null;
+  image_count: number;
 }
 
 /**
@@ -61,12 +64,16 @@ export interface IGenerateArticleInput {
   keyword: string;
   /** ID of the project this article belongs to */
   projectId: string;
+  /** ID of the campaign this article belongs to (REQUIRED) */
+  campaignId: string;
   /** OpenRouter model ID (defaults to config if not specified) */
   model?: string;
   /** Writing tone: professional, casual, witty, academic */
   tone?: 'professional' | 'casual' | 'witty' | 'academic';
   /** Target word count (800-3000, default 1500) */
   targetWordCount?: number;
+  /** Image generation preset key (optional, no images if not specified) */
+  imagePreset?: string;
 }
 
 /**
@@ -85,10 +92,21 @@ export interface IArticleResponse {
 }
 
 /**
+ * Article with campaign info (for list views)
+ */
+export interface IArticleWithCampaign extends IArticle {
+  /** Campaign info (joined) */
+  campaigns: {
+    id: string;
+    name: string;
+  } | null;
+}
+
+/**
  * Response from articles listing API
  */
 export interface IArticlesListResponse {
-  articles: IArticle[];
+  articles: IArticleWithCampaign[];
   total: number;
 }
 
@@ -100,4 +118,46 @@ export interface IArticlesListParams {
   status?: ArticleStatus;
   limit?: number;
   offset?: number;
+}
+
+/**
+ * Article image record from database
+ */
+export interface IArticleImage {
+  id: string;
+  article_id: string;
+  position: number;
+  image_url: string | null;
+  prompt: string;
+  section_context: string | null;
+  replicate_model: string;
+  preset_key: string;
+  status: 'pending' | 'generating' | 'completed' | 'failed';
+  error: string | null;
+  replicate_prediction_id: string | null;
+  generation_time_ms: number | null;
+  created_at: string;
+}
+
+/**
+ * Image marker parsed from article markdown
+ */
+export interface IImageMarker {
+  position: number;
+  sectionContext: string;
+}
+
+/**
+ * Result from generating a single image
+ */
+export interface IImageResult {
+  position: number;
+  imageUrl: string | null;
+  prompt: string;
+  model: string;
+  presetKey: string;
+  status: 'completed' | 'failed';
+  error?: string;
+  generationTimeMs?: number;
+  replicatePredictionId?: string;
 }

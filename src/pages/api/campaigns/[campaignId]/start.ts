@@ -14,6 +14,7 @@ import {
 import type { IStartCampaignResponse } from '@shared/types/campaign.types';
 import { articleGenerationService } from '@server/services/article-generation.service';
 import { supabaseAdmin } from '@server/supabase/supabaseAdmin';
+import { getImagePresetCreditCost } from '@shared/config/image-models.config';
 
 /**
  * POST /api/campaigns/:campaignId/start
@@ -82,9 +83,11 @@ export const POST: APIRoute = async ({ params, locals }) => {
             await articleGenerationService.generateArticle(article.id, userId, {
               keyword: keyword.keyword,
               projectId: campaign.project_id ?? '',
+              campaignId: campaignId,
               model: campaign.ai_model,
               tone: campaign.tone,
               targetWordCount: campaign.target_word_count,
+              imagePreset: campaign.image_preset ?? undefined,
             });
 
             // Update keyword status to 'generated' on success

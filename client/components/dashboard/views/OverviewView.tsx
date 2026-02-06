@@ -15,7 +15,6 @@ import { useUserStore, useSubscription } from '@client/store/userStore';
 import { CreditsDisplay } from '@client/components/stripe/CreditsDisplay';
 import { ProjectOnboarding } from '@client/components/projects/ProjectOnboarding';
 import { ProjectList } from '@client/components/projects/ProjectList';
-import { QuickGenerate } from '@client/components/articles/QuickGenerate';
 import { getPlanDisplayName } from '@shared/config/stripe';
 import { dashboardNavigate } from '@client/utils/dashboardNavigation';
 import { getTranslations } from '@src/i18n/utils';
@@ -197,16 +196,6 @@ export function OverviewView(): JSX.Element {
             {t('projects.createFirst')}
           </button>
         </div>
-      )}
-
-      {/* Quick Generate - Only visible when user has a project */}
-      {activeProject && (
-        <QuickGenerate
-          onGenerateComplete={article => {
-            console.log('Article generated:', article);
-            // Optionally navigate to article detail page or show toast
-          }}
-        />
       )}
 
       {/* Quick Actions */}

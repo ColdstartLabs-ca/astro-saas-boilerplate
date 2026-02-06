@@ -3,11 +3,11 @@
  * Generate a new SEO article from a keyword
  *
  * Flow:
- * 1. Validate input
+ * 1. Validate input (campaignId is REQUIRED)
  * 2. Check project ownership
- * 3. Check sufficient credits
- * 4. Deduct 1 credit
- * 5. Create "Quick Generate" campaign if needed
+ * 3. Verify campaign ownership
+ * 4. Check sufficient credits
+ * 5. Deduct 1 credit
  * 6. Create article record with status='generating'
  * 7. Fire & forget generation via waitUntil()
  * 8. Return 202 with articleId
@@ -20,14 +20,20 @@ import { articleGenerationService } from '@server/services/article-generation.se
 import { z } from 'zod';
 import type { IGenerateArticleResponse } from '@shared/types/article.types';
 import { ErrorCodes } from '@shared/utils/errors';
+import { isValidImagePreset, getImagePresetCreditCost } from '@shared/config/image-models.config';
 
 // Validation schema
 const generateSchema = z.object({
   keyword: z.string().min(1, 'Keyword is required').max(200, 'Keyword is too long').trim(),
   projectId: z.string().uuid('Invalid project ID'),
+  campaignId: z.string().uuid('Campaign is required'),
   model: z.string().optional(),
   tone: z.enum(['professional', 'casual', 'witty', 'academic']).optional(),
   targetWordCount: z.number().int().min(800).max(3000).optional().default(1500),
+  imagePreset: z.string().optional().refine(
+    val => !val || isValidImagePreset(val),
+    { message: 'Invalid image preset' }
+  ),
 });
 
 export const POST: APIRoute = async ({ request, locals }) => {
@@ -75,47 +81,50 @@ export const POST: APIRoute = async ({ request, locals }) => {
       .eq('user_id', userId)
       .single();
 
-    if (!profile || profile.total_credits_balance < 1) {
+    // Calculate total credits needed (1 base + optional image cost)
+    const imageCreditCost = getImagePresetCreditCost(input.imagePreset || null);
+    const totalCreditsNeeded = 1 + imageCreditCost;
+
+    if (!profile || profile.total_credits_balance < totalCreditsNeeded) {
       return new Response(
         JSON.stringify({
           success: false,
           error: {
             code: ErrorCodes.INSUFFICIENT_CREDITS,
-            message: 'Insufficient credits for article generation',
+            message: `Insufficient credits for article generation. Need ${totalCreditsNeeded} credits.`,
           },
         }),
         { status: 402, headers: { 'Content-Type': 'application/json' } }
       );
     }
 
-    // Get or create "Quick Generate" campaign for this project
-    let campaignId: string;
-    const { data: existingCampaign } = await supabaseAdmin
+    // Verify campaign ownership and get project_id
+    const { data: campaign, error: campaignError } = await supabaseAdmin
       .from('campaigns')
-      .select('id')
-      .eq('project_id', input.projectId)
-      .eq('name', 'Quick Generate')
+      .select('id, project_id, name')
+      .eq('id', input.campaignId)
+      .eq('user_id', userId)
       .single();
 
-    if (existingCampaign) {
-      campaignId = existingCampaign.id;
-    } else {
-      // Create new Quick Generate campaign
-      const { data: newCampaign } = await supabaseAdmin
-        .from('campaigns')
-        .insert({
-          user_id: userId,
-          project_id: input.projectId,
-          name: 'Quick Generate',
-          status: 'active',
-        })
-        .select('id')
-        .single();
+    if (campaignError || !campaign) {
+      return new Response(
+        JSON.stringify({
+          success: false,
+          error: { code: ErrorCodes.NOT_FOUND, message: 'Campaign not found' },
+        }),
+        { status: 404, headers: { 'Content-Type': 'application/json' } }
+      );
+    }
 
-      if (!newCampaign) {
-        throw new Error('Failed to create campaign');
-      }
-      campaignId = newCampaign.id;
+    // Verify the campaign belongs to the same project
+    if (campaign.project_id !== input.projectId) {
+      return new Response(
+        JSON.stringify({
+          success: false,
+          error: { code: ErrorCodes.VALIDATION_ERROR, message: 'Campaign does not belong to this project' },
+        }),
+        { status: 400, headers: { 'Content-Type': 'application/json' } }
+      );
     }
 
     // Create article record first (so we have the ID for credit tracking)
@@ -123,11 +132,11 @@ export const POST: APIRoute = async ({ request, locals }) => {
       .from('articles')
       .insert({
         user_id: userId,
-        campaign_id: campaignId,
-        project_id: input.projectId,
+        campaign_id: campaign.id,
+        project_id: campaign.project_id,
         primary_keyword: input.keyword,
         status: 'generating',
-        credits_used: 1,
+        credits_used: totalCreditsNeeded,
       })
       .select('id')
       .single();
@@ -136,10 +145,10 @@ export const POST: APIRoute = async ({ request, locals }) => {
       throw new Error('Failed to create article record');
     }
 
-    // Deduct 1 credit with article ID as reference (atomic, no backfill needed)
+    // Deduct total credits (1 base + optional image cost) with article ID as reference
     await supabaseAdmin.rpc('consume_credits_v2', {
       target_user_id: userId,
-      amount: 1,
+      amount: totalCreditsNeeded,
       ref_id: article.id,
       description: 'Article generation',
     });

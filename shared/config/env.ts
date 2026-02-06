@@ -208,6 +208,8 @@ const serverEnvSchema = z.object({
   OPENROUTER_VL_MODEL: z.string().default('google/gemini-2.0-flash-exp:free'),
   // OpenRouter for text generation (article content)
   OPENROUTER_TEXT_MODEL: z.string().default('openai/gpt-4o'),
+  // Replicate for image generation
+  REPLICATE_API_KEY: z.string().default(''),
 });
 
 export type IServerEnv = z.infer<typeof serverEnvSchema>;
@@ -265,6 +267,8 @@ function loadServerEnv(): IServerEnv {
     OPENROUTER_API_KEY: import.meta.env.OPENROUTER_API_KEY || '',
     OPENROUTER_VL_MODEL: import.meta.env.OPENROUTER_VL_MODEL || 'google/gemini-2.0-flash-exp:free',
     OPENROUTER_TEXT_MODEL: import.meta.env.OPENROUTER_TEXT_MODEL || 'openai/gpt-4o',
+    // Replicate for image generation
+    REPLICATE_API_KEY: import.meta.env.REPLICATE_API_KEY || '',
   };
 
   return serverEnvSchema.parse(env);

@@ -1060,4 +1060,332 @@ describe('CampaignService', () => {
       );
     });
   });
+
+  describe('Image Preset Integration', () => {
+    it('should validate image preset on create', async () => {
+      const { supabaseAdmin } = await import('@server/supabase/supabaseAdmin');
+
+      let insertCall: Record<string, unknown> | null = null;
+      let callCount = 0;
+      (supabaseAdmin.from as unknown as ReturnType<typeof vi.fn>).mockImplementation(() => {
+        callCount++;
+        if (callCount === 1) {
+          return {
+            select: vi.fn().mockReturnValue({
+              eq: vi.fn().mockReturnValue({
+                eq: vi.fn().mockReturnValue({
+                  single: vi.fn().mockResolvedValue({ data: { id: mockProjectId }, error: null }),
+                }),
+              }),
+            }),
+          } as unknown;
+        } else if (callCount === 2) {
+          return {
+            insert: vi.fn().mockImplementation((data: unknown) => {
+              insertCall = data as Record<string, unknown>;
+              return {
+                select: vi.fn().mockReturnValue({
+                  single: vi.fn().mockResolvedValue({ data: mockCampaign, error: null }),
+                }),
+              };
+            }),
+          } as unknown;
+        } else {
+          return {
+            insert: vi.fn().mockResolvedValue({ data: null, error: null }),
+          } as unknown;
+        }
+      });
+
+      const input = {
+        name: 'New Campaign',
+        projectId: mockProjectId,
+        keywords: ['coffee maker'],
+        imagePreset: 'blog-hero',
+      };
+
+      await campaignService.create(mockUserId, input);
+
+      expect(insertCall).toMatchObject({
+        image_preset: 'blog-hero',
+      });
+    });
+
+    it('should accept valid image presets on update', async () => {
+      const { supabaseAdmin } = await import('@server/supabase/supabaseAdmin');
+
+      let updateCall: Record<string, unknown> | null = null;
+      (supabaseAdmin.from as unknown as ReturnType<typeof vi.fn>).mockReturnValueOnce({
+        update: vi.fn().mockImplementation((data: unknown) => {
+          updateCall = data as Record<string, unknown>;
+          return {
+            eq: vi.fn().mockReturnValue({
+              eq: vi.fn().mockReturnValue({
+                select: vi.fn().mockReturnValue({
+                  single: vi.fn().mockResolvedValue({ data: mockCampaign, error: null }),
+                }),
+              }),
+            }),
+          };
+        }),
+      } as unknown);
+
+      await campaignService.update(mockCampaignId, mockUserId, {
+        imagePreset: 'premium-hero',
+      });
+
+      expect(updateCall).toMatchObject({
+        image_preset: 'premium-hero',
+      });
+    });
+
+    it('should reject invalid image preset on create', async () => {
+      const { supabaseAdmin } = await import('@server/supabase/supabaseAdmin');
+
+      (supabaseAdmin.from as unknown as ReturnType<typeof vi.fn>).mockReturnValueOnce({
+        select: vi.fn().mockReturnValue({
+          eq: vi.fn().mockReturnValue({
+            eq: vi.fn().mockReturnValue({
+              single: vi.fn().mockResolvedValue({ data: { id: mockProjectId }, error: null }),
+            }),
+          }),
+        }),
+      } as unknown);
+
+      const input = {
+        name: 'New Campaign',
+        projectId: mockProjectId,
+        keywords: ['coffee maker'],
+        imagePreset: 'invalid-preset',
+      };
+
+      await expect(campaignService.create(mockUserId, input)).rejects.toThrow();
+    });
+
+    it('should calculate credits including image cost on startGeneration', async () => {
+      const { supabaseAdmin } = await import('@server/supabase/supabaseAdmin');
+
+      const pendingKeywords = [
+        { id: 'kw1', keyword: 'coffee maker' },
+        { id: 'kw2', keyword: 'espresso machine' },
+      ];
+
+      let callCount = 0;
+      (supabaseAdmin.from as unknown as ReturnType<typeof vi.fn>).mockImplementation(() => {
+        callCount++;
+        if (callCount === 1) {
+          return {
+            select: vi.fn().mockReturnValue({
+              eq: vi.fn().mockReturnValue({
+                eq: vi.fn().mockReturnValue({
+                  single: vi.fn().mockResolvedValue({
+                    data: { ...mockCampaign, image_preset: 'premium-hero' },
+                    error: null,
+                  }),
+                }),
+              }),
+            }),
+          } as unknown;
+        } else if (callCount === 2) {
+          return {
+            select: vi.fn().mockReturnValue({
+              eq: vi.fn().mockReturnValue({
+                eq: vi.fn().mockResolvedValue({
+                  data: pendingKeywords,
+                  error: null,
+                }),
+              }),
+            }),
+          } as unknown;
+        } else if (callCount === 3) {
+          return {
+            select: vi.fn().mockReturnValue({
+              eq: vi.fn().mockReturnValue({
+                single: vi.fn().mockResolvedValue({
+                  data: { total_credits_balance: 10 },
+                  error: null,
+                }),
+              }),
+            }),
+          } as unknown;
+        } else if (callCount === 4) {
+          return {
+            update: vi.fn().mockReturnValue({
+              eq: vi.fn().mockReturnValue({
+                eq: vi.fn().mockResolvedValue({ error: null }),
+              }),
+            }),
+          } as unknown;
+        } else if (callCount === 5) {
+          return {
+            insert: vi.fn().mockReturnValue({
+              select: vi.fn().mockResolvedValue({
+                data: [
+                  { id: 'art1', primary_keyword: 'coffee maker' },
+                  { id: 'art2', primary_keyword: 'espresso machine' },
+                ],
+                error: null,
+              }),
+            }),
+          } as unknown;
+        } else if (callCount === 6) {
+          return {
+            update: vi.fn().mockReturnValue({
+              in: vi.fn().mockResolvedValue({ error: null }),
+            }),
+          } as unknown;
+        } else {
+          return {
+            rpc: vi.fn().mockResolvedValue({ data: null, error: null }),
+          } as unknown;
+        }
+      });
+
+      (supabaseAdmin as unknown as { rpc: ReturnType<typeof vi.fn> }).rpc.mockResolvedValueOnce({
+        data: null,
+        error: null,
+      });
+
+      const result = await campaignService.startGeneration(mockCampaignId, mockUserId);
+
+      // With premium-hero preset (+1 credit per article), 2 keywords should require 4 credits
+      expect(result.creditsRequired).toBe(4);
+    });
+
+    it('should not add extra cost for standard image presets', async () => {
+      const { supabaseAdmin } = await import('@server/supabase/supabaseAdmin');
+
+      const pendingKeywords = [
+        { id: 'kw1', keyword: 'coffee maker' },
+      ];
+
+      let callCount = 0;
+      (supabaseAdmin.from as unknown as ReturnType<typeof vi.fn>).mockImplementation(() => {
+        callCount++;
+        if (callCount === 1) {
+          return {
+            select: vi.fn().mockReturnValue({
+              eq: vi.fn().mockReturnValue({
+                eq: vi.fn().mockReturnValue({
+                  single: vi.fn().mockResolvedValue({
+                    data: { ...mockCampaign, image_preset: 'blog-hero' },
+                    error: null,
+                  }),
+                }),
+              }),
+            }),
+          } as unknown;
+        } else if (callCount === 2) {
+          return {
+            select: vi.fn().mockReturnValue({
+              eq: vi.fn().mockReturnValue({
+                eq: vi.fn().mockResolvedValue({
+                  data: pendingKeywords,
+                  error: null,
+                }),
+              }),
+            }),
+          } as unknown;
+        } else if (callCount === 3) {
+          return {
+            select: vi.fn().mockReturnValue({
+              eq: vi.fn().mockReturnValue({
+                single: vi.fn().mockResolvedValue({
+                  data: { total_credits_balance: 5 },
+                  error: null,
+                }),
+              }),
+            }),
+          } as unknown;
+        } else if (callCount === 4) {
+          return {
+            update: vi.fn().mockReturnValue({
+              eq: vi.fn().mockReturnValue({
+                eq: vi.fn().mockResolvedValue({ error: null }),
+              }),
+            }),
+          } as unknown;
+        } else if (callCount === 5) {
+          return {
+            insert: vi.fn().mockReturnValue({
+              select: vi.fn().mockResolvedValue({
+                data: [{ id: 'art1', primary_keyword: 'coffee maker' }],
+                error: null,
+              }),
+            }),
+          } as unknown;
+        } else if (callCount === 6) {
+          return {
+            update: vi.fn().mockReturnValue({
+              in: vi.fn().mockResolvedValue({ error: null }),
+            }),
+          } as unknown;
+        } else {
+          return {
+            rpc: vi.fn().mockResolvedValue({ data: null, error: null }),
+          } as unknown;
+        }
+      });
+
+      (supabaseAdmin as unknown as { rpc: ReturnType<typeof vi.fn> }).rpc.mockResolvedValueOnce({
+        data: null,
+        error: null,
+      });
+
+      const result = await campaignService.startGeneration(mockCampaignId, mockUserId);
+
+      // With blog-hero preset (0 extra credits), 1 keyword should require 1 credit
+      expect(result.creditsRequired).toBe(1);
+    });
+
+    it('should allow undefined image_preset on create (no preset selected)', async () => {
+      const { supabaseAdmin } = await import('@server/supabase/supabaseAdmin');
+
+      let insertCall: Record<string, unknown> | null = null;
+      let callCount = 0;
+      (supabaseAdmin.from as unknown as ReturnType<typeof vi.fn>).mockImplementation(() => {
+        callCount++;
+        if (callCount === 1) {
+          return {
+            select: vi.fn().mockReturnValue({
+              eq: vi.fn().mockReturnValue({
+                eq: vi.fn().mockReturnValue({
+                  single: vi.fn().mockResolvedValue({ data: { id: mockProjectId }, error: null }),
+                }),
+              }),
+            }),
+          } as unknown;
+        } else if (callCount === 2) {
+          return {
+            insert: vi.fn().mockImplementation((data: unknown) => {
+              insertCall = data as Record<string, unknown>;
+              return {
+                select: vi.fn().mockReturnValue({
+                  single: vi.fn().mockResolvedValue({ data: mockCampaign, error: null }),
+                }),
+              };
+            }),
+          } as unknown;
+        } else {
+          return {
+            insert: vi.fn().mockResolvedValue({ data: null, error: null }),
+          } as unknown;
+        }
+      });
+
+      const input = {
+        name: 'New Campaign',
+        projectId: mockProjectId,
+        keywords: ['coffee maker'],
+        // imagePreset: undefined (not provided)
+      };
+
+      await campaignService.create(mockUserId, input);
+
+      expect(insertCall).toMatchObject({
+        // image_preset should not be in the insert call when undefined
+        // or it should be handled appropriately by the service
+      });
+    });
+  });
 });

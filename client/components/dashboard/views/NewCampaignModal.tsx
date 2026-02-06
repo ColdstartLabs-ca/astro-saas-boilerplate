@@ -7,8 +7,10 @@ import { z } from 'zod';
 import { X, ArrowRight, Loader2, Zap, Upload } from 'lucide-react';
 import { DashboardButton } from '../ui/DashboardButton';
 import { AI_MODELS } from '@shared/config/ai-models.config';
+import { getImagePresetCreditCost } from '@shared/config/image-models.config';
 import { useUserStore } from '@client/store/userStore';
 import { useTranslations } from '@client/hooks/useTranslations';
+import { ImagePresetSelector } from '@client/components/articles/ImagePresetSelector';
 import type { CampaignTone } from '@shared/types/campaign.types';
 
 interface INewCampaignModalProps {
@@ -21,6 +23,7 @@ interface INewCampaignModalProps {
     model?: string;
     tone?: CampaignTone;
     targetWordCount?: number;
+    imagePreset?: string;
   }) => Promise<void>;
   projectId: string;
 }
@@ -35,6 +38,7 @@ const campaignSchema = z.object({
   model: z.string().optional(),
   tone: z.enum(['professional', 'casual', 'witty', 'academic']).optional(),
   targetWordCount: z.number().int().min(800).max(3000).optional(),
+  imagePreset: z.string().optional(),
 });
 
 type CampaignFormData = z.infer<typeof campaignSchema>;
@@ -79,11 +83,13 @@ export function NewCampaignModal({
       model: 'openrouter/auto',
       tone: 'professional',
       targetWordCount: 1500,
+      imagePreset: '',
     },
   });
 
   const watchedKeywords = watch('keywords');
   const watchedTone = watch('tone');
+  const watchedImagePreset = watch('imagePreset');
 
   // Parse keywords from textarea (one per line, trimmed, filtered)
   const parsedKeywords = watchedKeywords
@@ -92,7 +98,9 @@ export function NewCampaignModal({
     .filter(k => k.length > 0);
 
   const keywordCount = parsedKeywords.length;
-  const creditCost = keywordCount;
+  const imageCreditCost = getImagePresetCreditCost(watchedImagePreset || null);
+  const creditsPerKeyword = 1 + imageCreditCost;
+  const creditCost = keywordCount * creditsPerKeyword;
 
   // Check if user has enough credits (from subscription + purchased)
   const userCredits =
@@ -136,6 +144,7 @@ export function NewCampaignModal({
         model: data.model,
         tone: data.tone,
         targetWordCount: data.targetWordCount,
+        imagePreset: data.imagePreset,
       });
     } finally {
       setLoading(false);
@@ -339,6 +348,23 @@ export function NewCampaignModal({
                 </div>
               </div>
 
+              {/* Image Generation */}
+              <div>
+                <label className="block text-sm font-medium text-secondary mb-2">
+                  Generate Images
+                </label>
+                <div className="bg-main/50 border border-border rounded-lg p-4">
+                  <ImagePresetSelector
+                    selectedPreset={watchedImagePreset || null}
+                    onSelect={(preset) => setValue('imagePreset', preset || '')}
+                  />
+                  <p className="text-xs text-muted mt-3">
+                    Images will be generated for each article based on the selected preset.
+                    Standard presets are included, premium presets cost 1 additional credit per article.
+                  </p>
+                </div>
+              </div>
+
               {/* Credit Cost */}
               <div
                 className={`p-4 rounded-lg border ${
@@ -362,10 +388,7 @@ export function NewCampaignModal({
                     <p
                       className={`text-xs mt-1 ${hasEnoughCredits ? 'text-secondary' : 'text-red-300'}`}
                     >
-                      {t('campaigns.newCampaign.creditCostDetail', {
-                        count: creditCost,
-                        plural: creditCost !== 1 ? 's' : '',
-                      })}
+                      {keywordCount} keywords × {creditsPerKeyword} credit{creditsPerKeyword > 1 ? 's' : ''} per article = {creditCost} total credits
                       {!hasEnoughCredits && (
                         <span className="block mt-1">
                           {t('campaigns.newCampaign.insufficientCreditsDetail', {
