@@ -14,9 +14,6 @@ import {
   type IProject,
   type ICreateProjectInput,
   type IUpdateProjectInput,
-  type IContentPreferences,
-  type CmsType,
-  type ProjectStatus,
   ProjectLimitError,
 } from '@shared/types/project.types';
 import { getSubscriptionConfig } from '@shared/config/subscription.config';

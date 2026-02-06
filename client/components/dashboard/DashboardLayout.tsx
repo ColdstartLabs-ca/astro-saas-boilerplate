@@ -1,13 +1,14 @@
 'use client';
 
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState, useMemo, useRef, useCallback } from 'react';
 import { DashboardSidebar } from '@client/components/dashboard/DashboardSidebar';
 import { DashboardRouter } from '@client/components/dashboard/DashboardRouter';
 import { CreditsDisplay } from '@client/components/stripe/CreditsDisplay';
 import { useLowCreditWarning } from '@client/hooks/useLowCreditWarning';
-import { useUserStore } from '@client/store/userStore';
+import { useUserStore, useSubscription } from '@client/store/userStore';
+import { getPlanDisplayName } from '@shared/config/stripe';
 import { dashboardNavigate, onDashboardNavigate } from '@client/utils/dashboardNavigation';
-import { Menu, Plus, Bell, User } from 'lucide-react';
+import { Menu, Plus, Bell, User, Settings, CreditCard, LogOut, Sparkles } from 'lucide-react';
 import React from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { clientEnv, getAppLogoAbbr } from '@shared/config/env';
@@ -40,17 +41,46 @@ function getBreadcrumbLabel(pathname: string, t: ReturnType<typeof getTranslatio
 // Desktop top header bar
 function DashboardHeader(): JSX.Element {
   const t = useMemo(() => getTranslations('dashboard'), []);
+  const { user, signOut } = useUserStore();
+  const subscription = useSubscription();
+  const planDisplayName = getPlanDisplayName({
+    subscriptionTier: user?.profile?.subscription_tier,
+    priceId: subscription?.price_id,
+  });
   const [pathname, setPathname] = useState('');
+  const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     setPathname(window.location.pathname);
     return onDashboardNavigate(setPathname);
   }, []);
 
+  // Close menu on outside click
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        setUserMenuOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const handleMenuNav = useCallback((href: string) => {
+    setUserMenuOpen(false);
+    dashboardNavigate(href);
+  }, []);
+
+  const handleSignOut = useCallback(async () => {
+    setUserMenuOpen(false);
+    await signOut();
+  }, [signOut]);
+
   const breadcrumb = getBreadcrumbLabel(pathname, t);
 
   return (
-    <header className="hidden md:flex h-14 border-b border-border bg-surface/50 backdrop-blur-sm items-center justify-between px-8 shrink-0">
+    <header className="hidden md:flex h-14 border-b border-border bg-surface/50 backdrop-blur-sm items-center justify-between px-8 shrink-0 relative z-10">
       <div className="flex text-sm text-secondary">
         <span className="text-muted mr-2">/</span>
         <span>{breadcrumb}</span>
@@ -69,8 +99,71 @@ function DashboardHeader(): JSX.Element {
           <Bell className="w-5 h-5" />
           <span className="absolute top-0 right-0 w-2 h-2 bg-red-500 rounded-full" />
         </button>
-        <div className="w-8 h-8 bg-surface-light rounded-full border border-border flex items-center justify-center text-secondary">
-          <User className="w-4 h-4" />
+
+        {/* User dropdown */}
+        <div className="relative" ref={menuRef}>
+          <button
+            onClick={() => setUserMenuOpen(prev => !prev)}
+            className="w-8 h-8 bg-gradient-to-br from-accent/30 to-tertiary/30 rounded-full border border-border flex items-center justify-center text-accent font-semibold text-sm hover:ring-2 hover:ring-accent/30 transition-all"
+          >
+            {user?.email?.charAt(0).toUpperCase() || <User className="w-4 h-4" />}
+          </button>
+
+          {userMenuOpen && (
+            <div className="absolute right-0 mt-2 w-64 bg-surface border border-border rounded-lg shadow-xl z-[100] py-1">
+              {/* User info */}
+              <div className="px-4 py-3 border-b border-border">
+                <p className="text-sm font-medium text-white truncate">{user?.name || 'User'}</p>
+                <p className="text-xs text-muted truncate">{user?.email}</p>
+                <span className="inline-flex items-center mt-1.5 px-2 py-0.5 rounded-full text-xs font-medium bg-accent/10 text-accent">
+                  {planDisplayName}
+                </span>
+              </div>
+
+              {/* Credits */}
+              <div className="px-4 py-2.5 border-b border-border">
+                <CreditsDisplay />
+              </div>
+
+              {/* Upgrade CTA for free users */}
+              {!user?.profile?.subscription_tier && (
+                <div className="px-4 py-2.5 border-b border-border">
+                  <button
+                    onClick={() => handleMenuNav('/dashboard/billing')}
+                    className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-sm font-medium bg-accent hover:bg-accent-hover text-white transition-colors"
+                  >
+                    <Sparkles className="w-4 h-4" />
+                    {t('header.upgradeToPro')}
+                  </button>
+                </div>
+              )}
+
+              <button
+                onClick={() => handleMenuNav('/dashboard/settings')}
+                className="w-full flex items-center px-4 py-2.5 text-sm text-secondary hover:bg-surface-light hover:text-white transition-colors"
+              >
+                <Settings className="w-4 h-4 mr-3" />
+                {t('sidebar.settings')}
+              </button>
+              <button
+                onClick={() => handleMenuNav('/dashboard/billing')}
+                className="w-full flex items-center px-4 py-2.5 text-sm text-secondary hover:bg-surface-light hover:text-white transition-colors"
+              >
+                <CreditCard className="w-4 h-4 mr-3" />
+                {t('sidebar.billing')}
+              </button>
+
+              <div className="border-t border-border my-1" />
+
+              <button
+                onClick={handleSignOut}
+                className="w-full flex items-center px-4 py-2.5 text-sm text-secondary hover:bg-red-500/10 hover:text-red-500 transition-colors"
+              >
+                <LogOut className="w-4 h-4 mr-3" />
+                {t('sidebar.signOut')}
+              </button>
+            </div>
+          )}
         </div>
       </div>
     </header>
@@ -155,9 +248,9 @@ function DashboardLayout(): JSX.Element {
 
       <DashboardSidebar isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} />
 
-      <main className="flex-1 flex flex-col overflow-hidden pt-14 md:pt-0">
+      <main className="flex-1 flex flex-col min-h-0 pt-14 md:pt-0">
         <DashboardHeader />
-        <div className="flex-1 overflow-y-auto p-4 md:p-8">
+        <div className="flex-1 overflow-y-auto overflow-x-hidden p-4 md:p-8">
           <div className="max-w-7xl mx-auto">
             <DashboardRouter />
           </div>

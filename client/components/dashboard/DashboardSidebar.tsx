@@ -9,16 +9,20 @@ import {
   Calendar as CalendarIcon,
   Link2,
   BarChart2,
+  CreditCard,
   Settings,
+  HelpCircle,
   LogOut,
   Shield,
   X,
 } from 'lucide-react';
 import { dashboardNavigate, onDashboardNavigate } from '@client/utils/dashboardNavigation';
 import { useUserStore, useIsAdmin } from '@client/store/userStore';
+import { Logo } from '@client/components/logo/Logo';
 import { useLogger } from '@client/utils/logger';
 import { cn } from '@client/utils/cn';
 import { getTranslations } from '@src/i18n/utils';
+import { LocaleSwitcher } from '@client/components/i18n/LocaleSwitcher';
 import { ProjectSelector } from '@client/components/projects/ProjectSelector';
 import { ProjectOnboarding } from '@client/components/projects/ProjectOnboarding';
 
@@ -49,6 +53,7 @@ export const DashboardSidebar: React.FC<IDashboardSidebarProps> = ({ isOpen, onC
   // Onboarding modal state
   const [showOnboarding, setShowOnboarding] = useState(false);
 
+  // Primary nav — AutopilotRank-specific views
   const primaryItems: ISidebarItem[] = [
     { label: t('sidebar.overview'), href: '/dashboard', icon: LayoutGrid },
     { label: t('sidebar.campaigns'), href: '/dashboard/campaigns', icon: Layers },
@@ -59,13 +64,19 @@ export const DashboardSidebar: React.FC<IDashboardSidebarProps> = ({ isOpen, onC
     { label: t('sidebar.analytics'), href: '/dashboard/analytics', icon: BarChart2 },
   ];
 
-  const accountItems: ISidebarItem[] = [
+  // Secondary nav — account management
+  const secondaryItems: ISidebarItem[] = [
+    { label: t('sidebar.billing'), href: '/dashboard/billing', icon: CreditCard },
     { label: t('sidebar.settings'), href: '/dashboard/settings', icon: Settings },
   ];
 
   if (isAdmin) {
-    accountItems.push({ label: t('sidebar.admin'), href: '/dashboard/admin', icon: Shield });
+    secondaryItems.push({ label: t('sidebar.admin'), href: '/dashboard/admin', icon: Shield });
   }
+
+  const bottomMenuItems: ISidebarItem[] = [
+    { label: t('sidebar.helpSupport'), href: '/dashboard/support', icon: HelpCircle },
+  ];
 
   const normalizedPathname =
     pathname.length > 1 && pathname.endsWith('/') ? pathname.slice(0, -1) : pathname;
@@ -94,7 +105,6 @@ export const DashboardSidebar: React.FC<IDashboardSidebarProps> = ({ isOpen, onC
   const handleSignOut = async () => {
     try {
       await signOut();
-      // Redirect is handled by auth state change listener in userStore.ts
     } catch (error) {
       logger.error('Error signing out', {
         error: error instanceof Error ? error.message : 'Unknown error',
@@ -139,20 +149,15 @@ export const DashboardSidebar: React.FC<IDashboardSidebarProps> = ({ isOpen, onC
         )}
 
         {/* Logo/Brand */}
-        <div className="px-4 py-5 border-b border-border">
-          <a href="/" className="inline-flex items-center" onClick={e => handleNavigation(e, '/')}>
-            <img
-              src="/logo/horizontal-logo-compact.png"
-              alt="AutopilotRank"
-              className="h-8 w-auto"
-            />
+        <div className="p-6 border-b border-border flex items-center justify-between">
+          <a href="/" className="flex items-center" onClick={e => handleNavigation(e, '/')}>
+            <Logo variant="compact" />
           </a>
+          <LocaleSwitcher />
         </div>
 
-        {/* Active Project */}
-        <div className="border-b border-border pb-2">
-          <ProjectSelector onOpenOnboarding={() => setShowOnboarding(true)} />
-        </div>
+        {/* Active Project Selector */}
+        <ProjectSelector onOpenOnboarding={() => setShowOnboarding(true)} />
 
         {/* Primary Navigation */}
         <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
@@ -177,11 +182,12 @@ export const DashboardSidebar: React.FC<IDashboardSidebarProps> = ({ isOpen, onC
               </a>
             );
           })}
-        </nav>
 
-        {/* Account Navigation */}
-        <div className="px-3 py-4 border-t border-border space-y-1">
-          {accountItems.map(item => {
+          {/* Separator */}
+          <div className="border-t border-border my-2" />
+
+          {/* Secondary Navigation */}
+          {secondaryItems.map(item => {
             const Icon = item.icon;
             const active = isActive(item.href);
 
@@ -202,11 +208,38 @@ export const DashboardSidebar: React.FC<IDashboardSidebarProps> = ({ isOpen, onC
               </a>
             );
           })}
+        </nav>
+
+        {/* Bottom Navigation */}
+        <div className="px-3 py-4 border-t border-border space-y-1">
+          {bottomMenuItems.map(item => {
+            const Icon = item.icon;
+            const active = isActive(item.href);
+
+            return (
+              <a
+                key={item.href}
+                href={item.href}
+                onClick={e => handleNavigation(e, item.href)}
+                className={cn(
+                  'flex items-center px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 w-full text-left',
+                  active
+                    ? 'bg-accent/10 text-accent'
+                    : 'text-secondary hover:bg-surface-light hover:text-white'
+                )}
+              >
+                <Icon size={20} className={cn('mr-3', active ? 'text-accent' : 'text-secondary')} />
+                {item.label}
+              </a>
+            );
+          })}
+
+          {/* Sign Out Button */}
           <button
             onClick={handleSignOut}
             className="w-full flex items-center px-3 py-2.5 rounded-lg text-sm font-medium text-secondary hover:bg-red-500/10 hover:text-red-500 transition-all duration-200"
           >
-            <LogOut size={20} className="mr-3" />
+            <LogOut size={20} className="mr-3 text-secondary" />
             {t('sidebar.signOut')}
           </button>
         </div>
