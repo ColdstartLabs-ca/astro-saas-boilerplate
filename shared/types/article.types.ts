@@ -85,7 +85,26 @@ export interface IGenerateArticleResponse {
 }
 
 /**
- * Response from article details API
+ * Response from article details API (with images and campaign)
+ */
+export interface IArticleDetailResponse {
+  article: IArticle & {
+    campaigns?: {
+      id: string;
+      name: string;
+    } | null;
+    article_images?: Array<{
+      id: string;
+      position: number;
+      image_url: string | null;
+      prompt: string;
+      status: string;
+    }>;
+  };
+}
+
+/**
+ * Response from article details API (legacy)
  */
 export interface IArticleResponse {
   article: IArticle;

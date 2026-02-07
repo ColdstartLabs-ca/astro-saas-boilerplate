@@ -13,7 +13,7 @@
 
 'use client';
 
-import { useState, useCallback, useEffect, useMemo } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -22,11 +22,11 @@ import { useProjects } from '@client/hooks/useProjects';
 import { useCampaigns } from '@client/hooks/useCampaigns';
 import { useArticleGeneration } from '@client/hooks/useArticleGeneration';
 import { DashboardButton } from '@client/components/dashboard/ui/DashboardButton';
-import { AI_MODELS } from '@shared/config/ai-models.config';
 import { getImagePresetCreditCost } from '@shared/config/image-models.config';
 import { useTranslations } from '@client/hooks/useTranslations';
 import { ImagePresetSelector } from './ImagePresetSelector';
 import { ArticlePreview } from './ArticlePreview';
+import type { IArticle } from '@shared/types/article.types';
 
 // =============================================================================
 // Schema
@@ -66,7 +66,7 @@ const WORD_COUNT_OPTIONS = [
 interface IQuickGenerateModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onGenerateComplete?: (article: any) => void;
+  onGenerateComplete?: (article: IArticle) => void;
 }
 
 // =============================================================================
@@ -78,7 +78,7 @@ export function QuickGenerateModal({
   onClose,
   onGenerateComplete,
 }: IQuickGenerateModalProps): JSX.Element | null {
-  const t = useTranslations('dashboard');
+  const _t = useTranslations('dashboard');
   const { activeProject, isLoading: projectsLoading } = useProjects();
   const { campaigns, isLoading: campaignsLoading } = useCampaigns(activeProject?.id ?? null);
   const [articleId, setArticleId] = useState<string | null>(null);
@@ -109,9 +109,10 @@ export function QuickGenerateModal({
 
   const watchedImagePreset = watch('imagePreset');
   const watchedTone = watch('tone');
-  const watchedCampaignId = watch('campaignId');
+  const _watchedCampaignId = watch('campaignId');
 
   // Close modal on successful generation
+   
   useEffect(() => {
     if (article && article.status === 'draft') {
       if (onGenerateComplete) {

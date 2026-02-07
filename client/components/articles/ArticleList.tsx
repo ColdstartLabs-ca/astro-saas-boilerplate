@@ -20,7 +20,7 @@ interface IArticleListProps {
 }
 
 export function ArticleList({ statusFilter }: IArticleListProps): JSX.Element {
-  const t = useMemo(() => getTranslations('dashboard'), []);
+  const _t = useMemo(() => getTranslations('dashboard'), []);
   const { activeProject } = useProjects();
   const { articles, isLoading, error, refetch } = useArticles({
     projectId: activeProject?.id,
@@ -173,7 +173,10 @@ export function ArticleList({ statusFilter }: IArticleListProps): JSX.Element {
           setIsDetailModalOpen(false);
           setSelectedArticle(null);
         }}
-        onUpdate={() => {
+        onUpdate={(updatedArticle) => {
+          // Update the selected article with the new data
+          setSelectedArticle(updatedArticle);
+          // Also refetch the list to keep it in sync
           refetch();
         }}
       />

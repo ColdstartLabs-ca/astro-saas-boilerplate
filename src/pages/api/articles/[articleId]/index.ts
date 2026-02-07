@@ -6,7 +6,7 @@
 import type { APIRoute } from 'astro';
 import { getUserIdFromLocals } from '../../_utils';
 import { supabaseAdmin } from '@server/supabase/supabaseAdmin';
-import type { IArticleResponse } from '@shared/types/article.types';
+import type { IArticleResponse, IArticleDetailResponse } from '@shared/types/article.types';
 import { ErrorCodes } from '@shared/utils/errors';
 import { z } from 'zod';
 
@@ -46,7 +46,20 @@ export const GET: APIRoute = async ({ params, locals }) => {
   try {
     const { data: article, error } = await supabaseAdmin
       .from('articles')
-      .select('*')
+      .select(`
+        *,
+        campaigns (
+          id,
+          name
+        ),
+        article_images (
+          id,
+          position,
+          image_url,
+          prompt,
+          status
+        )
+      `)
       .eq('id', articleId)
       .eq('user_id', userId)
       .single();
@@ -61,7 +74,7 @@ export const GET: APIRoute = async ({ params, locals }) => {
       );
     }
 
-    const response: IArticleResponse = { article };
+    const response: IArticleDetailResponse = { article: article as any };
     return new Response(JSON.stringify({ success: true, data: response }), {
       status: 200,
       headers: { 'Content-Type': 'application/json' },
@@ -123,12 +136,25 @@ export const PATCH: APIRoute = async ({ request, params, locals }) => {
       );
     }
 
-    // Update article
+    // Update article and fetch full data with images
     const { data: updatedArticle, error: updateError } = await supabaseAdmin
       .from('articles')
       .update(input)
       .eq('id', articleId)
-      .select()
+      .select(`
+        *,
+        campaigns (
+          id,
+          name
+        ),
+        article_images (
+          id,
+          position,
+          image_url,
+          prompt,
+          status
+        )
+      `)
       .single();
 
     if (updateError || !updatedArticle) {
