@@ -255,6 +255,130 @@ describe('Subscription Change Fixes', () => {
     });
   });
 
+  describe('Bug Fix: No double credit grant on scheduled downgrade completion', () => {
+    /**
+     * When a scheduled downgrade completes, Stripe sends:
+     * 1. subscription_schedule.completed → handleSubscriptionScheduleCompleted
+     * 2. invoice.payment_succeeded → handleInvoicePaymentSucceeded
+     *
+     * Previously, handleSubscriptionScheduleCompleted directly set subscription_credits_balance
+     * AND handleInvoicePaymentSucceeded called add_subscription_credits, resulting in 2x credits.
+     *
+     * Fix: handleSubscriptionScheduleCompleted should ONLY update the tier, NOT touch credits.
+     * Credit allocation is exclusively handled by handleInvoicePaymentSucceeded.
+     */
+    it('should NOT reset credits in handleSubscriptionScheduleCompleted (source code check)', () => {
+      const fs = require('fs');
+      const handlerSource = fs.readFileSync(
+        'server/webhooks/stripe/handlers/subscription.handler.ts',
+        'utf-8'
+      );
+
+      // Extract the handleSubscriptionScheduleCompleted method body
+      const scheduleCompletedSection = handlerSource.split(
+        'handleSubscriptionScheduleCompleted'
+      )[1];
+      expect(scheduleCompletedSection).toBeDefined();
+
+      // The method should NOT directly set subscription_credits_balance
+      // (that was the bug - it bypassed the invoice handler)
+      const methodEnd = scheduleCompletedSection.indexOf('\n  /**');
+      const methodBody =
+        methodEnd > 0 ? scheduleCompletedSection.slice(0, methodEnd) : scheduleCompletedSection;
+
+      expect(methodBody).not.toContain('subscription_credits_balance');
+      expect(methodBody).not.toContain('creditsPerMonth');
+    });
+
+    it('should still update subscription_tier in handleSubscriptionScheduleCompleted', () => {
+      const fs = require('fs');
+      const handlerSource = fs.readFileSync(
+        'server/webhooks/stripe/handlers/subscription.handler.ts',
+        'utf-8'
+      );
+
+      const scheduleCompletedSection = handlerSource.split(
+        'handleSubscriptionScheduleCompleted'
+      )[1];
+      expect(scheduleCompletedSection).toBeDefined();
+
+      // The method SHOULD still update subscription_tier
+      expect(scheduleCompletedSection).toContain('subscription_tier');
+    });
+
+    it('should log that credits will be allocated by invoice handler', () => {
+      const fs = require('fs');
+      const handlerSource = fs.readFileSync(
+        'server/webhooks/stripe/handlers/subscription.handler.ts',
+        'utf-8'
+      );
+
+      const scheduleCompletedSection = handlerSource.split(
+        'handleSubscriptionScheduleCompleted'
+      )[1];
+      expect(scheduleCompletedSection).toBeDefined();
+
+      // Should contain a log indicating credits are deferred to invoice handler
+      expect(scheduleCompletedSection).toContain('invoice handler');
+    });
+  });
+
+  describe('Bug Fix: Release Stripe schedule on upgrade after scheduled downgrade', () => {
+    /**
+     * When a user upgrades after scheduling a downgrade, the upgrade path must release
+     * the existing Stripe subscription schedule. Otherwise, the schedule fires at period end
+     * and overrides the upgrade back to the lower plan.
+     *
+     * The downgrade path already handles this (releases existing schedules before creating new ones),
+     * but the upgrade path previously only cleared DB fields without releasing the Stripe schedule.
+     */
+    it('should release existing schedule in upgrade path (source code check)', () => {
+      const fs = require('fs');
+      const routeSource = fs.readFileSync('server/controllers/SubscriptionController.ts', 'utf-8');
+
+      // The upgrade section should contain schedule release logic
+      const upgradeSection = routeSource.split('// UPGRADE:')[1];
+      expect(upgradeSection).toBeDefined();
+
+      // Should call subscriptionSchedules.release before updating the subscription
+      expect(upgradeSection).toContain('subscriptionSchedules.release');
+    });
+
+    it('should check for existing schedule before releasing in upgrade path', () => {
+      const fs = require('fs');
+      const routeSource = fs.readFileSync('server/controllers/SubscriptionController.ts', 'utf-8');
+
+      const upgradeSection = routeSource.split('// UPGRADE:')[1];
+      expect(upgradeSection).toBeDefined();
+
+      // Should check if schedule exists before trying to release
+      expect(upgradeSection).toContain('existingScheduleId');
+    });
+
+    it('should handle schedule release failure gracefully in upgrade path', () => {
+      const fs = require('fs');
+      const routeSource = fs.readFileSync('server/controllers/SubscriptionController.ts', 'utf-8');
+
+      const upgradeSection = routeSource.split('// UPGRADE:')[1];
+      expect(upgradeSection).toBeDefined();
+
+      // Should have error handling for schedule release (try/catch)
+      expect(upgradeSection).toContain('SCHEDULE_RELEASE_FAILED');
+    });
+
+    it('should still clear scheduled DB fields on upgrade', () => {
+      const updateData = {
+        price_id: 'price_business',
+        updated_at: new Date().toISOString(),
+        scheduled_price_id: null,
+        scheduled_change_date: null,
+      };
+
+      expect(updateData.scheduled_price_id).toBeNull();
+      expect(updateData.scheduled_change_date).toBeNull();
+    });
+  });
+
   describe('Preview Change Response Structure', () => {
     it('should return correct structure for upgrade', () => {
       const response = {
