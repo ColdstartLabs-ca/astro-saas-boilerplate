@@ -18,6 +18,7 @@ import {
   type ICreateCampaignInput,
   type IUpdateCampaignInput,
   type ICampaignArticleStats,
+  type ICampaignCreditStats,
   CampaignNotFoundError,
   InsufficientCreditsError,
   NoPendingKeywordsError,
@@ -179,7 +180,7 @@ export class CampaignService {
   }
 
   /**
-   * Get campaign detail with keywords and article stats
+   * Get campaign detail with keywords, article stats, and credit stats
    */
   async getDetail(
     campaignId: string,
@@ -188,6 +189,7 @@ export class CampaignService {
     campaign: ICampaign;
     keywords: IKeyword[];
     articleStats: ICampaignArticleStats;
+    creditStats: ICampaignCreditStats;
   } | null> {
     const campaign = await this.getById(campaignId, userId);
     if (!campaign) {
@@ -209,20 +211,31 @@ export class CampaignService {
     // Get article stats
     const { data: articles, error: articlesError } = await supabaseAdmin
       .from('articles')
-      .select('status')
+      .select('status, credits_used')
       .eq('campaign_id', campaignId);
 
     if (articlesError) {
       throw new Error(`Failed to get article stats: ${articlesError.message}`);
     }
 
-    // Compute stats
+    // Compute article stats
     const stats: ICampaignArticleStats = {
       queued: 0,
       generating: 0,
       draft: 0,
       published: 0,
       total: articles?.length ?? 0,
+    };
+
+    // Compute credit stats
+    const creditStats: ICampaignCreditStats = {
+      creditsUsed: 0,
+      creditsRefunded: 0,
+      successfulCount: 0,
+      failedCount: 0,
+      costPerArticle: 1 + getImagePresetCreditCost(campaign.image_preset),
+      estimatedCreditsRemaining: 0,
+      totalCreditsRequired: 0,
     };
 
     for (const article of articles ?? []) {
@@ -232,21 +245,35 @@ export class CampaignService {
           break;
         case 'generating':
           stats.generating++;
+          creditStats.creditsUsed += article.credits_used ?? 0;
           break;
         case 'draft':
         case 'reviewed':
-          stats.draft++;
-          break;
         case 'published':
-          stats.published++;
+          stats.draft++;
+          if (article.status === 'published') {
+            stats.published++;
+          }
+          creditStats.creditsUsed += article.credits_used ?? 0;
+          creditStats.successfulCount++;
+          break;
+        case 'failed':
+          creditStats.creditsRefunded += article.credits_used ?? 0;
+          creditStats.failedCount++;
           break;
       }
     }
+
+    // Count pending keywords for remaining credits estimate
+    const pendingCount = keywords?.filter(k => k.status === 'pending' || k.status === 'queued').length ?? 0;
+    creditStats.estimatedCreditsRemaining = pendingCount * creditStats.costPerArticle;
+    creditStats.totalCreditsRequired = creditStats.creditsUsed + creditStats.estimatedCreditsRemaining;
 
     return {
       campaign,
       keywords: keywords as IKeyword[],
       articleStats: stats,
+      creditStats,
     };
   }
 

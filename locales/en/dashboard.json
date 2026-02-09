@@ -352,12 +352,142 @@
       "fetchFailed": "Failed to fetch article details"
     },
     "status": {
+      "all": "All Statuses",
       "queued": "Queued",
       "generating": "Generating",
       "draft": "Draft",
+      "approved": "Approved",
+      "rejected": "Rejected",
       "reviewed": "Reviewed",
       "published": "Published",
       "failed": "Failed"
+    },
+    "detailModal": {
+      "edit": "Edit",
+      "cancel": "Cancel",
+      "cancelEdit": "Cancel Edit",
+      "saveChanges": "Save Changes",
+      "saving": "Saving...",
+      "delete": "Delete",
+      "deleting": "Deleting...",
+      "regenerate": "Regenerate",
+      "regenerating": "Regenerating...",
+      "viewLive": "View Live",
+      "generatedImages": "Generated Images ({count})",
+      "viewFullSize": "View Full Size",
+      "generationFailed": "Generation Failed",
+      "noContent": "No content available...",
+      "unsavedChanges": "Unsaved changes",
+      "unsavedChangesWarning": "Are you sure you want to cancel? Your changes will be lost.",
+      "discardChanges": "Discard Changes",
+      "keepEditing": "Keep Editing",
+      "wordCount": "{count} words",
+      "deleteConfirm": "Are you sure you want to delete this article?",
+      "regenerateConfirm": "Regenerate this article? This will use 1 credit.",
+      "editorPlaceholder": "Write your article content in markdown...",
+      "approve": "Approve",
+      "approving": "Approving...",
+      "reject": "Reject",
+      "rejecting": "Rejecting...",
+      "rejectReason": "Rejection Reason",
+      "rejectReasonPlaceholder": "Optional: Explain why this article was rejected...",
+      "confirmReject": "Reject Article",
+      "rejectArticle": "Reject this article?",
+      "approveSuccess": "Article approved successfully",
+      "rejectSuccess": "Article rejected successfully",
+      "error": {
+        "saveFailed": "Failed to save article",
+        "deleteFailed": "Failed to delete article",
+        "regenerateFailed": "Failed to regenerate article",
+        "approveFailed": "Failed to approve article",
+        "rejectFailed": "Failed to reject article"
+      }
+    },
+    "approval": {
+      "approve": "Approve",
+      "reject": "Reject",
+      "rejecting": "Rejecting...",
+      "approving": "Approving...",
+      "rejectReason": "Rejection Reason",
+      "rejectReasonPlaceholder": "Optional: Explain why this article was rejected...",
+      "rejectConfirm": "Are you sure you want to reject this article?",
+      "approveSuccess": "Article approved successfully",
+      "rejectSuccess": "Article rejected successfully",
+      "bulkApprove": "Approve Selected",
+      "bulkReject": "Reject Selected",
+      "bulkApproving": "Approving {count} article{plural}...",
+      "bulkRejecting": "Rejecting {count} article{plural}...",
+      "bulkApproveSuccess": "{count} article{plural} approved",
+      "bulkRejectSuccess": "{count} article{plural} rejected",
+      "noSelection": "Please select at least one article",
+      "filterApproved": "Approved",
+      "filterRejected": "Rejected",
+      "filterAll": "All Articles",
+      "error": {
+        "approveFailed": "Failed to approve article",
+        "rejectFailed": "Failed to reject article",
+        "bulkApproveFailed": "Failed to approve some articles",
+        "bulkRejectFailed": "Failed to reject some articles"
+      }
+    },
+    "seo": {
+      "title": "SEO Score",
+      "score": "Score",
+      "overall": "Overall SEO Score",
+      "gradeA": "Excellent",
+      "gradeB": "Good",
+      "gradeC": "Fair",
+      "gradeD": "Poor",
+      "gradeF": "Very Poor",
+      "metrics": {
+        "keywordDensity": {
+          "title": "Keyword Density",
+          "ideal": "Ideal: 1-2%",
+          "tooLow": "Too low (aim for 1-2%)",
+          "tooHigh": "Too high (aim for 1-2%)",
+          "density": "{density}%"
+        },
+        "headingStructure": {
+          "title": "Heading Structure",
+          "hasH1": "Has H1",
+          "missingH1": "Missing H1",
+          "multipleH1": "Multiple H1s",
+          "hasH2": "Has {count} H2",
+          "missingH2": "Missing H2",
+          "hasH3": "Has {count} H3",
+          "hierarchy": "Hierarchy",
+          "properHierarchy": "Proper",
+          "improperHierarchy": "Improper"
+        },
+        "wordCount": {
+          "title": "Word Count",
+          "excellent": "Excellent ({count}+ words)",
+          "good": "Good ({count}+ words)",
+          "fair": "Fair (could be longer)",
+          "poor": "Too short (aim for 1000+)",
+          "words": "{count} words"
+        },
+        "metaDescription": {
+          "title": "Meta Description",
+          "ideal": "Ideal length",
+          "tooShort": "Too short",
+          "tooLong": "Too long",
+          "missing": "Missing",
+          "hasKeyword": "Has keyword",
+          "missingKeyword": "Missing keyword"
+        },
+        "title": {
+          "title": "Title Tag",
+          "ideal": "Ideal length",
+          "tooShort": "Too short",
+          "tooLong": "Too long",
+          "missing": "Missing",
+          "hasKeyword": "Has keyword",
+          "missingKeyword": "Missing keyword"
+        }
+      },
+      "issues": "Issues",
+      "noIssues": "No issues detected"
     }
   },
   "campaigns": {
@@ -401,7 +531,23 @@
       "startConfirmDetail": "This will queue article generation for all pending keywords. Credits will be deducted for each keyword.",
       "cancel": "Cancel",
       "start": "Start",
-      "starting": "Starting..."
+      "starting": "Starting...",
+      "credits": {
+        "title": "Credit Usage",
+        "used": "Credits Used",
+        "refunded": "Credits Refunded",
+        "costPerArticle": "Cost per Article",
+        "estimatedRemaining": "Estimated to Complete",
+        "totalRequired": "Total Required",
+        "successful": "Successful",
+        "failed": "Failed",
+        "breakdown": "Credit Breakdown",
+        "status": {
+          "successful": "Successfully generated articles",
+          "failed": "Failed generations (refunded)",
+          "remaining": "Pending keywords"
+        }
+      }
     },
     "errors": {
       "createFailed": "Failed to create campaign. Please try again.",

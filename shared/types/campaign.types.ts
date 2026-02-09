@@ -172,6 +172,7 @@ export interface ICampaignDetailResponse {
   campaign: ICampaign;
   keywords: IKeyword[];
   articleStats: ICampaignArticleStats;
+  creditStats: ICampaignCreditStats;
 }
 
 /**
@@ -188,6 +189,26 @@ export interface ICampaignArticleStats {
   published: number;
   /** Total articles across all statuses */
   total: number;
+}
+
+/**
+ * Credit usage statistics for a campaign
+ */
+export interface ICampaignCreditStats {
+  /** Total credits used for successfully generated articles */
+  creditsUsed: number;
+  /** Credits refunded for failed article generations */
+  creditsRefunded: number;
+  /** Number of successfully generated articles */
+  successfulCount: number;
+  /** Number of failed article generations */
+  failedCount: number;
+  /** Cost per article in credits (1 base + optional image cost) */
+  costPerArticle: number;
+  /** Estimated credits needed to complete remaining keywords */
+  estimatedCreditsRemaining: number;
+  /** Total credits required for the campaign (used + remaining) */
+  totalCreditsRequired: number;
 }
 
 /**

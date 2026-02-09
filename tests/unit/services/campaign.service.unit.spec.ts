@@ -367,7 +367,7 @@ describe('CampaignService', () => {
   });
 
   describe('getDetail', () => {
-    it('should return campaign with keywords and article stats', async () => {
+    it('should return campaign with keywords, article stats, and credit stats', async () => {
       const { supabaseAdmin } = await import('@server/supabase/supabaseAdmin');
 
       let callCount = 0;
@@ -396,11 +396,15 @@ describe('CampaignService', () => {
             }),
           } as unknown;
         } else {
-          // Third call: get articles
+          // Third call: get articles with credits_used
           return {
             select: vi.fn().mockReturnValue({
               eq: vi.fn().mockResolvedValue({
-                data: [{ status: 'draft' }, { status: 'published' }],
+                data: [
+                  { status: 'draft', credits_used: 1 },
+                  { status: 'published', credits_used: 1 },
+                  { status: 'failed', credits_used: 1 },
+                ],
                 error: null,
               }),
             }),
@@ -416,9 +420,18 @@ describe('CampaignService', () => {
         articleStats: {
           queued: 0,
           generating: 0,
-          draft: 1,
+          draft: 2, // Both 'draft' and 'published' articles increment draft counter
           published: 1,
-          total: 2,
+          total: 3,
+        },
+        creditStats: {
+          creditsUsed: 2,
+          creditsRefunded: 1,
+          successfulCount: 2,
+          failedCount: 1,
+          costPerArticle: 1,
+          estimatedCreditsRemaining: 1, // mockKeyword has 'pending' or 'queued' status
+          totalCreditsRequired: 3,
         },
       });
     });

@@ -1,31 +1,31 @@
 'use client';
 
 import { useMemo, useState, useEffect } from 'react';
-import {
-  Globe,
-  Plus,
-  Settings,
-  CreditCard,
-  FolderOpen,
-  ExternalLink,
-  ArrowRight,
-} from 'lucide-react';
+import { Globe, Plus, ExternalLink, Edit2, Trash2 } from 'lucide-react';
 import { useProjects } from '@client/hooks/useProjects';
 import { useUserStore, useSubscription } from '@client/store/userStore';
+import { useLogger } from '@client/utils/logger';
 import { CreditsDisplay } from '@client/components/stripe/CreditsDisplay';
 import { ProjectOnboarding } from '@client/components/projects/ProjectOnboarding';
+import { ProjectEditModal } from '@client/components/projects/ProjectEditModal';
 import { ProjectList } from '@client/components/projects/ProjectList';
 import { getPlanDisplayName } from '@shared/config/stripe';
 import { dashboardNavigate } from '@client/utils/dashboardNavigation';
 import { getTranslations } from '@src/i18n/utils';
 import { cn } from '@client/utils/cn';
+import type { IProject, IUpdateProjectInput } from '@shared/types/project.types';
 
 export function OverviewView(): JSX.Element {
   const t = useMemo(() => getTranslations('dashboard'), []);
+  const logger = useLogger('OverviewView');
   const { user } = useUserStore();
   const subscription = useSubscription();
-  const { projects, activeProject, isLoading } = useProjects();
+  const { projects, activeProject, isLoading, deleteProject, updateProject } = useProjects();
   const [showOnboarding, setShowOnboarding] = useState(false);
+  const [projectToDelete, setProjectToDelete] = useState<string | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [projectToEdit, setProjectToEdit] = useState<IProject | null>(null);
+  const [isEditing, setIsEditing] = useState(false);
 
   const planDisplayName = getPlanDisplayName({
     subscriptionTier: user?.profile?.subscription_tier,
@@ -41,6 +41,56 @@ export function OverviewView(): JSX.Element {
     }
   }, [isLoading, projects.length, showOnboarding]);
 
+  const handleDeleteClick = (projectId: string) => {
+    setProjectToDelete(projectId);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!projectToDelete) return;
+
+    setIsDeleting(true);
+    try {
+      await deleteProject(projectToDelete);
+      logger.info('Project deleted', { projectId: projectToDelete });
+      setProjectToDelete(null);
+    } catch (error) {
+      logger.error('Failed to delete project', {
+        error: error instanceof Error ? error.message : 'Unknown error',
+        projectId: projectToDelete,
+      });
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  const handleEditClick = () => {
+    if (!activeProject) return;
+    setProjectToEdit(activeProject);
+  };
+
+  const handleSaveEdit = async (updates: IUpdateProjectInput) => {
+    if (!projectToEdit) return;
+
+    setIsEditing(true);
+    try {
+      await updateProject(projectToEdit.id, updates);
+      logger.info('Project updated', { projectId: projectToEdit.id });
+      setProjectToEdit(null);
+    } catch (error) {
+      logger.error('Failed to update project', {
+        error: error instanceof Error ? error.message : 'Unknown error',
+        projectId: projectToEdit.id,
+      });
+      throw error;
+    } finally {
+      setIsEditing(false);
+    }
+  };
+
+  const handleCloseEdit = () => {
+    setProjectToEdit(null);
+  };
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-20">
@@ -52,15 +102,25 @@ export function OverviewView(): JSX.Element {
   return (
     <div className="space-y-6 animate-fadeIn">
       {/* Welcome Header */}
-      <div>
-        <h1 className="text-xl font-bold text-white">
-          {t('overview.welcomeBack', { name: displayName })}
-        </h1>
-        <p className="text-secondary text-sm mt-1">
-          {activeProject
-            ? t('overview.managing', { project: activeProject.name })
-            : t('overview.getStarted')}
-        </p>
+      <div className="flex items-start justify-between">
+        <div>
+          <h1 className="text-xl font-bold text-white">
+            {t('overview.welcomeBack', { name: displayName })}
+          </h1>
+          <p className="text-secondary text-sm mt-1">
+            {activeProject
+              ? t('overview.managing', { project: activeProject.name })
+              : t('overview.getStarted')}
+          </p>
+        </div>
+        {/* Prominent Add Project Button */}
+        <button
+          onClick={() => setShowOnboarding(true)}
+          className="flex items-center gap-2 bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg transition-colors shadow-lg shadow-green-500/20"
+        >
+          <Plus className="w-4 h-4" />
+          <span className="font-medium">Add Project</span>
+        </button>
       </div>
 
       {/* Quick Stats Row */}
@@ -102,10 +162,10 @@ export function OverviewView(): JSX.Element {
             <div className="text-xl font-bold text-white">{projects.length}</div>
             <button
               onClick={() => setShowOnboarding(true)}
-              className="text-xs font-medium text-accent hover:text-accent-light transition-colors flex items-center gap-1"
+              className="text-xs font-medium text-green-400 hover:text-green-300 transition-colors flex items-center gap-1"
             >
               <Plus className="w-3 h-3" />
-              {t('overview.add')}
+              Add Project
             </button>
           </div>
         </div>
@@ -145,6 +205,23 @@ export function OverviewView(): JSX.Element {
                   </span>
                 </div>
               </div>
+            </div>
+            {/* Action Buttons */}
+            <div className="flex items-center gap-2">
+              <button
+                onClick={handleEditClick}
+                className="p-2 text-secondary hover:text-green-400 hover:bg-green-500/10 rounded-lg transition-colors"
+                aria-label="Edit project"
+              >
+                <Edit2 className="w-4 h-4" />
+              </button>
+              <button
+                onClick={() => handleDeleteClick(activeProject.id)}
+                className="p-2 text-secondary hover:text-green-400 hover:bg-green-500/10 rounded-lg transition-colors"
+                aria-label="Delete project"
+              >
+                <Trash2 className="w-4 h-4" />
+              </button>
             </div>
           </div>
 
@@ -190,7 +267,7 @@ export function OverviewView(): JSX.Element {
           </p>
           <button
             onClick={() => setShowOnboarding(true)}
-            className="inline-flex items-center gap-2 bg-accent hover:bg-accent-hover text-white px-6 py-2.5 rounded-lg transition-colors"
+            className="inline-flex items-center gap-2 bg-green-500 hover:bg-green-600 text-white px-6 py-2.5 rounded-lg transition-colors"
           >
             <Plus className="w-4 h-4" />
             {t('projects.createFirst')}
@@ -198,71 +275,49 @@ export function OverviewView(): JSX.Element {
         </div>
       )}
 
-      {/* Quick Actions */}
-      <div>
-        <h3 className="text-white font-semibold mb-3">{t('overview.quickActions')}</h3>
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-          <button
-            onClick={() => setShowOnboarding(true)}
-            className="bg-surface border border-border hover:border-muted rounded-xl p-4 text-left transition-all group"
-          >
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="p-2 rounded-lg bg-accent/10 text-accent">
-                  <FolderOpen className="w-5 h-5" />
-                </div>
-                <div>
-                  <div className="text-sm font-medium text-white">{t('overview.newProject')}</div>
-                  <div className="text-xs text-muted">{t('overview.addProject')}</div>
-                </div>
-              </div>
-              <ArrowRight className="w-4 h-4 text-muted group-hover:text-accent transition-colors" />
-            </div>
-          </button>
-
-          <button
-            onClick={() => dashboardNavigate('/dashboard/billing')}
-            className="bg-surface border border-border hover:border-muted rounded-xl p-4 text-left transition-all group"
-          >
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="p-2 rounded-lg bg-blue-500/10 text-blue-400">
-                  <CreditCard className="w-5 h-5" />
-                </div>
-                <div>
-                  <div className="text-sm font-medium text-white">{t('overview.billing')}</div>
-                  <div className="text-xs text-muted">{t('overview.manageSubscription')}</div>
-                </div>
-              </div>
-              <ArrowRight className="w-4 h-4 text-muted group-hover:text-accent transition-colors" />
-            </div>
-          </button>
-
-          <button
-            onClick={() => dashboardNavigate('/dashboard/settings')}
-            className="bg-surface border border-border hover:border-muted rounded-xl p-4 text-left transition-all group"
-          >
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="p-2 rounded-lg bg-purple-500/10 text-purple-400">
-                  <Settings className="w-5 h-5" />
-                </div>
-                <div>
-                  <div className="text-sm font-medium text-white">{t('overview.settings')}</div>
-                  <div className="text-xs text-muted">{t('overview.accountPreferences')}</div>
-                </div>
-              </div>
-              <ArrowRight className="w-4 h-4 text-muted group-hover:text-accent transition-colors" />
-            </div>
-          </button>
-        </div>
-      </div>
-
-      {/* Project List (if user has projects) */}
-      {projects.length > 0 && <ProjectList />}
+      {/* Project List - only show if user has multiple projects */}
+      {projects.length > 1 && <ProjectList />}
 
       {/* Onboarding Modal */}
       <ProjectOnboarding isOpen={showOnboarding} onClose={() => setShowOnboarding(false)} />
+
+      {/* Delete Confirmation Modal */}
+      {projectToDelete && (
+        <div className="fixed inset-0 bg-main/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-surface border border-border rounded-xl p-6 max-w-md w-full">
+            <h3 className="text-lg font-semibold text-white mb-2">
+              {t('projects.list.deleteConfirmTitle')}
+            </h3>
+            <p className="text-secondary mb-6">{t('projects.list.deleteConfirm')}</p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setProjectToDelete(null)}
+                disabled={isDeleting}
+                className="flex-1 py-2.5 text-sm font-medium text-secondary hover:text-white bg-elevated hover:bg-surface-light rounded-lg transition-colors"
+              >
+                {t('projects.list.cancel')}
+              </button>
+              <button
+                onClick={handleConfirmDelete}
+                disabled={isDeleting}
+                className="flex-1 py-2.5 text-sm font-medium text-white bg-red-500 hover:bg-red-600 rounded-lg transition-colors disabled:opacity-50"
+              >
+                {isDeleting ? 'Deleting...' : t('projects.list.confirm')}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Project Modal */}
+      {projectToEdit && (
+        <ProjectEditModal
+          project={projectToEdit}
+          onSave={handleSaveEdit}
+          onClose={handleCloseEdit}
+          isSaving={isEditing}
+        />
+      )}
     </div>
   );
 }

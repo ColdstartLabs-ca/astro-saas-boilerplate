@@ -55,11 +55,17 @@ const translations: Record<string, Record<string, unknown>> = {
 
 /**
  * Get a translation function for a specific namespace
- * @param namespace - The translation namespace (e.g., 'privacy', 'terms')
+ * @param namespace - The translation namespace (e.g., 'privacy', 'terms', 'dashboard.articles.seo')
  * @returns Translation function
  */
 export function getTranslations(namespace: string): TFunction {
-  const ns = translations[namespace] || {};
+  // Support nested namespace paths (e.g., 'dashboard.articles.seo')
+  const ns = namespace.split('.').reduce((obj, key) => {
+    if (obj && typeof obj === 'object' && key in obj) {
+      return obj[key] as Record<string, unknown>;
+    }
+    return {};
+  }, translations as Record<string, unknown>);
 
   const resolve = (key: string): unknown => {
     const keys = key.split('.');

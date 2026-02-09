@@ -7,7 +7,6 @@
 'use client';
 
 import { useQuery } from '@tanstack/react-query';
-import { useCallback } from 'react';
 import type { IArticleWithCampaign } from '@shared/types/article.types';
 import { createClient } from '@shared/utils/supabase/client';
 
@@ -44,6 +43,9 @@ async function getAuthHeaders(): Promise<Record<string, string>> {
 async function fetchArticles(params: {
   projectId?: string;
   campaignId?: string;
+  status?: string;
+  dateFrom?: string;
+  dateTo?: string;
   limit?: number;
   offset?: number;
 }): Promise<{ articles: IArticleWithCampaign[]; total: number }> {
@@ -51,6 +53,9 @@ async function fetchArticles(params: {
   const queryParams = new URLSearchParams();
   if (params.projectId) queryParams.set('projectId', params.projectId);
   if (params.campaignId) queryParams.set('campaignId', params.campaignId);
+  if (params.status) queryParams.set('status', params.status);
+  if (params.dateFrom) queryParams.set('dateFrom', params.dateFrom);
+  if (params.dateTo) queryParams.set('dateTo', params.dateTo);
   if (params.limit) queryParams.set('limit', params.limit.toString());
   if (params.offset) queryParams.set('offset', params.offset.toString());
 
@@ -75,6 +80,9 @@ async function fetchArticles(params: {
 interface IUseArticlesOptions {
   projectId?: string;
   campaignId?: string;
+  status?: string;
+  dateFrom?: string;
+  dateTo?: string;
   limit?: number;
   enabled?: boolean;
 }
@@ -82,6 +90,9 @@ interface IUseArticlesOptions {
 export function useArticles({
   projectId,
   campaignId,
+  status,
+  dateFrom,
+  dateTo,
   limit = 20,
   enabled = true,
 }: IUseArticlesOptions = {}) {
@@ -92,8 +103,8 @@ export function useArticles({
     error,
     refetch,
   } = useQuery({
-    queryKey: ['articles', projectId, campaignId, limit],
-    queryFn: () => fetchArticles({ projectId, campaignId, limit }),
+    queryKey: ['articles', projectId, campaignId, status, dateFrom, dateTo, limit],
+    queryFn: () => fetchArticles({ projectId, campaignId, status, dateFrom, dateTo, limit }),
     enabled,
     staleTime: 1000 * 30, // 30 seconds
   });

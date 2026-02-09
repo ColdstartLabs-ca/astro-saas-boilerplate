@@ -6,7 +6,7 @@
 import type { APIRoute } from 'astro';
 import { getUserIdFromLocals } from '../../_utils';
 import { supabaseAdmin } from '@server/supabase/supabaseAdmin';
-import type { IArticleResponse, IArticleDetailResponse } from '@shared/types/article.types';
+import type { IArticleDetailResponse } from '@shared/types/article.types';
 import { ErrorCodes } from '@shared/utils/errors';
 import { z } from 'zod';
 
@@ -14,8 +14,9 @@ const updateSchema = z.object({
   content: z.string().optional(),
   title: z.string().optional(),
   meta_description: z.string().optional(),
-  status: z.enum(['draft', 'reviewed', 'published']).optional(),
+  status: z.enum(['queued', 'generating', 'draft', 'approved', 'rejected', 'reviewed', 'published', 'failed']).optional(),
   published_url: z.string().url().optional(),
+  rejection_reason: z.string().optional(),
 });
 
 export const GET: APIRoute = async ({ params, locals }) => {

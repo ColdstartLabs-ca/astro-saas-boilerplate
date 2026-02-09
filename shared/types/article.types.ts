@@ -7,7 +7,7 @@
 /**
  * Article status enum representing the lifecycle of an article
  */
-export type ArticleStatus = 'queued' | 'generating' | 'draft' | 'reviewed' | 'published' | 'failed';
+export type ArticleStatus = 'queued' | 'generating' | 'draft' | 'approved' | 'rejected' | 'reviewed' | 'published' | 'failed';
 
 /**
  * Full article interface matching the database schema
@@ -30,6 +30,7 @@ export interface IArticle {
   slug: string | null;
   credits_used: number;
   generation_error: string | null;
+  rejection_reason: string | null;
   outline: IArticleOutline | null;
   token_count: number | null;
   generation_time_ms: number | null;

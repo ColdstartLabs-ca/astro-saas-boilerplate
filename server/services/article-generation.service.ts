@@ -19,6 +19,7 @@ import {
   getArticlePrompt,
   getOutlineRetryPrompt,
 } from './prompts/article-prompts';
+import { calculateOverallSEOScore } from '@shared/utils/seo';
 import type {
   IArticleOutline,
   IGenerateArticleInput,
@@ -117,6 +118,15 @@ export class ArticleGenerationService {
       const wordCount = this.countWords(finalContent);
       const generationTimeMs = Date.now() - startTime;
 
+      // Step 5.5: Calculate SEO score
+      const seoResult = calculateOverallSEOScore({
+        title: outline.data.title,
+        content: finalContent,
+        meta_description: outline.data.metaDescription,
+        primary_keyword: input.keyword,
+        word_count: wordCount,
+      });
+
       // Step 6: Save result
       await this.supabase
         .from('articles')
@@ -127,6 +137,7 @@ export class ArticleGenerationService {
           meta_description: outline.data.metaDescription,
           slug: outline.data.slug,
           word_count: wordCount,
+          seo_score: seoResult.overallScore,
           ai_model_used: input.model || serverEnv.OPENROUTER_TEXT_MODEL,
           token_count: totalTokens,
           generation_time_ms: generationTimeMs,

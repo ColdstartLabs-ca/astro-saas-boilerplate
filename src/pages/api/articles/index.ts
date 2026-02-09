@@ -9,12 +9,16 @@ import { supabaseAdmin } from '@server/supabase/supabaseAdmin';
 import type { IArticlesListResponse } from '@shared/types/article.types';
 import { ErrorCodes } from '@shared/utils/errors';
 import { z } from 'zod';
+import { calculateOverallSEOScore } from '@shared/utils/seo';
+import type { IArticle } from '@shared/types/article.types';
 
 // Query params schema
 const listQuerySchema = z.object({
   projectId: z.string().uuid().optional(),
   campaignId: z.string().uuid().optional(),
-  status: z.enum(['queued', 'generating', 'draft', 'reviewed', 'published', 'failed']).optional(),
+  status: z.enum(['queued', 'generating', 'draft', 'approved', 'rejected', 'reviewed', 'published', 'failed']).optional(),
+  dateFrom: z.string().datetime().optional(),
+  dateTo: z.string().datetime().optional(),
   limit: z.coerce.number().int().min(1).max(100).optional().default(20),
   offset: z.coerce.number().int().min(0).optional().default(0),
 });
@@ -62,6 +66,12 @@ export const GET: APIRoute = async ({ url, locals }) => {
     if (query.status) {
       dbQuery = dbQuery.eq('status', query.status);
     }
+    if (query.dateFrom) {
+      dbQuery = dbQuery.gte('created_at', query.dateFrom);
+    }
+    if (query.dateTo) {
+      dbQuery = dbQuery.lte('created_at', query.dateTo);
+    }
 
     const { data: articles, error, count } = await dbQuery;
 
@@ -69,8 +79,23 @@ export const GET: APIRoute = async ({ url, locals }) => {
       throw error;
     }
 
+    // Calculate SEO score on-the-fly for articles that don't have one
+    const articlesWithScore = (articles ?? []).map((article: IArticle) => {
+      if (article.seo_score === null && article.content && article.title) {
+        const seoResult = calculateOverallSEOScore({
+          title: article.title,
+          content: article.content,
+          meta_description: article.meta_description,
+          primary_keyword: article.primary_keyword,
+          word_count: article.word_count,
+        });
+        return { ...article, seo_score: seoResult.overallScore };
+      }
+      return article;
+    });
+
     const response: IArticlesListResponse = {
-      articles: (articles ?? []) as any,
+      articles: articlesWithScore as any,
       total: count ?? 0,
     };
 

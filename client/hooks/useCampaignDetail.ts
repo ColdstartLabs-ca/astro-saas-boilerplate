@@ -17,6 +17,7 @@ import type {
   IKeyword,
   IUpdateCampaignInput,
   ICampaignArticleStats,
+  ICampaignCreditStats,
 } from '@shared/types/campaign.types';
 import type { IArticle } from '@shared/types/article.types';
 import { useLogger } from '@client/utils/logger';
@@ -52,12 +53,13 @@ async function getAuthHeaders(): Promise<Record<string, string>> {
 }
 
 /**
- * Fetch campaign detail with keywords and article stats
+ * Fetch campaign detail with keywords, article stats, and credit stats
  */
 async function fetchCampaignDetail(campaignId: string): Promise<{
   campaign: ICampaign;
   keywords: IKeyword[];
   articleStats: ICampaignArticleStats;
+  creditStats: ICampaignCreditStats;
 }> {
   const headers = await getAuthHeaders();
   const response = await fetch(`/api/campaigns/${campaignId}`, {
@@ -189,6 +191,7 @@ interface IUseCampaignDetailReturn {
   keywords: IKeyword[];
   articles: IArticle[];
   articleStats: ICampaignArticleStats | null;
+  creditStats: ICampaignCreditStats | null;
   isLoading: boolean;
   error: Error | null;
 
@@ -222,6 +225,7 @@ export function useCampaignDetail(campaignId: string | null | undefined): IUseCa
   const campaign = detailData?.campaign ?? null;
   const keywords = detailData?.keywords ?? [];
   const articleStats = detailData?.articleStats ?? null;
+  const creditStats = detailData?.creditStats ?? null;
 
   // Fetch articles query (separate for polling)
   // We use a separate query to enable polling based on campaign status
@@ -367,6 +371,7 @@ export function useCampaignDetail(campaignId: string | null | undefined): IUseCa
     keywords,
     articles,
     articleStats,
+    creditStats,
     isLoading,
     error,
 

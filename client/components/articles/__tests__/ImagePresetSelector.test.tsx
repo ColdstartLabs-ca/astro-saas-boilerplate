@@ -18,11 +18,11 @@ describe('ImagePresetSelector', () => {
   });
 
   describe('Rendering', () => {
-    it('should render all 6 presets plus None option', () => {
+    it('should render all 6 presets plus No images option', () => {
       render(<ImagePresetSelector selectedPreset={null} onSelect={mockOnSelect} />);
 
       // None option
-      expect(screen.getByText('None (text only)')).toBeInTheDocument();
+      expect(screen.getByText('No images')).toBeInTheDocument();
 
       // All 6 presets
       expect(screen.getByText('Blog Hero')).toBeInTheDocument();
@@ -43,24 +43,16 @@ describe('ImagePresetSelector', () => {
       expect(screen.getAllByText('+1 credit')).toHaveLength(3);
     });
 
-    it('should show "No images" badge for None option', () => {
+    it('should show "Free" badge for No images option', () => {
       render(<ImagePresetSelector selectedPreset={null} onSelect={mockOnSelect} />);
 
-      expect(screen.getByText('No images')).toBeInTheDocument();
+      expect(screen.getByText('Free')).toBeInTheDocument();
     });
 
     it('should display description for each preset', () => {
       render(<ImagePresetSelector selectedPreset={null} onSelect={mockOnSelect} />);
 
-      // Check display names and descriptions exist
-      expect(screen.getByText('Blog Hero')).toBeInTheDocument();
-      expect(screen.getByText('Social Card')).toBeInTheDocument();
-      expect(screen.getByText('Product Shot')).toBeInTheDocument();
-      expect(screen.getByText('Premium Hero')).toBeInTheDocument();
-      expect(screen.getByText('Photorealistic')).toBeInTheDocument();
-      expect(screen.getByText('Illustration')).toBeInTheDocument();
-
-      // Check some descriptions exist (using specific text to avoid multiple matches)
+      // Check descriptions exist
       expect(screen.getByText(/Fast, high-quality featured images for blog posts/i)).toBeInTheDocument();
       expect(screen.getByText(/Optimized for social media sharing and OG images/i)).toBeInTheDocument();
       expect(screen.getByText(/Enhanced quality for product and service visuals/i)).toBeInTheDocument();
@@ -69,34 +61,39 @@ describe('ImagePresetSelector', () => {
       expect(screen.getByText(/Blog illustrations, diagrams, and stylized visuals/i)).toBeInTheDocument();
     });
 
-    it('should display "Best for" info for each preset', () => {
+    it('should display "bestFor" info for each preset', () => {
       render(<ImagePresetSelector selectedPreset={null} onSelect={mockOnSelect} />);
 
-      expect(screen.getAllByText(/Best for:/i)).toHaveLength(6);
+      expect(screen.getByText(/Featured images, hero banners/i)).toBeInTheDocument();
+      expect(screen.getByText(/OG images, social sharing/i)).toBeInTheDocument();
+      expect(screen.getByText(/Product\/service visuals/i)).toBeInTheDocument();
+      expect(screen.getByText(/High-quality editorial/i)).toBeInTheDocument();
+      expect(screen.getByText(/Stock-photo-style imagery/i)).toBeInTheDocument();
+      expect(screen.getByText('Blog illustrations, diagrams')).toBeInTheDocument();
     });
   });
 
   describe('Selection behavior', () => {
     it('should highlight selected preset', () => {
-      const { container } = render(
+      render(
         <ImagePresetSelector selectedPreset="blog-hero" onSelect={mockOnSelect} />
       );
 
       const blogHeroButton = screen.getByText('Blog Hero').closest('button');
-      expect(blogHeroButton).toHaveClass('border-primary');
-      expect(blogHeroButton).toHaveClass('bg-primary/5');
-      expect(blogHeroButton).toHaveClass('ring-2');
+      expect(blogHeroButton).toHaveClass('border-accent');
+      expect(blogHeroButton).toHaveClass('bg-accent/10');
+      expect(blogHeroButton).toHaveClass('ring-1');
     });
 
-    it('should highlight None option when null is selected', () => {
-      const { container } = render(
+    it('should highlight No images option when null is selected', () => {
+      render(
         <ImagePresetSelector selectedPreset={null} onSelect={mockOnSelect} />
       );
 
-      const noneButton = screen.getByText('None (text only)').closest('button');
-      expect(noneButton).toHaveClass('border-primary');
-      expect(noneButton).toHaveClass('bg-primary/5');
-      expect(noneButton).toHaveClass('ring-2');
+      const noneButton = screen.getByText('No images').closest('button');
+      expect(noneButton).toHaveClass('border-accent');
+      expect(noneButton).toHaveClass('bg-accent/10');
+      expect(noneButton).toHaveClass('ring-1');
     });
 
     it('should call onSelect with preset key when preset clicked', async () => {
@@ -111,11 +108,11 @@ describe('ImagePresetSelector', () => {
       expect(mockOnSelect).toHaveBeenCalledWith('blog-hero');
     });
 
-    it('should call onSelect with null when None option clicked', async () => {
+    it('should call onSelect with null when No images option clicked', async () => {
       const user = userEvent.setup();
       render(<ImagePresetSelector selectedPreset="blog-hero" onSelect={mockOnSelect} />);
 
-      const noneButton = screen.getByText('None (text only)').closest('button');
+      const noneButton = screen.getByText('No images').closest('button');
       if (noneButton) {
         await user.click(noneButton);
       }
@@ -139,32 +136,32 @@ describe('ImagePresetSelector', () => {
 
   describe('Visual states', () => {
     it('should show correct badge color for free presets', () => {
-      const { container } = render(
+      render(
         <ImagePresetSelector selectedPreset={null} onSelect={mockOnSelect} />
       );
 
       const includedBadges = screen.getAllByText('Included');
       includedBadges.forEach(badge => {
-        expect(badge.closest('span')).toHaveClass('bg-green-100');
+        expect(badge.closest('span')).toHaveClass('bg-green-500/10');
       });
     });
 
     it('should show correct badge color for premium presets', () => {
-      const { container } = render(
+      render(
         <ImagePresetSelector selectedPreset={null} onSelect={mockOnSelect} />
       );
 
       const premiumBadges = screen.getAllByText('+1 credit');
       premiumBadges.forEach(badge => {
-        expect(badge.closest('span')).toHaveClass('bg-amber-100');
+        expect(badge.closest('span')).toHaveClass('bg-amber-500/10');
       });
     });
 
-    it('should show gray badge for None option', () => {
+    it('should show surface-light badge for Free option', () => {
       render(<ImagePresetSelector selectedPreset={null} onSelect={mockOnSelect} />);
 
-      const noImagesBadge = screen.getByText('No images');
-      expect(noImagesBadge.closest('span')).toHaveClass('bg-gray-100');
+      const freeBadge = screen.getByText('Free');
+      expect(freeBadge.closest('span')).toHaveClass('bg-surface-light');
     });
   });
 
@@ -173,13 +170,13 @@ describe('ImagePresetSelector', () => {
       render(<ImagePresetSelector selectedPreset={null} onSelect={mockOnSelect} />);
 
       const buttons = screen.getAllByRole('button');
-      expect(buttons).toHaveLength(7); // None + 6 presets
+      expect(buttons).toHaveLength(7); // No images + 6 presets
     });
 
     it('should have accessible names for all options', () => {
       render(<ImagePresetSelector selectedPreset={null} onSelect={mockOnSelect} />);
 
-      expect(screen.getByRole('button', { name: /none \(text only\)/i })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /no images/i })).toBeInTheDocument();
       expect(screen.getByRole('button', { name: /blog hero/i })).toBeInTheDocument();
       expect(screen.getByRole('button', { name: /social card/i })).toBeInTheDocument();
       expect(screen.getByRole('button', { name: /product shot/i })).toBeInTheDocument();
@@ -193,10 +190,9 @@ describe('ImagePresetSelector', () => {
     it('should handle empty string preset as unselected', () => {
       render(<ImagePresetSelector selectedPreset="" onSelect={mockOnSelect} />);
 
-      // Empty string should not match any preset or null, so no option is selected
-      // All buttons should have default gray border
-      const noneButton = screen.getByText('None (text only)').closest('button');
-      expect(noneButton).not.toHaveClass('border-primary');
+      // Empty string should not match null, so "No images" should have default border
+      const noneButton = screen.getByText('No images').closest('button');
+      expect(noneButton).not.toHaveClass('border-accent');
     });
 
     it('should not highlight any preset for invalid preset value', () => {
@@ -204,14 +200,10 @@ describe('ImagePresetSelector', () => {
         <ImagePresetSelector selectedPreset="invalid-preset" onSelect={mockOnSelect} />
       );
 
-      // Invalid preset should not match any button
-      // All preset buttons should have default border style
+      // Invalid preset should not match any button - all should have default border
       const buttons = screen.getAllByRole('button');
       buttons.forEach(button => {
-        if (button.textContent?.includes('None (text only)')) {
-          // None option should still be selectable even with invalid preset
-          expect(button).toHaveClass('border-gray-200');
-        }
+        expect(button).toHaveClass('border-border');
       });
     });
   });
