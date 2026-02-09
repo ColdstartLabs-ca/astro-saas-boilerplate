@@ -583,7 +583,7 @@ export class AdminController extends BaseController {
           const stripeSub = await stripe.subscriptions.retrieve(subscription.id);
           const updatedSub = await stripe.subscriptions.update(subscription.id, {
             items: [{ id: stripeSub.items.data[0]?.id, price: targetPriceId }],
-            proration_behavior: 'create_prorations',
+            proration_behavior: 'always_invoice',
           });
 
           const updatedSubData = updatedSub as unknown as { current_period_end?: number };

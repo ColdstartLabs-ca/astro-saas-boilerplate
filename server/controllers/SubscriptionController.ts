@@ -372,7 +372,7 @@ export class SubscriptionController extends BaseController {
           price: body.targetPriceId,
         },
       ],
-      proration_behavior: 'create_prorations',
+      proration_behavior: 'always_invoice',
       payment_behavior: 'error_if_incomplete',
     });
 
