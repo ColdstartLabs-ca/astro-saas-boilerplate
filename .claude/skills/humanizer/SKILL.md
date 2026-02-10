@@ -491,3 +491,12 @@ Provide:
 This skill is based on [Wikipedia:Signs of AI writing](https://en.wikipedia.org/wiki/Wikipedia:Signs_of_AI_writing), maintained by WikiProject AI Cleanup. The patterns documented there come from observations of thousands of instances of AI-generated text on Wikipedia.
 
 Key insight from Wikipedia: "LLMs use statistical algorithms to guess what should come next. The result tends toward the most statistically likely result that applies to the widest variety of cases."
+
+## Canonical Source
+
+The forbidden words, patterns, and writing examples are centralized in:
+`shared/constants/writing-guidelines.ts`
+
+This file is the single source of truth used by both this skill and the article generation pipeline
+(`server/services/prompts/article-prompts.ts`). When adding or modifying rules, update the shared
+constant to keep both in sync.
