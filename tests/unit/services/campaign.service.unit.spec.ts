@@ -6,6 +6,7 @@ import {
   NoPendingKeywordsError,
 } from '@shared/types/campaign.types';
 import { supabaseAdmin as actualSupabaseAdmin } from '@server/supabase/supabaseAdmin';
+import { AppError } from '@shared/utils/errors';
 
 // Mock supabaseAdmin - must use factory function
 vi.mock('@server/supabase/supabaseAdmin', () => {
@@ -481,12 +482,10 @@ describe('CampaignService', () => {
           return {
             insert: vi.fn().mockReturnValue({
               select: vi.fn().mockReturnValue({
-                single: vi
-                  .fn()
-                  .mockResolvedValue({
-                    data: { ...mockCampaign, name: 'New Campaign' },
-                    error: null,
-                  }),
+                single: vi.fn().mockResolvedValue({
+                  data: { ...mockCampaign, name: 'New Campaign' },
+                  error: null,
+                }),
               }),
             }),
           } as unknown;
@@ -1268,9 +1267,7 @@ describe('CampaignService', () => {
     it('should not add extra cost for standard image presets', async () => {
       const { supabaseAdmin } = await import('@server/supabase/supabaseAdmin');
 
-      const pendingKeywords = [
-        { id: 'kw1', keyword: 'coffee maker' },
-      ];
+      const pendingKeywords = [{ id: 'kw1', keyword: 'coffee maker' }];
 
       let callCount = 0;
       (supabaseAdmin.from as unknown as ReturnType<typeof vi.fn>).mockImplementation(() => {
@@ -1398,6 +1395,267 @@ describe('CampaignService', () => {
       expect(insertCall).toMatchObject({
         // image_preset should not be in the insert call when undefined
         // or it should be handled appropriately by the service
+      });
+    });
+  });
+
+  describe('Server-Side Validation (Configurable Models)', () => {
+    it('should reject unavailable writer model on create', async () => {
+      const { supabaseAdmin } = await import('@server/supabase/supabaseAdmin');
+
+      let callCount = 0;
+      (supabaseAdmin.from as unknown as ReturnType<typeof vi.fn>).mockImplementation(() => {
+        callCount++;
+        if (callCount === 1) {
+          // First call: check project ownership
+          return {
+            select: vi.fn().mockReturnValue({
+              eq: vi.fn().mockReturnValue({
+                eq: vi.fn().mockReturnValue({
+                  single: vi.fn().mockResolvedValue({ data: { id: mockProjectId }, error: null }),
+                }),
+              }),
+            }),
+          } as unknown;
+        } else {
+          // Second call: insert campaign (should not be reached if validation fails)
+          return {
+            insert: vi.fn().mockReturnValue({
+              select: vi.fn().mockReturnValue({
+                single: vi.fn().mockResolvedValue({ data: mockCampaign, error: null }),
+              }),
+            }),
+          } as unknown;
+        }
+      });
+
+      const input = {
+        name: 'New Campaign',
+        projectId: mockProjectId,
+        keywords: ['coffee maker'],
+        model: 'completely-invalid-model-id-not-in-registry', // This model does not exist
+      };
+
+      // When AVAILABLE_WRITER_MODELS is empty, all models in AI_MODELS are allowed
+      // But models NOT in AI_MODELS at all should still be rejected by validation
+      await expect(campaignService.create(mockUserId, input)).rejects.toThrow();
+    });
+
+    it('should reject unavailable image preset on create', async () => {
+      const { supabaseAdmin } = await import('@server/supabase/supabaseAdmin');
+
+      (supabaseAdmin.from as unknown as ReturnType<typeof vi.fn>).mockReturnValueOnce({
+        select: vi.fn().mockReturnValue({
+          eq: vi.fn().mockReturnValue({
+            eq: vi.fn().mockReturnValue({
+              single: vi.fn().mockResolvedValue({ data: { id: mockProjectId }, error: null }),
+            }),
+          }),
+        }),
+      } as unknown);
+
+      const input = {
+        name: 'New Campaign',
+        projectId: mockProjectId,
+        keywords: ['coffee maker'],
+        imagePreset: 'invalid-preset', // This preset does not exist
+      };
+
+      // This should be caught by the Zod schema validation (isValidImagePreset)
+      await expect(campaignService.create(mockUserId, input)).rejects.toThrow();
+    });
+
+    it('should accept available model on create', async () => {
+      const { supabaseAdmin } = await import('@server/supabase/supabaseAdmin');
+
+      let callCount = 0;
+      (supabaseAdmin.from as unknown as ReturnType<typeof vi.fn>).mockImplementation(() => {
+        callCount++;
+        if (callCount === 1) {
+          return {
+            select: vi.fn().mockReturnValue({
+              eq: vi.fn().mockReturnValue({
+                eq: vi.fn().mockReturnValue({
+                  single: vi.fn().mockResolvedValue({ data: { id: mockProjectId }, error: null }),
+                }),
+              }),
+            }),
+          } as unknown;
+        } else if (callCount === 2) {
+          return {
+            insert: vi.fn().mockReturnValue({
+              select: vi.fn().mockReturnValue({
+                single: vi.fn().mockResolvedValue({ data: mockCampaign, error: null }),
+              }),
+            }),
+          } as unknown;
+        } else {
+          return {
+            insert: vi.fn().mockResolvedValue({ data: null, error: null }),
+          } as unknown;
+        }
+      });
+
+      const input = {
+        name: 'New Campaign',
+        projectId: mockProjectId,
+        keywords: ['coffee maker'],
+        model: 'openai/gpt-4o', // This is a valid model
+      };
+
+      await expect(campaignService.create(mockUserId, input)).resolves.toBeDefined();
+    });
+
+    it('should accept any model when env is empty (all allowed)', async () => {
+      const { supabaseAdmin } = await import('@server/supabase/supabaseAdmin');
+
+      let callCount = 0;
+      (supabaseAdmin.from as unknown as ReturnType<typeof vi.fn>).mockImplementation(() => {
+        callCount++;
+        if (callCount === 1) {
+          return {
+            select: vi.fn().mockReturnValue({
+              eq: vi.fn().mockReturnValue({
+                eq: vi.fn().mockReturnValue({
+                  single: vi.fn().mockResolvedValue({ data: { id: mockProjectId }, error: null }),
+                }),
+              }),
+            }),
+          } as unknown;
+        } else if (callCount === 2) {
+          return {
+            insert: vi.fn().mockReturnValue({
+              select: vi.fn().mockReturnValue({
+                single: vi.fn().mockResolvedValue({ data: mockCampaign, error: null }),
+              }),
+            }),
+          } as unknown;
+        } else {
+          return {
+            insert: vi.fn().mockResolvedValue({ data: null, error: null }),
+          } as unknown;
+        }
+      });
+
+      const input = {
+        name: 'New Campaign',
+        projectId: mockProjectId,
+        keywords: ['coffee maker'],
+        model: 'anthropic/claude-sonnet-4-5', // Any valid model in AI_MODELS should work when env is empty
+      };
+
+      // When AVAILABLE_WRITER_MODELS is empty string, all models in AI_MODELS are allowed
+      await expect(campaignService.create(mockUserId, input)).resolves.toBeDefined();
+    });
+
+    it('should reject unavailable writer model on update', async () => {
+      const { supabaseAdmin } = await import('@server/supabase/supabaseAdmin');
+
+      (supabaseAdmin.from as unknown as ReturnType<typeof vi.fn>).mockReturnValueOnce({
+        update: vi.fn().mockReturnValue({
+          eq: vi.fn().mockReturnValue({
+            eq: vi.fn().mockReturnValue({
+              select: vi.fn().mockReturnValue({
+                single: vi.fn().mockResolvedValue({ data: mockCampaign, error: null }),
+              }),
+            }),
+          }),
+        }),
+      } as unknown);
+
+      // Test with a completely invalid model ID that doesn't exist in the registry
+      const input = {
+        model: 'this-model-does-not-exist-in-ai-models-config',
+      };
+
+      // Should be caught by server-side validation
+      await expect(campaignService.update(mockCampaignId, mockUserId, input)).rejects.toThrow(
+        AppError
+      );
+    });
+
+    it('should reject unavailable image preset on update', async () => {
+      const { supabaseAdmin } = await import('@server/supabase/supabaseAdmin');
+
+      (supabaseAdmin.from as unknown as ReturnType<typeof vi.fn>).mockReturnValueOnce({
+        update: vi.fn().mockReturnValue({
+          eq: vi.fn().mockReturnValue({
+            eq: vi.fn().mockReturnValue({
+              select: vi.fn().mockReturnValue({
+                single: vi.fn().mockResolvedValue({ data: mockCampaign, error: null }),
+              }),
+            }),
+          }),
+        }),
+      } as unknown);
+
+      const input = {
+        imagePreset: 'definitely-not-a-valid-preset',
+      };
+
+      // Should be caught by the Zod schema validation (isValidImagePreset)
+      await expect(campaignService.update(mockCampaignId, mockUserId, input)).rejects.toThrow();
+    });
+
+    it('should accept available image preset on update', async () => {
+      const { supabaseAdmin } = await import('@server/supabase/supabaseAdmin');
+
+      let updateCall: Record<string, unknown> | null = null;
+      (supabaseAdmin.from as unknown as ReturnType<typeof vi.fn>).mockReturnValueOnce({
+        update: vi.fn().mockImplementation((data: unknown) => {
+          updateCall = data as Record<string, unknown>;
+          return {
+            eq: vi.fn().mockReturnValue({
+              eq: vi.fn().mockReturnValue({
+                select: vi.fn().mockReturnValue({
+                  single: vi.fn().mockResolvedValue({ data: mockCampaign, error: null }),
+                }),
+              }),
+            }),
+          };
+        }),
+      } as unknown);
+
+      const input = {
+        imagePreset: 'blog-hero',
+      };
+
+      await expect(
+        campaignService.update(mockCampaignId, mockUserId, input)
+      ).resolves.toBeDefined();
+      expect(updateCall).toMatchObject({
+        image_preset: 'blog-hero',
+      });
+    });
+
+    it('should allow empty string imagePreset (user might not want images)', async () => {
+      const { supabaseAdmin } = await import('@server/supabase/supabaseAdmin');
+
+      let updateCall: Record<string, unknown> | null = null;
+      (supabaseAdmin.from as unknown as ReturnType<typeof vi.fn>).mockReturnValueOnce({
+        update: vi.fn().mockImplementation((data: unknown) => {
+          updateCall = data as Record<string, unknown>;
+          return {
+            eq: vi.fn().mockReturnValue({
+              eq: vi.fn().mockReturnValue({
+                select: vi.fn().mockReturnValue({
+                  single: vi.fn().mockResolvedValue({ data: mockCampaign, error: null }),
+                }),
+              }),
+            }),
+          };
+        }),
+      } as unknown);
+
+      const input = {
+        imagePreset: '', // Empty string means no images
+      };
+
+      await expect(
+        campaignService.update(mockCampaignId, mockUserId, input)
+      ).resolves.toBeDefined();
+      expect(updateCall).toMatchObject({
+        image_preset: '',
       });
     });
   });

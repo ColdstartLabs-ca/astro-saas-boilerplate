@@ -2,17 +2,22 @@
  * ImagePresetSelector Component
  *
  * A reusable component for selecting image generation presets.
- * Displays all available presets with their name, description, and credit cost.
+ * Displays available presets with their name, description, and credit cost.
  */
 
-import { IMAGE_PRESETS, getImagePresetCreditCost } from '@shared/config/image-models.config';
+import type { IAvailableImagePreset } from '@shared/types/models.types';
 
 interface IImagePresetSelectorProps {
   selectedPreset: string | null;
   onSelect: (preset: string | null) => void;
+  availablePresets: IAvailableImagePreset[];
 }
 
-export function ImagePresetSelector({ selectedPreset, onSelect }: IImagePresetSelectorProps): JSX.Element {
+export function ImagePresetSelector({
+  selectedPreset,
+  onSelect,
+  availablePresets,
+}: IImagePresetSelectorProps): JSX.Element {
   return (
     <div className="space-y-2">
       {/* None option */}
@@ -37,9 +42,10 @@ export function ImagePresetSelector({ selectedPreset, onSelect }: IImagePresetSe
       </button>
 
       {/* Preset options */}
-      {Object.values(IMAGE_PRESETS).map(preset => {
-        const creditCost = getImagePresetCreditCost(preset.key);
+      {availablePresets.map(preset => {
         const isSelected = selectedPreset === preset.key;
+        // Extract model name from replicateModel (e.g., "black-forest-labs/flux-schnell" -> "flux-schnell")
+        const modelName = preset.replicateModel.split('/').pop() ?? preset.replicateModel;
 
         return (
           <button
@@ -56,18 +62,20 @@ export function ImagePresetSelector({ selectedPreset, onSelect }: IImagePresetSe
               <div className="flex-1 min-w-0">
                 <div className="text-sm font-medium text-text-primary">{preset.displayName}</div>
                 <div className="text-xs text-text-secondary mt-0.5">{preset.description}</div>
-                <div className="text-[10px] text-muted mt-0.5">
-                  {preset.bestFor}
+                <div className="text-[10px] text-muted mt-0.5 flex items-center gap-1">
+                  <span>{preset.bestFor}</span>
+                  <span className="text-border">•</span>
+                  <span className="font-mono">{modelName}</span>
                 </div>
               </div>
               <span
                 className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium flex-shrink-0 ${
-                  creditCost === 0
+                  preset.creditCost === 0
                     ? 'bg-green-500/10 text-green-400 border border-green-500/20'
                     : 'bg-amber-500/10 text-amber-400 border border-amber-500/20'
                 }`}
               >
-                {creditCost === 0 ? 'Included' : `+${creditCost} credit`}
+                {preset.creditCost === 0 ? 'Included' : `+${preset.creditCost} credit`}
               </span>
             </div>
           </button>

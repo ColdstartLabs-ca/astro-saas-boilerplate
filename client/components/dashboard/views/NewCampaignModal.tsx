@@ -6,10 +6,10 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { X, ArrowRight, Loader2, Zap, Upload } from 'lucide-react';
 import { DashboardButton } from '../ui/DashboardButton';
-import { AI_MODELS } from '@shared/config/ai-models.config';
 import { getImagePresetCreditCost } from '@shared/config/image-models.config';
 import { useUserStore } from '@client/store/userStore';
 import { useTranslations } from '@client/hooks/useTranslations';
+import { useAvailableModels } from '@client/hooks/useAvailableModels';
 import { ImagePresetSelector } from '@client/components/articles/ImagePresetSelector';
 import type { CampaignTone } from '@shared/types/campaign.types';
 
@@ -64,6 +64,7 @@ export function NewCampaignModal({
 }: INewCampaignModalProps): JSX.Element | null {
   const t = useTranslations('dashboard');
   const { user } = useUserStore();
+  const { writerModels, imagePresets, isLoading: modelsLoading } = useAvailableModels();
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
   const [keywordInputTab, setKeywordInputTab] = useState<'manual' | 'csv'>('manual');
@@ -294,16 +295,23 @@ export function NewCampaignModal({
                 <label className="block text-sm font-medium text-secondary mb-2">
                   {t('campaigns.newCampaign.model')}
                 </label>
-                <select
-                  {...register('model')}
-                  className="w-full bg-main border border-border rounded-lg px-3 py-2.5 text-white focus:ring-1 focus:ring-accent outline-none"
-                >
-                  {Object.entries(AI_MODELS).map(([id, model]) => (
-                    <option key={id} value={id}>
-                      {model.name} ({model.provider})
-                    </option>
-                  ))}
-                </select>
+                {modelsLoading ? (
+                  <div className="w-full bg-main border border-border rounded-lg px-3 py-2.5 text-muted flex items-center gap-2">
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    <span>Loading models...</span>
+                  </div>
+                ) : (
+                  <select
+                    {...register('model')}
+                    className="w-full bg-main border border-border rounded-lg px-3 py-2.5 text-white focus:ring-1 focus:ring-accent outline-none"
+                  >
+                    {writerModels.map(model => (
+                      <option key={model.id} value={model.id}>
+                        {model.name} ({model.provider})
+                      </option>
+                    ))}
+                  </select>
+                )}
               </div>
 
               {/* Word Count Target */}
@@ -354,13 +362,21 @@ export function NewCampaignModal({
                   Generate Images
                 </label>
                 <div className="bg-main/50 border border-border rounded-lg p-4">
-                  <ImagePresetSelector
-                    selectedPreset={watchedImagePreset || null}
-                    onSelect={(preset) => setValue('imagePreset', preset || '')}
-                  />
+                  {modelsLoading ? (
+                    <div className="flex items-center gap-2 py-4 text-muted">
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      <span>Loading image presets...</span>
+                    </div>
+                  ) : (
+                    <ImagePresetSelector
+                      selectedPreset={watchedImagePreset || null}
+                      onSelect={preset => setValue('imagePreset', preset || '')}
+                      availablePresets={imagePresets}
+                    />
+                  )}
                   <p className="text-xs text-muted mt-3">
-                    Images will be generated for each article based on the selected preset.
-                    Standard presets are included, premium presets cost 1 additional credit per article.
+                    Images will be generated for each article based on the selected preset. Standard
+                    presets are included, premium presets cost 1 additional credit per article.
                   </p>
                 </div>
               </div>
@@ -388,7 +404,8 @@ export function NewCampaignModal({
                     <p
                       className={`text-xs mt-1 ${hasEnoughCredits ? 'text-secondary' : 'text-red-300'}`}
                     >
-                      {keywordCount} keywords × {creditsPerKeyword} credit{creditsPerKeyword > 1 ? 's' : ''} per article = {creditCost} total credits
+                      {keywordCount} keywords × {creditsPerKeyword} credit
+                      {creditsPerKeyword > 1 ? 's' : ''} per article = {creditCost} total credits
                       {!hasEnoughCredits && (
                         <span className="block mt-1">
                           {t('campaigns.newCampaign.insufficientCreditsDetail', {

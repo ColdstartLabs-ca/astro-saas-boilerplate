@@ -39,3 +39,31 @@ export function getModel(modelId: AIModelId): (typeof AI_MODELS)[AIModelId] {
 export function getModelsByTier(tier: string): AIModelId[] {
   return MODEL_IDS.filter(id => AI_MODELS[id].tier === tier || AI_MODELS[id].tier === 'all');
 }
+
+/**
+ * Parse comma-separated env string into available model IDs.
+ * Empty string = all models available.
+ */
+export function getAvailableWriterModels(
+  envValue: string
+): Array<{ id: AIModelId; name: string; provider: string }> {
+  const enabledIds = envValue
+    .split(',')
+    .map(s => s.trim())
+    .filter(Boolean);
+
+  const ids = enabledIds.length > 0 ? MODEL_IDS.filter(id => enabledIds.includes(id)) : MODEL_IDS;
+
+  return ids.map(id => {
+    const { name, provider } = AI_MODELS[id];
+    return { id, name, provider };
+  });
+}
+
+/**
+ * Check if a model is available based on env configuration.
+ */
+export function isAvailableWriterModel(modelId: string, envValue: string): boolean {
+  const available = getAvailableWriterModels(envValue);
+  return available.some(m => m.id === modelId);
+}

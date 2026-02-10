@@ -29,6 +29,7 @@ import {
 import { DashboardButton } from '../ui/DashboardButton';
 import { useCampaignDetail } from '@client/hooks/useCampaignDetail';
 import { useTranslations } from '@client/hooks/useTranslations';
+import { useAvailableModels } from '@client/hooks/useAvailableModels';
 import { ArticleDetailModal } from '@client/components/articles/ArticleDetailModal';
 import dayjs from 'dayjs';
 import type { IArticle, IArticleWithCampaign } from '@shared/types/article.types';
@@ -57,6 +58,7 @@ export function CampaignDetailView({
   onBackToList,
 }: ICampaignDetailViewProps): JSX.Element {
   const t = useTranslations('dashboard');
+  const { writerModels, imagePresets } = useAvailableModels();
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [isAddKeywordsModalOpen, setIsAddKeywordsModalOpen] = useState(false);
@@ -69,10 +71,14 @@ export function CampaignDetailView({
     name: string;
     tone: CampaignTone | '';
     targetWordCount: number;
+    model: string;
+    imagePreset: string;
   }>({
     name: '',
     tone: '',
     targetWordCount: 1500,
+    model: '',
+    imagePreset: '',
   });
 
   const {
@@ -190,6 +196,8 @@ export function CampaignDetailView({
       name: campaign.name,
       tone: campaign.tone,
       targetWordCount: campaign.target_word_count,
+      model: campaign.ai_model,
+      imagePreset: campaign.image_preset || '',
     });
     setIsSettingsModalOpen(true);
   };
@@ -202,6 +210,8 @@ export function CampaignDetailView({
         name: settingsForm.name,
         tone: settingsForm.tone,
         targetWordCount: settingsForm.targetWordCount,
+        model: settingsForm.model,
+        imagePreset: settingsForm.imagePreset || undefined,
       });
       setIsSettingsModalOpen(false);
     } catch {
@@ -221,7 +231,15 @@ export function CampaignDetailView({
 
   // Toggle status filter
   const cycleStatusFilter = () => {
-    const filters: string[] = ['all', 'queued', 'generating', 'draft', 'reviewed', 'published', 'failed'];
+    const filters: string[] = [
+      'all',
+      'queued',
+      'generating',
+      'draft',
+      'reviewed',
+      'published',
+      'failed',
+    ];
     const currentIndex = filters.indexOf(statusFilter);
     const nextIndex = (currentIndex + 1) % filters.length;
     setStatusFilter(filters[nextIndex]);
@@ -374,9 +392,7 @@ export function CampaignDetailView({
                 {t('campaigns.detail.metadata.tone')}
               </span>
             </div>
-            <div className="text-sm font-semibold text-white capitalize">
-              {campaign.tone}
-            </div>
+            <div className="text-sm font-semibold text-white capitalize">{campaign.tone}</div>
           </div>
 
           {/* Target Word Count */}
@@ -401,7 +417,9 @@ export function CampaignDetailView({
               </span>
             </div>
             <div className="text-sm font-semibold text-white">
-              {campaign.image_preset ? t('campaigns.detail.metadata.enabled') : t('campaigns.detail.metadata.disabled')}
+              {campaign.image_preset
+                ? t('campaigns.detail.metadata.enabled')
+                : t('campaigns.detail.metadata.disabled')}
             </div>
           </div>
 
@@ -442,7 +460,8 @@ export function CampaignDetailView({
               {t('campaigns.detail.credits.title')}
             </h3>
             <div className="text-xs text-muted font-mono">
-              {t('campaigns.detail.credits.costPerArticle')}: {creditStats.costPerArticle} {creditStats.costPerArticle === 1 ? 'credit' : 'credits'}
+              {t('campaigns.detail.credits.costPerArticle')}: {creditStats.costPerArticle}{' '}
+              {creditStats.costPerArticle === 1 ? 'credit' : 'credits'}
             </div>
           </div>
 
@@ -484,9 +503,12 @@ export function CampaignDetailView({
                 </span>
                 <TrendingUp className="w-4 h-4 text-blue-400" />
               </div>
-              <div className="text-xl font-bold text-white">{creditStats.estimatedCreditsRemaining}</div>
+              <div className="text-xl font-bold text-white">
+                {creditStats.estimatedCreditsRemaining}
+              </div>
               <div className="text-xs text-secondary mt-1">
-                {keywords.filter(k => k.status === 'pending' || k.status === 'queued').length} {t('campaigns.detail.credits.status.remaining')}
+                {keywords.filter(k => k.status === 'pending' || k.status === 'queued').length}{' '}
+                {t('campaigns.detail.credits.status.remaining')}
               </div>
             </div>
 
@@ -510,7 +532,8 @@ export function CampaignDetailView({
             <div className="flex justify-between text-xs">
               <span className="text-muted">{t('campaigns.detail.credits.breakdown')}</span>
               <span className="text-secondary font-mono">
-                {creditStats.creditsUsed} / {creditStats.totalCreditsRequired} {creditStats.totalCreditsRequired === 1 ? 'credit' : 'credits'}
+                {creditStats.creditsUsed} / {creditStats.totalCreditsRequired}{' '}
+                {creditStats.totalCreditsRequired === 1 ? 'credit' : 'credits'}
               </span>
             </div>
             <div className="w-full bg-main rounded-full h-2 overflow-hidden border border-border">
@@ -749,7 +772,9 @@ export function CampaignDetailView({
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm animate-fadeIn p-4">
           <div className="bg-surface border border-border rounded-xl w-full max-w-md shadow-2xl">
             <div className="flex justify-between items-center p-6 border-b border-border">
-              <h3 className="text-lg font-bold text-white">{t('campaigns.detail.metadata.title')}</h3>
+              <h3 className="text-lg font-bold text-white">
+                {t('campaigns.detail.metadata.title')}
+              </h3>
               <button
                 onClick={() => setIsSettingsModalOpen(false)}
                 className="text-muted hover:text-white"
@@ -789,7 +814,9 @@ export function CampaignDetailView({
                           : 'bg-main border-border text-muted hover:border-border'
                       }`}
                     >
-                      {t(`projects.onboarding.step3.tones.${toneOption}` as `projects.onboarding.step3.tones.${CampaignTone}`)}
+                      {t(
+                        `projects.onboarding.step3.tones.${toneOption}` as `projects.onboarding.step3.tones.${CampaignTone}`
+                      )}
                     </button>
                   ))}
                 </div>
@@ -816,6 +843,43 @@ export function CampaignDetailView({
                     </button>
                   ))}
                 </div>
+              </div>
+
+              {/* Writer Model */}
+              <div>
+                <label className="block text-sm font-medium text-secondary mb-1.5">
+                  Writer Model
+                </label>
+                <select
+                  value={settingsForm.model}
+                  onChange={e => setSettingsForm({ ...settingsForm, model: e.target.value })}
+                  className="w-full bg-main border border-border rounded-lg px-3 py-2 text-white focus:ring-1 focus:ring-accent outline-none"
+                >
+                  {writerModels.map(m => (
+                    <option key={m.id} value={m.id}>
+                      {m.name} ({m.provider})
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Image Preset */}
+              <div>
+                <label className="block text-sm font-medium text-secondary mb-1.5">
+                  Image Preset
+                </label>
+                <select
+                  value={settingsForm.imagePreset}
+                  onChange={e => setSettingsForm({ ...settingsForm, imagePreset: e.target.value })}
+                  className="w-full bg-main border border-border rounded-lg px-3 py-2 text-white focus:ring-1 focus:ring-accent outline-none"
+                >
+                  <option value="">No images</option>
+                  {imagePresets.map(p => (
+                    <option key={p.key} value={p.key}>
+                      {p.displayName}
+                    </option>
+                  ))}
+                </select>
               </div>
             </div>
             <div className="p-6 border-t border-border flex justify-end gap-2">

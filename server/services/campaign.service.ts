@@ -24,7 +24,14 @@ import {
   NoPendingKeywordsError,
 } from '@shared/types/campaign.types';
 import { z } from 'zod';
-import { isValidImagePreset, getImagePresetCreditCost } from '@shared/config/image-models.config';
+import {
+  isValidImagePreset,
+  getImagePresetCreditCost,
+  isAvailableImagePreset,
+} from '@shared/config/image-models.config';
+import { isAvailableWriterModel } from '@shared/config/ai-models.config';
+import { serverEnv } from '@shared/config/env';
+import { AppError } from '@shared/utils/errors';
 
 // =============================================================================
 // Validation Schemas
@@ -47,10 +54,10 @@ const createCampaignSchema = z.object({
   model: z.string().optional(),
   tone: z.enum(['professional', 'casual', 'witty', 'academic']).optional(),
   targetWordCount: z.number().int().min(800).max(3000).optional(),
-  imagePreset: z.string().optional().refine(
-    val => !val || isValidImagePreset(val),
-    { message: 'Invalid image preset' }
-  ),
+  imagePreset: z
+    .string()
+    .optional()
+    .refine(val => !val || isValidImagePreset(val), { message: 'Invalid image preset' }),
 });
 
 /**
@@ -62,10 +69,10 @@ const updateCampaignSchema = z.object({
   model: z.string().optional(),
   tone: z.enum(['professional', 'casual', 'witty', 'academic']).optional(),
   targetWordCount: z.number().int().min(800).max(3000).optional(),
-  imagePreset: z.string().optional().refine(
-    val => !val || isValidImagePreset(val),
-    { message: 'Invalid image preset' }
-  ),
+  imagePreset: z
+    .string()
+    .optional()
+    .refine(val => !val || isValidImagePreset(val), { message: 'Invalid image preset' }),
 });
 
 /**
@@ -265,9 +272,11 @@ export class CampaignService {
     }
 
     // Count pending keywords for remaining credits estimate
-    const pendingCount = keywords?.filter(k => k.status === 'pending' || k.status === 'queued').length ?? 0;
+    const pendingCount =
+      keywords?.filter(k => k.status === 'pending' || k.status === 'queued').length ?? 0;
     creditStats.estimatedCreditsRemaining = pendingCount * creditStats.costPerArticle;
-    creditStats.totalCreditsRequired = creditStats.creditsUsed + creditStats.estimatedCreditsRemaining;
+    creditStats.totalCreditsRequired =
+      creditStats.creditsUsed + creditStats.estimatedCreditsRemaining;
 
     return {
       campaign,
@@ -283,6 +292,22 @@ export class CampaignService {
   async create(userId: string, input: ICreateCampaignInput): Promise<ICampaign> {
     // Validate input
     const validated = createCampaignSchema.parse(input);
+
+    // Server-side validation: check if model is available
+    if (
+      validated.model &&
+      !isAvailableWriterModel(validated.model, serverEnv.AVAILABLE_WRITER_MODELS)
+    ) {
+      throw new AppError('MODEL_NOT_AVAILABLE', 'Selected writer model is not available', 400);
+    }
+
+    // Server-side validation: check if image preset is available
+    if (
+      validated.imagePreset &&
+      !isAvailableImagePreset(validated.imagePreset, serverEnv.AVAILABLE_IMAGE_PRESETS)
+    ) {
+      throw new AppError('MODEL_NOT_AVAILABLE', 'Selected image preset is not available', 400);
+    }
 
     // Verify project ownership
     const { data: project, error: projectError } = await supabaseAdmin
@@ -346,6 +371,22 @@ export class CampaignService {
   ): Promise<ICampaign> {
     // Validate input
     const validated = updateCampaignSchema.parse(input);
+
+    // Server-side validation: check if model is available
+    if (
+      validated.model &&
+      !isAvailableWriterModel(validated.model, serverEnv.AVAILABLE_WRITER_MODELS)
+    ) {
+      throw new AppError('MODEL_NOT_AVAILABLE', 'Selected writer model is not available', 400);
+    }
+
+    // Server-side validation: check if image preset is available
+    if (
+      validated.imagePreset &&
+      !isAvailableImagePreset(validated.imagePreset, serverEnv.AVAILABLE_IMAGE_PRESETS)
+    ) {
+      throw new AppError('MODEL_NOT_AVAILABLE', 'Selected image preset is not available', 400);
+    }
 
     // Build update object with only provided fields
     const updates: Record<string, unknown> = {};

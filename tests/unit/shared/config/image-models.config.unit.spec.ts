@@ -13,6 +13,8 @@ import {
   getImageCountForWordCount,
   getPresetDescription,
   isValidImagePreset,
+  getAvailableImagePresets,
+  isAvailableImagePreset,
   type ImagePresetKey,
 } from '@shared/config/image-models.config';
 
@@ -198,6 +200,76 @@ describe('image-models.config', () => {
       const imageCost = getImagePresetCreditCost('premium-hero');
       const totalCredits = keywordCount * (1 + imageCost);
       expect(totalCredits).toBe(20); // 10 keywords × 2 credits each
+    });
+  });
+
+  describe('getAvailableImagePresets', () => {
+    it('should return all presets when env string is empty', () => {
+      const presets = getAvailableImagePresets('');
+      expect(presets).toHaveLength(6);
+      expect(presets.map(p => p.key)).toEqual(expect.arrayContaining(IMAGE_PRESET_KEYS));
+    });
+
+    it('should return all presets when env string contains only whitespace', () => {
+      const presets = getAvailableImagePresets('   ,  ,   ');
+      expect(presets).toHaveLength(6);
+    });
+
+    it('should filter to only enabled presets when env has values', () => {
+      const presets = getAvailableImagePresets('blog-hero,premium-hero');
+      expect(presets).toHaveLength(2);
+      expect(presets.map(p => p.key)).toEqual(['blog-hero', 'premium-hero']);
+    });
+
+    it('should handle single preset', () => {
+      const presets = getAvailableImagePresets('social-card');
+      expect(presets).toHaveLength(1);
+      expect(presets[0].key).toBe('social-card');
+    });
+
+    it('should ignore invalid preset keys silently', () => {
+      const presets = getAvailableImagePresets('blog-hero,invalid-key,social-card');
+      expect(presets).toHaveLength(2);
+      expect(presets.map(p => p.key)).toEqual(['blog-hero', 'social-card']);
+    });
+
+    it('should handle extra whitespace around comma-separated values', () => {
+      const presets = getAvailableImagePresets('  blog-hero  ,  social-card  ,  premium-hero  ');
+      expect(presets).toHaveLength(3);
+      expect(presets.map(p => p.key)).toEqual(['blog-hero', 'social-card', 'premium-hero']);
+    });
+
+    it('should return empty array when no valid keys provided', () => {
+      const presets = getAvailableImagePresets('invalid,another-invalid');
+      expect(presets).toHaveLength(0);
+    });
+  });
+
+  describe('isAvailableImagePreset', () => {
+    it('should return true for any preset when env is empty', () => {
+      expect(isAvailableImagePreset('blog-hero', '')).toBe(true);
+      expect(isAvailableImagePreset('premium-hero', '')).toBe(true);
+      expect(isAvailableImagePreset('illustration', '')).toBe(true);
+    });
+
+    it('should return true for enabled presets', () => {
+      expect(isAvailableImagePreset('blog-hero', 'blog-hero,social-card')).toBe(true);
+      expect(isAvailableImagePreset('social-card', 'blog-hero,social-card')).toBe(true);
+    });
+
+    it('should return false for disabled presets', () => {
+      expect(isAvailableImagePreset('premium-hero', 'blog-hero,social-card')).toBe(false);
+      expect(isAvailableImagePreset('illustration', 'blog-hero,social-card')).toBe(false);
+    });
+
+    it('should return false for invalid preset keys', () => {
+      expect(isAvailableImagePreset('invalid-key', 'blog-hero,social-card')).toBe(false);
+      expect(isAvailableImagePreset('', 'blog-hero,social-card')).toBe(false);
+    });
+
+    it('should handle whitespace in env string', () => {
+      expect(isAvailableImagePreset('blog-hero', '  blog-hero  ,  social-card  ')).toBe(true);
+      expect(isAvailableImagePreset('premium-hero', '  blog-hero  ,  social-card  ')).toBe(false);
     });
   });
 });

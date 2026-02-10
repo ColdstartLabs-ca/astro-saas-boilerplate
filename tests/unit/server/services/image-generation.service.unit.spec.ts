@@ -5,33 +5,41 @@
  */
 
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { imageGenerationService } from '@server/services/image-generation.service';
-import { getReplicateService } from '@server/services/replicate.service';
-import { OpenRouterService } from './openrouter.service';
-import type { IImageMarker, IImageResult } from '@shared/types/article.types';
+import type { IImageMarker } from '@shared/types/article.types';
 import type { ImagePresetKey } from '@shared/config/image-models.config';
 
-// Mock dependencies
-vi.mock('@server/services/replicate.service');
-vi.mock('@server/services/openrouter.service');
+// Hoist mock functions so they're available in vi.mock factories
+const mockChatCompletionWithRetry = vi.fn();
+const mockWithRetry = vi.fn();
+const mockGenerateImage = vi.fn();
+const mockIsConfigured = vi.fn(() => true);
+const mockCreatePrediction = vi.fn();
+const mockPollPrediction = vi.fn();
+
+// Mock dependencies with hoisted functions
+vi.mock('@server/services/openrouter.service', () => ({
+  OpenRouterService: class {
+    chatCompletionWithRetry = mockChatCompletionWithRetry;
+  },
+}));
+
+vi.mock('@server/services/replicate.service', () => ({
+  getReplicateService: vi.fn(() => ({
+    isConfigured: mockIsConfigured,
+    createPrediction: mockCreatePrediction,
+    pollPrediction: mockPollPrediction,
+    generateImage: mockGenerateImage,
+    withRetry: mockWithRetry,
+  })),
+}));
+
+// Import after mocks are set up
+const { imageGenerationService } = await import('@server/services/image-generation.service');
 
 describe('ImageGenerationService', () => {
-  const mockReplicateService = {
-    isConfigured: vi.fn(() => true),
-    createPrediction: vi.fn(),
-    pollPrediction: vi.fn(),
-    generateImage: vi.fn(),
-    withRetry: vi.fn(),
-  };
-
-  const mockOpenRouterService = {
-    chatCompletionWithRetry: vi.fn(),
-  };
-
   beforeEach(() => {
     vi.clearAllMocks();
-    vi.mocked(getReplicateService).mockReturnValue(mockReplicateService as never);
-    vi.mocked(OpenRouterService).mockReturnValue(mockOpenRouterService as never);
+    mockIsConfigured.mockReturnValue(true);
   });
 
   describe('generateImagesForArticle', () => {
@@ -50,17 +58,21 @@ describe('ImageGenerationService', () => {
       expect(result).toEqual([]);
     });
 
-    it('should generate images in parallel via Promise.allSettled', async () => {
-      mockReplicateService.withRetry.mockImplementation(async (fn: () => Promise<string>) => {
+    it('should generate images sequentially with prompts', async () => {
+      // Mock LLM prompt generation
+      mockChatCompletionWithRetry.mockResolvedValue({
+        content: '{"prompts": ["prompt for image 1", "prompt for image 2"]}',
+        model: 'gpt-4o',
+        usage: { totalTokens: 100 },
+        finishReason: 'stop',
+      });
+
+      mockWithRetry.mockImplementation(async (fn: () => Promise<string>) => {
         return await fn();
       });
 
-      mockReplicateService.generateImage.mockResolvedValueOnce(
-        'https://replicate.delivery/image1.jpg'
-      );
-      mockReplicateService.generateImage.mockResolvedValueOnce(
-        'https://replicate.delivery/image2.jpg'
-      );
+      mockGenerateImage.mockResolvedValueOnce('https://replicate.delivery/image1.jpg');
+      mockGenerateImage.mockResolvedValueOnce('https://replicate.delivery/image2.jpg');
 
       const result = await imageGenerationService.generateImagesForArticle(
         mockMarkers,
@@ -76,13 +88,20 @@ describe('ImageGenerationService', () => {
     });
 
     it('should return failed status for individual image failures', async () => {
-      mockReplicateService.withRetry.mockRejectedValueOnce(
-        new Error('Generation failed')
-      );
+      // Mock LLM prompt generation
+      mockChatCompletionWithRetry.mockResolvedValue({
+        content: '{"prompts": ["prompt 1", "prompt 2"]}',
+        model: 'gpt-4o',
+        usage: { totalTokens: 100 },
+        finishReason: 'stop',
+      });
 
-      mockReplicateService.generateImage.mockResolvedValueOnce(
-        'https://replicate.delivery/image1.jpg'
-      );
+      mockWithRetry.mockImplementation(async (fn: () => Promise<string>) => {
+        return await fn();
+      });
+
+      mockGenerateImage.mockResolvedValueOnce('https://replicate.delivery/image1.jpg');
+      mockGenerateImage.mockRejectedValueOnce(new Error('Generation failed'));
 
       const result = await imageGenerationService.generateImagesForArticle(
         mockMarkers,
@@ -97,11 +116,19 @@ describe('ImageGenerationService', () => {
     });
 
     it('should include correct metadata in results', async () => {
-      mockReplicateService.withRetry.mockImplementation(async (fn: () => Promise<string>) => {
+      // Mock LLM prompt generation
+      mockChatCompletionWithRetry.mockResolvedValue({
+        content: '{"prompts": ["prompt for coffee image", "prompt for makers"]}',
+        model: 'gpt-4o',
+        usage: { totalTokens: 100 },
+        finishReason: 'stop',
+      });
+
+      mockWithRetry.mockImplementation(async (fn: () => Promise<string>) => {
         return await fn();
       });
 
-      mockReplicateService.generateImage.mockResolvedValue('https://replicate.delivery/image1.jpg');
+      mockGenerateImage.mockResolvedValue('https://replicate.delivery/image1.jpg');
 
       const result = await imageGenerationService.generateImagesForArticle(
         mockMarkers,
@@ -126,7 +153,7 @@ describe('ImageGenerationService', () => {
     ];
 
     it('should generate contextual prompts via LLM', async () => {
-      mockOpenRouterService.chatCompletionWithRetry.mockResolvedValue({
+      mockChatCompletionWithRetry.mockResolvedValue({
         content: '["prompt 1", "prompt 2"]',
         model: 'gpt-4o',
         usage: { totalTokens: 100 },
@@ -140,7 +167,7 @@ describe('ImageGenerationService', () => {
       );
 
       expect(result).toEqual(['prompt 1', 'prompt 2']);
-      expect(mockOpenRouterService.chatCompletionWithRetry).toHaveBeenCalledWith(
+      expect(mockChatCompletionWithRetry).toHaveBeenCalledWith(
         expect.objectContaining({
           model: expect.any(String),
           messages: expect.arrayContaining([
@@ -153,9 +180,7 @@ describe('ImageGenerationService', () => {
     });
 
     it('should fallback to basic prompts on LLM failure', async () => {
-      mockOpenRouterService.chatCompletionWithRetry.mockRejectedValue(
-        new Error('LLM error')
-      );
+      mockChatCompletionWithRetry.mockRejectedValue(new Error('LLM error'));
 
       const result = await (imageGenerationService as any).generateImagePrompts(
         mockMarkers,
@@ -165,7 +190,8 @@ describe('ImageGenerationService', () => {
 
       expect(result).toHaveLength(2);
       expect(result[0]).toContain('Professional blog article image');
-      expect(result[1]).toContain('Introduction to coffee culture');
+      expect(result[0]).toContain('Introduction to coffee culture');
+      expect(result[1]).toContain('Different brewing methods');
     });
   });
 });

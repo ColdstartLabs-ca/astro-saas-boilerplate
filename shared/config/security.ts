@@ -21,7 +21,12 @@ export const CSP_POLICY = {
     'https://js.stripe.com',
     'https://accounts.google.com',
   ],
-  'style-src': ["'self'", "'unsafe-inline'", 'https://accounts.google.com', 'https://fonts.googleapis.com'],
+  'style-src': [
+    "'self'",
+    "'unsafe-inline'",
+    'https://accounts.google.com',
+    'https://fonts.googleapis.com',
+  ],
   'img-src': ["'self'", 'blob:', 'data:', 'https:'],
   'font-src': ["'self'", 'https://fonts.gstatic.com'],
   'connect-src': [
@@ -101,6 +106,7 @@ export const SECURITY_HEADERS = {
  */
 export const PUBLIC_API_ROUTES = [
   '/api/health',
+  '/api/models', // Available AI models and image presets (public, read-only)
   '/api/webhooks/*', // All webhook routes are public (they use their own auth mechanisms)
   '/api/analytics/*', // Analytics events support both anonymous and authenticated tracking
   '/api/cron/*', // Cron routes use x-cron-secret header auth, not JWT

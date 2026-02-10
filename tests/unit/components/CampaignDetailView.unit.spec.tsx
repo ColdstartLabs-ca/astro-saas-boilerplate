@@ -6,30 +6,65 @@ import { CampaignDetailView } from '@client/components/dashboard/views/CampaignD
 import type { ICampaign, IKeyword } from '@shared/types/campaign.types';
 import type { IArticle } from '@shared/types/article.types';
 import { useCampaignDetail } from '@client/hooks/useCampaignDetail';
+import { useAvailableModels } from '@client/hooks/useAvailableModels';
 
 // Mock lucide-react icons
 vi.mock('lucide-react', () => ({
-  ArrowLeft: ({ className }: { className: string }) => <div data-testid="arrow-left" className={className} />,
+  ArrowLeft: ({ className }: { className: string }) => (
+    <div data-testid="arrow-left" className={className} />
+  ),
   Plus: ({ className }: { className: string }) => <div data-testid="plus" className={className} />,
-  Clock: ({ className }: { className: string }) => <div data-testid="clock" className={className} />,
-  Loader2: ({ className }: { className: string }) => <div data-testid="loader" className={className} />,
-  CheckCircle2: ({ className }: { className: string }) => <div data-testid="check-circle" className={className} />,
-  Search: ({ className }: { className: string }) => <div data-testid="search" className={className} />,
-  Filter: ({ className }: { className: string }) => <div data-testid="filter" className={className} />,
-  Layers: ({ className }: { className: string }) => <div data-testid="layers" className={className} />,
-  Settings: ({ className }: { className: string }) => <div data-testid="settings" className={className} />,
+  Clock: ({ className }: { className: string }) => (
+    <div data-testid="clock" className={className} />
+  ),
+  Loader2: ({ className }: { className: string }) => (
+    <div data-testid="loader" className={className} />
+  ),
+  CheckCircle2: ({ className }: { className: string }) => (
+    <div data-testid="check-circle" className={className} />
+  ),
+  Search: ({ className }: { className: string }) => (
+    <div data-testid="search" className={className} />
+  ),
+  Filter: ({ className }: { className: string }) => (
+    <div data-testid="filter" className={className} />
+  ),
+  Layers: ({ className }: { className: string }) => (
+    <div data-testid="layers" className={className} />
+  ),
+  Settings: ({ className }: { className: string }) => (
+    <div data-testid="settings" className={className} />
+  ),
   Play: ({ className }: { className: string }) => <div data-testid="play" className={className} />,
-  Pause: ({ className }: { className: string }) => <div data-testid="pause" className={className} />,
+  Pause: ({ className }: { className: string }) => (
+    <div data-testid="pause" className={className} />
+  ),
   Cpu: ({ className }: { className: string }) => <div data-testid="cpu" className={className} />,
   Edit2: ({ className }: { className: string }) => <div data-testid="edit" className={className} />,
-  ExternalLink: ({ className }: { className: string }) => <div data-testid="external-link" className={className} />,
-  AlertCircle: ({ className }: { className: string }) => <div data-testid="alert-circle" className={className} />,
-  Coins: ({ className }: { className: string }) => <div data-testid="coins" className={className} />,
-  TrendingUp: ({ className }: { className: string }) => <div data-testid="trending-up" className={className} />,
-  AlertTriangle: ({ className }: { className: string }) => <div data-testid="alert-triangle" className={className} />,
-  FileText: ({ className }: { className: string }) => <div data-testid="file-text" className={className} />,
-  Image: ({ className }: { className: string }) => <div data-testid="image" className={className} />,
-  Calendar: ({ className }: { className: string }) => <div data-testid="calendar" className={className} />,
+  ExternalLink: ({ className }: { className: string }) => (
+    <div data-testid="external-link" className={className} />
+  ),
+  AlertCircle: ({ className }: { className: string }) => (
+    <div data-testid="alert-circle" className={className} />
+  ),
+  Coins: ({ className }: { className: string }) => (
+    <div data-testid="coins" className={className} />
+  ),
+  TrendingUp: ({ className }: { className: string }) => (
+    <div data-testid="trending-up" className={className} />
+  ),
+  AlertTriangle: ({ className }: { className: string }) => (
+    <div data-testid="alert-triangle" className={className} />
+  ),
+  FileText: ({ className }: { className: string }) => (
+    <div data-testid="file-text" className={className} />
+  ),
+  Image: ({ className }: { className: string }) => (
+    <div data-testid="image" className={className} />
+  ),
+  Calendar: ({ className }: { className: string }) => (
+    <div data-testid="calendar" className={className} />
+  ),
   Hash: ({ className }: { className: string }) => <div data-testid="hash" className={className} />,
   X: ({ className }: { className: string }) => <div data-testid="x" className={className} />,
 }));
@@ -47,6 +82,39 @@ vi.mock('@client/components/articles/ArticleDetailModal', () => ({
 // Mock useCampaignDetail hook
 vi.mock('@client/hooks/useCampaignDetail', () => ({
   useCampaignDetail: vi.fn(),
+}));
+
+// Mock useAvailableModels hook
+vi.mock('@client/hooks/useAvailableModels', () => ({
+  useAvailableModels: vi.fn(() => ({
+    writerModels: [
+      { id: 'openai/gpt-4o', name: 'GPT-4o', provider: 'OpenAI' },
+      { id: 'anthropic/claude-sonnet-4-5', name: 'Claude Sonnet 4.5', provider: 'Anthropic' },
+      { id: 'openrouter/auto', name: 'Auto (Lowest Cost)', provider: 'OpenRouter' },
+    ],
+    imagePresets: [
+      {
+        key: 'blog-hero',
+        displayName: 'Blog Hero',
+        description: 'Hero images for blog posts',
+        bestFor: 'Long-form articles',
+        replicateModel: 'flux-schnell',
+        creditCost: 1,
+        aspectRatio: '16:9',
+      },
+      {
+        key: 'social-card',
+        displayName: 'Social Card',
+        description: 'Social media sharing cards',
+        bestFor: 'Social media posts',
+        replicateModel: 'flux-schnell',
+        creditCost: 1,
+        aspectRatio: '1:1',
+      },
+    ],
+    isLoading: false,
+    error: null,
+  })),
 }));
 
 // Mock translations
@@ -84,6 +152,38 @@ vi.mock('@client/hooks/useTranslations', () => ({
       'campaigns.keywords.placeholder': 'Enter one keyword per line...',
       'campaigns.keywords.cancel': 'Cancel',
       'campaigns.keywords.add': 'Add Keywords',
+      'campaigns.success.updated': 'Campaign updated successfully',
+      'campaigns.errors.updateFailed': 'Failed to update campaign',
+      'campaigns.newCampaign.name': 'Campaign Name',
+      'campaigns.newCampaign.namePlaceholder': 'Enter campaign name',
+      'campaigns.generation.started': 'Started generation for {count} keywords',
+      'projects.onboarding.step3.toneOfVoice': 'Tone of Voice',
+      'projects.onboarding.step3.targetWordCount': 'Target Word Count',
+      'projects.onboarding.step3.tones.professional': 'Professional',
+      'projects.onboarding.step3.tones.casual': 'Casual',
+      'projects.onboarding.step3.tones.witty': 'Witty',
+      'projects.onboarding.step3.tones.academic': 'Academic',
+      'projects.onboarding.buttons.nextStep': 'Save',
+      'campaigns.detail.metadata.title': 'Campaign Settings',
+      'campaigns.detail.metadata.tone': 'Tone',
+      'campaigns.detail.metadata.wordCount': 'Word Count',
+      'campaigns.detail.metadata.images': 'Images',
+      'campaigns.detail.metadata.enabled': 'Enabled',
+      'campaigns.detail.metadata.disabled': 'Disabled',
+      'campaigns.detail.metadata.created': 'Created',
+      'campaigns.detail.metadata.updated': 'Updated',
+      'campaigns.credits.title': 'Credit Usage',
+      'campaigns.credits.costPerArticle': 'Cost per article',
+      'campaigns.credits.used': 'Used',
+      'campaigns.credits.refunded': 'Refunded',
+      'campaigns.credits.estimatedRemaining': 'Est. Remaining',
+      'campaigns.credits.totalRequired': 'Total Required',
+      'campaigns.credits.successful': 'successful',
+      'campaigns.credits.failed': 'failed',
+      'campaigns.credits.status.remaining': 'remaining',
+      'campaigns.credits.status.successful': 'Successful',
+      'campaigns.credits.breakdown': 'Credit Breakdown',
+      'articles.status.all': 'All',
     };
 
     return (key: string, params?: Record<string, string | number>) => {
@@ -123,10 +223,11 @@ const mockCampaign: ICampaign = {
   project_id: 'project-1',
   name: 'Test Campaign',
   status: 'draft',
-  ai_model: 'auto',
+  ai_model: 'openrouter/auto',
   tone: 'professional',
   target_word_count: 1500,
   settings: {},
+  image_preset: 'blog-hero',
   created_at: '2024-01-01T00:00:00Z',
   updated_at: '2024-01-01T00:00:00Z',
 };
@@ -563,5 +664,223 @@ describe('CampaignDetailView', () => {
       expect(screen.queryByRole('heading', { name: 'Start Generation' })).not.toBeInTheDocument();
     });
     expect(mockStartCampaign).not.toHaveBeenCalled();
+  });
+
+  describe('Settings Modal', () => {
+    it('should populate settings modal with current model/preset', async () => {
+      const mockUpdateCampaign = vi.fn().mockResolvedValue(mockCampaign);
+      vi.mocked(useCampaignDetail).mockReturnValue({
+        campaign: mockCampaign,
+        keywords: mockKeywords,
+        articles: mockArticles,
+        articleStats: {
+          queued: 0,
+          generating: 0,
+          draft: 1,
+          published: 0,
+          total: 1,
+        },
+        isLoading: false,
+        error: null,
+        addKeywords: vi.fn(),
+        removeKeyword: vi.fn(),
+        startCampaign: vi.fn(),
+        updateCampaign: mockUpdateCampaign,
+        refetch: vi.fn(),
+      });
+
+      const renderResult = render(
+        <CampaignDetailView campaignId={mockCampaignId} onBackToList={mockOnBackToList} />,
+        {
+          wrapper: createWrapper(),
+        }
+      );
+
+      // Find the settings button - it's a button with a child that has data-testid="settings"
+      const settingsButtons = renderResult.container.querySelectorAll('button');
+      const settingsButton = Array.from(settingsButtons).find(
+        btn => btn.querySelector('[data-testid="settings"]') && btn.classList.contains('px-3')
+      );
+      expect(settingsButton).toBeDefined();
+      if (settingsButton) {
+        await userEvent.click(settingsButton);
+      }
+
+      await waitFor(() => {
+        const headings = screen.getAllByRole('heading', { name: 'Campaign Settings' });
+        expect(headings.length).toBe(2); // One in metadata section, one in modal
+      });
+
+      // Check that Writer Model label and dropdown exist
+      expect(screen.getByText('Writer Model')).toBeInTheDocument();
+      const selectElements = renderResult.container.querySelectorAll('select');
+      const writerModelSelect = Array.from(selectElements).find(select =>
+        select.parentElement?.textContent?.includes('Writer Model')
+      );
+      expect(writerModelSelect).toBeDefined();
+      if (writerModelSelect) {
+        expect(writerModelSelect.value).toBe('openrouter/auto');
+      }
+
+      // Check that Image Preset label and dropdown exist
+      expect(screen.getByText('Image Preset')).toBeInTheDocument();
+      const imagePresetSelect = Array.from(selectElements).find(select =>
+        select.parentElement?.textContent?.includes('Image Preset')
+      );
+      expect(imagePresetSelect).toBeDefined();
+      if (imagePresetSelect) {
+        expect(imagePresetSelect.value).toBe('blog-hero');
+      }
+    });
+
+    it('should update campaign model/preset on save', async () => {
+      const mockUpdateCampaign = vi.fn().mockResolvedValue({
+        ...mockCampaign,
+        ai_model: 'openai/gpt-4o',
+        image_preset: 'social-card',
+      });
+      vi.mocked(useCampaignDetail).mockReturnValue({
+        campaign: mockCampaign,
+        keywords: mockKeywords,
+        articles: mockArticles,
+        articleStats: {
+          queued: 0,
+          generating: 0,
+          draft: 1,
+          published: 0,
+          total: 1,
+        },
+        isLoading: false,
+        error: null,
+        addKeywords: vi.fn(),
+        removeKeyword: vi.fn(),
+        startCampaign: vi.fn(),
+        updateCampaign: mockUpdateCampaign,
+        refetch: vi.fn(),
+      });
+
+      const renderResult = render(
+        <CampaignDetailView campaignId={mockCampaignId} onBackToList={mockOnBackToList} />,
+        {
+          wrapper: createWrapper(),
+        }
+      );
+
+      // Find and click the settings button
+      const settingsButtons = renderResult.container.querySelectorAll('button');
+      const settingsButton = Array.from(settingsButtons).find(
+        btn => btn.querySelector('[data-testid="settings"]') && btn.classList.contains('px-3')
+      );
+      if (settingsButton) {
+        await userEvent.click(settingsButton);
+      }
+
+      await waitFor(() => {
+        const headings = screen.getAllByRole('heading', { name: 'Campaign Settings' });
+        expect(headings.length).toBe(2); // One in metadata section, one in modal
+      });
+
+      // Select a different writer model
+      const selectElements = renderResult.container.querySelectorAll('select');
+      const writerModelSelect = Array.from(selectElements).find(select =>
+        select.parentElement?.textContent?.includes('Writer Model')
+      );
+      if (writerModelSelect) {
+        await userEvent.selectOptions(writerModelSelect, 'openai/gpt-4o');
+      }
+
+      // Select a different image preset
+      const imagePresetSelect = Array.from(selectElements).find(select =>
+        select.parentElement?.textContent?.includes('Image Preset')
+      );
+      if (imagePresetSelect) {
+        await userEvent.selectOptions(imagePresetSelect, 'social-card');
+      }
+
+      // Click save
+      const saveButton = screen.getByRole('button', { name: 'Save' });
+      await userEvent.click(saveButton);
+
+      await waitFor(() => {
+        expect(mockUpdateCampaign).toHaveBeenCalledWith({
+          name: 'Test Campaign',
+          tone: 'professional',
+          targetWordCount: 1500,
+          model: 'openai/gpt-4o',
+          imagePreset: 'social-card',
+        });
+      });
+    });
+
+    it('should handle empty image preset (no images)', async () => {
+      const noImageCampaign: ICampaign = {
+        ...mockCampaign,
+        image_preset: null,
+      };
+      const mockUpdateCampaign = vi.fn().mockResolvedValue(noImageCampaign);
+      vi.mocked(useCampaignDetail).mockReturnValue({
+        campaign: noImageCampaign,
+        keywords: mockKeywords,
+        articles: mockArticles,
+        articleStats: {
+          queued: 0,
+          generating: 0,
+          draft: 1,
+          published: 0,
+          total: 1,
+        },
+        isLoading: false,
+        error: null,
+        addKeywords: vi.fn(),
+        removeKeyword: vi.fn(),
+        startCampaign: vi.fn(),
+        updateCampaign: mockUpdateCampaign,
+        refetch: vi.fn(),
+      });
+
+      const renderResult = render(
+        <CampaignDetailView campaignId={mockCampaignId} onBackToList={mockOnBackToList} />,
+        {
+          wrapper: createWrapper(),
+        }
+      );
+
+      // Find and click the settings button
+      const settingsButtons = renderResult.container.querySelectorAll('button');
+      const settingsButton = Array.from(settingsButtons).find(
+        btn => btn.querySelector('[data-testid="settings"]') && btn.classList.contains('px-3')
+      );
+      if (settingsButton) {
+        await userEvent.click(settingsButton);
+      }
+
+      await waitFor(() => {
+        const headings = screen.getAllByRole('heading', { name: 'Campaign Settings' });
+        expect(headings.length).toBe(2); // One in metadata section, one in modal
+      });
+
+      // Select "No images" option
+      const selectElements = renderResult.container.querySelectorAll('select');
+      const imagePresetSelect = Array.from(selectElements).find(select =>
+        select.parentElement?.textContent?.includes('Image Preset')
+      );
+      if (imagePresetSelect) {
+        await userEvent.selectOptions(imagePresetSelect, '');
+      }
+
+      // Click save
+      const saveButton = screen.getByRole('button', { name: 'Save' });
+      await userEvent.click(saveButton);
+
+      await waitFor(() => {
+        expect(mockUpdateCampaign).toHaveBeenCalledWith({
+          name: 'Test Campaign',
+          tone: 'professional',
+          targetWordCount: 1500,
+          model: 'openrouter/auto',
+          imagePreset: undefined,
+        });
+      });
+    });
   });
 });

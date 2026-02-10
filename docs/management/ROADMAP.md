@@ -2,7 +2,7 @@
 
 > AI SEO Content Automation Platform - "Outrank's Automation + Surfer's Quality. Finally."
 
-**Last Updated:** 2026-02-06
+**Last Updated:** 2026-02-09
 **Launch Target:** Early March 2026
 
 ---
@@ -169,17 +169,18 @@ Annual discount: 20% off (~2 months free).
 
 ---
 
-### Milestone 5: Article Management Dashboard
+### Milestone 5: Article Management Dashboard ✅
 
 > **Why fifth:** Users need to review, edit, and approve articles before publishing.
 > **Depends on:** Milestone 4 (needs campaigns and articles to display)
+> **Completed:** 2026-02-09
 
-- [ ] Article list view: filter by campaign, status, date
-- [ ] Article detail view: full content with inline editing (rich text or Markdown)
-- [ ] Basic SEO score display (keyword density, heading structure, word count, meta description)
-- [ ] AI detection score display
-- [ ] Approve/reject workflow before publishing
-- [ ] Credit usage tracking per campaign
+- [x] Article list view: filter by campaign, status, date, search functionality
+- [x] Article detail view: full content with inline editing (Markdown with live preview)
+- [x] Basic SEO score display (keyword density, heading structure, word count, meta description)
+- [x] AI detection score display
+- [x] Approve/reject workflow before publishing (status: approved, rejected, reviewed)
+- [x] Credit usage tracking per campaign (already implemented in Milestone 4 - displayed in CampaignDetailView)
 
 ---
 
@@ -410,6 +411,11 @@ M1 Foundation
 
 | Date       | Change                                                                                                                                                                                                                                                                                                                                                                                                                            |
 | ---------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 2026-02-09 | **Milestone 5 Article Management Dashboard completed!** ArticleList component refactor with filtering, search, inline editing. ArticleDetailModal with full Markdown content editing + live preview. AIDetectionScore component added. Approval workflow migration (approved/rejected/reviewed statuses). API endpoints for article updates (PUT/PATCH). Credit tracking already existed from Milestone 4.                        |
+| 2026-02-09 | **Image generation improvements!** Enhanced image generation service with better prompts. CampaignDetailView updated for image handling with 200+ lines of new functionality.                                                                                                                                                                                                                                                     |
+| 2026-02-09 | **Subscription fixes!** Two critical payment bug fixes ported from myimageupscaler.com: (1) Release existing Stripe subscription schedule before applying upgrade to prevent downgrade override, (2) Remove direct credit reset from schedule completion handler to prevent double-granting credits. Tests added.                                                                                                                 |
+| 2026-02-09 | **UI enhancements across dashboard!** OverviewView reorganized (416 lines). New DashboardCard component. CampaignDetailView improvements. BrandLink component. i18n updates for dashboard.                                                                                                                                                                                                                                        |
+| 2026-02-09 | **SEOScoreDisplay component added!** Shows SEO metrics including keyword density, heading structure, word count. Admin controller updates.                                                                                                                                                                                                                                                                                        |
 | 2026-02-06 | **Milestone 3 Humanizer completed!** Integrated comprehensive AI pattern avoidance into article generation prompt (24+ patterns from Wikipedia's "Signs of AI writing"). Forbidden words/phrases, sentence variation, personality injection. Prompt-based approach (no post-processing needed).                                                                                                                                   |
 | 2026-02-06 | **Milestone 4 Campaign Management completed!** Full campaign CRUD with keywords, bulk generation (sequential), CampaignService, API endpoints, React Query hooks. UI: CampaignsView (list), CampaignDetailView (detail with stats/table), NewCampaignModal (2-step + CSV + tabs). All gaps fixed: progress tracking, sequential gen, keyword status updates, campaign completion, credit refunds. PRD moved to `docs/PRDs/done/`. |
 | 2026-02-05 | **Milestone 2 AI Content Engine completed!** OpenRouter integration (GPT-4o, Claude, Gemini), 2-step article generation pipeline (outline→article), Quick Generate UI, credit deduction/refund, async via `waitUntil()`, 41 new tests. PRD moved to `docs/PRDs/done/`.                                                                                                                                                            |

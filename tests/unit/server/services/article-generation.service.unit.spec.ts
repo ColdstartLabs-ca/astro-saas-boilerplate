@@ -8,6 +8,11 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { ArticleGenerationService } from '@server/services/article-generation.service';
 import type { IGenerateArticleInput, IImageMarker } from '@shared/types/article.types';
 
+// Hoisted mock function shared across tests
+const { mockChatCompletionWithRetry } = vi.hoisted(() => ({
+  mockChatCompletionWithRetry: vi.fn(),
+}));
+
 // Mock dependencies
 vi.mock('@server/supabase/supabaseAdmin', () => {
   const mockFrom = vi.fn();
@@ -46,9 +51,9 @@ vi.mock('@server/supabase/supabaseAdmin', () => {
 });
 
 vi.mock('@server/services/openrouter.service', () => ({
-  OpenRouterService: vi.fn().mockImplementation(() => ({
-    chatCompletionWithRetry: vi.fn(),
-  })),
+  OpenRouterService: class {
+    chatCompletionWithRetry = mockChatCompletionWithRetry;
+  },
 }));
 
 vi.mock('@server/services/image-generation.service', () => ({
@@ -185,8 +190,12 @@ Some content follows.`;
 
       const replaced = (service as any).replaceImageMarkers(content, results);
 
-      expect(replaced).toContain('![A beautiful coffee cup](https://example.com/image1.jpg)');
-      expect(replaced).toContain('![Coffee beans scattered](https://example.com/image2.jpg)');
+      expect(replaced).toContain(
+        '![A beautiful coffee cup on a wooden table](https://example.com/image1.jpg)'
+      );
+      expect(replaced).toContain(
+        '![Coffee beans scattered on a dark surface](https://example.com/image2.jpg)'
+      );
       expect(replaced).not.toContain('[IMAGE:1]');
       expect(replaced).not.toContain('[IMAGE:2]');
     });
@@ -310,7 +319,14 @@ Some content follows.`;
     });
 
     it('should return the preset key for valid presets', () => {
-      const validPresets = ['blog-hero', 'social-card', 'product-shot', 'premium-hero', 'photorealistic', 'illustration'];
+      const validPresets = [
+        'blog-hero',
+        'social-card',
+        'product-shot',
+        'premium-hero',
+        'photorealistic',
+        'illustration',
+      ];
 
       validPresets.forEach(preset => {
         const result = (service as any).parseImagePreset(preset);
@@ -339,7 +355,7 @@ Some content follows.`;
       const count = (service as any).countWords(content);
 
       expect(count).toBeGreaterThan(0);
-      expect(count).toBe(14); // Introduction, This, is, an, article, about, coffee, Benefits, Coffee, has, many, benefits
+      expect(count).toBe(12); // Introduction, This, is, an, article, about, coffee, Benefits, Coffee, has, many, benefits
     });
 
     it('should strip markdown syntax before counting', () => {
@@ -375,29 +391,27 @@ Some content follows.`;
     it('should call image generation service when preset is provided', async () => {
       const { imageGenerationService } = await import('@server/services/image-generation.service');
       const { supabaseAdmin } = await import('@server/supabase/supabaseAdmin');
-      const { OpenRouterService } = await import('@server/services/openrouter.service');
 
-      // Mock OpenRouter responses
-      const mockOpenRouter = {
-        chatCompletionWithRetry: vi.fn()
-          .mockResolvedValueOnce({
-            content: JSON.stringify({
-              title: 'Test Article',
-              metaDescription: 'A test article',
-              slug: 'test-article',
-              sections: [],
-            }),
-            usage: { totalTokens: 100 },
-          })
-          .mockResolvedValueOnce({
-            content: 'Test content with [IMAGE:1] marker',
-            usage: { totalTokens: 200 },
+      // Mock OpenRouter responses via shared mock
+      mockChatCompletionWithRetry
+        .mockResolvedValueOnce({
+          content: JSON.stringify({
+            title: 'Test Article',
+            metaDescription: 'A test article',
+            slug: 'test-article',
+            sections: [],
           }),
-      };
-      (OpenRouterService as unknown as vi.Mock).mockImplementation(() => mockOpenRouter);
+          usage: { totalTokens: 100 },
+        })
+        .mockResolvedValueOnce({
+          content: 'Test content with [IMAGE:1] marker',
+          usage: { totalTokens: 200 },
+        });
 
       // Mock image generation
-      (imageGenerationService.generateImagesForArticle as ReturnType<typeof vi.fn>).mockResolvedValue([
+      (
+        imageGenerationService.generateImagesForArticle as ReturnType<typeof vi.fn>
+      ).mockResolvedValue([
         {
           position: 1,
           status: 'completed',
@@ -407,17 +421,14 @@ Some content follows.`;
       ]);
 
       // Mock Supabase chain
-      let callCount = 0;
-      (supabaseAdmin.from as unknown as ReturnType<typeof vi.fn>).mockImplementation(() => {
-        callCount++;
-        return {
-          update: vi.fn().mockReturnValue({
-            eq: vi.fn().mockReturnValue({
-              eq: vi.fn().mockResolvedValue({ error: null }),
-            }),
+      (supabaseAdmin.from as unknown as ReturnType<typeof vi.fn>).mockImplementation(() => ({
+        update: vi.fn().mockReturnValue({
+          eq: vi.fn().mockReturnValue({
+            eq: vi.fn().mockResolvedValue({ error: null }),
           }),
-        };
-      });
+        }),
+        insert: vi.fn().mockResolvedValue({ error: null }),
+      }));
 
       const input: IGenerateArticleInput = {
         keyword: 'coffee',
@@ -442,26 +453,6 @@ Some content follows.`;
 
     it('should not call image generation service when preset is not provided', async () => {
       const { imageGenerationService } = await import('@server/services/image-generation.service');
-      const { OpenRouterService } = await import('@server/services/openrouter.service');
-
-      // Mock OpenRouter responses
-      const mockOpenRouter = {
-        chatCompletionWithRetry: vi.fn()
-          .mockResolvedValueOnce({
-            content: JSON.stringify({
-              title: 'Test Article',
-              metaDescription: 'A test article',
-              slug: 'test-article',
-              sections: [],
-            }),
-            usage: { totalTokens: 100 },
-          })
-          .mockResolvedValueOnce({
-            content: 'Test content without markers',
-            usage: { totalTokens: 200 },
-          }),
-      };
-      (OpenRouterService as unknown as vi.Mock).mockImplementation(() => mockOpenRouter);
 
       const input: IGenerateArticleInput = {
         keyword: 'coffee',

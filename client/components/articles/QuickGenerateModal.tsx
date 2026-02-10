@@ -21,6 +21,7 @@ import { X, Loader2 } from 'lucide-react';
 import { useProjects } from '@client/hooks/useProjects';
 import { useCampaigns } from '@client/hooks/useCampaigns';
 import { useArticleGeneration } from '@client/hooks/useArticleGeneration';
+import { useAvailableModels } from '@client/hooks/useAvailableModels';
 import { DashboardButton } from '@client/components/dashboard/ui/DashboardButton';
 import { getImagePresetCreditCost } from '@shared/config/image-models.config';
 import { useTranslations } from '@client/hooks/useTranslations';
@@ -81,6 +82,7 @@ export function QuickGenerateModal({
   const _t = useTranslations('dashboard');
   const { activeProject, isLoading: projectsLoading } = useProjects();
   const { campaigns, isLoading: campaignsLoading } = useCampaigns(activeProject?.id ?? null);
+  const { imagePresets, isLoading: _modelsLoading } = useAvailableModels();
   const [articleId, setArticleId] = useState<string | null>(null);
   const [showImageSettings, setShowImageSettings] = useState(true);
   const { article, isGenerating, error, generate, reset } = useArticleGeneration(
@@ -112,7 +114,7 @@ export function QuickGenerateModal({
   const _watchedCampaignId = watch('campaignId');
 
   // Close modal on successful generation
-   
+
   useEffect(() => {
     if (article && article.status === 'draft') {
       if (onGenerateComplete) {
@@ -169,9 +171,7 @@ export function QuickGenerateModal({
     return (
       <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm animate-fadeIn p-4">
         <div className="bg-surface border border-border rounded-xl w-full max-w-lg shadow-2xl p-8 text-center">
-          <p className="text-text-secondary mb-4">
-            {_t('quickGenerate.noProject.title')}
-          </p>
+          <p className="text-text-secondary mb-4">{_t('quickGenerate.noProject.title')}</p>
           <DashboardButton variant="primary" onClick={handleClose}>
             {_t('quickGenerate.noProject.close')}
           </DashboardButton>
@@ -191,7 +191,9 @@ export function QuickGenerateModal({
           <h3 className="text-lg font-semibold text-text-primary mb-2">
             {_t('quickGenerate.generatingState.title')}
           </h3>
-          <p className="text-text-secondary text-sm">{_t('quickGenerate.generatingState.subtitle')}</p>
+          <p className="text-text-secondary text-sm">
+            {_t('quickGenerate.generatingState.subtitle')}
+          </p>
           {watchedImagePreset && (
             <p className="text-text-secondary text-xs mt-2">
               {_t('quickGenerate.generatingState.includingImages')}
@@ -231,11 +233,15 @@ export function QuickGenerateModal({
           <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-error/10 mb-4">
             <X className="w-6 h-6 text-error" />
           </div>
-          <h3 className="text-lg font-semibold text-text-primary mb-2">{_t('quickGenerate.failed.title')}</h3>
+          <h3 className="text-lg font-semibold text-text-primary mb-2">
+            {_t('quickGenerate.failed.title')}
+          </h3>
           <p className="text-text-secondary text-sm mb-4">
             {article?.generation_error || error || 'Something went wrong'}
           </p>
-          <p className="text-text-secondary text-xs mb-6">{_t('quickGenerate.failed.creditsRefunded')}</p>
+          <p className="text-text-secondary text-xs mb-6">
+            {_t('quickGenerate.failed.creditsRefunded')}
+          </p>
           <DashboardButton variant="primary" onClick={handleClose}>
             {_t('quickGenerate.failed.tryAgain')}
           </DashboardButton>
@@ -250,7 +256,9 @@ export function QuickGenerateModal({
     return (
       <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm animate-fadeIn p-4">
         <div className="bg-surface border border-border rounded-xl w-full max-w-md shadow-2xl p-8 text-center">
-          <h3 className="text-lg font-semibold text-text-primary mb-2">{_t('quickGenerate.noCampaigns')}</h3>
+          <h3 className="text-lg font-semibold text-text-primary mb-2">
+            {_t('quickGenerate.noCampaigns')}
+          </h3>
           <p className="text-text-secondary text-sm mb-6">
             {_t('quickGenerate.noCampaignsDescription')}
           </p>
@@ -293,7 +301,7 @@ export function QuickGenerateModal({
                 }`}
               >
                 <option value="">{_t('quickGenerate.selectCampaign')}</option>
-                {campaigns.map((campaign) => (
+                {campaigns.map(campaign => (
                   <option key={campaign.id} value={campaign.id}>
                     {campaign.name}
                   </option>
@@ -302,9 +310,7 @@ export function QuickGenerateModal({
               {errors.campaignId && (
                 <p className="text-red-400 text-xs mt-1">{errors.campaignId.message}</p>
               )}
-              <p className="text-xs text-muted mt-1">
-                {_t('quickGenerate.campaignHint')}
-              </p>
+              <p className="text-xs text-muted mt-1">{_t('quickGenerate.campaignHint')}</p>
             </div>
 
             {/* Keyword Input */}
@@ -331,7 +337,7 @@ export function QuickGenerateModal({
                 {_t('quickGenerate.tone')}
               </label>
               <div className="grid grid-cols-2 gap-2">
-                {TONE_OPTIONS.map((tone) => (
+                {TONE_OPTIONS.map(tone => (
                   <label
                     key={tone.value}
                     className={`flex items-center justify-center p-2.5 bg-main border rounded-lg cursor-pointer hover:border-border hover:bg-surface transition-colors ${
@@ -359,7 +365,7 @@ export function QuickGenerateModal({
                 {...register('targetWordCount', { valueAsNumber: true })}
                 className="w-full bg-main border border-border rounded-lg px-4 py-2.5 text-white focus:ring-1 focus:ring-accent outline-none"
               >
-                {WORD_COUNT_OPTIONS.map((opt) => (
+                {WORD_COUNT_OPTIONS.map(opt => (
                   <option key={opt.value} value={opt.value}>
                     {opt.label}
                   </option>
@@ -397,7 +403,8 @@ export function QuickGenerateModal({
                 <div className="mt-3">
                   <ImagePresetSelector
                     selectedPreset={watchedImagePreset || null}
-                    onSelect={(preset) => setValue('imagePreset', preset || undefined)}
+                    onSelect={preset => setValue('imagePreset', preset || undefined)}
+                    availablePresets={imagePresets}
                   />
                 </div>
               )}

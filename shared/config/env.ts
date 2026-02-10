@@ -210,6 +210,10 @@ const serverEnvSchema = z.object({
   OPENROUTER_TEXT_MODEL: z.string().default('openai/gpt-4o'),
   // Replicate for image generation
   REPLICATE_API_KEY: z.string().default(''),
+  // Available AI models (comma-separated OpenRouter model IDs, empty = all)
+  AVAILABLE_WRITER_MODELS: z.string().default(''),
+  // Available image presets (comma-separated preset keys, empty = all)
+  AVAILABLE_IMAGE_PRESETS: z.string().default(''),
 });
 
 export type IServerEnv = z.infer<typeof serverEnvSchema>;
@@ -269,6 +273,10 @@ function loadServerEnv(): IServerEnv {
     OPENROUTER_TEXT_MODEL: import.meta.env.OPENROUTER_TEXT_MODEL || 'openai/gpt-4o',
     // Replicate for image generation
     REPLICATE_API_KEY: import.meta.env.REPLICATE_API_KEY || '',
+    // Available AI models (comma-separated, empty = all)
+    AVAILABLE_WRITER_MODELS: import.meta.env.AVAILABLE_WRITER_MODELS || '',
+    // Available image presets (comma-separated, empty = all)
+    AVAILABLE_IMAGE_PRESETS: import.meta.env.AVAILABLE_IMAGE_PRESETS || '',
   };
 
   return serverEnvSchema.parse(env);

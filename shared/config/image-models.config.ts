@@ -194,3 +194,29 @@ export function getPresetDescription(key: ImagePresetKey): string {
       return 'professional imagery suitable for blog content';
   }
 }
+
+/**
+ * Parse comma-separated env string into available image presets.
+ * Empty string = all presets available.
+ */
+export function getAvailableImagePresets(envValue: string): IImagePreset[] {
+  const enabledKeys = envValue
+    .split(',')
+    .map(s => s.trim())
+    .filter(Boolean);
+
+  const keys =
+    enabledKeys.length > 0
+      ? IMAGE_PRESET_KEYS.filter(k => enabledKeys.includes(k))
+      : IMAGE_PRESET_KEYS;
+
+  return keys.map(k => IMAGE_PRESETS[k]);
+}
+
+/**
+ * Check if a specific preset key is available based on env value.
+ */
+export function isAvailableImagePreset(presetKey: string, envValue: string): boolean {
+  const available = getAvailableImagePresets(envValue);
+  return available.some(p => p.key === presetKey);
+}

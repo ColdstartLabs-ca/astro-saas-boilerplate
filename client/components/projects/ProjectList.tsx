@@ -43,36 +43,46 @@ const STATUS_BADGES = {
 export function ProjectList({ onProjectUpdated }: IProjectListProps): JSX.Element {
   const t = useMemo(() => getTranslations('dashboard'), []);
   const logger = useLogger('ProjectList');
-  const { projects, activeProjectId, setActiveProject, deleteProject, updateProject } = useProjects();
+  const { projects, activeProjectId, setActiveProject, deleteProject, updateProject } =
+    useProjects();
 
   const [showOnboarding, setShowOnboarding] = useState(false);
-  const [projectToDelete, setProjectToDelete] = useState<string | null>(null);
+  const [projectToDelete, setProjectToDelete] = useState<IProject | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const [projectToEdit, setProjectToEdit] = useState<IProject | null>(null);
   const [isEditing, setIsEditing] = useState(false);
+  const [confirmText, setConfirmText] = useState('');
 
-  const handleDeleteClick = (projectId: string) => {
-    setProjectToDelete(projectId);
+  const handleDeleteClick = (project: IProject) => {
+    setProjectToDelete(project);
+    setConfirmText('');
+  };
+
+  const handleCloseDelete = () => {
+    setProjectToDelete(null);
+    setConfirmText('');
   };
 
   const handleConfirmDelete = async () => {
-    if (!projectToDelete) return;
+    if (!projectToDelete || confirmText !== projectToDelete.name) return;
 
     setIsDeleting(true);
     try {
-      await deleteProject(projectToDelete);
-      logger.info('Project deleted', { projectId: projectToDelete });
-      setProjectToDelete(null);
+      await deleteProject(projectToDelete.id);
+      logger.info('Project deleted', { projectId: projectToDelete.id });
+      handleCloseDelete();
       onProjectUpdated?.();
     } catch (error) {
       logger.error('Failed to delete project', {
         error: error instanceof Error ? error.message : 'Unknown error',
-        projectId: projectToDelete,
+        projectId: projectToDelete.id,
       });
     } finally {
       setIsDeleting(false);
     }
   };
+
+  const canConfirmDelete = projectToDelete && confirmText === projectToDelete.name && !isDeleting;
 
   const handleEditClick = (project: IProject) => {
     setProjectToEdit(project);
@@ -200,12 +210,16 @@ export function ProjectList({ onProjectUpdated }: IProjectListProps): JSX.Elemen
                   {project.industry && (
                     <div className="flex items-center justify-between text-sm">
                       <span className="text-secondary">Industry</span>
-                      <span className="text-white font-medium truncate ml-2">{project.industry}</span>
+                      <span className="text-white font-medium truncate ml-2">
+                        {project.industry}
+                      </span>
                     </div>
                   )}
                   <div className="flex items-center justify-between text-sm">
                     <span className="text-secondary">Platform</span>
-                    <span className="text-white font-medium truncate ml-2">{getCmsLabel(project.cms_type)}</span>
+                    <span className="text-white font-medium truncate ml-2">
+                      {getCmsLabel(project.cms_type)}
+                    </span>
                   </div>
                 </div>
 
@@ -229,7 +243,7 @@ export function ProjectList({ onProjectUpdated }: IProjectListProps): JSX.Elemen
                     <Edit2 className="w-4 h-4" />
                   </button>
                   <button
-                    onClick={() => handleDeleteClick(project.id)}
+                    onClick={() => handleDeleteClick(project)}
                     className="p-2 text-secondary hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors"
                   >
                     <Trash2 className="w-4 h-4" />
@@ -251,10 +265,29 @@ export function ProjectList({ onProjectUpdated }: IProjectListProps): JSX.Elemen
             <h3 className="text-lg font-semibold text-white mb-2">
               {t('projects.list.deleteConfirmTitle')}
             </h3>
-            <p className="text-secondary mb-6">{t('projects.list.deleteConfirm')}</p>
+            <p className="text-secondary mb-2">{t('projects.list.deleteConfirm')}</p>
+            <ul className="text-secondary text-sm mb-4 space-y-1 pl-4">
+              <li>{t('projects.list.deleteConfirmCampaigns')}</li>
+              <li>{t('projects.list.deleteConfirmArticles')}</li>
+              <li>{t('projects.list.deleteConfirmKeywords')}</li>
+            </ul>
+            <p className="text-red-400 text-sm mb-4">{t('projects.list.deleteConfirmUndone')}</p>
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-white mb-2">
+                {t('projects.list.deleteConfirmType', { name: projectToDelete.name })}
+              </label>
+              <input
+                type="text"
+                value={confirmText}
+                onChange={e => setConfirmText(e.target.value)}
+                placeholder={t('projects.list.typePlaceholder')}
+                className="w-full px-3 py-2 bg-elevated border border-border rounded-lg text-white placeholder:text-secondary focus:outline-none focus:ring-2 focus:ring-accent/50"
+                autoFocus
+              />
+            </div>
             <div className="flex gap-3">
               <button
-                onClick={() => setProjectToDelete(null)}
+                onClick={handleCloseDelete}
                 disabled={isDeleting}
                 className="flex-1 py-2.5 text-sm font-medium text-secondary hover:text-white bg-elevated hover:bg-surface-light rounded-lg transition-colors"
               >
@@ -262,8 +295,8 @@ export function ProjectList({ onProjectUpdated }: IProjectListProps): JSX.Elemen
               </button>
               <button
                 onClick={handleConfirmDelete}
-                disabled={isDeleting}
-                className="flex-1 py-2.5 text-sm font-medium text-white bg-red-500 hover:bg-red-600 rounded-lg transition-colors disabled:opacity-50"
+                disabled={!canConfirmDelete}
+                className="flex-1 py-2.5 text-sm font-medium text-white bg-red-500 hover:bg-red-600 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {isDeleting ? 'Deleting...' : t('projects.list.confirm')}
               </button>
