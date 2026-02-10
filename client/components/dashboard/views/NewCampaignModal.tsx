@@ -6,11 +6,12 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { X, ArrowRight, Loader2, Zap, Upload } from 'lucide-react';
 import { DashboardButton } from '../ui/DashboardButton';
+import { ModelSelect } from '@client/components/ui/ModelSelect';
+import { writerModelToOption, imagePresetToOption } from '@client/utils/modelAdapters';
 import { getImagePresetCreditCost } from '@shared/config/image-models.config';
 import { useUserStore } from '@client/store/userStore';
 import { useTranslations } from '@client/hooks/useTranslations';
 import { useAvailableModels } from '@client/hooks/useAvailableModels';
-import { ImagePresetSelector } from '@client/components/articles/ImagePresetSelector';
 import type { CampaignTone } from '@shared/types/campaign.types';
 
 interface INewCampaignModalProps {
@@ -99,8 +100,10 @@ export function NewCampaignModal({
     .filter(k => k.length > 0);
 
   const keywordCount = parsedKeywords.length;
+  const watchedModel = watch('model');
+  const writerCreditCost = writerModels.find(m => m.id === watchedModel)?.creditCost ?? 0;
   const imageCreditCost = getImagePresetCreditCost(watchedImagePreset || null);
-  const creditsPerKeyword = 1 + imageCreditCost;
+  const creditsPerKeyword = 1 + writerCreditCost + imageCreditCost;
   const creditCost = keywordCount * creditsPerKeyword;
 
   // Check if user has enough credits (from subscription + purchased)
@@ -301,16 +304,12 @@ export function NewCampaignModal({
                     <span>Loading models...</span>
                   </div>
                 ) : (
-                  <select
-                    {...register('model')}
-                    className="w-full bg-main border border-border rounded-lg px-3 py-2.5 text-white focus:ring-1 focus:ring-accent outline-none"
-                  >
-                    {writerModels.map(model => (
-                      <option key={model.id} value={model.id}>
-                        {model.name} ({model.provider})
-                      </option>
-                    ))}
-                  </select>
+                  <ModelSelect
+                    options={writerModels.map(writerModelToOption)}
+                    selectedId={watch('model') || null}
+                    onSelect={id => setValue('model', id || 'openrouter/auto')}
+                    placeholder="Select writer model..."
+                  />
                 )}
               </div>
 
@@ -361,22 +360,25 @@ export function NewCampaignModal({
                 <label className="block text-sm font-medium text-secondary mb-2">
                   Generate Images
                 </label>
-                <div className="bg-main/50 border border-border rounded-lg p-4">
+                <div>
                   {modelsLoading ? (
-                    <div className="flex items-center gap-2 py-4 text-muted">
+                    <div className="w-full bg-main border border-border rounded-lg px-3 py-2.5 text-muted flex items-center gap-2">
                       <Loader2 className="w-4 h-4 animate-spin" />
                       <span>Loading image presets...</span>
                     </div>
                   ) : (
-                    <ImagePresetSelector
-                      selectedPreset={watchedImagePreset || null}
+                    <ModelSelect
+                      options={imagePresets.map(imagePresetToOption)}
+                      selectedId={watchedImagePreset || null}
                       onSelect={preset => setValue('imagePreset', preset || '')}
-                      availablePresets={imagePresets}
+                      allowNone
+                      noneLabel="No images"
+                      noneDescription="Text-only article"
+                      placeholder="Select image preset..."
                     />
                   )}
-                  <p className="text-xs text-muted mt-3">
-                    Images will be generated for each article based on the selected preset. Standard
-                    presets are included, premium presets cost 1 additional credit per article.
+                  <p className="text-xs text-muted mt-2">
+                    Standard presets are included, premium presets cost 1 additional credit per article.
                   </p>
                 </div>
               </div>

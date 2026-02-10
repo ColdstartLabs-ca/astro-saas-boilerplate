@@ -45,9 +45,18 @@ describe('ai-models.config', () => {
       });
     });
 
-    it('should have all models at tier "all"', () => {
+    it('should have valid tier for each model', () => {
       Object.values(AI_MODELS).forEach(model => {
-        expect(model.tier).toBe('all');
+        expect(['budget', 'balanced', 'ultra']).toContain(model.tier);
+      });
+    });
+
+    it('should have creditCost and description for each model', () => {
+      Object.values(AI_MODELS).forEach(model => {
+        expect(model).toHaveProperty('creditCost');
+        expect(model).toHaveProperty('description');
+        expect(typeof model.creditCost).toBe('number');
+        expect(typeof model.description).toBe('string');
       });
     });
   });
@@ -96,7 +105,7 @@ describe('ai-models.config', () => {
       const model = getModel('openai/gpt-4o');
       expect(model.name).toBe('GPT-4o');
       expect(model.provider).toBe('OpenAI');
-      expect(model.tier).toBe('all');
+      expect(model.tier).toBe('balanced');
     });
 
     it('should return model metadata for all valid keys', () => {
@@ -111,19 +120,24 @@ describe('ai-models.config', () => {
   });
 
   describe('getModelsByTier', () => {
-    it('should return all models for tier "all"', () => {
-      const models = getModelsByTier('all');
-      expect(models).toHaveLength(5);
+    it('should return budget tier models', () => {
+      const models = getModelsByTier('budget');
+      expect(models).toHaveLength(2);
+      expect(models).toContain('openai/gpt-4o-mini');
+      expect(models).toContain('google/gemini-2.0-flash');
     });
 
-    it('should return all models for any tier (since all are "all")', () => {
-      const models = getModelsByTier('premium');
-      expect(models).toHaveLength(5);
+    it('should return balanced tier models', () => {
+      const models = getModelsByTier('balanced');
+      expect(models).toHaveLength(2);
+      expect(models).toContain('openai/gpt-4o');
+      expect(models).toContain('openrouter/auto');
     });
 
-    it('should return all models for invalid tier (all have tier "all")', () => {
-      const models = getModelsByTier('invalid');
-      expect(models).toHaveLength(5);
+    it('should return ultra tier models', () => {
+      const models = getModelsByTier('ultra');
+      expect(models).toHaveLength(1);
+      expect(models).toContain('anthropic/claude-sonnet-4-5');
     });
   });
 
@@ -142,7 +156,9 @@ describe('ai-models.config', () => {
     it('should filter to only enabled models when env has values', () => {
       const available = getAvailableWriterModels('openai/gpt-4o,anthropic/claude-sonnet-4-5');
       expect(available).toHaveLength(2);
-      expect(available.map(m => m.id)).toEqual(['openai/gpt-4o', 'anthropic/claude-sonnet-4-5']);
+      expect(available.map(m => m.id)).toEqual(
+        expect.arrayContaining(['openai/gpt-4o', 'anthropic/claude-sonnet-4-5'])
+      );
     });
 
     it('should handle comma-separated values with spaces', () => {
@@ -150,10 +166,11 @@ describe('ai-models.config', () => {
         'openai/gpt-4o, anthropic/claude-sonnet-4-5 , google/gemini-2.0-flash'
       );
       expect(available).toHaveLength(3);
+      // Order follows config definition order (budget -> balanced -> ultra)
       expect(available.map(m => m.id)).toEqual([
+        'google/gemini-2.0-flash',
         'openai/gpt-4o',
         'anthropic/claude-sonnet-4-5',
-        'google/gemini-2.0-flash',
       ]);
     });
 
@@ -162,7 +179,9 @@ describe('ai-models.config', () => {
         'openai/gpt-4o,invalid-model,another-invalid,anthropic/claude-sonnet-4-5'
       );
       expect(available).toHaveLength(2);
-      expect(available.map(m => m.id)).toEqual(['openai/gpt-4o', 'anthropic/claude-sonnet-4-5']);
+      expect(available.map(m => m.id)).toEqual(
+        expect.arrayContaining(['openai/gpt-4o', 'anthropic/claude-sonnet-4-5'])
+      );
     });
 
     it('should return empty array when only invalid IDs are provided', () => {
@@ -170,12 +189,15 @@ describe('ai-models.config', () => {
       expect(available).toHaveLength(0);
     });
 
-    it('should return models with id, name, and provider properties', () => {
+    it('should return models with all required properties', () => {
       const available = getAvailableWriterModels('openai/gpt-4o');
       expect(available[0]).toEqual({
         id: 'openai/gpt-4o',
         name: 'GPT-4o',
         provider: 'OpenAI',
+        description: 'Strong all-round writing quality',
+        tier: 'balanced',
+        creditCost: 0,
       });
     });
 

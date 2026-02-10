@@ -15,6 +15,7 @@ import {
 import { DashboardButton } from '../ui/DashboardButton';
 import type { ICampaignWithStats } from '@shared/types/campaign.types';
 import { useTranslations } from '@client/hooks/useTranslations';
+import { getCampaignStatusStyles } from '@client/utils/statusStyles';
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
 
@@ -23,7 +24,6 @@ dayjs.extend(relativeTime);
 interface ICampaignsViewProps {
   campaigns: ICampaignWithStats[];
   isLoading: boolean;
-  projectId: string | null;
   onNewCampaign: () => void;
   onCampaignClick: (campaignId: string) => void;
   onDeleteCampaign: (campaignId: string) => Promise<void>;
@@ -34,10 +34,9 @@ interface ICampaignsViewProps {
 export function CampaignsView({
   campaigns,
   isLoading,
-  projectId: _projectId,
   onNewCampaign,
   onCampaignClick,
-  onDeleteCampaign: _onDeleteCampaign,
+  onDeleteCampaign,
   selectedCampaignId,
   onBackToList,
 }: ICampaignsViewProps): JSX.Element {
@@ -105,15 +104,7 @@ export function CampaignsView({
               <h2 className="text-2xl font-bold text-white flex items-center gap-3">
                 {selectedCampaign.name}
                 <span
-                  className={`text-xs px-2 py-1 rounded-full border ${
-                    selectedCampaign.status === 'active'
-                      ? 'bg-green-500/10 text-green-400 border-green-500/20'
-                      : selectedCampaign.status === 'completed'
-                        ? 'bg-blue-500/10 text-blue-400 border-blue-500/20'
-                        : selectedCampaign.status === 'paused'
-                          ? 'bg-yellow-500/10 text-yellow-400 border-yellow-500/20'
-                          : 'bg-surface text-muted border-border'
-                  } capitalize`}
+                  className={`text-xs px-2 py-1 rounded-full border ${getCampaignStatusStyles(selectedCampaign.status)} capitalize`}
                 >
                   {selectedCampaign.status}
                 </span>
@@ -189,9 +180,7 @@ export function CampaignsView({
                       onClick={e => {
                         e.stopPropagation();
                         setOpenMenuId(null);
-                        if (_onDeleteCampaign) {
-                          _onDeleteCampaign(campaign.id);
-                        }
+                        onDeleteCampaign(campaign.id);
                       }}
                     >
                       <Trash2 className="w-4 h-4" />{' '}
@@ -228,15 +217,7 @@ export function CampaignsView({
 
             <div className="flex items-center justify-between border-t border-border pt-4 mt-2">
               <span
-                className={`inline-flex items-center px-2 py-1 rounded text-xs font-medium ${
-                  campaign.status === 'active'
-                    ? 'bg-green-500/10 text-green-400'
-                    : campaign.status === 'completed'
-                      ? 'bg-blue-500/10 text-blue-400'
-                      : campaign.status === 'paused'
-                        ? 'bg-yellow-500/10 text-yellow-400'
-                        : 'bg-surface text-muted'
-                }`}
+                className={`inline-flex items-center px-2 py-1 rounded text-xs font-medium ${getCampaignStatusStyles(campaign.status)}`}
               >
                 {campaign.status === 'active' && <Play className="w-3 h-3 mr-1.5 fill-current" />}
                 {campaign.status === 'paused' && <Pause className="w-3 h-3 mr-1.5 fill-current" />}

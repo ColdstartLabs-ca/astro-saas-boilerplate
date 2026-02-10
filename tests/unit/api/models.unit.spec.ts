@@ -46,13 +46,15 @@ describe('GET /api/models', () => {
 
     // All 5 writer models should be available
     expect(data.writerModels).toHaveLength(5);
-    expect(data.writerModels.map(m => m.id)).toEqual([
-      'openai/gpt-4o',
-      'openai/gpt-4o-mini',
-      'anthropic/claude-sonnet-4-5',
-      'google/gemini-2.0-flash',
-      'openrouter/auto',
-    ]);
+    expect(data.writerModels.map(m => m.id)).toEqual(
+      expect.arrayContaining([
+        'openai/gpt-4o',
+        'openai/gpt-4o-mini',
+        'anthropic/claude-sonnet-4-5',
+        'google/gemini-2.0-flash',
+        'openrouter/auto',
+      ])
+    );
 
     // All 6 image presets should be available
     expect(data.imagePresets).toHaveLength(6);
@@ -97,10 +99,12 @@ describe('GET /api/models', () => {
 
     // Check writer model structure
     const gpt4o = data.writerModels.find(m => m.id === 'openai/gpt-4o');
-    expect(gpt4o).toEqual({
+    expect(gpt4o).toMatchObject({
       id: 'openai/gpt-4o',
       name: 'GPT-4o',
       provider: 'OpenAI',
+      tier: 'balanced',
+      creditCost: 0,
     });
 
     // Check image preset structure (includes replicateModel)
@@ -123,9 +127,11 @@ describe('GET /api/models', () => {
     const response = await GET();
     const data = (await response.json()) as IAvailableModelsResponse;
 
-    // Should only return valid models
+    // Should only return valid models (order follows config definition)
     expect(data.writerModels).toHaveLength(2);
-    expect(data.writerModels.map(m => m.id)).toEqual(['openai/gpt-4o', 'openai/gpt-4o-mini']);
+    expect(data.writerModels.map(m => m.id)).toEqual(
+      expect.arrayContaining(['openai/gpt-4o', 'openai/gpt-4o-mini'])
+    );
   });
 
   test('should set cache headers', async () => {

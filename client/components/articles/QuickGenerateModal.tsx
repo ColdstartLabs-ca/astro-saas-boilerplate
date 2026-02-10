@@ -25,7 +25,8 @@ import { useAvailableModels } from '@client/hooks/useAvailableModels';
 import { DashboardButton } from '@client/components/dashboard/ui/DashboardButton';
 import { getImagePresetCreditCost } from '@shared/config/image-models.config';
 import { useTranslations } from '@client/hooks/useTranslations';
-import { ImagePresetSelector } from './ImagePresetSelector';
+import { ModelSelect } from '@client/components/ui/ModelSelect';
+import { imagePresetToOption } from '@client/utils/modelAdapters';
 import { ArticlePreview } from './ArticlePreview';
 import type { IArticle } from '@shared/types/article.types';
 
@@ -401,10 +402,14 @@ export function QuickGenerateModal({
 
               {showImageSettings && (
                 <div className="mt-3">
-                  <ImagePresetSelector
-                    selectedPreset={watchedImagePreset || null}
+                  <ModelSelect
+                    options={imagePresets.map(imagePresetToOption)}
+                    selectedId={watchedImagePreset || null}
                     onSelect={preset => setValue('imagePreset', preset || undefined)}
-                    availablePresets={imagePresets}
+                    allowNone
+                    noneLabel="No images"
+                    noneDescription="Text-only article"
+                    placeholder="Select image preset..."
                   />
                 </div>
               )}

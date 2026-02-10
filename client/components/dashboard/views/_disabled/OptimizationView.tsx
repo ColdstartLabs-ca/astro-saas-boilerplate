@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { Filter, RefreshCw, Globe, Check, AlertCircle, CheckCircle2, ArrowRight, ArrowLeft } from 'lucide-react';
-import { DashboardButton } from '../ui/DashboardButton';
+import { DashboardButton } from '../../ui/DashboardButton';
 
 interface IPost {
     id: number;

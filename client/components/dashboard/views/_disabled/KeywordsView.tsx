@@ -1,7 +1,7 @@
 'use client';
 
 import { Search, Filter, Plus } from 'lucide-react';
-import { DashboardButton } from '../ui/DashboardButton';
+import { DashboardButton } from '../../ui/DashboardButton';
 
 export function KeywordsView(): JSX.Element {
   return (

@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { ChevronLeft, ChevronRight, Plus, PlusCircle, X, Trash2 } from 'lucide-react';
-import { DashboardButton } from '../ui/DashboardButton';
+import { DashboardButton } from '../../ui/DashboardButton';
 
 interface ICalendarEvent {
     id: number;

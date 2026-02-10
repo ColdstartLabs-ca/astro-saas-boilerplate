@@ -56,13 +56,62 @@ const fileToBase64 = (file: File): Promise<string> => {
 
 /**
  * Get the current user's access token for API requests
+ * @returns Access token or null if not authenticated
  */
-async function getAccessToken(): Promise<string | null> {
+export async function getAccessToken(): Promise<string | null> {
   const supabase = createClient();
   const {
     data: { session },
   } = await supabase.auth.getSession();
   return session?.access_token ?? null;
+}
+
+/**
+ * Build auth headers for API requests
+ * @returns Headers object with Content-Type and Authorization (if authenticated)
+ */
+export async function getAuthHeaders(): Promise<Record<string, string>> {
+  const accessToken = await getAccessToken();
+  const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+  if (accessToken) {
+    headers.Authorization = `Bearer ${accessToken}`;
+  }
+  return headers;
+}
+
+/**
+ * Typed fetch wrapper that handles auth headers and error parsing
+ * @param url - The URL to fetch
+ * @param options - Fetch options (headers will be merged with auth headers)
+ * @returns Parsed JSON response of type T
+ * @throws Error with message from response or generic error message
+ */
+export async function apiFetch<T>(
+  url: string,
+  options: {
+    method?: string;
+    headers?: Record<string, string>;
+    body?: string;
+    signal?: AbortSignal;
+  } = {}
+): Promise<T> {
+  const headers = await getAuthHeaders();
+  const response = await fetch(url, {
+    ...options,
+    headers: {
+      ...headers,
+      ...(options.headers as Record<string, string> ?? {}),
+    },
+  });
+
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({ error: 'Unknown error' }));
+    const errorMessage =
+      typeof error.error === 'object' ? error.error?.message : error.error;
+    throw new Error(errorMessage || `Request failed with status ${response.status}`);
+  }
+
+  return response.json();
 }
 
 export interface IAnalyzeImageResult {

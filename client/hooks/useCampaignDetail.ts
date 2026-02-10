@@ -20,37 +20,13 @@ import type {
   ICampaignCreditStats,
 } from '@shared/types/campaign.types';
 import type { IArticle } from '@shared/types/article.types';
-import { useLogger } from '@client/utils/logger';
-import { useToastStore } from '@client/store/toastStore';
-import { createClient } from '@shared/utils/supabase/client';
+import { apiFetch } from '@client/utils/api-client';
 import { getTranslations } from '@src/i18n/utils';
+import { useMutationWithToast } from './useMutationWithToast';
 
 // =============================================================================
 // API Functions
 // =============================================================================
-
-/**
- * Get the current user's access token for API requests
- */
-async function getAccessToken(): Promise<string | null> {
-  const supabase = createClient();
-  const {
-    data: { session },
-  } = await supabase.auth.getSession();
-  return session?.access_token ?? null;
-}
-
-/**
- * Build auth headers for API requests
- */
-async function getAuthHeaders(): Promise<Record<string, string>> {
-  const accessToken = await getAccessToken();
-  const headers: Record<string, string> = { 'Content-Type': 'application/json' };
-  if (accessToken) {
-    headers.Authorization = `Bearer ${accessToken}`;
-  }
-  return headers;
-}
 
 /**
  * Fetch campaign detail with keywords, article stats, and credit stats
@@ -61,18 +37,14 @@ async function fetchCampaignDetail(campaignId: string): Promise<{
   articleStats: ICampaignArticleStats;
   creditStats: ICampaignCreditStats;
 }> {
-  const headers = await getAuthHeaders();
-  const response = await fetch(`/api/campaigns/${campaignId}`, {
-    method: 'GET',
-    headers,
-  });
-
-  if (!response.ok) {
-    const error = await response.json().catch(() => ({ error: 'Unknown error' }));
-    throw new Error(error.error?.message || 'Failed to fetch campaign detail');
-  }
-
-  const data = await response.json();
+  const data = await apiFetch<{
+    data: {
+      campaign: ICampaign;
+      keywords: IKeyword[];
+      articleStats: ICampaignArticleStats;
+      creditStats: ICampaignCreditStats;
+    };
+  }>(`/api/campaigns/${campaignId}`, { method: 'GET' });
   return data.data;
 }
 
@@ -80,18 +52,10 @@ async function fetchCampaignDetail(campaignId: string): Promise<{
  * Fetch campaign articles
  */
 async function fetchCampaignArticles(campaignId: string): Promise<IArticle[]> {
-  const headers = await getAuthHeaders();
-  const response = await fetch(`/api/articles?campaignId=${campaignId}`, {
-    method: 'GET',
-    headers,
-  });
-
-  if (!response.ok) {
-    const error = await response.json().catch(() => ({ error: 'Unknown error' }));
-    throw new Error(error.error?.message || 'Failed to fetch articles');
-  }
-
-  const data = await response.json();
+  const data = await apiFetch<{ data: { articles: IArticle[] } }>(
+    `/api/articles?campaignId=${campaignId}`,
+    { method: 'GET' }
+  );
   return data.data.articles ?? [];
 }
 
@@ -105,19 +69,12 @@ async function addKeywords(
   added: number;
   duplicates: number;
 }> {
-  const headers = await getAuthHeaders();
-  const response = await fetch(`/api/campaigns/${campaignId}/keywords`, {
+  const data = await apiFetch<{
+    data: { added: number; duplicates: number };
+  }>(`/api/campaigns/${campaignId}/keywords`, {
     method: 'POST',
-    headers,
     body: JSON.stringify({ keywords }),
   });
-
-  if (!response.ok) {
-    const error = await response.json().catch(() => ({ error: 'Unknown error' }));
-    throw new Error(error.error?.message || 'Failed to add keywords');
-  }
-
-  const data = await response.json();
   return data.data;
 }
 
@@ -125,17 +82,10 @@ async function addKeywords(
  * Remove a keyword from campaign
  */
 async function removeKeyword(campaignId: string, keywordId: string): Promise<{ success: boolean }> {
-  const headers = await getAuthHeaders();
-  const response = await fetch(`/api/campaigns/${campaignId}/keywords/${keywordId}`, {
-    method: 'DELETE',
-    headers,
-  });
-
-  if (!response.ok) {
-    const error = await response.json().catch(() => ({ error: 'Unknown error' }));
-    throw new Error(error.error?.message || 'Failed to remove keyword');
-  }
-
+  await apiFetch<{ success: boolean }>(
+    `/api/campaigns/${campaignId}/keywords/${keywordId}`,
+    { method: 'DELETE' }
+  );
   return { success: true };
 }
 
@@ -143,19 +93,12 @@ async function removeKeyword(campaignId: string, keywordId: string): Promise<{ s
  * Update campaign settings
  */
 async function updateCampaign(campaignId: string, input: IUpdateCampaignInput): Promise<ICampaign> {
-  const headers = await getAuthHeaders();
-  const response = await fetch(`/api/campaigns/${campaignId}`, {
+  const data = await apiFetch<{
+    data: { campaign: ICampaign };
+  }>(`/api/campaigns/${campaignId}`, {
     method: 'PUT',
-    headers,
     body: JSON.stringify(input),
   });
-
-  if (!response.ok) {
-    const error = await response.json().catch(() => ({ error: 'Unknown error' }));
-    throw new Error(error.error?.message || 'Failed to update campaign');
-  }
-
-  const data = await response.json();
   return data.data.campaign;
 }
 
@@ -166,18 +109,10 @@ async function startCampaign(campaignId: string): Promise<{
   queued: number;
   creditsRequired: number;
 }> {
-  const headers = await getAuthHeaders();
-  const response = await fetch(`/api/campaigns/${campaignId}/start`, {
-    method: 'POST',
-    headers,
-  });
-
-  if (!response.ok) {
-    const error = await response.json().catch(() => ({ error: 'Unknown error' }));
-    throw new Error(error.error?.message || 'Failed to start campaign');
-  }
-
-  const data = await response.json();
+  const data = await apiFetch<{ data: { queued: number; creditsRequired: number } }>(
+    `/api/campaigns/${campaignId}/start`,
+    { method: 'POST' }
+  );
   return data.data;
 }
 
@@ -204,9 +139,7 @@ interface IUseCampaignDetailReturn {
 }
 
 export function useCampaignDetail(campaignId: string | null | undefined): IUseCampaignDetailReturn {
-  const logger = useLogger('useCampaignDetail');
   const queryClient = useQueryClient();
-  const { showToast } = useToastStore();
   const t = useMemo(() => getTranslations('dashboard'), []);
 
   // Fetch campaign detail query
@@ -244,10 +177,6 @@ export function useCampaignDetail(campaignId: string | null | undefined): IUseCa
       campaignId ? addKeywords(campaignId, keywords) : Promise.reject(new Error('No campaign ID')),
     onSuccess: data => {
       queryClient.invalidateQueries({ queryKey: ['campaign-detail', campaignId] });
-      showToast({
-        message: t('campaigns.keywords.added', { added: data.added, duplicates: data.duplicates }),
-        type: 'success',
-      });
     },
   });
 
@@ -259,10 +188,6 @@ export function useCampaignDetail(campaignId: string | null | undefined): IUseCa
         : Promise.reject(new Error('No campaign ID')),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['campaign-detail', campaignId] });
-      showToast({
-        message: t('campaigns.keywords.removed'),
-        type: 'success',
-      });
     },
   });
 
@@ -273,10 +198,6 @@ export function useCampaignDetail(campaignId: string | null | undefined): IUseCa
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['campaign-detail', campaignId] });
       queryClient.invalidateQueries({ queryKey: ['campaigns'] });
-      showToast({
-        message: t('campaigns.success.updated'),
-        type: 'success',
-      });
     },
   });
 
@@ -287,83 +208,46 @@ export function useCampaignDetail(campaignId: string | null | undefined): IUseCa
     onSuccess: data => {
       queryClient.invalidateQueries({ queryKey: ['campaign-detail', campaignId] });
       queryClient.invalidateQueries({ queryKey: ['campaign-articles', campaignId] });
-      showToast({
-        message: t('campaigns.generation.started', { count: data.queued }),
-        type: 'success',
-      });
     },
   });
 
   // Wrapped mutation functions with error handling
-  const handleAddKeywords = useCallback(
-    async (keywords: string[]) => {
-      try {
-        return await addKeywordsMutation.mutateAsync(keywords);
-      } catch (error) {
-        logger.error('Failed to add keywords', {
-          error: error instanceof Error ? error.message : 'Unknown error',
-        });
-        showToast({
-          message: t('campaigns.keywords.error'),
-          type: 'error',
-        });
-        throw error;
-      }
-    },
-    [addKeywordsMutation, logger, showToast, t]
-  );
+  const handleAddKeywords = useMutationWithToast(addKeywordsMutation, {
+    successMessage: (data: { added: number; duplicates: number }) =>
+      t('campaigns.keywords.added', { added: data.added, duplicates: data.duplicates }),
+    errorMessage: t('campaigns.keywords.error'),
+    loggerContext: 'Failed to add keywords',
+  });
+
+  const removeKeywordWithToast = useMutationWithToast(removeKeywordMutation, {
+    successMessage: t('campaigns.keywords.removed'),
+    errorMessage: t('campaigns.keywords.error'),
+    loggerContext: (keywordId: string) => ({
+      message: 'Failed to remove keyword',
+      context: { keywordId },
+    }),
+  });
 
   const handleRemoveKeyword = useCallback(
-    async (keywordId: string) => {
-      try {
-        await removeKeywordMutation.mutateAsync(keywordId);
-      } catch (error) {
-        logger.error('Failed to remove keyword', {
-          error: error instanceof Error ? error.message : 'Unknown error',
-        });
-        showToast({
-          message: t('campaigns.keywords.error'),
-          type: 'error',
-        });
-        throw error;
-      }
+    async (keywordId: string): Promise<void> => {
+      await removeKeywordWithToast(keywordId);
     },
-    [removeKeywordMutation, logger, showToast, t]
+    [removeKeywordWithToast]
   );
 
-  const handleUpdateCampaign = useCallback(
-    async (input: IUpdateCampaignInput) => {
-      try {
-        return await updateCampaignMutation.mutateAsync(input);
-      } catch (error) {
-        logger.error('Failed to update campaign', {
-          error: error instanceof Error ? error.message : 'Unknown error',
-        });
-        showToast({
-          message: t('campaigns.errors.updateFailed'),
-          type: 'error',
-        });
-        throw error;
-      }
-    },
-    [updateCampaignMutation, logger, showToast, t]
-  );
+  const handleUpdateCampaign = useMutationWithToast(updateCampaignMutation, {
+    successMessage: t('campaigns.success.updated'),
+    errorMessage: t('campaigns.errors.updateFailed'),
+    loggerContext: 'Failed to update campaign',
+  });
 
-  const handleStartCampaign = useCallback(async () => {
-    try {
-      return await startCampaignMutation.mutateAsync();
-    } catch (error) {
-      logger.error('Failed to start campaign', {
-        error: error instanceof Error ? error.message : 'Unknown error',
-      });
-      const message = error instanceof Error ? error.message : t('campaigns.errors.startFailed');
-      showToast({
-        message,
-        type: 'error',
-      });
-      throw error;
-    }
-  }, [startCampaignMutation, logger, showToast, t]);
+  const handleStartCampaign = useMutationWithToast(startCampaignMutation, {
+    successMessage: (data: { queued: number; creditsRequired: number }) =>
+      t('campaigns.generation.started', { count: data.queued }),
+    errorMessage: (error: Error) =>
+      error instanceof Error ? error.message : t('campaigns.errors.startFailed'),
+    loggerContext: 'Failed to start campaign',
+  });
 
   return {
     // Data

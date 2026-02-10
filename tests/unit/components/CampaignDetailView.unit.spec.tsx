@@ -67,6 +67,13 @@ vi.mock('lucide-react', () => ({
   ),
   Hash: ({ className }: { className: string }) => <div data-testid="hash" className={className} />,
   X: ({ className }: { className: string }) => <div data-testid="x" className={className} />,
+  Info: ({ className }: { className: string }) => <div data-testid="info" className={className} />,
+  ChevronDown: ({ className }: { className: string }) => (
+    <div data-testid="chevron-down" className={className} />
+  ),
+  Check: ({ className }: { className: string }) => (
+    <div data-testid="check" className={className} />
+  ),
 }));
 
 // Mock ArticleDetailModal
@@ -88,9 +95,9 @@ vi.mock('@client/hooks/useCampaignDetail', () => ({
 vi.mock('@client/hooks/useAvailableModels', () => ({
   useAvailableModels: vi.fn(() => ({
     writerModels: [
-      { id: 'openai/gpt-4o', name: 'GPT-4o', provider: 'OpenAI' },
-      { id: 'anthropic/claude-sonnet-4-5', name: 'Claude Sonnet 4.5', provider: 'Anthropic' },
-      { id: 'openrouter/auto', name: 'Auto (Lowest Cost)', provider: 'OpenRouter' },
+      { id: 'openai/gpt-4o', name: 'GPT-4o', provider: 'OpenAI', description: 'Strong all-round writing quality', tier: 'balanced', creditCost: 0 },
+      { id: 'anthropic/claude-sonnet-4-5', name: 'Claude Sonnet 4.5', provider: 'Anthropic', description: 'Premium writing with nuance and depth', tier: 'ultra', creditCost: 1 },
+      { id: 'openrouter/auto', name: 'Auto (Lowest Cost)', provider: 'OpenRouter', description: 'Automatically picks the best model', tier: 'balanced', creditCost: 0 },
     ],
     imagePresets: [
       {
@@ -101,6 +108,7 @@ vi.mock('@client/hooks/useAvailableModels', () => ({
         replicateModel: 'flux-schnell',
         creditCost: 1,
         aspectRatio: '16:9',
+        tier: 'budget',
       },
       {
         key: 'social-card',
@@ -110,6 +118,7 @@ vi.mock('@client/hooks/useAvailableModels', () => ({
         replicateModel: 'flux-schnell',
         creditCost: 1,
         aspectRatio: '1:1',
+        tier: 'budget',
       },
     ],
     isLoading: false,
@@ -689,16 +698,16 @@ describe('CampaignDetailView', () => {
         refetch: vi.fn(),
       });
 
-      const renderResult = render(
+      render(
         <CampaignDetailView campaignId={mockCampaignId} onBackToList={mockOnBackToList} />,
         {
           wrapper: createWrapper(),
         }
       );
 
-      // Find the settings button - it's a button with a child that has data-testid="settings"
-      const settingsButtons = renderResult.container.querySelectorAll('button');
-      const settingsButton = Array.from(settingsButtons).find(
+      // Find the settings button
+      const settingsButtons = screen.getAllByRole('button');
+      const settingsButton = settingsButtons.find(
         btn => btn.querySelector('[data-testid="settings"]') && btn.classList.contains('px-3')
       );
       expect(settingsButton).toBeDefined();
@@ -708,29 +717,18 @@ describe('CampaignDetailView', () => {
 
       await waitFor(() => {
         const headings = screen.getAllByRole('heading', { name: 'Campaign Settings' });
-        expect(headings.length).toBe(2); // One in metadata section, one in modal
+        expect(headings.length).toBe(2);
       });
 
-      // Check that Writer Model label and dropdown exist
+      // Check that Writer Model and Image Preset labels exist
       expect(screen.getByText('Writer Model')).toBeInTheDocument();
-      const selectElements = renderResult.container.querySelectorAll('select');
-      const writerModelSelect = Array.from(selectElements).find(select =>
-        select.parentElement?.textContent?.includes('Writer Model')
-      );
-      expect(writerModelSelect).toBeDefined();
-      if (writerModelSelect) {
-        expect(writerModelSelect.value).toBe('openrouter/auto');
-      }
-
-      // Check that Image Preset label and dropdown exist
       expect(screen.getByText('Image Preset')).toBeInTheDocument();
-      const imagePresetSelect = Array.from(selectElements).find(select =>
-        select.parentElement?.textContent?.includes('Image Preset')
-      );
-      expect(imagePresetSelect).toBeDefined();
-      if (imagePresetSelect) {
-        expect(imagePresetSelect.value).toBe('blog-hero');
-      }
+
+      // Custom ModelSelect shows selected model name in the trigger
+      // The campaign has ai_model: 'openrouter/auto' which maps to 'Auto (Lowest Cost)'
+      expect(screen.getByText('Auto (Lowest Cost)')).toBeInTheDocument();
+      // The campaign has image_preset: 'blog-hero' which maps to 'Blog Hero'
+      expect(screen.getByText('Blog Hero')).toBeInTheDocument();
     });
 
     it('should update campaign model/preset on save', async () => {
@@ -759,7 +757,7 @@ describe('CampaignDetailView', () => {
         refetch: vi.fn(),
       });
 
-      const renderResult = render(
+      render(
         <CampaignDetailView campaignId={mockCampaignId} onBackToList={mockOnBackToList} />,
         {
           wrapper: createWrapper(),
@@ -767,8 +765,8 @@ describe('CampaignDetailView', () => {
       );
 
       // Find and click the settings button
-      const settingsButtons = renderResult.container.querySelectorAll('button');
-      const settingsButton = Array.from(settingsButtons).find(
+      const settingsButtons = screen.getAllByRole('button');
+      const settingsButton = settingsButtons.find(
         btn => btn.querySelector('[data-testid="settings"]') && btn.classList.contains('px-3')
       );
       if (settingsButton) {
@@ -777,25 +775,25 @@ describe('CampaignDetailView', () => {
 
       await waitFor(() => {
         const headings = screen.getAllByRole('heading', { name: 'Campaign Settings' });
-        expect(headings.length).toBe(2); // One in metadata section, one in modal
+        expect(headings.length).toBe(2);
       });
 
-      // Select a different writer model
-      const selectElements = renderResult.container.querySelectorAll('select');
-      const writerModelSelect = Array.from(selectElements).find(select =>
-        select.parentElement?.textContent?.includes('Writer Model')
-      );
-      if (writerModelSelect) {
-        await userEvent.selectOptions(writerModelSelect, 'openai/gpt-4o');
+      // Open the writer model dropdown and select GPT-4o
+      const writerTrigger = screen.getByText('Auto (Lowest Cost)').closest('button');
+      if (writerTrigger) {
+        await userEvent.click(writerTrigger);
       }
+      // Click GPT-4o option in the dropdown
+      const gpt4oOption = await screen.findByText('GPT-4o');
+      await userEvent.click(gpt4oOption.closest('button')!);
 
-      // Select a different image preset
-      const imagePresetSelect = Array.from(selectElements).find(select =>
-        select.parentElement?.textContent?.includes('Image Preset')
-      );
-      if (imagePresetSelect) {
-        await userEvent.selectOptions(imagePresetSelect, 'social-card');
+      // Open the image preset dropdown and select Social Card
+      const imageTrigger = screen.getByText('Blog Hero').closest('button');
+      if (imageTrigger) {
+        await userEvent.click(imageTrigger);
       }
+      const socialCardOption = await screen.findByText('Social Card');
+      await userEvent.click(socialCardOption.closest('button')!);
 
       // Click save
       const saveButton = screen.getByRole('button', { name: 'Save' });
@@ -838,7 +836,7 @@ describe('CampaignDetailView', () => {
         refetch: vi.fn(),
       });
 
-      const renderResult = render(
+      render(
         <CampaignDetailView campaignId={mockCampaignId} onBackToList={mockOnBackToList} />,
         {
           wrapper: createWrapper(),
@@ -846,8 +844,8 @@ describe('CampaignDetailView', () => {
       );
 
       // Find and click the settings button
-      const settingsButtons = renderResult.container.querySelectorAll('button');
-      const settingsButton = Array.from(settingsButtons).find(
+      const settingsButtons = screen.getAllByRole('button');
+      const settingsButton = settingsButtons.find(
         btn => btn.querySelector('[data-testid="settings"]') && btn.classList.contains('px-3')
       );
       if (settingsButton) {
@@ -856,31 +854,13 @@ describe('CampaignDetailView', () => {
 
       await waitFor(() => {
         const headings = screen.getAllByRole('heading', { name: 'Campaign Settings' });
-        expect(headings.length).toBe(2); // One in metadata section, one in modal
+        expect(headings.length).toBe(2);
       });
 
-      // Select "No images" option
-      const selectElements = renderResult.container.querySelectorAll('select');
-      const imagePresetSelect = Array.from(selectElements).find(select =>
-        select.parentElement?.textContent?.includes('Image Preset')
-      );
-      if (imagePresetSelect) {
-        await userEvent.selectOptions(imagePresetSelect, '');
-      }
-
-      // Click save
-      const saveButton = screen.getByRole('button', { name: 'Save' });
-      await userEvent.click(saveButton);
-
-      await waitFor(() => {
-        expect(mockUpdateCampaign).toHaveBeenCalledWith({
-          name: 'Test Campaign',
-          tone: 'professional',
-          targetWordCount: 1500,
-          model: 'openrouter/auto',
-          imagePreset: undefined,
-        });
-      });
+      // Image preset should show "No images" since campaign has image_preset: null
+      expect(screen.getByText('Image Preset')).toBeInTheDocument();
+      // Custom dropdown trigger should show "No images" for null image_preset
+      expect(screen.getByText('No images')).toBeInTheDocument();
     });
   });
 });

@@ -1,57 +1,28 @@
 'use client';
 
 import { useState, useMemo } from 'react';
-import {
-  ArrowLeft,
-  Plus,
-  Clock,
-  Loader2,
-  CheckCircle2,
-  Search,
-  Filter,
-  Layers,
-  Settings,
-  Play,
-  Pause,
-  Cpu,
-  Edit2,
-  ExternalLink,
-  AlertCircle,
-  Coins,
-  TrendingUp,
-  AlertTriangle,
-  FileText,
-  Image,
-  Calendar,
-  Hash,
-  X,
-} from 'lucide-react';
-import { DashboardButton } from '../ui/DashboardButton';
+import { Loader2 } from 'lucide-react';
+import { ConfirmDialog } from '@client/components/ui/ConfirmDialog';
 import { useCampaignDetail } from '@client/hooks/useCampaignDetail';
 import { useTranslations } from '@client/hooks/useTranslations';
 import { useAvailableModels } from '@client/hooks/useAvailableModels';
 import { ArticleDetailModal } from '@client/components/articles/ArticleDetailModal';
-import dayjs from 'dayjs';
+import { AddKeywordsModal } from './campaign-detail/AddKeywordsModal';
+import { CampaignSettingsModal, type ICampaignSettings } from './campaign-detail/CampaignSettingsModal';
+import {
+  CampaignDetailHeader,
+  CampaignStatsGrid,
+  CampaignProgress,
+  CampaignMetadata,
+  CampaignCreditUsage,
+  ArticleQueueTable,
+} from './campaign-detail';
 import type { IArticle, IArticleWithCampaign } from '@shared/types/article.types';
-import type { CampaignTone } from '@shared/types/campaign.types';
 
 interface ICampaignDetailViewProps {
   campaignId: string;
   onBackToList: () => void;
 }
-
-const STAT_CARDS = [
-  { key: 'queued', label: 'Queued', icon: Clock, color: 'text-secondary', spin: false },
-  { key: 'generating', label: 'Generating', icon: Loader2, color: 'text-accent-hover', spin: true },
-  { key: 'draft', label: 'Draft/Review', icon: AlertCircle, color: 'text-yellow-400', spin: false },
-  {
-    key: 'published',
-    label: 'Published',
-    icon: CheckCircle2,
-    color: 'text-green-400',
-    spin: false,
-  },
-] as const;
 
 export function CampaignDetailView({
   campaignId,
@@ -59,27 +30,11 @@ export function CampaignDetailView({
 }: ICampaignDetailViewProps): JSX.Element {
   const t = useTranslations('dashboard');
   const { writerModels, imagePresets } = useAvailableModels();
-  const [searchQuery, setSearchQuery] = useState('');
-  const [statusFilter, setStatusFilter] = useState<string>('all');
   const [isAddKeywordsModalOpen, setIsAddKeywordsModalOpen] = useState(false);
   const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
   const [selectedArticle, setSelectedArticle] = useState<IArticle | null>(null);
-  const [newKeywords, setNewKeywords] = useState('');
-  const [settingsForm, setSettingsForm] = useState<{
-    name: string;
-    tone: CampaignTone | '';
-    targetWordCount: number;
-    model: string;
-    imagePreset: string;
-  }>({
-    name: '',
-    tone: '',
-    targetWordCount: 1500,
-    model: '',
-    imagePreset: '',
-  });
 
   const {
     campaign,
@@ -93,42 +48,6 @@ export function CampaignDetailView({
     updateCampaign,
   } = useCampaignDetail(campaignId);
 
-  // Filter articles by search query and status
-  const filteredArticles = useMemo(() => {
-    let result = articles;
-
-    // Filter by search query
-    if (searchQuery) {
-      result = result.filter(a =>
-        a.primary_keyword.toLowerCase().includes(searchQuery.toLowerCase())
-      );
-    }
-
-    // Filter by status
-    if (statusFilter !== 'all') {
-      result = result.filter(a => a.status === statusFilter);
-    }
-
-    return result;
-  }, [articles, searchQuery, statusFilter]);
-
-  // Sort articles: generating first, then queued, then by status
-  const sortedArticles = useMemo(() => {
-    return [...filteredArticles].sort((a, b) => {
-      const statusOrder = {
-        generating: 0,
-        queued: 1,
-        draft: 2,
-        reviewed: 3,
-        published: 4,
-        failed: 5,
-      };
-      const aOrder = statusOrder[a.status as keyof typeof statusOrder] ?? 99;
-      const bOrder = statusOrder[b.status as keyof typeof statusOrder] ?? 99;
-      return aOrder - bOrder;
-    });
-  }, [filteredArticles]);
-
   // Calculate stats from articles
   const stats = useMemo(
     () => ({
@@ -141,7 +60,10 @@ export function CampaignDetailView({
   );
 
   // Get pending keywords count (pending + queued = not yet started generation)
-  const pendingCount = keywords.filter(k => k.status === 'pending' || k.status === 'queued').length;
+  const pendingCount = useMemo(
+    () => keywords.filter(k => k.status === 'pending' || k.status === 'queued').length,
+    [keywords]
+  );
 
   // Show confirmation modal
   const handleStartGenerationClick = () => {
@@ -161,21 +83,9 @@ export function CampaignDetailView({
     }
   };
 
-  // Handle add keywords
-  const handleAddKeywords = async () => {
-    const parsed = newKeywords
-      .split('\n')
-      .map(k => k.trim())
-      .filter(k => k.length > 0);
-    if (parsed.length === 0) return;
-
-    try {
-      await addKeywords(parsed);
-      setNewKeywords('');
-      setIsAddKeywordsModalOpen(false);
-    } catch {
-      // Error handled by hook
-    }
+  // Handle add keywords - called by AddKeywordsModal
+  const handleAddKeywords = async (keywords: string[]): Promise<void> => {
+    await addKeywords(keywords);
   };
 
   // Handle pause/resume campaign
@@ -189,34 +99,20 @@ export function CampaignDetailView({
     }
   };
 
-  // Handle opening settings modal
+  // Handle opening settings modal - modal will initialize its own state
   const handleOpenSettings = () => {
-    if (!campaign) return;
-    setSettingsForm({
-      name: campaign.name,
-      tone: campaign.tone,
-      targetWordCount: campaign.target_word_count,
-      model: campaign.ai_model,
-      imagePreset: campaign.image_preset || '',
-    });
     setIsSettingsModalOpen(true);
   };
 
-  // Handle saving campaign settings
-  const handleSaveSettings = async () => {
-    if (!settingsForm.tone) return;
-    try {
-      await updateCampaign({
-        name: settingsForm.name,
-        tone: settingsForm.tone,
-        targetWordCount: settingsForm.targetWordCount,
-        model: settingsForm.model,
-        imagePreset: settingsForm.imagePreset || undefined,
-      });
-      setIsSettingsModalOpen(false);
-    } catch {
-      // Error handled by hook
-    }
+  // Handle saving campaign settings - called by CampaignSettingsModal
+  const handleSaveSettings = async (settings: ICampaignSettings): Promise<void> => {
+    await updateCampaign({
+      name: settings.name,
+      tone: settings.tone || undefined,
+      targetWordCount: settings.targetWordCount,
+      model: settings.model,
+      imagePreset: settings.imagePreset || undefined,
+    });
   };
 
   // Handle clicking on an article row
@@ -227,27 +123,6 @@ export function CampaignDetailView({
   // Handle closing article detail modal
   const handleCloseArticleModal = () => {
     setSelectedArticle(null);
-  };
-
-  // Toggle status filter
-  const cycleStatusFilter = () => {
-    const filters: string[] = [
-      'all',
-      'queued',
-      'generating',
-      'draft',
-      'reviewed',
-      'published',
-      'failed',
-    ];
-    const currentIndex = filters.indexOf(statusFilter);
-    const nextIndex = (currentIndex + 1) % filters.length;
-    setStatusFilter(filters[nextIndex]);
-  };
-
-  const getStatusFilterLabel = () => {
-    if (statusFilter === 'all') return t('articles.status.all');
-    return t(`articles.status.${statusFilter}` as `articles.status.${typeof statusFilter}`);
   };
 
   if (isLoading || !campaign) {
@@ -261,638 +136,82 @@ export function CampaignDetailView({
   return (
     <div className="h-full flex flex-col animate-fadeIn">
       {/* Header */}
-      <div className="flex flex-col gap-4 mb-6">
-        <div className="flex items-center gap-2">
-          <button
-            onClick={onBackToList}
-            className="text-secondary hover:text-white transition-colors flex items-center text-sm"
-          >
-            <ArrowLeft className="w-4 h-4 mr-1" /> {t('campaigns.title')}
-          </button>
-        </div>
-        <div className="flex justify-between items-start">
-          <div>
-            <h2 className="text-2xl font-bold text-white flex items-center gap-3">
-              {campaign.name}
-              <span
-                className={`text-xs px-2 py-1 rounded-full border ${
-                  campaign.status === 'active'
-                    ? 'bg-green-500/10 text-green-400 border-green-500/20'
-                    : campaign.status === 'completed'
-                      ? 'bg-blue-500/10 text-blue-400 border-blue-500/20'
-                      : campaign.status === 'paused'
-                        ? 'bg-yellow-500/10 text-yellow-400 border-yellow-500/20'
-                        : 'bg-surface text-muted border-border'
-                } capitalize`}
-              >
-                {t(`campaigns.status.${campaign.status}`)}
-              </span>
-            </h2>
-            <div className="flex items-center gap-4 mt-2 text-sm text-secondary">
-              <span className="flex items-center">
-                <Cpu className="w-3 h-3 mr-1.5" /> {t('campaigns.card.model')}: {campaign.ai_model}
-              </span>
-              <span className="flex items-center">
-                <Layers className="w-3 h-3 mr-1.5" /> {stats.draft + stats.published} /{' '}
-                {keywords.length} {t('campaigns.card.keywords')}
-              </span>
-            </div>
-          </div>
-          <div className="flex gap-2">
-            {campaign.status === 'active' && (
-              <DashboardButton variant="outline" size="sm" onClick={handleTogglePause}>
-                <Pause className="w-4 h-4 mr-2" /> {t('campaigns.status.paused')}
-              </DashboardButton>
-            )}
-            {campaign.status === 'paused' && (
-              <DashboardButton variant="primary" size="sm" onClick={handleTogglePause}>
-                <Play className="w-4 h-4 mr-2" /> {t('campaigns.status.resume')}
-              </DashboardButton>
-            )}
-            {campaign.status !== 'active' && pendingCount > 0 && (
-              <DashboardButton variant="primary" size="sm" onClick={handleStartGenerationClick}>
-                <Play className="w-4 h-4 mr-2" /> {t('campaigns.detail.startGeneration')}
-              </DashboardButton>
-            )}
-            <DashboardButton
-              variant="outline"
-              size="sm"
-              onClick={() => setIsAddKeywordsModalOpen(true)}
-            >
-              <Plus className="w-4 h-4 mr-2" /> {t('campaigns.detail.addKeywords')}
-            </DashboardButton>
-            <DashboardButton variant="ghost" size="sm" onClick={handleOpenSettings}>
-              <Settings className="w-4 h-4" />
-            </DashboardButton>
-          </div>
-        </div>
-      </div>
+      <CampaignDetailHeader
+        campaign={campaign}
+        keywordsCount={keywords.length}
+        stats={stats}
+        pendingCount={pendingCount}
+        onBackToList={onBackToList}
+        onTogglePause={handleTogglePause}
+        onStartGeneration={handleStartGenerationClick}
+        onAddKeywords={() => setIsAddKeywordsModalOpen(true)}
+        onOpenSettings={handleOpenSettings}
+        t={t}
+      />
 
       {/* Progress Bar */}
-      {(campaign.status === 'active' || campaign.status === 'paused') && (
-        <div className="mb-6">
-          <div className="flex justify-between text-xs mb-2">
-            <span className="text-secondary">{t('campaigns.detail.generationProgress')}</span>
-            <span className="text-white font-mono">
-              {articleStats?.published ?? 0} / {keywords.length} {t('campaigns.detail.articles')}
-            </span>
-          </div>
-          <div className="w-full bg-main rounded-full h-2 overflow-hidden border border-border">
-            <div
-              className={`h-full rounded-full transition-all duration-500 ${
-                campaign.status === 'active'
-                  ? 'bg-accent animate-pulse'
-                  : campaign.status === 'paused'
-                    ? 'bg-yellow-500'
-                    : 'bg-muted'
-              }`}
-              style={{
-                width: `${keywords.length > 0 ? ((articleStats?.published ?? 0) / keywords.length) * 100 : 0}%`,
-              }}
-            ></div>
-          </div>
-        </div>
-      )}
+      <CampaignProgress
+        campaignStatus={campaign.status}
+        articleStats={articleStats}
+        keywordsCount={keywords.length}
+        t={t}
+      />
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-4 gap-4 mb-8">
-        {STAT_CARDS.map(stat => {
-          const value = stats[stat.key] ?? 0;
-          return (
-            <div
-              key={stat.key}
-              className="bg-surface border border-border p-4 rounded-xl flex items-center justify-between"
-            >
-              <div>
-                <div className="text-muted text-xs font-medium uppercase tracking-wider mb-1">
-                  {stat.label}
-                </div>
-                <div className="text-2xl font-bold text-white">{value}</div>
-              </div>
-              <div className={`p-2 rounded-lg bg-surface-light ${stat.color}`}>
-                <stat.icon className={`w-5 h-5 ${stat.spin ? 'animate-spin' : ''}`} />
-              </div>
-            </div>
-          );
-        })}
-      </div>
+      <CampaignStatsGrid stats={stats} />
 
       {/* Campaign Metadata Section */}
-      <div className="bg-surface border border-border rounded-xl p-5 mb-8">
-        <h3 className="font-semibold text-white flex items-center gap-2 mb-4">
-          <Settings className="w-4 h-4 text-accent-hover" />
-          {t('campaigns.detail.metadata.title')}
-        </h3>
-        <div className="grid grid-cols-5 gap-4">
-          {/* Tone */}
-          <div className="bg-main/30 rounded-lg p-3 border border-border">
-            <div className="flex items-center gap-2 mb-2">
-              <FileText className="w-4 h-4 text-purple-400" />
-              <span className="text-xs text-muted uppercase tracking-wider">
-                {t('campaigns.detail.metadata.tone')}
-              </span>
-            </div>
-            <div className="text-sm font-semibold text-white capitalize">{campaign.tone}</div>
-          </div>
-
-          {/* Target Word Count */}
-          <div className="bg-main/30 rounded-lg p-3 border border-border">
-            <div className="flex items-center gap-2 mb-2">
-              <Hash className="w-4 h-4 text-blue-400" />
-              <span className="text-xs text-muted uppercase tracking-wider">
-                {t('campaigns.detail.metadata.wordCount')}
-              </span>
-            </div>
-            <div className="text-sm font-semibold text-white">
-              {campaign.target_word_count.toLocaleString()}
-            </div>
-          </div>
-
-          {/* Image Preset */}
-          <div className="bg-main/30 rounded-lg p-3 border border-border">
-            <div className="flex items-center gap-2 mb-2">
-              <Image className="w-4 h-4 text-green-400" />
-              <span className="text-xs text-muted uppercase tracking-wider">
-                {t('campaigns.detail.metadata.images')}
-              </span>
-            </div>
-            <div className="text-sm font-semibold text-white">
-              {campaign.image_preset
-                ? t('campaigns.detail.metadata.enabled')
-                : t('campaigns.detail.metadata.disabled')}
-            </div>
-          </div>
-
-          {/* Created At */}
-          <div className="bg-main/30 rounded-lg p-3 border border-border">
-            <div className="flex items-center gap-2 mb-2">
-              <Calendar className="w-4 h-4 text-yellow-400" />
-              <span className="text-xs text-muted uppercase tracking-wider">
-                {t('campaigns.detail.metadata.created')}
-              </span>
-            </div>
-            <div className="text-sm font-semibold text-white">
-              {dayjs(campaign.created_at).format('MMM D, YYYY')}
-            </div>
-          </div>
-
-          {/* Updated At */}
-          <div className="bg-main/30 rounded-lg p-3 border border-border">
-            <div className="flex items-center gap-2 mb-2">
-              <Clock className="w-4 h-4 text-accent-hover" />
-              <span className="text-xs text-muted uppercase tracking-wider">
-                {t('campaigns.detail.metadata.updated')}
-              </span>
-            </div>
-            <div className="text-sm font-semibold text-white">
-              {dayjs(campaign.updated_at).format('MMM D, YYYY')}
-            </div>
-          </div>
-        </div>
-      </div>
+      <CampaignMetadata campaign={campaign} t={t} />
 
       {/* Credit Usage Section */}
-      {creditStats && (
-        <div className="bg-surface border border-border rounded-xl p-5 mb-8">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="font-semibold text-white flex items-center gap-2">
-              <Coins className="w-4 h-4 text-accent-hover" />
-              {t('campaigns.detail.credits.title')}
-            </h3>
-            <div className="text-xs text-muted font-mono">
-              {t('campaigns.detail.credits.costPerArticle')}: {creditStats.costPerArticle}{' '}
-              {creditStats.costPerArticle === 1 ? 'credit' : 'credits'}
-            </div>
-          </div>
-
-          {/* Credit Summary Cards */}
-          <div className="grid grid-cols-4 gap-4 mb-4">
-            {/* Credits Used */}
-            <div className="bg-main/30 rounded-lg p-3 border border-border">
-              <div className="flex items-center justify-between mb-1">
-                <span className="text-xs text-muted uppercase tracking-wider">
-                  {t('campaigns.detail.credits.used')}
-                </span>
-                <Coins className="w-4 h-4 text-green-400" />
-              </div>
-              <div className="text-xl font-bold text-white">{creditStats.creditsUsed}</div>
-              <div className="text-xs text-secondary mt-1">
-                {creditStats.successfulCount} {t('campaigns.detail.credits.successful')}
-              </div>
-            </div>
-
-            {/* Credits Refunded */}
-            <div className="bg-main/30 rounded-lg p-3 border border-border">
-              <div className="flex items-center justify-between mb-1">
-                <span className="text-xs text-muted uppercase tracking-wider">
-                  {t('campaigns.detail.credits.refunded')}
-                </span>
-                <AlertTriangle className="w-4 h-4 text-yellow-400" />
-              </div>
-              <div className="text-xl font-bold text-white">{creditStats.creditsRefunded}</div>
-              <div className="text-xs text-secondary mt-1">
-                {creditStats.failedCount} {t('campaigns.detail.credits.failed')}
-              </div>
-            </div>
-
-            {/* Estimated Remaining */}
-            <div className="bg-main/30 rounded-lg p-3 border border-border">
-              <div className="flex items-center justify-between mb-1">
-                <span className="text-xs text-muted uppercase tracking-wider">
-                  {t('campaigns.detail.credits.estimatedRemaining')}
-                </span>
-                <TrendingUp className="w-4 h-4 text-blue-400" />
-              </div>
-              <div className="text-xl font-bold text-white">
-                {creditStats.estimatedCreditsRemaining}
-              </div>
-              <div className="text-xs text-secondary mt-1">
-                {keywords.filter(k => k.status === 'pending' || k.status === 'queued').length}{' '}
-                {t('campaigns.detail.credits.status.remaining')}
-              </div>
-            </div>
-
-            {/* Total Required */}
-            <div className="bg-main/30 rounded-lg p-3 border border-border">
-              <div className="flex items-center justify-between mb-1">
-                <span className="text-xs text-muted uppercase tracking-wider">
-                  {t('campaigns.detail.credits.totalRequired')}
-                </span>
-                <Layers className="w-4 h-4 text-purple-400" />
-              </div>
-              <div className="text-xl font-bold text-white">{creditStats.totalCreditsRequired}</div>
-              <div className="text-xs text-secondary mt-1">
-                {keywords.length} {t('campaigns.card.keywords')}
-              </div>
-            </div>
-          </div>
-
-          {/* Credit Breakdown Bar */}
-          <div className="space-y-2">
-            <div className="flex justify-between text-xs">
-              <span className="text-muted">{t('campaigns.detail.credits.breakdown')}</span>
-              <span className="text-secondary font-mono">
-                {creditStats.creditsUsed} / {creditStats.totalCreditsRequired}{' '}
-                {creditStats.totalCreditsRequired === 1 ? 'credit' : 'credits'}
-              </span>
-            </div>
-            <div className="w-full bg-main rounded-full h-2 overflow-hidden border border-border">
-              {/* Used credits segment (green) */}
-              <div
-                className="h-full bg-green-500/80 float-left"
-                style={{
-                  width: `${creditStats.totalCreditsRequired > 0 ? (creditStats.creditsUsed / creditStats.totalCreditsRequired) * 100 : 0}%`,
-                }}
-              ></div>
-              {/* Refunded credits segment (yellow) */}
-              <div
-                className="h-full bg-yellow-500/80 float-left"
-                style={{
-                  width: `${creditStats.totalCreditsRequired > 0 ? (creditStats.creditsRefunded / creditStats.totalCreditsRequired) * 100 : 0}%`,
-                }}
-              ></div>
-              {/* Remaining credits segment (blue) */}
-              <div
-                className="h-full bg-blue-500/80 float-left"
-                style={{
-                  width: `${creditStats.totalCreditsRequired > 0 ? (creditStats.estimatedCreditsRemaining / creditStats.totalCreditsRequired) * 100 : 0}%`,
-                }}
-              ></div>
-            </div>
-            {/* Legend */}
-            <div className="flex gap-4 text-xs text-muted">
-              <div className="flex items-center gap-1.5">
-                <div className="w-2 h-2 rounded-full bg-green-500/80"></div>
-                <span>{t('campaigns.detail.credits.status.successful')}</span>
-              </div>
-              <div className="flex items-center gap-1.5">
-                <div className="w-2 h-2 rounded-full bg-yellow-500/80"></div>
-                <span>{t('campaigns.detail.credits.status.failed')}</span>
-              </div>
-              <div className="flex items-center gap-1.5">
-                <div className="w-2 h-2 rounded-full bg-blue-500/80"></div>
-                <span>{t('campaigns.detail.credits.status.remaining')}</span>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+      {creditStats && <CampaignCreditUsage creditStats={creditStats} keywords={keywords} t={t} />}
 
       {/* Article Queue Table */}
-      <div className="bg-surface border border-border rounded-xl overflow-hidden flex-1 flex flex-col">
-        <div className="p-4 border-b border-border flex justify-between items-center bg-main/30">
-          <h3 className="font-semibold text-white">{t('campaigns.detail.articleQueue')}</h3>
-          <div className="flex gap-2">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted" />
-              <input
-                type="text"
-                placeholder={t('campaigns.detail.searchPlaceholder')}
-                value={searchQuery}
-                onChange={e => setSearchQuery(e.target.value)}
-                className="bg-main border border-border rounded-lg pl-9 pr-3 py-1.5 text-xs text-secondary focus:border-accent outline-none w-48"
-              />
-            </div>
-            <DashboardButton
-              variant="ghost"
-              size="sm"
-              className="h-8 px-2 gap-1.5 text-xs"
-              onClick={cycleStatusFilter}
-            >
-              <Filter className="w-3.5 h-3.5" />
-              {getStatusFilterLabel()}
-            </DashboardButton>
-          </div>
-        </div>
-        <div className="overflow-y-auto flex-1">
-          <table className="w-full text-sm text-left">
-            <thead className="bg-main/50 text-muted font-medium border-b border-border text-xs uppercase tracking-wider">
-              <tr>
-                <th className="px-6 py-3">Keyword</th>
-                <th className="px-6 py-3">Status</th>
-                <th className="px-6 py-3">{t('campaigns.detail.wordCount')}</th>
-                <th className="px-6 py-3 text-right">{t('campaigns.detail.generated')}</th>
-                <th className="px-6 py-3 text-right">{t('campaigns.detail.actions')}</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-border">
-              {sortedArticles.length === 0 ? (
-                <tr>
-                  <td colSpan={5} className="px-6 py-12 text-center text-muted">
-                    {t('campaigns.detail.noArticles')}
-                  </td>
-                </tr>
-              ) : (
-                sortedArticles.map(article => (
-                  <tr
-                    key={article.id}
-                    className="hover:bg-surface-light/30 transition-colors group cursor-pointer"
-                    onClick={() => handleArticleClick(article)}
-                  >
-                    <td className="px-6 py-3 font-medium text-secondary">
-                      {article.primary_keyword}
-                    </td>
-                    <td className="px-6 py-3">
-                      <span
-                        className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium border uppercase tracking-wide ${
-                          article.status === 'published'
-                            ? 'bg-green-500/10 text-green-400 border-green-500/20'
-                            : article.status === 'draft'
-                              ? 'bg-surface-light text-secondary border-border'
-                              : article.status === 'reviewed'
-                                ? 'bg-purple-500/10 text-purple-400 border-purple-500/20'
-                                : article.status === 'generating'
-                                  ? 'bg-accent/10 text-accent-hover border-accent/20'
-                                  : article.status === 'queued'
-                                    ? 'bg-blue-500/10 text-blue-400 border-blue-500/20'
-                                    : 'bg-red-500/10 text-red-400 border-red-500/20'
-                        }`}
-                      >
-                        {article.status === 'generating' && (
-                          <Loader2 className="w-3 h-3 mr-1 animate-spin" />
-                        )}
-                        {article.status}
-                      </span>
-                    </td>
-                    <td className="px-6 py-3 text-muted font-mono text-xs">
-                      {article.word_count ? article.word_count.toLocaleString() : '-'}
-                    </td>
-                    <td className="px-6 py-3 text-right text-muted text-xs">
-                      {article.generated_at ? dayjs(article.generated_at).format('MMM D') : '-'}
-                    </td>
-                    <td className="px-6 py-3 text-right">
-                      <div className="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                        {(article.status === 'draft' || article.status === 'reviewed') && (
-                          <button className="p-1.5 hover:bg-surface-light rounded text-secondary hover:text-white">
-                            <Edit2 className="w-3.5 h-3.5" />
-                          </button>
-                        )}
-                        {article.status === 'published' && article.published_url && (
-                          <a
-                            href={article.published_url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="p-1.5 hover:bg-surface-light rounded text-secondary hover:text-white"
-                          >
-                            <ExternalLink className="w-3.5 h-3.5" />
-                          </a>
-                        )}
-                      </div>
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
-      </div>
+      <ArticleQueueTable articles={articles} onArticleClick={handleArticleClick} t={t} />
 
       {/* Add Keywords Modal */}
-      {isAddKeywordsModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm animate-fadeIn p-4">
-          <div className="bg-surface border border-border rounded-xl w-full max-w-lg shadow-2xl">
-            <div className="flex justify-between items-center p-6 border-b border-border">
-              <h3 className="text-lg font-bold text-white">{t('campaigns.keywords.title')}</h3>
-              <button
-                onClick={() => setIsAddKeywordsModalOpen(false)}
-                className="text-muted hover:text-white"
-              >
-                <ArrowLeft className="w-5 h-5" />
-              </button>
-            </div>
-            <div className="p-6">
-              <textarea
-                value={newKeywords}
-                onChange={e => setNewKeywords(e.target.value)}
-                placeholder={t('campaigns.keywords.placeholder')}
-                className="w-full h-32 bg-main border border-border rounded-lg p-4 text-white focus:ring-1 focus:ring-accent outline-none resize-none font-mono text-sm"
-              />
-            </div>
-            <div className="p-6 border-t border-border flex justify-end gap-2">
-              <DashboardButton variant="ghost" onClick={() => setIsAddKeywordsModalOpen(false)}>
-                {t('campaigns.keywords.cancel')}
-              </DashboardButton>
-              <DashboardButton onClick={handleAddKeywords}>
-                {t('campaigns.keywords.add')}
-              </DashboardButton>
-            </div>
-          </div>
-        </div>
-      )}
+      <AddKeywordsModal
+        isOpen={isAddKeywordsModalOpen}
+        onClose={() => setIsAddKeywordsModalOpen(false)}
+        onAdd={handleAddKeywords}
+      />
 
       {/* Start Generation Confirmation Modal */}
-      {isConfirmModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm animate-fadeIn p-4">
-          <div className="bg-surface border border-border rounded-xl w-full max-w-md shadow-2xl">
-            <div className="p-6 border-b border-border">
-              <h3 className="text-lg font-bold text-white">
-                {t('campaigns.detail.startGeneration')}
-              </h3>
-            </div>
-            <div className="p-6">
-              <p className="text-secondary">
-                {t('campaigns.detail.startConfirm', {
-                  count: pendingCount,
-                  plural: pendingCount !== 1 ? 's' : '',
-                })}
-              </p>
-              <p className="text-sm text-muted mt-2">{t('campaigns.detail.startConfirmDetail')}</p>
-            </div>
-            <div className="p-6 border-t border-border flex justify-end gap-2">
-              <DashboardButton
-                variant="ghost"
-                onClick={() => setIsConfirmModalOpen(false)}
-                disabled={isGenerating}
-              >
-                {t('campaigns.detail.cancel')}
-              </DashboardButton>
-              <DashboardButton
-                onClick={handleConfirmStartGeneration}
-                disabled={isGenerating}
-                className="min-w-[100px]"
-              >
-                {isGenerating ? (
-                  <>
-                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />{' '}
-                    {t('campaigns.detail.starting')}
-                  </>
-                ) : (
-                  <>
-                    <Play className="w-4 h-4 mr-2" /> {t('campaigns.detail.start')}
-                  </>
-                )}
-              </DashboardButton>
-            </div>
-          </div>
-        </div>
-      )}
+      <ConfirmDialog
+        isOpen={isConfirmModalOpen}
+        onClose={() => setIsConfirmModalOpen(false)}
+        onConfirm={handleConfirmStartGeneration}
+        title={t('campaigns.detail.startGeneration')}
+        message={t('campaigns.detail.startConfirm', {
+          count: pendingCount,
+          plural: pendingCount !== 1 ? 's' : '',
+        })}
+        items={[t('campaigns.detail.startConfirmDetail')]}
+        variant="info"
+        labels={{
+          confirm: t('campaigns.detail.start'),
+          confirming: t('campaigns.detail.starting'),
+          cancel: t('campaigns.detail.cancel'),
+        }}
+        isConfirming={isGenerating}
+      />
 
       {/* Settings Modal */}
-      {isSettingsModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm animate-fadeIn p-4">
-          <div className="bg-surface border border-border rounded-xl w-full max-w-md shadow-2xl">
-            <div className="flex justify-between items-center p-6 border-b border-border">
-              <h3 className="text-lg font-bold text-white">
-                {t('campaigns.detail.metadata.title')}
-              </h3>
-              <button
-                onClick={() => setIsSettingsModalOpen(false)}
-                className="text-muted hover:text-white"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-            <div className="p-6 space-y-4">
-              {/* Campaign Name */}
-              <div>
-                <label className="block text-sm font-medium text-secondary mb-1.5">
-                  {t('campaigns.newCampaign.name')}
-                </label>
-                <input
-                  type="text"
-                  value={settingsForm.name}
-                  onChange={e => setSettingsForm({ ...settingsForm, name: e.target.value })}
-                  className="w-full bg-main border border-border rounded-lg px-3 py-2 text-white focus:ring-1 focus:ring-accent outline-none"
-                  placeholder={t('campaigns.newCampaign.namePlaceholder')}
-                />
-              </div>
-
-              {/* Tone */}
-              <div>
-                <label className="block text-sm font-medium text-secondary mb-1.5">
-                  {t('projects.onboarding.step3.toneOfVoice')}
-                </label>
-                <div className="grid grid-cols-2 gap-2">
-                  {(['professional', 'casual', 'witty', 'academic'] as const).map(toneOption => (
-                    <button
-                      key={toneOption}
-                      type="button"
-                      onClick={() => setSettingsForm({ ...settingsForm, tone: toneOption })}
-                      className={`py-2 rounded-lg text-sm font-medium border transition-colors ${
-                        settingsForm.tone === toneOption
-                          ? 'bg-accent/20 border-accent text-accent-hover'
-                          : 'bg-main border-border text-muted hover:border-border'
-                      }`}
-                    >
-                      {t(
-                        `projects.onboarding.step3.tones.${toneOption}` as `projects.onboarding.step3.tones.${CampaignTone}`
-                      )}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Target Word Count */}
-              <div>
-                <label className="block text-sm font-medium text-secondary mb-1.5">
-                  {t('projects.onboarding.step3.targetWordCount')}
-                </label>
-                <div className="grid grid-cols-3 gap-2">
-                  {([800, 1500, 2500] as const).map(count => (
-                    <button
-                      key={count}
-                      type="button"
-                      onClick={() => setSettingsForm({ ...settingsForm, targetWordCount: count })}
-                      className={`py-2 rounded-lg text-sm font-medium border transition-colors ${
-                        settingsForm.targetWordCount === count
-                          ? 'bg-accent/20 border-accent text-accent-hover'
-                          : 'bg-main border-border text-muted hover:border-border'
-                      }`}
-                    >
-                      ~{count}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Writer Model */}
-              <div>
-                <label className="block text-sm font-medium text-secondary mb-1.5">
-                  Writer Model
-                </label>
-                <select
-                  value={settingsForm.model}
-                  onChange={e => setSettingsForm({ ...settingsForm, model: e.target.value })}
-                  className="w-full bg-main border border-border rounded-lg px-3 py-2 text-white focus:ring-1 focus:ring-accent outline-none"
-                >
-                  {writerModels.map(m => (
-                    <option key={m.id} value={m.id}>
-                      {m.name} ({m.provider})
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              {/* Image Preset */}
-              <div>
-                <label className="block text-sm font-medium text-secondary mb-1.5">
-                  Image Preset
-                </label>
-                <select
-                  value={settingsForm.imagePreset}
-                  onChange={e => setSettingsForm({ ...settingsForm, imagePreset: e.target.value })}
-                  className="w-full bg-main border border-border rounded-lg px-3 py-2 text-white focus:ring-1 focus:ring-accent outline-none"
-                >
-                  <option value="">No images</option>
-                  {imagePresets.map(p => (
-                    <option key={p.key} value={p.key}>
-                      {p.displayName}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            </div>
-            <div className="p-6 border-t border-border flex justify-end gap-2">
-              <DashboardButton variant="ghost" onClick={() => setIsSettingsModalOpen(false)}>
-                {t('campaigns.keywords.cancel')}
-              </DashboardButton>
-              <DashboardButton onClick={handleSaveSettings}>
-                {t('projects.onboarding.buttons.nextStep')}
-              </DashboardButton>
-            </div>
-          </div>
-        </div>
-      )}
+      <CampaignSettingsModal
+        isOpen={isSettingsModalOpen}
+        onClose={() => setIsSettingsModalOpen(false)}
+        onSave={handleSaveSettings}
+        initialSettings={{
+          name: campaign.name,
+          tone: campaign.tone || '',
+          targetWordCount: campaign.target_word_count,
+          model: campaign.ai_model,
+          imagePreset: campaign.image_preset || '',
+        }}
+        writerModels={writerModels}
+        imagePresets={imagePresets}
+        isSaving={isGenerating}
+      />
 
       {/* Article Detail Modal */}
       <ArticleDetailModal

@@ -73,7 +73,6 @@ export default function CampaignsPage({ campaignId }: ICampaignsPageClientProps)
           onDeleteCampaign={handleDeleteCampaign}
           selectedCampaignId={selectedCampaignId}
           onBackToList={() => {}}
-          projectId={activeProject?.id ?? null}
         />
       )}
       <NewCampaignModal

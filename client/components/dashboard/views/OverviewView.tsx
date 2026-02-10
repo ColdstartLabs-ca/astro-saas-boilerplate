@@ -1,5 +1,6 @@
 'use client';
 
+import { ConfirmDialog } from '@client/components/ui/ConfirmDialog';
 import { DashboardCard } from '@client/components/dashboard/ui/DashboardCard';
 import { ProjectEditModal } from '@client/components/projects/ProjectEditModal';
 import { ProjectList } from '@client/components/projects/ProjectList';
@@ -9,6 +10,8 @@ import { useProjects } from '@client/hooks/useProjects';
 import { useSubscription, useUserStore } from '@client/store/userStore';
 import { cn } from '@client/utils/cn';
 import { dashboardNavigate } from '@client/utils/dashboardNavigation';
+import { getGreeting } from '@client/utils/timeUtils';
+import { getProjectStatusStyles } from '@client/utils/statusStyles';
 import { useLogger } from '@client/utils/logger';
 import { getPlanDisplayName } from '@shared/config/stripe';
 import type { IProject, IUpdateProjectInput } from '@shared/types/project.types';
@@ -49,12 +52,7 @@ export function OverviewView(): JSX.Element {
   const displayName = user?.name || user?.email?.split('@')[0] || 'there';
 
   // Time-based greeting
-  const greeting = useMemo(() => {
-    const hour = new Date().getHours();
-    if (hour < 12) return 'Good morning';
-    if (hour < 18) return 'Good afternoon';
-    return 'Good evening';
-  }, []);
+  const greeting = getGreeting();
 
   // Auto-show onboarding modal for first-time users
   useEffect(() => {
@@ -255,9 +253,7 @@ export function OverviewView(): JSX.Element {
                       <span
                         className={cn(
                           'px-2 py-0.5 rounded text-[10px] uppercase font-bold tracking-wide border',
-                          activeProject.status === 'active'
-                            ? 'bg-green-500/10 text-green-400 border-green-500/20'
-                            : 'bg-secondary/10 text-secondary border-secondary/20'
+                          getProjectStatusStyles(activeProject.status)
                         )}
                       >
                         {t(`projects.list.status.${activeProject.status}`)}
@@ -390,33 +386,21 @@ export function OverviewView(): JSX.Element {
       {/* Onboarding Modal */}
       <ProjectOnboarding isOpen={showOnboarding} onClose={() => setShowOnboarding(false)} />
 
-      {/* Delete Confirmation Modal */}
-      {projectToDelete && (
-        <div className="fixed inset-0 bg-main/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in fade-in duration-200">
-          <div className="bg-surface border border-border rounded-xl p-6 max-w-md w-full shadow-2xl">
-            <h3 className="text-lg font-semibold text-white mb-2">
-              {t('projects.list.deleteConfirmTitle')}
-            </h3>
-            <p className="text-secondary mb-6">{t('projects.list.deleteConfirm')}</p>
-            <div className="flex gap-3">
-              <button
-                onClick={() => setProjectToDelete(null)}
-                disabled={isDeleting}
-                className="flex-1 py-2.5 text-sm font-medium text-secondary hover:text-white bg-elevated hover:bg-surface-light rounded-lg transition-colors"
-              >
-                {t('projects.list.cancel')}
-              </button>
-              <button
-                onClick={handleConfirmDelete}
-                disabled={isDeleting}
-                className="flex-1 py-2.5 text-sm font-medium text-white bg-red-500 hover:bg-red-600 rounded-lg transition-colors disabled:opacity-50 shadow-lg shadow-red-500/20"
-              >
-                {isDeleting ? 'Deleting...' : t('projects.list.confirm')}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Delete Confirmation Dialog */}
+      <ConfirmDialog
+        isOpen={projectToDelete !== null}
+        onClose={() => setProjectToDelete(null)}
+        onConfirm={handleConfirmDelete}
+        title={t('projects.list.deleteConfirmTitle')}
+        message={t('projects.list.deleteConfirm')}
+        variant="danger"
+        labels={{
+          confirm: t('projects.list.confirm'),
+          cancel: t('projects.list.cancel'),
+          confirming: 'Deleting...',
+        }}
+        isConfirming={isDeleting}
+      />
 
       {/* Edit Project Modal */}
       {projectToEdit && (

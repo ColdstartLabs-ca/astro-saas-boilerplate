@@ -1,7 +1,7 @@
 'use client';
 
 import { Plus, ArrowUpRight } from 'lucide-react';
-import { DashboardButton } from '../ui/DashboardButton';
+import { DashboardButton } from '../../ui/DashboardButton';
 
 export function BacklinkExchangeView(): JSX.Element {
   return (

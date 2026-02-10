@@ -5,6 +5,8 @@
  * Each preset maps a use case to a specific model with defaults.
  */
 
+import type { ModelTier } from '@shared/types/models.types';
+
 /**
  * Image preset types for different use cases
  */
@@ -36,6 +38,8 @@ export interface IImagePreset {
   creditCost: number;
   /** Aspect ratio for generated images */
   aspectRatio: string;
+  /** Quality tier for UI grouping */
+  tier: ModelTier;
 }
 
 /**
@@ -55,6 +59,7 @@ export const IMAGE_PRESETS: Record<ImagePresetKey, IImagePreset> = {
     },
     creditCost: 0,
     aspectRatio: '16:9',
+    tier: 'budget',
   },
   'social-card': {
     key: 'social-card',
@@ -69,6 +74,7 @@ export const IMAGE_PRESETS: Record<ImagePresetKey, IImagePreset> = {
     },
     creditCost: 0,
     aspectRatio: '1.91:1',
+    tier: 'budget',
   },
   'product-shot': {
     key: 'product-shot',
@@ -83,6 +89,7 @@ export const IMAGE_PRESETS: Record<ImagePresetKey, IImagePreset> = {
     },
     creditCost: 0,
     aspectRatio: '4:3',
+    tier: 'balanced',
   },
   'premium-hero': {
     key: 'premium-hero',
@@ -97,6 +104,7 @@ export const IMAGE_PRESETS: Record<ImagePresetKey, IImagePreset> = {
     },
     creditCost: 1,
     aspectRatio: '16:9',
+    tier: 'ultra',
   },
   photorealistic: {
     key: 'photorealistic',
@@ -109,6 +117,7 @@ export const IMAGE_PRESETS: Record<ImagePresetKey, IImagePreset> = {
     },
     creditCost: 1,
     aspectRatio: '16:9',
+    tier: 'ultra',
   },
   illustration: {
     key: 'illustration',
@@ -122,6 +131,7 @@ export const IMAGE_PRESETS: Record<ImagePresetKey, IImagePreset> = {
     },
     creditCost: 1,
     aspectRatio: '4:3',
+    tier: 'ultra',
   },
 };
 

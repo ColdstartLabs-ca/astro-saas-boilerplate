@@ -3,15 +3,52 @@
  *
  * Defines supported AI models for text generation via OpenRouter.
  * Each model has metadata for display and configuration purposes.
+ *
+ * creditCost values are placeholders — update when real pricing is implemented.
  */
 
-export const AI_MODELS = {
-  'openai/gpt-4o': { name: 'GPT-4o', provider: 'OpenAI', tier: 'all' },
-  'openai/gpt-4o-mini': { name: 'GPT-4o Mini', provider: 'OpenAI', tier: 'all' },
-  'anthropic/claude-sonnet-4-5': { name: 'Claude Sonnet 4.5', provider: 'Anthropic', tier: 'all' },
-  'google/gemini-2.0-flash': { name: 'Gemini 2.0 Flash', provider: 'Google', tier: 'all' },
-  'openrouter/auto': { name: 'Auto (Best Match)', provider: 'OpenRouter', tier: 'all' },
-} as const;
+import type { ModelTier } from '@shared/types/models.types';
+
+export const AI_MODELS: Record<
+  string,
+  { name: string; provider: string; tier: ModelTier; description: string; creditCost: number }
+> = {
+  'openai/gpt-4o-mini': {
+    name: 'GPT-4o Mini',
+    provider: 'OpenAI',
+    tier: 'budget',
+    description: 'Fast, cost-effective text generation',
+    creditCost: 0,
+  },
+  'google/gemini-2.0-flash': {
+    name: 'Gemini 2.0 Flash',
+    provider: 'Google',
+    tier: 'budget',
+    description: 'High-speed, efficient content creation',
+    creditCost: 0,
+  },
+  'openai/gpt-4o': {
+    name: 'GPT-4o',
+    provider: 'OpenAI',
+    tier: 'balanced',
+    description: 'Strong all-round writing quality',
+    creditCost: 0,
+  },
+  'openrouter/auto': {
+    name: 'Auto (Best Match)',
+    provider: 'OpenRouter',
+    tier: 'balanced',
+    description: 'Automatically picks the best model',
+    creditCost: 0,
+  },
+  'anthropic/claude-sonnet-4-5': {
+    name: 'Claude Sonnet 4.5',
+    provider: 'Anthropic',
+    tier: 'ultra',
+    description: 'Premium writing with nuance and depth',
+    creditCost: 1,
+  },
+};
 
 export type AIModelId = keyof typeof AI_MODELS;
 
@@ -34,10 +71,10 @@ export function getModel(modelId: AIModelId): (typeof AI_MODELS)[AIModelId] {
 }
 
 /**
- * Get models by tier (currently all models are 'all')
+ * Get models by tier
  */
-export function getModelsByTier(tier: string): AIModelId[] {
-  return MODEL_IDS.filter(id => AI_MODELS[id].tier === tier || AI_MODELS[id].tier === 'all');
+export function getModelsByTier(tier: ModelTier): AIModelId[] {
+  return MODEL_IDS.filter(id => AI_MODELS[id].tier === tier);
 }
 
 /**
@@ -46,7 +83,7 @@ export function getModelsByTier(tier: string): AIModelId[] {
  */
 export function getAvailableWriterModels(
   envValue: string
-): Array<{ id: AIModelId; name: string; provider: string }> {
+): Array<{ id: AIModelId; name: string; provider: string; description: string; tier: ModelTier; creditCost: number }> {
   const enabledIds = envValue
     .split(',')
     .map(s => s.trim())
@@ -55,8 +92,8 @@ export function getAvailableWriterModels(
   const ids = enabledIds.length > 0 ? MODEL_IDS.filter(id => enabledIds.includes(id)) : MODEL_IDS;
 
   return ids.map(id => {
-    const { name, provider } = AI_MODELS[id];
-    return { id, name, provider };
+    const { name, provider, description, tier, creditCost } = AI_MODELS[id];
+    return { id, name, provider, description, tier, creditCost };
   });
 }
 

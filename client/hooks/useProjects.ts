@@ -18,12 +18,12 @@ import type {
   ICreateProjectInput,
   IUpdateProjectInput,
 } from '@shared/types/project.types';
-import { useLogger } from '@client/utils/logger';
 import { useUserStore } from '@client/store/userStore';
 import { useProjectStore } from '@client/store/projectStore';
-import { useToastStore } from '@client/store/toastStore';
-import { createClient } from '@shared/utils/supabase/client';
+import { apiFetch } from '@client/utils/api-client';
 import { getTranslations } from '@src/i18n/utils';
+import { useMutationWithToast } from './useMutationWithToast';
+import { useLogger } from '@client/utils/logger';
 
 // =============================================================================
 // Constants
@@ -36,44 +36,12 @@ const _ACTIVE_PROJECT_KEY = 'autopilotrank_active_project_id';
 // =============================================================================
 
 /**
- * Get the current user's access token for API requests
- */
-async function getAccessToken(): Promise<string | null> {
-  const supabase = createClient();
-  const {
-    data: { session },
-  } = await supabase.auth.getSession();
-  return session?.access_token ?? null;
-}
-
-/**
- * Build auth headers for API requests
- */
-async function getAuthHeaders(): Promise<Record<string, string>> {
-  const accessToken = await getAccessToken();
-  const headers: Record<string, string> = { 'Content-Type': 'application/json' };
-  if (accessToken) {
-    headers.Authorization = `Bearer ${accessToken}`;
-  }
-  return headers;
-}
-
-/**
  * Fetch user's projects from API
  */
 async function fetchProjects(): Promise<IProject[]> {
-  const headers = await getAuthHeaders();
-  const response = await fetch('/api/projects', {
+  const data = await apiFetch<{ projects: IProject[] }>('/api/projects', {
     method: 'GET',
-    headers,
   });
-
-  if (!response.ok) {
-    const error = await response.json().catch(() => ({ error: 'Unknown error' }));
-    throw new Error(error.error || 'Failed to fetch projects');
-  }
-
-  const data = await response.json();
   return data.projects ?? [];
 }
 
@@ -81,19 +49,10 @@ async function fetchProjects(): Promise<IProject[]> {
  * Create a new project
  */
 async function createProject(input: ICreateProjectInput): Promise<IProject> {
-  const headers = await getAuthHeaders();
-  const response = await fetch('/api/projects', {
+  const data = await apiFetch<{ project: IProject }>('/api/projects', {
     method: 'POST',
-    headers,
     body: JSON.stringify(input),
   });
-
-  if (!response.ok) {
-    const error = await response.json().catch(() => ({ error: 'Unknown error' }));
-    throw new Error(error.error || 'Failed to create project');
-  }
-
-  const data = await response.json();
   return data.project;
 }
 
@@ -101,19 +60,10 @@ async function createProject(input: ICreateProjectInput): Promise<IProject> {
  * Update an existing project
  */
 async function updateProject(projectId: string, input: IUpdateProjectInput): Promise<IProject> {
-  const headers = await getAuthHeaders();
-  const response = await fetch(`/api/projects/${projectId}`, {
+  const data = await apiFetch<{ project: IProject }>(`/api/projects/${projectId}`, {
     method: 'PUT',
-    headers,
     body: JSON.stringify(input),
   });
-
-  if (!response.ok) {
-    const error = await response.json().catch(() => ({ error: 'Unknown error' }));
-    throw new Error(error.error || 'Failed to update project');
-  }
-
-  const data = await response.json();
   return data.project;
 }
 
@@ -121,17 +71,9 @@ async function updateProject(projectId: string, input: IUpdateProjectInput): Pro
  * Delete a project
  */
 async function deleteProject(projectId: string): Promise<{ success: boolean }> {
-  const headers = await getAuthHeaders();
-  const response = await fetch(`/api/projects/${projectId}`, {
+  await apiFetch<{ success: boolean }>(`/api/projects/${projectId}`, {
     method: 'DELETE',
-    headers,
   });
-
-  if (!response.ok) {
-    const error = await response.json().catch(() => ({ error: 'Unknown error' }));
-    throw new Error(error.error || 'Failed to delete project');
-  }
-
   return { success: true };
 }
 
@@ -161,7 +103,6 @@ export function useProjects(): IUseProjectsReturn {
   const queryClient = useQueryClient();
   const { user } = useUserStore();
   const { activeProjectId, setActiveProjectId: setActiveProjectStore } = useProjectStore();
-  const { showToast } = useToastStore();
   const t = useMemo(() => getTranslations('dashboard'), []);
 
   // Fetch projects query - scoped by user ID to prevent cross-account stale data
@@ -201,10 +142,6 @@ export function useProjects(): IUseProjectsReturn {
       queryClient.invalidateQueries({ queryKey: ['projects', user?.id] });
       // Auto-select newly created project
       // (Note: we can't access the new project here directly, but the query will update)
-      showToast({
-        message: t('projects.success.created'),
-        type: 'success',
-      });
     },
   });
 
@@ -214,10 +151,6 @@ export function useProjects(): IUseProjectsReturn {
       updateProject(projectId, input),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['projects', user?.id] });
-      showToast({
-        message: t('projects.success.updated'),
-        type: 'success',
-      });
     },
   });
 
@@ -230,10 +163,6 @@ export function useProjects(): IUseProjectsReturn {
       if (activeProjectId === deletedProjectId) {
         setActiveProjectStore(null);
       }
-      showToast({
-        message: t('projects.success.deleted'),
-        type: 'success',
-      });
     },
   });
 
@@ -247,60 +176,42 @@ export function useProjects(): IUseProjectsReturn {
   );
 
   // Wrapped mutation functions with error handling
-  const handleCreateProject = useCallback(
-    async (input: ICreateProjectInput): Promise<IProject> => {
-      try {
-        return await createMutation.mutateAsync(input);
-      } catch (error) {
-        logger.error('Failed to create project', {
-          error: error instanceof Error ? error.message : 'Unknown error',
-        });
-        showToast({
-          message: t('projects.errors.createFailed'),
-          type: 'error',
-        });
-        throw error;
-      }
-    },
-    [createMutation, logger, showToast, t]
-  );
+  const handleCreateProject = useMutationWithToast(createMutation, {
+    successMessage: t('projects.success.created'),
+    errorMessage: t('projects.errors.createFailed'),
+    loggerContext: 'Failed to create project',
+  });
+
+  const updateProjectWithToast = useMutationWithToast(updateMutation, {
+    successMessage: t('projects.success.updated'),
+    errorMessage: t('projects.errors.updateFailed'),
+    loggerContext: (variables: { projectId: string; input: IUpdateProjectInput }) => ({
+      message: 'Failed to update project',
+      context: { projectId: variables.projectId },
+    }),
+  });
 
   const handleUpdateProject = useCallback(
     async (projectId: string, input: IUpdateProjectInput): Promise<IProject> => {
-      try {
-        return await updateMutation.mutateAsync({ projectId, input });
-      } catch (error) {
-        logger.error('Failed to update project', {
-          error: error instanceof Error ? error.message : 'Unknown error',
-          projectId,
-        });
-        showToast({
-          message: t('projects.errors.updateFailed'),
-          type: 'error',
-        });
-        throw error;
-      }
+      return updateProjectWithToast({ projectId, input });
     },
-    [updateMutation, logger, showToast, t]
+    [updateProjectWithToast]
   );
+
+  const deleteProjectWithToast = useMutationWithToast(deleteMutation, {
+    successMessage: t('projects.success.deleted'),
+    errorMessage: t('projects.errors.deleteFailed'),
+    loggerContext: (projectId: string) => ({
+      message: 'Failed to delete project',
+      context: { projectId },
+    }),
+  });
 
   const handleDeleteProject = useCallback(
     async (projectId: string): Promise<void> => {
-      try {
-        await deleteMutation.mutateAsync(projectId);
-      } catch (error) {
-        logger.error('Failed to delete project', {
-          error: error instanceof Error ? error.message : 'Unknown error',
-          projectId,
-        });
-        showToast({
-          message: t('projects.errors.deleteFailed'),
-          type: 'error',
-        });
-        throw error;
-      }
+      await deleteProjectWithToast(projectId);
     },
-    [deleteMutation, logger, showToast, t]
+    [deleteProjectWithToast]
   );
 
   return {
