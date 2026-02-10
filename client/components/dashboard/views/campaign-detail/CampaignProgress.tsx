@@ -18,7 +18,11 @@ export function CampaignProgress({
   }
 
   const published = articleStats?.published ?? 0;
+  const generating = articleStats?.generating ?? 0;
   const progressPercentage = keywordsCount > 0 ? (published / keywordsCount) * 100 : 0;
+
+  // Only show pulsing animation when actively generating articles
+  const isActivelyGenerating = campaignStatus === 'active' && generating > 0;
 
   return (
     <div className="mb-6">
@@ -31,11 +35,13 @@ export function CampaignProgress({
       <div className="w-full bg-main rounded-full h-2 overflow-hidden border border-border">
         <div
           className={`h-full rounded-full transition-all duration-500 ${
-            campaignStatus === 'active'
+            isActivelyGenerating
               ? 'bg-accent animate-pulse'
               : campaignStatus === 'paused'
                 ? 'bg-yellow-500'
-                : 'bg-muted'
+                : campaignStatus === 'active'
+                  ? 'bg-accent'
+                  : 'bg-muted'
           }`}
           style={{ width: `${progressPercentage}%` }}
         ></div>

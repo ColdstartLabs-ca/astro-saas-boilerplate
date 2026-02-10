@@ -157,18 +157,45 @@ export function NewCampaignModal({
 
   if (!isOpen) return null;
 
+  // Block campaign creation if no project is selected
+  if (!projectId) {
+    return (
+      <div
+        className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm animate-fadeIn p-4"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="no-project-title"
+      >
+        <div className="bg-surface border border-border rounded-xl w-full max-w-md shadow-2xl p-8 text-center">
+          <h3 id="no-project-title" className="text-lg font-semibold text-white mb-2">No Project Selected</h3>
+          <p className="text-secondary text-sm mb-6">
+            Please create or select a project before creating a campaign.
+          </p>
+          <DashboardButton variant="primary" onClick={onClose}>
+            Close
+          </DashboardButton>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm animate-fadeIn p-4">
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm animate-fadeIn p-4"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="new-campaign-title"
+    >
       <div className="bg-surface border border-border rounded-xl w-full max-w-2xl shadow-2xl flex flex-col max-h-[90vh]">
         {/* Header */}
         <div className="flex justify-between items-center p-6 border-b border-border">
           <div>
-            <h2 className="text-xl font-bold text-white">{t('campaigns.newCampaign.title')}</h2>
+            <h2 id="new-campaign-title" className="text-xl font-bold text-white">{t('campaigns.newCampaign.title')}</h2>
             <p className="text-secondary text-sm mt-1">
               {t('campaigns.newCampaign.stepOf', { current: step, total: 2 })}
             </p>
           </div>
-          <button onClick={onClose} className="text-muted hover:text-white">
+          <button onClick={onClose} className="text-muted hover:text-white" aria-label="Close dialog">
             <X className="w-5 h-5" />
           </button>
         </div>

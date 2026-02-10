@@ -1,9 +1,10 @@
 'use client';
 
 import React, { Suspense, useState, useEffect, useTransition, useCallback } from 'react';
-import { onDashboardNavigate } from '@client/utils/dashboardNavigation';
+import { dashboardNavigate, onDashboardNavigate } from '@client/utils/dashboardNavigation';
 import { useIsAdmin } from '@client/store/userStore';
 import { getRouteByPath, matchDynamicRoute } from '@client/config/dashboardRoutes';
+import { Home, ArrowLeft } from 'lucide-react';
 
 function LoadingSpinner(): JSX.Element {
   return (
@@ -16,7 +17,20 @@ function LoadingSpinner(): JSX.Element {
 function NotFound(): JSX.Element {
   return (
     <div className="flex flex-col items-center justify-center py-20 text-secondary">
-      <p className="text-lg">Page not found</p>
+      <div className="w-16 h-16 bg-surface-light rounded-full flex items-center justify-center mb-4">
+        <Home className="w-8 h-8 text-muted" />
+      </div>
+      <h2 className="text-xl font-semibold text-white mb-2">Page Not Found</h2>
+      <p className="text-secondary mb-6 text-center max-w-md">
+        The page you're looking for doesn't exist or has been moved.
+      </p>
+      <button
+        onClick={() => dashboardNavigate('/dashboard')}
+        className="flex items-center gap-2 bg-accent hover:bg-accent-hover text-white px-4 py-2 rounded-lg transition-colors font-medium text-sm"
+      >
+        <ArrowLeft className="w-4 h-4" />
+        Back to Overview
+      </button>
     </div>
   );
 }

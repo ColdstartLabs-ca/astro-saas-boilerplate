@@ -28,6 +28,7 @@ import { useTranslations } from '@client/hooks/useTranslations';
 import { ModelSelect } from '@client/components/ui/ModelSelect';
 import { imagePresetToOption } from '@client/utils/modelAdapters';
 import { ArticlePreview } from './ArticlePreview';
+import { dashboardNavigate } from '@client/utils/dashboardNavigation';
 import type { IArticle } from '@shared/types/article.types';
 
 // =============================================================================
@@ -114,18 +115,12 @@ export function QuickGenerateModal({
   const watchedTone = watch('tone');
   const _watchedCampaignId = watch('campaignId');
 
-  // Close modal on successful generation
-
+  // Notify parent of successful generation (don't auto-close)
   useEffect(() => {
     if (article && article.status === 'draft') {
       if (onGenerateComplete) {
         onGenerateComplete(article);
       }
-      // Close modal after a short delay to show success
-      const timer = setTimeout(() => {
-        handleClose();
-      }, 1500);
-      return () => clearTimeout(timer);
     }
   }, [article, onGenerateComplete]);
 
@@ -170,9 +165,14 @@ export function QuickGenerateModal({
   // No project state
   if (!activeProject && !projectsLoading) {
     return (
-      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm animate-fadeIn p-4">
+      <div
+        className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm animate-fadeIn p-4"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="quick-generate-no-project-title"
+      >
         <div className="bg-surface border border-border rounded-xl w-full max-w-lg shadow-2xl p-8 text-center">
-          <p className="text-text-secondary mb-4">{_t('quickGenerate.noProject.title')}</p>
+          <p id="quick-generate-no-project-title" className="text-text-secondary mb-4">{_t('quickGenerate.noProject.title')}</p>
           <DashboardButton variant="primary" onClick={handleClose}>
             {_t('quickGenerate.noProject.close')}
           </DashboardButton>
@@ -184,12 +184,17 @@ export function QuickGenerateModal({
   // Generating state
   if (isGenerating) {
     return (
-      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm animate-fadeIn p-4">
+      <div
+        className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm animate-fadeIn p-4"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="quick-generate-generating-title"
+      >
         <div className="bg-surface border border-border rounded-xl w-full max-w-lg shadow-2xl p-8 text-center">
           <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-accent/10 mb-4">
             <Loader2 className="w-8 h-8 text-accent animate-spin" />
           </div>
-          <h3 className="text-lg font-semibold text-text-primary mb-2">
+          <h3 id="quick-generate-generating-title" className="text-lg font-semibold text-text-primary mb-2">
             {_t('quickGenerate.generatingState.title')}
           </h3>
           <p className="text-text-secondary text-sm">
@@ -208,12 +213,17 @@ export function QuickGenerateModal({
   // Success state - show article preview
   if (article && article.status === 'draft') {
     return (
-      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm animate-fadeIn p-4">
+      <div
+        className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm animate-fadeIn p-4"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="quick-generate-success-title"
+      >
         <div className="bg-surface border border-border rounded-xl w-full max-w-2xl shadow-2xl max-h-[90vh] overflow-hidden flex flex-col">
           {/* Header */}
           <div className="flex justify-between items-center p-6 border-b border-border">
-            <h2 className="text-xl font-bold text-white">{_t('quickGenerate.success.title')}</h2>
-            <button onClick={handleClose} className="text-muted hover:text-white">
+            <h2 id="quick-generate-success-title" className="text-xl font-bold text-white">{_t('quickGenerate.success.title')}</h2>
+            <button onClick={handleClose} className="text-muted hover:text-white" aria-label="Close dialog">
               <X className="w-5 h-5" />
             </button>
           </div>
@@ -229,12 +239,17 @@ export function QuickGenerateModal({
   // Failed state
   if (article?.status === 'failed' || error) {
     return (
-      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm animate-fadeIn p-4">
+      <div
+        className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm animate-fadeIn p-4"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="quick-generate-failed-title"
+      >
         <div className="bg-surface border border-border rounded-xl w-full max-w-lg shadow-2xl p-8 text-center">
           <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-error/10 mb-4">
             <X className="w-6 h-6 text-error" />
           </div>
-          <h3 className="text-lg font-semibold text-text-primary mb-2">
+          <h3 id="quick-generate-failed-title" className="text-lg font-semibold text-text-primary mb-2">
             {_t('quickGenerate.failed.title')}
           </h3>
           <p className="text-text-secondary text-sm mb-4">
@@ -255,15 +270,26 @@ export function QuickGenerateModal({
   // Check if user has campaigns
   if (!campaignsLoading && campaigns.length === 0) {
     return (
-      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm animate-fadeIn p-4">
+      <div
+        className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm animate-fadeIn p-4"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="quick-generate-no-campaigns-title"
+      >
         <div className="bg-surface border border-border rounded-xl w-full max-w-md shadow-2xl p-8 text-center">
-          <h3 className="text-lg font-semibold text-text-primary mb-2">
+          <h3 id="quick-generate-no-campaigns-title" className="text-lg font-semibold text-text-primary mb-2">
             {_t('quickGenerate.noCampaigns')}
           </h3>
           <p className="text-text-secondary text-sm mb-6">
             {_t('quickGenerate.noCampaignsDescription')}
           </p>
-          <DashboardButton variant="primary" onClick={() => onClose()}>
+          <DashboardButton
+            variant="primary"
+            onClick={() => {
+              dashboardNavigate('/dashboard/campaigns');
+              onClose();
+            }}
+          >
             {_t('quickGenerate.goToCampaigns')}
           </DashboardButton>
         </div>
@@ -272,17 +298,22 @@ export function QuickGenerateModal({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm animate-fadeIn p-4">
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm animate-fadeIn p-4"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="quick-generate-title"
+    >
       <div className="bg-surface border border-border rounded-xl w-full max-w-lg shadow-2xl max-h-[90vh] overflow-hidden flex flex-col">
         {/* Header */}
         <div className="flex justify-between items-center p-6 border-b border-border">
           <div>
-            <h2 className="text-xl font-bold text-white">{_t('quickGenerate.title')}</h2>
+            <h2 id="quick-generate-title" className="text-xl font-bold text-white">{_t('quickGenerate.title')}</h2>
             <p className="text-secondary text-sm mt-1">
               {activeProject?.name && `For ${activeProject.name}`}
             </p>
           </div>
-          <button onClick={handleClose} className="text-muted hover:text-white">
+          <button onClick={handleClose} className="text-muted hover:text-white" aria-label="Close dialog">
             <X className="w-5 h-5" />
           </button>
         </div>

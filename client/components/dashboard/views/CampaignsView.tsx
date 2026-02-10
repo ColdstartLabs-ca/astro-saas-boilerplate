@@ -13,11 +13,14 @@ import {
   Trash2,
 } from 'lucide-react';
 import { DashboardButton } from '../ui/DashboardButton';
+import { ConfirmDialog } from '@client/components/ui/ConfirmDialog';
 import type { ICampaignWithStats } from '@shared/types/campaign.types';
+import type { IProject } from '@shared/types/project.types';
 import { useTranslations } from '@client/hooks/useTranslations';
 import { getCampaignStatusStyles } from '@client/utils/statusStyles';
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
+import { dashboardNavigate } from '@client/utils/dashboardNavigation';
 
 dayjs.extend(relativeTime);
 
@@ -29,6 +32,7 @@ interface ICampaignsViewProps {
   onDeleteCampaign: (campaignId: string) => Promise<void>;
   selectedCampaignId: string | null;
   onBackToList: () => void;
+  activeProject: IProject | null;
 }
 
 export function CampaignsView({
@@ -39,13 +43,58 @@ export function CampaignsView({
   onDeleteCampaign,
   selectedCampaignId,
   onBackToList,
+  activeProject,
 }: ICampaignsViewProps): JSX.Element {
   const t = useTranslations('dashboard');
   const [viewMode, setViewMode] = useState<'list' | 'detail'>('list');
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
+  const [campaignToDelete, setCampaignToDelete] = useState<ICampaignWithStats | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   // Get selected campaign from campaigns list
   const selectedCampaign = campaigns.find(c => c.id === selectedCampaignId) ?? null;
+
+  const handleDeleteClick = (campaign: ICampaignWithStats) => {
+    setOpenMenuId(null);
+    setCampaignToDelete(campaign);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!campaignToDelete) return;
+
+    setIsDeleting(true);
+    try {
+      await onDeleteCampaign(campaignToDelete.id);
+      setCampaignToDelete(null);
+    } catch (error) {
+      console.error('Failed to delete campaign:', error);
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  // Show empty state when no project is selected
+  if (!isLoading && !activeProject) {
+    return (
+      <div className="flex flex-col items-center justify-center h-full py-20 animate-fadeIn">
+        <div className="w-20 h-20 rounded-full bg-surface border border-border flex items-center justify-center mb-6">
+          <Layers className="w-10 h-10 text-muted" />
+        </div>
+        <h3 className="text-xl font-semibold text-white mb-2">No Project Selected</h3>
+        <p className="text-secondary text-sm mb-6 text-center max-w-md">
+          Please create or select a project before creating campaigns.
+        </p>
+        <div className="flex gap-3">
+          <DashboardButton size="sm" onClick={() => dashboardNavigate('/dashboard')}>
+            <span>Select Project</span>
+          </DashboardButton>
+          <DashboardButton size="sm" variant="ghost" onClick={() => dashboardNavigate('/dashboard')}>
+            <span>Create Project</span>
+          </DashboardButton>
+        </div>
+      </div>
+    );
+  }
 
   // Show loading skeleton
   if (isLoading) {
@@ -140,14 +189,15 @@ export function CampaignsView({
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {campaigns.map(campaign => (
-          <div
+          <button
             key={campaign.id}
             onClick={() => {
               setViewMode('detail');
               onCampaignClick(campaign.id);
               setOpenMenuId(null);
             }}
-            className="bg-surface border border-border rounded-xl p-6 hover:border-border transition-all cursor-pointer group hover:shadow-xl hover:shadow-black/20"
+            className="bg-surface border border-border rounded-xl p-6 hover:border-border transition-all cursor-pointer group hover:shadow-xl hover:shadow-black/20 text-left w-full"
+            type="button"
           >
             <div className="flex justify-between items-start mb-4">
               <div className="flex items-center gap-3">
@@ -170,6 +220,9 @@ export function CampaignsView({
                     e.stopPropagation();
                     setOpenMenuId(openMenuId === campaign.id ? null : campaign.id);
                   }}
+                  aria-label={`Actions for ${campaign.name}`}
+                  aria-expanded={openMenuId === campaign.id}
+                  aria-haspopup="true"
                 >
                   <MoreHorizontal className="w-5 h-5" />
                 </button>
@@ -179,8 +232,7 @@ export function CampaignsView({
                       className="w-full px-3 py-2 text-left text-sm text-secondary hover:text-red-400 hover:bg-surface-light transition-colors flex items-center gap-2"
                       onClick={e => {
                         e.stopPropagation();
-                        setOpenMenuId(null);
-                        onDeleteCampaign(campaign.id);
+                        handleDeleteClick(campaign);
                       }}
                     >
                       <Trash2 className="w-4 h-4" />{' '}
@@ -228,7 +280,7 @@ export function CampaignsView({
                 <Cpu className="w-3 h-3 mr-1" /> {campaign.ai_model}
               </div>
             </div>
-          </div>
+          </button>
         ))}
 
         {/* Add New Card */}
@@ -242,6 +294,21 @@ export function CampaignsView({
           <span className="font-medium">{t('campaigns.newCampaignButton')}</span>
         </button>
       </div>
+
+      {/* Delete Confirmation Dialog */}
+      <ConfirmDialog
+        isOpen={campaignToDelete !== null}
+        onClose={() => setCampaignToDelete(null)}
+        onConfirm={handleConfirmDelete}
+        title="Delete Campaign?"
+        message={`Are you sure you want to delete "${campaignToDelete?.name || 'this campaign'}"? This action cannot be undone.`}
+        variant="danger"
+        labels={{
+          confirm: isDeleting ? 'Deleting...' : 'Delete Campaign',
+          cancel: 'Cancel',
+        }}
+        isConfirming={isDeleting}
+      />
     </div>
   );
 }

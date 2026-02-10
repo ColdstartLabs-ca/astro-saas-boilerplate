@@ -39,7 +39,7 @@ export function DashboardHeader(): JSX.Element {
       <div />
       <div className="flex items-center space-x-4">
         <LocaleSwitcher />
-        <button className="text-secondary hover:text-white relative transition-colors">
+        <button className="text-secondary hover:text-white relative transition-colors" aria-label="Notifications">
           <Bell className="w-5 h-5" />
           <span className="absolute top-0 right-0 w-2 h-2 bg-red-500 rounded-full" />
         </button>
@@ -49,6 +49,8 @@ export function DashboardHeader(): JSX.Element {
           <button
             onClick={() => setUserMenuOpen(prev => !prev)}
             className="w-8 h-8 bg-gradient-to-br from-accent/30 to-tertiary/30 rounded-full border border-border flex items-center justify-center text-accent font-semibold text-sm hover:ring-2 hover:ring-accent/30 transition-all"
+            aria-label="User menu"
+            aria-expanded={userMenuOpen}
           >
             {user?.email?.charAt(0).toUpperCase() || <User className="w-4 h-4" />}
           </button>

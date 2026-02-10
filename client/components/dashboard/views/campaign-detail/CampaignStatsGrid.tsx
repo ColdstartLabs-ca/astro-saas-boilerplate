@@ -34,10 +34,23 @@ interface ICampaignStatsGridProps {
 export function CampaignStatsGrid({
   stats,
 }: ICampaignStatsGridProps): JSX.Element {
+  // Filter out generating card when count is 0
+  const visibleCards = STAT_CARDS.filter(stat => {
+    if (stat.key === 'generating') {
+      return (stats[stat.key] ?? 0) > 0;
+    }
+    return true;
+  });
+
+  // Adjust grid columns based on visible cards
+  const gridCols = visibleCards.length === 3 ? 'grid-cols-3' : 'grid-cols-4';
+
   return (
-    <div className="grid grid-cols-4 gap-4 mb-8">
-      {STAT_CARDS.map(stat => {
+    <div className={`grid ${gridCols} gap-4 mb-8`}>
+      {visibleCards.map(stat => {
         const value = stats[stat.key] ?? 0;
+        // Only animate spin for generating card when actively generating
+        const shouldSpin = stat.spin && value > 0;
         return (
           <div
             key={stat.key}
@@ -50,7 +63,7 @@ export function CampaignStatsGrid({
               <div className="text-2xl font-bold text-white">{value}</div>
             </div>
             <div className={`p-2 rounded-lg bg-surface-light ${stat.color}`}>
-              <stat.icon className={`w-5 h-5 ${stat.spin ? 'animate-spin' : ''}`} />
+              <stat.icon className={`w-5 h-5 ${shouldSpin ? 'animate-spin' : ''}`} />
             </div>
           </div>
         );

@@ -183,7 +183,7 @@ export function CampaignSettingsModal({
             {t('campaigns.keywords.cancel')}
           </DashboardButton>
           <DashboardButton onClick={handleSave} disabled={isSaving || !settings.tone}>
-            {isSaving ? 'Saving...' : t('projects.onboarding.buttons.nextStep')}
+            {isSaving ? 'Saving...' : 'Save Changes'}
           </DashboardButton>
         </div>
       </div>

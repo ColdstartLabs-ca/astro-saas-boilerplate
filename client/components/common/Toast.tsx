@@ -37,12 +37,16 @@ const Toast: React.FC<IToastProps> = ({ vertical = 'bottom', horizontal = 'end' 
   return (
     <div
       className={`fixed ${positionClasses.vertical} ${positionClasses.horizontal} z-[9999] flex flex-col gap-2`}
+      role="status"
+      aria-live="polite"
+      aria-atomic="true"
     >
       {toasts.map((toast) => (
         <div
           key={toast.id}
           onClick={() => removeToast(toast.id!)}
           className={`${getToastColors(toast.type)} px-4 py-3 rounded-lg shadow-lg cursor-pointer hover:opacity-90 transition-opacity min-w-[250px] max-w-md`}
+          role="alert"
         >
           <p className="text-sm font-medium">{toast.message}</p>
         </div>

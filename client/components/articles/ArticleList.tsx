@@ -675,9 +675,11 @@ function ArticleRow({ article, isSelected, onToggleSelect, onOpenDetail, getStat
         </button>
 
         {/* Thumbnail */}
-        <div
-          className="w-10 h-10 rounded overflow-hidden flex-shrink-0 border border-border bg-surface-light cursor-pointer"
+        <button
+          type="button"
+          className="w-10 h-10 rounded overflow-hidden flex-shrink-0 border border-border bg-surface-light cursor-pointer p-0"
           onClick={onOpenDetail}
+          aria-label={`View article: ${article.title || article.primary_keyword}`}
         >
           {thumbnailUrl ? (
             <ThumbnailImage src={thumbnailUrl} />
@@ -690,10 +692,15 @@ function ArticleRow({ article, isSelected, onToggleSelect, onOpenDetail, getStat
               <FileText className="w-4 h-4 text-muted/50" />
             </div>
           )}
-        </div>
+        </button>
 
         {/* Title */}
-        <div className="flex-1 min-w-0 cursor-pointer" onClick={onOpenDetail}>
+        <button
+          type="button"
+          className="flex-1 min-w-0 cursor-pointer text-left"
+          onClick={onOpenDetail}
+          aria-label={`View article: ${article.title || article.primary_keyword}`}
+        >
           <h3 className="text-sm font-medium text-text-primary truncate" title={article.title || article.primary_keyword}>
             {article.title || article.primary_keyword}
           </h3>
@@ -702,7 +709,7 @@ function ArticleRow({ article, isSelected, onToggleSelect, onOpenDetail, getStat
               {article.primary_keyword}
             </p>
           )}
-        </div>
+        </button>
       </div>
 
       {/* Status Column */}
@@ -766,7 +773,7 @@ function ArticleRow({ article, isSelected, onToggleSelect, onOpenDetail, getStat
       {/* Date Column */}
       <div className="col-span-1 text-right">
         <span className="text-xs text-muted">
-          {new Date(article.created_at).toLocaleDateString('en-US', {
+          {new Date(article.created_at).toLocaleDateString(undefined, {
             month: 'short',
             day: 'numeric',
           })}

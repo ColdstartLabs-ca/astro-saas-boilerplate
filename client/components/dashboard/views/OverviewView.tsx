@@ -44,6 +44,12 @@ export function OverviewView(): JSX.Element {
   const [projectToEdit, setProjectToEdit] = useState<IProject | null>(null);
   const [isEditing, setIsEditing] = useState(false);
 
+  // Track if we've already auto-opened onboarding this session to prevent repeated reopening
+  const hasAutoOpenedOnboarding = useMemo(() => {
+    if (typeof window === 'undefined') return false;
+    return sessionStorage.getItem('hasAutoOpenedOnboarding') === 'true';
+  }, []);
+
   const planDisplayName = getPlanDisplayName({
     subscriptionTier: user?.profile?.subscription_tier,
     priceId: subscription?.price_id,
@@ -54,12 +60,14 @@ export function OverviewView(): JSX.Element {
   // Time-based greeting
   const greeting = getGreeting();
 
-  // Auto-show onboarding modal for first-time users
+  // Auto-show onboarding modal for first-time users (only once per session)
   useEffect(() => {
-    if (!isLoading && projects.length === 0 && !showOnboarding) {
+    if (!isLoading && projects.length === 0 && !showOnboarding && !hasAutoOpenedOnboarding) {
       setShowOnboarding(true);
+      // Mark that we've auto-opened onboarding this session
+      sessionStorage.setItem('hasAutoOpenedOnboarding', 'true');
     }
-  }, [isLoading, projects.length, showOnboarding]);
+  }, [isLoading, projects.length, showOnboarding, hasAutoOpenedOnboarding]);
 
   const handleDeleteClick = (projectId: string) => {
     setProjectToDelete(projectId);
@@ -340,32 +348,28 @@ export function OverviewView(): JSX.Element {
               </div>
             </DashboardCard>
 
-            <DashboardCard
-              className="hover:border-purple-500/30 cursor-pointer group py-3 px-4"
-              onClick={() => dashboardNavigate('/dashboard/keywords')}
-            >
+            {/* Research Keywords - Coming Soon */}
+            <DashboardCard className="opacity-50 pointer-events-none py-3 px-4">
               <div className="flex items-center gap-3">
-                <div className="p-2 rounded-lg bg-purple-500/10 text-purple-400 group-hover:bg-purple-500/20 transition-colors">
+                <div className="p-2 rounded-lg bg-purple-500/10 text-purple-400">
                   <Search className="w-4 h-4" />
                 </div>
                 <div>
-                  <h3 className="text-sm font-semibold text-white group-hover:text-purple-400 transition-colors">Research Keywords</h3>
-                  <p className="text-[11px] text-secondary mt-0.5">Find new opportunities</p>
+                  <h3 className="text-sm font-semibold text-white">Research Keywords</h3>
+                  <p className="text-[11px] text-secondary mt-0.5">Coming soon</p>
                 </div>
               </div>
             </DashboardCard>
 
-            <DashboardCard
-              className="hover:border-orange-500/30 cursor-pointer group py-3 px-4"
-              onClick={() => dashboardNavigate('/dashboard/analytics')}
-            >
+            {/* View Analytics - Coming Soon */}
+            <DashboardCard className="opacity-50 pointer-events-none py-3 px-4">
               <div className="flex items-center gap-3">
-                <div className="p-2 rounded-lg bg-orange-500/10 text-orange-400 group-hover:bg-orange-500/20 transition-colors">
+                <div className="p-2 rounded-lg bg-orange-500/10 text-orange-400">
                   <BarChart2 className="w-4 h-4" />
                 </div>
                 <div>
-                  <h3 className="text-sm font-semibold text-white group-hover:text-orange-400 transition-colors">View Analytics</h3>
-                  <p className="text-[11px] text-secondary mt-0.5">Check your performance</p>
+                  <h3 className="text-sm font-semibold text-white">View Analytics</h3>
+                  <p className="text-[11px] text-secondary mt-0.5">Coming soon</p>
                 </div>
               </div>
             </DashboardCard>

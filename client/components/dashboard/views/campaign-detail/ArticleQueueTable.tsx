@@ -1,4 +1,4 @@
-import { useMemo, useState, useCallback } from 'react';
+import { useMemo, useState } from 'react';
 import {
   Search,
   Filter,
@@ -6,7 +6,6 @@ import {
   Edit2,
   ExternalLink,
 } from 'lucide-react';
-import { DashboardButton } from '../../ui/DashboardButton';
 import { getArticleStatusStyles } from '@client/utils/statusStyles';
 import dayjs from 'dayjs';
 import type { IArticle } from '@shared/types/article.types';
@@ -61,28 +60,6 @@ export function ArticleQueueTable({
     });
   }, [filteredArticles]);
 
-  // Toggle status filter
-  const cycleStatusFilter = useCallback(() => {
-    const filters: string[] = [
-      'all',
-      'queued',
-      'generating',
-      'draft',
-      'reviewed',
-      'published',
-      'failed',
-    ];
-    const currentIndex = filters.indexOf(statusFilter);
-    const nextIndex = (currentIndex + 1) % filters.length;
-    setStatusFilter(filters[nextIndex]);
-  }, [statusFilter]);
-
-  // Get status filter label
-  const getStatusFilterLabel = useCallback(() => {
-    if (statusFilter === 'all') return t('articles.status.all');
-    return t(`articles.status.${statusFilter}` as `articles.status.${typeof statusFilter}`);
-  }, [statusFilter, t]);
-
   return (
     <div className="bg-surface border border-border rounded-xl overflow-hidden flex-1 flex flex-col">
       <div className="p-4 border-b border-border flex justify-between items-center bg-main/30">
@@ -98,15 +75,22 @@ export function ArticleQueueTable({
               className="bg-main border border-border rounded-lg pl-9 pr-3 py-1.5 text-xs text-secondary focus:border-accent outline-none w-48"
             />
           </div>
-          <DashboardButton
-            variant="ghost"
-            size="sm"
-            className="h-8 px-2 gap-1.5 text-xs"
-            onClick={cycleStatusFilter}
-          >
-            <Filter className="w-3.5 h-3.5" />
-            {getStatusFilterLabel()}
-          </DashboardButton>
+          <div className="relative">
+            <select
+              value={statusFilter}
+              onChange={e => setStatusFilter(e.target.value)}
+              className="appearance-none bg-main border border-border rounded-lg pl-3 pr-8 py-1.5 text-xs text-secondary focus:border-accent outline-none cursor-pointer hover:bg-surface-light/50"
+            >
+              <option value="all">{t('articles.status.all')}</option>
+              <option value="queued">{t('articles.status.queued')}</option>
+              <option value="generating">{t('articles.status.generating')}</option>
+              <option value="draft">{t('articles.status.draft')}</option>
+              <option value="reviewed">{t('articles.status.reviewed')}</option>
+              <option value="published">{t('articles.status.published')}</option>
+              <option value="failed">{t('articles.status.failed')}</option>
+            </select>
+            <Filter className="absolute right-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted pointer-events-none" />
+          </div>
         </div>
       </div>
       <div className="overflow-y-auto flex-1">
@@ -131,11 +115,16 @@ export function ArticleQueueTable({
               sortedArticles.map(article => (
                 <tr
                   key={article.id}
-                  className="hover:bg-surface-light/30 transition-colors group cursor-pointer"
-                  onClick={() => onArticleClick(article)}
+                  className="hover:bg-surface-light/30 transition-colors group"
                 >
-                  <td className="px-6 py-3 font-medium text-secondary">
-                    {article.primary_keyword}
+                  <td className="px-6 py-3">
+                    <button
+                      type="button"
+                      onClick={() => onArticleClick(article)}
+                      className="font-medium text-secondary hover:text-white transition-colors text-left"
+                    >
+                      {article.primary_keyword}
+                    </button>
                   </td>
                   <td className="px-6 py-3">
                     <span
