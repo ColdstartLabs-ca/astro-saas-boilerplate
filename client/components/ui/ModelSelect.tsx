@@ -24,12 +24,13 @@ interface IModelSelectProps {
   placeholder?: string;
 }
 
-const TIER_ORDER: ModelTier[] = ['budget', 'balanced', 'ultra'];
+const TIER_ORDER: ModelTier[] = ['budget', 'balanced', 'pro', 'ultra'];
 
 const TIER_CONFIG: Record<ModelTier, { label: string; dotColor: string }> = {
   budget: { label: 'Budget', dotColor: 'bg-green-400' },
   balanced: { label: 'Balanced', dotColor: 'bg-blue-400' },
-  ultra: { label: 'Ultra Quality', dotColor: 'bg-amber-400' },
+  pro: { label: 'Pro', dotColor: 'bg-purple-400' },
+  ultra: { label: 'Ultra', dotColor: 'bg-amber-400' },
 };
 
 function groupByTier(options: IModelSelectOption[]): Map<ModelTier, IModelSelectOption[]> {

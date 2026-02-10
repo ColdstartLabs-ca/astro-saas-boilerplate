@@ -1,3 +1,4 @@
+import React from 'react';
 import { Clock, Loader2, CheckCircle2, AlertCircle } from 'lucide-react';
 
 interface IStatCard {

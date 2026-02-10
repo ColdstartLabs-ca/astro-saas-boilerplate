@@ -20,18 +20,16 @@ import {
 
 describe('image-models.config', () => {
   describe('IMAGE_PRESETS', () => {
-    it('should have all 6 required presets', () => {
-      expect(Object.keys(IMAGE_PRESETS)).toHaveLength(6);
+    it('should have all 4 required presets', () => {
+      expect(Object.keys(IMAGE_PRESETS)).toHaveLength(4);
     });
 
     it('should include all expected preset keys', () => {
       const expectedKeys: ImagePresetKey[] = [
-        'blog-hero',
-        'social-card',
-        'product-shot',
-        'premium-hero',
-        'photorealistic',
-        'illustration',
+        'budget',
+        'balanced',
+        'pro',
+        'ultra',
       ];
       expectedKeys.forEach(key => {
         expect(IMAGE_PRESETS[key]).toBeDefined();
@@ -65,8 +63,8 @@ describe('image-models.config', () => {
   });
 
   describe('IMAGE_PRESET_KEYS', () => {
-    it('should return array of 6 preset keys', () => {
-      expect(IMAGE_PRESET_KEYS).toHaveLength(6);
+    it('should return array of 4 preset keys', () => {
+      expect(IMAGE_PRESET_KEYS).toHaveLength(4);
     });
 
     it('should match keys from IMAGE_PRESETS', () => {
@@ -77,12 +75,10 @@ describe('image-models.config', () => {
 
   describe('isValidImagePreset', () => {
     it('should return true for valid preset keys', () => {
-      expect(isValidImagePreset('blog-hero')).toBe(true);
-      expect(isValidImagePreset('social-card')).toBe(true);
-      expect(isValidImagePreset('product-shot')).toBe(true);
-      expect(isValidImagePreset('premium-hero')).toBe(true);
-      expect(isValidImagePreset('photorealistic')).toBe(true);
-      expect(isValidImagePreset('illustration')).toBe(true);
+      expect(isValidImagePreset('budget')).toBe(true);
+      expect(isValidImagePreset('balanced')).toBe(true);
+      expect(isValidImagePreset('pro')).toBe(true);
+      expect(isValidImagePreset('ultra')).toBe(true);
     });
 
     it('should return false for invalid preset keys', () => {
@@ -95,9 +91,9 @@ describe('image-models.config', () => {
 
   describe('getImagePreset', () => {
     it('should return preset for valid key', () => {
-      const preset = getImagePreset('blog-hero');
-      expect(preset.key).toBe('blog-hero');
-      expect(preset.displayName).toBe('Blog Hero');
+      const preset = getImagePreset('budget');
+      expect(preset.key).toBe('budget');
+      expect(preset.displayName).toBe('Budget');
       expect(preset.replicateModel).toBe('black-forest-labs/flux-schnell');
     });
 
@@ -109,16 +105,14 @@ describe('image-models.config', () => {
   });
 
   describe('getImagePresetCreditCost', () => {
-    it('should return 0 for standard/bundled presets', () => {
-      expect(getImagePresetCreditCost('blog-hero')).toBe(0);
-      expect(getImagePresetCreditCost('social-card')).toBe(0);
-      expect(getImagePresetCreditCost('product-shot')).toBe(0);
+    it('should return 0 for free-tier presets', () => {
+      expect(getImagePresetCreditCost('budget')).toBe(0);
+      expect(getImagePresetCreditCost('balanced')).toBe(0);
     });
 
     it('should return 1 for premium presets', () => {
-      expect(getImagePresetCreditCost('premium-hero')).toBe(1);
-      expect(getImagePresetCreditCost('photorealistic')).toBe(1);
-      expect(getImagePresetCreditCost('illustration')).toBe(1);
+      expect(getImagePresetCreditCost('pro')).toBe(1);
+      expect(getImagePresetCreditCost('ultra')).toBe(1);
     });
 
     it('should return 0 for null/undefined/invalid preset', () => {
@@ -156,12 +150,10 @@ describe('image-models.config', () => {
   describe('getPresetDescription', () => {
     it('should return description for each preset', () => {
       const descriptions = [
-        getPresetDescription('blog-hero'),
-        getPresetDescription('social-card'),
-        getPresetDescription('product-shot'),
-        getPresetDescription('premium-hero'),
-        getPresetDescription('photorealistic'),
-        getPresetDescription('illustration'),
+        getPresetDescription('budget'),
+        getPresetDescription('balanced'),
+        getPresetDescription('pro'),
+        getPresetDescription('ultra'),
       ];
 
       descriptions.forEach(desc => {
@@ -171,72 +163,72 @@ describe('image-models.config', () => {
       });
     });
 
-    it('should return appropriate description for blog-hero', () => {
-      const desc = getPresetDescription('blog-hero');
+    it('should return appropriate description for budget', () => {
+      const desc = getPresetDescription('budget');
       expect(desc).toContain('blog');
     });
 
-    it('should return appropriate description for illustration', () => {
-      const desc = getPresetDescription('illustration');
-      expect(desc).toContain('illustration');
+    it('should return appropriate description for ultra', () => {
+      const desc = getPresetDescription('ultra');
+      expect(desc).toContain('photorealistic');
     });
   });
 
   describe('Credit cost calculations', () => {
-    it('should calculate total cost for standard preset article', () => {
-      const baseCost = 1; // 1 credit for article
-      const imageCost = getImagePresetCreditCost('blog-hero');
-      expect(baseCost + imageCost).toBe(1); // No extra cost
+    it('should calculate total cost for free-tier preset article', () => {
+      const baseCost = 1;
+      const imageCost = getImagePresetCreditCost('budget');
+      expect(baseCost + imageCost).toBe(1);
     });
 
     it('should calculate total cost for premium preset article', () => {
-      const baseCost = 1; // 1 credit for article
-      const imageCost = getImagePresetCreditCost('premium-hero');
-      expect(baseCost + imageCost).toBe(2); // +1 credit for premium
+      const baseCost = 1;
+      const imageCost = getImagePresetCreditCost('pro');
+      expect(baseCost + imageCost).toBe(2);
     });
 
     it('should calculate total cost for campaign with multiple keywords', () => {
       const keywordCount = 10;
-      const imageCost = getImagePresetCreditCost('premium-hero');
+      const imageCost = getImagePresetCreditCost('pro');
       const totalCredits = keywordCount * (1 + imageCost);
-      expect(totalCredits).toBe(20); // 10 keywords × 2 credits each
+      expect(totalCredits).toBe(20);
     });
   });
 
   describe('getAvailableImagePresets', () => {
     it('should return all presets when env string is empty', () => {
       const presets = getAvailableImagePresets('');
-      expect(presets).toHaveLength(6);
+      expect(presets).toHaveLength(4);
       expect(presets.map(p => p.key)).toEqual(expect.arrayContaining(IMAGE_PRESET_KEYS));
     });
 
     it('should return all presets when env string contains only whitespace', () => {
       const presets = getAvailableImagePresets('   ,  ,   ');
-      expect(presets).toHaveLength(6);
+      expect(presets).toHaveLength(4);
     });
 
     it('should filter to only enabled presets when env has values', () => {
-      const presets = getAvailableImagePresets('blog-hero,premium-hero');
+      const presets = getAvailableImagePresets('budget,pro');
       expect(presets).toHaveLength(2);
-      expect(presets.map(p => p.key)).toEqual(['blog-hero', 'premium-hero']);
+      expect(presets.map(p => p.key)).toEqual(['budget', 'pro']);
     });
 
     it('should handle single preset', () => {
-      const presets = getAvailableImagePresets('social-card');
+      const presets = getAvailableImagePresets('balanced');
       expect(presets).toHaveLength(1);
-      expect(presets[0].key).toBe('social-card');
+      expect(presets[0].key).toBe('balanced');
     });
 
     it('should ignore invalid preset keys silently', () => {
-      const presets = getAvailableImagePresets('blog-hero,invalid-key,social-card');
+      const presets = getAvailableImagePresets('budget,invalid-key,balanced');
       expect(presets).toHaveLength(2);
-      expect(presets.map(p => p.key)).toEqual(['blog-hero', 'social-card']);
+      expect(presets.map(p => p.key)).toEqual(['budget', 'balanced']);
     });
 
     it('should handle extra whitespace around comma-separated values', () => {
-      const presets = getAvailableImagePresets('  blog-hero  ,  social-card  ,  premium-hero  ');
+      const presets = getAvailableImagePresets('  budget  ,  balanced  ,  pro  ');
       expect(presets).toHaveLength(3);
-      expect(presets.map(p => p.key)).toEqual(['blog-hero', 'social-card', 'premium-hero']);
+      expect(presets.map(p => p.key)).toEqual(['budget', 'balanced', 'pro']);
     });
 
     it('should return empty array when no valid keys provided', () => {
@@ -247,29 +239,29 @@ describe('image-models.config', () => {
 
   describe('isAvailableImagePreset', () => {
     it('should return true for any preset when env is empty', () => {
-      expect(isAvailableImagePreset('blog-hero', '')).toBe(true);
-      expect(isAvailableImagePreset('premium-hero', '')).toBe(true);
-      expect(isAvailableImagePreset('illustration', '')).toBe(true);
+      expect(isAvailableImagePreset('budget', '')).toBe(true);
+      expect(isAvailableImagePreset('pro', '')).toBe(true);
+      expect(isAvailableImagePreset('ultra', '')).toBe(true);
     });
 
     it('should return true for enabled presets', () => {
-      expect(isAvailableImagePreset('blog-hero', 'blog-hero,social-card')).toBe(true);
-      expect(isAvailableImagePreset('social-card', 'blog-hero,social-card')).toBe(true);
+      expect(isAvailableImagePreset('budget', 'budget,balanced')).toBe(true);
+      expect(isAvailableImagePreset('balanced', 'budget,balanced')).toBe(true);
     });
 
     it('should return false for disabled presets', () => {
-      expect(isAvailableImagePreset('premium-hero', 'blog-hero,social-card')).toBe(false);
-      expect(isAvailableImagePreset('illustration', 'blog-hero,social-card')).toBe(false);
+      expect(isAvailableImagePreset('pro', 'budget,balanced')).toBe(false);
+      expect(isAvailableImagePreset('ultra', 'budget,balanced')).toBe(false);
     });
 
     it('should return false for invalid preset keys', () => {
-      expect(isAvailableImagePreset('invalid-key', 'blog-hero,social-card')).toBe(false);
-      expect(isAvailableImagePreset('', 'blog-hero,social-card')).toBe(false);
+      expect(isAvailableImagePreset('invalid-key', 'budget,balanced')).toBe(false);
+      expect(isAvailableImagePreset('', 'budget,balanced')).toBe(false);
     });
 
     it('should handle whitespace in env string', () => {
-      expect(isAvailableImagePreset('blog-hero', '  blog-hero  ,  social-card  ')).toBe(true);
-      expect(isAvailableImagePreset('premium-hero', '  blog-hero  ,  social-card  ')).toBe(false);
+      expect(isAvailableImagePreset('budget', '  budget  ,  balanced  ')).toBe(true);
+      expect(isAvailableImagePreset('pro', '  budget  ,  balanced  ')).toBe(false);
     });
   });
 });

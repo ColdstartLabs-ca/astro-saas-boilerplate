@@ -2,21 +2,15 @@
  * Image Generation Models Configuration for Article Images
  *
  * Defines supported image generation presets via Replicate API.
- * Each preset maps a use case to a specific model with defaults.
+ * Simple tier-based presets: Budget, Balanced, Pro, Ultra.
  */
 
 import type { ModelTier } from '@shared/types/models.types';
 
 /**
- * Image preset types for different use cases
+ * Image preset types — one per quality tier
  */
-export type ImagePresetKey =
-  | 'blog-hero'
-  | 'social-card'
-  | 'product-shot'
-  | 'premium-hero'
-  | 'photorealistic'
-  | 'illustration';
+export type ImagePresetKey = 'budget' | 'balanced' | 'pro' | 'ultra';
 
 /**
  * Image preset metadata
@@ -46,11 +40,11 @@ export interface IImagePreset {
  * All available image presets
  */
 export const IMAGE_PRESETS: Record<ImagePresetKey, IImagePreset> = {
-  'blog-hero': {
-    key: 'blog-hero',
-    displayName: 'Blog Hero',
-    description: 'Fast, high-quality featured images for blog posts',
-    bestFor: 'Featured images, hero banners',
+  budget: {
+    key: 'budget',
+    displayName: 'Budget',
+    description: 'Fast, good-quality images',
+    bestFor: 'Quick drafts, blog posts',
     replicateModel: 'black-forest-labs/flux-schnell',
     defaultParams: {
       aspect_ratio: '16:9',
@@ -61,41 +55,26 @@ export const IMAGE_PRESETS: Record<ImagePresetKey, IImagePreset> = {
     aspectRatio: '16:9',
     tier: 'budget',
   },
-  'social-card': {
-    key: 'social-card',
-    displayName: 'Social Card',
-    description: 'Optimized for social media sharing and OG images',
-    bestFor: 'OG images, social sharing',
-    replicateModel: 'black-forest-labs/flux-schnell',
-    defaultParams: {
-      aspect_ratio: '1.91:1',
-      output_format: 'jpg',
-      output_quality: 80,
-    },
-    creditCost: 0,
-    aspectRatio: '1.91:1',
-    tier: 'budget',
-  },
-  'product-shot': {
-    key: 'product-shot',
-    displayName: 'Product Shot',
-    description: 'Enhanced quality for product and service visuals',
-    bestFor: 'Product/service visuals',
+  balanced: {
+    key: 'balanced',
+    displayName: 'Balanced',
+    description: 'Higher quality, slower generation',
+    bestFor: 'Standard articles, featured posts',
     replicateModel: 'black-forest-labs/flux-dev',
     defaultParams: {
-      aspect_ratio: '4:3',
+      aspect_ratio: '16:9',
       output_format: 'jpg',
       output_quality: 90,
     },
     creditCost: 0,
-    aspectRatio: '4:3',
+    aspectRatio: '16:9',
     tier: 'balanced',
   },
-  'premium-hero': {
-    key: 'premium-hero',
-    displayName: 'Premium Hero',
-    description: 'Highest quality editorial-style images',
-    bestFor: 'High-quality editorial',
+  pro: {
+    key: 'pro',
+    displayName: 'Pro',
+    description: 'Professional editorial-quality images',
+    bestFor: 'High-quality editorial content',
     replicateModel: 'black-forest-labs/flux-1.1-pro',
     defaultParams: {
       aspect_ratio: '16:9',
@@ -104,33 +83,19 @@ export const IMAGE_PRESETS: Record<ImagePresetKey, IImagePreset> = {
     },
     creditCost: 1,
     aspectRatio: '16:9',
-    tier: 'ultra',
+    tier: 'pro',
   },
-  photorealistic: {
-    key: 'photorealistic',
-    displayName: 'Photorealistic',
-    description: 'Stock-photo-style realistic imagery',
-    bestFor: 'Stock-photo-style imagery',
+  ultra: {
+    key: 'ultra',
+    displayName: 'Ultra',
+    description: 'Best quality, photorealistic imagery',
+    bestFor: 'Premium content, hero images',
     replicateModel: 'bytedance/seedream-4.5',
     defaultParams: {
       aspect_ratio: '16:9',
     },
     creditCost: 1,
     aspectRatio: '16:9',
-    tier: 'ultra',
-  },
-  illustration: {
-    key: 'illustration',
-    displayName: 'Illustration',
-    description: 'Blog illustrations, diagrams, and stylized visuals',
-    bestFor: 'Blog illustrations, diagrams',
-    replicateModel: 'recraft-ai/recraft-v3',
-    defaultParams: {
-      aspect_ratio: '4:3',
-      style: 'digital_illustration',
-    },
-    creditCost: 1,
-    aspectRatio: '4:3',
     tier: 'ultra',
   },
 };
@@ -170,18 +135,18 @@ export function getImagePresetCreditCost(key: string | null | undefined): number
 
 /**
  * Determine number of images based on word count
- * - 800-1200 words → 2 images (1 hero + 1 in-section)
- * - 1200-2000 words → 3 images (1 hero + 2 in-section)
- * - 2000-3000 words → 3 images (same — diminishing returns above 3)
+ * - 800-1200 words -> 2 images (1 hero + 1 in-section)
+ * - 1200-2000 words -> 3 images (1 hero + 2 in-section)
+ * - 2000-3000 words -> 3 images (same -- diminishing returns above 3)
  */
 export function getImageCountForWordCount(targetWordCount: number): number {
   if (targetWordCount < 800) {
-    return 0; // Too short for images
+    return 0;
   }
   if (targetWordCount <= 1200) {
     return 2;
   }
-  return 3; // Up to 3 images for longer content
+  return 3;
 }
 
 /**
@@ -189,17 +154,14 @@ export function getImageCountForWordCount(targetWordCount: number): number {
  */
 export function getPresetDescription(key: ImagePresetKey): string {
   switch (key) {
-    case 'blog-hero':
-    case 'social-card':
+    case 'budget':
       return 'modern, clean blog-style imagery with good lighting and composition';
-    case 'product-shot':
-      return 'professional product photography style with sharp focus and clean background';
-    case 'premium-hero':
+    case 'balanced':
+      return 'professional imagery with sharp focus, clean composition, and good detail';
+    case 'pro':
       return 'editorial magazine-quality imagery with dramatic lighting and high detail';
-    case 'photorealistic':
-      return 'photorealistic stock photo style with natural lighting and realistic textures';
-    case 'illustration':
-      return 'clean vector illustration style with flat colors and simple shapes';
+    case 'ultra':
+      return 'photorealistic imagery with natural lighting, realistic textures, and exceptional detail';
     default:
       return 'professional imagery suitable for blog content';
   }

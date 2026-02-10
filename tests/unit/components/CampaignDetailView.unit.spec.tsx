@@ -101,24 +101,24 @@ vi.mock('@client/hooks/useAvailableModels', () => ({
     ],
     imagePresets: [
       {
-        key: 'blog-hero',
-        displayName: 'Blog Hero',
-        description: 'Hero images for blog posts',
-        bestFor: 'Long-form articles',
+        key: 'budget',
+        displayName: 'Budget',
+        description: 'Fast, good-quality images',
+        bestFor: 'Quick drafts, blog posts',
         replicateModel: 'flux-schnell',
-        creditCost: 1,
+        creditCost: 0,
         aspectRatio: '16:9',
         tier: 'budget',
       },
       {
-        key: 'social-card',
-        displayName: 'Social Card',
-        description: 'Social media sharing cards',
-        bestFor: 'Social media posts',
-        replicateModel: 'flux-schnell',
-        creditCost: 1,
-        aspectRatio: '1:1',
-        tier: 'budget',
+        key: 'balanced',
+        displayName: 'Balanced',
+        description: 'Higher quality, slower generation',
+        bestFor: 'Standard articles, featured posts',
+        replicateModel: 'flux-dev',
+        creditCost: 0,
+        aspectRatio: '16:9',
+        tier: 'balanced',
       },
     ],
     isLoading: false,
@@ -236,7 +236,7 @@ const mockCampaign: ICampaign = {
   tone: 'professional',
   target_word_count: 1500,
   settings: {},
-  image_preset: 'blog-hero',
+  image_preset: 'budget',
   created_at: '2024-01-01T00:00:00Z',
   updated_at: '2024-01-01T00:00:00Z',
 };
@@ -727,15 +727,15 @@ describe('CampaignDetailView', () => {
       // Custom ModelSelect shows selected model name in the trigger
       // The campaign has ai_model: 'openrouter/auto' which maps to 'Auto (Lowest Cost)'
       expect(screen.getByText('Auto (Lowest Cost)')).toBeInTheDocument();
-      // The campaign has image_preset: 'blog-hero' which maps to 'Blog Hero'
-      expect(screen.getByText('Blog Hero')).toBeInTheDocument();
+      // The campaign has image_preset: 'budget' which maps to 'Budget'
+      expect(screen.getByText('Budget')).toBeInTheDocument();
     });
 
     it('should update campaign model/preset on save', async () => {
       const mockUpdateCampaign = vi.fn().mockResolvedValue({
         ...mockCampaign,
         ai_model: 'openai/gpt-4o',
-        image_preset: 'social-card',
+        image_preset: 'balanced',
       });
       vi.mocked(useCampaignDetail).mockReturnValue({
         campaign: mockCampaign,
@@ -787,13 +787,23 @@ describe('CampaignDetailView', () => {
       const gpt4oOption = await screen.findByText('GPT-4o');
       await userEvent.click(gpt4oOption.closest('button')!);
 
-      // Open the image preset dropdown and select Social Card
-      const imageTrigger = screen.getByText('Blog Hero').closest('button');
+      // Open the image preset dropdown and select Balanced
+      // Use getAllByText since "Budget" may appear as both trigger label and tier header
+      const budgetElements = screen.getAllByText('Budget');
+      const imageTrigger = budgetElements[0].closest('button');
       if (imageTrigger) {
         await userEvent.click(imageTrigger);
       }
-      const socialCardOption = await screen.findByText('Social Card');
-      await userEvent.click(socialCardOption.closest('button')!);
+      // Find the Balanced option button (not the tier header div)
+      await waitFor(() => {
+        const balancedElements = screen.getAllByText('Balanced');
+        const balancedButton = balancedElements.find(el => el.closest('button[type="button"]'));
+        expect(balancedButton).toBeTruthy();
+        return balancedButton;
+      });
+      const balancedElements = screen.getAllByText('Balanced');
+      const balancedButton = balancedElements.find(el => el.closest('button[type="button"]'))!;
+      await userEvent.click(balancedButton.closest('button')!);
 
       // Click save
       const saveButton = screen.getByRole('button', { name: 'Save' });
@@ -805,7 +815,7 @@ describe('CampaignDetailView', () => {
           tone: 'professional',
           targetWordCount: 1500,
           model: 'openai/gpt-4o',
-          imagePreset: 'social-card',
+          imagePreset: 'balanced',
         });
       });
     });

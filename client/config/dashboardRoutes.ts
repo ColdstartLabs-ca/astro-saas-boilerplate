@@ -100,14 +100,6 @@ export const DASHBOARD_ROUTES: readonly IDashboardRoute[] = [
     group: 'primary',
   },
   {
-    path: '/dashboard/articles',
-    labelKey: 'sidebar.articles',
-    icon: FileText,
-    component: ArticlesPage,
-    enabled: true,
-    group: 'primary',
-  },
-  {
     path: '/dashboard/campaigns',
     labelKey: 'sidebar.campaigns',
     icon: Layers,
@@ -124,6 +116,14 @@ export const DASHBOARD_ROUTES: readonly IDashboardRoute[] = [
         group: 'primary',
       },
     ],
+  },
+  {
+    path: '/dashboard/articles',
+    labelKey: 'sidebar.articles',
+    icon: FileText,
+    component: ArticlesPage,
+    enabled: true,
+    group: 'primary',
   },
   {
     path: '/dashboard/keywords',

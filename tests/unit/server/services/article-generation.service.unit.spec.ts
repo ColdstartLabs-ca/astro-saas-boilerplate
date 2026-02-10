@@ -320,12 +320,10 @@ Some content follows.`;
 
     it('should return the preset key for valid presets', () => {
       const validPresets = [
-        'blog-hero',
-        'social-card',
-        'product-shot',
-        'premium-hero',
-        'photorealistic',
-        'illustration',
+        'budget',
+        'balanced',
+        'pro',
+        'ultra',
       ];
 
       validPresets.forEach(preset => {
@@ -435,7 +433,7 @@ Some content follows.`;
         model: 'gpt-4o',
         tone: 'professional',
         targetWordCount: 1500,
-        imagePreset: 'blog-hero',
+        imagePreset: 'budget',
       };
 
       await service.generateArticle(mockArticleId, mockUserId, input);
@@ -446,7 +444,7 @@ Some content follows.`;
             position: 1,
           }),
         ]),
-        'blog-hero',
+        'budget',
         'coffee'
       );
     });

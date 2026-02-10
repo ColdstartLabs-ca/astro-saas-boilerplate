@@ -85,7 +85,7 @@ export function QuickGenerateModal({
   const { campaigns, isLoading: campaignsLoading } = useCampaigns(activeProject?.id ?? null);
   const { imagePresets, isLoading: _modelsLoading } = useAvailableModels();
   const [articleId, setArticleId] = useState<string | null>(null);
-  const [showImageSettings, setShowImageSettings] = useState(true);
+  const [showImageSettings, setShowImageSettings] = useState(false);
   const { article, isGenerating, error, generate, reset } = useArticleGeneration(
     articleId,
     setArticleId
@@ -156,7 +156,7 @@ export function QuickGenerateModal({
     reset();
     resetForm();
     setArticleId(null);
-    setShowImageSettings(true);
+    setShowImageSettings(false);
     onClose();
   }, [reset, resetForm, onClose]);
 
@@ -387,10 +387,23 @@ export function QuickGenerateModal({
                 </div>
                 <button
                   type="button"
-                  onClick={() => setShowImageSettings(!showImageSettings)}
+                  onClick={() => {
+                    const next = !showImageSettings;
+                    setShowImageSettings(next);
+                    if (next) {
+                      // Auto-select first available preset when toggling ON
+                      const firstPreset = imagePresets[0];
+                      if (firstPreset) {
+                        setValue('imagePreset', firstPreset.key);
+                      }
+                    } else {
+                      // Clear preset when toggling OFF
+                      setValue('imagePreset', undefined);
+                    }
+                  }}
                   className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-accent/20 ${
                     showImageSettings ? 'bg-accent' : 'bg-gray-200 dark:bg-gray-700'
-                  } transition-colors`}
+                  }`}
                 >
                   <span
                     className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
@@ -406,9 +419,6 @@ export function QuickGenerateModal({
                     options={imagePresets.map(imagePresetToOption)}
                     selectedId={watchedImagePreset || null}
                     onSelect={preset => setValue('imagePreset', preset || undefined)}
-                    allowNone
-                    noneLabel="No images"
-                    noneDescription="Text-only article"
                     placeholder="Select image preset..."
                   />
                 </div>

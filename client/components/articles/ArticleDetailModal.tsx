@@ -6,7 +6,7 @@
 
 'use client';
 
-import { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { X, Loader2, Trash2, RotateCcw, ExternalLink, Edit3, Check, Image as ImageIcon, AlertCircle } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import MDEditor from '@uiw/react-md-editor';
@@ -17,6 +17,33 @@ import { createClient } from '@shared/utils/supabase/client';
 import { AIDetectionScore } from './AIDetectionScore';
 import { SEOScoreDisplay } from './SEOScoreDisplay';
 import { useTranslations } from '@client/hooks/useTranslations';
+import { ImageOff } from 'lucide-react';
+
+function MarkdownImage(props: React.ImgHTMLAttributes<HTMLImageElement>) {
+  const [broken, setBroken] = useState(false);
+  if (broken) {
+    return (
+      <span className="inline-flex items-center gap-1.5 text-muted text-xs py-1">
+        <ImageOff className="w-4 h-4" />
+        Image expired
+      </span>
+    );
+  }
+  return <img {...props} onError={() => setBroken(true)} />;
+}
+
+function GalleryImage({ src, alt, className }: { src: string; alt: string; className?: string }) {
+  const [broken, setBroken] = useState(false);
+  if (broken) {
+    return (
+      <div className={`${className ?? 'w-full h-36'} flex flex-col items-center justify-center gap-1.5 text-muted`}>
+        <ImageOff className="w-5 h-5" />
+        <span className="text-[10px] font-medium uppercase tracking-wider">Expired</span>
+      </div>
+    );
+  }
+  return <img src={src} alt={alt} className={className} loading="lazy" onError={() => setBroken(true)} />;
+}
 
 // Helper to get access token
 async function getAccessToken(): Promise<string | null> {
@@ -360,7 +387,7 @@ export function ArticleDetailModal({
           ) : (
             <div className="prose prose-invert max-w-none text-sm">
               {currentArticle.content ? (
-                <ReactMarkdown>{currentArticle.content}</ReactMarkdown>
+                <ReactMarkdown components={{ img: MarkdownImage }}>{currentArticle.content}</ReactMarkdown>
               ) : currentArticle.generation_error ? (
                 <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-4 text-red-400">
                   <p className="font-medium mb-2">{t('articles.detailModal.generationFailed')}</p>
@@ -388,11 +415,10 @@ export function ArticleDetailModal({
                     <div key={img.id} className="relative group rounded-lg overflow-hidden border border-border bg-surface-light">
                       {img.status === 'completed' && img.image_url ? (
                         <>
-                          <img
+                          <GalleryImage
                             src={img.image_url}
                             alt={img.prompt.substring(0, 80)}
                             className="w-full h-36 object-cover"
-                            loading="lazy"
                           />
                           <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
                             <a

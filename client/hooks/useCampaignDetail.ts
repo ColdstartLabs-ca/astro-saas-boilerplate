@@ -175,7 +175,7 @@ export function useCampaignDetail(campaignId: string | null | undefined): IUseCa
   const addKeywordsMutation = useMutation({
     mutationFn: (keywords: string[]) =>
       campaignId ? addKeywords(campaignId, keywords) : Promise.reject(new Error('No campaign ID')),
-    onSuccess: data => {
+    onSuccess: _data => {
       queryClient.invalidateQueries({ queryKey: ['campaign-detail', campaignId] });
     },
   });
@@ -205,7 +205,7 @@ export function useCampaignDetail(campaignId: string | null | undefined): IUseCa
   const startCampaignMutation = useMutation({
     mutationFn: () =>
       campaignId ? startCampaign(campaignId) : Promise.reject(new Error('No campaign ID')),
-    onSuccess: data => {
+    onSuccess: _data => {
       queryClient.invalidateQueries({ queryKey: ['campaign-detail', campaignId] });
       queryClient.invalidateQueries({ queryKey: ['campaign-articles', campaignId] });
     },

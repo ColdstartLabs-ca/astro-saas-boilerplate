@@ -14,6 +14,7 @@
 import { supabaseAdmin } from '@server/supabase/supabaseAdmin';
 import { OpenRouterService } from './openrouter.service';
 import { imageGenerationService } from './image-generation.service';
+import { persistArticleImages } from './image-storage.service';
 import {
   getOutlinePrompt,
   getArticlePrompt,
@@ -103,11 +104,14 @@ export class ArticleGenerationService {
           imagePreset
         );
 
-        // Step 4: Replace markers with real image URLs
+        // Step 4: Persist images to Supabase Storage (replace temp Replicate URLs)
+        await persistArticleImages(imageResults, articleId, input.keyword);
+
+        // Step 5: Replace markers with permanent image URLs
         finalContent = this.replaceImageMarkers(article.content, imageResults);
         successfulImageCount = imageResults.filter(r => r.status === 'completed').length;
 
-        // Save article images to database
+        // Save article images to database (now with permanent URLs)
         await this.saveArticleImages(articleId, imageResults);
       } else {
         // No images requested, strip any markers that might be present

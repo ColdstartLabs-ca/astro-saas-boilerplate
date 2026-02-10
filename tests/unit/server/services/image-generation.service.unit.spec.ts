@@ -51,7 +51,7 @@ describe('ImageGenerationService', () => {
     it('should return empty array for no markers', async () => {
       const result = await imageGenerationService.generateImagesForArticle(
         [],
-        'blog-hero',
+        'budget',
         'coffee'
       );
 
@@ -76,7 +76,7 @@ describe('ImageGenerationService', () => {
 
       const result = await imageGenerationService.generateImagesForArticle(
         mockMarkers,
-        'blog-hero',
+        'budget',
         'coffee'
       );
 
@@ -105,7 +105,7 @@ describe('ImageGenerationService', () => {
 
       const result = await imageGenerationService.generateImagesForArticle(
         mockMarkers,
-        'blog-hero',
+        'budget',
         'coffee'
       );
 
@@ -132,7 +132,7 @@ describe('ImageGenerationService', () => {
 
       const result = await imageGenerationService.generateImagesForArticle(
         mockMarkers,
-        'blog-hero',
+        'budget',
         'coffee'
       );
 
@@ -140,7 +140,7 @@ describe('ImageGenerationService', () => {
         position: 1,
         imageUrl: 'https://replicate.delivery/image1.jpg',
         model: 'black-forest-labs/flux-schnell',
-        presetKey: 'blog-hero',
+        presetKey: 'budget',
         status: 'completed',
       });
     });

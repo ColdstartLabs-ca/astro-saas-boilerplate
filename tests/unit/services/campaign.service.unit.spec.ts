@@ -1113,13 +1113,13 @@ describe('CampaignService', () => {
         name: 'New Campaign',
         projectId: mockProjectId,
         keywords: ['coffee maker'],
-        imagePreset: 'blog-hero',
+        imagePreset: 'budget',
       };
 
       await campaignService.create(mockUserId, input);
 
       expect(insertCall).toMatchObject({
-        image_preset: 'blog-hero',
+        image_preset: 'budget',
       });
     });
 
@@ -1143,11 +1143,11 @@ describe('CampaignService', () => {
       } as unknown);
 
       await campaignService.update(mockCampaignId, mockUserId, {
-        imagePreset: 'premium-hero',
+        imagePreset: 'pro',
       });
 
       expect(updateCall).toMatchObject({
-        image_preset: 'premium-hero',
+        image_preset: 'pro',
       });
     });
 
@@ -1191,7 +1191,7 @@ describe('CampaignService', () => {
               eq: vi.fn().mockReturnValue({
                 eq: vi.fn().mockReturnValue({
                   single: vi.fn().mockResolvedValue({
-                    data: { ...mockCampaign, image_preset: 'premium-hero' },
+                    data: { ...mockCampaign, image_preset: 'pro' },
                     error: null,
                   }),
                 }),
@@ -1260,7 +1260,7 @@ describe('CampaignService', () => {
 
       const result = await campaignService.startGeneration(mockCampaignId, mockUserId);
 
-      // With premium-hero preset (+1 credit per article), 2 keywords should require 4 credits
+      // With pro preset (+1 credit per article), 2 keywords should require 4 credits
       expect(result.creditsRequired).toBe(4);
     });
 
@@ -1278,7 +1278,7 @@ describe('CampaignService', () => {
               eq: vi.fn().mockReturnValue({
                 eq: vi.fn().mockReturnValue({
                   single: vi.fn().mockResolvedValue({
-                    data: { ...mockCampaign, image_preset: 'blog-hero' },
+                    data: { ...mockCampaign, image_preset: 'budget' },
                     error: null,
                   }),
                 }),
@@ -1344,7 +1344,7 @@ describe('CampaignService', () => {
 
       const result = await campaignService.startGeneration(mockCampaignId, mockUserId);
 
-      // With blog-hero preset (0 extra credits), 1 keyword should require 1 credit
+      // With budget preset (0 extra credits), 1 keyword should require 1 credit
       expect(result.creditsRequired).toBe(1);
     });
 
@@ -1617,14 +1617,14 @@ describe('CampaignService', () => {
       } as unknown);
 
       const input = {
-        imagePreset: 'blog-hero',
+        imagePreset: 'budget',
       };
 
       await expect(
         campaignService.update(mockCampaignId, mockUserId, input)
       ).resolves.toBeDefined();
       expect(updateCall).toMatchObject({
-        image_preset: 'blog-hero',
+        image_preset: 'budget',
       });
     });
 

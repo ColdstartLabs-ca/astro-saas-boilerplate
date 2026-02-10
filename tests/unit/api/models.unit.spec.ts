@@ -56,15 +56,13 @@ describe('GET /api/models', () => {
       ])
     );
 
-    // All 6 image presets should be available
-    expect(data.imagePresets).toHaveLength(6);
+    // All 4 image presets should be available
+    expect(data.imagePresets).toHaveLength(4);
     expect(data.imagePresets.map(p => p.key)).toEqual([
-      'blog-hero',
-      'social-card',
-      'product-shot',
-      'premium-hero',
-      'photorealistic',
-      'illustration',
+      'budget',
+      'balanced',
+      'pro',
+      'ultra',
     ]);
   });
 
@@ -84,13 +82,13 @@ describe('GET /api/models', () => {
 
   test('should return filtered image presets based on env', async () => {
     // Only enable specific presets
-    mockEnvValues.AVAILABLE_IMAGE_PRESETS = 'blog-hero,premium-hero';
+    mockEnvValues.AVAILABLE_IMAGE_PRESETS = 'budget,pro';
 
     const response = await GET();
     const data = (await response.json()) as IAvailableModelsResponse;
 
     expect(data.imagePresets).toHaveLength(2);
-    expect(data.imagePresets.map(p => p.key)).toEqual(['blog-hero', 'premium-hero']);
+    expect(data.imagePresets.map(p => p.key)).toEqual(['budget', 'pro']);
   });
 
   test('should include correct model metadata', async () => {
@@ -108,12 +106,12 @@ describe('GET /api/models', () => {
     });
 
     // Check image preset structure (includes replicateModel)
-    const blogHero = data.imagePresets.find(p => p.key === 'blog-hero');
-    expect(blogHero).toMatchObject({
-      key: 'blog-hero',
-      displayName: 'Blog Hero',
-      description: 'Fast, high-quality featured images for blog posts',
-      bestFor: 'Featured images, hero banners',
+    const budgetPreset = data.imagePresets.find(p => p.key === 'budget');
+    expect(budgetPreset).toMatchObject({
+      key: 'budget',
+      displayName: 'Budget',
+      description: 'Fast, good-quality images',
+      bestFor: 'Quick drafts, blog posts',
       replicateModel: 'black-forest-labs/flux-schnell',
       creditCost: 0,
       aspectRatio: '16:9',
@@ -156,7 +154,7 @@ describe('GET /api/models', () => {
   test('should handle whitespace in env values', async () => {
     // Include spaces around commas
     mockEnvValues.AVAILABLE_WRITER_MODELS = ' openai/gpt-4o , anthropic/claude-sonnet-4-5 ';
-    mockEnvValues.AVAILABLE_IMAGE_PRESETS = ' blog-hero , premium-hero ';
+    mockEnvValues.AVAILABLE_IMAGE_PRESETS = ' budget , pro ';
 
     const response = await GET();
     const data = (await response.json()) as IAvailableModelsResponse;

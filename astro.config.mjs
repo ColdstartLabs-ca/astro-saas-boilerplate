@@ -38,6 +38,17 @@ export default defineConfig({
     },
   },
   vite: {
+    optimizeDeps: {
+      include: [
+        '@stripe/react-stripe-js',
+        '@stripe/stripe-js',
+        'react-hook-form',
+        '@hookform/resolvers/zod',
+        'framer-motion',
+        'dayjs',
+        'dayjs/plugin/relativeTime',
+      ],
+    },
     // Preserve existing path aliases
     resolve: {
       alias: {

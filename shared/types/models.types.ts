@@ -2,7 +2,7 @@
  * Types for available AI models and image presets API
  */
 
-export type ModelTier = 'budget' | 'balanced' | 'ultra';
+export type ModelTier = 'budget' | 'balanced' | 'pro' | 'ultra';
 
 export interface IAvailableWriterModel {
   id: string;

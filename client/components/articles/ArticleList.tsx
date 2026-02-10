@@ -20,6 +20,7 @@ import {
   CheckSquare,
   Square,
   Image as ImageIcon,
+  ImageOff,
 } from 'lucide-react';
 import { useArticles } from '@client/hooks/useArticles';
 import { useProjects } from '@client/hooks/useProjects';
@@ -622,6 +623,18 @@ export function ArticleList({ statusFilter: propStatusFilter }: IArticleListProp
   );
 }
 
+function ThumbnailImage({ src }: { src: string }) {
+  const [broken, setBroken] = useState(false);
+  if (broken) {
+    return (
+      <div className="w-full h-full flex items-center justify-center">
+        <ImageOff className="w-4 h-4 text-muted/50" />
+      </div>
+    );
+  }
+  return <img src={src} alt="" className="w-full h-full object-cover" loading="lazy" onError={() => setBroken(true)} />;
+}
+
 // =============================================================================
 // ArticleRow - Individual article list item
 // =============================================================================
@@ -667,12 +680,7 @@ function ArticleRow({ article, isSelected, onToggleSelect, onOpenDetail, getStat
           onClick={onOpenDetail}
         >
           {thumbnailUrl ? (
-            <img
-              src={thumbnailUrl}
-              alt=""
-              className="w-full h-full object-cover"
-              loading="lazy"
-            />
+            <ThumbnailImage src={thumbnailUrl} />
           ) : article.image_count && article.image_count > 0 ? (
             <div className="w-full h-full flex items-center justify-center">
               <ImageIcon className="w-4 h-4 text-muted" />
