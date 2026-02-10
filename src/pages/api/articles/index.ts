@@ -16,7 +16,18 @@ import type { IArticle } from '@shared/types/article.types';
 const listQuerySchema = z.object({
   projectId: z.string().uuid().optional(),
   campaignId: z.string().uuid().optional(),
-  status: z.enum(['queued', 'generating', 'draft', 'approved', 'rejected', 'reviewed', 'published', 'failed']).optional(),
+  status: z
+    .enum([
+      'queued',
+      'generating',
+      'draft',
+      'approved',
+      'rejected',
+      'reviewed',
+      'published',
+      'failed',
+    ])
+    .optional(),
   dateFrom: z.string().datetime().optional(),
   dateTo: z.string().datetime().optional(),
   limit: z.coerce.number().int().min(1).max(100).optional().default(20),
@@ -45,13 +56,16 @@ export const GET: APIRoute = async ({ url, locals }) => {
     // Build query - include campaign information
     let dbQuery = supabaseAdmin
       .from('articles')
-      .select(`
+      .select(
+        `
         *,
         campaigns (
           id,
           name
         )
-      `, { count: 'exact' })
+      `,
+        { count: 'exact' }
+      )
       .eq('user_id', userId)
       .order('created_at', { ascending: false })
       .range(query.offset, query.offset + query.limit - 1);
@@ -95,7 +109,7 @@ export const GET: APIRoute = async ({ url, locals }) => {
     });
 
     const response: IArticlesListResponse = {
-      articles: articlesWithScore as any,
+      articles: articlesWithScore as IArticlesListResponse['articles'],
       total: count ?? 0,
     };
 

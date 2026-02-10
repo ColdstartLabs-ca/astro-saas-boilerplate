@@ -38,7 +38,8 @@ export const POST: APIRoute = async ({ params, locals }) => {
     // Get article with campaign info
     const { data: article, error: articleError } = await supabaseAdmin
       .from('articles')
-      .select(`
+      .select(
+        `
         *,
         campaigns (
           id,
@@ -48,7 +49,8 @@ export const POST: APIRoute = async ({ params, locals }) => {
           target_word_count,
           image_preset
         )
-      `)
+      `
+      )
       .eq('id', articleId)
       .eq('user_id', userId)
       .single();
@@ -63,12 +65,22 @@ export const POST: APIRoute = async ({ params, locals }) => {
       );
     }
 
-    const campaign = article.campaigns as any;
+    const campaign = article.campaigns as {
+      id: string;
+      project_id: string | null;
+      ai_model: string | null;
+      tone: string | null;
+      target_word_count: number | null;
+      image_preset: string | null;
+    } | null;
     if (!campaign) {
       return new Response(
         JSON.stringify({
           success: false,
-          error: { code: ErrorCodes.VALIDATION_ERROR, message: 'Article has no associated campaign' },
+          error: {
+            code: ErrorCodes.VALIDATION_ERROR,
+            message: 'Article has no associated campaign',
+          },
         }),
         { status: 400, headers: { 'Content-Type': 'application/json' } }
       );
@@ -124,18 +136,32 @@ export const POST: APIRoute = async ({ params, locals }) => {
       projectId: campaign.project_id ?? '',
       campaignId: campaign.id,
       model: campaign.ai_model || undefined,
-      tone: campaign.tone || undefined,
+      tone:
+        (campaign.tone as import('@shared/types/article.types').IGenerateArticleInput['tone']) ||
+        undefined,
       targetWordCount: campaign.target_word_count || undefined,
       imagePreset: campaign.image_preset || undefined,
     };
 
     if (ctx?.waitUntil) {
-      ctx.waitUntil(articleGenerationService.generateArticle(articleId, userId as string, generateInput as any));
+      ctx.waitUntil(
+        articleGenerationService.generateArticle(
+          articleId,
+          userId as string,
+          generateInput as import('@shared/types/article.types').IGenerateArticleInput
+        )
+      );
     } else {
       // Fallback for dev
-      articleGenerationService.generateArticle(articleId, userId as string, generateInput as any).catch(err => {
-        console.error('[ArticleRegeneration] Background generation failed:', err);
-      });
+      articleGenerationService
+        .generateArticle(
+          articleId,
+          userId as string,
+          generateInput as import('@shared/types/article.types').IGenerateArticleInput
+        )
+        .catch(err => {
+          console.error('[ArticleRegeneration] Background generation failed:', err);
+        });
     }
 
     return new Response(JSON.stringify({ success: true, data: { status: 'generating' } }), {

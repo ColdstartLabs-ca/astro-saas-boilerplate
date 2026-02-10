@@ -14,7 +14,18 @@ const updateSchema = z.object({
   content: z.string().optional(),
   title: z.string().optional(),
   meta_description: z.string().optional(),
-  status: z.enum(['queued', 'generating', 'draft', 'approved', 'rejected', 'reviewed', 'published', 'failed']).optional(),
+  status: z
+    .enum([
+      'queued',
+      'generating',
+      'draft',
+      'approved',
+      'rejected',
+      'reviewed',
+      'published',
+      'failed',
+    ])
+    .optional(),
   published_url: z.string().url().optional(),
   rejection_reason: z.string().optional(),
 });
@@ -47,7 +58,8 @@ export const GET: APIRoute = async ({ params, locals }) => {
   try {
     const { data: article, error } = await supabaseAdmin
       .from('articles')
-      .select(`
+      .select(
+        `
         *,
         campaigns (
           id,
@@ -60,7 +72,8 @@ export const GET: APIRoute = async ({ params, locals }) => {
           prompt,
           status
         )
-      `)
+      `
+      )
       .eq('id', articleId)
       .eq('user_id', userId)
       .single();
@@ -75,7 +88,9 @@ export const GET: APIRoute = async ({ params, locals }) => {
       );
     }
 
-    const response: IArticleDetailResponse = { article: article as any };
+    const response: IArticleDetailResponse = {
+      article: article as IArticleDetailResponse['article'],
+    };
     return new Response(JSON.stringify({ success: true, data: response }), {
       status: 200,
       headers: { 'Content-Type': 'application/json' },
@@ -142,7 +157,8 @@ export const PATCH: APIRoute = async ({ request, params, locals }) => {
       .from('articles')
       .update(input)
       .eq('id', articleId)
-      .select(`
+      .select(
+        `
         *,
         campaigns (
           id,
@@ -155,7 +171,8 @@ export const PATCH: APIRoute = async ({ request, params, locals }) => {
           prompt,
           status
         )
-      `)
+      `
+      )
       .single();
 
     if (updateError || !updatedArticle) {

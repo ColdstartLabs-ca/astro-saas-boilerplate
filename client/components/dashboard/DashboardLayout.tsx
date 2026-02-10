@@ -8,7 +8,7 @@ import { useLowCreditWarning } from '@client/hooks/useLowCreditWarning';
 import { useUserStore, useSubscription } from '@client/store/userStore';
 import { useShallow } from 'zustand/react/shallow';
 import { getPlanDisplayName } from '@shared/config/stripe';
-import { dashboardNavigate, onDashboardNavigate } from '@client/utils/dashboardNavigation';
+import { dashboardNavigate } from '@client/utils/dashboardNavigation';
 import { Menu, Bell, User, Settings, CreditCard, LogOut, Sparkles } from 'lucide-react';
 import React from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';

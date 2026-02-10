@@ -2,7 +2,7 @@ import { cn } from '@client/utils/cn';
 import { motion } from 'framer-motion';
 import React from 'react';
 
-interface DashboardCardProps {
+interface IDashboardCardProps {
   title?: string;
   subtitle?: string;
   children: React.ReactNode;
@@ -22,7 +22,7 @@ export function DashboardCard({
   action,
   onClick,
   gradient = false,
-}: DashboardCardProps) {
+}: IDashboardCardProps): JSX.Element {
   const CardContent = (
     <div className="relative z-10">
       {(title || Icon || action) && (
@@ -56,7 +56,8 @@ export function DashboardCard({
       className={cn(
         'relative overflow-hidden rounded-xl border border-border/50 bg-surface/50 backdrop-blur-sm p-4',
         'transition-all duration-300 ease-out',
-        onClick && 'cursor-pointer hover:border-accent/20 hover:bg-surface/80 hover:shadow-lg hover:shadow-accent/5',
+        onClick &&
+          'cursor-pointer hover:border-accent/20 hover:bg-surface/80 hover:shadow-lg hover:shadow-accent/5',
         gradient && 'bg-gradient-to-br from-surface/80 to-surface-light/50 border-accent/10',
         className
       )}

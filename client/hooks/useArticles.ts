@@ -95,7 +95,13 @@ export function useArticles({
   dateTo,
   limit = 20,
   enabled = true,
-}: IUseArticlesOptions = {}) {
+}: IUseArticlesOptions = {}): {
+  articles: IArticleWithCampaign[];
+  total: number;
+  isLoading: boolean;
+  error: Error | null;
+  refetch: () => void;
+} {
   // Fetch articles query
   const {
     data: { articles = [], total = 0 } = {},

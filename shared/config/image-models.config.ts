@@ -128,9 +128,7 @@ export const IMAGE_PRESETS: Record<ImagePresetKey, IImagePreset> = {
 /**
  * Array of preset keys for iteration
  */
-export const IMAGE_PRESET_KEYS: ImagePresetKey[] = Object.keys(
-  IMAGE_PRESETS
-) as ImagePresetKey[];
+export const IMAGE_PRESET_KEYS: ImagePresetKey[] = Object.keys(IMAGE_PRESETS) as ImagePresetKey[];
 
 /**
  * Check if a preset key is valid
@@ -180,7 +178,6 @@ export function getImageCountForWordCount(targetWordCount: number): number {
  * Get description of a preset for prompt generation
  */
 export function getPresetDescription(key: ImagePresetKey): string {
-  const preset = getImagePreset(key);
   switch (key) {
     case 'blog-hero':
     case 'social-card':

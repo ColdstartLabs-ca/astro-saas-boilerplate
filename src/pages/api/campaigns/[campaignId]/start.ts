@@ -14,7 +14,6 @@ import {
 import type { IStartCampaignResponse } from '@shared/types/campaign.types';
 import { articleGenerationService } from '@server/services/article-generation.service';
 import { supabaseAdmin } from '@server/supabase/supabaseAdmin';
-import { getImagePresetCreditCost } from '@shared/config/image-models.config';
 
 /**
  * POST /api/campaigns/:campaignId/start
