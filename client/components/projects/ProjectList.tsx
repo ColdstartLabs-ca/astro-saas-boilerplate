@@ -22,6 +22,7 @@ import { useMemo } from 'react';
 import { cn } from '@client/utils/cn';
 import { ProjectOnboarding } from './ProjectOnboarding';
 import { ProjectEditModal } from './ProjectEditModal';
+import { ConfirmDialog } from '@client/components/ui/ConfirmDialog';
 
 interface IProjectListProps {
   onProjectUpdated?: () => void;
@@ -51,26 +52,19 @@ export function ProjectList({ onProjectUpdated }: IProjectListProps): JSX.Elemen
   const [isDeleting, setIsDeleting] = useState(false);
   const [projectToEdit, setProjectToEdit] = useState<IProject | null>(null);
   const [isEditing, setIsEditing] = useState(false);
-  const [confirmText, setConfirmText] = useState('');
 
   const handleDeleteClick = (project: IProject) => {
     setProjectToDelete(project);
-    setConfirmText('');
-  };
-
-  const handleCloseDelete = () => {
-    setProjectToDelete(null);
-    setConfirmText('');
   };
 
   const handleConfirmDelete = async () => {
-    if (!projectToDelete || confirmText !== projectToDelete.name) return;
+    if (!projectToDelete) return;
 
     setIsDeleting(true);
     try {
       await deleteProject(projectToDelete.id);
       logger.info('Project deleted', { projectId: projectToDelete.id });
-      handleCloseDelete();
+      setProjectToDelete(null);
       onProjectUpdated?.();
     } catch (error) {
       logger.error('Failed to delete project', {
@@ -81,8 +75,6 @@ export function ProjectList({ onProjectUpdated }: IProjectListProps): JSX.Elemen
       setIsDeleting(false);
     }
   };
-
-  const canConfirmDelete = projectToDelete && confirmText === projectToDelete.name && !isDeleting;
 
   const handleEditClick = (project: IProject) => {
     setProjectToEdit(project);
@@ -258,51 +250,31 @@ export function ProjectList({ onProjectUpdated }: IProjectListProps): JSX.Elemen
       {/* Onboarding Modal */}
       <ProjectOnboarding isOpen={showOnboarding} onClose={() => setShowOnboarding(false)} />
 
-      {/* Delete Confirmation Modal */}
+      {/* Delete Confirmation Dialog */}
       {projectToDelete && (
-        <div className="fixed inset-0 bg-main/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-surface border border-border rounded-xl p-6 max-w-md w-full">
-            <h3 className="text-lg font-semibold text-white mb-2">
-              {t('projects.list.deleteConfirmTitle')}
-            </h3>
-            <p className="text-secondary mb-2">{t('projects.list.deleteConfirm')}</p>
-            <ul className="text-secondary text-sm mb-4 space-y-1 pl-4">
-              <li>{t('projects.list.deleteConfirmCampaigns')}</li>
-              <li>{t('projects.list.deleteConfirmArticles')}</li>
-              <li>{t('projects.list.deleteConfirmKeywords')}</li>
-            </ul>
-            <p className="text-red-400 text-sm mb-4">{t('projects.list.deleteConfirmUndone')}</p>
-            <div className="mb-4">
-              <label className="block text-sm font-medium text-white mb-2">
-                {t('projects.list.deleteConfirmType', { name: projectToDelete.name })}
-              </label>
-              <input
-                type="text"
-                value={confirmText}
-                onChange={e => setConfirmText(e.target.value)}
-                placeholder={t('projects.list.typePlaceholder')}
-                className="w-full px-3 py-2 bg-elevated border border-border rounded-lg text-white placeholder:text-secondary focus:outline-none focus:ring-2 focus:ring-accent/50"
-                autoFocus
-              />
-            </div>
-            <div className="flex gap-3">
-              <button
-                onClick={handleCloseDelete}
-                disabled={isDeleting}
-                className="flex-1 py-2.5 text-sm font-medium text-secondary hover:text-white bg-elevated hover:bg-surface-light rounded-lg transition-colors"
-              >
-                {t('projects.list.cancel')}
-              </button>
-              <button
-                onClick={handleConfirmDelete}
-                disabled={!canConfirmDelete}
-                className="flex-1 py-2.5 text-sm font-medium text-white bg-red-500 hover:bg-red-600 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {isDeleting ? 'Deleting...' : t('projects.list.confirm')}
-              </button>
-            </div>
-          </div>
-        </div>
+        <ConfirmDialog
+          isOpen={!!projectToDelete}
+          onClose={() => setProjectToDelete(null)}
+          onConfirm={handleConfirmDelete}
+          title={t('projects.list.deleteConfirmTitle')}
+          message={t('projects.list.deleteConfirm')}
+          items={[
+            t('projects.list.deleteConfirmCampaigns'),
+            t('projects.list.deleteConfirmArticles'),
+            t('projects.list.deleteConfirmKeywords'),
+          ]}
+          confirmText={{
+            matchValue: projectToDelete.name,
+            label: t('projects.list.deleteConfirmType').replace('{name}', projectToDelete.name),
+            placeholder: t('projects.list.typePlaceholder'),
+          }}
+          variant="danger"
+          labels={{
+            confirm: t('projects.list.confirm'),
+            confirming: 'Deleting...',
+          }}
+          isConfirming={isDeleting}
+        />
       )}
 
       {/* Edit Project Modal */}
