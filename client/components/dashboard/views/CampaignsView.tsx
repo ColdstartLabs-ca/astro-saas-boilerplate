@@ -143,7 +143,7 @@ export function CampaignsView({
           <p className="text-secondary text-sm">{t('campaigns.subtitle')}</p>
         </div>
         <DashboardButton size="sm" onClick={onNewCampaign}>
-          <Plus className="w-4 h-4 mr-2" /> {t('campaigns.newCampaign')}
+          <Plus className="w-4 h-4 mr-2" /> {t('campaigns.newCampaignButton')}
         </DashboardButton>
       </div>
 
@@ -258,7 +258,7 @@ export function CampaignsView({
           <div className="w-12 h-12 rounded-full bg-surface border border-border flex items-center justify-center group-hover:scale-110 transition-transform">
             <Plus className="w-6 h-6" />
           </div>
-          <span className="font-medium">{t('campaigns.newCampaign')}</span>
+          <span className="font-medium">{t('campaigns.newCampaignButton')}</span>
         </button>
       </div>
     </div>

@@ -6,6 +6,7 @@ import { DashboardRouter } from '@client/components/dashboard/DashboardRouter';
 import { CreditsDisplay } from '@client/components/stripe/CreditsDisplay';
 import { useLowCreditWarning } from '@client/hooks/useLowCreditWarning';
 import { useUserStore, useSubscription } from '@client/store/userStore';
+import { useShallow } from 'zustand/react/shallow';
 import { getPlanDisplayName } from '@shared/config/stripe';
 import { dashboardNavigate, onDashboardNavigate } from '@client/utils/dashboardNavigation';
 import { Menu, Bell, User, Settings, CreditCard, LogOut, Sparkles } from 'lucide-react';
@@ -170,7 +171,15 @@ function DashboardHeader(): JSX.Element {
 
 function DashboardLayout(): JSX.Element {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const { isAuthenticated, isLoading, user, lastFetched, fetchUserData } = useUserStore();
+  const { isAuthenticated, isLoading, userId, lastFetched, fetchUserData } = useUserStore(
+    useShallow(state => ({
+      isAuthenticated: state.isAuthenticated,
+      isLoading: state.isLoading,
+      userId: state.user?.id ?? null,
+      lastFetched: state.lastFetched,
+      fetchUserData: state.fetchUserData,
+    }))
+  );
   // Skip grace period if already authenticated (Zustand persists as module singleton)
   const [authGracePeriodElapsed, setAuthGracePeriodElapsed] = useState(isAuthenticated);
 
@@ -178,12 +187,12 @@ function DashboardLayout(): JSX.Element {
 
   // Refresh user data when entering dashboard
   useEffect(() => {
-    if (!isAuthenticated || !user?.id) return;
+    if (!isAuthenticated || !userId) return;
     const shouldRefresh = !lastFetched || Date.now() - lastFetched > MIN_REFRESH_INTERVAL_MS;
     if (shouldRefresh) {
-      fetchUserData(user.id);
+      fetchUserData(userId);
     }
-  }, [isAuthenticated, user?.id, lastFetched, fetchUserData]);
+  }, [isAuthenticated, userId, lastFetched, fetchUserData]);
 
   // Start grace period timer on mount
   useEffect(() => {

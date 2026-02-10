@@ -493,7 +493,7 @@
   "campaigns": {
     "title": "Campaigns",
     "subtitle": "Manage your content generation queues.",
-    "newCampaign": "New Campaign",
+    "newCampaignButton": "New Campaign",
     "empty": "No campaigns yet. Create your first campaign to start generating content.",
     "emptyTitle": "No campaigns yet",
     "createFirst": "Create Your First Campaign",
@@ -517,6 +517,16 @@
       "error": "Failed to delete campaign."
     },
     "detail": {
+      "metadata": {
+        "title": "Campaign Settings",
+        "tone": "Tone",
+        "wordCount": "Target Words",
+        "images": "Images",
+        "enabled": "Enabled",
+        "disabled": "Disabled",
+        "created": "Created",
+        "updated": "Last Updated"
+      },
       "addKeywords": "Add Keywords",
       "startGeneration": "Start Generation",
       "generationProgress": "Generation Progress",
@@ -601,6 +611,47 @@
       "creating": "Creating...",
       "success": "Campaign created with {count} keywords!",
       "error": "Failed to create campaign."
+    }
+  },
+  "quickGenerate": {
+    "title": "Generate Article",
+    "keyword": "Keyword or Topic",
+    "keywordPlaceholder": "e.g., best project management tools 2026",
+    "keywordRequired": "Keyword is required",
+    "keywordTooLong": "Keyword is too long",
+    "campaign": "Campaign",
+    "selectCampaign": "Select a campaign...",
+    "campaignRequired": "Campaign is required",
+    "campaignHint": "Article will be added to the selected campaign",
+    "noCampaigns": "No Campaigns Yet",
+    "noCampaignsDescription": "You need to create a campaign before generating articles.",
+    "goToCampaigns": "Go to Campaigns",
+    "tone": "Tone",
+    "wordCount": "Target Word Count",
+    "images": {
+      "title": "Generate Images",
+      "description": "Add AI-generated images to your article"
+    },
+    "generate": "Generate Article",
+    "generating": "Generating...",
+    "generateWithCredits": "Generate Article ({count} credit{plural})",
+    "generatingState": {
+      "title": "Generating your article...",
+      "subtitle": "This usually takes 30-60 seconds",
+      "includingImages": "Including images (may take longer)"
+    },
+    "noProject": {
+      "title": "Create a project first to generate articles",
+      "close": "Close"
+    },
+    "failed": {
+      "title": "Generation Failed",
+      "creditsRefunded": "Your credits have been refunded",
+      "tryAgain": "Try Again"
+    },
+    "success": {
+      "title": "Article Generated!",
+      "close": "Close"
     }
   },
   "common": {

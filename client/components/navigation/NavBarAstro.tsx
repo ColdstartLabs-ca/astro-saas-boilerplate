@@ -1,10 +1,10 @@
-import { AuthProvider } from '@shared/types/authProviders.types';
 import { LocaleSwitcher } from '@client/components/i18n/LocaleSwitcher';
+import { BrandLink } from '@client/components/logo/BrandLink';
 import { CreditsDisplay } from '@client/components/stripe/CreditsDisplay';
-import { Logo } from '@client/components/logo/Logo';
 import { useClickOutside } from '@client/hooks/useClickOutside';
 import { useModalStore } from '@client/store/modalStore';
 import { useUserStore } from '@client/store/userStore';
+import { AuthProvider } from '@shared/types/authProviders.types';
 import { DEFAULT_LOCALE } from '@src/i18n/config';
 import { getTranslations } from '@src/i18n/utils';
 import { Menu, X } from 'lucide-react';
@@ -55,12 +55,8 @@ export function NavBarAstro(): JSX.Element {
   return (
     <header className="sticky top-0 z-50 w-full border-b border-border bg-main/80 backdrop-blur-xl transition-all duration-300">
       <div className="mx-auto flex h-20 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
-        <a
-          href={localizedPath('/')}
-          className="flex items-center cursor-pointer hover:opacity-90 transition-all active:scale-95 flex-shrink-0 drop-shadow-[0_2px_8px_rgba(34,197,94,0.3)]"
-        >
-          <Logo variant="full" />
-        </a>
+        {/* ... */}
+        <BrandLink variant="full" />
 
         <nav className="hidden lg:flex items-center gap-2 xl:gap-4 ml-6 xl:ml-10">
           <a

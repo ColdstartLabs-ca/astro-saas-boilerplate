@@ -1,6 +1,6 @@
 'use client';
 
-import React, { Suspense, useState, useEffect } from 'react';
+import React, { Suspense, useState, useEffect, useTransition, useCallback } from 'react';
 import { onDashboardNavigate } from '@client/utils/dashboardNavigation';
 import { useIsAdmin } from '@client/store/userStore';
 import { getRouteByPath, matchDynamicRoute } from '@client/config/dashboardRoutes';
@@ -59,6 +59,15 @@ function getRouteElement(pathname: string): JSX.Element {
     }
   }
 
+  // Check for dynamic campaign routes: /dashboard/campaigns/:campaignId
+  const campaignDetailParams = matchDynamicRoute(path, '/dashboard/campaigns/:campaignId');
+  if (campaignDetailParams) {
+    const CampaignsPage = React.lazy(
+      () => import('@client/components/pages/CampaignsPageClient')
+    );
+    return <CampaignsPage campaignId={campaignDetailParams.campaignId} />;
+  }
+
   // Look up route in centralized config
   const route = getRouteByPath(path);
 
@@ -104,10 +113,25 @@ export function DashboardRouter(): JSX.Element {
   const [pathname, setPathname] = useState(() =>
     typeof window !== 'undefined' ? window.location.pathname : '/dashboard'
   );
+  const [isPending, startTransition] = useTransition();
+
+  // Wrap pathname updates in startTransition so React keeps showing
+  // the current page while the next lazy component loads,
+  // instead of immediately falling back to the Suspense spinner.
+  const setPathnameTransition = useCallback(
+    (next: string) => startTransition(() => setPathname(next)),
+    [startTransition]
+  );
 
   useEffect(() => {
-    return onDashboardNavigate(setPathname);
-  }, []);
+    return onDashboardNavigate(setPathnameTransition);
+  }, [setPathnameTransition]);
 
-  return <Suspense fallback={<LoadingSpinner />}>{getRouteElement(pathname)}</Suspense>;
+  return (
+    <Suspense fallback={<LoadingSpinner />}>
+      <div className={isPending ? 'opacity-80 transition-opacity duration-150' : undefined}>
+        {getRouteElement(pathname)}
+      </div>
+    </Suspense>
+  );
 }

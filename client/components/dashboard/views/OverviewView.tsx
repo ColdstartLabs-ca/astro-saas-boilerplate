@@ -1,19 +1,33 @@
 'use client';
 
-import { useMemo, useState, useEffect } from 'react';
-import { Globe, Plus, ExternalLink, Edit2, Trash2 } from 'lucide-react';
-import { useProjects } from '@client/hooks/useProjects';
-import { useUserStore, useSubscription } from '@client/store/userStore';
-import { useLogger } from '@client/utils/logger';
-import { CreditsDisplay } from '@client/components/stripe/CreditsDisplay';
-import { ProjectOnboarding } from '@client/components/projects/ProjectOnboarding';
+import { DashboardCard } from '@client/components/dashboard/ui/DashboardCard';
 import { ProjectEditModal } from '@client/components/projects/ProjectEditModal';
 import { ProjectList } from '@client/components/projects/ProjectList';
-import { getPlanDisplayName } from '@shared/config/stripe';
-import { dashboardNavigate } from '@client/utils/dashboardNavigation';
-import { getTranslations } from '@src/i18n/utils';
+import { ProjectOnboarding } from '@client/components/projects/ProjectOnboarding';
+import { CreditsDisplay } from '@client/components/stripe/CreditsDisplay';
+import { useProjects } from '@client/hooks/useProjects';
+import { useSubscription, useUserStore } from '@client/store/userStore';
 import { cn } from '@client/utils/cn';
+import { dashboardNavigate } from '@client/utils/dashboardNavigation';
+import { useLogger } from '@client/utils/logger';
+import { getPlanDisplayName } from '@shared/config/stripe';
 import type { IProject, IUpdateProjectInput } from '@shared/types/project.types';
+import { getTranslations } from '@src/i18n/utils';
+import { motion } from 'framer-motion';
+import {
+  BarChart2,
+  CreditCard,
+  Edit2,
+  ExternalLink,
+  FileText,
+  Globe,
+  LayoutGrid,
+  Plus,
+  Search,
+  Trash2,
+  Zap
+} from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
 
 export function OverviewView(): JSX.Element {
   const t = useMemo(() => getTranslations('dashboard'), []);
@@ -33,6 +47,14 @@ export function OverviewView(): JSX.Element {
   });
 
   const displayName = user?.name || user?.email?.split('@')[0] || 'there';
+
+  // Time-based greeting
+  const greeting = useMemo(() => {
+    const hour = new Date().getHours();
+    if (hour < 12) return 'Good morning';
+    if (hour < 18) return 'Good afternoon';
+    return 'Good evening';
+  }, []);
 
   // Auto-show onboarding modal for first-time users
   useEffect(() => {
@@ -99,192 +121,279 @@ export function OverviewView(): JSX.Element {
     );
   }
 
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.1
+      }
+    }
+  };
+
+  const itemVariants = {
+    hidden: { y: 20, opacity: 0 },
+    visible: {
+      y: 0,
+      opacity: 1,
+      transition: { duration: 0.4 }
+    }
+  };
+
   return (
-    <div className="space-y-6 animate-fadeIn">
+    <motion.div
+      variants={containerVariants}
+      initial="hidden"
+      animate="visible"
+      className="space-y-8 pb-10"
+    >
       {/* Welcome Header */}
-      <div className="flex items-start justify-between">
+      <motion.div variants={itemVariants} className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
-          <h1 className="text-xl font-bold text-white">
-            {t('overview.welcomeBack', { name: displayName })}
+          <h1 className="text-2xl font-bold text-white tracking-tight">
+            {greeting}, <span className="text-transparent bg-clip-text bg-gradient-to-r from-white to-white/70">{displayName}</span>
           </h1>
-          <p className="text-secondary text-sm mt-1">
+          <p className="text-secondary mt-1 text-sm font-medium">
             {activeProject
               ? t('overview.managing', { project: activeProject.name })
               : t('overview.getStarted')}
           </p>
         </div>
-        {/* Prominent Add Project Button */}
-        <button
+        <motion.button
+          whileHover={{ scale: 1.02 }}
+          whileTap={{ scale: 0.98 }}
           onClick={() => setShowOnboarding(true)}
-          className="flex items-center gap-2 bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg transition-colors shadow-lg shadow-green-500/20"
+          className="flex items-center gap-2 bg-accent hover:bg-accent-hover text-white px-4 py-2 rounded-lg transition-all shadow-lg shadow-accent/20 font-medium text-sm"
         >
           <Plus className="w-4 h-4" />
-          <span className="font-medium">Add Project</span>
-        </button>
-      </div>
+          <span>New Project</span>
+        </motion.button>
+      </motion.div>
 
-      {/* Quick Stats Row */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        {/* Plan */}
-        <div className="bg-surface border border-border p-4 rounded-xl">
-          <div className="text-secondary text-xs font-medium uppercase tracking-wider mb-1">
-            {t('overview.currentPlan')}
-          </div>
-          <div className="flex items-end justify-between">
-            <div className="text-2xl font-bold text-white">{planDisplayName}</div>
-            {!user?.profile?.subscription_tier && (
+      {/* Quick Stats Grid */}
+      <motion.div variants={itemVariants} className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        {/* Plan Status */}
+        <DashboardCard
+          title="Current Plan"
+          icon={Zap}
+          action={
+            !user?.profile?.subscription_tier && (
               <button
                 onClick={() => dashboardNavigate('/dashboard/billing')}
-                className="text-xs font-medium text-accent hover:text-accent-light transition-colors"
+                className="text-[10px] font-bold text-accent hover:text-accent-light uppercase tracking-wide transition-colors bg-accent/10 px-2 py-0.5 rounded"
               >
                 {t('overview.upgrade')}
               </button>
-            )}
+            )
+          }
+        >
+          <div className="text-xl font-bold text-white mt-2">{planDisplayName}</div>
+          <div className="text-xs text-secondary mt-0.5 font-medium">
+            {user?.profile?.subscription_tier ? 'Active & recurring' : 'Free tier account'}
           </div>
-        </div>
+        </DashboardCard>
 
-        {/* Credits */}
-        <div className="bg-surface border border-border p-4 rounded-xl">
-          <div className="text-secondary text-xs font-medium uppercase tracking-wider mb-1">
-            {t('overview.credits')}
-          </div>
-          <div className="mt-0.5">
+        {/* Credits Status */}
+        <DashboardCard title="Available Credits" icon={CreditCard}>
+          <div className="mt-2">
             <CreditsDisplay />
           </div>
-        </div>
+        </DashboardCard>
 
-        {/* Projects Count */}
-        <div className="bg-surface border border-border p-4 rounded-xl">
-          <div className="text-secondary text-xs font-medium uppercase tracking-wider mb-1">
-            {t('overview.projects')}
-          </div>
-          <div className="flex items-end justify-between">
+        {/* Projects Status */}
+        <DashboardCard
+          title="Total Projects"
+          icon={LayoutGrid}
+          onClick={() => setShowOnboarding(true)}
+        >
+          <div className="flex items-baseline justify-between mt-2">
             <div className="text-xl font-bold text-white">{projects.length}</div>
-            <button
-              onClick={() => setShowOnboarding(true)}
-              className="text-xs font-medium text-green-400 hover:text-green-300 transition-colors flex items-center gap-1"
+            <div className="flex items-center text-[10px] uppercase tracking-wide text-accent font-bold bg-accent/10 px-2 py-0.5 rounded transition-colors group-hover:bg-accent group-hover:text-white">
+              Add New
+            </div>
+          </div>
+          <div className="text-xs text-secondary mt-0.5 font-medium">
+            Active websites being tracked
+          </div>
+        </DashboardCard>
+      </motion.div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Main Content Area - Active Project & Implementation */}
+        <motion.div variants={itemVariants} className="lg:col-span-2 space-y-6">
+          <h2 className="text-xl font-semibold text-white flex items-center gap-2">
+            <Globe className="w-5 h-5 text-accent" />
+            Active Project
+          </h2>
+
+          {activeProject ? (
+            <DashboardCard
+              className="border-accent/20 ring-1 ring-accent/5 p-5 md:p-6"
+              gradient
             >
-              <Plus className="w-3 h-3" />
-              Add Project
-            </button>
-          </div>
-        </div>
-      </div>
+              <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-5 relative z-10">
+                <div className="flex items-start gap-4">
+                  <div className="w-14 h-14 rounded-xl bg-surface-light/80 border border-white/10 flex items-center justify-center text-2xl font-bold text-white shadow-inner backdrop-blur-sm">
+                    {activeProject.name.charAt(0).toUpperCase()}
+                  </div>
+                  <div>
+                    <h2 className="text-xl font-bold text-white">{activeProject.name}</h2>
 
-      {/* Active Project Card */}
-      {activeProject ? (
-        <div className="bg-surface border border-accent/30 rounded-xl p-6">
-          <div className="flex items-start justify-between mb-4">
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 rounded-lg bg-accent/20 text-accent flex items-center justify-center font-bold text-xl">
-                {activeProject.name.charAt(0).toUpperCase()}
-              </div>
-              <div>
-                <h2 className="text-base font-semibold text-white">{activeProject.name}</h2>
-                <div className="flex items-center gap-3 mt-0.5">
-                  {activeProject.domain && (
-                    <a
-                      href={activeProject.domain}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-sm text-accent hover:underline flex items-center gap-1"
-                    >
-                      {activeProject.domain}
-                      <ExternalLink className="w-3 h-3" />
-                    </a>
-                  )}
-                  <span
-                    className={cn(
-                      'px-2 py-0.5 rounded text-xs font-medium',
-                      activeProject.status === 'active'
-                        ? 'bg-green-500/10 text-green-400'
-                        : 'bg-secondary/10 text-secondary'
-                    )}
+                    <div className="flex flex-wrap items-center gap-2 mt-1.5">
+                      {activeProject.domain && (
+                        <a
+                          href={activeProject.domain}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center gap-1.5 text-xs font-medium text-accent hover:text-accent-light hover:underline transition-colors bg-accent/5 border border-accent/10 px-2 py-0.5 rounded"
+                        >
+                          <Globe className="w-3 h-3" />
+                          {activeProject.domain}
+                          <ExternalLink className="w-2.5 h-2.5 ml-0.5 opacity-70" />
+                        </a>
+                      )}
+                      <span
+                        className={cn(
+                          'px-2 py-0.5 rounded text-[10px] uppercase font-bold tracking-wide border',
+                          activeProject.status === 'active'
+                            ? 'bg-green-500/10 text-green-400 border-green-500/20'
+                            : 'bg-secondary/10 text-secondary border-secondary/20'
+                        )}
+                      >
+                        {t(`projects.list.status.${activeProject.status}`)}
+                      </span>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-x-8 gap-y-2 mt-4">
+                      <div>
+                        <div className="text-[10px] text-secondary uppercase tracking-wider font-bold mb-0.5">Platform</div>
+                        <div className="text-sm text-white font-medium capitalize flex items-center gap-1.5">
+                          {activeProject.cms_type}
+                        </div>
+                      </div>
+                      <div>
+                        <div className="text-[10px] text-secondary uppercase tracking-wider font-bold mb-0.5">Frequency</div>
+                        <div className="text-sm text-white font-medium capitalize">
+                          {activeProject.content_preferences?.frequency?.replace('_', ' ') || 'Not set'}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex sm:flex-col gap-2">
+                  <button
+                    onClick={handleEditClick}
+                    className="p-2 text-secondary hover:text-white hover:bg-surface-light rounded-lg transition-all border border-transparent hover:border-white/5"
+                    aria-label="Edit project"
                   >
-                    {t(`projects.list.status.${activeProject.status}`)}
-                  </span>
+                    <Edit2 className="w-4 h-4" />
+                  </button>
+                  <button
+                    onClick={() => handleDeleteClick(activeProject.id)}
+                    className="p-2 text-secondary hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-all border border-transparent hover:border-red-500/10"
+                    aria-label="Delete project"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
                 </div>
               </div>
+            </DashboardCard>
+          ) : (
+            <DashboardCard className="border-dashed border-2 bg-transparent hover:border-accent/50 hover:bg-accent/5 group">
+              <div className="flex flex-col items-center justify-center py-10 text-center">
+                <div className="w-16 h-16 bg-surface-light rounded-full flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-300">
+                  <Plus className="w-8 h-8 text-muted group-hover:text-accent transition-colors" />
+                </div>
+                <h3 className="text-lg font-semibold text-white mb-2">{t('projects.noProjects')}</h3>
+                <p className="text-secondary max-w-sm mx-auto mb-6">{t('projects.noProjectsDescription')}</p>
+                <button
+                  onClick={() => setShowOnboarding(true)}
+                  className="bg-accent hover:bg-accent-hover text-white px-6 py-2 rounded-lg transition-colors font-medium shadow-lg shadow-accent/20"
+                >
+                  {t('projects.createFirst')}
+                </button>
+              </div>
+            </DashboardCard>
+          )}
+
+          {/* Recent Activity / Project List */}
+          {projects.length > 1 && (
+            <div className="pt-4">
+              <ProjectList />
             </div>
-            {/* Action Buttons */}
-            <div className="flex items-center gap-2">
-              <button
-                onClick={handleEditClick}
-                className="p-2 text-secondary hover:text-green-400 hover:bg-green-500/10 rounded-lg transition-colors"
-                aria-label="Edit project"
-              >
-                <Edit2 className="w-4 h-4" />
-              </button>
-              <button
-                onClick={() => handleDeleteClick(activeProject.id)}
-                className="p-2 text-secondary hover:text-green-400 hover:bg-green-500/10 rounded-lg transition-colors"
-                aria-label="Delete project"
-              >
-                <Trash2 className="w-4 h-4" />
-              </button>
-            </div>
+          )}
+        </motion.div>
+
+        {/* Sidebar - Quick Actions */}
+        <motion.div variants={itemVariants} className="space-y-4">
+          <h2 className="text-lg font-semibold text-white">Quick Actions</h2>
+          <div className="grid grid-cols-1 gap-3">
+            <DashboardCard
+              className="hover:border-blue-500/30 cursor-pointer group py-3 px-4"
+              onClick={() => dashboardNavigate('/dashboard/campaigns')}
+            >
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-lg bg-blue-500/10 text-blue-400 group-hover:bg-blue-500/20 transition-colors">
+                  <FileText className="w-4 h-4" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-semibold text-white group-hover:text-blue-400 transition-colors">Start Campaign</h3>
+                  <p className="text-[11px] text-secondary mt-0.5">Generate SEO content for your site</p>
+                </div>
+              </div>
+            </DashboardCard>
+
+            <DashboardCard
+              className="hover:border-purple-500/30 cursor-pointer group py-3 px-4"
+              onClick={() => dashboardNavigate('/dashboard/keywords')}
+            >
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-lg bg-purple-500/10 text-purple-400 group-hover:bg-purple-500/20 transition-colors">
+                  <Search className="w-4 h-4" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-semibold text-white group-hover:text-purple-400 transition-colors">Research Keywords</h3>
+                  <p className="text-[11px] text-secondary mt-0.5">Find new opportunities</p>
+                </div>
+              </div>
+            </DashboardCard>
+
+            <DashboardCard
+              className="hover:border-orange-500/30 cursor-pointer group py-3 px-4"
+              onClick={() => dashboardNavigate('/dashboard/analytics')}
+            >
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-lg bg-orange-500/10 text-orange-400 group-hover:bg-orange-500/20 transition-colors">
+                  <BarChart2 className="w-4 h-4" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-semibold text-white group-hover:text-orange-400 transition-colors">View Analytics</h3>
+                  <p className="text-[11px] text-secondary mt-0.5">Check your performance</p>
+                </div>
+              </div>
+            </DashboardCard>
           </div>
 
-          {/* Project Details */}
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 pt-4 border-t border-border">
-            {activeProject.industry && (
-              <div>
-                <div className="text-xs text-muted uppercase tracking-wider mb-1">
-                  {t('overview.industry')}
-                </div>
-                <div className="text-sm font-medium text-white">{activeProject.industry}</div>
-              </div>
-            )}
-            <div>
-              <div className="text-xs text-muted uppercase tracking-wider mb-1">
-                {t('overview.platform')}
-              </div>
-              <div className="text-sm font-medium text-white capitalize">
-                {activeProject.cms_type}
-              </div>
-            </div>
-            {activeProject.content_preferences?.frequency && (
-              <div>
-                <div className="text-xs text-muted uppercase tracking-wider mb-1">
-                  {t('overview.frequency')}
-                </div>
-                <div className="text-sm font-medium text-white capitalize">
-                  {activeProject.content_preferences.frequency.replace('_', ' ')}
-                </div>
-              </div>
-            )}
+          <div className="bg-gradient-to-br from-indigo-500/5 to-purple-500/5 rounded-xl p-4 border border-indigo-500/10 mt-4 backdrop-blur-sm">
+            <h3 className="text-xs font-bold text-white uppercase tracking-wider mb-1.5 flex items-center gap-2">
+              <span className="w-1.5 h-1.5 rounded-full bg-indigo-500 animate-pulse"></span>
+              Pro Tip
+            </h3>
+            <p className="text-xs text-secondary leading-relaxed font-medium">
+              Connecting your Google Search Console can improve keyword recommendations by 40%.
+            </p>
           </div>
-        </div>
-      ) : (
-        /* Empty State - No Project */
-        <div className="bg-surface border border-border rounded-xl p-8 text-center">
-          <div className="w-16 h-16 bg-surface-light rounded-full flex items-center justify-center mx-auto mb-4">
-            <Globe className="w-8 h-8 text-muted" />
-          </div>
-          <h3 className="text-base font-semibold text-white mb-2">{t('projects.noProjects')}</h3>
-          <p className="text-secondary mb-6 max-w-md mx-auto">
-            {t('projects.noProjectsDescription')}
-          </p>
-          <button
-            onClick={() => setShowOnboarding(true)}
-            className="inline-flex items-center gap-2 bg-green-500 hover:bg-green-600 text-white px-6 py-2.5 rounded-lg transition-colors"
-          >
-            <Plus className="w-4 h-4" />
-            {t('projects.createFirst')}
-          </button>
-        </div>
-      )}
-
-      {/* Project List - only show if user has multiple projects */}
-      {projects.length > 1 && <ProjectList />}
+        </motion.div>
+      </div>
 
       {/* Onboarding Modal */}
       <ProjectOnboarding isOpen={showOnboarding} onClose={() => setShowOnboarding(false)} />
 
       {/* Delete Confirmation Modal */}
       {projectToDelete && (
-        <div className="fixed inset-0 bg-main/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-surface border border-border rounded-xl p-6 max-w-md w-full">
+        <div className="fixed inset-0 bg-main/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in fade-in duration-200">
+          <div className="bg-surface border border-border rounded-xl p-6 max-w-md w-full shadow-2xl">
             <h3 className="text-lg font-semibold text-white mb-2">
               {t('projects.list.deleteConfirmTitle')}
             </h3>
@@ -300,7 +409,7 @@ export function OverviewView(): JSX.Element {
               <button
                 onClick={handleConfirmDelete}
                 disabled={isDeleting}
-                className="flex-1 py-2.5 text-sm font-medium text-white bg-red-500 hover:bg-red-600 rounded-lg transition-colors disabled:opacity-50"
+                className="flex-1 py-2.5 text-sm font-medium text-white bg-red-500 hover:bg-red-600 rounded-lg transition-colors disabled:opacity-50 shadow-lg shadow-red-500/20"
               >
                 {isDeleting ? 'Deleting...' : t('projects.list.confirm')}
               </button>
@@ -318,6 +427,7 @@ export function OverviewView(): JSX.Element {
           isSaving={isEditing}
         />
       )}
-    </div>
+    </motion.div>
   );
 }
+

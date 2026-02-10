@@ -64,6 +64,7 @@
     color-scheme: dark;
     overflow-y: scroll;
     scrollbar-gutter: stable;
+    font-size: 15px;
   }
 
   body {

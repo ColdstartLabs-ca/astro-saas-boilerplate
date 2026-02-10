@@ -170,10 +170,10 @@ export function QuickGenerateModal({
       <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm animate-fadeIn p-4">
         <div className="bg-surface border border-border rounded-xl w-full max-w-lg shadow-2xl p-8 text-center">
           <p className="text-text-secondary mb-4">
-            Create a project first to generate articles
+            {_t('quickGenerate.noProject.title')}
           </p>
           <DashboardButton variant="primary" onClick={handleClose}>
-            Close
+            {_t('quickGenerate.noProject.close')}
           </DashboardButton>
         </div>
       </div>
@@ -189,12 +189,12 @@ export function QuickGenerateModal({
             <Loader2 className="w-8 h-8 text-accent animate-spin" />
           </div>
           <h3 className="text-lg font-semibold text-text-primary mb-2">
-            Generating your article...
+            {_t('quickGenerate.generatingState.title')}
           </h3>
-          <p className="text-text-secondary text-sm">This usually takes 30-60 seconds</p>
+          <p className="text-text-secondary text-sm">{_t('quickGenerate.generatingState.subtitle')}</p>
           {watchedImagePreset && (
             <p className="text-text-secondary text-xs mt-2">
-              Including images (may take longer)
+              {_t('quickGenerate.generatingState.includingImages')}
             </p>
           )}
         </div>
@@ -209,7 +209,7 @@ export function QuickGenerateModal({
         <div className="bg-surface border border-border rounded-xl w-full max-w-2xl shadow-2xl max-h-[90vh] overflow-hidden flex flex-col">
           {/* Header */}
           <div className="flex justify-between items-center p-6 border-b border-border">
-            <h2 className="text-xl font-bold text-white">Article Generated!</h2>
+            <h2 className="text-xl font-bold text-white">{_t('quickGenerate.success.title')}</h2>
             <button onClick={handleClose} className="text-muted hover:text-white">
               <X className="w-5 h-5" />
             </button>
@@ -231,13 +231,13 @@ export function QuickGenerateModal({
           <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-error/10 mb-4">
             <X className="w-6 h-6 text-error" />
           </div>
-          <h3 className="text-lg font-semibold text-text-primary mb-2">Generation Failed</h3>
+          <h3 className="text-lg font-semibold text-text-primary mb-2">{_t('quickGenerate.failed.title')}</h3>
           <p className="text-text-secondary text-sm mb-4">
             {article?.generation_error || error || 'Something went wrong'}
           </p>
-          <p className="text-text-secondary text-xs mb-6">Your credits have been refunded</p>
+          <p className="text-text-secondary text-xs mb-6">{_t('quickGenerate.failed.creditsRefunded')}</p>
           <DashboardButton variant="primary" onClick={handleClose}>
-            Try Again
+            {_t('quickGenerate.failed.tryAgain')}
           </DashboardButton>
         </div>
       </div>
@@ -250,12 +250,12 @@ export function QuickGenerateModal({
     return (
       <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm animate-fadeIn p-4">
         <div className="bg-surface border border-border rounded-xl w-full max-w-md shadow-2xl p-8 text-center">
-          <h3 className="text-lg font-semibold text-text-primary mb-2">No Campaigns Yet</h3>
+          <h3 className="text-lg font-semibold text-text-primary mb-2">{_t('quickGenerate.noCampaigns')}</h3>
           <p className="text-text-secondary text-sm mb-6">
-            You need to create a campaign before generating articles.
+            {_t('quickGenerate.noCampaignsDescription')}
           </p>
           <DashboardButton variant="primary" onClick={() => onClose()}>
-            Go to Campaigns
+            {_t('quickGenerate.goToCampaigns')}
           </DashboardButton>
         </div>
       </div>
@@ -268,7 +268,7 @@ export function QuickGenerateModal({
         {/* Header */}
         <div className="flex justify-between items-center p-6 border-b border-border">
           <div>
-            <h2 className="text-xl font-bold text-white">Generate Article</h2>
+            <h2 className="text-xl font-bold text-white">{_t('quickGenerate.title')}</h2>
             <p className="text-secondary text-sm mt-1">
               {activeProject?.name && `For ${activeProject.name}`}
             </p>
@@ -284,7 +284,7 @@ export function QuickGenerateModal({
             {/* Campaign Selector (required, first field) */}
             <div>
               <label className="block text-sm font-medium text-text-primary mb-1.5">
-                Campaign <span className="text-red-400">*</span>
+                {_t('quickGenerate.campaign')} <span className="text-red-400">*</span>
               </label>
               <select
                 {...register('campaignId')}
@@ -292,7 +292,7 @@ export function QuickGenerateModal({
                   errors.campaignId ? 'border-red-500' : ''
                 }`}
               >
-                <option value="">Select a campaign...</option>
+                <option value="">{_t('quickGenerate.selectCampaign')}</option>
                 {campaigns.map((campaign) => (
                   <option key={campaign.id} value={campaign.id}>
                     {campaign.name}
@@ -303,18 +303,18 @@ export function QuickGenerateModal({
                 <p className="text-red-400 text-xs mt-1">{errors.campaignId.message}</p>
               )}
               <p className="text-xs text-muted mt-1">
-                Article will be added to the selected campaign
+                {_t('quickGenerate.campaignHint')}
               </p>
             </div>
 
             {/* Keyword Input */}
             <div>
               <label className="block text-sm font-medium text-text-primary mb-1.5">
-                Keyword or Topic <span className="text-red-400">*</span>
+                {_t('quickGenerate.keyword')} <span className="text-red-400">*</span>
               </label>
               <input
                 type="text"
-                placeholder="e.g., best project management tools 2026"
+                placeholder={_t('quickGenerate.keywordPlaceholder')}
                 {...register('keyword')}
                 className={`w-full bg-main border border-border rounded-lg px-4 py-2.5 text-white focus:ring-1 focus:ring-accent outline-none ${
                   errors.keyword ? 'border-red-500' : ''
@@ -328,7 +328,7 @@ export function QuickGenerateModal({
             {/* Tone Selector */}
             <div>
               <label className="block text-sm font-medium text-text-primary mb-1.5">
-                Tone
+                {_t('quickGenerate.tone')}
               </label>
               <div className="grid grid-cols-2 gap-2">
                 {TONE_OPTIONS.map((tone) => (
@@ -353,7 +353,7 @@ export function QuickGenerateModal({
             {/* Word Count Selector */}
             <div>
               <label className="block text-sm font-medium text-text-primary mb-1.5">
-                Target Word Count
+                {_t('quickGenerate.wordCount')}
               </label>
               <select
                 {...register('targetWordCount', { valueAsNumber: true })}
@@ -372,10 +372,10 @@ export function QuickGenerateModal({
               <div className="flex items-center justify-between mb-3">
                 <div>
                   <label className="block text-sm font-medium text-text-primary">
-                    Generate Images
+                    {_t('quickGenerate.images.title')}
                   </label>
                   <p className="text-xs text-text-secondary mt-0.5">
-                    Add AI-generated images to your article
+                    {_t('quickGenerate.images.description')}
                   </p>
                 </div>
                 <button
@@ -413,10 +413,13 @@ export function QuickGenerateModal({
               {isGenerating ? (
                 <>
                   <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  Generating...
+                  {_t('quickGenerate.generating')}
                 </>
               ) : (
-                `Generate Article (${totalCredits} credit${totalCredits > 1 ? 's' : ''})`
+                _t('quickGenerate.generateWithCredits', {
+                  count: totalCredits,
+                  plural: totalCredits > 1 ? 's' : '',
+                })
               )}
             </DashboardButton>
           </form>

@@ -1,20 +1,20 @@
 'use client';
 
-import React, { useState, useMemo, useEffect, useCallback } from 'react';
-import { LogOut, X } from 'lucide-react';
-import { dashboardNavigate, onDashboardNavigate } from '@client/utils/dashboardNavigation';
-import { useUserStore, useIsAdmin } from '@client/store/userStore';
-import { Logo } from '@client/components/logo/Logo';
-import { useLogger } from '@client/utils/logger';
-import { cn } from '@client/utils/cn';
-import { getTranslations, type TFunction } from '@src/i18n/utils';
-import { ProjectSelector } from '@client/components/projects/ProjectSelector';
+import { BrandLink } from '@client/components/logo/BrandLink';
 import { ProjectOnboarding } from '@client/components/projects/ProjectOnboarding';
+import { ProjectSelector } from '@client/components/projects/ProjectSelector';
 import {
   getRoutesByGroup,
   isPathActive,
   type IDashboardRoute,
 } from '@client/config/dashboardRoutes';
+import { useIsAdmin, useUserStore } from '@client/store/userStore';
+import { cn } from '@client/utils/cn';
+import { dashboardNavigate, onDashboardNavigate } from '@client/utils/dashboardNavigation';
+import { useLogger } from '@client/utils/logger';
+import { getTranslations, type TFunction } from '@src/i18n/utils';
+import { LogOut, X } from 'lucide-react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 
 interface IDashboardSidebarProps {
   isOpen?: boolean;
@@ -157,9 +157,7 @@ export const DashboardSidebar: React.FC<IDashboardSidebarProps> = ({ isOpen, onC
 
         {/* Logo/Brand */}
         <div className="p-6 border-b border-border">
-          <a href="/" className="flex items-center gap-2" onClick={() => handleNavigation('/')}>
-            <Logo variant="full" />
-          </a>
+          <BrandLink variant="full" />
         </div>
 
         {/* Active Project Selector */}

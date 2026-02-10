@@ -1,11 +1,29 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
+import { createClient } from '@shared/utils/supabase/client';
 
 export interface IEmailPreferences {
   marketing_emails: boolean;
   product_updates: boolean;
   low_credit_alerts: boolean;
+}
+
+/**
+ * Get auth headers for API requests
+ */
+async function getAuthHeaders(): Promise<Record<string, string>> {
+  const supabase = createClient();
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
+  const accessToken = session?.access_token;
+
+  const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+  if (accessToken) {
+    headers.Authorization = `Bearer ${accessToken}`;
+  }
+  return headers;
 }
 
 export function useEmailPreferences(): {
@@ -26,7 +44,8 @@ export function useEmailPreferences(): {
     const fetchPreferences = async (): Promise<void> => {
       try {
         setIsLoading(true);
-        const response = await fetch('/api/email/preferences');
+        const headers = await getAuthHeaders();
+        const response = await fetch('/api/email/preferences', { headers });
         const result = await response.json();
 
         if (!response.ok || !result.success) {
@@ -51,9 +70,10 @@ export function useEmailPreferences(): {
         setIsUpdating(true);
         setError(null);
 
+        const headers = await getAuthHeaders();
         const response = await fetch('/api/email/preferences', {
           method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
+          headers,
           body: JSON.stringify({ [key]: value }),
         });
 
