@@ -15,7 +15,6 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { clientEnv, getAppLogoAbbr } from '@shared/config/env';
 import { getTranslations } from '@src/i18n/utils';
 import { LocaleSwitcher } from '@client/components/i18n/LocaleSwitcher';
-import { getBreadcrumbLabelKey } from '@client/config/dashboardRoutes';
 import { Toast } from '@client/components/common/Toast';
 
 const queryClient = new QueryClient({
@@ -32,18 +31,6 @@ const AUTH_GRACE_PERIOD_MS = 500;
 // Minimum interval between credit refreshes (30 seconds)
 const MIN_REFRESH_INTERVAL_MS = 30_000;
 
-// Derive breadcrumb label from pathname using centralized route config
-function getBreadcrumbLabel(pathname: string, t: ReturnType<typeof getTranslations>): string {
-  const labelKey = getBreadcrumbLabelKey(pathname);
-  const label = t(labelKey);
-  // Fallback to capitalized segment if translation missing
-  if (label === labelKey) {
-    const segment = pathname.replace('/dashboard', '').replace(/^\//, '') || 'overview';
-    return segment.charAt(0).toUpperCase() + segment.slice(1);
-  }
-  return label;
-}
-
 // Desktop top header bar
 function DashboardHeader(): JSX.Element {
   const t = useMemo(() => getTranslations('dashboard'), []);
@@ -53,14 +40,8 @@ function DashboardHeader(): JSX.Element {
     subscriptionTier: user?.profile?.subscription_tier,
     priceId: subscription?.price_id,
   });
-  const [pathname, setPathname] = useState('');
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    setPathname(window.location.pathname);
-    return onDashboardNavigate(setPathname);
-  }, []);
 
   // Close menu on outside click
   useEffect(() => {
@@ -83,15 +64,9 @@ function DashboardHeader(): JSX.Element {
     await signOut();
   }, [signOut]);
 
-  const breadcrumb = getBreadcrumbLabel(pathname, t);
-
   return (
     <header className="hidden md:flex h-16 border-b border-border bg-surface/50 backdrop-blur-sm items-center justify-between px-6 shrink-0 relative z-10">
-      <div className="flex text-sm text-secondary">
-        <span className="text-muted mr-2">/</span>
-        <span>{breadcrumb}</span>
-      </div>
-
+      <div />
       <div className="flex items-center space-x-4">
         <LocaleSwitcher />
         <button className="text-secondary hover:text-white relative transition-colors">
