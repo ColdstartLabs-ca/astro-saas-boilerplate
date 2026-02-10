@@ -46,8 +46,8 @@ Guidelines:
 - Keep subjects generic (no specific brands or trademarked characters)
 - Make prompts specific enough to generate quality images
 
-Respond with ONLY a JSON array of prompt strings, one per section.
-Example: ["prompt 1", "prompt 2", "prompt 3"]`;
+Respond with ONLY a JSON object containing a "prompts" key with an array of prompt strings, one per section.
+Example: {"prompts": ["prompt 1", "prompt 2", "prompt 3"]}`;
 }
 
 /**

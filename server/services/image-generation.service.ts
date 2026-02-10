@@ -155,12 +155,18 @@ export class ImageGenerationService {
         maxTokens: 1000,
       });
 
-      // Parse JSON array of prompts
-      const prompts = JSON.parse(result.content) as string[];
+      // Parse response - may be a plain array or an object wrapping one
+      // (json_object mode forces models to return objects, not bare arrays)
+      const parsed = JSON.parse(result.content);
+      const prompts: string[] = Array.isArray(parsed)
+        ? parsed
+        : Array.isArray(Object.values(parsed)[0])
+          ? (Object.values(parsed)[0] as string[])
+          : (() => { throw new Error(`Unexpected response shape: ${Object.keys(parsed).join(', ')}`); })();
 
       // Validate we got the right number of prompts
-      if (!Array.isArray(prompts) || prompts.length !== markers.length) {
-        throw new Error(`Expected ${markers.length} prompts, got ${prompts?.length}`);
+      if (prompts.length !== markers.length) {
+        throw new Error(`Expected ${markers.length} prompts, got ${prompts.length}`);
       }
 
       console.log(`[ImageGeneration] Generated ${prompts.length} image prompts via LLM`);

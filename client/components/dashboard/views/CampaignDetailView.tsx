@@ -24,11 +24,15 @@ import {
   Image,
   Calendar,
   Hash,
+  X,
 } from 'lucide-react';
 import { DashboardButton } from '../ui/DashboardButton';
 import { useCampaignDetail } from '@client/hooks/useCampaignDetail';
 import { useTranslations } from '@client/hooks/useTranslations';
+import { ArticleDetailModal } from '@client/components/articles/ArticleDetailModal';
 import dayjs from 'dayjs';
+import type { IArticle, IArticleWithCampaign } from '@shared/types/article.types';
+import type { CampaignTone } from '@shared/types/campaign.types';
 
 interface ICampaignDetailViewProps {
   campaignId: string;
@@ -54,10 +58,22 @@ export function CampaignDetailView({
 }: ICampaignDetailViewProps): JSX.Element {
   const t = useTranslations('dashboard');
   const [searchQuery, setSearchQuery] = useState('');
+  const [statusFilter, setStatusFilter] = useState<string>('all');
   const [isAddKeywordsModalOpen, setIsAddKeywordsModalOpen] = useState(false);
   const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
+  const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [selectedArticle, setSelectedArticle] = useState<IArticle | null>(null);
   const [newKeywords, setNewKeywords] = useState('');
+  const [settingsForm, setSettingsForm] = useState<{
+    name: string;
+    tone: CampaignTone | '';
+    targetWordCount: number;
+  }>({
+    name: '',
+    tone: '',
+    targetWordCount: 1500,
+  });
 
   const {
     campaign,
@@ -71,13 +87,24 @@ export function CampaignDetailView({
     updateCampaign,
   } = useCampaignDetail(campaignId);
 
-  // Filter articles by search query
+  // Filter articles by search query and status
   const filteredArticles = useMemo(() => {
-    if (!searchQuery) return articles;
-    return articles.filter(a =>
-      a.primary_keyword.toLowerCase().includes(searchQuery.toLowerCase())
-    );
-  }, [articles, searchQuery]);
+    let result = articles;
+
+    // Filter by search query
+    if (searchQuery) {
+      result = result.filter(a =>
+        a.primary_keyword.toLowerCase().includes(searchQuery.toLowerCase())
+      );
+    }
+
+    // Filter by status
+    if (statusFilter !== 'all') {
+      result = result.filter(a => a.status === statusFilter);
+    }
+
+    return result;
+  }, [articles, searchQuery, statusFilter]);
 
   // Sort articles: generating first, then queued, then by status
   const sortedArticles = useMemo(() => {
@@ -156,6 +183,55 @@ export function CampaignDetailView({
     }
   };
 
+  // Handle opening settings modal
+  const handleOpenSettings = () => {
+    if (!campaign) return;
+    setSettingsForm({
+      name: campaign.name,
+      tone: campaign.tone,
+      targetWordCount: campaign.target_word_count,
+    });
+    setIsSettingsModalOpen(true);
+  };
+
+  // Handle saving campaign settings
+  const handleSaveSettings = async () => {
+    if (!settingsForm.tone) return;
+    try {
+      await updateCampaign({
+        name: settingsForm.name,
+        tone: settingsForm.tone,
+        targetWordCount: settingsForm.targetWordCount,
+      });
+      setIsSettingsModalOpen(false);
+    } catch {
+      // Error handled by hook
+    }
+  };
+
+  // Handle clicking on an article row
+  const handleArticleClick = (article: IArticle) => {
+    setSelectedArticle(article);
+  };
+
+  // Handle closing article detail modal
+  const handleCloseArticleModal = () => {
+    setSelectedArticle(null);
+  };
+
+  // Toggle status filter
+  const cycleStatusFilter = () => {
+    const filters: string[] = ['all', 'queued', 'generating', 'draft', 'reviewed', 'published', 'failed'];
+    const currentIndex = filters.indexOf(statusFilter);
+    const nextIndex = (currentIndex + 1) % filters.length;
+    setStatusFilter(filters[nextIndex]);
+  };
+
+  const getStatusFilterLabel = () => {
+    if (statusFilter === 'all') return t('articles.status.all');
+    return t(`articles.status.${statusFilter}` as `articles.status.${typeof statusFilter}`);
+  };
+
   if (isLoading || !campaign) {
     return (
       <div className="h-full flex items-center justify-center">
@@ -227,7 +303,7 @@ export function CampaignDetailView({
             >
               <Plus className="w-4 h-4 mr-2" /> {t('campaigns.detail.addKeywords')}
             </DashboardButton>
-            <DashboardButton variant="ghost" size="sm">
+            <DashboardButton variant="ghost" size="sm" onClick={handleOpenSettings}>
               <Settings className="w-4 h-4" />
             </DashboardButton>
           </div>
@@ -494,8 +570,14 @@ export function CampaignDetailView({
                 className="bg-main border border-border rounded-lg pl-9 pr-3 py-1.5 text-xs text-secondary focus:border-accent outline-none w-48"
               />
             </div>
-            <DashboardButton variant="ghost" size="sm" className="h-8 w-8 p-0">
-              <Filter className="w-4 h-4" />
+            <DashboardButton
+              variant="ghost"
+              size="sm"
+              className="h-8 px-2 gap-1.5 text-xs"
+              onClick={cycleStatusFilter}
+            >
+              <Filter className="w-3.5 h-3.5" />
+              {getStatusFilterLabel()}
             </DashboardButton>
           </div>
         </div>
@@ -521,7 +603,8 @@ export function CampaignDetailView({
                 sortedArticles.map(article => (
                   <tr
                     key={article.id}
-                    className="hover:bg-surface-light/30 transition-colors group"
+                    className="hover:bg-surface-light/30 transition-colors group cursor-pointer"
+                    onClick={() => handleArticleClick(article)}
                   >
                     <td className="px-6 py-3 font-medium text-secondary">
                       {article.primary_keyword}
@@ -660,6 +743,106 @@ export function CampaignDetailView({
           </div>
         </div>
       )}
+
+      {/* Settings Modal */}
+      {isSettingsModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm animate-fadeIn p-4">
+          <div className="bg-surface border border-border rounded-xl w-full max-w-md shadow-2xl">
+            <div className="flex justify-between items-center p-6 border-b border-border">
+              <h3 className="text-lg font-bold text-white">{t('campaigns.detail.metadata.title')}</h3>
+              <button
+                onClick={() => setIsSettingsModalOpen(false)}
+                className="text-muted hover:text-white"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="p-6 space-y-4">
+              {/* Campaign Name */}
+              <div>
+                <label className="block text-sm font-medium text-secondary mb-1.5">
+                  {t('campaigns.newCampaign.name')}
+                </label>
+                <input
+                  type="text"
+                  value={settingsForm.name}
+                  onChange={e => setSettingsForm({ ...settingsForm, name: e.target.value })}
+                  className="w-full bg-main border border-border rounded-lg px-3 py-2 text-white focus:ring-1 focus:ring-accent outline-none"
+                  placeholder={t('campaigns.newCampaign.namePlaceholder')}
+                />
+              </div>
+
+              {/* Tone */}
+              <div>
+                <label className="block text-sm font-medium text-secondary mb-1.5">
+                  {t('projects.onboarding.step3.toneOfVoice')}
+                </label>
+                <div className="grid grid-cols-2 gap-2">
+                  {(['professional', 'casual', 'witty', 'academic'] as const).map(toneOption => (
+                    <button
+                      key={toneOption}
+                      type="button"
+                      onClick={() => setSettingsForm({ ...settingsForm, tone: toneOption })}
+                      className={`py-2 rounded-lg text-sm font-medium border transition-colors ${
+                        settingsForm.tone === toneOption
+                          ? 'bg-accent/20 border-accent text-accent-hover'
+                          : 'bg-main border-border text-muted hover:border-border'
+                      }`}
+                    >
+                      {t(`projects.onboarding.step3.tones.${toneOption}` as `projects.onboarding.step3.tones.${CampaignTone}`)}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Target Word Count */}
+              <div>
+                <label className="block text-sm font-medium text-secondary mb-1.5">
+                  {t('projects.onboarding.step3.targetWordCount')}
+                </label>
+                <div className="grid grid-cols-3 gap-2">
+                  {([800, 1500, 2500] as const).map(count => (
+                    <button
+                      key={count}
+                      type="button"
+                      onClick={() => setSettingsForm({ ...settingsForm, targetWordCount: count })}
+                      className={`py-2 rounded-lg text-sm font-medium border transition-colors ${
+                        settingsForm.targetWordCount === count
+                          ? 'bg-accent/20 border-accent text-accent-hover'
+                          : 'bg-main border-border text-muted hover:border-border'
+                      }`}
+                    >
+                      ~{count}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+            <div className="p-6 border-t border-border flex justify-end gap-2">
+              <DashboardButton variant="ghost" onClick={() => setIsSettingsModalOpen(false)}>
+                {t('campaigns.keywords.cancel')}
+              </DashboardButton>
+              <DashboardButton onClick={handleSaveSettings}>
+                {t('projects.onboarding.buttons.nextStep')}
+              </DashboardButton>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Article Detail Modal */}
+      <ArticleDetailModal
+        article={
+          selectedArticle
+            ? ({
+                ...selectedArticle,
+                campaigns: campaign ? { id: campaign.id, name: campaign.name } : null,
+              } satisfies IArticleWithCampaign)
+            : null
+        }
+        isOpen={!!selectedArticle}
+        onClose={handleCloseArticleModal}
+      />
     </div>
   );
 }

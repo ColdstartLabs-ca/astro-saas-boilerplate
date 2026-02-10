@@ -7,6 +7,43 @@ import type { ICampaign, IKeyword } from '@shared/types/campaign.types';
 import type { IArticle } from '@shared/types/article.types';
 import { useCampaignDetail } from '@client/hooks/useCampaignDetail';
 
+// Mock lucide-react icons
+vi.mock('lucide-react', () => ({
+  ArrowLeft: ({ className }: { className: string }) => <div data-testid="arrow-left" className={className} />,
+  Plus: ({ className }: { className: string }) => <div data-testid="plus" className={className} />,
+  Clock: ({ className }: { className: string }) => <div data-testid="clock" className={className} />,
+  Loader2: ({ className }: { className: string }) => <div data-testid="loader" className={className} />,
+  CheckCircle2: ({ className }: { className: string }) => <div data-testid="check-circle" className={className} />,
+  Search: ({ className }: { className: string }) => <div data-testid="search" className={className} />,
+  Filter: ({ className }: { className: string }) => <div data-testid="filter" className={className} />,
+  Layers: ({ className }: { className: string }) => <div data-testid="layers" className={className} />,
+  Settings: ({ className }: { className: string }) => <div data-testid="settings" className={className} />,
+  Play: ({ className }: { className: string }) => <div data-testid="play" className={className} />,
+  Pause: ({ className }: { className: string }) => <div data-testid="pause" className={className} />,
+  Cpu: ({ className }: { className: string }) => <div data-testid="cpu" className={className} />,
+  Edit2: ({ className }: { className: string }) => <div data-testid="edit" className={className} />,
+  ExternalLink: ({ className }: { className: string }) => <div data-testid="external-link" className={className} />,
+  AlertCircle: ({ className }: { className: string }) => <div data-testid="alert-circle" className={className} />,
+  Coins: ({ className }: { className: string }) => <div data-testid="coins" className={className} />,
+  TrendingUp: ({ className }: { className: string }) => <div data-testid="trending-up" className={className} />,
+  AlertTriangle: ({ className }: { className: string }) => <div data-testid="alert-triangle" className={className} />,
+  FileText: ({ className }: { className: string }) => <div data-testid="file-text" className={className} />,
+  Image: ({ className }: { className: string }) => <div data-testid="image" className={className} />,
+  Calendar: ({ className }: { className: string }) => <div data-testid="calendar" className={className} />,
+  Hash: ({ className }: { className: string }) => <div data-testid="hash" className={className} />,
+  X: ({ className }: { className: string }) => <div data-testid="x" className={className} />,
+}));
+
+// Mock ArticleDetailModal
+vi.mock('@client/components/articles/ArticleDetailModal', () => ({
+  ArticleDetailModal: ({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) =>
+    isOpen ? (
+      <div data-testid="article-detail-modal">
+        <button onClick={onClose}>Close</button>
+      </div>
+    ) : null,
+}));
+
 // Mock useCampaignDetail hook
 vi.mock('@client/hooks/useCampaignDetail', () => ({
   useCampaignDetail: vi.fn(),
