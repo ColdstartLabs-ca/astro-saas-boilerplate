@@ -2,7 +2,7 @@
 
 **Complexity: 9 → HIGH mode** (new system from scratch, external API integration, database schema changes, 15+ files, AI-powered analysis, complex gap-detection logic)
 
-**Depends on:** `opportunities.md` PRD (GSC integration — Phases 1-2 provide GSC tables + service)
+**Depends on:** `gsc-integration.md` PRD (GSC integration — Phases 1-2 provide GSC tables + service)
 
 ---
 
@@ -19,14 +19,14 @@
 - `server/services/openrouter.service.ts` — AI service pattern
 - `server/services/campaign.service.ts` — campaign creation flow
 - `shared/config/env.ts` — environment config
-- `docs/PRDs/opportunities.md` — existing GSC + opportunity analysis PRD
+- `docs/PRDs/gsc-integration.md` — existing GSC + opportunity analysis PRD
 
 **Current Behavior:**
 
 - Users manually brainstorm keywords or use external tools (Ahrefs, SEMrush)
 - No competitor intelligence inside the product
 - No way to compare your content footprint against competitors
-- GSC integration is planned (`opportunities.md`) but no competitor layer exists
+- GSC integration is planned (`gsc-integration.md`) but no competitor layer exists
 - Campaign creation requires manual keyword entry
 
 ---
@@ -63,7 +63,7 @@ flowchart LR
     end
     subgraph External
         Sites["Competitor Websites"]
-        GSCAPI["GSC API (from opportunities.md)"]
+        GSCAPI["GSC API (from gsc-integration.md)"]
     end
     subgraph DB
         CompTable[(competitor_sitemaps)]
@@ -414,7 +414,7 @@ sequenceDiagram
 - [ ] Create `GapAnalysisService`:
   - `analyze(userId)`:
     1. Fetch all competitor pages with topics
-    2. Fetch user's GSC data (if connected, via `gsc_snapshots` from opportunities.md)
+    2. Fetch user's GSC data (if connected, via `gsc_snapshots` from gsc-integration.md)
     3. Fetch user's existing articles
     4. Build topic frequency map from competitors
     5. Cross-reference: for each competitor topic, check if user has matching content (fuzzy match on keywords)
@@ -614,7 +614,7 @@ sequenceDiagram
 No new environment variables required. This feature reuses:
 
 - `OPENROUTER_API_KEY` — for AI topic extraction + gap enrichment (existing)
-- GSC data comes from `opportunities.md` integration (existing `GOOGLE_OAUTH_CLIENT_SECRET`)
+- GSC data comes from `gsc-integration.md` integration (existing `GOOGLE_OAUTH_CLIENT_SECRET`)
 
 ---
 

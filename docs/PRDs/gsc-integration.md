@@ -1,4 +1,4 @@
-# PRD: Opportunities (GSC-Powered SEO Insights)
+# PRD: GSC Integration (Google Search Console-Powered SEO Insights)
 
 **Complexity: 9 → HIGH mode** (new system from scratch, external API integration, database schema changes, 15+ files, AI analysis, complex state logic)
 
