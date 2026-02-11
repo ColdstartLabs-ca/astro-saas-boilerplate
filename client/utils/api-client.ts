@@ -100,15 +100,18 @@ export async function apiFetch<T>(
     ...options,
     headers: {
       ...headers,
-      ...(options.headers as Record<string, string> ?? {}),
+      ...((options.headers as Record<string, string>) ?? {}),
     },
   });
 
   if (!response.ok) {
     const error = await response.json().catch(() => ({ error: 'Unknown error' }));
-    const errorMessage =
-      typeof error.error === 'object' ? error.error?.message : error.error;
+    const errorMessage = typeof error.error === 'object' ? error.error?.message : error.error;
     throw new Error(errorMessage || `Request failed with status ${response.status}`);
+  }
+
+  if (response.status === 204 || response.headers.get('content-length') === '0') {
+    return undefined as T;
   }
 
   return response.json();

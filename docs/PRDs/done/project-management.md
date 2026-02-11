@@ -42,15 +42,15 @@ M4 Campaign Management UI (campaigns belong to projects)
 
 **Files Analyzed:**
 
-| File | Purpose |
-| --- | --- |
-| `supabase/migrations/20260205100000_create_projects_table.sql` | Existing DB schema |
-| `UI_TEMPLATE/components/dashboard/WebsiteOnboarding.tsx` | UI reference for onboarding wizard |
-| `UI_TEMPLATE/components/Dashboard.tsx` | UI reference for sidebar project selector |
-| `src/pages/api/protected/example/index.ts` | API route pattern (auth, CRUD) |
-| `src/pages/dashboard/index.astro` | Dashboard page pattern (Astro + React island) |
-| `server/middleware/getAuthenticatedUser.ts` | Auth middleware pattern |
-| `docs/PRDs/dashboard-autopilotrank.md` | Dashboard stub PRD with color token mapping |
+| File                                                           | Purpose                                       |
+| -------------------------------------------------------------- | --------------------------------------------- |
+| `supabase/migrations/20260205100000_create_projects_table.sql` | Existing DB schema                            |
+| `UI_TEMPLATE/components/dashboard/WebsiteOnboarding.tsx`       | UI reference for onboarding wizard            |
+| `UI_TEMPLATE/components/Dashboard.tsx`                         | UI reference for sidebar project selector     |
+| `src/pages/api/protected/example/index.ts`                     | API route pattern (auth, CRUD)                |
+| `src/pages/dashboard/index.astro`                              | Dashboard page pattern (Astro + React island) |
+| `server/middleware/getAuthenticatedUser.ts`                    | Auth middleware pattern                       |
+| `docs/PRDs/dashboard-autopilotrank.md`                         | Dashboard stub PRD with color token mapping   |
 
 ---
 
@@ -240,6 +240,7 @@ npx supabase db push
 **Implementation:**
 
 - [ ] Create `IProject` interface in `shared/types/project.types.ts`:
+
   ```typescript
   interface IProject {
     id: string;
@@ -547,12 +548,12 @@ yarn verify
 
 ## 7. Risk Mitigation
 
-| Risk | Impact | Mitigation |
-| --- | --- | --- |
-| `projects` table missing new columns | Migration fails | Phase 1 uses `ADD COLUMN IF NOT EXISTS` |
-| Plan limits not enforceable (no plan info in service) | Users create unlimited projects | Service reads user's subscription tier from profiles table |
-| Active project lost in localStorage | Confusing UX | Auto-select first project if stored ID not found |
-| Onboarding wizard shown repeatedly | Annoying UX | Only show when `projects.length === 0`, not based on localStorage flag |
+| Risk                                                  | Impact                          | Mitigation                                                             |
+| ----------------------------------------------------- | ------------------------------- | ---------------------------------------------------------------------- |
+| `projects` table missing new columns                  | Migration fails                 | Phase 1 uses `ADD COLUMN IF NOT EXISTS`                                |
+| Plan limits not enforceable (no plan info in service) | Users create unlimited projects | Service reads user's subscription tier from profiles table             |
+| Active project lost in localStorage                   | Confusing UX                    | Auto-select first project if stored ID not found                       |
+| Onboarding wizard shown repeatedly                    | Annoying UX                     | Only show when `projects.length === 0`, not based on localStorage flag |
 
 ---
 
@@ -560,27 +561,27 @@ yarn verify
 
 The `UI_TEMPLATE/` folder contains reference implementations. Key files:
 
-| UI Template File | Maps To | Notes |
-| --- | --- | --- |
-| `WebsiteOnboarding.tsx` | `ProjectOnboarding.tsx` | 3-step wizard — adapt fields, remove CMS credentials |
-| `Dashboard.tsx` (sidebar) | `ProjectSelector.tsx` | "Active Site" dropdown section |
-| `NewCampaignModal.tsx` | N/A (future) | Shows how modals are structured in the template |
+| UI Template File          | Maps To                 | Notes                                                |
+| ------------------------- | ----------------------- | ---------------------------------------------------- |
+| `WebsiteOnboarding.tsx`   | `ProjectOnboarding.tsx` | 3-step wizard — adapt fields, remove CMS credentials |
+| `Dashboard.tsx` (sidebar) | `ProjectSelector.tsx`   | "Active Site" dropdown section                       |
+| `NewCampaignModal.tsx`    | N/A (future)            | Shows how modals are structured in the template      |
 
 **Color Token Mapping** (from dashboard PRD):
 
-| UI Template | Project Token |
-| --- | --- |
-| `slate-950` | `bg-main` |
-| `slate-900` | `bg-elevated` |
-| `slate-800` | `bg-surface` |
-| `brand-500` | `accent` |
+| UI Template | Project Token    |
+| ----------- | ---------------- |
+| `slate-950` | `bg-main`        |
+| `slate-900` | `bg-elevated`    |
+| `slate-800` | `bg-surface`     |
+| `brand-500` | `accent`         |
 | `slate-400` | `text-secondary` |
-| `slate-500` | `text-muted` |
+| `slate-500` | `text-muted`     |
 
 ---
 
 ## Changelog
 
-| Date | Change |
-| --- | --- |
+| Date       | Change              |
+| ---------- | ------------------- |
 | 2026-02-05 | Initial PRD created |
