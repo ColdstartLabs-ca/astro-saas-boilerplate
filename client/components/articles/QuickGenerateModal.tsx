@@ -17,13 +17,14 @@ import { useState, useCallback, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { X, Loader2 } from 'lucide-react';
+import { X, Loader2, Zap } from 'lucide-react';
 import { useProjects } from '@client/hooks/useProjects';
 import { useCampaigns } from '@client/hooks/useCampaigns';
 import { useArticleGeneration } from '@client/hooks/useArticleGeneration';
 import { useAvailableModels } from '@client/hooks/useAvailableModels';
+import { useUserStore } from '@client/store/userStore';
 import { DashboardButton } from '@client/components/dashboard/ui/DashboardButton';
-import { getImagePresetCreditCost } from '@shared/config/image-models.config';
+import { calculateArticleCreditCost } from '@shared/constants';
 import { useTranslations } from '@client/hooks/useTranslations';
 import { ModelSelect } from '@client/components/ui/ModelSelect';
 import { imagePresetToOption } from '@client/utils/modelAdapters';
@@ -85,6 +86,7 @@ export function QuickGenerateModal({
   const { activeProject, isLoading: projectsLoading } = useProjects();
   const { campaigns, isLoading: campaignsLoading } = useCampaigns(activeProject?.id ?? null);
   const { imagePresets, isLoading: _modelsLoading } = useAvailableModels();
+  const { user } = useUserStore();
   const [articleId, setArticleId] = useState<string | null>(null);
   const [showImageSettings, setShowImageSettings] = useState(false);
   const { article, isGenerating, error, generate, reset } = useArticleGeneration(
@@ -156,8 +158,24 @@ export function QuickGenerateModal({
   }, [reset, resetForm, onClose]);
 
   // Calculate total credit cost
-  const imageCreditCost = getImagePresetCreditCost(watchedImagePreset || null);
-  const totalCredits = 1 + imageCreditCost;
+  // QuickGenerate uses default writer (auto), which defaults to budget=1 when undefined
+  const defaultWriterPreset = 'budget'; // auto mode uses budget writer
+  const writerCost = 1; // WRITER_CREDIT_COSTS.budget
+  const imageCost =
+    watchedImagePreset === 'budget'
+      ? 0
+      : watchedImagePreset === 'balanced' || watchedImagePreset === 'pro'
+        ? 1
+        : watchedImagePreset === 'ultra'
+          ? 2
+          : 0;
+  const totalCredits = writerCost + imageCost;
+
+  // Check if user has enough credits (from subscription + purchased)
+  const userCredits =
+    (user?.profile?.subscription_credits_balance ?? 0) +
+    (user?.profile?.purchased_credits_balance ?? 0);
+  const hasEnoughCredits = userCredits >= totalCredits;
 
   // Don't render if closed
   if (!isOpen) return null;
@@ -474,16 +492,71 @@ export function QuickGenerateModal({
                     selectedId={watchedImagePreset || null}
                     onSelect={preset => setValue('imagePreset', preset || undefined)}
                     placeholder="Select image preset..."
+                    showCreditCost={true}
                   />
+                  <p className="text-xs text-muted mt-2">
+                    Higher quality image presets (Pro, Ultra) add extra credits to the base cost.
+                  </p>
                 </div>
               )}
+            </div>
+
+            {/* Credit Cost Summary */}
+            <div
+              className={`p-4 rounded-lg border ${
+                hasEnoughCredits
+                  ? 'bg-blue-900/10 border-blue-500/20'
+                  : 'bg-red-900/10 border-red-500/20'
+              }`}
+            >
+              <div className="flex items-start gap-3">
+                <Zap
+                  className={`w-5 h-5 mt-0.5 ${hasEnoughCredits ? 'text-blue-400' : 'text-red-400'}`}
+                />
+                <div className="flex-1">
+                  <h4
+                    className={`text-sm font-medium ${hasEnoughCredits ? 'text-blue-200' : 'text-red-200'}`}
+                  >
+                    {hasEnoughCredits ? 'Credit Cost Breakdown' : 'Insufficient Credits'}
+                  </h4>
+                  <div className={`text-xs mt-2 space-y-1.5 ${hasEnoughCredits ? 'text-blue-100/80' : 'text-red-200/80'}`}>
+                    <div className="flex justify-between items-center">
+                      <span>Article (budget writer)</span>
+                      <span className="font-semibold text-white">{writerCost} credit</span>
+                    </div>
+                    {imageCost > 0 ? (
+                      <div className="flex justify-between items-center">
+                        <span>Images ({watchedImagePreset})</span>
+                        <span className="font-semibold text-white">+{imageCost} credit{imageCost > 1 ? 's' : ''}</span>
+                      </div>
+                    ) : (
+                      <div className="flex justify-between items-center text-muted">
+                        <span>Images</span>
+                        <span>none (text-only)</span>
+                      </div>
+                    )}
+                    <div className="h-px bg-white/10 my-1"></div>
+                    <div className="flex justify-between items-center">
+                      <span className="font-semibold text-blue-200">Total</span>
+                      <span className="font-bold text-white">{totalCredits} credit{totalCredits > 1 ? 's' : ''}</span>
+                    </div>
+                    {!hasEnoughCredits && (
+                      <div className="pt-1 text-red-300 flex items-center gap-1">
+                        <span>Required: {totalCredits}</span>
+                        <span>·</span>
+                        <span>Available: {userCredits}</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
             </div>
 
             {/* Submit Button */}
             <DashboardButton
               type="submit"
               variant="primary"
-              disabled={!isValid || isGenerating}
+              disabled={!isValid || isGenerating || !hasEnoughCredits}
               className="w-full"
             >
               {isGenerating ? (
@@ -492,10 +565,10 @@ export function QuickGenerateModal({
                   {_t('quickGenerate.generating')}
                 </>
               ) : (
-                _t('quickGenerate.generateWithCredits', {
-                  count: totalCredits,
-                  plural: totalCredits > 1 ? 's' : '',
-                })
+                <>
+                  <Zap className="w-4 h-4 mr-2" />
+                  Generate Article
+                </>
               )}
             </DashboardButton>
           </form>

@@ -55,9 +55,9 @@ describe('image-models.config', () => {
       });
     });
 
-    it('should have valid credit costs (0 or 1)', () => {
+    it('should have valid credit costs (0, 1, or 2)', () => {
       Object.values(IMAGE_PRESETS).forEach(preset => {
-        expect([0, 1]).toContain(preset.creditCost);
+        expect([0, 1, 2]).toContain(preset.creditCost);
       });
     });
   });
@@ -105,14 +105,20 @@ describe('image-models.config', () => {
   });
 
   describe('getImagePresetCreditCost', () => {
-    it('should return 0 for free-tier presets', () => {
+    it('should return 0 for budget preset', () => {
       expect(getImagePresetCreditCost('budget')).toBe(0);
-      expect(getImagePresetCreditCost('balanced')).toBe(0);
     });
 
-    it('should return 1 for premium presets', () => {
+    it('should return 1 for balanced preset', () => {
+      expect(getImagePresetCreditCost('balanced')).toBe(1);
+    });
+
+    it('should return 1 for pro preset', () => {
       expect(getImagePresetCreditCost('pro')).toBe(1);
-      expect(getImagePresetCreditCost('ultra')).toBe(1);
+    });
+
+    it('should return 2 for ultra preset', () => {
+      expect(getImagePresetCreditCost('ultra')).toBe(2);
     });
 
     it('should return 0 for null/undefined/invalid preset', () => {
@@ -175,23 +181,34 @@ describe('image-models.config', () => {
   });
 
   describe('Credit cost calculations', () => {
-    it('should calculate total cost for free-tier preset article', () => {
-      const baseCost = 1;
+    it('should calculate total cost for budget writer + budget images', () => {
+      // Budget writer = 1 credit, budget images = 0 credits
+      const writerCost = 1;
       const imageCost = getImagePresetCreditCost('budget');
-      expect(baseCost + imageCost).toBe(1);
+      expect(writerCost + imageCost).toBe(1);
     });
 
-    it('should calculate total cost for premium preset article', () => {
-      const baseCost = 1;
+    it('should calculate total cost for pro writer + pro images', () => {
+      // Pro writer = 2 credits, pro images = 1 credit
+      const writerCost = 2;
       const imageCost = getImagePresetCreditCost('pro');
-      expect(baseCost + imageCost).toBe(2);
+      expect(writerCost + imageCost).toBe(3);
+    });
+
+    it('should calculate total cost for ultra writer + ultra images', () => {
+      // Ultra writer = 3 credits, ultra images = 2 credits
+      const writerCost = 3;
+      const imageCost = getImagePresetCreditCost('ultra');
+      expect(writerCost + imageCost).toBe(5);
     });
 
     it('should calculate total cost for campaign with multiple keywords', () => {
+      // Pro writer (2) + pro images (1) = 3 credits per article
       const keywordCount = 10;
+      const writerCost = 2;
       const imageCost = getImagePresetCreditCost('pro');
-      const totalCredits = keywordCount * (1 + imageCost);
-      expect(totalCredits).toBe(20);
+      const totalCredits = keywordCount * (writerCost + imageCost);
+      expect(totalCredits).toBe(30);
     });
   });
 

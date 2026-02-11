@@ -87,7 +87,7 @@ describe('CampaignService', () => {
     project_id: mockProjectId,
     name: 'Test Campaign',
     status: 'draft',
-    ai_model: 'auto',
+    ai_model: 'pro',
     tone: 'professional',
     target_word_count: 1500,
     settings: {},
@@ -430,9 +430,9 @@ describe('CampaignService', () => {
           creditsRefunded: 1,
           successfulCount: 2,
           failedCount: 1,
-          costPerArticle: 1,
-          estimatedCreditsRemaining: 1, // mockKeyword has 'pending' or 'queued' status
-          totalCreditsRequired: 3,
+          costPerArticle: 2,
+          estimatedCreditsRemaining: 2, // mockKeyword has 'pending' or 'queued' status
+          totalCreditsRequired: 4,
         },
       });
     });
@@ -456,6 +456,84 @@ describe('CampaignService', () => {
       const detail = await campaignService.getDetail('non-existent', mockUserId);
 
       expect(detail).toBeNull();
+    });
+
+    it('should correctly aggregate credits for all article statuses', async () => {
+      const { supabaseAdmin } = await import('@server/supabase/supabaseAdmin');
+
+      let callCount = 0;
+      (supabaseAdmin.from as unknown as ReturnType<typeof vi.fn>).mockImplementation(() => {
+        callCount++;
+        if (callCount === 1) {
+          // First call: get campaign
+          return {
+            select: vi.fn().mockReturnValue({
+              eq: vi.fn().mockReturnValue({
+                eq: vi.fn().mockReturnValue({
+                  single: vi.fn().mockResolvedValue({ data: mockCampaign, error: null }),
+                }),
+              }),
+            }),
+          } as unknown;
+        } else if (callCount === 2) {
+          // Second call: get keywords
+          return {
+            select: vi.fn().mockReturnValue({
+              eq: vi.fn().mockReturnValue({
+                order: vi.fn().mockReturnValue({
+                  order: vi.fn().mockResolvedValue({ data: [], error: null }),
+                }),
+              }),
+            }),
+          } as unknown;
+        } else {
+          // Third call: get articles with all possible statuses
+          return {
+            select: vi.fn().mockReturnValue({
+              eq: vi.fn().mockResolvedValue({
+                data: [
+                  // Intermediate statuses - pre-charged credits
+                  { status: 'queued', credits_used: 2 },
+                  { status: 'generating', credits_used: 2 },
+                  { status: 'qa_checking', credits_used: 2 },
+                  // Success statuses - credits stay charged
+                  { status: 'draft', credits_used: 2 },
+                  { status: 'reviewed', credits_used: 2 },
+                  { status: 'qa_passed', credits_used: 2 },
+                  { status: 'approved', credits_used: 2 },
+                  { status: 'published', credits_used: 2 },
+                  // Failure statuses - credits refunded
+                  { status: 'failed', credits_used: 2 },
+                  { status: 'failed_quality', credits_used: 2 },
+                  { status: 'failed_timeout', credits_used: 2 },
+                  { status: 'qa_failed', credits_used: 2 },
+                  { status: 'rejected', credits_used: 2 },
+                ],
+                error: null,
+              }),
+            }),
+          } as unknown;
+        }
+      });
+
+      const detail = await campaignService.getDetail(mockCampaignId, mockUserId);
+
+      // Verify credit aggregation
+      expect(detail).toMatchObject({
+        articleStats: {
+          queued: 1, // 'queued' only
+          generating: 2, // 'generating' + 'qa_checking'
+          draft: 5, // 'draft' + 'reviewed' + 'qa_passed' + 'approved' + 'published'
+          published: 1, // 'published' only
+          total: 13, // All articles (queued doesn't charge credits yet)
+        },
+        creditStats: {
+          creditsUsed: 14, // 2 intermediate (generating, qa_checking) + 5 success = 7 articles * 2 credits
+          creditsRefunded: 10, // 5 failure statuses * 2 credits
+          successfulCount: 5, // 'draft', 'reviewed', 'qa_passed', 'approved', 'published'
+          failedCount: 5, // 'failed', 'failed_quality', 'failed_timeout', 'qa_failed', 'rejected'
+        },
+      });
     });
   });
 
@@ -580,7 +658,7 @@ describe('CampaignService', () => {
       await campaignService.create(mockUserId, input);
 
       expect(insertCall).toMatchObject({
-        ai_model: 'auto',
+        ai_model: 'pro',
         tone: 'professional',
         target_word_count: 1500,
       });
@@ -940,13 +1018,13 @@ describe('CampaignService', () => {
 
       // Mock atomic RPC: create_articles_with_credits
       (supabaseAdmin as unknown as { rpc: ReturnType<typeof vi.fn> }).rpc.mockResolvedValueOnce({
-        data: [{ articles_created: 2, credits_deducted: 2 }],
+        data: [{ articles_created: 2, credits_deducted: 4 }],
         error: null,
       });
 
       const result = await campaignService.startGeneration(mockCampaignId, mockUserId);
 
-      expect(result).toEqual({ queued: 2, creditsRequired: 2 });
+      expect(result).toEqual({ queued: 2, creditsRequired: 4 });
     });
 
     it('should resume paused campaign with queued keywords (no new credits)', async () => {
@@ -1267,14 +1345,14 @@ describe('CampaignService', () => {
 
       // Atomic RPC returns success
       (supabaseAdmin as unknown as { rpc: ReturnType<typeof vi.fn> }).rpc.mockResolvedValueOnce({
-        data: [{ articles_created: 2, credits_deducted: 4 }],
+        data: [{ articles_created: 2, credits_deducted: 6 }],
         error: null,
       });
 
       const result = await campaignService.startGeneration(mockCampaignId, mockUserId);
 
-      // With pro preset (+1 credit per article), 2 keywords should require 4 credits
-      expect(result.creditsRequired).toBe(4);
+      // With pro writer preset (2 credits) + pro image preset (1 credit) = 3 credits per article, 2 keywords = 6 credits
+      expect(result.creditsRequired).toBe(6);
     });
 
     it('should not add extra cost for standard image presets', async () => {
@@ -1332,14 +1410,14 @@ describe('CampaignService', () => {
 
       // Atomic RPC returns success
       (supabaseAdmin as unknown as { rpc: ReturnType<typeof vi.fn> }).rpc.mockResolvedValueOnce({
-        data: [{ articles_created: 1, credits_deducted: 1 }],
+        data: [{ articles_created: 1, credits_deducted: 2 }],
         error: null,
       });
 
       const result = await campaignService.startGeneration(mockCampaignId, mockUserId);
 
-      // With budget preset (0 extra credits), 1 keyword should require 1 credit
-      expect(result.creditsRequired).toBe(1);
+      // With pro writer preset (2 credits) + budget image preset (0 credits) = 2 credits per article, 1 keyword = 2 credits
+      expect(result.creditsRequired).toBe(2);
     });
 
     it('should allow undefined image_preset on create (no preset selected)', async () => {

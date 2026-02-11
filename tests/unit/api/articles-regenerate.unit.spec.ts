@@ -283,7 +283,7 @@ describe('POST /api/articles/[articleId]/regenerate', () => {
       });
     });
 
-    it('should use getImagePresetCreditCost for balanced preset (0 cost)', async () => {
+    it('should use getImagePresetCreditCost for balanced preset (1 cost)', async () => {
       const mockArticle = createMockArticle({
         status: 'failed',
         campaigns: {
@@ -305,10 +305,10 @@ describe('POST /api/articles/[articleId]/regenerate', () => {
         locals: {},
       });
 
-      // Verify consume_credits_v2 was called with totalCreditsNeeded = 1 (base) + 0 (balanced) = 1
+      // Verify consume_credits_v2 was called with totalCreditsNeeded = 1 (base) + 1 (balanced) = 2
       expect(mockRpc).toHaveBeenCalledWith('consume_credits_v2', {
         target_user_id: 'user-123',
-        amount: 1,
+        amount: 2,
         ref_id: 'article-123',
         description: 'Article regeneration: test keyword',
       });
@@ -345,7 +345,7 @@ describe('POST /api/articles/[articleId]/regenerate', () => {
       });
     });
 
-    it('should use getImagePresetCreditCost for ultra preset (1 cost)', async () => {
+    it('should use getImagePresetCreditCost for ultra preset (2 cost)', async () => {
       const mockArticle = createMockArticle({
         status: 'failed',
         campaigns: {
@@ -367,10 +367,10 @@ describe('POST /api/articles/[articleId]/regenerate', () => {
         locals: {},
       });
 
-      // Verify consume_credits_v2 was called with totalCreditsNeeded = 1 (base) + 1 (ultra) = 2
+      // Verify consume_credits_v2 was called with totalCreditsNeeded = 1 (base) + 2 (ultra) = 3
       expect(mockRpc).toHaveBeenCalledWith('consume_credits_v2', {
         target_user_id: 'user-123',
-        amount: 2,
+        amount: 3,
         ref_id: 'article-123',
         description: 'Article regeneration: test keyword',
       });
@@ -682,11 +682,13 @@ describe('POST /api/articles/[articleId]/regenerate', () => {
         locals: {},
       });
 
-      // Verify update was called with generation_error: null
+      // Verify update was called with generation_error: null and credits_used
+      // Note: 'gpt-4' is not a valid preset key (budget/balanced/pro/ultra), so it falls back to 1
       expect(mockUpdate).toHaveBeenCalledWith(
         {
           status: 'generating',
           generation_error: null,
+          credits_used: 1, // fallback cost for invalid preset 'gpt-4' + no images
         },
         { count: 'exact' }
       );

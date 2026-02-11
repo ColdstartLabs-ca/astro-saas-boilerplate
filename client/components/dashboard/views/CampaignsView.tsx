@@ -189,7 +189,7 @@ export function CampaignsView({
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {campaigns.map(campaign => (
-          <button
+          <div
             key={campaign.id}
             onClick={() => {
               setViewMode('detail');
@@ -197,7 +197,15 @@ export function CampaignsView({
               setOpenMenuId(null);
             }}
             className="bg-surface border border-border rounded-xl p-6 hover:border-border transition-all cursor-pointer group hover:shadow-xl hover:shadow-black/20 text-left w-full"
-            type="button"
+            role="button"
+            tabIndex={0}
+            onKeyPress={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                setViewMode('detail');
+                onCampaignClick(campaign.id);
+                setOpenMenuId(null);
+              }
+            }}
           >
             <div className="flex justify-between items-start mb-4">
               <div className="flex items-center gap-3">
@@ -280,7 +288,7 @@ export function CampaignsView({
                 <Cpu className="w-3 h-3 mr-1" /> {campaign.ai_model}
               </div>
             </div>
-          </button>
+          </div>
         ))}
 
         {/* Add New Card */}

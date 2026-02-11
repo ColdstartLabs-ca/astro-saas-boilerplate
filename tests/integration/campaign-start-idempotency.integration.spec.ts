@@ -35,7 +35,7 @@ describe('Campaign Start Idempotency - Integration Tests', () => {
       const campaign = await ctx.createCampaign(user.id, project.id, {
         name: 'Test Campaign',
         keywords: ['keyword1', 'keyword2', 'keyword3'],
-        model: 'auto',
+        model: 'pro', // Use explicit preset (pro = 2 credits base)
         tone: 'professional',
       });
 
@@ -55,7 +55,8 @@ describe('Campaign Start Idempotency - Integration Tests', () => {
       expect(result1.status).toBe('fulfilled');
       if (result1.status === 'fulfilled') {
         expect(result1.value.queued).toBe(3);
-        expect(result1.value.creditsRequired).toBe(3); // 1 credit per keyword
+        // pro preset = 2 credits per article (base writer cost)
+        expect(result1.value.creditsRequired).toBe(6);
       }
 
       // Subsequent requests should also succeed but with cached data
@@ -89,7 +90,7 @@ describe('Campaign Start Idempotency - Integration Tests', () => {
       const campaign = await ctx.createCampaign(user.id, project.id, {
         name: 'Test Campaign',
         keywords: ['test1', 'test2'],
-        model: 'auto',
+        model: 'pro', // Use explicit preset (pro = 2 credits base)
         tone: 'professional',
       });
 
@@ -103,7 +104,8 @@ describe('Campaign Start Idempotency - Integration Tests', () => {
       );
 
       expect(result1.queued).toBe(2);
-      expect(result1.creditsRequired).toBe(2);
+      // pro preset = 2 credits per article (base writer cost)
+      expect(result1.creditsRequired).toBe(4);
 
       // Second request with same key (should return cached)
       const result2 = await campaignService.startGenerationWithIdempotency(
@@ -113,7 +115,8 @@ describe('Campaign Start Idempotency - Integration Tests', () => {
       );
 
       expect(result2.queued).toBe(2);
-      expect(result2.creditsRequired).toBe(2);
+      // pro preset = 2 credits per article (base writer cost)
+      expect(result2.creditsRequired).toBe(4);
 
       // Verify only 2 articles were created (not 4)
       const articles = await ctx.getArticlesByCampaign(campaign.id);
@@ -124,7 +127,7 @@ describe('Campaign Start Idempotency - Integration Tests', () => {
       const user = await ctx.createUser({
         subscription: 'active',
         tier: 'pro',
-        credits: 10, // Exactly enough for 5 keywords at 2 credits each (1 + 1 image)
+        credits: 20, // 5 keywords * (2 pro writer + 2 ultra image) = 20 credits
       });
 
       const project = await ctx.createProject(user.id, {
@@ -135,9 +138,9 @@ describe('Campaign Start Idempotency - Integration Tests', () => {
       const campaign = await ctx.createCampaign(user.id, project.id, {
         name: 'Test Campaign',
         keywords: ['kw1', 'kw2', 'kw3', 'kw4', 'kw5'],
-        model: 'auto',
+        model: 'pro', // Use explicit preset (pro = 2 credits base)
         tone: 'professional',
-        imagePreset: 'standard', // +1 credit per article
+        imagePreset: 'ultra', // +2 credits per article (ultra addon)
       });
 
       // Get initial credit balance
@@ -154,9 +157,9 @@ describe('Campaign Start Idempotency - Integration Tests', () => {
       // Get final credit balance
       const finalCredits = await ctx.getUserCredits(user.id);
 
-      // Should have deducted exactly 10 credits (5 keywords * 2 credits)
-      // Not 20 credits which would happen if both requests succeeded
-      expect(initialCredits - finalCredits).toBe(10);
+      // Should have deducted exactly 20 credits (5 keywords * (2 pro writer + 2 ultra image) = 4 credits each)
+      // Not 40 credits which would happen if both requests succeeded
+      expect(initialCredits - finalCredits).toBe(20);
     });
 
     it('should reject concurrent start with different idempotency keys', async () => {
@@ -174,7 +177,7 @@ describe('Campaign Start Idempotency - Integration Tests', () => {
       const campaign = await ctx.createCampaign(user.id, project.id, {
         name: 'Test Campaign',
         keywords: ['test1', 'test2'],
-        model: 'auto',
+        model: 'pro', // Use explicit preset (pro = 2 credits base)
         tone: 'professional',
       });
 
@@ -215,7 +218,7 @@ describe('Campaign Start Idempotency - Integration Tests', () => {
       const campaign = await ctx.createCampaign(user.id, project.id, {
         name: 'Test Campaign',
         keywords: ['test1'],
-        model: 'auto',
+        model: 'pro', // Use explicit preset
         tone: 'professional',
       });
 
@@ -245,7 +248,7 @@ describe('Campaign Start Idempotency - Integration Tests', () => {
       const campaign = await ctx.createCampaign(user.id, project.id, {
         name: 'Test Campaign',
         keywords: ['test1'],
-        model: 'auto',
+        model: 'pro', // Use explicit preset
         tone: 'professional',
       });
 
@@ -275,7 +278,7 @@ describe('Campaign Start Idempotency - Integration Tests', () => {
       const campaign = await ctx.createCampaign(user.id, project.id, {
         name: 'Test Campaign',
         keywords: ['test1'],
-        model: 'auto',
+        model: 'pro', // Use explicit preset
         tone: 'professional',
       });
 
@@ -301,7 +304,7 @@ describe('Campaign Start Idempotency - Integration Tests', () => {
       const campaign = await ctx.createCampaign(user.id, project.id, {
         name: 'Test Campaign',
         keywords: ['test1'],
-        model: 'auto',
+        model: 'pro', // Use explicit preset
         tone: 'professional',
       });
 
@@ -337,7 +340,7 @@ describe('Campaign Start Idempotency - Integration Tests', () => {
       const campaign = await ctx.createCampaign(user.id, project.id, {
         name: 'Test Campaign',
         keywords: ['test1', 'test2', 'test3'],
-        model: 'auto',
+        model: 'pro', // Use explicit preset
         tone: 'professional',
       });
 

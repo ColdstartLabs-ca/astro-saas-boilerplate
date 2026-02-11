@@ -54,6 +54,7 @@ test.describe('API: Campaign Start/Pause/Resume', () => {
       keywords,
       tone: 'professional',
       targetWordCount: 500,
+      model: 'pro', // Use explicit preset (pro = 2 credits base)
     });
     createResponse.expectStatus(201);
     const campaignData = await createResponse.getData();
@@ -64,7 +65,8 @@ test.describe('API: Campaign Start/Pause/Resume', () => {
     startResponse.expectStatus(202);
     const startData = await startResponse.getData();
     expect(startData.queued).toBe(3);
-    expect(startData.creditsRequired).toBe(3);
+    // pro preset = 2 credits per article (base writer cost)
+    expect(startData.creditsRequired).toBe(6);
 
     // Wait a bit for generation to start
     await new Promise(resolve => setTimeout(resolve, 2000));

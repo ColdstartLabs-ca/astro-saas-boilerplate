@@ -74,6 +74,9 @@ vi.mock('lucide-react', () => ({
   Check: ({ className }: { className: string }) => (
     <div data-testid="check" className={className} />
   ),
+  Zap: ({ className }: { className: string }) => (
+    <div data-testid="zap" className={className} />
+  ),
 }));
 
 // Mock ArticleDetailModal

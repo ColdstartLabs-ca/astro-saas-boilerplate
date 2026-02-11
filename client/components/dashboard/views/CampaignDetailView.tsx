@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useMemo } from 'react';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Zap } from 'lucide-react';
 import { ConfirmDialog } from '@client/components/ui/ConfirmDialog';
 import { useCampaignDetail } from '@client/hooks/useCampaignDetail';
 import { useTranslations } from '@client/hooks/useTranslations';
@@ -67,6 +67,26 @@ export function CampaignDetailView({
     () => keywords.filter(k => k.status === 'pending' || k.status === 'queued').length,
     [keywords]
   );
+
+  // Calculate credit cost per article based on campaign settings
+  const { creditsPerArticle, writerCost, imageCost } = useMemo(() => {
+    if (!campaign) return { creditsPerArticle: 1, writerCost: 1, imageCost: 0 };
+
+    const writerPreset = writerPresets.find(p => p.key === campaign.ai_model);
+    const imagePreset = imagePresets.find(p => p.key === campaign.image_preset);
+
+    const writerCost = writerPreset?.creditCost ?? 1;
+    const imageCost = imagePreset?.creditCost ?? 0;
+
+    return {
+      creditsPerArticle: writerCost + imageCost,
+      writerCost,
+      imageCost,
+    };
+  }, [campaign, writerPresets, imagePresets]);
+
+  // Calculate total credits needed for all pending keywords
+  const totalCreditsNeeded = pendingCount * creditsPerArticle;
 
   // Show confirmation modal
   const handleStartGenerationClick = () => {
@@ -187,8 +207,47 @@ export function CampaignDetailView({
         title={t('campaigns.detail.startGeneration')}
         message={t(`campaigns.detail.startConfirm_${pendingCount === 1 ? 'one' : 'other'}`, {
           count: pendingCount,
+          credits: totalCreditsNeeded,
         })}
-        items={[t('campaigns.detail.startConfirmDetail')]}
+        details={
+          <div className="bg-blue-500/5 border border-blue-500/20 rounded-lg p-3 space-y-2">
+            <p className="text-xs font-medium text-blue-200">Credit cost per article:</p>
+            <div className="space-y-1.5">
+              <div className="flex items-center justify-between text-xs">
+                <span className="text-blue-100/80">
+                  Writer ({campaign?.ai_model || 'budget'})
+                </span>
+                <span className="font-semibold text-white">{writerCost} credit</span>
+              </div>
+              {imageCost > 0 ? (
+                <div className="flex items-center justify-between text-xs">
+                  <span className="text-blue-100/80">
+                    Images ({campaign?.image_preset || 'balanced'})
+                  </span>
+                  <span className="font-semibold text-white">+{imageCost} credit{imageCost > 1 ? 's' : ''}</span>
+                </div>
+              ) : (
+                <div className="flex items-center justify-between text-xs">
+                  <span className="text-muted">Images</span>
+                  <span className="text-muted">none (text-only)</span>
+                </div>
+              )}
+              <div className="h-px bg-blue-500/20 my-1"></div>
+              <div className="flex items-center justify-between text-xs">
+                <span className="text-blue-200 font-medium">Total per article</span>
+                <span className="font-bold text-white">{creditsPerArticle} credit{creditsPerArticle > 1 ? 's' : ''}</span>
+              </div>
+              <div className="h-px bg-blue-500/20 my-1"></div>
+              <div className="flex items-center gap-2 text-xs">
+                <Zap className="w-3 h-3 text-yellow-400" />
+                <span className="text-blue-200">
+                  <strong className="text-white">{totalCreditsNeeded} credit{totalCreditsNeeded > 1 ? 's' : ''}</strong> for{' '}
+                  {pendingCount} keyword{pendingCount === 1 ? '' : 's'}
+                </span>
+              </div>
+            </div>
+          </div>
+        }
         variant="info"
         labels={{
           confirm: t('campaigns.detail.start'),

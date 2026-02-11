@@ -11,7 +11,7 @@
 import { withAuth, jsonResponse, errorResponse, fireAndForget } from '../../_utils';
 import { supabaseAdmin } from '@server/supabase/supabaseAdmin';
 import { articleGenerationService } from '@server/services/article-generation.service';
-import { getImagePresetCreditCost } from '@shared/config/image-models.config';
+import { calculateArticleCreditCost } from '@shared/config/credits.config';
 import type { IGenerateArticleInput, ArticleStatus } from '@shared/types/article.types';
 
 // Valid statuses for regeneration
@@ -69,9 +69,8 @@ export const POST = withAuth(async (userId, { params, locals }) => {
     );
   }
 
-  // Calculate credit cost using shared helper
-  const imageCreditCost = getImagePresetCreditCost(campaign.image_preset);
-  const totalCreditsNeeded = 1 + imageCreditCost;
+  // Calculate credit cost using shared helper (fixes hardcoded 1 cost bug)
+  const totalCreditsNeeded = calculateArticleCreditCost(campaign.ai_model, campaign.image_preset);
 
   // Check user has credits
   const { data: profile } = await supabaseAdmin
@@ -90,12 +89,14 @@ export const POST = withAuth(async (userId, { params, locals }) => {
 
   // Use conditional update to prevent race conditions
   // Only update if status is still in REGENERATABLE_STATUSES (acquires lock)
+  // IMPORTANT: Update credits_used here so refund reads correct amount if generation fails
   const { data: updateResult, error: updateError } = await supabaseAdmin
     .from('articles')
     .update(
       {
         status: 'generating',
         generation_error: null,
+        credits_used: totalCreditsNeeded, // Store charged amount for accurate refund
       },
       { count: 'exact' }
     )

@@ -38,6 +38,7 @@ import {
   type ImagePresetKey,
 } from '@shared/config/image-models.config';
 import { resolveWriterModel } from '@shared/config/ai-models.config';
+import { calculateArticleCreditCost } from '@shared/constants';
 import { articleQualityGateService, type IQualityGateResult } from './article-quality-gate.service';
 import { qaService, type IQACheckResult, type IQAConfig } from './qa.service';
 import {
@@ -79,7 +80,8 @@ export class ArticleGenerationService {
     // Determine image preset and credit cost
     const imagePreset = this.parseImagePreset(input.imagePreset);
     const imageCreditCost = getImagePresetCreditCost(imagePreset);
-    const totalCredits = 1 + imageCreditCost;
+    // Calculate total credits using centralized function (writer base + image addon)
+    const totalCredits = calculateArticleCreditCost(input.model, imagePreset);
 
     // Track quality gate retry locally (not on singleton) to avoid race conditions
     let hasRetriedQualityGate = false;
@@ -150,7 +152,8 @@ export class ArticleGenerationService {
             qualityResult,
             outline.data,
             articleResult.content,
-            imageCreditCost
+            imageCreditCost,
+            input.model
           );
           return; // Exit without throwing
         }
@@ -288,7 +291,7 @@ export class ArticleGenerationService {
     } catch (error) {
       console.error(`[ArticleGeneration] Error generating article ${articleId}:`, error);
       // Pass 'unknown' as default stage - error classifier will detect from message
-      await this.handleGenerationFailure(articleId, userId, error, imageCreditCost, 'unknown');
+      await this.handleGenerationFailure(articleId, userId, error, imageCreditCost, 'unknown', input.model);
       throw error; // Re-throw for logging
     }
   }
@@ -517,27 +520,33 @@ export class ArticleGenerationService {
   /**
    * Handle generation failure - mark article as failed and refund credit.
    * Uses structured error classification for monitoring and triage.
+   *
+   * IMPORTANT: Refund amount is read from articles.credits_used, not recomputed.
+   * This prevents credit loss/minting when charge and refund formulas diverge.
    */
   private async handleGenerationFailure(
     articleId: string,
     userId: string,
     error: unknown,
-    imageCreditCost: number,
-    failureStage: FailureStage = 'unknown'
+    _imageCreditCost: number, // Unused: kept for backward compatibility
+    failureStage: FailureStage = 'unknown',
+    _writerModel?: string | null // Unused: kept for backward compatibility
   ): Promise<void> {
     // Classify the error using the error classifier
     const parsedError = classifyError(error, failureStage);
     const formattedErrorMessage = formatErrorMessage(parsedError);
     const failureMetadata = createFailureMetadata(parsedError);
 
-    // Get current attempt count from article
+    // Get current attempt count and credits_used from article
+    // We read credits_used to ensure refund matches exact charge amount
     const { data: article } = await this.supabase
       .from('articles')
-      .select('attempt_count')
+      .select('attempt_count, credits_used')
       .eq('id', articleId)
       .single();
 
     const currentAttemptCount = article?.attempt_count || 1;
+    const creditsToRefund = article?.credits_used ?? 1; // Default to 1 if not set (safety)
 
     // Update article status with structured failure metadata
     await this.supabase
@@ -552,17 +561,17 @@ export class ArticleGenerationService {
       .eq('id', articleId)
       .eq('user_id', userId);
 
-    // Refund total credits (base article + image cost)
-    const totalRefund = 1 + imageCreditCost;
+    // Refund exact amount that was charged (read from credits_used column)
+    // This prevents credit loss or minting if charge/refund formulas diverge
     await this.supabase.rpc('add_purchased_credits', {
       p_user_id: userId,
-      p_amount: totalRefund,
+      p_amount: creditsToRefund,
       p_reference_id: articleId,
       p_description: `Refund: generation failed - ${formattedErrorMessage}`,
     });
 
     console.log(
-      `[ArticleGeneration] ${totalRefund} credits refunded for failed article ${articleId}` +
+      `[ArticleGeneration] ${creditsToRefund} credits refunded for failed article ${articleId}` +
         ` [stage=${parsedError.stage}, provider=${parsedError.provider}, retryable=${parsedError.isRetryable}]`
     );
 
@@ -574,6 +583,9 @@ export class ArticleGenerationService {
    * Handle quality gate failure - mark article as failed_quality and refund credit.
    * Uses structured error classification for monitoring.
    * Does NOT throw - allows generation to complete gracefully.
+   *
+   * IMPORTANT: Refund amount is read from articles.credits_used, not recomputed.
+   * This prevents credit loss/minting when charge and refund formulas diverge.
    */
   private async handleQualityGateFailure(
     articleId: string,
@@ -581,7 +593,8 @@ export class ArticleGenerationService {
     qualityResult: IQualityGateResult,
     outline: IArticleOutline,
     content: string,
-    imageCreditCost: number
+    _imageCreditCost: number, // Unused: kept for backward compatibility
+    _writerModel?: string | null // Unused: kept for backward compatibility
   ): Promise<void> {
     // Create structured error for quality gate failure
     const parsedError = classifyError(
@@ -589,14 +602,16 @@ export class ArticleGenerationService {
       'quality_gate'
     );
 
-    // Get current attempt count
+    // Get current attempt count and credits_used from article
+    // We read credits_used to ensure refund matches exact charge amount
     const { data: article } = await this.supabase
       .from('articles')
-      .select('attempt_count')
+      .select('attempt_count, credits_used')
       .eq('id', articleId)
       .single();
 
     const currentAttemptCount = article?.attempt_count || 1;
+    const creditsToRefund = article?.credits_used ?? 1; // Default to 1 if not set (safety)
 
     // Update article status with structured failure details
     await this.supabase
@@ -618,17 +633,17 @@ export class ArticleGenerationService {
       .eq('id', articleId)
       .eq('user_id', userId);
 
-    // Refund total credits (base article + image cost)
-    const totalRefund = 1 + imageCreditCost;
+    // Refund exact amount that was charged (read from credits_used column)
+    // This prevents credit loss or minting if charge/refund formulas diverge
     await this.supabase.rpc('add_purchased_credits', {
       p_user_id: userId,
-      p_amount: totalRefund,
+      p_amount: creditsToRefund,
       p_reference_id: articleId,
       p_description: `Refund: quality gate failed after retry - ${qualityResult.failureReason}`,
     });
 
     console.log(
-      `[ArticleGeneration] ${totalRefund} credits refunded for quality gate failure on article ${articleId}`
+      `[ArticleGeneration] ${creditsToRefund} credits refunded for quality gate failure on article ${articleId}`
     );
 
     // Log structured failure metrics

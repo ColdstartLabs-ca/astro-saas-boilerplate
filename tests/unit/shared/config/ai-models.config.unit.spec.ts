@@ -1,8 +1,5 @@
 /**
  * AI Writer Presets Config Unit Tests
- *
- * Tests for writer preset configuration and utility functions,
- * including availability filtering based on environment variables.
  */
 
 import { describe, it, expect } from 'vitest';
@@ -15,7 +12,6 @@ import {
   isAvailableWriterPreset,
   resolveWriterModel,
   getWriterPresetCreditCost,
-  // Deprecated exports (backward compat)
   AI_MODELS,
   DEFAULT_MODEL,
   isValidModel,
@@ -32,7 +28,7 @@ describe('ai-models.config (writer presets)', () => {
     it('should include expected preset keys', () => {
       expect(WRITER_PRESETS).toHaveProperty('budget');
       expect(WRITER_PRESETS).toHaveProperty('balanced');
-      expect(WRITER_PRESETS).toHaveProperty('auto');
+      expect(WRITER_PRESETS).toHaveProperty('pro');
       expect(WRITER_PRESETS).toHaveProperty('ultra');
     });
 
@@ -56,8 +52,8 @@ describe('ai-models.config (writer presets)', () => {
     it('should map correct default models', () => {
       expect(WRITER_PRESETS.budget.defaultModel).toBe('openai/gpt-4o-mini');
       expect(WRITER_PRESETS.balanced.defaultModel).toBe('openai/gpt-4o');
-      expect(WRITER_PRESETS.auto.defaultModel).toBe('openrouter/auto');
-      expect(WRITER_PRESETS.ultra.defaultModel).toBe('anthropic/claude-sonnet-4-5');
+      expect(WRITER_PRESETS.pro.defaultModel).toBe('anthropic/claude-sonnet-4-5');
+      expect(WRITER_PRESETS.ultra.defaultModel).toBe('anthropic/claude-opus-4-6');
     });
   });
 
@@ -68,14 +64,14 @@ describe('ai-models.config (writer presets)', () => {
 
     it('should match keys from WRITER_PRESETS', () => {
       expect(WRITER_PRESET_KEYS).toEqual(
-        expect.arrayContaining(['budget', 'balanced', 'auto', 'ultra'])
+        expect.arrayContaining(['budget', 'balanced', 'pro', 'ultra'])
       );
     });
   });
 
   describe('DEFAULT_WRITER_PRESET', () => {
-    it('should be set to auto', () => {
-      expect(DEFAULT_WRITER_PRESET).toBe('auto');
+    it('should be set to pro', () => {
+      expect(DEFAULT_WRITER_PRESET).toBe('pro');
     });
 
     it('should be a valid preset key', () => {
@@ -87,7 +83,7 @@ describe('ai-models.config (writer presets)', () => {
     it('should return true for valid preset keys', () => {
       expect(isValidWriterPreset('budget')).toBe(true);
       expect(isValidWriterPreset('balanced')).toBe(true);
-      expect(isValidWriterPreset('auto')).toBe(true);
+      expect(isValidWriterPreset('pro')).toBe(true);
       expect(isValidWriterPreset('ultra')).toBe(true);
     });
 
@@ -103,7 +99,7 @@ describe('ai-models.config (writer presets)', () => {
       const available = getAvailableWriterPresets('');
       expect(available).toHaveLength(4);
       expect(available.map(p => p.key)).toEqual(
-        expect.arrayContaining(['budget', 'balanced', 'auto', 'ultra'])
+        expect.arrayContaining(['budget', 'balanced', 'pro', 'ultra'])
       );
     });
 
@@ -124,7 +120,7 @@ describe('ai-models.config (writer presets)', () => {
       const budget = available.find(p => p.key === 'budget')!;
       expect(budget.model).toBe('custom/model-a');
       const balanced = available.find(p => p.key === 'balanced')!;
-      expect(balanced.model).toBe('openai/gpt-4o'); // default
+      expect(balanced.model).toBe('openai/gpt-4o');
     });
 
     it('should handle comma-separated values with spaces', () => {
@@ -151,14 +147,14 @@ describe('ai-models.config (writer presets)', () => {
         description: 'Strong all-round writing quality',
         model: 'openai/gpt-4o',
         tier: 'balanced',
-        creditCost: 0,
+        creditCost: 1,
       });
     });
 
     it('should handle single preset without comma', () => {
-      const available = getAvailableWriterPresets('auto');
+      const available = getAvailableWriterPresets('pro');
       expect(available).toHaveLength(1);
-      expect(available[0].key).toBe('auto');
+      expect(available[0].key).toBe('pro');
     });
 
     it('should be backward compatible (empty = all available)', () => {
@@ -172,7 +168,7 @@ describe('ai-models.config (writer presets)', () => {
     it('should return true for all presets when env is empty', () => {
       expect(isAvailableWriterPreset('budget', '')).toBe(true);
       expect(isAvailableWriterPreset('balanced', '')).toBe(true);
-      expect(isAvailableWriterPreset('auto', '')).toBe(true);
+      expect(isAvailableWriterPreset('pro', '')).toBe(true);
       expect(isAvailableWriterPreset('ultra', '')).toBe(true);
     });
 
@@ -185,7 +181,7 @@ describe('ai-models.config (writer presets)', () => {
     it('should return false for disabled presets', () => {
       const env = 'budget,ultra';
       expect(isAvailableWriterPreset('balanced', env)).toBe(false);
-      expect(isAvailableWriterPreset('auto', env)).toBe(false);
+      expect(isAvailableWriterPreset('pro', env)).toBe(false);
     });
 
     it('should return false for invalid preset keys', () => {
@@ -210,8 +206,8 @@ describe('ai-models.config (writer presets)', () => {
     it('should resolve preset key to default model', () => {
       expect(resolveWriterModel('budget', '')).toBe('openai/gpt-4o-mini');
       expect(resolveWriterModel('balanced', '')).toBe('openai/gpt-4o');
-      expect(resolveWriterModel('auto', '')).toBe('openrouter/auto');
-      expect(resolveWriterModel('ultra', '')).toBe('anthropic/claude-sonnet-4-5');
+      expect(resolveWriterModel('pro', '')).toBe('anthropic/claude-sonnet-4-5');
+      expect(resolveWriterModel('ultra', '')).toBe('anthropic/claude-opus-4-6');
     });
 
     it('should resolve to overridden model from env', () => {
@@ -222,20 +218,22 @@ describe('ai-models.config (writer presets)', () => {
 
     it('should fallback to default preset model for unknown key', () => {
       const result = resolveWriterModel('nonexistent', '');
-      // Falls back to DEFAULT_WRITER_PRESET (auto) defaultModel
-      expect(result).toBe('openrouter/auto');
+      expect(result).toBe('anthropic/claude-sonnet-4-5');
     });
   });
 
   describe('getWriterPresetCreditCost', () => {
-    it('should return 0 for budget/balanced/auto presets', () => {
-      expect(getWriterPresetCreditCost('budget')).toBe(0);
-      expect(getWriterPresetCreditCost('balanced')).toBe(0);
-      expect(getWriterPresetCreditCost('auto')).toBe(0);
+    it('should return 1 for budget/balanced presets', () => {
+      expect(getWriterPresetCreditCost('budget')).toBe(1);
+      expect(getWriterPresetCreditCost('balanced')).toBe(1);
     });
 
-    it('should return 1 for ultra preset', () => {
-      expect(getWriterPresetCreditCost('ultra')).toBe(1);
+    it('should return 2 for pro preset', () => {
+      expect(getWriterPresetCreditCost('pro')).toBe(2);
+    });
+
+    it('should return 3 for ultra preset', () => {
+      expect(getWriterPresetCreditCost('ultra')).toBe(3);
     });
 
     it('should return 0 for null/undefined/invalid', () => {
@@ -245,7 +243,6 @@ describe('ai-models.config (writer presets)', () => {
     });
   });
 
-  // Deprecated exports — backward compatibility
   describe('Deprecated exports', () => {
     it('AI_MODELS should map default model IDs to metadata', () => {
       expect(AI_MODELS['openai/gpt-4o']).toBeDefined();
@@ -254,7 +251,7 @@ describe('ai-models.config (writer presets)', () => {
     });
 
     it('DEFAULT_MODEL should be the default preset model', () => {
-      expect(DEFAULT_MODEL).toBe('openrouter/auto');
+      expect(DEFAULT_MODEL).toBe('anthropic/claude-sonnet-4-5');
     });
 
     it('isValidModel should accept both model IDs and preset keys', () => {

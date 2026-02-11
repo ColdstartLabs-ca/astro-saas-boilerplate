@@ -10,6 +10,7 @@
 
 import type { ModelTier } from '@shared/types/models.types';
 import { parsePresetEnv } from './preset-parser';
+import { IMAGE_CREDIT_COSTS } from '@shared/constants';
 
 /**
  * Image preset types — one per quality tier
@@ -46,7 +47,7 @@ export const IMAGE_PRESETS: Record<ImagePresetKey, IImagePreset> = {
       output_format: 'jpg',
       output_quality: 80,
     },
-    creditCost: 0,
+    creditCost: IMAGE_CREDIT_COSTS.budget,
     aspectRatio: '16:9',
     tier: 'budget',
   },
@@ -61,7 +62,7 @@ export const IMAGE_PRESETS: Record<ImagePresetKey, IImagePreset> = {
       output_format: 'jpg',
       output_quality: 90,
     },
-    creditCost: 0,
+    creditCost: IMAGE_CREDIT_COSTS.balanced,
     aspectRatio: '16:9',
     tier: 'balanced',
   },
@@ -76,7 +77,7 @@ export const IMAGE_PRESETS: Record<ImagePresetKey, IImagePreset> = {
       output_format: 'jpg',
       output_quality: 95,
     },
-    creditCost: 1,
+    creditCost: IMAGE_CREDIT_COSTS.pro,
     aspectRatio: '16:9',
     tier: 'pro',
   },
@@ -89,7 +90,7 @@ export const IMAGE_PRESETS: Record<ImagePresetKey, IImagePreset> = {
     defaultParams: {
       aspect_ratio: '16:9',
     },
-    creditCost: 1,
+    creditCost: IMAGE_CREDIT_COSTS.ultra,
     aspectRatio: '16:9',
     tier: 'ultra',
   },

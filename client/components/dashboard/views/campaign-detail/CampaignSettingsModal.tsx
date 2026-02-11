@@ -1,13 +1,14 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { X } from 'lucide-react';
+import { X, Zap } from 'lucide-react';
 import { DashboardButton } from '@client/components/dashboard/ui/DashboardButton';
 import { ModelSelect } from '@client/components/ui/ModelSelect';
 import { writerPresetToOption, imagePresetToOption } from '@client/utils/modelAdapters';
 import { useTranslations } from '@client/hooks/useTranslations';
 import type { CampaignTone } from '@shared/types/campaign.types';
 import type { IAvailableWriterPreset, IAvailableImagePreset } from '@shared/types/models.types';
+import { getImagePresetCreditCost } from '@shared/config/image-models.config';
 
 interface ICampaignSettingsModalProps {
   isOpen: boolean;
@@ -34,6 +35,28 @@ const TONE_OPTIONS: readonly CampaignTone[] = [
   'academic',
 ] as const;
 const WORD_COUNT_OPTIONS = [800, 1500, 2500] as const;
+
+/**
+ * Get total credit cost for an article (writer + image).
+ */
+function getTotalCreditCost(
+  writerPresetKey: string,
+  imagePresetKey: string
+): number {
+  const writerCost = WRITER_PRESET_COSTS[writerPresetKey as keyof typeof WRITER_PRESET_COSTS] ?? 1;
+  const imageCost = getImagePresetCreditCost(imagePresetKey);
+  return writerCost + imageCost;
+}
+
+/**
+ * Credit costs for writer presets (from shared constants).
+ */
+const WRITER_PRESET_COSTS = {
+  budget: 1,
+  balanced: 1,
+  pro: 2,
+  ultra: 3,
+} as const;
 
 /**
  * Modal for editing campaign settings.
@@ -156,6 +179,7 @@ export function CampaignSettingsModal({
               onSelect={id => updateSetting('model', id || '')}
               disabled={isSaving}
               placeholder="Select writer model..."
+              showCreditCost
             />
           </div>
 
@@ -171,7 +195,52 @@ export function CampaignSettingsModal({
               noneDescription="Text-only article"
               disabled={isSaving}
               placeholder="Select image preset..."
+              showCreditCost
             />
+          </div>
+
+          {/* Cost Summary */}
+          <div
+            className={`p-3 rounded-lg border ${
+              getTotalCreditCost(settings.model, settings.imagePreset) > 3
+                ? 'bg-amber-900/10 border-amber-500/20'
+                : 'bg-blue-900/10 border-blue-500/20'
+            }`}
+          >
+            <div className="flex items-start gap-2">
+              <Zap
+                className={`w-4 h-4 mt-0.5 ${
+                  getTotalCreditCost(settings.model, settings.imagePreset) > 3
+                    ? 'text-amber-400'
+                    : 'text-blue-400'
+                }`}
+              />
+              <div className="flex-1">
+                <p
+                  className={`text-xs font-medium ${
+                    getTotalCreditCost(settings.model, settings.imagePreset) > 3
+                      ? 'text-amber-200'
+                      : 'text-blue-200'
+                  }`}
+                >
+                  Cost: {getTotalCreditCost(settings.model, settings.imagePreset)} credit
+                  {getTotalCreditCost(settings.model, settings.imagePreset) !== 1 ? 's' : ''} per
+                  article
+                  {settings.imagePreset && (
+                    <span>
+                      {' '}
+                      ({writerPresets.find(p => p.key === settings.model)?.creditCost ?? 1} writer +{' '}
+                      {getImagePresetCreditCost(settings.imagePreset)} image)
+                    </span>
+                  )}
+                </p>
+                {getTotalCreditCost(settings.model, settings.imagePreset) > 3 && (
+                  <p className="text-xs text-amber-300/80 mt-1">
+                    Premium model combination — uses more credits per article
+                  </p>
+                )}
+              </div>
+            </div>
           </div>
         </div>
         <div className="p-6 border-t border-border flex justify-end gap-2">

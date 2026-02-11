@@ -48,7 +48,7 @@ describe('GET /api/models', () => {
     // All 4 writer presets should be available
     expect(data.writerPresets).toHaveLength(4);
     expect(data.writerPresets.map(p => p.key)).toEqual(
-      expect.arrayContaining(['budget', 'balanced', 'auto', 'ultra'])
+      expect.arrayContaining(['budget', 'balanced', 'pro', 'ultra'])
     );
 
     // Deprecated writerModels also returns 4
@@ -103,7 +103,7 @@ describe('GET /api/models', () => {
       description: 'Strong all-round writing quality',
       model: 'openai/gpt-4o',
       tier: 'balanced',
-      creditCost: 0,
+      creditCost: 1, // Updated to match new pricing (1/1/2/3)
     });
 
     // Check image preset structure

@@ -113,7 +113,7 @@ vi.mock('@server/supabase/supabaseAdmin', () => ({
     from: vi.fn((table: string) => {
       const chain = createChainableEq(
         table === 'articles'
-          ? { attempt_count: 1 }
+          ? { attempt_count: 1, credits_used: 1 } // Default to 1 credit (base article cost)
           : table === 'projects'
             ? { qa_config: null }
             : null
@@ -452,8 +452,23 @@ AI content is here to stay.`,
       const mockInput: IGenerateArticleInput = {
         keyword: 'test',
         projectId: 'project-123',
-        imagePreset: 'pro', // Valid preset with 3 credit cost
+        imagePreset: 'pro', // Valid preset with 1 credit cost
       };
+
+      // Mock the article record to simulate that 2 credits were charged (1 base + 1 for 'pro' image)
+      // This simulates what the atomic RPC would have set when creating the article
+      (supabaseAdmin.from as any).mockImplementation((table: string) => {
+        const chain = createChainableEq(
+          table === 'articles'
+            ? { attempt_count: 1, credits_used: 2 } // Charged 2 credits
+            : table === 'projects'
+              ? { qa_config: null }
+              : null
+        );
+        chain.update = vi.fn(() => chain);
+        chain.insert = vi.fn(() => chain);
+        return chain;
+      });
 
       // All calls fail
       mockOpenRouter.chatCompletionWithRetry.mockRejectedValue(new Error('Service unavailable'));
@@ -467,11 +482,12 @@ AI content is here to stay.`,
       expect(supabaseAdmin.rpc).toHaveBeenCalledTimes(1);
 
       // Verify correct RPC function (add_purchased_credits) was called
+      // The refund should match credits_used (2), not recompute from inputs
       expect(supabaseAdmin.rpc).toHaveBeenCalledWith(
         'add_purchased_credits',
         expect.objectContaining({
           p_user_id: 'user-123',
-          p_amount: 2, // 1 base article + 1 for 'pro' preset
+          p_amount: 2, // Refund matches the charged amount stored in credits_used
           p_reference_id: 'article-fail-single-refund',
         })
       );

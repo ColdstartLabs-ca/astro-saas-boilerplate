@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import { ChevronDown, Check } from 'lucide-react';
+import { ChevronDown, Check, Coins } from 'lucide-react';
 import type { ModelTier } from '@shared/types/models.types';
 
 export interface IModelSelectOption {
@@ -22,6 +22,7 @@ interface IModelSelectProps {
   noneDescription?: string;
   disabled?: boolean;
   placeholder?: string;
+  showCreditCost?: boolean;
 }
 
 const TIER_ORDER: ModelTier[] = ['budget', 'balanced', 'pro', 'ultra'];
@@ -33,6 +34,17 @@ const TIER_CONFIG: Record<ModelTier, { label: string; dotColor: string }> = {
   ultra: { label: 'Ultra', dotColor: 'bg-amber-400' },
 };
 
+/**
+ * Format credit cost for display in badges.
+ * - 0 credits: "Included" (for budget image preset)
+ * - 1 credit: "1 credit"
+ * - 2+ credits: "N credits"
+ */
+function formatCreditCost(cost: number): string {
+  if (cost === 0) return 'Included';
+  return `${cost} credit${cost > 1 ? 's' : ''}`;
+}
+
 function groupByTier(options: IModelSelectOption[]): Map<ModelTier, IModelSelectOption[]> {
   const groups = new Map<ModelTier, IModelSelectOption[]>();
   for (const tier of TIER_ORDER) {
@@ -41,8 +53,6 @@ function groupByTier(options: IModelSelectOption[]): Map<ModelTier, IModelSelect
   }
   return groups;
 }
-
-// Credit badge removed - total cost is shown in campaign modal
 
 export function ModelSelect({
   options,
@@ -53,6 +63,7 @@ export function ModelSelect({
   noneDescription,
   disabled = false,
   placeholder = 'Select...',
+  showCreditCost = false,
 }: IModelSelectProps): JSX.Element {
   const [isOpen, setIsOpen] = useState(false);
   const [openUpward, setOpenUpward] = useState(false);
@@ -124,6 +135,18 @@ export function ModelSelect({
           )}
         </div>
         <div className="flex items-center gap-2 flex-shrink-0">
+          {showCreditCost && selected && (
+            <span
+              className={`text-[10px] font-medium px-1.5 py-0.5 rounded flex items-center gap-1 ${
+                selected.creditCost === 0
+                  ? 'bg-green-500/10 text-green-300 border border-green-500/20'
+                  : 'bg-amber-500/10 text-amber-300 border border-amber-500/20'
+              }`}
+            >
+              <Coins className="w-2.5 h-2.5" />
+              {formatCreditCost(selected.creditCost)}
+            </span>
+          )}
           <ChevronDown
             className={`w-4 h-4 text-muted transition-transform ${isOpen ? 'rotate-180' : ''}`}
           />
@@ -192,6 +215,18 @@ export function ModelSelect({
                       </div>
                     </div>
                     <div className="flex items-center gap-2 flex-shrink-0">
+                      {showCreditCost && (
+                        <span
+                          className={`text-[10px] font-medium px-1.5 py-0.5 rounded flex items-center gap-1 ${
+                            option.creditCost === 0
+                              ? 'bg-green-500/10 text-green-300 border border-green-500/20'
+                              : 'bg-amber-500/10 text-amber-300 border border-amber-500/20'
+                          }`}
+                        >
+                          <Coins className="w-2.5 h-2.5" />
+                          {formatCreditCost(option.creditCost)}
+                        </span>
+                      )}
                       {isSelected && <Check className="w-3.5 h-3.5 text-accent" />}
                     </div>
                   </button>

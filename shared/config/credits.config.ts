@@ -1,8 +1,42 @@
 /**
  * Credit costs configuration
  * AutopilotRank - 1 credit = 1 article generation
+ *
+ * Note: Credit costs for writer/image presets are now centralized in
+ * @shared/constants/credit-costs.constants.ts
  */
 
+export {
+  // Writer preset costs (base cost per article)
+  WRITER_CREDIT_COSTS,
+
+  // Image preset costs (addon cost per article)
+  IMAGE_CREDIT_COSTS,
+
+  // Calculation helper
+  calculateArticleCreditCost,
+  MIN_ARTICLE_COST,
+  MAX_ARTICLE_COST,
+
+  // Subscription credit allocations
+  SUBSCRIPTION_CREDITS,
+
+  // Credit pack sizes
+  CREDIT_PACKS,
+
+  // Free tier credits
+  FREE_TIER_CREDITS,
+
+  // Warning thresholds
+  LOW_CREDIT_WARNING_THRESHOLD,
+  CREDIT_WARNING_PERCENTAGE,
+} from '@shared/constants';
+
+// =============================================================================
+// Deprecated - Legacy exports for backward compatibility
+// =============================================================================
+
+/** @deprecated Use calculateArticleCreditCost from @shared/constants instead */
 export const CREDIT_COSTS = {
   // Base cost - 1 credit = 1 article
   API_CALL: 1,

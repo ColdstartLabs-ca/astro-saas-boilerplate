@@ -21,7 +21,8 @@ import { articleGenerationService } from '@server/services/article-generation.se
 import { openaiEmbeddingsService } from '@server/services/openai-embeddings.service';
 import { z } from 'zod';
 import type { IGenerateArticleResponse } from '@shared/types/article.types';
-import { isValidImagePreset, getImagePresetCreditCost } from '@shared/config/image-models.config';
+import { calculateArticleCreditCost } from '@shared/config/credits.config';
+import { isValidImagePreset } from '@shared/config/image-models.config';
 import { normalizeKeyword } from '@shared/utils/keyword';
 
 // Validation schema
@@ -56,7 +57,7 @@ export const POST = withAuthAndBody(generateSchema, async (userId, input, { loca
   // Verify campaign ownership and get project_id
   const { data: campaign, error: campaignError } = await supabaseAdmin
     .from('campaigns')
-    .select('id, project_id, name')
+    .select('id, project_id, name, ai_model')
     .eq('id', input.campaignId)
     .eq('user_id', userId)
     .single();
@@ -70,9 +71,13 @@ export const POST = withAuthAndBody(generateSchema, async (userId, input, { loca
     return errorResponse('VALIDATION_ERROR', 'Campaign does not belong to this project', 400);
   }
 
-  // Calculate total credits needed (1 base + optional image cost)
-  const imageCreditCost = getImagePresetCreditCost(input.imagePreset || null);
-  const totalCreditsNeeded = 1 + imageCreditCost;
+  // Resolve writer preset: use input.model if provided, otherwise fall back to campaign's ai_model
+  // This ensures the billed model matches the actual generation model
+  const resolvedModel = input.model || campaign.ai_model || 'pro';
+
+  // Calculate total credits needed (writer preset base cost + optional image cost)
+  // Use the resolved model to ensure billing matches actual generation
+  const totalCreditsNeeded = calculateArticleCreditCost(resolvedModel, input.imagePreset);
 
   // Check for existing non-failed article with the same normalized keyword in this campaign
   // This prevents duplicate article generation for the same topic
@@ -199,7 +204,11 @@ export const POST = withAuthAndBody(generateSchema, async (userId, input, { loca
   const { article_id: articleId } = result;
 
   // Fire & forget generation using waitUntil()
-  fireAndForget(locals, articleGenerationService.generateArticle(articleId, userId, input));
+  // Pass resolved model to ensure billing matches actual generation
+  fireAndForget(locals, articleGenerationService.generateArticle(articleId, userId, {
+    ...input,
+    model: resolvedModel,
+  }));
 
   const response: IGenerateArticleResponse = {
     articleId,

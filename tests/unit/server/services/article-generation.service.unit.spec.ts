@@ -64,25 +64,34 @@ vi.mock('@server/services/image-generation.service', () => ({
 
 vi.mock('@shared/config/ai-models.config', () => ({
   WRITER_PRESETS: {
-    budget: { key: 'budget', defaultModel: 'openai/gpt-4o-mini', tier: 'budget', creditCost: 0 },
-    balanced: { key: 'balanced', defaultModel: 'openai/gpt-4o', tier: 'balanced', creditCost: 0 },
-    auto: { key: 'auto', defaultModel: 'openrouter/auto', tier: 'balanced', creditCost: 0 },
+    budget: { key: 'budget', defaultModel: 'openai/gpt-4o-mini', tier: 'budget', creditCost: 1 },
+    balanced: { key: 'balanced', defaultModel: 'openai/gpt-4o', tier: 'balanced', creditCost: 1 },
+    pro: { key: 'pro', defaultModel: 'anthropic/claude-sonnet-4-5', tier: 'balanced', creditCost: 2 },
     ultra: {
       key: 'ultra',
-      defaultModel: 'anthropic/claude-sonnet-4-5',
+      defaultModel: 'anthropic/claude-opus-4-6',
       tier: 'ultra',
-      creditCost: 1,
+      creditCost: 3,
     },
   },
-  isValidWriterPreset: (key: string) => ['budget', 'balanced', 'auto', 'ultra'].includes(key),
+  isValidWriterPreset: (key: string) => ['budget', 'balanced', 'pro', 'ultra'].includes(key),
   resolveWriterModel: (presetKey: string, _envValue?: string) => {
     const defaults: Record<string, string> = {
       budget: 'openai/gpt-4o-mini',
       balanced: 'openai/gpt-4o',
-      auto: 'openrouter/auto',
-      ultra: 'anthropic/claude-sonnet-4-5',
+      pro: 'anthropic/claude-sonnet-4-5',
+      ultra: 'anthropic/claude-opus-4-6',
     };
-    return defaults[presetKey] || 'openrouter/auto';
+    return defaults[presetKey] || 'anthropic/claude-sonnet-4-5';
+  },
+  getWriterPresetCreditCost: (presetKey: string | null | undefined) => {
+    const costs: Record<string, number> = {
+      budget: 1,
+      balanced: 1,
+      pro: 2,
+      ultra: 3,
+    };
+    return presetKey ? (costs[presetKey] ?? 1) : 1;
   },
   // Deprecated compat
   AI_MODELS: { 'openai/gpt-4o': { name: 'GPT-4o', provider: 'OpenAI', tier: 'balanced' } },

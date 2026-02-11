@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { AlertTriangle, Info } from 'lucide-react';
+import { AlertTriangle, Info, Zap } from 'lucide-react';
 import { Modal } from '@client/components/modal/Modal';
 
 export type ConfirmDialogVariant = 'danger' | 'warning' | 'info';
@@ -14,6 +14,8 @@ interface IConfirmDialogProps {
   message?: string;
   /** Bullet points to display under the main message */
   items?: string[];
+  /** Rich details content (React node) for complex layouts like credit breakdowns */
+  details?: React.ReactNode;
   /** Optional type-to-confirm requirement */
   confirmText?: {
     /** The text the user must type to confirm */
@@ -83,6 +85,7 @@ export function ConfirmDialog({
   title,
   message,
   items,
+  details,
   confirmText,
   variant = 'danger',
   labels = {},
@@ -182,6 +185,9 @@ export function ConfirmDialog({
             ))}
           </ul>
         )}
+
+        {/* Rich details content */}
+        {details && <div className="text-secondary">{details}</div>}
 
         {/* Warning text */}
         {variant === 'danger' && (

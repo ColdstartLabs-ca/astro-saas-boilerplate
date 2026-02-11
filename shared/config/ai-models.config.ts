@@ -2,21 +2,22 @@
  * AI Writer Presets Configuration
  *
  * Preset-based system for text generation via OpenRouter.
- * Each preset key (budget, balanced, auto, ultra) maps to a default OpenRouter model
+ * Each preset key (budget, balanced, pro, ultra) maps to a default OpenRouter model
  * that can be overridden via AVAILABLE_WRITER_PRESETS env var.
  *
- * Env format: "budget(openai/gpt-4o-mini),balanced(openai/gpt-4o),auto,ultra(anthropic/claude-sonnet-4-5)"
+ * Env format: "budget(openai/gpt-4o-mini),balanced(openai/gpt-4o),pro,ultra(anthropic/claude-opus-4-6)"
  */
 
 import type { ModelTier } from '@shared/types/models.types';
 import type { IAvailableWriterPreset } from '@shared/types/models.types';
 import { parsePresetEnv } from './preset-parser';
+import { WRITER_CREDIT_COSTS } from '@shared/constants';
 
 // =============================================================================
 // Writer Preset Definitions
 // =============================================================================
 
-export type WriterPresetKey = 'budget' | 'balanced' | 'auto' | 'ultra';
+export type WriterPresetKey = 'budget' | 'balanced' | 'pro' | 'ultra';
 
 export interface IWriterPreset {
   key: WriterPresetKey;
@@ -34,7 +35,7 @@ export const WRITER_PRESETS: Record<WriterPresetKey, IWriterPreset> = {
     description: 'Fast, cost-effective text generation',
     defaultModel: 'openai/gpt-4o-mini',
     tier: 'budget',
-    creditCost: 0,
+    creditCost: WRITER_CREDIT_COSTS.budget,
   },
   balanced: {
     key: 'balanced',
@@ -42,23 +43,23 @@ export const WRITER_PRESETS: Record<WriterPresetKey, IWriterPreset> = {
     description: 'Strong all-round writing quality',
     defaultModel: 'openai/gpt-4o',
     tier: 'balanced',
-    creditCost: 0,
+    creditCost: WRITER_CREDIT_COSTS.balanced,
   },
-  auto: {
-    key: 'auto',
-    displayName: 'Auto (Best Match)',
-    description: 'Automatically picks the best model',
-    defaultModel: 'openrouter/auto',
+  pro: {
+    key: 'pro',
+    displayName: 'Pro',
+    description: 'Professional-grade AI writing',
+    defaultModel: 'anthropic/claude-sonnet-4-5',
     tier: 'balanced',
-    creditCost: 0,
+    creditCost: WRITER_CREDIT_COSTS.pro,
   },
   ultra: {
     key: 'ultra',
     displayName: 'Ultra',
     description: 'Premium writing with nuance and depth',
-    defaultModel: 'anthropic/claude-sonnet-4-5',
+    defaultModel: 'anthropic/claude-opus-4-6',
     tier: 'ultra',
-    creditCost: 1,
+    creditCost: WRITER_CREDIT_COSTS.ultra,
   },
 };
 
@@ -69,7 +70,7 @@ const WRITER_DEFAULTS = new Map<string, string>(
   WRITER_PRESET_KEYS.map(k => [k, WRITER_PRESETS[k].defaultModel])
 );
 
-export const DEFAULT_WRITER_PRESET: WriterPresetKey = 'auto';
+export const DEFAULT_WRITER_PRESET: WriterPresetKey = 'pro';
 
 // =============================================================================
 // Public API

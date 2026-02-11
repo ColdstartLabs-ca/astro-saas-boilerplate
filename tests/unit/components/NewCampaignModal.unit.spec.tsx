@@ -61,6 +61,24 @@ vi.mock('@shared/config/ai-models.config', () => ({
   },
 }));
 
+vi.mock('@client/hooks/useAvailableModels', () => ({
+  useAvailableModels: () => ({
+    writerPresets: [
+      { key: 'budget', displayName: 'Budget', model: 'openai/gpt-4o-mini', tier: 'budget', creditCost: 1, description: 'Fast, cost-effective text generation' },
+      { key: 'balanced', displayName: 'Balanced', model: 'openai/gpt-4o', tier: 'balanced', creditCost: 1, description: 'Strong all-round writing quality' },
+      { key: 'pro', displayName: 'Pro', model: 'anthropic/claude-sonnet-4-5', tier: 'balanced', creditCost: 2, description: 'Professional-grade AI writing' },
+      { key: 'ultra', displayName: 'Ultra', model: 'anthropic/claude-opus-4-6', tier: 'ultra', creditCost: 3, description: 'Premium writing with nuance and depth' },
+    ],
+    imagePresets: [
+      { key: 'budget', displayName: 'Budget', replicateModel: 'black-forest-labs/flux-schnell', tier: 'budget', creditCost: 0, description: 'Fast, good-quality images', bestFor: 'Quick drafts, blog posts', aspectRatio: '16:9' },
+      { key: 'balanced', displayName: 'Balanced', replicateModel: 'black-forest-labs/flux-dev', tier: 'balanced', creditCost: 0, description: 'Higher quality, slower generation', bestFor: 'Standard articles, featured posts', aspectRatio: '16:9' },
+      { key: 'pro', displayName: 'Pro', replicateModel: 'black-forest-labs/flux-1.1-pro', tier: 'pro', creditCost: 1, description: 'Professional editorial-quality images', bestFor: 'High-quality editorial content', aspectRatio: '16:9' },
+      { key: 'ultra', displayName: 'Ultra', replicateModel: 'bytedance/seedream-4.5', tier: 'ultra', creditCost: 1, description: 'Best quality, photorealistic imagery', bestFor: 'Premium content, hero images', aspectRatio: '16:9' },
+    ],
+    isLoading: false,
+  }),
+}));
+
 vi.mock('@client/store/userStore', () => ({
   useUserStore: () => ({
     user: {

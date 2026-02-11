@@ -23,11 +23,9 @@ import {
   InsufficientCreditsError,
   NoPendingKeywordsError,
 } from '@shared/types/campaign.types';
-import {
-  getImagePresetCreditCost,
-  isAvailableImagePreset,
-} from '@shared/config/image-models.config';
+import { isAvailableImagePreset } from '@shared/config/image-models.config';
 import { isAvailableWriterPreset } from '@shared/config/ai-models.config';
+import { calculateArticleCreditCost } from '@shared/constants';
 import { serverEnv } from '@shared/config/env';
 import { AppError } from '@shared/utils/errors';
 import {
@@ -180,22 +178,28 @@ export class CampaignService {
       creditsRefunded: 0,
       successfulCount: 0,
       failedCount: 0,
-      costPerArticle: 1 + getImagePresetCreditCost(campaign.image_preset),
+      costPerArticle: calculateArticleCreditCost(campaign.ai_model, campaign.image_preset),
       estimatedCreditsRemaining: 0,
       totalCreditsRequired: 0,
     };
 
     for (const article of articles ?? []) {
       switch (article.status) {
+        // Intermediate statuses - credits pre-charged, article not yet complete
         case 'queued':
           stats.queued++;
           break;
         case 'generating':
+        case 'qa_checking':
           stats.generating++;
           creditStats.creditsUsed += article.credits_used ?? 0;
           break;
+
+        // Success statuses - generation completed, credits stay charged
         case 'draft':
         case 'reviewed':
+        case 'qa_passed':
+        case 'approved':
         case 'published':
           stats.draft++;
           if (article.status === 'published') {
@@ -204,7 +208,13 @@ export class CampaignService {
           creditStats.creditsUsed += article.credits_used ?? 0;
           creditStats.successfulCount++;
           break;
+
+        // Failure statuses - credits refunded
         case 'failed':
+        case 'failed_quality':
+        case 'failed_timeout':
+        case 'qa_failed':
+        case 'rejected':
           creditStats.creditsRefunded += article.credits_used ?? 0;
           creditStats.failedCount++;
           break;
@@ -259,7 +269,7 @@ export class CampaignService {
         project_id: validated.projectId,
         name: validated.name,
         status: 'draft',
-        ai_model: validated.model || 'auto',
+        ai_model: validated.model || 'pro',
         tone: validated.tone || 'professional',
         target_word_count: validated.targetWordCount || 1500,
         settings: {},
@@ -621,9 +631,8 @@ export class CampaignService {
     if (pendingKeywords && pendingKeywords.length > 0) {
       const keywordCount = pendingKeywords.length;
 
-      // Calculate credits per keyword (1 base + optional image cost)
-      const imageCreditCost = getImagePresetCreditCost(campaign.image_preset);
-      const creditsPerKeyword = 1 + imageCreditCost;
+      // Calculate credits per keyword using centralized pricing model
+      const creditsPerKeyword = calculateArticleCreditCost(campaign.ai_model, campaign.image_preset);
       const totalCreditsNeeded = keywordCount * creditsPerKeyword;
 
       // Extract keywords array

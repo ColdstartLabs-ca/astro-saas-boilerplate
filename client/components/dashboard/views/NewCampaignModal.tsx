@@ -103,7 +103,8 @@ export function NewCampaignModal({
   const watchedModel = watch('model');
   const writerCreditCost = writerPresets.find(p => p.key === watchedModel)?.creditCost ?? 0;
   const imageCreditCost = getImagePresetCreditCost(watchedImagePreset || null);
-  const creditsPerKeyword = 1 + writerCreditCost + imageCreditCost;
+  // Total credits = writer base cost + image cost (writer costs are 1/1/2/3, image costs are 0/1/1/2)
+  const creditsPerKeyword = writerCreditCost + imageCreditCost;
   const creditCost = keywordCount * creditsPerKeyword;
 
   // Check if user has enough credits (from subscription + purchased)
@@ -348,6 +349,7 @@ export function NewCampaignModal({
                       selectedId={watch('model') || null}
                       onSelect={id => setValue('model', id || 'balanced')}
                       placeholder="Select writer model..."
+                      showCreditCost
                     />
                   )}
                 </div>
@@ -369,11 +371,11 @@ export function NewCampaignModal({
                       noneLabel="No images"
                       noneDescription="Text-only article"
                       placeholder="Select image preset..."
+                      showCreditCost
                     />
                   )}
                   <p className="text-xs text-muted mt-2">
-                    Standard presets are included, premium presets cost 1 additional credit per
-                    article.
+                    Budget images are included, balanced/pro cost +1 credit, ultra costs +2 credits.
                   </p>
                   {!watchedImagePreset && (
                     <p className="text-xs text-amber-400 mt-1.5 flex items-start gap-1.5">
@@ -381,6 +383,61 @@ export function NewCampaignModal({
                       <span>For better SEO results, your articles should include images.</span>
                     </p>
                   )}
+                </div>
+
+                {/* Total Cost Summary */}
+                <div
+                  className={`p-3 rounded-lg border ${
+                    creditsPerKeyword > 3
+                      ? 'bg-amber-900/10 border-amber-500/20'
+                      : 'bg-blue-900/10 border-blue-500/20'
+                  }`}
+                >
+                  <div className="flex items-start gap-2">
+                    <Zap
+                      className={`w-4 h-4 mt-0.5 ${creditsPerKeyword > 3 ? 'text-amber-400' : 'text-blue-400'}`}
+                    />
+                    <div className="flex-1">
+                      <p
+                        className={`text-xs font-medium mb-2 ${creditsPerKeyword > 3 ? 'text-amber-200' : 'text-blue-200'}`}
+                      >
+                        Cost per article:
+                      </p>
+                      <div className="space-y-1.5">
+                        <div className="flex justify-between text-xs">
+                          <span className={creditsPerKeyword > 3 ? 'text-amber-100/80' : 'text-blue-100/80'}>
+                            Writer ({watchedModel || 'budget'})
+                          </span>
+                          <span className="font-semibold text-white">{writerCreditCost} credit</span>
+                        </div>
+                        {watchedImagePreset ? (
+                          <div className="flex justify-between text-xs">
+                            <span className={creditsPerKeyword > 3 ? 'text-amber-100/80' : 'text-blue-100/80'}>
+                              Images ({watchedImagePreset})
+                            </span>
+                            <span className="font-semibold text-white">+{imageCreditCost} credit{imageCreditCost > 1 ? 's' : ''}</span>
+                          </div>
+                        ) : (
+                          <div className="flex justify-between text-xs text-muted">
+                            <span>Images</span>
+                            <span>none (text-only)</span>
+                          </div>
+                        )}
+                        <div className="h-px bg-white/10 my-1"></div>
+                        <div className="flex justify-between text-xs">
+                          <span className={`font-semibold ${creditsPerKeyword > 3 ? 'text-amber-200' : 'text-blue-200'}`}>
+                            Total
+                          </span>
+                          <span className="font-bold text-white">{creditsPerKeyword} credit{creditsPerKeyword > 1 ? 's' : ''}</span>
+                        </div>
+                      </div>
+                      {creditsPerKeyword > 3 && (
+                        <p className="text-xs text-amber-300/80 mt-2">
+                          Premium model combination — uses more credits per article
+                        </p>
+                      )}
+                    </div>
+                  </div>
                 </div>
               </div>
 

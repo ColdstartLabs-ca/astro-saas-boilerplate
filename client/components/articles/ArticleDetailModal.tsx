@@ -214,7 +214,7 @@ export function ArticleDetailModal({
   }, [currentArticle, onClose, onUpdate]);
 
   const handleRegenerate = useCallback(async () => {
-    if (!currentArticle || !confirm('Regenerate this article? This will use 1 credit.')) return;
+    if (!currentArticle || !confirm('Regenerate this article? This will use credits based on your current settings.')) return;
 
     setIsRegenerating(true);
     setError(null);
