@@ -62,6 +62,94 @@ vi.mock('@server/services/image-generation.service', () => ({
   },
 }));
 
+vi.mock('@shared/config/ai-models.config', () => ({
+  WRITER_PRESETS: {
+    budget: { key: 'budget', defaultModel: 'openai/gpt-4o-mini', tier: 'budget', creditCost: 0 },
+    balanced: { key: 'balanced', defaultModel: 'openai/gpt-4o', tier: 'balanced', creditCost: 0 },
+    auto: { key: 'auto', defaultModel: 'openrouter/auto', tier: 'balanced', creditCost: 0 },
+    ultra: {
+      key: 'ultra',
+      defaultModel: 'anthropic/claude-sonnet-4-5',
+      tier: 'ultra',
+      creditCost: 1,
+    },
+  },
+  isValidWriterPreset: (key: string) => ['budget', 'balanced', 'auto', 'ultra'].includes(key),
+  resolveWriterModel: (presetKey: string, _envValue?: string) => {
+    const defaults: Record<string, string> = {
+      budget: 'openai/gpt-4o-mini',
+      balanced: 'openai/gpt-4o',
+      auto: 'openrouter/auto',
+      ultra: 'anthropic/claude-sonnet-4-5',
+    };
+    return defaults[presetKey] || 'openrouter/auto';
+  },
+  // Deprecated compat
+  AI_MODELS: { 'openai/gpt-4o': { name: 'GPT-4o', provider: 'OpenAI', tier: 'balanced' } },
+  isValidModel: () => true,
+}));
+
+vi.mock('@server/services/article-quality-gate.service', () => ({
+  articleQualityGateService: {
+    checkQualityGates: vi.fn(() => ({
+      passed: true,
+      details: {
+        wordCountCheck: { passed: true, actual: 1000, target: 1000, percentage: 100 },
+        headingCheck: { passed: true, h2Count: 3, required: 3 },
+        metadataCheck: { passed: true, hasTitle: true, hasMetaDescription: true, hasSlug: true },
+        completionCheck: { passed: true, finishReason: 'stop' },
+      },
+    })),
+  },
+}));
+
+vi.mock('@server/services/openai-embeddings.service', () => ({
+  openaiEmbeddingsService: {
+    isConfigured: vi.fn(() => false),
+    generateEmbeddingForDB: vi.fn(),
+    checkSimilarity: vi.fn(),
+  },
+}));
+
+vi.mock('@server/services/qa.service', () => ({
+  qaService: {
+    runQAChecks: vi.fn(() =>
+      Promise.resolve({
+        passed: true,
+        failureReason: undefined,
+        results: {
+          plagiarism: { passed: true, similarityScore: 0, flaggedPhrases: [] },
+          factConsistency: { passed: true, score: 1, inconsistencyCount: 0 },
+          readability: { passed: true, fleschKincaidGrade: 8, fleschReadingEase: 65 },
+          aiLikelihood: { passed: true, aiScore: 0.2, confidence: 'low' },
+        },
+      })
+    ),
+  },
+}));
+
+vi.mock('@server/utils/error-classifier', () => ({
+  classifyError: vi.fn((error: unknown, stage: string) => ({
+    message: error instanceof Error ? error.message : String(error),
+    stage: stage || 'unknown',
+    provider: 'unknown',
+    httpStatus: null,
+    isRetryable: false,
+    category: 'unknown',
+  })),
+  createFailureMetadata: vi.fn((parsed: any) => ({
+    failure_stage: parsed.stage,
+    provider: parsed.provider,
+    http_status: parsed.httpStatus,
+    is_retryable: parsed.isRetryable,
+  })),
+  formatErrorMessage: vi.fn((parsed: any) => parsed.message),
+}));
+
+vi.mock('@server/services/image-storage.service', () => ({
+  persistArticleImages: vi.fn(),
+}));
+
 describe('ArticleGenerationService', () => {
   let service: ArticleGenerationService;
   const mockUserId = 'user-123';
@@ -319,12 +407,7 @@ Some content follows.`;
     });
 
     it('should return the preset key for valid presets', () => {
-      const validPresets = [
-        'budget',
-        'balanced',
-        'pro',
-        'ultra',
-      ];
+      const validPresets = ['budget', 'balanced', 'pro', 'ultra'];
 
       validPresets.forEach(preset => {
         const result = (service as any).parseImagePreset(preset);
@@ -400,10 +483,12 @@ Some content follows.`;
             sections: [],
           }),
           usage: { totalTokens: 100 },
+          finishReason: 'stop',
         })
         .mockResolvedValueOnce({
           content: 'Test content with [IMAGE:1] marker',
           usage: { totalTokens: 200 },
+          finishReason: 'stop',
         });
 
       // Mock image generation
@@ -418,19 +503,30 @@ Some content follows.`;
         },
       ]);
 
-      // Mock Supabase chain
-      (supabaseAdmin.from as unknown as ReturnType<typeof vi.fn>).mockImplementation(() => ({
+      // Mock Supabase chain with select support for attempt_count and project queries
+      const mockChain = {
         update: vi.fn().mockReturnValue({
           eq: vi.fn().mockReturnValue({
             eq: vi.fn().mockResolvedValue({ error: null }),
           }),
         }),
+        select: vi.fn().mockReturnValue({
+          eq: vi.fn().mockReturnValue({
+            eq: vi.fn().mockReturnValue({
+              single: vi.fn().mockResolvedValue({ data: { attempt_count: 1 }, error: null }),
+            }),
+            single: vi.fn().mockResolvedValue({ data: { qa_config: null }, error: null }),
+          }),
+        }),
         insert: vi.fn().mockResolvedValue({ error: null }),
-      }));
+      };
+      (supabaseAdmin.from as unknown as ReturnType<typeof vi.fn>).mockImplementation(
+        () => mockChain
+      );
 
       const input: IGenerateArticleInput = {
         keyword: 'coffee',
-        model: 'gpt-4o',
+        model: 'balanced',
         tone: 'professional',
         targetWordCount: 1500,
         imagePreset: 'budget',
@@ -454,7 +550,7 @@ Some content follows.`;
 
       const input: IGenerateArticleInput = {
         keyword: 'coffee',
-        model: 'gpt-4o',
+        model: 'balanced',
         tone: 'professional',
         targetWordCount: 1500,
         imagePreset: undefined,

@@ -4,17 +4,17 @@ import { useState, useEffect } from 'react';
 import { X } from 'lucide-react';
 import { DashboardButton } from '@client/components/dashboard/ui/DashboardButton';
 import { ModelSelect } from '@client/components/ui/ModelSelect';
-import { writerModelToOption, imagePresetToOption } from '@client/utils/modelAdapters';
+import { writerPresetToOption, imagePresetToOption } from '@client/utils/modelAdapters';
 import { useTranslations } from '@client/hooks/useTranslations';
 import type { CampaignTone } from '@shared/types/campaign.types';
-import type { IAvailableWriterModel, IAvailableImagePreset } from '@shared/types/models.types';
+import type { IAvailableWriterPreset, IAvailableImagePreset } from '@shared/types/models.types';
 
 interface ICampaignSettingsModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSave: (settings: ICampaignSettings) => void | Promise<void>;
   initialSettings: ICampaignSettings;
-  writerModels: IAvailableWriterModel[];
+  writerPresets: IAvailableWriterPreset[];
   imagePresets: IAvailableImagePreset[];
   isSaving?: boolean;
 }
@@ -27,30 +27,23 @@ export interface ICampaignSettings {
   imagePreset: string;
 }
 
-const TONE_OPTIONS: readonly CampaignTone[] = ['professional', 'casual', 'witty', 'academic'] as const;
+const TONE_OPTIONS: readonly CampaignTone[] = [
+  'professional',
+  'casual',
+  'witty',
+  'academic',
+] as const;
 const WORD_COUNT_OPTIONS = [800, 1500, 2500] as const;
 
 /**
  * Modal for editing campaign settings.
- *
- * @example
- * ```tsx
- * <CampaignSettingsModal
- *   isOpen={isOpen}
- *   onClose={() => setIsOpen(false)}
- *   onSave={handleSave}
- *   initialSettings={campaignSettings}
- *   writerModels={writerModels}
- *   imagePresets={imagePresets}
- * />
- * ```
  */
 export function CampaignSettingsModal({
   isOpen,
   onClose,
   onSave,
   initialSettings,
-  writerModels,
+  writerPresets,
   imagePresets,
   isSaving = false,
 }: ICampaignSettingsModalProps): JSX.Element | null {
@@ -72,7 +65,10 @@ export function CampaignSettingsModal({
     }
   };
 
-  const updateSetting = <K extends keyof ICampaignSettings>(key: K, value: ICampaignSettings[K]) => {
+  const updateSetting = <K extends keyof ICampaignSettings>(
+    key: K,
+    value: ICampaignSettings[K]
+  ) => {
     setSettings(prev => ({ ...prev, [key]: value }));
   };
 
@@ -151,11 +147,11 @@ export function CampaignSettingsModal({
             </div>
           </div>
 
-          {/* Writer Model */}
+          {/* Writer Preset */}
           <div>
             <label className="block text-sm font-medium text-secondary mb-1.5">Writer Model</label>
             <ModelSelect
-              options={writerModels.map(writerModelToOption)}
+              options={writerPresets.map(writerPresetToOption)}
               selectedId={settings.model || null}
               onSelect={id => updateSetting('model', id || '')}
               disabled={isSaving}

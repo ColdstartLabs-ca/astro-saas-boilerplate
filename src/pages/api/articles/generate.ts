@@ -2,23 +2,27 @@
  * POST /api/articles/generate
  * Generate a new SEO article from a keyword
  *
- * Flow:
+ * Flow (E7: Atomic Operations):
  * 1. Validate input (campaignId is REQUIRED)
- * 2. Check project ownership
+ * 2. Verify project ownership
  * 3. Verify campaign ownership
- * 4. Check sufficient credits
- * 5. Deduct 1 credit
- * 6. Create article record with status='generating'
- * 7. Fire & forget generation via waitUntil()
- * 8. Return 202 with articleId
+ * 4. Check for existing non-failed article with same keyword (duplicate detection)
+ * 5. Create article record and deduct credits atomically via RPC
+ * 6. Fire & forget generation via waitUntil()
+ * 7. Return 202 with articleId
+ *
+ * Note: Credit check is now done inside the atomic RPC, preventing race conditions
+ * and ensuring no orphaned articles or partial credit states.
  */
 
 import { withAuthAndBody, jsonResponse, errorResponse, fireAndForget } from '../_utils';
 import { supabaseAdmin } from '@server/supabase/supabaseAdmin';
 import { articleGenerationService } from '@server/services/article-generation.service';
+import { openaiEmbeddingsService } from '@server/services/openai-embeddings.service';
 import { z } from 'zod';
 import type { IGenerateArticleResponse } from '@shared/types/article.types';
 import { isValidImagePreset, getImagePresetCreditCost } from '@shared/config/image-models.config';
+import { normalizeKeyword } from '@shared/utils/keyword';
 
 // Validation schema
 const generateSchema = z.object({
@@ -28,10 +32,12 @@ const generateSchema = z.object({
   model: z.string().optional(),
   tone: z.enum(['professional', 'casual', 'witty', 'academic']).optional(),
   targetWordCount: z.number().int().min(800).max(3000).optional().default(1500),
-  imagePreset: z.string().optional().refine(
-    val => !val || isValidImagePreset(val),
-    { message: 'Invalid image preset' }
-  ),
+  imagePreset: z
+    .string()
+    .optional()
+    .refine(val => !val || isValidImagePreset(val), { message: 'Invalid image preset' }),
+  forceRegenerate: z.boolean().optional().default(false),
+  skipSemanticDedup: z.boolean().optional().default(false),
 });
 
 export const POST = withAuthAndBody(generateSchema, async (userId, input, { locals }) => {
@@ -45,25 +51,6 @@ export const POST = withAuthAndBody(generateSchema, async (userId, input, { loca
 
   if (projectError || !project) {
     return errorResponse('NOT_FOUND', 'Project not found', 404);
-  }
-
-  // Check total credits (subscription + purchased)
-  const { data: profile } = await supabaseAdmin
-    .from('user_credits')
-    .select('total_credits_balance')
-    .eq('user_id', userId)
-    .single();
-
-  // Calculate total credits needed (1 base + optional image cost)
-  const imageCreditCost = getImagePresetCreditCost(input.imagePreset || null);
-  const totalCreditsNeeded = 1 + imageCreditCost;
-
-  if (!profile || profile.total_credits_balance < totalCreditsNeeded) {
-    return errorResponse(
-      'INSUFFICIENT_CREDITS',
-      `Insufficient credits for article generation. Need ${totalCreditsNeeded} credits.`,
-      402
-    );
   }
 
   // Verify campaign ownership and get project_id
@@ -83,37 +70,139 @@ export const POST = withAuthAndBody(generateSchema, async (userId, input, { loca
     return errorResponse('VALIDATION_ERROR', 'Campaign does not belong to this project', 400);
   }
 
-  // Create article record first (so we have the ID for credit tracking)
-  const { data: article, error: articleError } = await supabaseAdmin
-    .from('articles')
-    .insert({
-      user_id: userId,
-      campaign_id: campaign.id,
-      project_id: campaign.project_id,
-      primary_keyword: input.keyword,
-      status: 'generating',
-      credits_used: totalCreditsNeeded,
-    })
-    .select('id')
-    .single();
+  // Calculate total credits needed (1 base + optional image cost)
+  const imageCreditCost = getImagePresetCreditCost(input.imagePreset || null);
+  const totalCreditsNeeded = 1 + imageCreditCost;
 
-  if (articleError || !article) {
-    throw new Error('Failed to create article record');
+  // Check for existing non-failed article with the same normalized keyword in this campaign
+  // This prevents duplicate article generation for the same topic
+  if (!input.forceRegenerate) {
+    const normalizedKeyword = normalizeKeyword(input.keyword);
+
+    const { data: existingArticle } = await supabaseAdmin
+      .from('articles')
+      .select('id')
+      .eq('campaign_id', campaign.id)
+      .eq('keyword_normalized', normalizedKeyword)
+      .not('status', 'eq', 'failed') // Exclude failed articles from duplicate check
+      .maybeSingle();
+
+    // If we found an existing article with the same keyword (case-insensitive), return 409
+    if (existingArticle) {
+      return errorResponse(
+        'DUPLICATE_ARTICLE',
+        'An article with this keyword already exists in this campaign',
+        409,
+        { existingArticleId: existingArticle.id }
+      );
+    }
+
+    // E10: Semantic deduplication check - detect near-duplicates with different wording
+    if (!input.skipSemanticDedup && openaiEmbeddingsService.isConfigured()) {
+      const { data: projectArticles } = await supabaseAdmin
+        .from('articles')
+        .select('id, title, topic_fingerprint')
+        .eq('project_id', campaign.project_id)
+        .not('topic_fingerprint', 'is', null)
+        .not('status', 'eq', 'failed')
+        .limit(50); // Limit to recent 50 articles for performance
+
+      if (projectArticles && projectArticles.length > 0) {
+        try {
+          const similarityResult = await openaiEmbeddingsService.checkSimilarity(
+            input.keyword,
+            projectArticles.map(a => ({
+              id: a.id,
+              title: a.title,
+              topic_fingerprint: a.topic_fingerprint as number[] | null,
+            })),
+            { threshold: 0.85, maxResults: 3 }
+          );
+
+          if (similarityResult.isSimilar) {
+            // Return 409 with similarity information
+            return errorResponse(
+              'SIMILAR_ARTICLE',
+              `This topic is very similar to an existing article (similarity: ${(similarityResult.maxSimilarity * 100).toFixed(1)}%)`,
+              409,
+              {
+                similarArticleId: similarityResult.similarArticleId,
+                similarityScore: similarityResult.maxSimilarity,
+                similarArticles: similarityResult.similarArticles,
+              }
+            );
+          }
+        } catch (error) {
+          // Log semantic dedup error but don't block generation
+          console.error('[Semantic Dedup] Failed to check similarity:', error);
+          // Continue with generation - semantic dedup is a safety net, not a hard requirement
+        }
+      }
+    }
   }
 
-  // Deduct total credits (1 base + optional image cost) with article ID as reference
-  await supabaseAdmin.rpc('consume_credits_v2', {
-    target_user_id: userId,
-    amount: totalCreditsNeeded,
-    ref_id: article.id,
-    description: 'Article generation',
-  });
+  // E7: Use atomic RPC to create article and deduct credits in a single transaction
+  // This prevents orphaned articles and partial credit states
+  const { data: articleResult, error: articleError } = await supabaseAdmin.rpc(
+    'create_article_with_credits',
+    {
+      p_user_id: userId,
+      p_campaign_id: campaign.id,
+      p_project_id: campaign.project_id,
+      p_primary_keyword: input.keyword,
+      p_credits_needed: totalCreditsNeeded,
+      p_status: 'generating',
+      p_image_preset: input.imagePreset || null,
+    }
+  );
+
+  if (articleError) {
+    // Check if it's a credit insufficiency error
+    if (articleError.message?.includes('Insufficient credits')) {
+      return errorResponse(
+        'INSUFFICIENT_CREDITS',
+        `Insufficient credits for article generation. Need ${totalCreditsNeeded} credits.`,
+        402
+      );
+    }
+
+    // Check if it's a unique constraint violation (duplicate)
+    if (articleError.code === '23505') {
+      const normalizedKeyword = normalizeKeyword(input.keyword);
+      const { data: existingArticle } = await supabaseAdmin
+        .from('articles')
+        .select('id')
+        .eq('campaign_id', campaign.id)
+        .eq('keyword_normalized', normalizedKeyword)
+        .not('status', 'eq', 'failed')
+        .maybeSingle();
+
+      if (existingArticle) {
+        return errorResponse(
+          'DUPLICATE_ARTICLE',
+          'An article with this keyword already exists in this campaign',
+          409,
+          { existingArticleId: existingArticle.id }
+        );
+      }
+    }
+
+    // Generic error
+    throw new Error(`Failed to create article and deduct credits: ${articleError.message}`);
+  }
+
+  if (!articleResult || articleResult.length === 0) {
+    throw new Error('Failed to create article record - no data returned from RPC');
+  }
+
+  const result = articleResult[0];
+  const { article_id: articleId } = result;
 
   // Fire & forget generation using waitUntil()
-  fireAndForget(locals, articleGenerationService.generateArticle(article.id, userId, input));
+  fireAndForget(locals, articleGenerationService.generateArticle(articleId, userId, input));
 
   const response: IGenerateArticleResponse = {
-    articleId: article.id,
+    articleId,
     status: 'generating',
   };
 

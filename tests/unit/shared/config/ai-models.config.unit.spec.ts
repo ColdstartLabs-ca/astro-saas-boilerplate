@@ -1,254 +1,282 @@
 /**
- * AI Models Config Unit Tests
+ * AI Writer Presets Config Unit Tests
  *
- * Tests for AI model configuration and utility functions,
+ * Tests for writer preset configuration and utility functions,
  * including availability filtering based on environment variables.
  */
 
 import { describe, it, expect } from 'vitest';
 import {
+  WRITER_PRESETS,
+  WRITER_PRESET_KEYS,
+  DEFAULT_WRITER_PRESET,
+  isValidWriterPreset,
+  getAvailableWriterPresets,
+  isAvailableWriterPreset,
+  resolveWriterModel,
+  getWriterPresetCreditCost,
+  // Deprecated exports (backward compat)
   AI_MODELS,
-  MODEL_IDS,
   DEFAULT_MODEL,
   isValidModel,
-  getModel,
-  getModelsByTier,
   getAvailableWriterModels,
   isAvailableWriterModel,
-  type AIModelId,
 } from '@shared/config/ai-models.config';
 
-describe('ai-models.config', () => {
-  describe('AI_MODELS', () => {
-    it('should have all 5 required models', () => {
-      expect(Object.keys(AI_MODELS)).toHaveLength(5);
+describe('ai-models.config (writer presets)', () => {
+  describe('WRITER_PRESETS', () => {
+    it('should have all 4 presets', () => {
+      expect(Object.keys(WRITER_PRESETS)).toHaveLength(4);
     });
 
-    it('should include all expected model IDs', () => {
-      const expectedIds: AIModelId[] = [
-        'openai/gpt-4o',
-        'openai/gpt-4o-mini',
-        'anthropic/claude-sonnet-4-5',
-        'google/gemini-2.0-flash',
-        'openrouter/auto',
-      ];
-      expectedIds.forEach(id => {
-        expect(AI_MODELS[id]).toBeDefined();
+    it('should include expected preset keys', () => {
+      expect(WRITER_PRESETS).toHaveProperty('budget');
+      expect(WRITER_PRESETS).toHaveProperty('balanced');
+      expect(WRITER_PRESETS).toHaveProperty('auto');
+      expect(WRITER_PRESETS).toHaveProperty('ultra');
+    });
+
+    it('should have required fields for each preset', () => {
+      Object.values(WRITER_PRESETS).forEach(preset => {
+        expect(preset).toHaveProperty('key');
+        expect(preset).toHaveProperty('displayName');
+        expect(preset).toHaveProperty('description');
+        expect(preset).toHaveProperty('defaultModel');
+        expect(preset).toHaveProperty('tier');
+        expect(preset).toHaveProperty('creditCost');
       });
     });
 
-    it('should have required fields for each model', () => {
-      Object.values(AI_MODELS).forEach(model => {
-        expect(model).toHaveProperty('name');
-        expect(model).toHaveProperty('provider');
-        expect(model).toHaveProperty('tier');
+    it('should have valid tier for each preset', () => {
+      Object.values(WRITER_PRESETS).forEach(preset => {
+        expect(['budget', 'balanced', 'ultra']).toContain(preset.tier);
       });
     });
 
-    it('should have valid tier for each model', () => {
-      Object.values(AI_MODELS).forEach(model => {
-        expect(['budget', 'balanced', 'ultra']).toContain(model.tier);
-      });
-    });
-
-    it('should have creditCost and description for each model', () => {
-      Object.values(AI_MODELS).forEach(model => {
-        expect(model).toHaveProperty('creditCost');
-        expect(model).toHaveProperty('description');
-        expect(typeof model.creditCost).toBe('number');
-        expect(typeof model.description).toBe('string');
-      });
+    it('should map correct default models', () => {
+      expect(WRITER_PRESETS.budget.defaultModel).toBe('openai/gpt-4o-mini');
+      expect(WRITER_PRESETS.balanced.defaultModel).toBe('openai/gpt-4o');
+      expect(WRITER_PRESETS.auto.defaultModel).toBe('openrouter/auto');
+      expect(WRITER_PRESETS.ultra.defaultModel).toBe('anthropic/claude-sonnet-4-5');
     });
   });
 
-  describe('MODEL_IDS', () => {
-    it('should return array of 5 model IDs', () => {
-      expect(MODEL_IDS).toHaveLength(5);
+  describe('WRITER_PRESET_KEYS', () => {
+    it('should return array of 4 preset keys', () => {
+      expect(WRITER_PRESET_KEYS).toHaveLength(4);
     });
 
-    it('should match keys from AI_MODELS', () => {
-      const configKeys = Object.keys(AI_MODELS) as AIModelId[];
-      expect(MODEL_IDS).toEqual(expect.arrayContaining(configKeys));
-    });
-  });
-
-  describe('DEFAULT_MODEL', () => {
-    it('should be set to GPT-4o', () => {
-      expect(DEFAULT_MODEL).toBe('openai/gpt-4o');
-    });
-
-    it('should be a valid model ID', () => {
-      expect(isValidModel(DEFAULT_MODEL)).toBe(true);
-    });
-  });
-
-  describe('isValidModel', () => {
-    it('should return true for valid model IDs', () => {
-      expect(isValidModel('openai/gpt-4o')).toBe(true);
-      expect(isValidModel('openai/gpt-4o-mini')).toBe(true);
-      expect(isValidModel('anthropic/claude-sonnet-4-5')).toBe(true);
-      expect(isValidModel('google/gemini-2.0-flash')).toBe(true);
-      expect(isValidModel('openrouter/auto')).toBe(true);
-    });
-
-    it('should return false for invalid model IDs', () => {
-      expect(isValidModel('invalid')).toBe(false);
-      expect(isValidModel('')).toBe(false);
-      expect(isValidModel('openai/gpt-3')).toBe(false);
-      expect(isValidModel(null)).toBe(false);
-      expect(isValidModel(undefined)).toBe(false);
-    });
-  });
-
-  describe('getModel', () => {
-    it('should return model metadata for valid key', () => {
-      const model = getModel('openai/gpt-4o');
-      expect(model.name).toBe('GPT-4o');
-      expect(model.provider).toBe('OpenAI');
-      expect(model.tier).toBe('balanced');
-    });
-
-    it('should return model metadata for all valid keys', () => {
-      const models = MODEL_IDS.map(id => getModel(id));
-      expect(models).toHaveLength(5);
-      models.forEach(model => {
-        expect(model).toHaveProperty('name');
-        expect(model).toHaveProperty('provider');
-        expect(model).toHaveProperty('tier');
-      });
-    });
-  });
-
-  describe('getModelsByTier', () => {
-    it('should return budget tier models', () => {
-      const models = getModelsByTier('budget');
-      expect(models).toHaveLength(2);
-      expect(models).toContain('openai/gpt-4o-mini');
-      expect(models).toContain('google/gemini-2.0-flash');
-    });
-
-    it('should return balanced tier models', () => {
-      const models = getModelsByTier('balanced');
-      expect(models).toHaveLength(2);
-      expect(models).toContain('openai/gpt-4o');
-      expect(models).toContain('openrouter/auto');
-    });
-
-    it('should return ultra tier models', () => {
-      const models = getModelsByTier('ultra');
-      expect(models).toHaveLength(1);
-      expect(models).toContain('anthropic/claude-sonnet-4-5');
-    });
-  });
-
-  describe('getAvailableWriterModels', () => {
-    it('should return all models when env is empty string', () => {
-      const available = getAvailableWriterModels('');
-      expect(available).toHaveLength(5);
-      expect(available.map(m => m.id)).toEqual(expect.arrayContaining(MODEL_IDS));
-    });
-
-    it('should return all models when env is whitespace only', () => {
-      const available = getAvailableWriterModels('   ');
-      expect(available).toHaveLength(5);
-    });
-
-    it('should filter to only enabled models when env has values', () => {
-      const available = getAvailableWriterModels('openai/gpt-4o,anthropic/claude-sonnet-4-5');
-      expect(available).toHaveLength(2);
-      expect(available.map(m => m.id)).toEqual(
-        expect.arrayContaining(['openai/gpt-4o', 'anthropic/claude-sonnet-4-5'])
+    it('should match keys from WRITER_PRESETS', () => {
+      expect(WRITER_PRESET_KEYS).toEqual(
+        expect.arrayContaining(['budget', 'balanced', 'auto', 'ultra'])
       );
+    });
+  });
+
+  describe('DEFAULT_WRITER_PRESET', () => {
+    it('should be set to auto', () => {
+      expect(DEFAULT_WRITER_PRESET).toBe('auto');
+    });
+
+    it('should be a valid preset key', () => {
+      expect(isValidWriterPreset(DEFAULT_WRITER_PRESET)).toBe(true);
+    });
+  });
+
+  describe('isValidWriterPreset', () => {
+    it('should return true for valid preset keys', () => {
+      expect(isValidWriterPreset('budget')).toBe(true);
+      expect(isValidWriterPreset('balanced')).toBe(true);
+      expect(isValidWriterPreset('auto')).toBe(true);
+      expect(isValidWriterPreset('ultra')).toBe(true);
+    });
+
+    it('should return false for invalid keys', () => {
+      expect(isValidWriterPreset('invalid')).toBe(false);
+      expect(isValidWriterPreset('')).toBe(false);
+      expect(isValidWriterPreset('openai/gpt-4o')).toBe(false);
+    });
+  });
+
+  describe('getAvailableWriterPresets', () => {
+    it('should return all presets when env is empty string', () => {
+      const available = getAvailableWriterPresets('');
+      expect(available).toHaveLength(4);
+      expect(available.map(p => p.key)).toEqual(
+        expect.arrayContaining(['budget', 'balanced', 'auto', 'ultra'])
+      );
+    });
+
+    it('should return all presets when env is whitespace only', () => {
+      const available = getAvailableWriterPresets('   ');
+      expect(available).toHaveLength(4);
+    });
+
+    it('should filter to only listed presets', () => {
+      const available = getAvailableWriterPresets('budget,ultra');
+      expect(available).toHaveLength(2);
+      expect(available.map(p => p.key)).toEqual(expect.arrayContaining(['budget', 'ultra']));
+    });
+
+    it('should support key(model) override format', () => {
+      const available = getAvailableWriterPresets('budget(custom/model-a),balanced');
+      expect(available).toHaveLength(2);
+      const budget = available.find(p => p.key === 'budget')!;
+      expect(budget.model).toBe('custom/model-a');
+      const balanced = available.find(p => p.key === 'balanced')!;
+      expect(balanced.model).toBe('openai/gpt-4o'); // default
     });
 
     it('should handle comma-separated values with spaces', () => {
-      const available = getAvailableWriterModels(
-        'openai/gpt-4o, anthropic/claude-sonnet-4-5 , google/gemini-2.0-flash'
-      );
+      const available = getAvailableWriterPresets(' budget , balanced , ultra ');
       expect(available).toHaveLength(3);
-      // Order follows config definition order (budget -> balanced -> ultra)
-      expect(available.map(m => m.id)).toEqual([
-        'google/gemini-2.0-flash',
-        'openai/gpt-4o',
-        'anthropic/claude-sonnet-4-5',
-      ]);
     });
 
-    it('should silently ignore invalid model IDs', () => {
-      const available = getAvailableWriterModels(
-        'openai/gpt-4o,invalid-model,another-invalid,anthropic/claude-sonnet-4-5'
-      );
+    it('should silently ignore invalid preset keys', () => {
+      const available = getAvailableWriterPresets('budget,invalid-key,ultra');
       expect(available).toHaveLength(2);
-      expect(available.map(m => m.id)).toEqual(
-        expect.arrayContaining(['openai/gpt-4o', 'anthropic/claude-sonnet-4-5'])
-      );
+      expect(available.map(p => p.key)).toEqual(expect.arrayContaining(['budget', 'ultra']));
     });
 
-    it('should return empty array when only invalid IDs are provided', () => {
-      const available = getAvailableWriterModels('invalid-model,another-invalid');
+    it('should return empty array when only invalid keys are provided', () => {
+      const available = getAvailableWriterPresets('invalid-1,invalid-2');
       expect(available).toHaveLength(0);
     });
 
-    it('should return models with all required properties', () => {
-      const available = getAvailableWriterModels('openai/gpt-4o');
+    it('should return presets with all required properties', () => {
+      const available = getAvailableWriterPresets('balanced');
       expect(available[0]).toEqual({
-        id: 'openai/gpt-4o',
-        name: 'GPT-4o',
-        provider: 'OpenAI',
+        key: 'balanced',
+        displayName: 'Balanced',
         description: 'Strong all-round writing quality',
+        model: 'openai/gpt-4o',
         tier: 'balanced',
         creditCost: 0,
       });
     });
 
-    it('should handle single model without comma', () => {
-      const available = getAvailableWriterModels('openai/gpt-4o');
+    it('should handle single preset without comma', () => {
+      const available = getAvailableWriterPresets('auto');
       expect(available).toHaveLength(1);
-      expect(available[0].id).toBe('openai/gpt-4o');
+      expect(available[0].key).toBe('auto');
     });
 
     it('should be backward compatible (empty = all available)', () => {
-      const emptyResult = getAvailableWriterModels('');
-      const allResult = getAvailableWriterModels(MODEL_IDS.join(','));
+      const emptyResult = getAvailableWriterPresets('');
+      const allResult = getAvailableWriterPresets(WRITER_PRESET_KEYS.join(','));
       expect(emptyResult).toHaveLength(allResult.length);
     });
   });
 
-  describe('isAvailableWriterModel', () => {
-    it('should return true for all models when env is empty', () => {
-      expect(isAvailableWriterModel('openai/gpt-4o', '')).toBe(true);
-      expect(isAvailableWriterModel('anthropic/claude-sonnet-4-5', '')).toBe(true);
-      expect(isAvailableWriterModel('google/gemini-2.0-flash', '')).toBe(true);
+  describe('isAvailableWriterPreset', () => {
+    it('should return true for all presets when env is empty', () => {
+      expect(isAvailableWriterPreset('budget', '')).toBe(true);
+      expect(isAvailableWriterPreset('balanced', '')).toBe(true);
+      expect(isAvailableWriterPreset('auto', '')).toBe(true);
+      expect(isAvailableWriterPreset('ultra', '')).toBe(true);
     });
 
-    it('should return true for enabled models', () => {
-      const env = 'openai/gpt-4o,anthropic/claude-sonnet-4-5';
-      expect(isAvailableWriterModel('openai/gpt-4o', env)).toBe(true);
-      expect(isAvailableWriterModel('anthropic/claude-sonnet-4-5', env)).toBe(true);
+    it('should return true for enabled presets', () => {
+      const env = 'budget,ultra';
+      expect(isAvailableWriterPreset('budget', env)).toBe(true);
+      expect(isAvailableWriterPreset('ultra', env)).toBe(true);
     });
 
-    it('should return false for disabled models', () => {
-      const env = 'openai/gpt-4o,anthropic/claude-sonnet-4-5';
-      expect(isAvailableWriterModel('google/gemini-2.0-flash', env)).toBe(false);
-      expect(isAvailableWriterModel('openrouter/auto', env)).toBe(false);
+    it('should return false for disabled presets', () => {
+      const env = 'budget,ultra';
+      expect(isAvailableWriterPreset('balanced', env)).toBe(false);
+      expect(isAvailableWriterPreset('auto', env)).toBe(false);
     });
 
-    it('should return false for invalid model IDs', () => {
-      const env = 'openai/gpt-4o,anthropic/claude-sonnet-4-5';
-      expect(isAvailableWriterModel('invalid-model', env)).toBe(false);
-      expect(isAvailableWriterModel('', env)).toBe(false);
+    it('should return false for invalid preset keys', () => {
+      expect(isAvailableWriterPreset('invalid-model', '')).toBe(false);
+      expect(isAvailableWriterPreset('', '')).toBe(false);
     });
 
     it('should handle whitespace in env string', () => {
-      const env = 'openai/gpt-4o , anthropic/claude-sonnet-4-5';
-      expect(isAvailableWriterModel('openai/gpt-4o', env)).toBe(true);
-      expect(isAvailableWriterModel('anthropic/claude-sonnet-4-5', env)).toBe(true);
+      const env = ' budget , ultra ';
+      expect(isAvailableWriterPreset('budget', env)).toBe(true);
+      expect(isAvailableWriterPreset('ultra', env)).toBe(true);
     });
 
-    it('should return false when no models are enabled', () => {
-      const env = 'invalid-model-1,invalid-model-2';
-      expect(isAvailableWriterModel('openai/gpt-4o', env)).toBe(false);
-      expect(isAvailableWriterModel('anthropic/claude-sonnet-4-5', env)).toBe(false);
+    it('should return false when no valid presets are configured', () => {
+      const env = 'invalid-1,invalid-2';
+      expect(isAvailableWriterPreset('budget', env)).toBe(false);
+      expect(isAvailableWriterPreset('ultra', env)).toBe(false);
+    });
+  });
+
+  describe('resolveWriterModel', () => {
+    it('should resolve preset key to default model', () => {
+      expect(resolveWriterModel('budget', '')).toBe('openai/gpt-4o-mini');
+      expect(resolveWriterModel('balanced', '')).toBe('openai/gpt-4o');
+      expect(resolveWriterModel('auto', '')).toBe('openrouter/auto');
+      expect(resolveWriterModel('ultra', '')).toBe('anthropic/claude-sonnet-4-5');
+    });
+
+    it('should resolve to overridden model from env', () => {
+      const env = 'budget(custom/fast-model),balanced(custom/strong-model)';
+      expect(resolveWriterModel('budget', env)).toBe('custom/fast-model');
+      expect(resolveWriterModel('balanced', env)).toBe('custom/strong-model');
+    });
+
+    it('should fallback to default preset model for unknown key', () => {
+      const result = resolveWriterModel('nonexistent', '');
+      // Falls back to DEFAULT_WRITER_PRESET (auto) defaultModel
+      expect(result).toBe('openrouter/auto');
+    });
+  });
+
+  describe('getWriterPresetCreditCost', () => {
+    it('should return 0 for budget/balanced/auto presets', () => {
+      expect(getWriterPresetCreditCost('budget')).toBe(0);
+      expect(getWriterPresetCreditCost('balanced')).toBe(0);
+      expect(getWriterPresetCreditCost('auto')).toBe(0);
+    });
+
+    it('should return 1 for ultra preset', () => {
+      expect(getWriterPresetCreditCost('ultra')).toBe(1);
+    });
+
+    it('should return 0 for null/undefined/invalid', () => {
+      expect(getWriterPresetCreditCost(null)).toBe(0);
+      expect(getWriterPresetCreditCost(undefined)).toBe(0);
+      expect(getWriterPresetCreditCost('invalid')).toBe(0);
+    });
+  });
+
+  // Deprecated exports — backward compatibility
+  describe('Deprecated exports', () => {
+    it('AI_MODELS should map default model IDs to metadata', () => {
+      expect(AI_MODELS['openai/gpt-4o']).toBeDefined();
+      expect(AI_MODELS['openai/gpt-4o'].name).toBe('Balanced');
+      expect(AI_MODELS['openai/gpt-4o'].tier).toBe('balanced');
+    });
+
+    it('DEFAULT_MODEL should be the default preset model', () => {
+      expect(DEFAULT_MODEL).toBe('openrouter/auto');
+    });
+
+    it('isValidModel should accept both model IDs and preset keys', () => {
+      expect(isValidModel('openai/gpt-4o')).toBe(true);
+      expect(isValidModel('budget')).toBe(true);
+      expect(isValidModel('invalid')).toBe(false);
+    });
+
+    it('getAvailableWriterModels should return preset keys as IDs', () => {
+      const models = getAvailableWriterModels('');
+      expect(models.length).toBe(4);
+      models.forEach(m => {
+        expect(m).toHaveProperty('id');
+        expect(m).toHaveProperty('name');
+        expect(m).toHaveProperty('provider');
+        expect(m).toHaveProperty('tier');
+      });
+    });
+
+    it('isAvailableWriterModel should delegate to isAvailableWriterPreset', () => {
+      expect(isAvailableWriterModel('budget', '')).toBe(true);
+      expect(isAvailableWriterModel('invalid', '')).toBe(false);
     });
   });
 });

@@ -1,11 +1,15 @@
 /**
- * Image Generation Models Configuration for Article Images
+ * Image Generation Presets Configuration
  *
- * Defines supported image generation presets via Replicate API.
- * Simple tier-based presets: Budget, Balanced, Pro, Ultra.
+ * Preset-based system for image generation via Replicate API.
+ * Each preset key (budget, balanced, pro, ultra) maps to a default Replicate model
+ * that can be overridden via AVAILABLE_IMAGE_PRESETS env var.
+ *
+ * Env format: "budget(black-forest-labs/flux-schnell),balanced,pro(black-forest-labs/flux-1.1-pro)"
  */
 
 import type { ModelTier } from '@shared/types/models.types';
+import { parsePresetEnv } from './preset-parser';
 
 /**
  * Image preset types — one per quality tier
@@ -16,23 +20,14 @@ export type ImagePresetKey = 'budget' | 'balanced' | 'pro' | 'ultra';
  * Image preset metadata
  */
 export interface IImagePreset {
-  /** Unique preset key */
   key: ImagePresetKey;
-  /** Display name for UI */
   displayName: string;
-  /** Description of the preset */
   description: string;
-  /** What this preset is best for */
   bestFor: string;
-  /** Replicate model identifier (e.g., 'black-forest-labs/flux-schnell') */
   replicateModel: string;
-  /** Default parameters for the model */
   defaultParams: Record<string, unknown>;
-  /** Credit cost per article (0 = bundled, 1 = +1 credit) */
   creditCost: number;
-  /** Aspect ratio for generated images */
   aspectRatio: string;
-  /** Quality tier for UI grouping */
   tier: ModelTier;
 }
 
@@ -100,10 +95,12 @@ export const IMAGE_PRESETS: Record<ImagePresetKey, IImagePreset> = {
   },
 };
 
-/**
- * Array of preset keys for iteration
- */
 export const IMAGE_PRESET_KEYS: ImagePresetKey[] = Object.keys(IMAGE_PRESETS) as ImagePresetKey[];
+
+const VALID_IMAGE_KEYS = new Set<string>(IMAGE_PRESET_KEYS);
+const IMAGE_DEFAULTS = new Map<string, string>(
+  IMAGE_PRESET_KEYS.map(k => [k, IMAGE_PRESETS[k].replicateModel])
+);
 
 /**
  * Check if a preset key is valid
@@ -113,14 +110,15 @@ export function isValidImagePreset(key: string): key is ImagePresetKey {
 }
 
 /**
- * Get preset metadata by key
+ * Get preset metadata by key.
+ * Returns the preset with model potentially overridden from env.
  */
 export function getImagePreset(key: ImagePresetKey): IImagePreset {
   const preset = IMAGE_PRESETS[key];
   if (!preset) {
     throw new Error(`Invalid image preset key: ${key}`);
   }
-  return preset as IImagePreset;
+  return preset;
 }
 
 /**
@@ -135,17 +133,10 @@ export function getImagePresetCreditCost(key: string | null | undefined): number
 
 /**
  * Determine number of images based on word count
- * - 800-1200 words -> 2 images (1 hero + 1 in-section)
- * - 1200-2000 words -> 3 images (1 hero + 2 in-section)
- * - 2000-3000 words -> 3 images (same -- diminishing returns above 3)
  */
 export function getImageCountForWordCount(targetWordCount: number): number {
-  if (targetWordCount < 800) {
-    return 0;
-  }
-  if (targetWordCount <= 1200) {
-    return 2;
-  }
+  if (targetWordCount < 800) return 0;
+  if (targetWordCount <= 1200) return 2;
   return 3;
 }
 
@@ -168,21 +159,22 @@ export function getPresetDescription(key: ImagePresetKey): string {
 }
 
 /**
- * Parse comma-separated env string into available image presets.
+ * Parse env string into available image presets.
+ * Supports both simple format ("budget,balanced") and override format ("budget(custom/model),balanced").
  * Empty string = all presets available.
+ *
+ * When a model override is provided, the returned preset's replicateModel is updated.
  */
 export function getAvailableImagePresets(envValue: string): IImagePreset[] {
-  const enabledKeys = envValue
-    .split(',')
-    .map(s => s.trim())
-    .filter(Boolean);
+  const resolved = parsePresetEnv(envValue, VALID_IMAGE_KEYS, IMAGE_DEFAULTS);
 
-  const keys =
-    enabledKeys.length > 0
-      ? IMAGE_PRESET_KEYS.filter(k => enabledKeys.includes(k))
-      : IMAGE_PRESET_KEYS;
-
-  return keys.map(k => IMAGE_PRESETS[k]);
+  return Array.from(resolved.entries()).map(([key, model]) => {
+    const preset = IMAGE_PRESETS[key as ImagePresetKey];
+    return {
+      ...preset,
+      replicateModel: model, // May be overridden from env
+    };
+  });
 }
 
 /**
@@ -191,4 +183,13 @@ export function getAvailableImagePresets(envValue: string): IImagePreset[] {
 export function isAvailableImagePreset(presetKey: string, envValue: string): boolean {
   const available = getAvailableImagePresets(envValue);
   return available.some(p => p.key === presetKey);
+}
+
+/**
+ * Resolve image preset key to a Replicate model ID.
+ * Returns env-overridden model if configured, otherwise the default.
+ */
+export function resolveImageModel(presetKey: string, envValue: string): string {
+  const resolved = parsePresetEnv(envValue, VALID_IMAGE_KEYS, IMAGE_DEFAULTS);
+  return resolved.get(presetKey) ?? IMAGE_PRESETS.budget.replicateModel;
 }

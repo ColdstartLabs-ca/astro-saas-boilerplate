@@ -7,7 +7,20 @@
 /**
  * Article status enum representing the lifecycle of an article
  */
-export type ArticleStatus = 'queued' | 'generating' | 'draft' | 'approved' | 'rejected' | 'reviewed' | 'published' | 'failed';
+export type ArticleStatus =
+  | 'queued'
+  | 'generating'
+  | 'draft'
+  | 'qa_checking'
+  | 'qa_failed'
+  | 'qa_passed'
+  | 'approved'
+  | 'rejected'
+  | 'reviewed'
+  | 'published'
+  | 'failed'
+  | 'failed_quality'
+  | 'failed_timeout';
 
 /**
  * Full article interface matching the database schema
@@ -41,6 +54,15 @@ export interface IArticle {
   // Image generation fields
   image_preset: string | null;
   image_count: number;
+  // Stale recovery fields
+  last_attempt_at: string | null;
+  attempt_count: number;
+  // Semantic deduplication fields (E10)
+  topic_fingerprint: number[] | null;
+  similarity_score: number | null;
+  similar_to_article_id: string | null;
+  // QA pipeline fields (E11)
+  qa_results: IQAResult | null;
 }
 
 /**
@@ -75,6 +97,10 @@ export interface IGenerateArticleInput {
   targetWordCount?: number;
   /** Image generation preset key (optional, no images if not specified) */
   imagePreset?: string;
+  /** Force regeneration even if an article with the same keyword exists */
+  forceRegenerate?: boolean;
+  /** Skip semantic deduplication check (for admin/advanced users) */
+  skipSemanticDedup?: boolean;
 }
 
 /**
@@ -180,4 +206,78 @@ export interface IImageResult {
   error?: string;
   generationTimeMs?: number;
   replicatePredictionId?: string;
+}
+
+/**
+ * QA check result stored with article
+ */
+export interface IQAResult {
+  /** Overall pass/fail status */
+  passed: boolean;
+  /** Reason for overall failure */
+  failureReason?: string;
+  /** Timestamp of check */
+  checkedAt: string;
+  /** Individual check results */
+  plagiarism: {
+    passed: boolean;
+    similarityScore: number;
+    flaggedPhrases: number;
+  };
+  factConsistency: {
+    passed: boolean;
+    score: number;
+    inconsistencyCount: number;
+  };
+  readability: {
+    passed: boolean;
+    fleschKincaidGrade: number;
+    fleschReadingEase: number;
+  };
+  aiLikelihood: {
+    passed: boolean;
+    aiScore: number;
+    confidence: 'low' | 'medium' | 'high';
+  };
+}
+
+/**
+ * Similar article information for near-duplicate detection
+ */
+export interface ISimilarArticle {
+  articleId: string;
+  title: string | null;
+  similarity: number;
+  similarityPercent: number;
+  status?: ArticleStatus;
+  primaryKeyword?: string;
+}
+
+/**
+ * Response from similarity check API
+ */
+export interface ISimilarityCheckResponse {
+  /** Whether similar articles were found */
+  isSimilar: boolean;
+  /** Highest similarity score (0-1) */
+  maxSimilarity: number;
+  /** Highest similarity as percentage */
+  maxSimilarityPercent: number;
+  /** ID of the most similar article */
+  similarArticleId?: string;
+  /** List of similar articles with details */
+  similarArticles: ISimilarArticle[];
+  /** Human-readable message */
+  message: string;
+}
+
+/**
+ * Similarity check request parameters
+ */
+export interface ISimilarityCheckRequest {
+  topic: string;
+  projectId: string;
+  threshold?: number;
+  maxResults?: number;
+  excludeArticleId?: string;
 }

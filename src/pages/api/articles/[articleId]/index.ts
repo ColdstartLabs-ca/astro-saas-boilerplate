@@ -7,6 +7,12 @@ import { withAuth, withAuthAndBody, jsonResponse, errorResponse } from '../../_u
 import { supabaseAdmin } from '@server/supabase/supabaseAdmin';
 import type { IArticleDetailResponse } from '@shared/types/article.types';
 import { z } from 'zod';
+import {
+  validateTransition,
+  validateRequiredFieldsForTransition,
+  InvalidStatusTransitionError,
+  getValidTransitions,
+} from '@server/services/article-status-transitions';
 
 const updateSchema = z.object({
   content: z.string().optional(),
@@ -22,9 +28,11 @@ const updateSchema = z.object({
       'reviewed',
       'published',
       'failed',
+      'failed_quality',
     ])
     .optional(),
   published_url: z.string().url().optional(),
+  published_at: z.string().optional(),
   rejection_reason: z.string().optional(),
 });
 
@@ -73,10 +81,10 @@ export const GET = withAuth(async (userId, { params }) => {
 export const PATCH = withAuthAndBody(updateSchema, async (userId, input, { params }) => {
   const { articleId } = params;
 
-  // Verify article ownership
+  // Verify article ownership and get current status
   const { data: article, error: articleError } = await supabaseAdmin
     .from('articles')
-    .select('id, user_id')
+    .select('id, user_id, status')
     .eq('id', articleId)
     .eq('user_id', userId)
     .single();
@@ -85,10 +93,36 @@ export const PATCH = withAuthAndBody(updateSchema, async (userId, input, { param
     return errorResponse('NOT_FOUND', 'Article not found', 404);
   }
 
+  // Validate status transition if status is being changed
+  if (input.status && input.status !== article.status) {
+    try {
+      // Check if transition is valid
+      validateTransition(article.status, input.status);
+
+      // Check if required fields are present
+      validateRequiredFieldsForTransition(input.status, input);
+    } catch (error) {
+      if (error instanceof InvalidStatusTransitionError) {
+        return errorResponse('INVALID_STATUS_TRANSITION', error.message, 400, {
+          from: error.fromStatus,
+          to: error.toStatus,
+          validTransitions: getValidTransitions(article.status),
+        });
+      }
+      return errorResponse('VALIDATION_ERROR', (error as Error).message, 400);
+    }
+  }
+
+  // Prepare update data - auto-set published_at if transitioning to published and not provided
+  const updateData: Record<string, unknown> = { ...input };
+  if (input.status === 'published' && !input.published_at) {
+    updateData.published_at = new Date().toISOString();
+  }
+
   // Update article and fetch full data with images
   const { data: updatedArticle, error: updateError } = await supabaseAdmin
     .from('articles')
-    .update(input)
+    .update(updateData)
     .eq('id', articleId)
     .select(
       `
@@ -135,10 +169,7 @@ export const DELETE = withAuth(async (userId, { params }) => {
   }
 
   // Delete article (images and other related records cascade via FK)
-  const { error: deleteError } = await supabaseAdmin
-    .from('articles')
-    .delete()
-    .eq('id', articleId);
+  const { error: deleteError } = await supabaseAdmin.from('articles').delete().eq('id', articleId);
 
   if (deleteError) {
     throw deleteError;

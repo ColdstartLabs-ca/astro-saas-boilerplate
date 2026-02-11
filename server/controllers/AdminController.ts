@@ -49,8 +49,16 @@ export class AdminController extends BaseController {
    * Verify admin access
    * Returns admin check result with error response if not authorized
    */
-  private async checkAdminAccess(req: Request): Promise<IAdminCheckResult> {
+  protected async checkAdminAccess(req: Request): Promise<IAdminCheckResult> {
     return requireAdmin(req);
+  }
+
+  /**
+   * Get Supabase admin client
+   * Exposed for use by endpoints that need direct DB access
+   */
+  getSupabase(): typeof supabaseAdmin {
+    return supabaseAdmin;
   }
 
   /**
@@ -83,6 +91,9 @@ export class AdminController extends BaseController {
     }
     if (path.endsWith('/subscription') && this.isPost(req)) {
       return this.updateSubscription(req);
+    }
+    if (path.endsWith('/failure-metrics') && this.isGet(req)) {
+      return this.getFailureMetrics(req);
     }
 
     return this.error('METHOD_NOT_ALLOWED', 'Method not allowed', 405);
@@ -644,5 +655,173 @@ export class AdminController extends BaseController {
     }
 
     return this.error('VALIDATION_ERROR', 'Invalid action', 400);
+  }
+
+  /**
+   * GET /api/admin/failure-metrics
+   *
+   * Query parameters:
+   * - timeWindow: 'last_hour' | 'last_24h' | 'last_7d' | 'last_30d' (default: 'last_24h')
+   * - groupBy: 'stage' | 'provider' | 'model' | 'summary' | 'rate_over_time' (default: 'summary')
+   * - userId: Optional user ID filter
+   * - projectId: Optional project ID filter
+   */
+  private async getFailureMetrics(req: Request): Promise<Response> {
+    // Parse query parameters
+    const url = new URL(req.url);
+    const timeWindow =
+      (url.searchParams.get('timeWindow') as 'last_hour' | 'last_24h' | 'last_7d' | 'last_30d') ||
+      'last_24h';
+    const groupBy =
+      (url.searchParams.get('groupBy') as
+        | 'stage'
+        | 'provider'
+        | 'model'
+        | 'summary'
+        | 'rate_over_time') || 'summary';
+    const userId = url.searchParams.get('userId') || undefined;
+    const projectId = url.searchParams.get('projectId') || undefined;
+
+    // Convert time window to hours
+    const hoursAgo: Record<string, number> = {
+      last_hour: 1,
+      last_24h: 24,
+      last_7d: 24 * 7,
+      last_30d: 24 * 30,
+    };
+
+    const hours = hoursAgo[timeWindow] || 24;
+
+    try {
+      // Route to appropriate query based on groupBy
+      switch (groupBy) {
+        case 'stage':
+          return await this.getFailuresByStage(hours, userId, projectId);
+
+        case 'provider':
+          return await this.getFailuresByProvider(hours, userId, projectId);
+
+        case 'model':
+          return await this.getFailuresByModel(hours, userId, projectId);
+
+        case 'rate_over_time':
+          return await this.getFailureRateOverTime(hours, userId, projectId);
+
+        case 'summary':
+        default:
+          return await this.getFailureSummary(hours, userId, projectId);
+      }
+    } catch (err) {
+      console.error('[FailureMetrics] Error fetching metrics:', err);
+      return this.error('INTERNAL_ERROR', 'Failed to fetch failure metrics', 500);
+    }
+  }
+
+  private async getFailuresByStage(
+    hoursAgo: number,
+    userId?: string,
+    projectId?: string
+  ): Promise<Response> {
+    const { data, error } = await supabaseAdmin.rpc('get_failure_metrics_by_stage', {
+      p_hours_ago: hoursAgo,
+      p_user_id: userId || null,
+      p_project_id: projectId || null,
+    });
+
+    if (error) throw error;
+
+    return this.json({
+      timeWindow: this.hoursToTimeWindow(hoursAgo),
+      groupBy: 'stage',
+      data: data || [],
+    });
+  }
+
+  private async getFailuresByProvider(
+    hoursAgo: number,
+    userId?: string,
+    projectId?: string
+  ): Promise<Response> {
+    const { data, error } = await supabaseAdmin.rpc('get_failure_metrics_by_provider', {
+      p_hours_ago: hoursAgo,
+      p_user_id: userId || null,
+      p_project_id: projectId || null,
+    });
+
+    if (error) throw error;
+
+    return this.json({
+      timeWindow: this.hoursToTimeWindow(hoursAgo),
+      groupBy: 'provider',
+      data: data || [],
+    });
+  }
+
+  private async getFailuresByModel(
+    hoursAgo: number,
+    userId?: string,
+    projectId?: string
+  ): Promise<Response> {
+    const { data, error } = await supabaseAdmin.rpc('get_failure_metrics_by_model', {
+      p_hours_ago: hoursAgo,
+      p_user_id: userId || null,
+      p_project_id: projectId || null,
+    });
+
+    if (error) throw error;
+
+    return this.json({
+      timeWindow: this.hoursToTimeWindow(hoursAgo),
+      groupBy: 'model',
+      data: data || [],
+    });
+  }
+
+  private async getFailureRateOverTime(
+    hoursAgo: number,
+    userId?: string,
+    projectId?: string
+  ): Promise<Response> {
+    const { data, error } = await supabaseAdmin.rpc('get_failure_rate_over_time', {
+      p_hours_ago: hoursAgo,
+      p_user_id: userId || null,
+      p_project_id: projectId || null,
+    });
+
+    if (error) throw error;
+
+    return this.json({
+      timeWindow: this.hoursToTimeWindow(hoursAgo),
+      groupBy: 'rate_over_time',
+      data: data || [],
+    });
+  }
+
+  private async getFailureSummary(
+    hoursAgo: number,
+    userId?: string,
+    projectId?: string
+  ): Promise<Response> {
+    const { data, error } = await supabaseAdmin.rpc('get_failure_summary', {
+      p_hours_ago: hoursAgo,
+      p_user_id: userId || null,
+      p_project_id: projectId || null,
+    });
+
+    if (error) throw error;
+
+    return this.json({
+      timeWindow: this.hoursToTimeWindow(hoursAgo),
+      groupBy: 'summary',
+      data: data?.[0] || null,
+    });
+  }
+
+  private hoursToTimeWindow(hours: number): string {
+    if (hours === 1) return 'last_hour';
+    if (hours === 24) return 'last_24h';
+    if (hours === 24 * 7) return 'last_7d';
+    if (hours === 24 * 30) return 'last_30d';
+    return 'custom';
   }
 }

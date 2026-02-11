@@ -254,7 +254,7 @@ describe('NewCampaignModal', () => {
         name: 'Test Campaign',
         projectId: mockProjectId,
         keywords: ['test keyword'],
-        model: 'openrouter/auto',
+        model: 'auto',
         tone: 'professional',
         targetWordCount: 1500,
         imagePreset: '', // Default value from form

@@ -1,106 +1,186 @@
 /**
- * AI Models Configuration for Article Generation
+ * AI Writer Presets Configuration
  *
- * Defines supported AI models for text generation via OpenRouter.
- * Each model has metadata for display and configuration purposes.
+ * Preset-based system for text generation via OpenRouter.
+ * Each preset key (budget, balanced, auto, ultra) maps to a default OpenRouter model
+ * that can be overridden via AVAILABLE_WRITER_PRESETS env var.
  *
- * creditCost values are placeholders — update when real pricing is implemented.
+ * Env format: "budget(openai/gpt-4o-mini),balanced(openai/gpt-4o),auto,ultra(anthropic/claude-sonnet-4-5)"
  */
 
 import type { ModelTier } from '@shared/types/models.types';
+import type { IAvailableWriterPreset } from '@shared/types/models.types';
+import { parsePresetEnv } from './preset-parser';
 
-export const AI_MODELS: Record<
-  string,
-  { name: string; provider: string; tier: ModelTier; description: string; creditCost: number }
-> = {
-  'openai/gpt-4o-mini': {
-    name: 'GPT-4o Mini',
-    provider: 'OpenAI',
-    tier: 'budget',
+// =============================================================================
+// Writer Preset Definitions
+// =============================================================================
+
+export type WriterPresetKey = 'budget' | 'balanced' | 'auto' | 'ultra';
+
+export interface IWriterPreset {
+  key: WriterPresetKey;
+  displayName: string;
+  description: string;
+  defaultModel: string;
+  tier: ModelTier;
+  creditCost: number;
+}
+
+export const WRITER_PRESETS: Record<WriterPresetKey, IWriterPreset> = {
+  budget: {
+    key: 'budget',
+    displayName: 'Budget',
     description: 'Fast, cost-effective text generation',
-    creditCost: 0,
-  },
-  'google/gemini-2.0-flash': {
-    name: 'Gemini 2.0 Flash',
-    provider: 'Google',
+    defaultModel: 'openai/gpt-4o-mini',
     tier: 'budget',
-    description: 'High-speed, efficient content creation',
     creditCost: 0,
   },
-  'openai/gpt-4o': {
-    name: 'GPT-4o',
-    provider: 'OpenAI',
-    tier: 'balanced',
+  balanced: {
+    key: 'balanced',
+    displayName: 'Balanced',
     description: 'Strong all-round writing quality',
-    creditCost: 0,
-  },
-  'openrouter/auto': {
-    name: 'Auto (Best Match)',
-    provider: 'OpenRouter',
+    defaultModel: 'openai/gpt-4o',
     tier: 'balanced',
-    description: 'Automatically picks the best model',
     creditCost: 0,
   },
-  'anthropic/claude-sonnet-4-5': {
-    name: 'Claude Sonnet 4.5',
-    provider: 'Anthropic',
-    tier: 'ultra',
+  auto: {
+    key: 'auto',
+    displayName: 'Auto (Best Match)',
+    description: 'Automatically picks the best model',
+    defaultModel: 'openrouter/auto',
+    tier: 'balanced',
+    creditCost: 0,
+  },
+  ultra: {
+    key: 'ultra',
+    displayName: 'Ultra',
     description: 'Premium writing with nuance and depth',
+    defaultModel: 'anthropic/claude-sonnet-4-5',
+    tier: 'ultra',
     creditCost: 1,
   },
 };
 
-export type AIModelId = keyof typeof AI_MODELS;
+export const WRITER_PRESET_KEYS = Object.keys(WRITER_PRESETS) as WriterPresetKey[];
 
-export const DEFAULT_MODEL: AIModelId = 'openai/gpt-4o';
+const VALID_WRITER_KEYS = new Set<string>(WRITER_PRESET_KEYS);
+const WRITER_DEFAULTS = new Map<string, string>(
+  WRITER_PRESET_KEYS.map(k => [k, WRITER_PRESETS[k].defaultModel])
+);
 
-export const MODEL_IDS = Object.keys(AI_MODELS) as AIModelId[];
+export const DEFAULT_WRITER_PRESET: WriterPresetKey = 'auto';
+
+// =============================================================================
+// Public API
+// =============================================================================
 
 /**
- * Check if a model ID is valid
+ * Check if a preset key is valid.
  */
-export function isValidModel(model: string): model is AIModelId {
-  return MODEL_IDS.includes(model as AIModelId);
+export function isValidWriterPreset(key: string): key is WriterPresetKey {
+  return key in WRITER_PRESETS;
 }
 
 /**
- * Get model metadata by ID
+ * Get available writer presets from env value.
+ * Returns presets with resolved model IDs (env override or default).
+ *
+ * @param envValue - Raw AVAILABLE_WRITER_PRESETS env string
  */
-export function getModel(modelId: AIModelId): (typeof AI_MODELS)[AIModelId] {
-  return AI_MODELS[modelId];
-}
+export function getAvailableWriterPresets(envValue: string): IAvailableWriterPreset[] {
+  const resolved = parsePresetEnv(envValue, VALID_WRITER_KEYS, WRITER_DEFAULTS);
 
-/**
- * Get models by tier
- */
-export function getModelsByTier(tier: ModelTier): AIModelId[] {
-  return MODEL_IDS.filter(id => AI_MODELS[id].tier === tier);
-}
-
-/**
- * Parse comma-separated env string into available model IDs.
- * Empty string = all models available.
- */
-export function getAvailableWriterModels(
-  envValue: string
-): Array<{ id: AIModelId; name: string; provider: string; description: string; tier: ModelTier; creditCost: number }> {
-  const enabledIds = envValue
-    .split(',')
-    .map(s => s.trim())
-    .filter(Boolean);
-
-  const ids = enabledIds.length > 0 ? MODEL_IDS.filter(id => enabledIds.includes(id)) : MODEL_IDS;
-
-  return ids.map(id => {
-    const { name, provider, description, tier, creditCost } = AI_MODELS[id];
-    return { id, name, provider, description, tier, creditCost };
+  return Array.from(resolved.entries()).map(([key, model]) => {
+    const preset = WRITER_PRESETS[key as WriterPresetKey];
+    return {
+      key: key as WriterPresetKey,
+      displayName: preset.displayName,
+      description: preset.description,
+      model,
+      tier: preset.tier,
+      creditCost: preset.creditCost,
+    };
   });
 }
 
 /**
- * Check if a model is available based on env configuration.
+ * Check if a writer preset is available based on env configuration.
  */
+export function isAvailableWriterPreset(presetKey: string, envValue: string): boolean {
+  const available = getAvailableWriterPresets(envValue);
+  return available.some(p => p.key === presetKey);
+}
+
+/**
+ * Resolve a writer preset key to an OpenRouter model ID.
+ * Returns the env-overridden model if configured, otherwise the default.
+ */
+export function resolveWriterModel(presetKey: string, envValue: string): string {
+  const resolved = parsePresetEnv(envValue, VALID_WRITER_KEYS, WRITER_DEFAULTS);
+  return resolved.get(presetKey) ?? WRITER_PRESETS[DEFAULT_WRITER_PRESET].defaultModel;
+}
+
+/**
+ * Get the credit cost for a writer preset.
+ */
+export function getWriterPresetCreditCost(presetKey: string | null | undefined): number {
+  if (!presetKey || !isValidWriterPreset(presetKey)) return 0;
+  return WRITER_PRESETS[presetKey].creditCost;
+}
+
+// =============================================================================
+// Deprecated exports — backward compatibility during transition
+// =============================================================================
+
+/** @deprecated Use WRITER_PRESETS instead */
+export const AI_MODELS = Object.fromEntries(
+  WRITER_PRESET_KEYS.map(k => [
+    WRITER_PRESETS[k].defaultModel,
+    {
+      name: WRITER_PRESETS[k].displayName,
+      provider: WRITER_PRESETS[k].defaultModel.split('/')[0] ?? 'Unknown',
+      tier: WRITER_PRESETS[k].tier,
+      description: WRITER_PRESETS[k].description,
+      creditCost: WRITER_PRESETS[k].creditCost,
+    },
+  ])
+);
+
+/** @deprecated Use WriterPresetKey instead */
+export type AIModelId = string;
+
+/** @deprecated Use DEFAULT_WRITER_PRESET instead */
+export const DEFAULT_MODEL = WRITER_PRESETS[DEFAULT_WRITER_PRESET].defaultModel;
+
+/** @deprecated Use isValidWriterPreset instead */
+export function isValidModel(model: string): boolean {
+  return model in AI_MODELS || isValidWriterPreset(model);
+}
+
+/** @deprecated Use getAvailableWriterPresets instead */
+export function getAvailableWriterModels(
+  envValue: string
+): Array<{
+  id: string;
+  name: string;
+  provider: string;
+  description: string;
+  tier: ModelTier;
+  creditCost: number;
+}> {
+  const presets = getAvailableWriterPresets(envValue);
+  return presets.map(p => ({
+    id: p.key,
+    name: p.displayName,
+    provider: p.model.split('/')[0] ?? 'Unknown',
+    description: p.description,
+    tier: p.tier,
+    creditCost: p.creditCost,
+  }));
+}
+
+/** @deprecated Use isAvailableWriterPreset instead */
 export function isAvailableWriterModel(modelId: string, envValue: string): boolean {
-  const available = getAvailableWriterModels(envValue);
-  return available.some(m => m.id === modelId);
+  return isAvailableWriterPreset(modelId, envValue);
 }

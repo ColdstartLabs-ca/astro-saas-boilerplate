@@ -15,13 +15,16 @@ import { supabaseAdmin } from '@server/supabase/supabaseAdmin';
 import { OpenRouterService } from './openrouter.service';
 import { imageGenerationService } from './image-generation.service';
 import { persistArticleImages } from './image-storage.service';
+import { openaiEmbeddingsService } from './openai-embeddings.service';
 import {
   getOutlinePrompt,
   getArticlePrompt,
   getOutlineRetryPrompt,
+  getArticleRetryPrompt,
 } from './prompts/article-prompts';
 import { calculateOverallSEOScore } from '@shared/utils/seo';
 import type {
+  ArticleStatus,
   IArticleOutline,
   IGenerateArticleInput,
   IImageMarker,
@@ -34,11 +37,19 @@ import {
   isValidImagePreset,
   type ImagePresetKey,
 } from '@shared/config/image-models.config';
+import { resolveWriterModel } from '@shared/config/ai-models.config';
+import { articleQualityGateService, type IQualityGateResult } from './article-quality-gate.service';
+import { qaService, type IQACheckResult, type IQAConfig } from './qa.service';
+import {
+  classifyError,
+  createFailureMetadata,
+  formatErrorMessage,
+} from '@server/utils/error-classifier';
+import type { FailureStage } from '@shared/types/failure.types';
 
 export class ArticleGenerationService {
   private openRouter = new OpenRouterService();
   private supabase = supabaseAdmin;
-
   /**
    * Generate an article from a keyword.
    *
@@ -70,11 +81,19 @@ export class ArticleGenerationService {
     const imageCreditCost = getImagePresetCreditCost(imagePreset);
     const totalCredits = 1 + imageCreditCost;
 
+    // Track quality gate retry locally (not on singleton) to avoid race conditions
+    let hasRetriedQualityGate = false;
+
     try {
-      // Update status to generating
+      // Update status to generating and set attempt tracking
       await this.supabase
         .from('articles')
-        .update({ status: 'generating' })
+        .update({
+          status: 'generating',
+          last_attempt_at: new Date().toISOString(),
+          // Only increment attempt_count if not already set (first attempt)
+          // Note: attempt_count is managed by stale recovery for retries
+        })
         .eq('id', articleId)
         .eq('user_id', userId);
 
@@ -89,17 +108,63 @@ export class ArticleGenerationService {
         .eq('id', articleId)
         .eq('user_id', userId);
 
-      // Step 2: Generate full article (with IMAGE markers if enabled)
-      const article = await this.generateFullArticle(outline.data, input, imagePreset);
-      totalTokens += article.usage.totalTokens;
+      // Step 2: Generate full article (with IMAGE markers if enabled) with quality gate
+      const targetWordCount = input.targetWordCount || 1500;
+      let articleResult = await this.generateFullArticle(outline.data, input, imagePreset, false);
+      totalTokens += articleResult.usage.totalTokens;
+
+      // Step 2.5: Quality gate check with auto-retry
+      let qualityResult = articleQualityGateService.checkQualityGates(
+        articleResult.content,
+        outline.data,
+        targetWordCount,
+        articleResult.finishReason
+      );
+
+      if (!qualityResult.passed && !hasRetriedQualityGate) {
+        console.log(
+          `[ArticleGeneration] Article ${articleId} failed quality gates: ${qualityResult.failureReason}. Retrying with stricter prompt...`
+        );
+
+        // Retry once with stricter prompt
+        hasRetriedQualityGate = true;
+        articleResult = await this.generateFullArticle(outline.data, input, imagePreset, true);
+        totalTokens += articleResult.usage.totalTokens;
+
+        // Re-check quality after retry
+        qualityResult = articleQualityGateService.checkQualityGates(
+          articleResult.content,
+          outline.data,
+          targetWordCount,
+          articleResult.finishReason
+        );
+
+        if (!qualityResult.passed) {
+          // Still failed after retry - mark as failed_quality
+          console.error(
+            `[ArticleGeneration] Article ${articleId} still failed quality gates after retry: ${qualityResult.failureReason}`
+          );
+          await this.handleQualityGateFailure(
+            articleId,
+            userId,
+            qualityResult,
+            outline.data,
+            articleResult.content,
+            imageCreditCost
+          );
+          return; // Exit without throwing
+        }
+
+        console.log(`[ArticleGeneration] Article ${articleId} passed quality gates on retry`);
+      }
 
       // Step 3: Generate images if preset is provided
-      let finalContent = article.content;
+      let finalContent = articleResult.content;
       let successfulImageCount = 0;
 
       if (imagePreset) {
         const imageResults = await this.generateImagesForArticle(
-          article.content,
+          articleResult.content,
           input.keyword,
           imagePreset
         );
@@ -108,14 +173,14 @@ export class ArticleGenerationService {
         await persistArticleImages(imageResults, articleId, input.keyword);
 
         // Step 5: Replace markers with permanent image URLs
-        finalContent = this.replaceImageMarkers(article.content, imageResults);
+        finalContent = this.replaceImageMarkers(articleResult.content, imageResults);
         successfulImageCount = imageResults.filter(r => r.status === 'completed').length;
 
         // Save article images to database (now with permanent URLs)
         await this.saveArticleImages(articleId, imageResults);
       } else {
         // No images requested, strip any markers that might be present
-        finalContent = this.stripImageMarkers(article.content);
+        finalContent = this.stripImageMarkers(articleResult.content);
       }
 
       // Step 5: Extract metadata
@@ -131,24 +196,87 @@ export class ArticleGenerationService {
         word_count: wordCount,
       });
 
+      // Step 5.6: Generate topic fingerprint for semantic deduplication (E10)
+      let topicFingerprint: string | null = null;
+      if (openaiEmbeddingsService.isConfigured()) {
+        try {
+          topicFingerprint = await openaiEmbeddingsService.generateEmbeddingForDB(input.keyword);
+          console.log(`[ArticleGeneration] Topic fingerprint generated for article ${articleId}`);
+        } catch (error) {
+          // Don't fail generation if embedding generation fails
+          console.warn(`[ArticleGeneration] Failed to generate topic fingerprint:`, error);
+          topicFingerprint = null;
+        }
+      }
+
+      // Step 5.7: Run QA pipeline checks (E11)
+      let qaResults: IQACheckResult | null = null;
+      let finalStatus: ArticleStatus = 'draft';
+      let qaResultsForDb: IQACheckResult | null = null;
+
+      // Get project QA config
+      const { data: project } = await this.supabase
+        .from('projects')
+        .select('qa_config')
+        .eq('id', input.projectId)
+        .single();
+
+      const qaConfig = (project?.qa_config as IQAConfig) || undefined;
+
+      try {
+        qaResults = await qaService.runQAChecks(finalContent, outline.data, qaConfig);
+        qaResultsForDb = {
+          ...qaResults,
+          // Remove full flagged phrases for storage (keep counts only)
+          results: {
+            ...qaResults.results,
+            plagiarism: {
+              ...qaResults.results.plagiarism,
+              flaggedPhrases: qaResults.results.plagiarism.flaggedPhrases.map(p => ({
+                phrase: p.phrase.substring(0, 50), // Truncate for storage
+                start: p.start,
+                end: p.end,
+              })),
+            },
+          },
+        };
+
+        // Determine final status based on QA results
+        if (qaResults.passed) {
+          finalStatus = 'qa_passed';
+          console.log(`[ArticleGeneration] Article ${articleId} passed QA checks`);
+        } else {
+          finalStatus = 'qa_failed';
+          console.warn(
+            `[ArticleGeneration] Article ${articleId} failed QA checks: ${qaResults.failureReason}`
+          );
+        }
+      } catch (error) {
+        console.error(`[ArticleGeneration] QA checks failed for article ${articleId}:`, error);
+        // Continue without QA if checks fail - don't block generation
+        finalStatus = 'draft';
+      }
+
       // Step 6: Save result
       await this.supabase
         .from('articles')
         .update({
-          status: 'draft',
+          status: finalStatus,
           title: outline.data.title,
           content: finalContent,
           meta_description: outline.data.metaDescription,
           slug: outline.data.slug,
           word_count: wordCount,
           seo_score: seoResult.overallScore,
-          ai_model_used: input.model || serverEnv.OPENROUTER_TEXT_MODEL,
+          ai_model_used: input.model || 'auto',
           token_count: totalTokens,
           generation_time_ms: generationTimeMs,
           generated_at: new Date().toISOString(),
           image_preset: imagePreset || null,
           image_count: successfulImageCount,
           credits_used: totalCredits,
+          topic_fingerprint: topicFingerprint,
+          qa_results: qaResultsForDb,
         })
         .eq('id', articleId)
         .eq('user_id', userId);
@@ -159,7 +287,8 @@ export class ArticleGenerationService {
       );
     } catch (error) {
       console.error(`[ArticleGeneration] Error generating article ${articleId}:`, error);
-      await this.handleGenerationFailure(articleId, userId, error, imageCreditCost);
+      // Pass 'unknown' as default stage - error classifier will detect from message
+      await this.handleGenerationFailure(articleId, userId, error, imageCreditCost, 'unknown');
       throw error; // Re-throw for logging
     }
   }
@@ -173,7 +302,7 @@ export class ArticleGenerationService {
   }> {
     const tone = input.tone || 'professional';
     const targetWordCount = input.targetWordCount || 1500;
-    const model = input.model || serverEnv.OPENROUTER_TEXT_MODEL;
+    const model = resolveWriterModel(input.model || 'auto', serverEnv.AVAILABLE_WRITER_PRESETS);
 
     const systemPrompt = getOutlinePrompt(input.keyword, tone, targetWordCount);
 
@@ -217,29 +346,38 @@ export class ArticleGenerationService {
   private async generateFullArticle(
     outline: IArticleOutline,
     input: IGenerateArticleInput,
-    imagePreset: ImagePresetKey | null | undefined
-  ): Promise<{ content: string; usage: { totalTokens: number } }> {
+    imagePreset: ImagePresetKey | null | undefined,
+    isRetry: boolean = false
+  ): Promise<{ content: string; usage: { totalTokens: number }; finishReason: string }> {
     const tone = input.tone || 'professional';
     const targetWordCount = input.targetWordCount || 1500;
-    const model = input.model || serverEnv.OPENROUTER_TEXT_MODEL;
+    const model = resolveWriterModel(input.model || 'auto', serverEnv.AVAILABLE_WRITER_PRESETS);
 
     // Calculate image count based on word count
     const imageCount = imagePreset ? getImageCountForWordCount(targetWordCount) : 0;
 
-    const systemPrompt = getArticlePrompt(outline, tone, targetWordCount, imageCount);
+    // Use stricter prompt for retry
+    const systemPrompt = isRetry
+      ? getArticleRetryPrompt(outline, tone, targetWordCount, imageCount)
+      : getArticlePrompt(outline, tone, targetWordCount, imageCount);
 
     const result = await this.openRouter.chatCompletionWithRetry({
       model,
       messages: [
         { role: 'system', content: systemPrompt },
-        { role: 'user', content: 'Write the article now.' },
+        {
+          role: 'user',
+          content: isRetry
+            ? 'Write the COMPLETE article now. DO NOT STOP until finished.'
+            : 'Write the article now.',
+        },
       ],
       responseFormat: { type: 'text' },
-      temperature: 0.8,
-      maxTokens: 4000,
+      temperature: isRetry ? 0.6 : 0.8, // Lower temperature for more consistent output on retry
+      maxTokens: isRetry ? 6000 : 4000, // Higher max tokens for retry to allow longer completion
     });
 
-    return { content: result.content, usage: result.usage };
+    return { content: result.content, usage: result.usage, finishReason: result.finishReason };
   }
 
   /**
@@ -378,21 +516,38 @@ export class ArticleGenerationService {
 
   /**
    * Handle generation failure - mark article as failed and refund credit.
+   * Uses structured error classification for monitoring and triage.
    */
   private async handleGenerationFailure(
     articleId: string,
     userId: string,
     error: unknown,
-    imageCreditCost: number
+    imageCreditCost: number,
+    failureStage: FailureStage = 'unknown'
   ): Promise<void> {
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    // Classify the error using the error classifier
+    const parsedError = classifyError(error, failureStage);
+    const formattedErrorMessage = formatErrorMessage(parsedError);
+    const failureMetadata = createFailureMetadata(parsedError);
 
-    // Update article status
+    // Get current attempt count from article
+    const { data: article } = await this.supabase
+      .from('articles')
+      .select('attempt_count')
+      .eq('id', articleId)
+      .single();
+
+    const currentAttemptCount = article?.attempt_count || 1;
+
+    // Update article status with structured failure metadata
     await this.supabase
       .from('articles')
       .update({
         status: 'failed',
-        generation_error: errorMessage,
+        generation_error: formattedErrorMessage,
+        ...failureMetadata,
+        // Increment attempt count
+        attempt_count: currentAttemptCount + 1,
       })
       .eq('id', articleId)
       .eq('user_id', userId);
@@ -403,12 +558,81 @@ export class ArticleGenerationService {
       p_user_id: userId,
       p_amount: totalRefund,
       p_reference_id: articleId,
-      p_description: `Refund: generation failed - ${errorMessage}`,
+      p_description: `Refund: generation failed - ${formattedErrorMessage}`,
     });
 
     console.log(
-      `[ArticleGeneration] ${totalRefund} credits refunded for failed article ${articleId}`
+      `[ArticleGeneration] ${totalRefund} credits refunded for failed article ${articleId}` +
+        ` [stage=${parsedError.stage}, provider=${parsedError.provider}, retryable=${parsedError.isRetryable}]`
     );
+
+    // Log structured failure metrics for monitoring
+    await this.logFailureMetrics(articleId, parsedError);
+  }
+
+  /**
+   * Handle quality gate failure - mark article as failed_quality and refund credit.
+   * Uses structured error classification for monitoring.
+   * Does NOT throw - allows generation to complete gracefully.
+   */
+  private async handleQualityGateFailure(
+    articleId: string,
+    userId: string,
+    qualityResult: IQualityGateResult,
+    outline: IArticleOutline,
+    content: string,
+    imageCreditCost: number
+  ): Promise<void> {
+    // Create structured error for quality gate failure
+    const parsedError = classifyError(
+      new Error(qualityResult.failureReason || 'Quality gate failed'),
+      'quality_gate'
+    );
+
+    // Get current attempt count
+    const { data: article } = await this.supabase
+      .from('articles')
+      .select('attempt_count')
+      .eq('id', articleId)
+      .single();
+
+    const currentAttemptCount = article?.attempt_count || 1;
+
+    // Update article status with structured failure details
+    await this.supabase
+      .from('articles')
+      .update({
+        status: 'failed_quality',
+        title: outline.title,
+        content: content,
+        meta_description: outline.metaDescription,
+        slug: outline.slug,
+        word_count: qualityResult.details.wordCountCheck.actual,
+        generation_error: qualityResult.failureReason || 'Quality gate failed',
+        // Structured failure metadata
+        failure_stage: 'quality_gate',
+        provider: 'internal',
+        is_retryable: false, // Quality gate failures require human review
+        attempt_count: currentAttemptCount + 1,
+      })
+      .eq('id', articleId)
+      .eq('user_id', userId);
+
+    // Refund total credits (base article + image cost)
+    const totalRefund = 1 + imageCreditCost;
+    await this.supabase.rpc('add_purchased_credits', {
+      p_user_id: userId,
+      p_amount: totalRefund,
+      p_reference_id: articleId,
+      p_description: `Refund: quality gate failed after retry - ${qualityResult.failureReason}`,
+    });
+
+    console.log(
+      `[ArticleGeneration] ${totalRefund} credits refunded for quality gate failure on article ${articleId}`
+    );
+
+    // Log structured failure metrics
+    await this.logFailureMetrics(articleId, parsedError);
   }
 
   /**
@@ -437,6 +661,32 @@ export class ArticleGenerationService {
     }
     console.warn(`[ArticleGeneration] Invalid image preset: ${preset}, ignoring`);
     return undefined;
+  }
+
+  /**
+   * Log structured failure metrics for monitoring and analytics.
+   * This can be extended to send to external monitoring services.
+   */
+  private async logFailureMetrics(
+    articleId: string,
+    parsedError: ReturnType<typeof classifyError>
+  ): Promise<void> {
+    // Log structured metrics to console for now
+    // In production, this would send to monitoring service (Baselime, etc.)
+    const metrics = {
+      articleId,
+      timestamp: new Date().toISOString(),
+      stage: parsedError.stage,
+      provider: parsedError.provider,
+      category: parsedError.category,
+      isRetryable: parsedError.isRetryable,
+      httpStatus: parsedError.httpStatus,
+    };
+
+    console.log('[ArticleGeneration] Failure metrics:', JSON.stringify(metrics, null, 2));
+
+    // TODO: Send to monitoring service
+    // Example: await monitoringService.trackFailure(metrics);
   }
 }
 

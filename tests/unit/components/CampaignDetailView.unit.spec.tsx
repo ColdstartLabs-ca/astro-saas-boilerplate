@@ -94,10 +94,31 @@ vi.mock('@client/hooks/useCampaignDetail', () => ({
 // Mock useAvailableModels hook
 vi.mock('@client/hooks/useAvailableModels', () => ({
   useAvailableModels: vi.fn(() => ({
-    writerModels: [
-      { id: 'openai/gpt-4o', name: 'GPT-4o', provider: 'OpenAI', description: 'Strong all-round writing quality', tier: 'balanced', creditCost: 0 },
-      { id: 'anthropic/claude-sonnet-4-5', name: 'Claude Sonnet 4.5', provider: 'Anthropic', description: 'Premium writing with nuance and depth', tier: 'ultra', creditCost: 1 },
-      { id: 'openrouter/auto', name: 'Auto (Lowest Cost)', provider: 'OpenRouter', description: 'Automatically picks the best model', tier: 'balanced', creditCost: 0 },
+    writerPresets: [
+      {
+        key: 'balanced',
+        displayName: 'GPT-4o',
+        description: 'Strong all-round writing quality',
+        model: 'openai/gpt-4o',
+        tier: 'balanced',
+        creditCost: 0,
+      },
+      {
+        key: 'ultra',
+        displayName: 'Claude Sonnet 4.5',
+        description: 'Premium writing with nuance and depth',
+        model: 'anthropic/claude-sonnet-4-5',
+        tier: 'ultra',
+        creditCost: 1,
+      },
+      {
+        key: 'auto',
+        displayName: 'Auto (Best Match)',
+        description: 'Automatically picks the best model',
+        model: 'openrouter/auto',
+        tier: 'balanced',
+        creditCost: 0,
+      },
     ],
     imagePresets: [
       {
@@ -150,8 +171,8 @@ vi.mock('@client/hooks/useTranslations', () => ({
       'campaigns.detail.wordCount': 'Word Count',
       'campaigns.detail.generated': 'Generated',
       'campaigns.detail.actions': 'Actions',
-      'campaigns.detail.startConfirm':
-        'Generate {count} article{plural} using {count} credit{plural}?',
+      'campaigns.detail.startConfirm_one': 'Generate {count} article using {count} credit?',
+      'campaigns.detail.startConfirm_other': 'Generate {count} articles using {count} credits?',
       'campaigns.detail.startConfirmDetail':
         'This will queue article generation for all pending keywords. Credits will be deducted for each keyword.',
       'campaigns.detail.cancel': 'Cancel',
@@ -232,7 +253,7 @@ const mockCampaign: ICampaign = {
   project_id: 'project-1',
   name: 'Test Campaign',
   status: 'draft',
-  ai_model: 'openrouter/auto',
+  ai_model: 'auto',
   tone: 'professional',
   target_word_count: 1500,
   settings: {},
@@ -698,12 +719,9 @@ describe('CampaignDetailView', () => {
         refetch: vi.fn(),
       });
 
-      render(
-        <CampaignDetailView campaignId={mockCampaignId} onBackToList={mockOnBackToList} />,
-        {
-          wrapper: createWrapper(),
-        }
-      );
+      render(<CampaignDetailView campaignId={mockCampaignId} onBackToList={mockOnBackToList} />, {
+        wrapper: createWrapper(),
+      });
 
       // Find the settings button
       const settingsButtons = screen.getAllByRole('button');
@@ -725,8 +743,8 @@ describe('CampaignDetailView', () => {
       expect(screen.getByText('Image Preset')).toBeInTheDocument();
 
       // Custom ModelSelect shows selected model name in the trigger
-      // The campaign has ai_model: 'openrouter/auto' which maps to 'Auto (Lowest Cost)'
-      expect(screen.getByText('Auto (Lowest Cost)')).toBeInTheDocument();
+      // The campaign has ai_model: 'openrouter/auto' which maps to 'Auto (Best Match)'
+      expect(screen.getByText('Auto (Best Match)')).toBeInTheDocument();
       // The campaign has image_preset: 'budget' which maps to 'Budget'
       expect(screen.getByText('Budget')).toBeInTheDocument();
     });
@@ -734,7 +752,7 @@ describe('CampaignDetailView', () => {
     it('should update campaign model/preset on save', async () => {
       const mockUpdateCampaign = vi.fn().mockResolvedValue({
         ...mockCampaign,
-        ai_model: 'openai/gpt-4o',
+        ai_model: 'balanced',
         image_preset: 'balanced',
       });
       vi.mocked(useCampaignDetail).mockReturnValue({
@@ -757,12 +775,9 @@ describe('CampaignDetailView', () => {
         refetch: vi.fn(),
       });
 
-      render(
-        <CampaignDetailView campaignId={mockCampaignId} onBackToList={mockOnBackToList} />,
-        {
-          wrapper: createWrapper(),
-        }
-      );
+      render(<CampaignDetailView campaignId={mockCampaignId} onBackToList={mockOnBackToList} />, {
+        wrapper: createWrapper(),
+      });
 
       // Find and click the settings button
       const settingsButtons = screen.getAllByRole('button');
@@ -779,7 +794,7 @@ describe('CampaignDetailView', () => {
       });
 
       // Open the writer model dropdown and select GPT-4o
-      const writerTrigger = screen.getByText('Auto (Lowest Cost)').closest('button');
+      const writerTrigger = screen.getByText('Auto (Best Match)').closest('button');
       if (writerTrigger) {
         await userEvent.click(writerTrigger);
       }
@@ -806,7 +821,7 @@ describe('CampaignDetailView', () => {
       await userEvent.click(balancedButton.closest('button')!);
 
       // Click save
-      const saveButton = screen.getByRole('button', { name: 'Save' });
+      const saveButton = screen.getByRole('button', { name: /Save/i });
       await userEvent.click(saveButton);
 
       await waitFor(() => {
@@ -814,7 +829,7 @@ describe('CampaignDetailView', () => {
           name: 'Test Campaign',
           tone: 'professional',
           targetWordCount: 1500,
-          model: 'openai/gpt-4o',
+          model: 'balanced',
           imagePreset: 'balanced',
         });
       });
@@ -846,12 +861,9 @@ describe('CampaignDetailView', () => {
         refetch: vi.fn(),
       });
 
-      render(
-        <CampaignDetailView campaignId={mockCampaignId} onBackToList={mockOnBackToList} />,
-        {
-          wrapper: createWrapper(),
-        }
-      );
+      render(<CampaignDetailView campaignId={mockCampaignId} onBackToList={mockOnBackToList} />, {
+        wrapper: createWrapper(),
+      });
 
       // Find and click the settings button
       const settingsButtons = screen.getAllByRole('button');

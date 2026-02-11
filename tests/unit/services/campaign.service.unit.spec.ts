@@ -672,11 +672,11 @@ describe('CampaignService', () => {
             }),
           } as unknown;
         } else if (callCount === 2) {
-          // Second call: get existing keywords
+          // Second call: get existing keywords with normalized values
           return {
             select: vi.fn().mockReturnValue({
               eq: vi.fn().mockResolvedValue({
-                data: [{ keyword: 'coffee maker' }],
+                data: [{ keyword_normalized: 'coffee maker' }],
                 error: null,
               }),
             }),
@@ -887,6 +887,12 @@ describe('CampaignService', () => {
         { id: 'kw2', keyword: 'espresso machine' },
       ];
 
+      // New flow uses atomic RPC:
+      // 1. from('campaigns') - get campaign
+      // 2. from('keywords') - get pending keywords
+      // 3. rpc('create_articles_with_credits') - atomic creation + credit deduction
+      // 4. from('keywords') - update keyword status
+      // 5. from('campaigns') - update campaign status
       let callCount = 0;
       (supabaseAdmin.from as unknown as ReturnType<typeof vi.fn>).mockImplementation(() => {
         callCount++;
@@ -914,19 +920,14 @@ describe('CampaignService', () => {
             }),
           } as unknown;
         } else if (callCount === 3) {
-          // Third call: check credits
+          // Third call: update keywords status to queued
           return {
-            select: vi.fn().mockReturnValue({
-              eq: vi.fn().mockReturnValue({
-                single: vi.fn().mockResolvedValue({
-                  data: { total_credits_balance: 10 },
-                  error: null,
-                }),
-              }),
+            update: vi.fn().mockReturnValue({
+              in: vi.fn().mockResolvedValue({ error: null }),
             }),
           } as unknown;
-        } else if (callCount === 4) {
-          // Fourth call: update campaign status
+        } else {
+          // Fourth call: update campaign status to active
           return {
             update: vi.fn().mockReturnValue({
               eq: vi.fn().mockReturnValue({
@@ -934,37 +935,12 @@ describe('CampaignService', () => {
               }),
             }),
           } as unknown;
-        } else if (callCount === 5) {
-          // Fifth call: insert article records
-          return {
-            insert: vi.fn().mockReturnValue({
-              select: vi.fn().mockResolvedValue({
-                data: [
-                  { id: 'art1', primary_keyword: 'coffee maker' },
-                  { id: 'art2', primary_keyword: 'espresso machine' },
-                ],
-                error: null,
-              }),
-            }),
-          } as unknown;
-        } else if (callCount === 6) {
-          // Sixth call: update keywords status
-          return {
-            update: vi.fn().mockReturnValue({
-              in: vi.fn().mockResolvedValue({ error: null }),
-            }),
-          } as unknown;
-        } else {
-          // RPC call for consume_credits_v2
-          return {
-            rpc: vi.fn().mockResolvedValue({ data: null, error: null }),
-          } as unknown;
         }
       });
 
-      // Mock rpc on the root object
+      // Mock atomic RPC: create_articles_with_credits
       (supabaseAdmin as unknown as { rpc: ReturnType<typeof vi.fn> }).rpc.mockResolvedValueOnce({
-        data: null,
+        data: [{ articles_created: 2, credits_deducted: 2 }],
         error: null,
       });
 
@@ -973,13 +949,16 @@ describe('CampaignService', () => {
       expect(result).toEqual({ queued: 2, creditsRequired: 2 });
     });
 
-    it('should throw InsufficientCreditsError when user lacks credits', async () => {
+    it('should resume paused campaign with queued keywords (no new credits)', async () => {
       const { supabaseAdmin } = await import('@server/supabase/supabaseAdmin');
+
+      const queuedKeywords = [{ id: 'kw1' }, { id: 'kw2' }];
 
       let callCount = 0;
       (supabaseAdmin.from as unknown as ReturnType<typeof vi.fn>).mockImplementation(() => {
         callCount++;
         if (callCount === 1) {
+          // First call: get campaign
           return {
             select: vi.fn().mockReturnValue({
               eq: vi.fn().mockReturnValue({
@@ -990,6 +969,67 @@ describe('CampaignService', () => {
             }),
           } as unknown;
         } else if (callCount === 2) {
+          // Second call: get pending keywords (returns empty - this is a resume)
+          return {
+            select: vi.fn().mockReturnValue({
+              eq: vi.fn().mockReturnValue({
+                eq: vi.fn().mockResolvedValue({
+                  data: [],
+                  error: null,
+                }),
+              }),
+            }),
+          } as unknown;
+        } else if (callCount === 3) {
+          // Third call: get queued keywords (this is a resume)
+          return {
+            select: vi.fn().mockReturnValue({
+              eq: vi.fn().mockReturnValue({
+                eq: vi.fn().mockResolvedValue({
+                  data: queuedKeywords,
+                  error: null,
+                }),
+              }),
+            }),
+          } as unknown;
+        } else if (callCount === 4) {
+          // Fourth call: update campaign status to active
+          return {
+            update: vi.fn().mockReturnValue({
+              eq: vi.fn().mockReturnValue({
+                eq: vi.fn().mockResolvedValue({ error: null }),
+              }),
+            }),
+          } as unknown;
+        }
+        return {} as unknown;
+      });
+
+      const result = await campaignService.startGeneration(mockCampaignId, mockUserId);
+
+      // Should resume without requiring additional credits
+      expect(result).toEqual({ queued: 2, creditsRequired: 0 });
+    });
+
+    it('should throw InsufficientCreditsError when user lacks credits', async () => {
+      const { supabaseAdmin } = await import('@server/supabase/supabaseAdmin');
+
+      let callCount = 0;
+      (supabaseAdmin.from as unknown as ReturnType<typeof vi.fn>).mockImplementation(() => {
+        callCount++;
+        if (callCount === 1) {
+          // Get campaign
+          return {
+            select: vi.fn().mockReturnValue({
+              eq: vi.fn().mockReturnValue({
+                eq: vi.fn().mockReturnValue({
+                  single: vi.fn().mockResolvedValue({ data: mockCampaign, error: null }),
+                }),
+              }),
+            }),
+          } as unknown;
+        } else {
+          // Get pending keywords
           return {
             select: vi.fn().mockReturnValue({
               eq: vi.fn().mockReturnValue({
@@ -1000,18 +1040,13 @@ describe('CampaignService', () => {
               }),
             }),
           } as unknown;
-        } else {
-          return {
-            select: vi.fn().mockReturnValue({
-              eq: vi.fn().mockReturnValue({
-                single: vi.fn().mockResolvedValue({
-                  data: { total_credits_balance: 0 },
-                  error: null,
-                }),
-              }),
-            }),
-          } as unknown;
         }
+      });
+
+      // RPC returns insufficient credits error
+      (supabaseAdmin as unknown as { rpc: ReturnType<typeof vi.fn> }).rpc.mockResolvedValueOnce({
+        data: null,
+        error: { message: 'Insufficient credits' },
       });
 
       await expect(campaignService.startGeneration(mockCampaignId, mockUserId)).rejects.toThrow(
@@ -1186,6 +1221,7 @@ describe('CampaignService', () => {
       (supabaseAdmin.from as unknown as ReturnType<typeof vi.fn>).mockImplementation(() => {
         callCount++;
         if (callCount === 1) {
+          // Get campaign with image_preset: 'pro'
           return {
             select: vi.fn().mockReturnValue({
               eq: vi.fn().mockReturnValue({
@@ -1199,6 +1235,7 @@ describe('CampaignService', () => {
             }),
           } as unknown;
         } else if (callCount === 2) {
+          // Get pending keywords
           return {
             select: vi.fn().mockReturnValue({
               eq: vi.fn().mockReturnValue({
@@ -1210,17 +1247,14 @@ describe('CampaignService', () => {
             }),
           } as unknown;
         } else if (callCount === 3) {
+          // Update keywords status
           return {
-            select: vi.fn().mockReturnValue({
-              eq: vi.fn().mockReturnValue({
-                single: vi.fn().mockResolvedValue({
-                  data: { total_credits_balance: 10 },
-                  error: null,
-                }),
-              }),
+            update: vi.fn().mockReturnValue({
+              in: vi.fn().mockResolvedValue({ error: null }),
             }),
           } as unknown;
-        } else if (callCount === 4) {
+        } else {
+          // Update campaign status
           return {
             update: vi.fn().mockReturnValue({
               eq: vi.fn().mockReturnValue({
@@ -1228,33 +1262,12 @@ describe('CampaignService', () => {
               }),
             }),
           } as unknown;
-        } else if (callCount === 5) {
-          return {
-            insert: vi.fn().mockReturnValue({
-              select: vi.fn().mockResolvedValue({
-                data: [
-                  { id: 'art1', primary_keyword: 'coffee maker' },
-                  { id: 'art2', primary_keyword: 'espresso machine' },
-                ],
-                error: null,
-              }),
-            }),
-          } as unknown;
-        } else if (callCount === 6) {
-          return {
-            update: vi.fn().mockReturnValue({
-              in: vi.fn().mockResolvedValue({ error: null }),
-            }),
-          } as unknown;
-        } else {
-          return {
-            rpc: vi.fn().mockResolvedValue({ data: null, error: null }),
-          } as unknown;
         }
       });
 
+      // Atomic RPC returns success
       (supabaseAdmin as unknown as { rpc: ReturnType<typeof vi.fn> }).rpc.mockResolvedValueOnce({
-        data: null,
+        data: [{ articles_created: 2, credits_deducted: 4 }],
         error: null,
       });
 
@@ -1273,6 +1286,7 @@ describe('CampaignService', () => {
       (supabaseAdmin.from as unknown as ReturnType<typeof vi.fn>).mockImplementation(() => {
         callCount++;
         if (callCount === 1) {
+          // Get campaign with image_preset: 'budget'
           return {
             select: vi.fn().mockReturnValue({
               eq: vi.fn().mockReturnValue({
@@ -1286,6 +1300,7 @@ describe('CampaignService', () => {
             }),
           } as unknown;
         } else if (callCount === 2) {
+          // Get pending keywords
           return {
             select: vi.fn().mockReturnValue({
               eq: vi.fn().mockReturnValue({
@@ -1297,17 +1312,14 @@ describe('CampaignService', () => {
             }),
           } as unknown;
         } else if (callCount === 3) {
+          // Update keywords status
           return {
-            select: vi.fn().mockReturnValue({
-              eq: vi.fn().mockReturnValue({
-                single: vi.fn().mockResolvedValue({
-                  data: { total_credits_balance: 5 },
-                  error: null,
-                }),
-              }),
+            update: vi.fn().mockReturnValue({
+              in: vi.fn().mockResolvedValue({ error: null }),
             }),
           } as unknown;
-        } else if (callCount === 4) {
+        } else {
+          // Update campaign status
           return {
             update: vi.fn().mockReturnValue({
               eq: vi.fn().mockReturnValue({
@@ -1315,30 +1327,12 @@ describe('CampaignService', () => {
               }),
             }),
           } as unknown;
-        } else if (callCount === 5) {
-          return {
-            insert: vi.fn().mockReturnValue({
-              select: vi.fn().mockResolvedValue({
-                data: [{ id: 'art1', primary_keyword: 'coffee maker' }],
-                error: null,
-              }),
-            }),
-          } as unknown;
-        } else if (callCount === 6) {
-          return {
-            update: vi.fn().mockReturnValue({
-              in: vi.fn().mockResolvedValue({ error: null }),
-            }),
-          } as unknown;
-        } else {
-          return {
-            rpc: vi.fn().mockResolvedValue({ data: null, error: null }),
-          } as unknown;
         }
       });
 
+      // Atomic RPC returns success
       (supabaseAdmin as unknown as { rpc: ReturnType<typeof vi.fn> }).rpc.mockResolvedValueOnce({
-        data: null,
+        data: [{ articles_created: 1, credits_deducted: 1 }],
         error: null,
       });
 
@@ -1436,8 +1430,8 @@ describe('CampaignService', () => {
         model: 'completely-invalid-model-id-not-in-registry', // This model does not exist
       };
 
-      // When AVAILABLE_WRITER_MODELS is empty, all models in AI_MODELS are allowed
-      // But models NOT in AI_MODELS at all should still be rejected by validation
+      // When AVAILABLE_WRITER_PRESETS is empty, all presets are allowed
+      // But keys NOT in WRITER_PRESETS should still be rejected by validation
       await expect(campaignService.create(mockUserId, input)).rejects.toThrow();
     });
 
@@ -1500,7 +1494,7 @@ describe('CampaignService', () => {
         name: 'New Campaign',
         projectId: mockProjectId,
         keywords: ['coffee maker'],
-        model: 'openai/gpt-4o', // This is a valid model
+        model: 'balanced', // This is a valid preset key
       };
 
       await expect(campaignService.create(mockUserId, input)).resolves.toBeDefined();
@@ -1541,10 +1535,10 @@ describe('CampaignService', () => {
         name: 'New Campaign',
         projectId: mockProjectId,
         keywords: ['coffee maker'],
-        model: 'anthropic/claude-sonnet-4-5', // Any valid model in AI_MODELS should work when env is empty
+        model: 'ultra', // Any valid preset key should work when env is empty
       };
 
-      // When AVAILABLE_WRITER_MODELS is empty string, all models in AI_MODELS are allowed
+      // When AVAILABLE_WRITER_PRESETS is empty, all preset keys are allowed
       await expect(campaignService.create(mockUserId, input)).resolves.toBeDefined();
     });
 
@@ -1657,6 +1651,271 @@ describe('CampaignService', () => {
       expect(updateCall).toMatchObject({
         image_preset: '',
       });
+    });
+  });
+
+  describe('Keyword Normalization (E12)', () => {
+    it('should reject case variants of existing keywords', async () => {
+      const { supabaseAdmin } = await import('@server/supabase/supabaseAdmin');
+
+      let callCount = 0;
+      (supabaseAdmin.from as unknown as ReturnType<typeof vi.fn>).mockImplementation(() => {
+        callCount++;
+        if (callCount === 1) {
+          // Get campaign
+          return {
+            select: vi.fn().mockReturnValue({
+              eq: vi.fn().mockReturnValue({
+                eq: vi.fn().mockReturnValue({
+                  single: vi.fn().mockResolvedValue({ data: mockCampaign, error: null }),
+                }),
+              }),
+            }),
+          } as unknown;
+        } else if (callCount === 2) {
+          // Get existing keywords with normalized values
+          return {
+            select: vi.fn().mockReturnValue({
+              eq: vi.fn().mockResolvedValue({
+                data: [
+                  { keyword_normalized: 'coffee maker' },
+                  { keyword_normalized: 'espresso machine' },
+                ],
+                error: null,
+              }),
+            }),
+          } as unknown;
+        } else {
+          // Insert keywords
+          return {
+            insert: vi.fn().mockResolvedValue({ data: null, error: null }),
+          } as unknown;
+        }
+      });
+
+      const result = await campaignService.addKeywords(mockCampaignId, mockUserId, [
+        'Coffee Maker', // Case variant
+        'ESPRESSO MACHINE', // Case variant
+        'french press', // New keyword
+      ]);
+
+      // Only 'french press' should be added
+      expect(result).toEqual({ added: 1, duplicates: 2 });
+    });
+
+    it('should reject spacing variants of existing keywords', async () => {
+      const { supabaseAdmin } = await import('@server/supabase/supabaseAdmin');
+
+      let callCount = 0;
+      (supabaseAdmin.from as unknown as ReturnType<typeof vi.fn>).mockImplementation(() => {
+        callCount++;
+        if (callCount === 1) {
+          return {
+            select: vi.fn().mockReturnValue({
+              eq: vi.fn().mockReturnValue({
+                eq: vi.fn().mockReturnValue({
+                  single: vi.fn().mockResolvedValue({ data: mockCampaign, error: null }),
+                }),
+              }),
+            }),
+          } as unknown;
+        } else if (callCount === 2) {
+          return {
+            select: vi.fn().mockReturnValue({
+              eq: vi.fn().mockResolvedValue({
+                data: [{ keyword_normalized: 'coffee maker' }],
+                error: null,
+              }),
+            }),
+          } as unknown;
+        } else {
+          return {
+            insert: vi.fn().mockResolvedValue({ data: null, error: null }),
+          } as unknown;
+        }
+      });
+
+      const result = await campaignService.addKeywords(mockCampaignId, mockUserId, [
+        'coffee  maker', // Extra spaces
+        '  coffee maker', // Leading spaces
+        'coffee maker ', // Trailing spaces
+      ]);
+
+      // All should be duplicates
+      expect(result).toEqual({ added: 0, duplicates: 3 });
+    });
+
+    it('should reject combined case and spacing variants', async () => {
+      const { supabaseAdmin } = await import('@server/supabase/supabaseAdmin');
+
+      let callCount = 0;
+      (supabaseAdmin.from as unknown as ReturnType<typeof vi.fn>).mockImplementation(() => {
+        callCount++;
+        if (callCount === 1) {
+          return {
+            select: vi.fn().mockReturnValue({
+              eq: vi.fn().mockReturnValue({
+                eq: vi.fn().mockReturnValue({
+                  single: vi.fn().mockResolvedValue({ data: mockCampaign, error: null }),
+                }),
+              }),
+            }),
+          } as unknown;
+        } else if (callCount === 2) {
+          return {
+            select: vi.fn().mockReturnValue({
+              eq: vi.fn().mockResolvedValue({
+                data: [{ keyword_normalized: 'best coffee maker' }],
+                error: null,
+              }),
+            }),
+          } as unknown;
+        } else {
+          return {
+            insert: vi.fn().mockResolvedValue({ data: null, error: null }),
+          } as unknown;
+        }
+      });
+
+      const result = await campaignService.addKeywords(mockCampaignId, mockUserId, [
+        'Best  Coffee  Maker', // Case + spacing
+        'BEST COFFEE MAKER', // All caps
+        'best coffee maker', // Exact match
+      ]);
+
+      // All should be duplicates
+      expect(result).toEqual({ added: 0, duplicates: 3 });
+    });
+
+    it('should handle within-batch duplicates', async () => {
+      const { supabaseAdmin } = await import('@server/supabase/supabaseAdmin');
+
+      let callCount = 0;
+      (supabaseAdmin.from as unknown as ReturnType<typeof vi.fn>).mockImplementation(() => {
+        callCount++;
+        if (callCount === 1) {
+          return {
+            select: vi.fn().mockReturnValue({
+              eq: vi.fn().mockReturnValue({
+                eq: vi.fn().mockReturnValue({
+                  single: vi.fn().mockResolvedValue({ data: mockCampaign, error: null }),
+                }),
+              }),
+            }),
+          } as unknown;
+        } else if (callCount === 2) {
+          // No existing keywords
+          return {
+            select: vi.fn().mockReturnValue({
+              eq: vi.fn().mockResolvedValue({
+                data: [],
+                error: null,
+              }),
+            }),
+          } as unknown;
+        } else {
+          return {
+            insert: vi.fn().mockResolvedValue({ data: null, error: null }),
+          } as unknown;
+        }
+      });
+
+      const result = await campaignService.addKeywords(mockCampaignId, mockUserId, [
+        'coffee maker',
+        'Coffee Maker', // Duplicate within batch
+        'COFFEE MAKER', // Duplicate within batch
+        'espresso machine',
+      ]);
+
+      // Should deduplicate within the batch
+      expect(result).toEqual({ added: 2, duplicates: 2 });
+    });
+
+    it('should trim leading/trailing spaces but preserve internal spacing', async () => {
+      const { supabaseAdmin } = await import('@server/supabase/supabaseAdmin');
+
+      let insertedKeywords: string[] = [];
+      let callCount = 0;
+      (supabaseAdmin.from as unknown as ReturnType<typeof vi.fn>).mockImplementation(() => {
+        callCount++;
+        if (callCount === 1) {
+          return {
+            select: vi.fn().mockReturnValue({
+              eq: vi.fn().mockReturnValue({
+                eq: vi.fn().mockReturnValue({
+                  single: vi.fn().mockResolvedValue({ data: mockCampaign, error: null }),
+                }),
+              }),
+            }),
+          } as unknown;
+        } else if (callCount === 2) {
+          return {
+            select: vi.fn().mockReturnValue({
+              eq: vi.fn().mockResolvedValue({
+                data: [],
+                error: null,
+              }),
+            }),
+          } as unknown;
+        } else {
+          return {
+            insert: vi.fn().mockImplementation((data: unknown) => {
+              insertedKeywords = (data as Array<{ keyword: string }>).map(k => k.keyword);
+              return { data: null, error: null };
+            }),
+          } as unknown;
+        }
+      });
+
+      await campaignService.addKeywords(mockCampaignId, mockUserId, [
+        '  coffee  maker  ', // Leading/trailing spaces trimmed, internal spaces preserved
+        'espresso machine',
+      ]);
+
+      // Keywords are trimmed but internal spacing preserved
+      expect(insertedKeywords).toEqual(['coffee  maker', 'espresso machine']);
+    });
+
+    it('should handle trailing/leading spaces correctly', async () => {
+      const { supabaseAdmin } = await import('@server/supabase/supabaseAdmin');
+
+      let callCount = 0;
+      (supabaseAdmin.from as unknown as ReturnType<typeof vi.fn>).mockImplementation(() => {
+        callCount++;
+        if (callCount === 1) {
+          return {
+            select: vi.fn().mockReturnValue({
+              eq: vi.fn().mockReturnValue({
+                eq: vi.fn().mockReturnValue({
+                  single: vi.fn().mockResolvedValue({ data: mockCampaign, error: null }),
+                }),
+              }),
+            }),
+          } as unknown;
+        } else if (callCount === 2) {
+          return {
+            select: vi.fn().mockReturnValue({
+              eq: vi.fn().mockResolvedValue({
+                data: [],
+                error: null,
+              }),
+            }),
+          } as unknown;
+        } else {
+          return {
+            insert: vi.fn().mockResolvedValue({ data: null, error: null }),
+          } as unknown;
+        }
+      });
+
+      const result = await campaignService.addKeywords(mockCampaignId, mockUserId, [
+        '  coffee maker',
+        'espresso machine  ',
+        '\tfrench press\t', // Tab characters
+      ]);
+
+      // All keywords should be added (after trimming)
+      expect(result).toEqual({ added: 3, duplicates: 0 });
     });
   });
 });

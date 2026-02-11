@@ -104,7 +104,7 @@ export function QuickGenerateModal({
     defaultValues: {
       keyword: '',
       campaignId: '',
-      model: 'openrouter/auto',
+      model: 'auto',
       tone: 'professional',
       targetWordCount: 1500,
       imagePreset: undefined,
@@ -132,7 +132,7 @@ export function QuickGenerateModal({
         keyword: data.keyword,
         projectId: activeProject.id,
         campaignId: data.campaignId,
-        model: data.model === 'openrouter/auto' ? undefined : data.model,
+        model: data.model === 'auto' ? undefined : data.model,
         tone: data.tone,
         targetWordCount: data.targetWordCount ?? 1500,
         imagePreset: data.imagePreset,
@@ -172,7 +172,9 @@ export function QuickGenerateModal({
         aria-labelledby="quick-generate-no-project-title"
       >
         <div className="bg-surface border border-border rounded-xl w-full max-w-lg shadow-2xl p-8 text-center">
-          <p id="quick-generate-no-project-title" className="text-text-secondary mb-4">{_t('quickGenerate.noProject.title')}</p>
+          <p id="quick-generate-no-project-title" className="text-text-secondary mb-4">
+            {_t('quickGenerate.noProject.title')}
+          </p>
           <DashboardButton variant="primary" onClick={handleClose}>
             {_t('quickGenerate.noProject.close')}
           </DashboardButton>
@@ -194,7 +196,10 @@ export function QuickGenerateModal({
           <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-accent/10 mb-4">
             <Loader2 className="w-8 h-8 text-accent animate-spin" />
           </div>
-          <h3 id="quick-generate-generating-title" className="text-lg font-semibold text-text-primary mb-2">
+          <h3
+            id="quick-generate-generating-title"
+            className="text-lg font-semibold text-text-primary mb-2"
+          >
             {_t('quickGenerate.generatingState.title')}
           </h3>
           <p className="text-text-secondary text-sm">
@@ -222,8 +227,14 @@ export function QuickGenerateModal({
         <div className="bg-surface border border-border rounded-xl w-full max-w-2xl shadow-2xl max-h-[90vh] overflow-hidden flex flex-col">
           {/* Header */}
           <div className="flex justify-between items-center p-6 border-b border-border">
-            <h2 id="quick-generate-success-title" className="text-xl font-bold text-white">{_t('quickGenerate.success.title')}</h2>
-            <button onClick={handleClose} className="text-muted hover:text-white" aria-label="Close dialog">
+            <h2 id="quick-generate-success-title" className="text-xl font-bold text-white">
+              {_t('quickGenerate.success.title')}
+            </h2>
+            <button
+              onClick={handleClose}
+              className="text-muted hover:text-white"
+              aria-label="Close dialog"
+            >
               <X className="w-5 h-5" />
             </button>
           </div>
@@ -249,7 +260,10 @@ export function QuickGenerateModal({
           <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-error/10 mb-4">
             <X className="w-6 h-6 text-error" />
           </div>
-          <h3 id="quick-generate-failed-title" className="text-lg font-semibold text-text-primary mb-2">
+          <h3
+            id="quick-generate-failed-title"
+            className="text-lg font-semibold text-text-primary mb-2"
+          >
             {_t('quickGenerate.failed.title')}
           </h3>
           <p className="text-text-secondary text-sm mb-4">
@@ -277,7 +291,10 @@ export function QuickGenerateModal({
         aria-labelledby="quick-generate-no-campaigns-title"
       >
         <div className="bg-surface border border-border rounded-xl w-full max-w-md shadow-2xl p-8 text-center">
-          <h3 id="quick-generate-no-campaigns-title" className="text-lg font-semibold text-text-primary mb-2">
+          <h3
+            id="quick-generate-no-campaigns-title"
+            className="text-lg font-semibold text-text-primary mb-2"
+          >
             {_t('quickGenerate.noCampaigns')}
           </h3>
           <p className="text-text-secondary text-sm mb-6">
@@ -308,12 +325,18 @@ export function QuickGenerateModal({
         {/* Header */}
         <div className="flex justify-between items-center p-6 border-b border-border">
           <div>
-            <h2 id="quick-generate-title" className="text-xl font-bold text-white">{_t('quickGenerate.title')}</h2>
+            <h2 id="quick-generate-title" className="text-xl font-bold text-white">
+              {_t('quickGenerate.title')}
+            </h2>
             <p className="text-secondary text-sm mt-1">
               {activeProject?.name && `For ${activeProject.name}`}
             </p>
           </div>
-          <button onClick={handleClose} className="text-muted hover:text-white" aria-label="Close dialog">
+          <button
+            onClick={handleClose}
+            className="text-muted hover:text-white"
+            aria-label="Close dialog"
+          >
             <X className="w-5 h-5" />
           </button>
         </div>

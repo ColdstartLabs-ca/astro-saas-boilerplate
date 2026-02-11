@@ -7,7 +7,7 @@ import { z } from 'zod';
 import { X, ArrowRight, Loader2, Zap, Upload } from 'lucide-react';
 import { DashboardButton } from '../ui/DashboardButton';
 import { ModelSelect } from '@client/components/ui/ModelSelect';
-import { writerModelToOption, imagePresetToOption } from '@client/utils/modelAdapters';
+import { writerPresetToOption, imagePresetToOption } from '@client/utils/modelAdapters';
 import { getImagePresetCreditCost } from '@shared/config/image-models.config';
 import { useUserStore } from '@client/store/userStore';
 import { useTranslations } from '@client/hooks/useTranslations';
@@ -65,7 +65,7 @@ export function NewCampaignModal({
 }: INewCampaignModalProps): JSX.Element | null {
   const t = useTranslations('dashboard');
   const { user } = useUserStore();
-  const { writerModels, imagePresets, isLoading: modelsLoading } = useAvailableModels();
+  const { writerPresets, imagePresets, isLoading: modelsLoading } = useAvailableModels();
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
   const [keywordInputTab, setKeywordInputTab] = useState<'manual' | 'csv'>('manual');
@@ -82,7 +82,7 @@ export function NewCampaignModal({
     defaultValues: {
       name: '',
       keywords: '',
-      model: 'openrouter/auto',
+      model: 'auto',
       tone: 'professional',
       targetWordCount: 1500,
       imagePreset: '',
@@ -101,7 +101,7 @@ export function NewCampaignModal({
 
   const keywordCount = parsedKeywords.length;
   const watchedModel = watch('model');
-  const writerCreditCost = writerModels.find(m => m.id === watchedModel)?.creditCost ?? 0;
+  const writerCreditCost = writerPresets.find(p => p.key === watchedModel)?.creditCost ?? 0;
   const imageCreditCost = getImagePresetCreditCost(watchedImagePreset || null);
   const creditsPerKeyword = 1 + writerCreditCost + imageCreditCost;
   const creditCost = keywordCount * creditsPerKeyword;
@@ -167,7 +167,9 @@ export function NewCampaignModal({
         aria-labelledby="no-project-title"
       >
         <div className="bg-surface border border-border rounded-xl w-full max-w-md shadow-2xl p-8 text-center">
-          <h3 id="no-project-title" className="text-lg font-semibold text-white mb-2">No Project Selected</h3>
+          <h3 id="no-project-title" className="text-lg font-semibold text-white mb-2">
+            No Project Selected
+          </h3>
           <p className="text-secondary text-sm mb-6">
             Please create or select a project before creating a campaign.
           </p>
@@ -190,12 +192,18 @@ export function NewCampaignModal({
         {/* Header */}
         <div className="flex justify-between items-center p-6 border-b border-border">
           <div>
-            <h2 id="new-campaign-title" className="text-xl font-bold text-white">{t('campaigns.newCampaign.title')}</h2>
+            <h2 id="new-campaign-title" className="text-xl font-bold text-white">
+              {t('campaigns.newCampaign.title')}
+            </h2>
             <p className="text-secondary text-sm mt-1">
               {t('campaigns.newCampaign.stepOf', { current: step, total: 2 })}
             </p>
           </div>
-          <button onClick={onClose} className="text-muted hover:text-white" aria-label="Close dialog">
+          <button
+            onClick={onClose}
+            className="text-muted hover:text-white"
+            aria-label="Close dialog"
+          >
             <X className="w-5 h-5" />
           </button>
         </div>
@@ -332,9 +340,9 @@ export function NewCampaignModal({
                   </div>
                 ) : (
                   <ModelSelect
-                    options={writerModels.map(writerModelToOption)}
+                    options={writerPresets.map(writerPresetToOption)}
                     selectedId={watch('model') || null}
-                    onSelect={id => setValue('model', id || 'openrouter/auto')}
+                    onSelect={id => setValue('model', id || 'auto')}
                     placeholder="Select writer model..."
                   />
                 )}
@@ -405,7 +413,8 @@ export function NewCampaignModal({
                     />
                   )}
                   <p className="text-xs text-muted mt-2">
-                    Standard presets are included, premium presets cost 1 additional credit per article.
+                    Standard presets are included, premium presets cost 1 additional credit per
+                    article.
                   </p>
                 </div>
               </div>

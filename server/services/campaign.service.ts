@@ -27,7 +27,7 @@ import {
   getImagePresetCreditCost,
   isAvailableImagePreset,
 } from '@shared/config/image-models.config';
-import { isAvailableWriterModel } from '@shared/config/ai-models.config';
+import { isAvailableWriterPreset } from '@shared/config/ai-models.config';
 import { serverEnv } from '@shared/config/env';
 import { AppError } from '@shared/utils/errors';
 import {
@@ -236,7 +236,7 @@ export class CampaignService {
     // Server-side validation: check if model is available
     if (
       validated.model &&
-      !isAvailableWriterModel(validated.model, serverEnv.AVAILABLE_WRITER_MODELS)
+      !isAvailableWriterPreset(validated.model, serverEnv.AVAILABLE_WRITER_PRESETS)
     ) {
       throw new AppError('MODEL_NOT_AVAILABLE', 'Selected writer model is not available', 400);
     }
@@ -302,7 +302,7 @@ export class CampaignService {
     // Server-side validation: check if model is available
     if (
       validated.model &&
-      !isAvailableWriterModel(validated.model, serverEnv.AVAILABLE_WRITER_MODELS)
+      !isAvailableWriterPreset(validated.model, serverEnv.AVAILABLE_WRITER_PRESETS)
     ) {
       throw new AppError('MODEL_NOT_AVAILABLE', 'Selected writer model is not available', 400);
     }
@@ -381,15 +381,30 @@ export class CampaignService {
       throw new CampaignNotFoundError(campaignId);
     }
 
-    // Get existing keywords to count duplicates
+    // Get existing normalized keywords to count duplicates
     const { data: existingKeywords } = await supabaseAdmin
       .from('keywords')
-      .select('keyword')
+      .select('keyword_normalized')
       .eq('campaign_id', campaignId);
 
-    const existingSet = new Set(existingKeywords?.map(k => k.keyword.toLowerCase()) ?? []);
+    const existingSet = new Set(existingKeywords?.map(k => k.keyword_normalized) ?? []);
     const newKeywords = keywords.map(k => k.trim()).filter(k => k.length > 0);
-    const uniqueNew = newKeywords.filter(k => !existingSet.has(k.toLowerCase()));
+
+    // Normalize using the same logic as the DB constraint
+    const normalizeKeyword = (kw: string) => kw.trim().toLowerCase().replace(/\s+/g, ' ');
+
+    const uniqueNew: string[] = [];
+    const duplicates: string[] = [];
+
+    for (const kw of newKeywords) {
+      const normalized = normalizeKeyword(kw);
+      if (existingSet.has(normalized)) {
+        duplicates.push(kw);
+      } else {
+        uniqueNew.push(kw);
+        existingSet.add(normalized); // Track within batch to avoid duplicates in same request
+      }
+    }
 
     // Batch insert unique keywords
     const keywordRows = this.buildKeywordRows(campaignId, uniqueNew);
@@ -404,7 +419,7 @@ export class CampaignService {
 
     return {
       added: uniqueNew.length,
-      duplicates: newKeywords.length - uniqueNew.length,
+      duplicates: duplicates.length,
     };
   }
 
@@ -462,10 +477,123 @@ export class CampaignService {
   }
 
   /**
+   * Start bulk article generation for a campaign with idempotency support
+   * Queues articles, updates campaign status, uses credits
+   *
+   * This method should be used for all new campaign start requests as it includes:
+   * - Database-level locking via SELECT FOR UPDATE
+   * - Idempotency key tracking
+   * - Cached response retrieval for retries
+   *
+   * Handles two scenarios:
+   * 1. Initial start: keywords with status 'pending' are queued and credits deducted
+   * 2. Resume after pause: keywords with status 'queued' continue processing (no new credits needed)
+   *
+   * @param campaignId - The campaign ID to start
+   * @param userId - The user ID making the request
+   * @param idempotencyKey - Unique key for idempotency (optional but recommended)
+   * @returns Generation result with queued count and credits used
+   */
+  async startGenerationWithIdempotency(
+    campaignId: string,
+    userId: string,
+    idempotencyKey?: string
+  ): Promise<{
+    queued: number;
+    creditsRequired: number;
+    generationRunId?: string;
+  }> {
+    /* eslint-disable no-restricted-syntax -- Lazy import to avoid circular dependency */
+    const { CampaignIdempotencyService } =
+      await import('@server/services/campaign-idempotency.service');
+    /* eslint-enable no-restricted-syntax */
+
+    // Generate idempotency key if not provided
+    const key = idempotencyKey || CampaignIdempotencyService.generateIdempotencyKey();
+
+    // Claim the generation with idempotency (uses DB locking internally)
+    const claimResult = await CampaignIdempotencyService.claimGeneration(campaignId, key, userId);
+
+    // If this is a cached result, return it
+    if (!claimResult.isNew && claimResult.cachedResponse) {
+      console.log(`[Campaign] Returning cached result for idempotency key: ${key}`);
+      return {
+        queued: claimResult.cachedResponse.queued,
+        creditsRequired: claimResult.cachedResponse.creditsRequired,
+      };
+    }
+
+    // If campaign is already running, throw error
+    if (!claimResult.isNew && claimResult.existingStatus === 'already_running') {
+      throw new Error(
+        'Campaign is already running. Please wait for the current generation to complete.'
+      );
+    }
+
+    // If we got here, this is a new request - proceed with generation
+    if (!claimResult.isNew || !claimResult.generationRunId) {
+      throw new Error('Failed to claim campaign generation');
+    }
+
+    try {
+      // Perform the actual generation using the internal method
+      const result = await this.startGenerationInternal(campaignId, userId);
+
+      // Mark the generation run as completed with response data
+      await CampaignIdempotencyService.markCompleted(
+        claimResult.generationRunId,
+        result,
+        result.queued,
+        result.creditsRequired
+      );
+
+      // Clear the generation_run_id from campaign (allows restart)
+      await CampaignIdempotencyService.clearCampaignRunId(campaignId);
+
+      return {
+        ...result,
+        generationRunId: claimResult.generationRunId,
+      };
+    } catch (error) {
+      // Mark the generation run as failed
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      await CampaignIdempotencyService.markFailed(claimResult.generationRunId, errorMessage);
+
+      // Clear the generation_run_id from campaign on failure too
+      await CampaignIdempotencyService.clearCampaignRunId(campaignId);
+
+      throw error;
+    }
+  }
+
+  /**
    * Start bulk article generation for a campaign
    * Queues articles, updates campaign status, uses credits
+   *
+   * Handles two scenarios:
+   * 1. Initial start: keywords with status 'pending' are queued and credits deducted
+   * 2. Resume after pause: keywords with status 'queued' continue processing (no new credits needed)
+   *
+   * NOTE: This method does NOT include idempotency or locking.
+   * Use startGenerationWithIdempotency() for new code.
    */
   async startGeneration(
+    campaignId: string,
+    userId: string
+  ): Promise<{
+    queued: number;
+    creditsRequired: number;
+  }> {
+    return this.startGenerationInternal(campaignId, userId);
+  }
+
+  /**
+   * Internal method that performs the actual generation work.
+   * Separated so it can be called by both startGeneration and startGenerationWithIdempotency.
+   *
+   * E7: Uses atomic RPC to prevent orphaned articles and partial credit states
+   */
+  private async startGenerationInternal(
     campaignId: string,
     userId: string
   ): Promise<{
@@ -478,7 +606,7 @@ export class CampaignService {
       throw new CampaignNotFoundError(campaignId);
     }
 
-    // Get pending keywords
+    // Get pending keywords for initial start
     const { data: pendingKeywords, error: keywordsError } = await supabaseAdmin
       .from('keywords')
       .select('id, keyword')
@@ -489,72 +617,92 @@ export class CampaignService {
       throw new Error(`Failed to get pending keywords: ${keywordsError.message}`);
     }
 
-    if (!pendingKeywords || pendingKeywords.length === 0) {
-      throw new NoPendingKeywordsError();
-    }
+    // If we have pending keywords, this is an initial start - queue them and deduct credits atomically
+    if (pendingKeywords && pendingKeywords.length > 0) {
+      const keywordCount = pendingKeywords.length;
 
-    const keywordCount = pendingKeywords.length;
+      // Calculate credits per keyword (1 base + optional image cost)
+      const imageCreditCost = getImagePresetCreditCost(campaign.image_preset);
+      const creditsPerKeyword = 1 + imageCreditCost;
+      const totalCreditsNeeded = keywordCount * creditsPerKeyword;
 
-    // Calculate credits per keyword (1 base + optional image cost)
-    const imageCreditCost = getImagePresetCreditCost(campaign.image_preset);
-    const creditsPerKeyword = 1 + imageCreditCost;
-    const totalCreditsNeeded = keywordCount * creditsPerKeyword;
+      // Extract keywords array
+      const keywords = pendingKeywords.map(k => k.keyword);
 
-    // Check user has enough credits
-    const { data: profile } = await supabaseAdmin
-      .from('user_credits')
-      .select('total_credits_balance')
-      .eq('user_id', userId)
-      .single();
-
-    if (!profile || profile.total_credits_balance < totalCreditsNeeded) {
-      throw new InsufficientCreditsError(totalCreditsNeeded, profile?.total_credits_balance ?? 0);
-    }
-
-    // Update campaign status to active
-    await supabaseAdmin
-      .from('campaigns')
-      .update({ status: 'active' })
-      .eq('id', campaignId)
-      .eq('user_id', userId);
-
-    // Queue articles for each pending keyword
-    const articleRecords = pendingKeywords.map(keyword => ({
-      user_id: userId,
-      campaign_id: campaignId,
-      project_id: campaign.project_id,
-      primary_keyword: keyword.keyword,
-      status: 'queued' as const,
-      credits_used: creditsPerKeyword,
-    }));
-
-    const { data: articles, error: articlesError } = await supabaseAdmin
-      .from('articles')
-      .insert(articleRecords)
-      .select('id, primary_keyword');
-
-    if (articlesError || !articles) {
-      throw new Error(
-        `Failed to create article records: ${articlesError?.message ?? 'Unknown error'}`
+      // E7: Use atomic RPC to create articles and deduct credits in a single transaction
+      const { data: batchResult, error: batchError } = await supabaseAdmin.rpc(
+        'create_articles_with_credits',
+        {
+          p_user_id: userId,
+          p_campaign_id: campaignId,
+          p_project_id: campaign.project_id,
+          p_keywords: keywords,
+          p_credits_per_article: creditsPerKeyword,
+          p_status: 'queued',
+          p_image_preset: campaign.image_preset,
+        }
       );
+
+      if (batchError) {
+        // Check if it's a credit insufficiency error
+        if (batchError.message?.includes('Insufficient credits')) {
+          throw new InsufficientCreditsError(totalCreditsNeeded, 0);
+        }
+        throw new Error(`Failed to create articles and deduct credits: ${batchError.message}`);
+      }
+
+      if (!batchResult || batchResult.length === 0) {
+        throw new Error('Failed to create article records - no data returned from RPC');
+      }
+
+      const _result = batchResult[0];
+
+      // Update keywords to queued status (after successful article creation and credit deduction)
+      const keywordIds = pendingKeywords.map(k => k.id);
+      await supabaseAdmin.from('keywords').update({ status: 'queued' }).in('id', keywordIds);
+
+      // Update campaign status to active
+      await supabaseAdmin
+        .from('campaigns')
+        .update({ status: 'active' })
+        .eq('id', campaignId)
+        .eq('user_id', userId);
+
+      return {
+        queued: keywordCount,
+        creditsRequired: totalCreditsNeeded,
+      };
     }
 
-    // Update keywords to queued status
-    const keywordIds = pendingKeywords.map(k => k.id);
-    await supabaseAdmin.from('keywords').update({ status: 'queued' }).in('id', keywordIds);
+    // No pending keywords - check if this is a resume (has queued keywords)
+    const { data: queuedKeywords, error: queuedError } = await supabaseAdmin
+      .from('keywords')
+      .select('id')
+      .eq('campaign_id', campaignId)
+      .eq('status', 'queued');
 
-    // Deduct total credits (batch)
-    await supabaseAdmin.rpc('consume_credits_v2', {
-      target_user_id: userId,
-      amount: totalCreditsNeeded,
-      ref_id: campaignId,
-      description: `Campaign generation: ${campaign.name}`,
-    });
+    if (queuedError) {
+      throw new Error(`Failed to get queued keywords: ${queuedError.message}`);
+    }
 
-    return {
-      queued: keywordCount,
-      creditsRequired: totalCreditsNeeded,
-    };
+    // If we have queued keywords, this is a resume - just activate the campaign
+    // No credits needed since they were already deducted when originally queued
+    if (queuedKeywords && queuedKeywords.length > 0) {
+      // Update campaign status to active
+      await supabaseAdmin
+        .from('campaigns')
+        .update({ status: 'active' })
+        .eq('id', campaignId)
+        .eq('user_id', userId);
+
+      return {
+        queued: queuedKeywords.length,
+        creditsRequired: 0, // Credits already deducted
+      };
+    }
+
+    // No keywords to process
+    throw new NoPendingKeywordsError();
   }
 
   // ===========================================================================

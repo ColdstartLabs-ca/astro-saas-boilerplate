@@ -367,22 +367,8 @@ describe('OpenRouterService', () => {
       expect(callCount).toBe(3);
     });
 
-    it('should validate model is in allowed list', async () => {
-      vi.mocked(fetch).mockResolvedValue({
-        ok: true,
-        json: async () => mockSuccessResponse,
-      } as Response);
-
-      // This should throw before fetch is called
-      await expect(
-        service.chatCompletion({
-          model: 'invalid-model',
-          messages: [{ role: 'user', content: 'Test' }],
-        })
-      ).rejects.toThrow();
-
-      expect(fetch).not.toHaveBeenCalled();
-    });
+    // Model validation removed from OpenRouterService — it now accepts any model string.
+    // Validation happens upstream in campaign.service.ts via isAvailableWriterPreset().
   });
 
   describe('Integration: chatCompletionWithRetry full flow', () => {

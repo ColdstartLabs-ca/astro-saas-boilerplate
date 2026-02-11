@@ -4,14 +4,23 @@
 
 export type ModelTier = 'budget' | 'balanced' | 'pro' | 'ultra';
 
-export interface IAvailableWriterModel {
-  id: string;
-  name: string;
-  provider: string;
+// =============================================================================
+// Writer Presets (new)
+// =============================================================================
+
+export interface IAvailableWriterPreset {
+  key: string;
+  displayName: string;
   description: string;
+  /** Resolved OpenRouter model ID (may be env-overridden) */
+  model: string;
   tier: ModelTier;
   creditCost: number;
 }
+
+// =============================================================================
+// Image Presets
+// =============================================================================
 
 export interface IAvailableImagePreset {
   key: string;
@@ -24,7 +33,27 @@ export interface IAvailableImagePreset {
   tier: ModelTier;
 }
 
+// =============================================================================
+// API Response
+// =============================================================================
+
 export interface IAvailableModelsResponse {
-  writerModels: IAvailableWriterModel[];
+  writerPresets: IAvailableWriterPreset[];
   imagePresets: IAvailableImagePreset[];
+  /** @deprecated Use writerPresets instead */
+  writerModels: IAvailableWriterModel[];
+}
+
+// =============================================================================
+// Deprecated types — backward compatibility
+// =============================================================================
+
+/** @deprecated Use IAvailableWriterPreset instead */
+export interface IAvailableWriterModel {
+  id: string;
+  name: string;
+  provider: string;
+  description: string;
+  tier: ModelTier;
+  creditCost: number;
 }

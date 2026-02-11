@@ -259,4 +259,155 @@ export class TestContext {
       return v.toString(16);
     });
   }
+
+  /**
+   * Creates a test project for a user
+   *
+   * @param userId - User ID who owns the project
+   * @param options - Project configuration
+   * @returns Created project
+   */
+  async createProject(
+    userId: string,
+    options: {
+      name: string;
+      url?: string;
+      description?: string;
+    }
+  ): Promise<{ id: string }> {
+    const projectId = this.generateUUID();
+
+    const { error } = await this.supabaseAdmin.from('projects').insert({
+      id: projectId,
+      user_id: userId,
+      name: options.name,
+      url: options.url || null,
+      description: options.description || null,
+    });
+
+    if (error) {
+      throw new Error(`Failed to create project: ${error.message}`);
+    }
+
+    return { id: projectId };
+  }
+
+  /**
+   * Creates a test campaign for a user
+   *
+   * @param userId - User ID who owns the campaign
+   * @param projectId - Project ID the campaign belongs to
+   * @param options - Campaign configuration
+   * @returns Created campaign
+   */
+  async createCampaign(
+    userId: string,
+    projectId: string,
+    options: {
+      name: string;
+      keywords: string[];
+      model?: string;
+      tone?: string;
+      targetWordCount?: number;
+      imagePreset?: string;
+    }
+  ): Promise<{ id: string }> {
+    const campaignId = this.generateUUID();
+
+    const { error: campaignError } = await this.supabaseAdmin.from('campaigns').insert({
+      id: campaignId,
+      user_id: userId,
+      project_id: projectId,
+      name: options.name,
+      status: 'draft',
+      ai_model: options.model || 'auto',
+      tone: options.tone || 'professional',
+      target_word_count: options.targetWordCount || 1500,
+      settings: {},
+      image_preset: options.imagePreset || null,
+    });
+
+    if (campaignError) {
+      throw new Error(`Failed to create campaign: ${campaignError.message}`);
+    }
+
+    // Insert keywords
+    const keywordRows = options.keywords.map(keyword => ({
+      campaign_id: campaignId,
+      keyword: keyword.trim(),
+      status: 'pending' as const,
+      difficulty: 'unknown' as const,
+      priority: 0,
+    }));
+
+    const { error: keywordsError } = await this.supabaseAdmin.from('keywords').insert(keywordRows);
+
+    if (keywordsError) {
+      throw new Error(`Failed to create keywords: ${keywordsError.message}`);
+    }
+
+    return { id: campaignId };
+  }
+
+  /**
+   * Gets all articles for a campaign
+   *
+   * @param campaignId - Campaign ID to get articles for
+   * @returns Array of articles
+   */
+  async getArticlesByCampaign(campaignId: string): Promise<Array<{ id: string }>> {
+    const { data, error } = await this.supabaseAdmin
+      .from('articles')
+      .select('id')
+      .eq('campaign_id', campaignId);
+
+    if (error) {
+      throw new Error(`Failed to get articles: ${error.message}`);
+    }
+
+    return data || [];
+  }
+
+  /**
+   * Gets user's credit balance
+   *
+   * @param userId - User ID to get credits for
+   * @returns Total credit balance
+   */
+  async getUserCredits(userId: string): Promise<number> {
+    const { data, error } = await this.supabaseAdmin
+      .from('user_credits')
+      .select('total_credits_balance')
+      .eq('user_id', userId)
+      .single();
+
+    if (error) {
+      throw new Error(`Failed to get user credits: ${error.message}`);
+    }
+
+    return data?.total_credits_balance || 0;
+  }
+
+  /**
+   * Gets a campaign by ID
+   *
+   * @param campaignId - Campaign ID to get
+   * @returns Campaign data
+   */
+  async getCampaignById(campaignId: string): Promise<{
+    id: string;
+    generation_run_id: string | null;
+  }> {
+    const { data, error } = await this.supabaseAdmin
+      .from('campaigns')
+      .select('id, generation_run_id')
+      .eq('id', campaignId)
+      .single();
+
+    if (error) {
+      throw new Error(`Failed to get campaign: ${error.message}`);
+    }
+
+    return data;
+  }
 }

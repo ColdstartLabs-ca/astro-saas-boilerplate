@@ -1,10 +1,10 @@
 /**
  * useAvailableModels Hook
- * React hook for fetching available AI models with React Query
+ * React hook for fetching available AI presets with React Query
  *
  * Features:
- * - Fetch available writer models and image presets
- * - 5-minute cache since models rarely change
+ * - Fetch available writer presets and image presets
+ * - 5-minute cache since presets rarely change
  * - Proper error handling
  */
 
@@ -17,9 +17,6 @@ import type { IAvailableModelsResponse } from '@shared/types/models.types';
 // API Function
 // =============================================================================
 
-/**
- * Fetch available models from the API
- */
 async function fetchAvailableModels(): Promise<IAvailableModelsResponse> {
   const response = await fetch('/api/models', {
     method: 'GET',
@@ -40,9 +37,10 @@ async function fetchAvailableModels(): Promise<IAvailableModelsResponse> {
 // =============================================================================
 
 interface IUseAvailableModelsReturn {
-  // Data
-  writerModels: IAvailableModelsResponse['writerModels'];
+  writerPresets: IAvailableModelsResponse['writerPresets'];
   imagePresets: IAvailableModelsResponse['imagePresets'];
+  /** @deprecated Use writerPresets instead */
+  writerModels: IAvailableModelsResponse['writerModels'];
   isLoading: boolean;
   error: Error | null;
 }
@@ -55,12 +53,13 @@ export function useAvailableModels(): IUseAvailableModelsReturn {
   } = useQuery<IAvailableModelsResponse>({
     queryKey: ['available-models'],
     queryFn: fetchAvailableModels,
-    staleTime: 5 * 60 * 1000, // 5 min — models rarely change
+    staleTime: 5 * 60 * 1000, // 5 min — presets rarely change
   });
 
   return {
-    writerModels: responseData?.writerModels ?? [],
+    writerPresets: responseData?.writerPresets ?? [],
     imagePresets: responseData?.imagePresets ?? [],
+    writerModels: responseData?.writerModels ?? [],
     isLoading,
     error,
   };

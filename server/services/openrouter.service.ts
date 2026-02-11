@@ -1,5 +1,6 @@
 import { serverEnv } from '@shared/config/env';
-import { AI_MODELS, isValidModel } from '@shared/config/ai-models.config';
+// Model validation now happens upstream in campaign.service.ts (preset key validation)
+// OpenRouter accepts any valid model ID string directly
 import { AppError, ErrorCodes } from '@shared/utils/errors';
 
 /**
@@ -181,14 +182,8 @@ export class OpenRouterService {
       throw new AppError(ErrorCodes.AI_UNAVAILABLE, 'OpenRouter API key not configured');
     }
 
-    // Validate model is in allowed list
+    // Model is already resolved from preset key by the calling service
     const modelToUse = params.model || serverEnv.OPENROUTER_TEXT_MODEL;
-    if (!isValidModel(modelToUse)) {
-      throw new AppError(
-        ErrorCodes.INVALID_INPUT,
-        `Invalid model: ${params.model}. Must be one of: ${Object.keys(AI_MODELS).join(', ')}`
-      );
-    }
 
     const requestBody = {
       model: modelToUse,

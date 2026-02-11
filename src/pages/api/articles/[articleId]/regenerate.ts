@@ -1,12 +1,21 @@
 /**
  * POST /api/articles/[articleId]/regenerate
- * Regenerate a failed article (uses same campaign settings)
+ * Regenerate a failed or rejected article (uses same campaign settings)
+ *
+ * Security:
+ * - Only allows regeneration for 'failed' or 'rejected' status articles
+ * - Uses conditional UPDATE to prevent race conditions
+ * - Returns 409 Conflict if regeneration is already in progress
  */
 
 import { withAuth, jsonResponse, errorResponse, fireAndForget } from '../../_utils';
 import { supabaseAdmin } from '@server/supabase/supabaseAdmin';
 import { articleGenerationService } from '@server/services/article-generation.service';
-import type { IGenerateArticleInput } from '@shared/types/article.types';
+import { getImagePresetCreditCost } from '@shared/config/image-models.config';
+import type { IGenerateArticleInput, ArticleStatus } from '@shared/types/article.types';
+
+// Valid statuses for regeneration
+const REGENERATABLE_STATUSES: ArticleStatus[] = ['failed', 'rejected'];
 
 export const POST = withAuth(async (userId, { params, locals }) => {
   const { articleId } = params;
@@ -51,15 +60,25 @@ export const POST = withAuth(async (userId, { params, locals }) => {
     return errorResponse('VALIDATION_ERROR', 'Article has no associated campaign', 400);
   }
 
+  // Validate article status - only allow regeneration for failed or rejected
+  if (!REGENERATABLE_STATUSES.includes(article.status as ArticleStatus)) {
+    return errorResponse(
+      'VALIDATION_ERROR',
+      `Article cannot be regenerated. Current status: ${article.status}. Only failed or rejected articles can be regenerated.`,
+      400
+    );
+  }
+
+  // Calculate credit cost using shared helper
+  const imageCreditCost = getImagePresetCreditCost(campaign.image_preset);
+  const totalCreditsNeeded = 1 + imageCreditCost;
+
   // Check user has credits
   const { data: profile } = await supabaseAdmin
     .from('user_credits')
     .select('total_credits_balance')
     .eq('user_id', userId)
     .single();
-
-  const imageCreditCost = campaign.image_preset ? 1 : 0;
-  const totalCreditsNeeded = 1 + imageCreditCost;
 
   if (!profile || profile.total_credits_balance < totalCreditsNeeded) {
     return errorResponse(
@@ -69,14 +88,30 @@ export const POST = withAuth(async (userId, { params, locals }) => {
     );
   }
 
-  // Update article status to generating
-  await supabaseAdmin
+  // Use conditional update to prevent race conditions
+  // Only update if status is still in REGENERATABLE_STATUSES (acquires lock)
+  const { data: updateResult, error: updateError } = await supabaseAdmin
     .from('articles')
-    .update({
-      status: 'generating',
-      generation_error: null,
-    })
-    .eq('id', articleId);
+    .update(
+      {
+        status: 'generating',
+        generation_error: null,
+      },
+      { count: 'exact' }
+    )
+    .eq('id', articleId)
+    .in('status', REGENERATABLE_STATUSES)
+    .select('id')
+    .single();
+
+  // If no rows were updated, another request already started regeneration
+  if (updateError || !updateResult) {
+    return errorResponse(
+      'CONFLICT',
+      'Article regeneration is already in progress. Please wait for the current regeneration to complete.',
+      409
+    );
+  }
 
   // Deduct credit
   await supabaseAdmin.rpc('consume_credits_v2', {
@@ -97,10 +132,7 @@ export const POST = withAuth(async (userId, { params, locals }) => {
     imagePreset: campaign.image_preset || undefined,
   };
 
-  fireAndForget(
-    locals,
-    articleGenerationService.generateArticle(articleId, userId, generateInput)
-  );
+  fireAndForget(locals, articleGenerationService.generateArticle(articleId, userId, generateInput));
 
   return jsonResponse({ status: 'generating' }, 202);
 });

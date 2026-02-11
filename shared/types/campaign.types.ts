@@ -37,6 +37,7 @@ export interface ICampaign {
   target_word_count: number;
   settings: Record<string, unknown>;
   image_preset: string | null;
+  generation_run_id: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -254,4 +255,26 @@ export class NoPendingKeywordsError extends Error {
     super('Cannot start campaign: no pending keywords found.');
     this.name = 'NoPendingKeywordsError';
   }
+}
+
+/**
+ * Result data from a campaign generation run (stored for idempotency)
+ */
+export interface ICampaignGenerationRunResult {
+  queued: number;
+  creditsRequired: number;
+}
+
+/**
+ * Result from claiming a campaign generation with idempotency key
+ */
+export interface IClaimCampaignGenerationResult {
+  /** True if this is a new request, false if idempotency key was already used */
+  isNew: boolean;
+  /** The generation run ID (only for new requests) */
+  generationRunId?: string;
+  /** Status of existing run (only for cached requests) */
+  existingStatus?: 'completed' | 'processing' | 'failed' | 'already_running' | 'unknown';
+  /** Cached response data (only for completed runs) */
+  cachedResponse?: ICampaignGenerationRunResult;
 }

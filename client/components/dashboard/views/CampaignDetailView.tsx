@@ -8,7 +8,10 @@ import { useTranslations } from '@client/hooks/useTranslations';
 import { useAvailableModels } from '@client/hooks/useAvailableModels';
 import { ArticleDetailModal } from '@client/components/articles/ArticleDetailModal';
 import { AddKeywordsModal } from './campaign-detail/AddKeywordsModal';
-import { CampaignSettingsModal, type ICampaignSettings } from './campaign-detail/CampaignSettingsModal';
+import {
+  CampaignSettingsModal,
+  type ICampaignSettings,
+} from './campaign-detail/CampaignSettingsModal';
 import {
   CampaignDetailHeader,
   CampaignStatsGrid,
@@ -29,7 +32,7 @@ export function CampaignDetailView({
   onBackToList,
 }: ICampaignDetailViewProps): JSX.Element {
   const t = useTranslations('dashboard');
-  const { writerModels, imagePresets } = useAvailableModels();
+  const { writerPresets, imagePresets } = useAvailableModels();
   const [isAddKeywordsModalOpen, setIsAddKeywordsModalOpen] = useState(false);
   const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
@@ -182,9 +185,8 @@ export function CampaignDetailView({
         onClose={() => setIsConfirmModalOpen(false)}
         onConfirm={handleConfirmStartGeneration}
         title={t('campaigns.detail.startGeneration')}
-        message={t('campaigns.detail.startConfirm', {
+        message={t(`campaigns.detail.startConfirm_${pendingCount === 1 ? 'one' : 'other'}`, {
           count: pendingCount,
-          plural: pendingCount !== 1 ? 's' : '',
         })}
         items={[t('campaigns.detail.startConfirmDetail')]}
         variant="info"
@@ -208,7 +210,7 @@ export function CampaignDetailView({
           model: campaign.ai_model,
           imagePreset: campaign.image_preset || '',
         }}
-        writerModels={writerModels}
+        writerPresets={writerPresets}
         imagePresets={imagePresets}
         isSaving={isGenerating}
       />

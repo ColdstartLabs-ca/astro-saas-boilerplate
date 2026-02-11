@@ -14,18 +14,29 @@ import { withAuth, jsonResponse, fireAndForget } from '../../_utils';
  * Start bulk article generation for a campaign
  *
  * Flow:
- * 1. Get pending keywords for campaign
- * 2. Check user has enough credits (1 per keyword)
- * 3. Set campaign status to active
- * 4. For each pending keyword: create article record, update keyword status to queued
- * 5. Use fireAndForget() to run sequential generation in background
- * 6. Return 202 with queued count
+ * 1. Extract idempotency key from X-Idempotency-Key header (optional but recommended)
+ * 2. Claim campaign generation with idempotency (uses DB locking)
+ * 3. Return cached response if idempotency key was already used
+ * 4. Get pending keywords for campaign
+ * 5. Check user has enough credits (1 per keyword)
+ * 6. Set campaign status to active
+ * 7. For each pending keyword: create article record, update keyword status to queued
+ * 8. Use fireAndForget() to run sequential generation in background
+ * 9. Return 202 with queued count
  */
-export const POST = withAuth(async (userId, { params, locals }) => {
+export const POST = withAuth(async (userId, { params, locals, request }) => {
   const campaignId = params.campaignId as string;
 
-  // Start generation: queue articles, deduct credits
-  const result = await campaignService.startGeneration(campaignId, userId);
+  // Extract idempotency key from header (optional but recommended)
+  const idempotencyKey = request.headers.get('X-Idempotency-Key') || undefined;
+
+  // Start generation with idempotency: queue articles, deduct credits
+  // This uses DB locking internally to prevent concurrent starts
+  const result = await campaignService.startGenerationWithIdempotency(
+    campaignId,
+    userId,
+    idempotencyKey
+  );
 
   // Get campaign details for generation
   const campaignDetail = await campaignService.getDetail(campaignId, userId);
@@ -37,8 +48,27 @@ export const POST = withAuth(async (userId, { params, locals }) => {
     const processSequentially = async () => {
       let successCount = 0;
       let failureCount = 0;
+      let processedCount = 0;
 
       for (const keyword of queuedKeywords) {
+        // Check campaign status before each keyword generation
+        // This allows pause/resume to take effect immediately
+        const { data: currentCampaign } = await supabaseAdmin
+          .from('campaigns')
+          .select('status')
+          .eq('id', campaignId)
+          .single();
+
+        // Stop processing if campaign has been paused
+        if (!currentCampaign || currentCampaign.status === 'paused') {
+          console.log(
+            `[Campaign] Campaign ${campaignId} paused, stopping generation. Processed ${processedCount}/${queuedKeywords.length} keywords.`
+          );
+          // Update campaign status to paused to reflect the stopped state
+          await supabaseAdmin.from('campaigns').update({ status: 'paused' }).eq('id', campaignId);
+          break;
+        }
+
         try {
           // Update keyword status to 'generating'
           await supabaseAdmin
@@ -71,15 +101,14 @@ export const POST = withAuth(async (userId, { params, locals }) => {
           });
 
           // Update keyword status to 'generated' on success
-          await supabaseAdmin
-            .from('keywords')
-            .update({ status: 'generated' })
-            .eq('id', keyword.id);
+          await supabaseAdmin.from('keywords').update({ status: 'generated' }).eq('id', keyword.id);
 
           successCount++;
+          processedCount++;
           console.log(`[Campaign] Generated article for keyword: ${keyword.keyword}`);
         } catch (err) {
           failureCount++;
+          processedCount++;
           console.error(
             `[Campaign] Failed to generate article for keyword: ${keyword.keyword}`,
             err
@@ -88,26 +117,16 @@ export const POST = withAuth(async (userId, { params, locals }) => {
           // Update keyword status to 'failed' on error
           await supabaseAdmin.from('keywords').update({ status: 'failed' }).eq('id', keyword.id);
 
-          // Refund credit for this failed generation
-          try {
-            await supabaseAdmin.rpc('add_credits_v2', {
-              target_user_id: userId,
-              amount: 1,
-              description: `Refund for failed keyword generation: ${keyword.keyword}`,
-            });
-            console.log(`[Campaign] Refunded 1 credit for failed keyword: ${keyword.keyword}`);
-          } catch (refundErr) {
-            console.error('[Campaign] Failed to refund credit:', refundErr);
-          }
+          // Note: Refund is handled by ArticleGenerationService.handleGenerationFailure()
+          // The service layer already refunds credits (base article + image cost) when generation fails
+          // We don't refund here to avoid double-refunding
         }
       }
 
       // Update campaign status to 'completed' if all keywords processed
-      if (successCount + failureCount === queuedKeywords.length) {
-        await supabaseAdmin
-          .from('campaigns')
-          .update({ status: 'completed' })
-          .eq('id', campaignId);
+      // Only if we weren't paused (processedCount should equal queuedKeywords.length)
+      if (processedCount === queuedKeywords.length) {
+        await supabaseAdmin.from('campaigns').update({ status: 'completed' }).eq('id', campaignId);
         console.log(
           `[Campaign] Campaign ${campaignId} completed with ${successCount} successes and ${failureCount} failures`
         );
@@ -117,6 +136,9 @@ export const POST = withAuth(async (userId, { params, locals }) => {
     fireAndForget(locals, processSequentially());
   }
 
-  const response: IStartCampaignResponse = result;
+  const response: IStartCampaignResponse = {
+    queued: result.queued,
+    creditsRequired: result.creditsRequired,
+  };
   return jsonResponse(response, 202);
 });

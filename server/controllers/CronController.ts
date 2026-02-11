@@ -18,10 +18,11 @@ import type Stripe from 'stripe';
 /**
  * Cron Controller
  *
- * Handles cron job endpoints for subscription maintenance:
+ * Handles cron job endpoints for subscription maintenance and article recovery:
  * - POST /api/cron/check-expirations - Check expired subscriptions
  * - POST /api/cron/reconcile - Full subscription reconciliation
  * - POST /api/cron/recover-webhooks - Recover failed webhooks
+ * - POST /api/cron/recover-stale-articles - Recover stale article generation jobs
  */
 export class CronController extends BaseController {
   /**
@@ -46,6 +47,26 @@ export class CronController extends BaseController {
   private readonly WEBHOOK_BATCH_SIZE = 50;
 
   /**
+   * Maximum retry attempts for stale article recovery
+   */
+  private readonly MAX_ARTICLE_RETRIES = 3;
+
+  /**
+   * Stale threshold in minutes - articles stuck longer than this are recovered
+   */
+  private readonly STALE_THRESHOLD_MINUTES = 30;
+
+  /**
+   * Alert threshold for stale articles - emit alert when count exceeds this
+   */
+  private readonly STALE_ALERT_THRESHOLD = 10;
+
+  /**
+   * Batch size for article recovery
+   */
+  private readonly ARTICLE_RECOVERY_BATCH_SIZE = 50;
+
+  /**
    * Handle incoming request
    */
   protected async handle(req: Request): Promise<Response> {
@@ -64,6 +85,9 @@ export class CronController extends BaseController {
     }
     if (path.endsWith('/recover-webhooks') && this.isPost(req)) {
       return this.recoverWebhooks(req);
+    }
+    if (path.endsWith('/recover-stale-articles') && this.isPost(req)) {
+      return this.recoverStaleArticles(req);
     }
 
     return this.error('METHOD_NOT_ALLOWED', 'Method not allowed', 405);
@@ -129,7 +153,9 @@ export class CronController extends BaseController {
 
           if (stripeSub.status !== 'active') {
             // Stripe says subscription is no longer active - sync to DB
-            console.log(`[CRON] Subscription ${sub.id} is ${stripeSub.status} in Stripe (was active in DB)`);
+            console.log(
+              `[CRON] Subscription ${sub.id} is ${stripeSub.status} in Stripe (was active in DB)`
+            );
 
             const userId = await getUserIdFromCustomerId(stripeSub.customer as string);
             if (userId) {
@@ -138,7 +164,9 @@ export class CronController extends BaseController {
             }
           } else {
             // Stripe says it's still active - update period
-            console.log(`[CRON] Subscription ${sub.id} is still active in Stripe - updating period`);
+            console.log(
+              `[CRON] Subscription ${sub.id} is still active in Stripe - updating period`
+            );
             await updateSubscriptionPeriod(sub.id, stripeSub);
             fixed++;
           }
@@ -186,12 +214,7 @@ export class CronController extends BaseController {
         }
       }
 
-      return this.error(
-        'INTERNAL_ERROR',
-        errorMessage,
-        500,
-        { processed, fixed }
-      );
+      return this.error('INTERNAL_ERROR', errorMessage, 500, { processed, fixed });
     }
   }
 
@@ -411,12 +434,12 @@ export class CronController extends BaseController {
         }
       }
 
-      return this.error(
-        'INTERNAL_ERROR',
-        errorMessage,
-        500,
-        { processed, discrepancies, fixed, issues }
-      );
+      return this.error('INTERNAL_ERROR', errorMessage, 500, {
+        processed,
+        discrepancies,
+        fixed,
+        issues,
+      });
     }
   }
 
@@ -493,7 +516,9 @@ export class CronController extends BaseController {
         } catch (error: unknown) {
           if (isStripeNotFoundError(error)) {
             // Event not found in Stripe
-            console.log(`[CRON] Webhook event ${event.event_id} not found in Stripe - marking as unrecoverable`);
+            console.log(
+              `[CRON] Webhook event ${event.event_id} not found in Stripe - marking as unrecoverable`
+            );
 
             await supabaseAdmin
               .from('webhook_events')
@@ -572,12 +597,201 @@ export class CronController extends BaseController {
         }
       }
 
-      return this.error(
-        'INTERNAL_ERROR',
-        errorMessage,
-        500,
-        { processed, recovered, unrecoverable }
+      return this.error('INTERNAL_ERROR', errorMessage, 500, {
+        processed,
+        recovered,
+        unrecoverable,
+      });
+    }
+  }
+
+  /**
+   * POST /api/cron/recover-stale-articles
+   * Recover articles stuck in queued or generating status for too long
+   */
+  private async recoverStaleArticles(_req: Request): Promise<Response> {
+    console.log('[CRON] Starting stale article recovery...');
+
+    let syncRunId: string | null = null;
+    let processed = 0;
+    let recovered = 0;
+    let failed = 0;
+    const staleThreshold = new Date(Date.now() - this.STALE_THRESHOLD_MINUTES * 60 * 1000);
+
+    try {
+      // Create sync run record
+      syncRunId = await createSyncRun('stale_article_recovery');
+
+      // Find stale articles in queued or generating status
+      const { data: staleArticles, error: fetchError } = await supabaseAdmin
+        .from('articles')
+        .select('id, user_id, status, attempt_count, credits_used, created_at, primary_keyword')
+        .in('status', ['queued', 'generating'])
+        .lt('created_at', staleThreshold.toISOString())
+        .order('created_at', { ascending: true })
+        .limit(this.ARTICLE_RECOVERY_BATCH_SIZE);
+
+      if (fetchError) {
+        throw new Error(`Failed to fetch stale articles: ${fetchError.message}`);
+      }
+
+      if (!staleArticles || staleArticles.length === 0) {
+        console.log('[CRON] No stale articles found');
+        await completeSyncRun(syncRunId, {
+          status: 'completed',
+          recordsProcessed: 0,
+          recordsFixed: 0,
+        });
+        return this.json({ processed: 0, recovered: 0, failed: 0 });
+      }
+
+      console.log(`[CRON] Found ${staleArticles.length} stale articles to recover`);
+
+      // Emit alert if stale count crosses threshold
+      if (staleArticles.length >= this.STALE_ALERT_THRESHOLD) {
+        console.error(
+          `[CRON] ALERT: ${staleArticles.length} stale articles found (threshold: ${this.STALE_ALERT_THRESHOLD})`
+        );
+      }
+
+      // Import articleGenerationService dynamically to avoid circular dependencies
+      // eslint-disable-next-line no-restricted-syntax
+      const { articleGenerationService } = await import('../services/article-generation.service');
+
+      // Process each stale article
+      for (const article of staleArticles) {
+        processed++;
+        const newAttemptCount = article.attempt_count + 1;
+
+        try {
+          console.log(
+            `[CRON] Recovering article ${article.id} (attempt ${newAttemptCount}/${this.MAX_ARTICLE_RETRIES}) - ${article.primary_keyword}`
+          );
+
+          if (newAttemptCount > this.MAX_ARTICLE_RETRIES) {
+            // Max retries exceeded - mark as failed_timeout
+            console.log(
+              `[CRON] Article ${article.id} exceeded max retries - marking as failed_timeout`
+            );
+
+            await supabaseAdmin
+              .from('articles')
+              .update({
+                status: 'failed_timeout',
+                last_attempt_at: new Date().toISOString(),
+                attempt_count: newAttemptCount,
+                generation_error: `Article generation timed out after ${this.MAX_ARTICLE_RETRIES} retry attempts. The generation process did not complete within ${this.STALE_THRESHOLD_MINUTES} minutes.`,
+              })
+              .eq('id', article.id);
+
+            // Refund credits for failed_timeout articles
+            await supabaseAdmin.rpc('add_purchased_credits', {
+              p_user_id: article.user_id,
+              p_amount: article.credits_used,
+              p_reference_id: article.id,
+              p_description: `Refund: article generation timed out after ${newAttemptCount} attempts`,
+            });
+
+            failed++;
+          } else {
+            // Retry the generation
+            // Update attempt tracking first
+            await supabaseAdmin
+              .from('articles')
+              .update({
+                last_attempt_at: new Date().toISOString(),
+                attempt_count: newAttemptCount,
+                status: 'generating',
+              })
+              .eq('id', article.id);
+
+            // Re-trigger generation
+            // We need to fetch the original generation parameters
+            const { data: articleDetails } = await supabaseAdmin
+              .from('articles')
+              .select('campaign_id, project_id')
+              .eq('id', article.id)
+              .single();
+
+            if (articleDetails) {
+              // Use minimal input for retry - just the keyword and IDs
+              const retryInput = {
+                keyword: article.primary_keyword,
+                projectId: articleDetails.project_id || '',
+                campaignId: articleDetails.campaign_id || '',
+              };
+
+              // Fire and forget the regeneration
+              // Note: We don't charge additional credits for retries
+              await articleGenerationService.generateArticle(
+                article.id,
+                article.user_id,
+                retryInput
+              );
+
+              recovered++;
+              console.log(`[CRON] Successfully initiated recovery for article ${article.id}`);
+            } else {
+              console.error(`[CRON] Could not fetch details for article ${article.id}`);
+              failed++;
+            }
+          }
+        } catch (error: unknown) {
+          const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+          console.error(`[CRON] Error recovering article ${article.id}:`, errorMessage);
+
+          // Update attempt count even on failure
+          await supabaseAdmin
+            .from('articles')
+            .update({
+              last_attempt_at: new Date().toISOString(),
+              attempt_count: newAttemptCount,
+            })
+            .eq('id', article.id);
+
+          failed++;
+        }
+      }
+
+      // Complete sync run
+      await completeSyncRun(syncRunId, {
+        status: 'completed',
+        recordsProcessed: processed,
+        recordsFixed: recovered,
+        metadata: { failed, staleCount: staleArticles.length },
+      });
+
+      console.log(
+        `[CRON] Stale article recovery complete: ${processed} processed, ${recovered} recovered, ${failed} failed/terminal`
       );
+
+      return this.json({
+        success: true,
+        processed,
+        recovered,
+        failed,
+        syncRunId,
+        staleCount: staleArticles.length,
+      });
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      console.error('[CRON] Stale article recovery failed:', errorMessage);
+
+      if (syncRunId) {
+        try {
+          await completeSyncRun(syncRunId, {
+            status: 'failed',
+            recordsProcessed: processed,
+            recordsFixed: recovered,
+            errorMessage,
+            metadata: { failed },
+          });
+        } catch (completeError) {
+          console.error('[CRON] Failed to mark sync run as failed:', completeError);
+        }
+      }
+
+      return this.error('INTERNAL_ERROR', errorMessage, 500, { processed, recovered, failed });
     }
   }
 }
