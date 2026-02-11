@@ -141,6 +141,10 @@ export default {
           '0%': { opacity: '0', transform: 'translateY(6px)' },
           '100%': { opacity: '1', transform: 'translateY(0)' },
         },
+        slideInRight: {
+          '0%': { opacity: '0', transform: 'translateX(100%)' },
+          '100%': { opacity: '1', transform: 'translateX(0)' },
+        },
         progress: {
           '0%': { transform: 'translateX(-100%)' },
           '100%': { transform: 'translateX(100%)' },
@@ -153,15 +157,16 @@ export default {
         'glow-pulse': 'glow-pulse 2s ease-in-out infinite',
         'gradient-shift': 'gradient-shift 8s ease infinite',
         fadeIn: 'fadeIn 0.3s ease-out',
+        slideInRight: 'slideInRight 0.3s ease-out',
         progress: 'progress 2s ease-in-out infinite',
         // From UI_TEMPLATE
-        'blob': 'blob 7s infinite',
-        'scroll': 'scroll 25s linear infinite',
-        'float': 'float 6s ease-in-out infinite',
+        blob: 'blob 7s infinite',
+        scroll: 'scroll 25s linear infinite',
+        float: 'float 6s ease-in-out infinite',
         'pulse-slow': 'pulse 4s cubic-bezier(0.4, 0, 0.6, 1) infinite',
         'spin-slow': 'spin 3s linear infinite',
-        'scan': 'scan 4s linear infinite',
-        'typing': 'typing 3s steps(40, end) infinite alternate',
+        scan: 'scan 4s linear infinite',
+        typing: 'typing 3s steps(40, end) infinite alternate',
       },
       typography: {
         DEFAULT: {

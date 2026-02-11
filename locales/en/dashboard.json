@@ -11,6 +11,7 @@
     "calendar": "Calendar",
     "backlinks": "Backlinks",
     "analytics": "Analytics",
+    "opportunities": "Opportunities",
     "billing": "Billing",
     "settings": "Settings",
     "admin": "Admin",
@@ -36,7 +37,8 @@
       "backlinks": "Backlinks",
       "analytics": "Analytics",
       "billing": "Billing",
-      "settings": "Settings"
+      "settings": "Settings",
+      "opportunities": "Opportunities"
     }
   },
   "history": {
@@ -494,6 +496,87 @@
       },
       "issues": "Issues",
       "noIssues": "No issues detected"
+    }
+  },
+  "opportunities": {
+    "title": "SEO Opportunities",
+    "subtitle": "AI-powered insights from Google Search Console",
+    "empty": {
+      "noProject": "Select a project to view opportunities",
+      "noConnection": "Connect Google Search Console to discover SEO opportunities",
+      "noOpportunities": "No opportunities found. Click Analyze Now to scan your site."
+    },
+    "connectGsc": "Connect Google Search Console",
+    "gsc": {
+      "connect": "Connect Google Search Console",
+      "connectDescription": "Link your Google Search Console account to discover SEO opportunities, track rankings, and get AI-powered content recommendations.",
+      "freeNote": "Free — no credits required",
+      "connected": "Connected",
+      "disconnected": "Disconnected",
+      "error": "Connection Error",
+      "reconnect": "Reconnect",
+      "disconnect": "Disconnect",
+      "disconnectConfirm": "Are you sure you want to disconnect Google Search Console?",
+      "selectSite": "Select a site to monitor",
+      "lastSynced": "Last synced",
+      "noSites": "No verified sites found in your Google Search Console account"
+    },
+    "analyzeNow": "Analyze Now",
+    "analyzing": "Analyzing...",
+    "lastAnalyzed": "Last analyzed",
+    "filter": {
+      "all": "All",
+      "content": "Content",
+      "technical": "Technical"
+    },
+    "dismiss": "Dismiss",
+    "createArticle": "Create Article",
+    "viewDetails": "View Details",
+    "markComplete": "Mark Complete",
+    "detail": {
+      "title": "Opportunity Details",
+      "metrics": "Metrics",
+      "position": "Avg. Position",
+      "ctr": "CTR",
+      "impressions": "Impressions",
+      "clicks": "Clicks",
+      "recommendations": "Recommendations"
+    },
+    "type": {
+      "content_gap": "Content Gap",
+      "low_hanging_fruit": "Low-Hanging Fruit",
+      "topic_cluster": "Topic Cluster",
+      "low_ctr": "Low CTR",
+      "declining_position": "Declining Position",
+      "thin_content": "Thin Content",
+      "cannibalization": "Cannibalization"
+    },
+    "impact": {
+      "high": "High Impact",
+      "medium": "Medium Impact",
+      "low": "Low Impact"
+    },
+    "status": {
+      "open": "Open",
+      "in_progress": "In Progress",
+      "completed": "Completed",
+      "dismissed": "Dismissed"
+    },
+    "success": {
+      "analyzed": "Analysis complete",
+      "dismissed": "Opportunity dismissed",
+      "articleCreated": "Article campaign created",
+      "completed": "Opportunity marked complete",
+      "connected": "Google Search Console connected",
+      "disconnected": "Google Search Console disconnected"
+    },
+    "error": {
+      "analyze": "Failed to analyze opportunities",
+      "dismiss": "Failed to dismiss opportunity",
+      "createArticle": "Failed to create article",
+      "complete": "Failed to mark as complete",
+      "connect": "Failed to connect Google Search Console",
+      "disconnect": "Failed to disconnect"
     }
   },
   "campaigns": {

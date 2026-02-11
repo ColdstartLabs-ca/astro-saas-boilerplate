@@ -44,7 +44,7 @@ export const IMAGE_PRESETS: Record<ImagePresetKey, IImagePreset> = {
     replicateModel: 'black-forest-labs/flux-schnell',
     defaultParams: {
       aspect_ratio: '16:9',
-      output_format: 'jpg',
+      output_format: 'webp',
       output_quality: 80,
     },
     creditCost: IMAGE_CREDIT_COSTS.budget,
@@ -59,7 +59,7 @@ export const IMAGE_PRESETS: Record<ImagePresetKey, IImagePreset> = {
     replicateModel: 'black-forest-labs/flux-dev',
     defaultParams: {
       aspect_ratio: '16:9',
-      output_format: 'jpg',
+      output_format: 'webp',
       output_quality: 90,
     },
     creditCost: IMAGE_CREDIT_COSTS.balanced,
@@ -74,7 +74,7 @@ export const IMAGE_PRESETS: Record<ImagePresetKey, IImagePreset> = {
     replicateModel: 'black-forest-labs/flux-1.1-pro',
     defaultParams: {
       aspect_ratio: '16:9',
-      output_format: 'jpg',
+      output_format: 'webp',
       output_quality: 95,
     },
     creditCost: IMAGE_CREDIT_COSTS.pro,
@@ -89,6 +89,8 @@ export const IMAGE_PRESETS: Record<ImagePresetKey, IImagePreset> = {
     replicateModel: 'bytedance/seedream-4.5',
     defaultParams: {
       aspect_ratio: '16:9',
+      output_format: 'webp',
+      output_quality: 95,
     },
     creditCost: IMAGE_CREDIT_COSTS.ultra,
     aspectRatio: '16:9',

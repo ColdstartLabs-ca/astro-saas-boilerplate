@@ -88,10 +88,10 @@ export async function authenticateUserFromHeader(
  * Create a JSON response
  */
 export function jsonResponse<T>(data: T, status = 200): Response {
-  return new Response(
-    JSON.stringify({ success: true, data }),
-    { status, headers: { 'Content-Type': 'application/json' } }
-  );
+  return new Response(JSON.stringify({ success: true, data }), {
+    status,
+    headers: { 'Content-Type': 'application/json' },
+  });
 }
 
 /**
@@ -150,10 +150,7 @@ export function getUserIdFromLocals(locals: ILocals): string {
 // Route Handler Factories
 // =============================================================================
 
-type AuthenticatedHandler = (
-  userId: string,
-  context: APIContext
-) => Promise<Response>;
+type AuthenticatedHandler = (userId: string, context: APIContext) => Promise<Response>;
 
 /**
  * Wraps an API route with authentication and standard error handling.
@@ -169,7 +166,7 @@ type AuthenticatedHandler = (
  * ```
  */
 export function withAuth(handler: AuthenticatedHandler): APIRoute {
-  return async (context) => {
+  return async context => {
     let userId: string;
     try {
       userId = getUserIdFromLocals(context.locals as ILocals);
@@ -221,15 +218,14 @@ export function withAuthAndBody<T extends z.ZodType>(
  * - NoPendingKeywordsError → 400 VALIDATION_ERROR
  * - InsufficientCreditsError → 402 INSUFFICIENT_CREDITS
  * - ProjectLimitError → 403 FORBIDDEN
+ * - IntegrationNotFoundError → 404 NOT_FOUND
+ * - EncryptionKeyError → 500 INTERNAL_ERROR
+ * - DecryptionError → 500 INTERNAL_ERROR
  * - Everything else → 500 INTERNAL_ERROR
  */
 export function handleApiError(error: unknown, context?: string): Response {
   if (error instanceof z.ZodError) {
-    return errorResponse(
-      'VALIDATION_ERROR',
-      error.errors[0]?.message ?? 'Validation failed',
-      400
-    );
+    return errorResponse('VALIDATION_ERROR', error.errors[0]?.message ?? 'Validation failed', 400);
   }
 
   // Domain errors - check by name to avoid importing every error class
@@ -243,6 +239,15 @@ export function handleApiError(error: unknown, context?: string): Response {
         return errorResponse('INSUFFICIENT_CREDITS', error.message, 402);
       case 'ProjectLimitError':
         return errorResponse('FORBIDDEN', error.message, 403);
+      case 'OpportunityNotFoundError':
+        return errorResponse('NOT_FOUND', error.message, 404);
+      case 'GscConnectionError':
+        return errorResponse('NOT_FOUND', error.message, 404);
+      case 'IntegrationNotFoundError':
+        return errorResponse('NOT_FOUND', error.message, 404);
+      case 'EncryptionKeyError':
+      case 'DecryptionError':
+        return errorResponse('INTERNAL_ERROR', error.message, 500);
     }
   }
 
@@ -272,6 +277,6 @@ export function fireAndForget(locals: unknown, promise: Promise<unknown>): void 
   if (ctx?.waitUntil) {
     ctx.waitUntil(promise);
   } else {
-    promise.catch((err) => console.error('[fireAndForget] Background task failed:', err));
+    promise.catch(err => console.error('[fireAndForget] Background task failed:', err));
   }
 }

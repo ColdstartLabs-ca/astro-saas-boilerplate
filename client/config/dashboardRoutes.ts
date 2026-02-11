@@ -24,6 +24,7 @@ import {
   Settings,
   HelpCircle,
   Shield,
+  Lightbulb,
 } from 'lucide-react';
 
 // Lazy-load page components
@@ -35,6 +36,7 @@ const OptimizationPage = lazy(() => import('@client/components/pages/Optimizatio
 const CalendarPage = lazy(() => import('@client/components/pages/CalendarPageClient'));
 const BacklinksPage = lazy(() => import('@client/components/pages/BacklinksPageClient'));
 const AnalyticsPage = lazy(() => import('@client/components/pages/AnalyticsPageClient'));
+const OpportunitiesPage = lazy(() => import('@client/components/pages/OpportunitiesPageClient'));
 const SettingsPage = lazy(() => import('@client/components/pages/SettingsPageClient'));
 const BillingPage = lazy(() => import('@client/components/pages/BillingPageClient'));
 const _HistoryPage = lazy(() => import('@client/components/pages/HistoryPageClient'));
@@ -116,6 +118,14 @@ export const DASHBOARD_ROUTES: readonly IDashboardRoute[] = [
         group: 'primary',
       },
     ],
+  },
+  {
+    path: '/dashboard/opportunities',
+    labelKey: 'sidebar.opportunities',
+    icon: Lightbulb,
+    component: OpportunitiesPage,
+    enabled: true,
+    group: 'primary',
   },
   {
     path: '/dashboard/articles',

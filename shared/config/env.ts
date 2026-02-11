@@ -216,6 +216,18 @@ const serverEnvSchema = z.object({
   AVAILABLE_IMAGE_PRESETS: z.string().default(''),
   // OpenAI for semantic similarity and embeddings
   OPENAI_API_KEY: z.string().default(''),
+
+  // ==========================================
+  // CMS INTEGRATIONS
+  // ==========================================
+  // CMS encryption key for encrypting WordPress/webhook credentials
+  // Generate with: openssl rand -base64 32 (minimum 32 characters recommended)
+  CMS_ENCRYPTION_KEY: z.string().default(''),
+
+  // ==========================================
+  // GOOGLE OAUTH (GSC + future Google APIs)
+  // ==========================================
+  GOOGLE_OAUTH_CLIENT_SECRET: z.string().default(''),
 });
 
 export type IServerEnv = z.infer<typeof serverEnvSchema>;
@@ -281,6 +293,10 @@ function loadServerEnv(): IServerEnv {
     AVAILABLE_IMAGE_PRESETS: import.meta.env.AVAILABLE_IMAGE_PRESETS || '',
     // OpenAI for semantic similarity and embeddings
     OPENAI_API_KEY: import.meta.env.OPENAI_API_KEY || '',
+    // CMS encryption key
+    CMS_ENCRYPTION_KEY: import.meta.env.CMS_ENCRYPTION_KEY || '',
+    // Google OAuth
+    GOOGLE_OAUTH_CLIENT_SECRET: import.meta.env.GOOGLE_OAUTH_CLIENT_SECRET || '',
   };
 
   return serverEnvSchema.parse(env);

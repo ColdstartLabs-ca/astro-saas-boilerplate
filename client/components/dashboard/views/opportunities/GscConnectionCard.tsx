@@ -1,0 +1,288 @@
+/**
+ * GscConnectionCard Component
+ * Displays Google Search Console connection status with three states:
+ * - Not connected: Prominent CTA to connect
+ * - Connected: Compact inline status with site info
+ * - Error: Error state with reconnect option
+ */
+
+'use client';
+
+import { useState } from 'react';
+import { Search, ExternalLink, CheckCircle2, AlertCircle, Unlink, Loader2 } from 'lucide-react';
+import { DashboardButton } from '../../ui/DashboardButton';
+import { GscSiteSelector } from './GscSiteSelector';
+import { useTranslations } from '@client/hooks/useTranslations';
+import type { IGscConnectionSafe, IGscSite } from '@shared/types/opportunity.types';
+import dayjs from 'dayjs';
+import relativeTime from 'dayjs/plugin/relativeTime';
+
+dayjs.extend(relativeTime);
+
+// =============================================================================
+// Props
+// =============================================================================
+
+interface IGscConnectionCardProps {
+  connection: IGscConnectionSafe | null;
+  isLoading: boolean;
+  onConnect: () => void;
+  onDisconnect: () => void;
+  onSelectSite: (siteUrl: string) => void;
+  sites: IGscSite[];
+  isConnecting?: boolean;
+  isDisconnecting?: boolean;
+  isLoadingSites?: boolean;
+}
+
+// =============================================================================
+// Sub-Components
+// =============================================================================
+
+/** Not connected state — full CTA card */
+function NotConnectedState({
+  onConnect,
+  isConnecting,
+  t,
+}: {
+  onConnect: () => void;
+  isConnecting: boolean;
+  t: (key: string) => string;
+}): JSX.Element {
+  return (
+    <div className="bg-surface border border-border rounded-xl p-6">
+      <div className="flex flex-col items-center text-center">
+        <div className="w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center mb-4">
+          <Search className="w-7 h-7 text-primary" />
+        </div>
+
+        <h3 className="text-lg font-semibold text-white mb-2">{t('opportunities.gsc.connect')}</h3>
+
+        <p className="text-sm text-secondary mb-6 max-w-md">
+          {t('opportunities.gsc.connectDescription')}
+        </p>
+
+        <DashboardButton size="sm" onClick={onConnect} disabled={isConnecting}>
+          {isConnecting ? (
+            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+          ) : (
+            <ExternalLink className="w-4 h-4 mr-2" />
+          )}
+          {t('opportunities.gsc.connect')}
+        </DashboardButton>
+
+        <p className="text-xs text-muted mt-3">{t('opportunities.gsc.freeNote')}</p>
+      </div>
+    </div>
+  );
+}
+
+/** Connected state — compact inline card */
+function ConnectedState({
+  connection,
+  sites,
+  onDisconnect,
+  onSelectSite,
+  isDisconnecting,
+  isLoadingSites,
+  t,
+}: {
+  connection: IGscConnectionSafe;
+  sites: IGscSite[];
+  onDisconnect: () => void;
+  onSelectSite: (siteUrl: string) => void;
+  isDisconnecting: boolean;
+  isLoadingSites: boolean;
+  t: (key: string) => string;
+}): JSX.Element {
+  const [showDisconnectConfirm, setShowDisconnectConfirm] = useState(false);
+
+  const handleDisconnectClick = () => {
+    setShowDisconnectConfirm(true);
+  };
+
+  const handleConfirmDisconnect = () => {
+    setShowDisconnectConfirm(false);
+    onDisconnect();
+  };
+
+  const handleCancelDisconnect = () => {
+    setShowDisconnectConfirm(false);
+  };
+
+  return (
+    <div className="bg-surface border border-border rounded-xl p-4">
+      <div className="flex items-center justify-between">
+        {/* Left: Status & Info */}
+        <div className="flex items-center gap-3 min-w-0">
+          <div className="flex-shrink-0 w-2.5 h-2.5 rounded-full bg-emerald-400" />
+          <div className="min-w-0">
+            <div className="flex items-center gap-2">
+              <CheckCircle2 className="w-4 h-4 text-emerald-400 flex-shrink-0" />
+              <span className="text-sm font-medium text-white">
+                {t('opportunities.gsc.connected')}
+              </span>
+              <span className="text-xs text-muted truncate">{connection.google_email}</span>
+            </div>
+            <div className="flex items-center gap-3 mt-1">
+              {connection.site_url && (
+                <span className="text-xs text-secondary truncate">{connection.site_url}</span>
+              )}
+              {connection.last_synced_at && (
+                <span className="text-xs text-muted">
+                  {t('opportunities.gsc.lastSynced')} {dayjs(connection.last_synced_at).fromNow()}
+                </span>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Right: Disconnect */}
+        <div className="flex-shrink-0 ml-4">
+          {showDisconnectConfirm ? (
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-secondary">
+                {t('opportunities.gsc.disconnectConfirm')}
+              </span>
+              <DashboardButton
+                variant="ghost"
+                size="sm"
+                onClick={handleConfirmDisconnect}
+                disabled={isDisconnecting}
+                className="text-red-400 hover:text-red-300"
+              >
+                {isDisconnecting ? (
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                ) : (
+                  t('opportunities.gsc.disconnect')
+                )}
+              </DashboardButton>
+              <DashboardButton variant="ghost" size="sm" onClick={handleCancelDisconnect}>
+                Cancel
+              </DashboardButton>
+            </div>
+          ) : (
+            <button
+              onClick={handleDisconnectClick}
+              className="text-xs text-muted hover:text-secondary transition-colors flex items-center gap-1"
+            >
+              <Unlink className="w-3.5 h-3.5" />
+              {t('opportunities.gsc.disconnect')}
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* Site selector — show if no site selected yet */}
+      {!connection.site_url && (
+        <div className="mt-4 border-t border-border pt-4">
+          <GscSiteSelector
+            sites={sites}
+            selectedSiteUrl={connection.site_url}
+            onSelectSite={onSelectSite}
+            isLoading={isLoadingSites}
+          />
+        </div>
+      )}
+    </div>
+  );
+}
+
+/** Error state — card with reconnect CTA */
+function ErrorState({
+  connection,
+  onConnect,
+  isConnecting,
+  t,
+}: {
+  connection: IGscConnectionSafe;
+  onConnect: () => void;
+  isConnecting: boolean;
+  t: (key: string) => string;
+}): JSX.Element {
+  return (
+    <div className="bg-surface border border-red-500/30 rounded-xl p-4">
+      <div className="flex items-center justify-between">
+        {/* Left: Error status */}
+        <div className="flex items-center gap-3 min-w-0">
+          <div className="flex-shrink-0 w-2.5 h-2.5 rounded-full bg-red-400" />
+          <div className="min-w-0">
+            <div className="flex items-center gap-2">
+              <AlertCircle className="w-4 h-4 text-red-400 flex-shrink-0" />
+              <span className="text-sm font-medium text-white">{t('opportunities.gsc.error')}</span>
+            </div>
+            <p className="text-xs text-secondary mt-1">{connection.google_email}</p>
+          </div>
+        </div>
+
+        {/* Right: Reconnect button */}
+        <DashboardButton size="sm" onClick={onConnect} disabled={isConnecting}>
+          {isConnecting ? (
+            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+          ) : (
+            <ExternalLink className="w-4 h-4 mr-2" />
+          )}
+          {t('opportunities.gsc.reconnect')}
+        </DashboardButton>
+      </div>
+    </div>
+  );
+}
+
+// =============================================================================
+// Main Component
+// =============================================================================
+
+export function GscConnectionCard({
+  connection,
+  isLoading,
+  onConnect,
+  onDisconnect,
+  onSelectSite,
+  sites,
+  isConnecting = false,
+  isDisconnecting = false,
+  isLoadingSites = false,
+}: IGscConnectionCardProps): JSX.Element {
+  const t = useTranslations('dashboard');
+
+  // Loading skeleton
+  if (isLoading) {
+    return (
+      <div className="bg-surface border border-border rounded-xl p-6 animate-pulse">
+        <div className="flex items-center gap-4">
+          <div className="w-14 h-14 rounded-full bg-surface-light" />
+          <div className="flex-1 space-y-2">
+            <div className="h-4 bg-surface-light rounded w-48" />
+            <div className="h-3 bg-surface-light rounded w-72" />
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Error state
+  if (connection?.status === 'error') {
+    return (
+      <ErrorState connection={connection} onConnect={onConnect} isConnecting={isConnecting} t={t} />
+    );
+  }
+
+  // Connected state
+  if (connection?.status === 'active') {
+    return (
+      <ConnectedState
+        connection={connection}
+        sites={sites}
+        onDisconnect={onDisconnect}
+        onSelectSite={onSelectSite}
+        isDisconnecting={isDisconnecting}
+        isLoadingSites={isLoadingSites}
+        t={t}
+      />
+    );
+  }
+
+  // Not connected state (default)
+  return <NotConnectedState onConnect={onConnect} isConnecting={isConnecting} t={t} />;
+}
