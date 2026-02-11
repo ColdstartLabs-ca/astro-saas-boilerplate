@@ -68,6 +68,7 @@ export function ModelSelect({
   placeholder = 'Select...',
 }: IModelSelectProps): JSX.Element {
   const [isOpen, setIsOpen] = useState(false);
+  const [openUpward, setOpenUpward] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
   // Close on click outside
@@ -121,7 +122,15 @@ export function ModelSelect({
       {/* Trigger */}
       <button
         type="button"
-        onClick={() => !disabled && setIsOpen(prev => !prev)}
+        onClick={() => {
+          if (disabled) return;
+          if (!isOpen && containerRef.current) {
+            const rect = containerRef.current.getBoundingClientRect();
+            const spaceBelow = window.innerHeight - rect.bottom;
+            setOpenUpward(spaceBelow < 280);
+          }
+          setIsOpen(prev => !prev);
+        }}
         disabled={disabled}
         className={`w-full flex items-center justify-between gap-2 bg-main border rounded-lg px-3 py-2.5 text-left transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
           isOpen ? 'border-accent ring-1 ring-accent/30' : 'border-border hover:border-accent/40'
@@ -143,7 +152,9 @@ export function ModelSelect({
 
       {/* Dropdown */}
       {isOpen && (
-        <div className="absolute z-50 mt-1 w-full bg-surface border border-border rounded-lg shadow-xl max-h-64 overflow-y-auto animate-fadeIn">
+        <div className={`absolute z-50 w-full bg-surface border border-border rounded-lg shadow-xl max-h-64 overflow-y-auto animate-fadeIn ${
+          openUpward ? 'bottom-full mb-1' : 'top-full mt-1'
+        }`}>
           {/* None option */}
           {allowNone && (
             <button

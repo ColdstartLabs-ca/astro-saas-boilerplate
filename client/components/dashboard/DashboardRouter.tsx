@@ -22,7 +22,7 @@ function NotFound(): JSX.Element {
       </div>
       <h2 className="text-xl font-semibold text-white mb-2">Page Not Found</h2>
       <p className="text-secondary mb-6 text-center max-w-md">
-        The page you're looking for doesn't exist or has been moved.
+        The page you&apos;re looking for doesn&apos;t exist or has been moved.
       </p>
       <button
         onClick={() => dashboardNavigate('/dashboard')}

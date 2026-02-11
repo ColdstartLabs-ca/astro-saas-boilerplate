@@ -3,11 +3,9 @@
  * List articles for the authenticated user with optional filters
  */
 
-import type { APIRoute } from 'astro';
-import { getUserIdFromLocals } from '../_utils';
+import { withAuth, jsonResponse } from '../_utils';
 import { supabaseAdmin } from '@server/supabase/supabaseAdmin';
 import type { IArticlesListResponse } from '@shared/types/article.types';
-import { ErrorCodes } from '@shared/utils/errors';
 import { z } from 'zod';
 import { calculateOverallSEOScore } from '@shared/utils/seo';
 import type { IArticle } from '@shared/types/article.types';
@@ -34,111 +32,70 @@ const listQuerySchema = z.object({
   offset: z.coerce.number().int().min(0).optional().default(0),
 });
 
-export const GET: APIRoute = async ({ url, locals }) => {
-  let userId: string;
-  try {
-    userId = getUserIdFromLocals(locals);
-  } catch {
-    return new Response(
-      JSON.stringify({
-        success: false,
-        error: { code: ErrorCodes.UNAUTHORIZED, message: 'Authentication required' },
-      }),
-      { status: 401, headers: { 'Content-Type': 'application/json' } }
-    );
-  }
+export const GET = withAuth(async (userId, { url }) => {
+  // Parse query params (ZodError auto-handled by withAuth)
+  const queryParams = Object.fromEntries(url.searchParams.entries());
+  const query = listQuerySchema.parse(queryParams);
 
-  try {
-    // Parse query params
-    const queryParams = Object.fromEntries(url.searchParams.entries());
-    const query = listQuerySchema.parse(queryParams);
-
-    // Build query - include campaign information
-    let dbQuery = supabaseAdmin
-      .from('articles')
-      .select(
-        `
-        *,
-        campaigns (
-          id,
-          name
-        )
-      `,
-        { count: 'exact' }
+  // Build query - include campaign information
+  let dbQuery = supabaseAdmin
+    .from('articles')
+    .select(
+      `
+      *,
+      campaigns (
+        id,
+        name
       )
-      .eq('user_id', userId)
-      .order('created_at', { ascending: false })
-      .range(query.offset, query.offset + query.limit - 1);
+    `,
+      { count: 'exact' }
+    )
+    .eq('user_id', userId)
+    .order('created_at', { ascending: false })
+    .range(query.offset, query.offset + query.limit - 1);
 
-    // Apply optional filters
-    if (query.projectId) {
-      dbQuery = dbQuery.eq('project_id', query.projectId);
-    }
-    if (query.campaignId) {
-      dbQuery = dbQuery.eq('campaign_id', query.campaignId);
-    }
-    if (query.status) {
-      dbQuery = dbQuery.eq('status', query.status);
-    }
-    if (query.dateFrom) {
-      dbQuery = dbQuery.gte('created_at', query.dateFrom);
-    }
-    if (query.dateTo) {
-      dbQuery = dbQuery.lte('created_at', query.dateTo);
-    }
-
-    const { data: articles, error, count } = await dbQuery;
-
-    if (error) {
-      throw error;
-    }
-
-    // Calculate SEO score on-the-fly for articles that don't have one
-    const articlesWithScore = (articles ?? []).map((article: IArticle) => {
-      if (article.seo_score === null && article.content && article.title) {
-        const seoResult = calculateOverallSEOScore({
-          title: article.title,
-          content: article.content,
-          meta_description: article.meta_description,
-          primary_keyword: article.primary_keyword,
-          word_count: article.word_count,
-        });
-        return { ...article, seo_score: seoResult.overallScore };
-      }
-      return article;
-    });
-
-    const response: IArticlesListResponse = {
-      articles: articlesWithScore as IArticlesListResponse['articles'],
-      total: count ?? 0,
-    };
-
-    return new Response(JSON.stringify({ success: true, data: response }), {
-      status: 200,
-      headers: { 'Content-Type': 'application/json' },
-    });
-  } catch (error) {
-    console.error('Error listing articles:', error);
-
-    if (error instanceof z.ZodError) {
-      return new Response(
-        JSON.stringify({
-          success: false,
-          error: {
-            code: ErrorCodes.VALIDATION_ERROR,
-            message: error.errors[0]?.message ?? 'Invalid query params',
-          },
-        }),
-        { status: 400, headers: { 'Content-Type': 'application/json' } }
-      );
-    }
-
-    return new Response(
-      JSON.stringify({
-        success: false,
-        error: { code: ErrorCodes.INTERNAL_ERROR, message: 'Failed to list articles' },
-      }),
-      { status: 500, headers: { 'Content-Type': 'application/json' } }
-    );
+  // Apply optional filters
+  if (query.projectId) {
+    dbQuery = dbQuery.eq('project_id', query.projectId);
   }
-};
+  if (query.campaignId) {
+    dbQuery = dbQuery.eq('campaign_id', query.campaignId);
+  }
+  if (query.status) {
+    dbQuery = dbQuery.eq('status', query.status);
+  }
+  if (query.dateFrom) {
+    dbQuery = dbQuery.gte('created_at', query.dateFrom);
+  }
+  if (query.dateTo) {
+    dbQuery = dbQuery.lte('created_at', query.dateTo);
+  }
+
+  const { data: articles, error, count } = await dbQuery;
+
+  if (error) {
+    throw error;
+  }
+
+  // Calculate SEO score on-the-fly for articles that don't have one
+  const articlesWithScore = (articles ?? []).map((article: IArticle) => {
+    if (article.seo_score === null && article.content && article.title) {
+      const seoResult = calculateOverallSEOScore({
+        title: article.title,
+        content: article.content,
+        meta_description: article.meta_description,
+        primary_keyword: article.primary_keyword,
+        word_count: article.word_count,
+      });
+      return { ...article, seo_score: seoResult.overallScore };
+    }
+    return article;
+  });
+
+  const response: IArticlesListResponse = {
+    articles: articlesWithScore as IArticlesListResponse['articles'],
+    total: count ?? 0,
+  };
+
+  return jsonResponse(response);
+});

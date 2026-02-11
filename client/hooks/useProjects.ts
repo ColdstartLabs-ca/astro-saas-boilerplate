@@ -39,39 +39,39 @@ const _ACTIVE_PROJECT_KEY = 'autopilotrank_active_project_id';
  * Fetch user's projects from API
  */
 async function fetchProjects(): Promise<IProject[]> {
-  const data = await apiFetch<{ projects: IProject[] }>('/api/projects', {
+  const data = await apiFetch<{ data: { projects: IProject[] } }>('/api/projects', {
     method: 'GET',
   });
-  return data.projects ?? [];
+  return data.data.projects ?? [];
 }
 
 /**
  * Create a new project
  */
 async function createProject(input: ICreateProjectInput): Promise<IProject> {
-  const data = await apiFetch<{ project: IProject }>('/api/projects', {
+  const data = await apiFetch<{ data: { project: IProject } }>('/api/projects', {
     method: 'POST',
     body: JSON.stringify(input),
   });
-  return data.project;
+  return data.data.project;
 }
 
 /**
  * Update an existing project
  */
 async function updateProject(projectId: string, input: IUpdateProjectInput): Promise<IProject> {
-  const data = await apiFetch<{ project: IProject }>(`/api/projects/${projectId}`, {
+  const data = await apiFetch<{ data: { project: IProject } }>(`/api/projects/${projectId}`, {
     method: 'PUT',
     body: JSON.stringify(input),
   });
-  return data.project;
+  return data.data.project;
 }
 
 /**
  * Delete a project
  */
 async function deleteProject(projectId: string): Promise<{ success: boolean }> {
-  await apiFetch<{ success: boolean }>(`/api/projects/${projectId}`, {
+  await apiFetch<{ data: { success: boolean } }>(`/api/projects/${projectId}`, {
     method: 'DELETE',
   });
   return { success: true };

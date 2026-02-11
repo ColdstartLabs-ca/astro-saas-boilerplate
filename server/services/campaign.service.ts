@@ -23,68 +23,18 @@ import {
   InsufficientCreditsError,
   NoPendingKeywordsError,
 } from '@shared/types/campaign.types';
-import { z } from 'zod';
 import {
-  isValidImagePreset,
   getImagePresetCreditCost,
   isAvailableImagePreset,
 } from '@shared/config/image-models.config';
 import { isAvailableWriterModel } from '@shared/config/ai-models.config';
 import { serverEnv } from '@shared/config/env';
 import { AppError } from '@shared/utils/errors';
-
-// =============================================================================
-// Validation Schemas
-// ============================================================================
-
-/**
- * Zod schema for campaign creation input
- */
-const createCampaignSchema = z.object({
-  name: z
-    .string()
-    .min(1, 'Campaign name is required')
-    .max(100, 'Campaign name must be 100 characters or less')
-    .trim(),
-  projectId: z.string().uuid('Invalid project ID'),
-  keywords: z
-    .array(z.string().min(1).max(200))
-    .min(1, 'At least one keyword is required')
-    .max(500, 'Maximum 500 keywords allowed'),
-  model: z.string().optional(),
-  tone: z.enum(['professional', 'casual', 'witty', 'academic']).optional(),
-  targetWordCount: z.number().int().min(800).max(3000).optional(),
-  imagePreset: z
-    .string()
-    .optional()
-    .refine(val => !val || isValidImagePreset(val), { message: 'Invalid image preset' }),
-});
-
-/**
- * Zod schema for campaign update input
- */
-const updateCampaignSchema = z.object({
-  name: z.string().min(1).max(100).trim().optional(),
-  status: z.enum(['draft', 'active', 'paused', 'completed']).optional(),
-  model: z.string().optional(),
-  tone: z.enum(['professional', 'casual', 'witty', 'academic']).optional(),
-  targetWordCount: z.number().int().min(800).max(3000).optional(),
-  imagePreset: z
-    .string()
-    .optional()
-    .refine(val => !val || isValidImagePreset(val), { message: 'Invalid image preset' }),
-});
-
-/**
- * Zod schema for adding keywords input
- */
-const addKeywordsSchema = z.object({
-  campaignId: z.string().uuid('Invalid campaign ID'),
-  keywords: z
-    .array(z.string().min(1).max(200))
-    .min(1, 'At least one keyword is required')
-    .max(500, 'Maximum 500 keywords allowed'),
-});
+import {
+  createCampaignSchema,
+  updateCampaignSchema,
+  addKeywordsWithCampaignSchema,
+} from '@shared/validation/campaign.schema';
 
 // =============================================================================
 // Campaign Service Class
@@ -95,17 +45,7 @@ export class CampaignService {
    * List all campaigns for a project with aggregated stats
    */
   async listByProject(userId: string, projectId: string): Promise<ICampaignWithStats[]> {
-    // First verify project ownership
-    const { data: project, error: projectError } = await supabaseAdmin
-      .from('projects')
-      .select('id')
-      .eq('id', projectId)
-      .eq('user_id', userId)
-      .single();
-
-    if (projectError || !project) {
-      throw new Error('Project not found or access denied');
-    }
+    await this.verifyProjectOwnership(projectId, userId);
 
     // Get campaigns with keyword and article counts
     const { data, error } = await supabaseAdmin
@@ -309,17 +249,7 @@ export class CampaignService {
       throw new AppError('MODEL_NOT_AVAILABLE', 'Selected image preset is not available', 400);
     }
 
-    // Verify project ownership
-    const { data: project, error: projectError } = await supabaseAdmin
-      .from('projects')
-      .select('id')
-      .eq('id', validated.projectId)
-      .eq('user_id', userId)
-      .single();
-
-    if (projectError || !project) {
-      throw new Error('Project not found or access denied');
-    }
+    await this.verifyProjectOwnership(validated.projectId, userId);
 
     // Create campaign
     const { data: campaign, error: campaignError } = await supabaseAdmin
@@ -343,13 +273,10 @@ export class CampaignService {
     }
 
     // Batch insert keywords (skip duplicates via ON CONFLICT)
-    const keywordRows = validated.keywords.map(keyword => ({
-      campaign_id: campaign.id,
-      keyword: keyword.trim(),
-      status: 'pending' as const,
-      difficulty: 'unknown' as const,
-      priority: 0,
-    }));
+    const keywordRows = this.buildKeywordRows(
+      campaign.id,
+      validated.keywords.map(k => k.trim())
+    );
 
     const { error: keywordsError } = await supabaseAdmin.from('keywords').insert(keywordRows);
 
@@ -446,7 +373,7 @@ export class CampaignService {
     duplicates: number;
   }> {
     // Validate
-    addKeywordsSchema.parse({ campaignId, keywords });
+    addKeywordsWithCampaignSchema.parse({ campaignId, keywords });
 
     // Verify campaign ownership
     const campaign = await this.getById(campaignId, userId);
@@ -465,13 +392,7 @@ export class CampaignService {
     const uniqueNew = newKeywords.filter(k => !existingSet.has(k.toLowerCase()));
 
     // Batch insert unique keywords
-    const keywordRows = uniqueNew.map(keyword => ({
-      campaign_id: campaignId,
-      keyword: keyword,
-      status: 'pending' as const,
-      difficulty: 'unknown' as const,
-      priority: 0,
-    }));
+    const keywordRows = this.buildKeywordRows(campaignId, uniqueNew);
 
     if (keywordRows.length > 0) {
       const { error } = await supabaseAdmin.from('keywords').insert(keywordRows);
@@ -634,6 +555,40 @@ export class CampaignService {
       queued: keywordCount,
       creditsRequired: totalCreditsNeeded,
     };
+  }
+
+  // ===========================================================================
+  // Private Helpers
+  // ===========================================================================
+
+  /**
+   * Build keyword row objects for batch insertion
+   */
+  private buildKeywordRows(campaignId: string, keywords: string[]) {
+    return keywords.map(keyword => ({
+      campaign_id: campaignId,
+      keyword,
+      status: 'pending' as const,
+      difficulty: 'unknown' as const,
+      priority: 0,
+    }));
+  }
+
+  /**
+   * Verify the user owns the given project
+   * @throws Error if project not found or user doesn't own it
+   */
+  private async verifyProjectOwnership(projectId: string, userId: string): Promise<void> {
+    const { data, error } = await supabaseAdmin
+      .from('projects')
+      .select('id')
+      .eq('id', projectId)
+      .eq('user_id', userId)
+      .single();
+
+    if (error || !data) {
+      throw new Error('Project not found or access denied');
+    }
   }
 }
 

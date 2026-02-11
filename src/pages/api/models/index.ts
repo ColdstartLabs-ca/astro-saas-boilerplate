@@ -28,7 +28,7 @@ export const GET: APIRoute = async () => {
     headers: {
       'Content-Type': 'application/json',
       // Cache for 5 minutes since models rarely change
-      'Cache-Control': 'public, max-age=300, stale-while-revalidate=600',
+      'Cache-Control': 'public, max-age=60, stale-while-revalidate=120',
     },
   });
 };
