@@ -254,10 +254,10 @@ describe('NewCampaignModal', () => {
         name: 'Test Campaign',
         projectId: mockProjectId,
         keywords: ['test keyword'],
-        model: 'auto',
+        model: 'balanced',
         tone: 'professional',
         targetWordCount: 1500,
-        imagePreset: '', // Default value from form
+        imagePreset: 'balanced', // Default value from form
       });
     });
   });

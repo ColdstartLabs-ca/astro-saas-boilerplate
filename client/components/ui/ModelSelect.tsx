@@ -42,20 +42,7 @@ function groupByTier(options: IModelSelectOption[]): Map<ModelTier, IModelSelect
   return groups;
 }
 
-function CreditBadge({ cost }: { cost: number }): JSX.Element {
-  if (cost === 0) {
-    return (
-      <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium bg-green-500/10 text-green-400 border border-green-500/20 flex-shrink-0">
-        Included
-      </span>
-    );
-  }
-  return (
-    <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium bg-amber-500/10 text-amber-400 border border-amber-500/20 flex-shrink-0">
-      +{cost} credit{cost > 1 ? 's' : ''}
-    </span>
-  );
-}
+// Credit badge removed - total cost is shown in campaign modal
 
 export function ModelSelect({
   options,
@@ -96,19 +83,13 @@ export function ModelSelect({
   const selected = selectedId ? options.find(o => o.id === selectedId) : null;
   const isNoneSelected = allowNone && (selectedId === null || selectedId === '');
 
-  const triggerLabel = isNoneSelected
-    ? noneLabel
-    : selected
-      ? selected.name
-      : placeholder;
+  const triggerLabel = isNoneSelected ? noneLabel : selected ? selected.name : placeholder;
 
   const triggerSublabel = isNoneSelected
     ? noneDescription
     : selected
-      ? `${TIER_CONFIG[selected.tier].label} · ${selected.detail ?? selected.description}`
+      ? selected.description
       : undefined;
-
-  const triggerCost = selected?.creditCost ?? 0;
 
   const grouped = groupByTier(options);
 
@@ -137,13 +118,12 @@ export function ModelSelect({
         }`}
       >
         <div className="flex-1 min-w-0">
-          <div className="text-sm font-medium text-white truncate">{triggerLabel}</div>
+          <div className="text-base font-semibold text-white truncate">{triggerLabel}</div>
           {triggerSublabel && (
-            <div className="text-[11px] text-muted truncate mt-0.5">{triggerSublabel}</div>
+            <div className="text-xs text-muted truncate mt-0.5">{triggerSublabel}</div>
           )}
         </div>
         <div className="flex items-center gap-2 flex-shrink-0">
-          {(selected || isNoneSelected) && <CreditBadge cost={isNoneSelected ? 0 : triggerCost} />}
           <ChevronDown
             className={`w-4 h-4 text-muted transition-transform ${isOpen ? 'rotate-180' : ''}`}
           />
@@ -152,18 +132,18 @@ export function ModelSelect({
 
       {/* Dropdown */}
       {isOpen && (
-        <div className={`absolute z-50 w-full bg-surface border border-border rounded-lg shadow-xl max-h-64 overflow-y-auto animate-fadeIn ${
-          openUpward ? 'bottom-full mb-1' : 'top-full mt-1'
-        }`}>
+        <div
+          className={`absolute z-50 w-full bg-surface border border-border rounded-lg shadow-xl max-h-64 overflow-y-auto animate-fadeIn ${
+            openUpward ? 'bottom-full mb-1' : 'top-full mt-1'
+          }`}
+        >
           {/* None option */}
           {allowNone && (
             <button
               type="button"
               onClick={() => handleSelect(null)}
               className={`w-full text-left px-3 py-2.5 flex items-center justify-between gap-2 transition-colors ${
-                isNoneSelected
-                  ? 'bg-accent/10 text-white'
-                  : 'text-secondary hover:bg-surface-light'
+                isNoneSelected ? 'bg-accent/10 text-white' : 'text-secondary hover:bg-surface-light'
               }`}
             >
               <div className="flex-1 min-w-0">
@@ -173,7 +153,6 @@ export function ModelSelect({
                 )}
               </div>
               <div className="flex items-center gap-2 flex-shrink-0">
-                <CreditBadge cost={0} />
                 {isNoneSelected && <Check className="w-3.5 h-3.5 text-accent" />}
               </div>
             </button>
@@ -207,11 +186,12 @@ export function ModelSelect({
                     <div className="flex-1 min-w-0">
                       <div className="text-sm font-medium">{option.name}</div>
                       <div className="text-[11px] text-muted mt-0.5 truncate">
-                        {option.detail ? `${option.detail} · ${option.description}` : option.description}
+                        {option.detail
+                          ? `${option.detail} · ${option.description}`
+                          : option.description}
                       </div>
                     </div>
                     <div className="flex items-center gap-2 flex-shrink-0">
-                      <CreditBadge cost={option.creditCost} />
                       {isSelected && <Check className="w-3.5 h-3.5 text-accent" />}
                     </div>
                   </button>

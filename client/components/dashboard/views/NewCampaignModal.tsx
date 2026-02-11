@@ -82,10 +82,10 @@ export function NewCampaignModal({
     defaultValues: {
       name: '',
       keywords: '',
-      model: 'auto',
+      model: 'balanced',
       tone: 'professional',
       targetWordCount: 1500,
-      imagePreset: '',
+      imagePreset: 'balanced',
     },
   });
 
@@ -328,24 +328,60 @@ export function NewCampaignModal({
 
           {step === 2 && (
             <div className="space-y-6 animate-fadeIn">
-              {/* AI Model */}
-              <div>
-                <label className="block text-sm font-medium text-secondary mb-2">
-                  {t('campaigns.newCampaign.model')}
-                </label>
-                {modelsLoading ? (
-                  <div className="w-full bg-main border border-border rounded-lg px-3 py-2.5 text-muted flex items-center gap-2">
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                    <span>Loading models...</span>
-                  </div>
-                ) : (
-                  <ModelSelect
-                    options={writerPresets.map(writerPresetToOption)}
-                    selectedId={watch('model') || null}
-                    onSelect={id => setValue('model', id || 'auto')}
-                    placeholder="Select writer model..."
-                  />
-                )}
+              {/* AI Models Section */}
+              <div className="space-y-5 pb-5 border-b border-border">
+                <div>
+                  <h3 className="text-sm font-semibold text-white mb-4">AI Models</h3>
+                </div>
+
+                {/* Writer */}
+                <div>
+                  <label className="block text-sm font-medium text-secondary mb-2">Writer</label>
+                  {modelsLoading ? (
+                    <div className="w-full bg-main border border-border rounded-lg px-3 py-2.5 text-muted flex items-center gap-2">
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      <span>Loading models...</span>
+                    </div>
+                  ) : (
+                    <ModelSelect
+                      options={writerPresets.map(writerPresetToOption)}
+                      selectedId={watch('model') || null}
+                      onSelect={id => setValue('model', id || 'balanced')}
+                      placeholder="Select writer model..."
+                    />
+                  )}
+                </div>
+
+                {/* Images */}
+                <div>
+                  <label className="block text-sm font-medium text-secondary mb-2">Images</label>
+                  {modelsLoading ? (
+                    <div className="w-full bg-main border border-border rounded-lg px-3 py-2.5 text-muted flex items-center gap-2">
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      <span>Loading image presets...</span>
+                    </div>
+                  ) : (
+                    <ModelSelect
+                      options={imagePresets.map(imagePresetToOption)}
+                      selectedId={watchedImagePreset || null}
+                      onSelect={preset => setValue('imagePreset', preset || 'balanced')}
+                      allowNone
+                      noneLabel="No images"
+                      noneDescription="Text-only article"
+                      placeholder="Select image preset..."
+                    />
+                  )}
+                  <p className="text-xs text-muted mt-2">
+                    Standard presets are included, premium presets cost 1 additional credit per
+                    article.
+                  </p>
+                  {!watchedImagePreset && (
+                    <p className="text-xs text-amber-400 mt-1.5 flex items-start gap-1.5">
+                      <span>⚠️</span>
+                      <span>For better SEO results, your articles should include images.</span>
+                    </p>
+                  )}
+                </div>
               </div>
 
               {/* Word Count Target */}
@@ -387,35 +423,6 @@ export function NewCampaignModal({
                       <span className="text-sm text-secondary">{tone.label}</span>
                     </label>
                   ))}
-                </div>
-              </div>
-
-              {/* Image Generation */}
-              <div>
-                <label className="block text-sm font-medium text-secondary mb-2">
-                  Generate Images
-                </label>
-                <div>
-                  {modelsLoading ? (
-                    <div className="w-full bg-main border border-border rounded-lg px-3 py-2.5 text-muted flex items-center gap-2">
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                      <span>Loading image presets...</span>
-                    </div>
-                  ) : (
-                    <ModelSelect
-                      options={imagePresets.map(imagePresetToOption)}
-                      selectedId={watchedImagePreset || null}
-                      onSelect={preset => setValue('imagePreset', preset || '')}
-                      allowNone
-                      noneLabel="No images"
-                      noneDescription="Text-only article"
-                      placeholder="Select image preset..."
-                    />
-                  )}
-                  <p className="text-xs text-muted mt-2">
-                    Standard presets are included, premium presets cost 1 additional credit per
-                    article.
-                  </p>
                 </div>
               </div>
 
