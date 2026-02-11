@@ -1,0 +1,386 @@
+/**
+ * Delivery Service
+ *
+ * Orchestrates article delivery to integrations (WordPress, webhooks).
+ * Creates delivery records, dispatches to adapters, and tracks results.
+ */
+
+import { supabaseAdmin } from '@server/supabase/supabaseAdmin';
+import { integrationService } from './integration.service';
+import { getAdapter } from '@server/integrations';
+import type {
+  IIntegrationDelivery,
+  IIntegrationDeliveryWithDetails,
+  IIntegration,
+  DeliveryStatus,
+} from '@shared/types/integration.types';
+import type { IArticle } from '@shared/types/article.types';
+import type { ICampaign } from '@shared/types/campaign.types';
+import type { IProject } from '@shared/types/project.types';
+
+/**
+ * Simple serviceLogger for service-level logging
+ */
+const serviceLogger = {
+  info: (message: string, meta?: Record<string, unknown>) => {
+    console.log(`[DeliveryService] ${message}`, meta ? JSON.stringify(meta) : '');
+  },
+  warn: (message: string, meta?: Record<string, unknown>) => {
+    console.warn(`[DeliveryService] ${message}`, meta ? JSON.stringify(meta) : '');
+  },
+  error: (message: string, error?: Error | unknown) => {
+    console.error(`[DeliveryService] ${message}`, error);
+  },
+};
+
+/**
+ * Campaign settings structure (from settings JSONB)
+ */
+interface ICampaignSettings {
+  auto_publish?: boolean;
+}
+
+/**
+ * Result of a delivery operation
+ */
+interface IDeliveryOperationResult {
+  total: number;
+  successful: number;
+  failed: number;
+  deliveries: IIntegrationDelivery[];
+}
+
+/**
+ * Delivery Service class
+ */
+export class DeliveryService {
+  /**
+   * Deliver an article to all enabled integrations for its campaign
+   *
+   * @param articleId - Article ID to deliver
+   * @param retryFailed - If true, only retry failed deliveries
+   * @returns Delivery operation result
+   */
+  async deliverArticle(articleId: string, retryFailed = false): Promise<IDeliveryOperationResult> {
+    // Get article with campaign info
+    const { data: article, error: articleError } = await supabaseAdmin
+      .from('articles')
+      .select(
+        'id, title, content, slug, meta_description, primary_keyword, word_count, seo_score, featured_image_url, campaign_id, user_id'
+      )
+      .eq('id', articleId)
+      .single();
+
+    if (articleError || !article) {
+      serviceLogger.error('[DeliveryService] Article not found', {
+        articleId,
+        error: articleError,
+      });
+      throw new Error('Article not found');
+    }
+
+    // Get campaign with project info
+    const { data: campaign } = await supabaseAdmin
+      .from('campaigns')
+      .select('id, name, settings, project_id, projects(id, name, domain)')
+      .eq('id', article.campaign_id)
+      .single();
+
+    const projects = campaign?.projects as Array<{
+      id: string;
+      name: string;
+      domain: string;
+    }> | null;
+    const project = projects && projects.length > 0 ? projects[0] : null;
+
+    // Get integrations to deliver to
+    let integrationIds: string[];
+
+    if (retryFailed) {
+      // Get failed delivery integration IDs
+      const { data: failedDeliveries } = await supabaseAdmin
+        .from('integration_deliveries')
+        .select('integration_id')
+        .eq('article_id', articleId)
+        .eq('status', 'failed');
+
+      integrationIds = failedDeliveries?.map(d => d.integration_id) || [];
+    } else {
+      // Get enabled campaign integrations
+      const { data: campaignIntegrations } = await supabaseAdmin
+        .from('campaign_integrations')
+        .select('integration_id')
+        .eq('campaign_id', article.campaign_id)
+        .eq('enabled', true);
+
+      integrationIds = campaignIntegrations?.map(ci => ci.integration_id) || [];
+    }
+
+    if (integrationIds.length === 0) {
+      serviceLogger.info('[DeliveryService] No integrations to deliver to', { articleId });
+      return {
+        total: 0,
+        successful: 0,
+        failed: 0,
+        deliveries: [],
+      };
+    }
+
+    // Fetch integrations
+    const { data: integrations } = await supabaseAdmin
+      .from('integrations')
+      .select('*')
+      .in('id', integrationIds);
+
+    if (!integrations || integrations.length === 0) {
+      serviceLogger.warn('[DeliveryService] No valid integrations found', { integrationIds });
+      return {
+        total: 0,
+        successful: 0,
+        failed: 0,
+        deliveries: [],
+      };
+    }
+
+    // Create/update delivery records and dispatch
+    const results: IDeliveryOperationResult = {
+      total: (integrations as unknown as IIntegration[]).length,
+      successful: 0,
+      failed: 0,
+      deliveries: [],
+    };
+
+    for (const integration of integrations as IIntegration[]) {
+      try {
+        // Create or update delivery record
+        let deliveryId: string;
+
+        if (retryFailed) {
+          // Update existing failed delivery
+          const { data: existing } = await supabaseAdmin
+            .from('integration_deliveries')
+            .select('id')
+            .eq('article_id', articleId)
+            .eq('integration_id', integration.id)
+            .single();
+
+          if (existing) {
+            deliveryId = existing.id;
+          } else {
+            // Create new if not exists
+            const { data: newDelivery } = await supabaseAdmin
+              .from('integration_deliveries')
+              .insert({
+                article_id: articleId,
+                integration_id: integration.id,
+                campaign_id: article.campaign_id,
+                status: 'pending',
+                attempt_count: 0,
+              })
+              .select('id')
+              .single();
+
+            deliveryId = newDelivery!.id;
+          }
+        } else {
+          // Create new delivery record
+          const { data: newDelivery } = await supabaseAdmin
+            .from('integration_deliveries')
+            .insert({
+              article_id: articleId,
+              integration_id: integration.id,
+              campaign_id: article.campaign_id,
+              status: 'pending',
+              attempt_count: 0,
+            })
+            .select('id')
+            .single();
+
+          deliveryId = newDelivery!.id;
+        }
+
+        // Mark as delivering
+        await supabaseAdmin
+          .from('integration_deliveries')
+          .update({
+            status: 'delivering',
+            attempt_count: retryFailed
+              ? (
+                  await supabaseAdmin
+                    .from('integration_deliveries')
+                    .select('attempt_count')
+                    .eq('id', deliveryId)
+                    .single()
+                ).data?.attempt_count || 0 + 1
+              : 1,
+          })
+          .eq('id', deliveryId);
+
+        // Get credentials and deliver
+        const { integration: fullIntegration, credentials } =
+          await integrationService.getWithCredentials(integration.id, integration.user_id);
+
+        const adapter = getAdapter(fullIntegration.type);
+
+        const publishResult = await adapter.publish(
+          {
+            article: article as unknown as IArticle,
+            campaign: campaign as unknown as ICampaign | null,
+            project: project as unknown as IProject | null,
+          },
+          fullIntegration.config,
+          credentials
+        );
+
+        // Update delivery record based on result
+        if (publishResult.success) {
+          const updateData: {
+            status: DeliveryStatus;
+            external_id?: string | null;
+            external_url?: string | null;
+            error?: string | null;
+            delivered_at?: string;
+          } = {
+            status: 'delivered',
+            external_id: publishResult.externalId || null,
+            external_url: publishResult.externalUrl || null,
+            error: null,
+            delivered_at: new Date().toISOString(),
+          };
+
+          await supabaseAdmin
+            .from('integration_deliveries')
+            .update(updateData)
+            .eq('id', deliveryId);
+
+          // Update article published_url/updated_at if WordPress delivered
+          if (publishResult.externalUrl && fullIntegration.type === 'wordpress') {
+            await supabaseAdmin
+              .from('articles')
+              .update({
+                published_url: publishResult.externalUrl,
+                published_at: new Date().toISOString(),
+              })
+              .eq('id', articleId);
+          }
+
+          results.successful++;
+        } else {
+          await supabaseAdmin
+            .from('integration_deliveries')
+            .update({
+              status: 'failed',
+              error: publishResult.error || 'Unknown error',
+            })
+            .eq('id', deliveryId);
+
+          results.failed++;
+        }
+
+        // Fetch updated delivery record
+        const { data: updatedDelivery } = await supabaseAdmin
+          .from('integration_deliveries')
+          .select('*')
+          .eq('id', deliveryId)
+          .single();
+
+        if (updatedDelivery) {
+          results.deliveries.push(updatedDelivery as IIntegrationDelivery);
+        }
+      } catch (error) {
+        serviceLogger.error('[DeliveryService] Delivery error', {
+          articleId,
+          integrationId: integration.id,
+          error: error instanceof Error ? error.message : String(error),
+        });
+        results.failed++;
+      }
+    }
+
+    serviceLogger.info('[DeliveryService] Delivery completed', {
+      articleId,
+      total: results.total,
+      successful: results.successful,
+      failed: results.failed,
+    });
+
+    return results;
+  }
+
+  /**
+   * Get delivery records for an article with integration details
+   */
+  async getArticleDeliveries(
+    articleId: string,
+    userId: string
+  ): Promise<IIntegrationDeliveryWithDetails[]> {
+    const { data, error } = await supabaseAdmin
+      .from('integration_deliveries')
+      .select(
+        `
+        id,
+        article_id,
+        integration_id,
+        campaign_id,
+        status,
+        external_id,
+        external_url,
+        error,
+        attempt_count,
+        delivered_at,
+        created_at,
+        integrations (
+          id,
+          name,
+          type,
+          status
+        )
+        `
+      )
+      .eq('article_id', articleId)
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      serviceLogger.error('[DeliveryService] Failed to get deliveries', { articleId, error });
+      throw new Error('Failed to get delivery records');
+    }
+
+    // Verify article ownership
+    if (data && data.length > 0) {
+      const { data: article } = await supabaseAdmin
+        .from('articles')
+        .select('user_id')
+        .eq('id', articleId)
+        .single();
+
+      if (article?.user_id !== userId) {
+        throw new Error('Article not found or access denied');
+      }
+    }
+
+    return data as unknown as IIntegrationDeliveryWithDetails[];
+  }
+
+  /**
+   * Check if a campaign has auto_publish enabled
+   */
+  async shouldAutoDeliver(campaignId: string): Promise<boolean> {
+    const { data } = await supabaseAdmin
+      .from('campaigns')
+      .select('settings')
+      .eq('id', campaignId)
+      .single();
+
+    if (!data) {
+      return false;
+    }
+
+    const settings = (data.settings as ICampaignSettings) || {};
+    return settings.auto_publish === true;
+  }
+}
+
+/**
+ * Singleton instance
+ */
+export const deliveryService = new DeliveryService();

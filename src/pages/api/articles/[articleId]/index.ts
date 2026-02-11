@@ -3,7 +3,13 @@
  * Get details of a single article by ID
  */
 
-import { withAuth, withAuthAndBody, jsonResponse, errorResponse } from '../../_utils';
+import {
+  withAuth,
+  withAuthAndBody,
+  jsonResponse,
+  errorResponse,
+  fireAndForget,
+} from '../../_utils';
 import { supabaseAdmin } from '@server/supabase/supabaseAdmin';
 import type { IArticleDetailResponse } from '@shared/types/article.types';
 import { z } from 'zod';
@@ -78,13 +84,13 @@ export const GET = withAuth(async (userId, { params }) => {
  * PATCH /api/articles/[articleId]
  * Update an article (content, title, etc.)
  */
-export const PATCH = withAuthAndBody(updateSchema, async (userId, input, { params }) => {
-  const { articleId } = params;
+export const PATCH = withAuthAndBody(updateSchema, async (userId, input, context) => {
+  const { articleId } = context.params;
 
-  // Verify article ownership and get current status
+  // Verify article ownership and get current status and campaign info
   const { data: article, error: articleError } = await supabaseAdmin
     .from('articles')
-    .select('id, user_id, status')
+    .select('id, user_id, status, campaign_id')
     .eq('id', articleId)
     .eq('user_id', userId)
     .single();
@@ -144,6 +150,21 @@ export const PATCH = withAuthAndBody(updateSchema, async (userId, input, { param
 
   if (updateError || !updatedArticle) {
     throw updateError;
+  }
+
+  // Trigger delivery if status changed to 'approved' and article has a campaign
+  if (
+    input.status === 'approved' &&
+    input.status !== article.status &&
+    article.campaign_id &&
+    articleId
+  ) {
+    // Dynamic import to avoid circular dependencies
+    // eslint-disable-next-line no-restricted-syntax
+    const deliveryPromise = import('@server/services/delivery.service').then(
+      ({ deliveryService }) => deliveryService.deliverArticle(articleId)
+    );
+    fireAndForget(context.locals, deliveryPromise);
   }
 
   return jsonResponse({ article: updatedArticle });
