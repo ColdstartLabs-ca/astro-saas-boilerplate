@@ -99,7 +99,7 @@ test.describe('API: Stripe Checkout - Authenticated Users', () => {
     const user = await ctx.createUser();
     const api = new ApiClient(request).withAuth(user.token);
     const response = await api.post('/api/checkout', {
-      priceId: STRIPE_PRICES.PRO_MONTHLY,
+      priceId: STRIPE_PRICES.GROWTH_MONTHLY,
       successUrl: 'https://example.com/success',
       cancelUrl: 'https://example.com/cancel',
       metadata: {
@@ -139,7 +139,7 @@ test.describe('API: Stripe Checkout - Authenticated Users', () => {
     const user = await ctx.createUser();
     const api = new ApiClient(request).withAuth(user.token);
     const response = await api.post('/api/checkout', {
-      priceId: STRIPE_PRICES.HOBBY_MONTHLY,
+      priceId: STRIPE_PRICES.STARTER_MONTHLY,
       metadata: {
         plan_type: 'premium',
         campaign_id: 'summer_sale',
@@ -167,7 +167,7 @@ test.describe('API: Stripe Checkout - Authenticated Users', () => {
     const user = await ctx.createUser();
     const api = new ApiClient(request).withAuth(user.token);
     const response = await api.post('/api/checkout', {
-      priceId: STRIPE_PRICES.BUSINESS_MONTHLY,
+      priceId: STRIPE_PRICES.AGENCY_MONTHLY,
       metadata: {},
     });
 
@@ -185,7 +185,7 @@ test.describe('API: Stripe Checkout - Authenticated Users', () => {
     const user = await ctx.createUser();
     const api = new ApiClient(request).withAuth(user.token);
     const response = await api.post('/api/checkout', {
-      priceId: STRIPE_PRICES.PRO_MONTHLY,
+      priceId: STRIPE_PRICES.GROWTH_MONTHLY,
       // metadata not provided - should default to {}
     });
 
@@ -204,7 +204,7 @@ test.describe('API: Stripe Checkout - Authenticated Users', () => {
     const api = new ApiClient(request).withAuth(user.token);
 
     const response = await api.post('/api/checkout', {
-      priceId: STRIPE_PRICES.PRO_MONTHLY, // Trying to subscribe to a different plan
+      priceId: STRIPE_PRICES.GROWTH_MONTHLY, // Trying to subscribe to a different plan
     });
 
     response.expectStatus(400);
@@ -216,7 +216,7 @@ test.describe('API: Stripe Checkout - Authenticated Users', () => {
     const api = new ApiClient(request).withAuth(user.token);
 
     const response = await api.post('/api/checkout', {
-      priceId: STRIPE_PRICES.BUSINESS_MONTHLY,
+      priceId: STRIPE_PRICES.AGENCY_MONTHLY,
     });
 
     response.expectStatus(400);
@@ -228,7 +228,7 @@ test.describe('API: Stripe Checkout - Authenticated Users', () => {
     const api = new ApiClient(request).withAuth(user.token);
 
     const response = await api.post('/api/checkout', {
-      priceId: STRIPE_PRICES.PRO_MONTHLY,
+      priceId: STRIPE_PRICES.GROWTH_MONTHLY,
     });
 
     // Should succeed since subscription is canceled
@@ -252,7 +252,7 @@ test.describe('API: Stripe Checkout - Customer Management', () => {
     const api = new ApiClient(request).withAuth(user.token);
 
     const response = await api.post('/api/checkout', {
-      priceId: STRIPE_PRICES.PRO_MONTHLY,
+      priceId: STRIPE_PRICES.GROWTH_MONTHLY,
       successUrl: 'https://example.com/success',
       cancelUrl: 'https://example.com/cancel',
     });
@@ -476,7 +476,7 @@ test.describe('API: Stripe Checkout - Subscription Metadata Handling', () => {
     const api = new ApiClient(request).withAuth(user.token);
 
     const response = await api.post('/api/checkout', {
-      priceId: STRIPE_PRICES.HOBBY_MONTHLY,
+      priceId: STRIPE_PRICES.STARTER_MONTHLY,
       metadata: {
         source: 'web',
         campaign: 'summer_sale',
@@ -493,7 +493,7 @@ test.describe('API: Stripe Checkout - Subscription Metadata Handling', () => {
     const api = new ApiClient(request).withAuth(user.token);
 
     const response = await api.post('/api/checkout', {
-      priceId: STRIPE_PRICES.PRO_MONTHLY,
+      priceId: STRIPE_PRICES.GROWTH_MONTHLY,
     });
 
     // In test environment with mock mode, expect success response
@@ -506,7 +506,7 @@ test.describe('API: Stripe Checkout - Subscription Metadata Handling', () => {
     const api = new ApiClient(request).withAuth(user.token);
 
     const response = await api.post('/api/checkout', {
-      priceId: STRIPE_PRICES.BUSINESS_MONTHLY,
+      priceId: STRIPE_PRICES.AGENCY_MONTHLY,
       metadata: {
         promotion: 'new_user',
         referral_code: 'friend123',
@@ -528,7 +528,7 @@ test.describe('API: Stripe Checkout - Integration with Subscription Webhook Flow
     const api = new ApiClient(request).withAuth(user.token);
 
     const response = await api.post('/api/checkout', {
-      priceId: STRIPE_PRICES.HOBBY_MONTHLY,
+      priceId: STRIPE_PRICES.STARTER_MONTHLY,
       metadata: {
         source: 'pricing_page',
         campaign: 'launch_promo',

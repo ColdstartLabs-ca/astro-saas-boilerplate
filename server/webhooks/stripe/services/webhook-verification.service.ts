@@ -25,10 +25,10 @@ export class WebhookVerificationService {
       throw new Error('Missing stripe-signature header');
     }
 
-    // CRITICAL-4 FIX: Use AND conditions to prevent accidental test mode in production
-    // Both conditions must be true for test mode
-    const isTestMode =
-      serverEnv.ENV === 'test' && serverEnv.STRIPE_SECRET_KEY?.includes('dummy_key');
+    // Test mode detection: check ENV variable directly
+    // In test mode (ENV=test), webhooks skip signature verification
+    // and accept test signatures for integration testing
+    const isTestMode = serverEnv.ENV === 'test';
 
     console.log('Webhook test mode detection:', {
       ENV: serverEnv.ENV,

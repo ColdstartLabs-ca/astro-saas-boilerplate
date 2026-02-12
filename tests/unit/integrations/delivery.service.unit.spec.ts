@@ -21,7 +21,7 @@ vi.mock('@server/supabase/supabaseAdmin', () => ({
   },
 }));
 
-import { DeliveryService } from '@server/integrations/delivery.service';
+import { DeliveryService } from '@server/services/delivery.service';
 import { supabaseAdmin } from '@server/supabase/supabaseAdmin';
 
 describe('DeliveryService', () => {
@@ -120,6 +120,8 @@ describe('DeliveryService', () => {
   });
 
   describe('getArticleDeliveries', () => {
+    const testUserId = 'user-123';
+
     it('should return delivery records for an article', async () => {
       const mockFrom = vi.mocked(supabaseAdmin.from);
 
@@ -139,6 +141,12 @@ describe('DeliveryService', () => {
         },
       ];
 
+      const mockArticle = {
+        id: 'article-123',
+        user_id: testUserId,
+      };
+
+      // First call: get deliveries
       mockFrom.mockReturnValueOnce({
         select: vi.fn().mockReturnValue({
           eq: vi.fn().mockReturnValue({
@@ -150,7 +158,19 @@ describe('DeliveryService', () => {
         }),
       } as never);
 
-      const deliveries = await service.getArticleDeliveries('article-123');
+      // Second call: verify article ownership
+      mockFrom.mockReturnValueOnce({
+        select: vi.fn().mockReturnValue({
+          eq: vi.fn().mockReturnValue({
+            single: vi.fn().mockResolvedValue({
+              data: mockArticle,
+              error: null,
+            }),
+          }),
+        }),
+      } as never);
+
+      const deliveries = await service.getArticleDeliveries('article-123', testUserId);
 
       expect(deliveries).toHaveLength(1);
       expect(deliveries[0].status).toBe('delivered');
@@ -171,7 +191,7 @@ describe('DeliveryService', () => {
         }),
       } as never);
 
-      const deliveries = await service.getArticleDeliveries('article-123');
+      const deliveries = await service.getArticleDeliveries('article-123', testUserId);
 
       expect(deliveries).toHaveLength(0);
     });
@@ -190,8 +210,8 @@ describe('DeliveryService', () => {
         }),
       } as never);
 
-      await expect(service.getArticleDeliveries('article-123')).rejects.toThrow(
-        'Failed to fetch deliveries'
+      await expect(service.getArticleDeliveries('article-123', testUserId)).rejects.toThrow(
+        'Failed to get delivery records'
       );
     });
   });

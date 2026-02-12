@@ -241,8 +241,13 @@ function loadServerEnv(): IServerEnv {
   // In ESM, import.meta always exists, but import.meta.env may not
   const metaEnv = (typeof import.meta !== 'undefined' && import.meta.env) ? import.meta.env : {} as Record<string, string | number | boolean | undefined>;
 
+  // IMPORTANT: Use process.env for non-prefixed environment variables
+  // Vite only exposes variables with VITE_* or PUBLIC_* prefixes to import.meta.env
+  // For server-side vars like ENV, we need to check process.env directly
+  const processEnv = process.env as Record<string, string | number | boolean | undefined>;
+
   const env = {
-    ENV: metaEnv.ENV || metaEnv.NODE_ENV || 'development',
+    ENV: metaEnv.ENV || processEnv.ENV || processEnv.NODE_ENV || 'development',
     // App Name
     APP_NAME: metaEnv.APP_NAME || metaEnv.PUBLIC_APP_NAME || 'SaaS Boilerplate',
     // Node environment
@@ -314,8 +319,20 @@ function loadServerEnv(): IServerEnv {
  * Server-side environment variables.
  * Only use in server components, API routes, and middleware.
  * These values are NEVER sent to the client.
+ *
+ * Lazy-loaded to prevent `process is not defined` errors when
+ * client code imports `clientEnv` from this same module.
  */
-export const serverEnv = loadServerEnv();
+let _serverEnv: IServerEnv | null = null;
+
+export const serverEnv: IServerEnv = new Proxy({} as IServerEnv, {
+  get(_target, prop: string) {
+    if (!_serverEnv) {
+      _serverEnv = loadServerEnv();
+    }
+    return _serverEnv[prop as keyof IServerEnv];
+  },
+});
 
 // =============================================================================
 // Helper functions

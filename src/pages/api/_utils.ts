@@ -39,7 +39,11 @@ export async function authenticateUserFromHeader(
     if (token.startsWith('test_token_')) {
       let mockUserId: string;
       if (token.startsWith('test_token_mock_user_')) {
-        mockUserId = token.replace('test_token_mock_user_', '');
+        // Token format: test_token_mock_user_{userId} or test_token_mock_user_{userId}_sub_{status}_{tier}
+        // Extract just the UUID part (first segment after 'test_token_mock_user_')
+        const tokenWithoutPrefix = token.replace('test_token_mock_user_', '');
+        // Split by '_' and take the first 36 characters (UUID length) to handle tokens with extra metadata
+        mockUserId = tokenWithoutPrefix.split('_')[0];
       } else {
         mockUserId = token.replace('test_token_', '');
       }

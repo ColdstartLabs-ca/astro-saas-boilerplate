@@ -20,6 +20,12 @@ test.describe('Billing Workflow Integration', () => {
   let webhookClient: WebhookClient;
   let testUser: { id: string; email: string; token: string };
 
+  // Price ID constants - defined at describe block level for all tests to access
+  // Price IDs from shared/config/subscription.config.ts
+  const STARTER_PRICE_ID = 'price_1SxZp7K2K0pPNfoSMt94q8kP';
+  const GROWTH_PRICE_ID = 'price_1SxZp9K2K0pPNfoSeOwSLmcp';
+  const AGENCY_PRICE_ID = 'price_1SxZpAK2K0pPNfoSbxIQNtKL';
+
   test.beforeAll(async () => {
     ctx = new TestContext();
   });
@@ -34,9 +40,6 @@ test.describe('Billing Workflow Integration', () => {
   });
 
   test.describe('Subscription Webhook Processing', () => {
-    // Use actual price IDs from configuration to avoid assertKnownPriceId() errors
-    const PRO_PRICE_ID = 'price_1SZmVzALMLhQocpfPyRX2W8D';
-    const BUSINESS_PRICE_ID = 'price_1SZmVzALMLhQocpfqPk9spg4';
 
     test('should handle subscription creation webhook', async () => {
       // Set up Stripe customer ID for webhook lookup
@@ -46,7 +49,7 @@ test.describe('Billing Workflow Integration', () => {
         userId: testUser.id,
         customerId: `cus_${testUser.id}`,
         subscriptionId: `sub_test_${Date.now()}`,
-        priceId: PRO_PRICE_ID,
+        priceId: STARTER_PRICE_ID,
       });
 
       expect([200, 202]).toContain(subscriptionResponse.status);
@@ -64,7 +67,7 @@ test.describe('Billing Workflow Integration', () => {
         userId: testUser.id,
         customerId: `cus_${testUser.id}`,
         subscriptionId: `sub_cancel_${Date.now()}`,
-        priceId: PRO_PRICE_ID,
+        priceId: STARTER_PRICE_ID,
       });
 
       // Now cancel it
@@ -84,20 +87,20 @@ test.describe('Billing Workflow Integration', () => {
     test('should handle subscription update webhook for plan upgrade', async () => {
       await ctx.setupStripeCustomer(testUser.id, `cus_${testUser.id}`);
 
-      // Start with Pro plan
+      // Start with Starter plan
       await webhookClient.sendSubscriptionCreated({
         userId: testUser.id,
         customerId: `cus_${testUser.id}`,
         subscriptionId: `sub_upgrade_${Date.now()}`,
-        priceId: PRO_PRICE_ID,
+        priceId: STARTER_PRICE_ID,
       });
 
-      // Upgrade to Business plan
+      // Upgrade to Growth plan
       const upgradeResponse = await webhookClient.sendSubscriptionUpdated({
         userId: testUser.id,
         customerId: `cus_${testUser.id}`,
         subscriptionId: `sub_upgrade_${Date.now()}`,
-        priceId: BUSINESS_PRICE_ID,
+        priceId: GROWTH_PRICE_ID,
       });
 
       expect([200, 202]).toContain(upgradeResponse.status);
@@ -115,7 +118,7 @@ test.describe('Billing Workflow Integration', () => {
         userId: testUser.id,
         customerId: `cus_${testUser.id}`,
         subscriptionId: `sub_invoice_${Date.now()}`,
-        priceId: PRO_PRICE_ID,
+        priceId: STARTER_PRICE_ID,
       });
 
       // Simulate renewal via invoice payment
@@ -123,7 +126,7 @@ test.describe('Billing Workflow Integration', () => {
         userId: testUser.id,
         customerId: `cus_${testUser.id}`,
         subscriptionId: `sub_invoice_${Date.now()}`,
-        priceId: PRO_PRICE_ID,
+        priceId: STARTER_PRICE_ID,
       });
 
       expect([200, 202]).toContain(invoiceResponse.status);
@@ -141,7 +144,7 @@ test.describe('Billing Workflow Integration', () => {
         userId: testUser.id,
         customerId: `cus_${testUser.id}`,
         subscriptionId: `sub_failed_${Date.now()}`,
-        priceId: PRO_PRICE_ID,
+        priceId: STARTER_PRICE_ID,
       });
 
       // Simulate payment failure
@@ -160,32 +163,6 @@ test.describe('Billing Workflow Integration', () => {
   });
 
   test.describe('Credit Allocation Tests', () => {
-    test('should allocate correct credits for Pro plan', async () => {
-      await ctx.setupStripeCustomer(testUser.id, `cus_${testUser.id}`);
-
-      const response = await webhookClient.sendSubscriptionCreated({
-        userId: testUser.id,
-        customerId: `cus_${testUser.id}`,
-        subscriptionId: `sub_pro_${Date.now()}`,
-        priceId: 'price_1SZmVzALMLhQocpfPyRX2W8D', // Pro plan
-      });
-
-      expect([200, 202]).toContain(response.status);
-    });
-
-    test('should allocate correct credits for Business plan', async () => {
-      await ctx.setupStripeCustomer(testUser.id, `cus_${testUser.id}`);
-
-      const response = await webhookClient.sendSubscriptionCreated({
-        userId: testUser.id,
-        customerId: `cus_${testUser.id}`,
-        subscriptionId: `sub_business_${Date.now()}`,
-        priceId: 'price_1SZmVzALMLhQocpfqPk9spg4', // Business plan
-      });
-
-      expect([200, 202]).toContain(response.status);
-    });
-
     test('should allocate correct credits for Starter plan', async () => {
       await ctx.setupStripeCustomer(testUser.id, `cus_${testUser.id}`);
 
@@ -193,7 +170,33 @@ test.describe('Billing Workflow Integration', () => {
         userId: testUser.id,
         customerId: `cus_${testUser.id}`,
         subscriptionId: `sub_starter_${Date.now()}`,
-        priceId: 'price_1Sq14eALMLhQocpf5CXIwYSv', // Starter plan
+        priceId: STARTER_PRICE_ID, // Starter plan
+      });
+
+      expect([200, 202]).toContain(response.status);
+    });
+
+    test('should allocate correct credits for Growth plan', async () => {
+      await ctx.setupStripeCustomer(testUser.id, `cus_${testUser.id}`);
+
+      const response = await webhookClient.sendSubscriptionCreated({
+        userId: testUser.id,
+        customerId: `cus_${testUser.id}`,
+        subscriptionId: `sub_growth_${Date.now()}`,
+        priceId: GROWTH_PRICE_ID, // Growth plan
+      });
+
+      expect([200, 202]).toContain(response.status);
+    });
+
+    test('should allocate correct credits for Agency plan', async () => {
+      await ctx.setupStripeCustomer(testUser.id, `cus_${testUser.id}`);
+
+      const response = await webhookClient.sendSubscriptionCreated({
+        userId: testUser.id,
+        customerId: `cus_${testUser.id}`,
+        subscriptionId: `sub_agency_${Date.now()}`,
+        priceId: AGENCY_PRICE_ID, // Agency plan
       });
 
       expect([200, 202]).toContain(response.status);
@@ -201,7 +204,7 @@ test.describe('Billing Workflow Integration', () => {
   });
 
   test.describe('Plan Change Workflow Tests', () => {
-    test('should handle upgrade from Starter to Pro', async () => {
+    test('should handle upgrade from Starter to Growth', async () => {
       await ctx.setupStripeCustomer(testUser.id, `cus_${testUser.id}`);
 
       // Start with Starter
@@ -209,29 +212,29 @@ test.describe('Billing Workflow Integration', () => {
         userId: testUser.id,
         customerId: `cus_${testUser.id}`,
         subscriptionId: `sub_${Date.now()}`,
-        priceId: 'price_1Sq14eALMLhQocpf5CXIwYSv', // Starter
+        priceId: STARTER_PRICE_ID, // Starter
       });
 
-      // Upgrade to Pro
+      // Upgrade to Growth
       const response = await webhookClient.sendSubscriptionUpdated({
         userId: testUser.id,
         customerId: `cus_${testUser.id}`,
         subscriptionId: `sub_${Date.now()}`,
-        priceId: 'price_1SZmVzALMLhQocpfPyRX2W8D', // Pro
+        priceId: GROWTH_PRICE_ID, // Growth
       });
 
       expect([200, 202]).toContain(response.status);
     });
 
-    test('should handle downgrade from Pro to Starter', async () => {
+    test('should handle downgrade from Growth to Starter', async () => {
       await ctx.setupStripeCustomer(testUser.id, `cus_${testUser.id}`);
 
-      // Start with Pro
+      // Start with Growth
       await webhookClient.sendSubscriptionCreated({
         userId: testUser.id,
         customerId: `cus_${testUser.id}`,
         subscriptionId: `sub_${Date.now()}`,
-        priceId: 'price_1SZmVzALMLhQocpfPyRX2W8D', // Pro
+        priceId: GROWTH_PRICE_ID, // Growth
       });
 
       // Downgrade to Starter
@@ -239,7 +242,7 @@ test.describe('Billing Workflow Integration', () => {
         userId: testUser.id,
         customerId: `cus_${testUser.id}`,
         subscriptionId: `sub_${Date.now()}`,
-        priceId: 'price_1Sq14eALMLhQocpf5CXIwYSv', // Starter
+        priceId: STARTER_PRICE_ID, // Starter
       });
 
       expect([200, 202]).toContain(response.status);
@@ -251,7 +254,6 @@ test.describe('Billing Workflow Integration', () => {
       await ctx.setupStripeCustomer(testUser.id, `cus_${testUser.id}`);
 
       const eventId = `evt_duplicate_${Date.now()}`;
-      const PRO_PRICE_ID = 'price_1SZmVzALMLhQocpfPyRX2W8D';
 
       const event = {
         id: eventId,
@@ -262,7 +264,7 @@ test.describe('Billing Workflow Integration', () => {
             customer: `cus_${testUser.id}`,
             status: 'active',
             items: {
-              data: [{ price: { id: PRO_PRICE_ID } }],
+              data: [{ price: { id: STARTER_PRICE_ID } }],
             },
           },
         },

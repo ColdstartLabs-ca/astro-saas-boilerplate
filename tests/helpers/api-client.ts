@@ -434,6 +434,20 @@ export class ApiResponse<T = unknown> {
   }
 
   /**
+   * Gets the data field from the API response
+   * This is a convenience method that unwraps the { success: true, data: ... } structure
+   *
+   * @returns The data field from the API response
+   */
+  async getData(): Promise<T> {
+    const response = await this.json();
+    if (!response.success) {
+      throw new Error(`Cannot get data from unsuccessful response: ${JSON.stringify(response)}`);
+    }
+    return response.data as T;
+  }
+
+  /**
    * Gets the response body as text
    *
    * @returns Response body as string

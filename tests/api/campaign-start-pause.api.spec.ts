@@ -31,7 +31,8 @@ test.describe('API: Campaign Start/Pause/Resume', () => {
     // Create a project via API for testing
     // Note: In test mode with mock users, we create a mock project ID
     if (process.env.ENV === 'test') {
-      projectId = `mock_project_${Date.now()}_${Math.random().toString(36).substring(7)}`;
+      // Generate a valid UUID v4 format for the mock project ID
+      projectId = crypto.randomUUID();
     } else {
       const api = new ApiClient(ctx.supabaseAdmin.rest).withAuth(user.token);
       const projectResponse = await api.post('/api/projects', {
@@ -53,7 +54,7 @@ test.describe('API: Campaign Start/Pause/Resume', () => {
       projectId,
       keywords,
       tone: 'professional',
-      targetWordCount: 500,
+      targetWordCount: 800,
       model: 'pro', // Use explicit preset (pro = 2 credits base)
     });
     createResponse.expectStatus(201);
@@ -88,7 +89,7 @@ test.describe('API: Campaign Start/Pause/Resume', () => {
       projectId,
       keywords,
       tone: 'professional',
-      targetWordCount: 500,
+      targetWordCount: 800,
     });
     createResponse.expectStatus(201);
     const campaignData = await createResponse.getData();
@@ -133,7 +134,7 @@ test.describe('API: Campaign Start/Pause/Resume', () => {
       projectId,
       keywords,
       tone: 'professional',
-      targetWordCount: 500,
+      targetWordCount: 800,
     });
     createResponse.expectStatus(201);
     const campaignData = await createResponse.getData();
@@ -153,8 +154,17 @@ test.describe('API: Campaign Start/Pause/Resume', () => {
     // Verify we have queued keywords
     let detailResponse = await api.get(`/api/campaigns/${campaignId}`);
     let detailData = await detailResponse.getData();
-    const initialQueuedCount = detailData.keywords.filter(
+
+    // Debug logging
+    console.log('[DEBUG] After start - detailData.keywords:', JSON.stringify(detailData.keywords));
+    console.log('[DEBUG] keywords[0].status:', detailData.keywords[0]?.status);
+    console.log('[DEBUG] Filter result:', detailData.keywords.filter((k: { status: string }) => k.status === 'queued'));
+    console.log('[DEBUG] initialQueuedCount:', detailData.keywords.filter(
       (k: { status: string }) => k.status === 'queued'
+    ).length);
+
+    const initialQueuedCount = detailData.keywords.filter(
+      (k: { status: string }) => k.status === 'queued' || k.status === "queued"
     ).length;
     expect(initialQueuedCount).toBeGreaterThan(0);
 
@@ -183,7 +193,7 @@ test.describe('API: Campaign Start/Pause/Resume', () => {
       projectId,
       keywords: [],
       tone: 'professional',
-      targetWordCount: 500,
+      targetWordCount: 800,
     });
     createResponse.expectStatus(201);
     const campaignData = await createResponse.getData();

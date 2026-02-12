@@ -2,7 +2,7 @@
 
 import { BaselimeRum } from '@baselime/react-rum';
 import { type ReactNode } from 'react';
-import { clientEnv, isDevelopment } from '@shared/config/env';
+import { clientEnv } from '@shared/config/env';
 
 interface IBaselimeProviderProps {
   children: ReactNode;
@@ -12,7 +12,7 @@ export function BaselimeProvider({ children }: IBaselimeProviderProps): ReactNod
   const apiKey = clientEnv.BASELIME_KEY;
 
   // Skip Baselime in development or if no API key
-  if (!apiKey || isDevelopment()) {
+  if (!apiKey || clientEnv.ENV === 'development') {
     return <>{children}</>;
   }
 

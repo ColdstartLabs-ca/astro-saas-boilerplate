@@ -298,6 +298,20 @@ globalThis.fetch = vi.fn((_url, _init) => {
 globalThis.URL.createObjectURL = vi.fn(() => 'mock-object-url');
 globalThis.URL.revokeObjectURL = vi.fn();
 
+// Mock window scroll properties and methods for jsdom
+// In jsdom/vitest, window.scrollY and window.scrollTo need to be defined
+Object.defineProperty(globalThis, 'scrollY', {
+  value: 0,
+  writable: true,
+  configurable: true,
+});
+
+Object.defineProperty(globalThis, 'scrollTo', {
+  value: vi.fn(),
+  writable: true,
+  configurable: true,
+});
+
 // Mock HTMLElement methods
 HTMLElement.prototype.scrollIntoView = vi.fn();
 

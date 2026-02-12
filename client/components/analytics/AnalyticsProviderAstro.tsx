@@ -2,7 +2,7 @@
 
 import { type ReactNode, useEffect } from 'react';
 import { analytics } from '@client/analytics';
-import { clientEnv, isDevelopment } from '@shared/config/env';
+import { clientEnv } from '@shared/config/env';
 
 interface IAnalyticsProviderProps {
   children: ReactNode;
@@ -27,7 +27,7 @@ export function AnalyticsProviderAstro({ children }: IAnalyticsProviderProps): R
 
   useEffect(() => {
     // Skip analytics in development or if no API key
-    if (!apiKey || isDevelopment()) {
+    if (!apiKey || clientEnv.ENV === 'development') {
       return;
     }
 

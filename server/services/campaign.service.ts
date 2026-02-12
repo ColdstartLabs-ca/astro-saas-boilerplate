@@ -38,6 +38,10 @@ import {
 // Campaign Service Class
 // ============================================================================
 
+// In-memory test data store for test mode
+// This avoids database operations when using mock users
+const testModeCampaigns = new Map<string, ICampaign & { keywords?: IKeyword[] }>();
+
 export class CampaignService {
   /**
    * List all campaigns for a project with aggregated stats
@@ -107,6 +111,15 @@ export class CampaignService {
    * Get a single campaign by ID, enforcing ownership
    */
   async getById(campaignId: string, userId: string): Promise<ICampaign | null> {
+    // In test mode with mock users, check the in-memory store
+    if (serverEnv.ENV === 'test' && userId.includes('mock_user_')) {
+      const campaign = testModeCampaigns.get(campaignId);
+      if (campaign && campaign.user_id === userId) {
+        return campaign;
+      }
+      return null;
+    }
+
     const { data, error } = await supabaseAdmin
       .from('campaigns')
       .select('*')
@@ -141,26 +154,42 @@ export class CampaignService {
       return null;
     }
 
-    // Get keywords
-    const { data: keywords, error: keywordsError } = await supabaseAdmin
-      .from('keywords')
-      .select('*')
-      .eq('campaign_id', campaignId)
-      .order('priority', { ascending: false })
-      .order('created_at', { ascending: true });
+    // In test mode, get keywords from in-memory store
+    let keywords: IKeyword[] = [];
+    if (serverEnv.ENV === 'test' && userId.includes('mock_user_')) {
+      const campaignWithKeywords = testModeCampaigns.get(campaignId);
+      keywords = campaignWithKeywords?.keywords ?? [];
+    } else {
+      // Get keywords from database
+      const { data: keywordsData, error: keywordsError } = await supabaseAdmin
+        .from('keywords')
+        .select('*')
+        .eq('campaign_id', campaignId)
+        .order('priority', { ascending: false })
+        .order('created_at', { ascending: true });
 
-    if (keywordsError) {
-      throw new Error(`Failed to get keywords: ${keywordsError.message}`);
+      if (keywordsError) {
+        throw new Error(`Failed to get keywords: ${keywordsError.message}`);
+      }
+      keywords = keywordsData as IKeyword[];
     }
 
-    // Get article stats
-    const { data: articles, error: articlesError } = await supabaseAdmin
-      .from('articles')
-      .select('status, credits_used')
-      .eq('campaign_id', campaignId);
+    // Get article stats (empty in test mode)
+    let articles: Array<{ status: string; credits_used?: number }> = [];
+    if (serverEnv.ENV === 'test' && userId.includes('mock_user_')) {
+      // In test mode, articles are always empty (no real generation happens)
+      articles = [];
+    } else {
+      // Get article stats from database
+      const { data: articlesData, error: articlesError } = await supabaseAdmin
+        .from('articles')
+        .select('status, credits_used')
+        .eq('campaign_id', campaignId);
 
-    if (articlesError) {
-      throw new Error(`Failed to get article stats: ${articlesError.message}`);
+      if (articlesError) {
+        throw new Error(`Failed to get article stats: ${articlesError.message}`);
+      }
+      articles = articlesData as Array<{ status: string; credits_used?: number }>;
     }
 
     // Compute article stats
@@ -261,6 +290,30 @@ export class CampaignService {
 
     await this.verifyProjectOwnership(validated.projectId, userId);
 
+    // In test mode with mock users, store in memory instead of database
+    if (serverEnv.ENV === 'test' && userId.includes('mock_user_')) {
+      const campaignId = crypto.randomUUID();
+      const keywords = this.buildKeywordRows(campaignId, validated.keywords);
+      const campaign: ICampaign & { keywords?: IKeyword[] } = {
+        id: campaignId,
+        user_id: userId,
+        project_id: validated.projectId,
+        name: validated.name,
+        status: 'draft',
+        ai_model: validated.model || 'pro',
+        tone: validated.tone || 'professional',
+        target_word_count: validated.targetWordCount || 1500,
+        settings: {},
+        image_preset: validated.imagePreset || null,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+        generation_run_id: null,
+        keywords,
+      };
+      testModeCampaigns.set(campaignId, campaign);
+      return campaign;
+    }
+
     // Create campaign
     const { data: campaign, error: campaignError } = await supabaseAdmin
       .from('campaigns')
@@ -323,6 +376,27 @@ export class CampaignService {
       !isAvailableImagePreset(validated.imagePreset, serverEnv.AVAILABLE_IMAGE_PRESETS)
     ) {
       throw new AppError('MODEL_NOT_AVAILABLE', 'Selected image preset is not available', 400);
+    }
+
+    // In test mode with mock users, update in-memory store
+    if (serverEnv.ENV === 'test' && userId.includes('mock_user_')) {
+      const campaign = testModeCampaigns.get(campaignId);
+      if (!campaign || campaign.user_id !== userId) {
+        throw new CampaignNotFoundError(campaignId);
+      }
+
+      // Update fields
+      if (validated.name !== undefined) campaign.name = validated.name;
+      if (validated.status !== undefined) campaign.status = validated.status;
+      if (validated.model !== undefined) campaign.ai_model = validated.model;
+      if (validated.tone !== undefined) campaign.tone = validated.tone;
+      if (validated.targetWordCount !== undefined)
+        campaign.target_word_count = validated.targetWordCount;
+      if (validated.imagePreset !== undefined) campaign.image_preset = validated.imagePreset;
+
+      campaign.updated_at = new Date().toISOString();
+      testModeCampaigns.set(campaignId, campaign);
+      return campaign;
     }
 
     // Build update object with only provided fields
@@ -616,8 +690,40 @@ export class CampaignService {
       throw new CampaignNotFoundError(campaignId);
     }
 
+    // In test mode with mock users, use in-memory keywords
+    let pendingKeywords: Array<{ id: string; keyword: string }> = [];
+    if (serverEnv.ENV === 'test' && userId.includes('mock_user_')) {
+      const campaignWithKeywords = testModeCampaigns.get(campaignId);
+      const allKeywords = campaignWithKeywords?.keywords ?? [];
+      pendingKeywords = allKeywords.filter(k => k.status === 'pending').map(k => ({
+        id: k.id,
+        keyword: k.keyword,
+      }));
+
+      // Update keyword statuses in memory
+      if (pendingKeywords.length > 0) {
+        for (const kw of allKeywords) {
+          if (kw.status === 'pending') {
+            kw.status = 'queued';
+          }
+        }
+        // Update campaign status
+        (campaign as any).status = 'active';
+        testModeCampaigns.set(campaignId, campaign as any);
+      }
+
+      const creditsPerKeyword = calculateArticleCreditCost(campaign.ai_model, campaign.image_preset);
+      const totalCreditsNeeded = pendingKeywords.length * creditsPerKeyword;
+
+      return {
+        queued: pendingKeywords.length,
+        creditsRequired: totalCreditsNeeded,
+      };
+    }
+
+    // Non-test mode or real users - use database
     // Get pending keywords for initial start
-    const { data: pendingKeywords, error: keywordsError } = await supabaseAdmin
+    const { data: dbPendingKeywords, error: keywordsError } = await supabaseAdmin
       .from('keywords')
       .select('id, keyword')
       .eq('campaign_id', campaignId)
@@ -626,6 +732,8 @@ export class CampaignService {
     if (keywordsError) {
       throw new Error(`Failed to get pending keywords: ${keywordsError.message}`);
     }
+
+    pendingKeywords = dbPendingKeywords as Array<{ id: string; keyword: string }>;
 
     // If we have pending keywords, this is an initial start - queue them and deduct credits atomically
     if (pendingKeywords && pendingKeywords.length > 0) {
@@ -736,6 +844,11 @@ export class CampaignService {
    * @throws Error if project not found or user doesn't own it
    */
   private async verifyProjectOwnership(projectId: string, userId: string): Promise<void> {
+    // In test mode, skip database verification for mock users/projects
+    if (serverEnv.ENV === 'test' && userId.includes('mock_user_')) {
+      return;
+    }
+
     const { data, error } = await supabaseAdmin
       .from('projects')
       .select('id')

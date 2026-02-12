@@ -1,6 +1,6 @@
 'use client';
 
-import { isDevelopment } from '@shared/config/env';
+import { clientEnv } from '@shared/config/env';
 
 type LogLevel = 'info' | 'warn' | 'error';
 
@@ -23,7 +23,7 @@ export class ClientLogger {
       source: 'saas-boilerplate-web',
     };
 
-    if (isDevelopment()) {
+    if (clientEnv.ENV === 'development') {
       // In development, use console methods for easier debugging
       const prefix = `[${level.toUpperCase()}] ${message}`;
 
