@@ -4,9 +4,22 @@
  */
 
 /**
+ * Schedule frequency options for drip-feed article generation
+ */
+export type ScheduleFrequency =
+  | '3x_daily'
+  | '2x_daily'
+  | 'daily'
+  | 'every_other_day'
+  | '3x_weekly'
+  | '2x_weekly'
+  | 'weekly'
+  | 'every_2_weeks';
+
+/**
  * Campaign status enum representing the lifecycle of a campaign
  */
-export type CampaignStatus = 'draft' | 'active' | 'paused' | 'completed';
+export type CampaignStatus = 'draft' | 'active' | 'paused' | 'completed' | 'scheduled';
 
 /**
  * Keyword status enum representing the processing state of a keyword
@@ -22,6 +35,15 @@ export type KeywordDifficulty = 'easy' | 'medium' | 'hard' | 'unknown';
  * Writing tone options for content generation
  */
 export type CampaignTone = 'professional' | 'casual' | 'witty' | 'academic';
+
+/**
+ * Reasons why a scheduled campaign might be auto-paused
+ */
+export type SchedulePauseReason =
+  | 'insufficient_credits'
+  | 'no_pending_keywords'
+  | 'generation_failed'
+  | 'user_paused';
 
 /**
  * Full campaign interface matching the database schema
@@ -40,6 +62,13 @@ export interface ICampaign {
   generation_run_id: string | null;
   created_at: string;
   updated_at: string;
+  // Scheduling fields
+  schedule_frequency: ScheduleFrequency | null;
+  schedule_batch_size: number;
+  next_run_at: string | null;
+  last_run_at: string | null;
+  schedule_timezone: string;
+  schedule_hour: number;
 }
 
 /**
@@ -87,6 +116,15 @@ export interface ICreateCampaignInput {
   targetWordCount?: number;
   /** Image generation preset key (optional, no images if not specified) */
   imagePreset?: string;
+  // Scheduling fields
+  /** How often to generate articles (optional) */
+  scheduleFrequency?: ScheduleFrequency;
+  /** Number of articles per scheduled run (optional, 1-50) */
+  scheduleBatchSize?: number;
+  /** IANA timezone for scheduling (optional, default UTC) */
+  scheduleTimezone?: string;
+  /** Preferred hour in user timezone (optional, 0-23, default 9) */
+  scheduleHour?: number;
 }
 
 /**
@@ -105,6 +143,17 @@ export interface IUpdateCampaignInput {
   targetWordCount?: number;
   /** Image generation preset key */
   imagePreset?: string;
+  // Scheduling fields
+  /** How often to generate articles */
+  scheduleFrequency?: ScheduleFrequency | null;
+  /** Number of articles per scheduled run (1-50) */
+  scheduleBatchSize?: number;
+  /** IANA timezone for scheduling */
+  scheduleTimezone?: string;
+  /** Preferred hour in user timezone (0-23) */
+  scheduleHour?: number;
+  /** Next scheduled run time (for scheduling) */
+  nextRunAt?: string | null;
 }
 
 /**
@@ -277,4 +326,35 @@ export interface IClaimCampaignGenerationResult {
   existingStatus?: 'completed' | 'processing' | 'failed' | 'already_running' | 'unknown';
   /** Cached response data (only for completed runs) */
   cachedResponse?: ICampaignGenerationRunResult;
+}
+
+/**
+ * Schedule configuration for a campaign
+ */
+export interface IScheduleConfig {
+  /** How often to generate articles */
+  frequency: ScheduleFrequency;
+  /** Number of articles per scheduled run (1-50) */
+  batchSize: number;
+  /** IANA timezone for scheduling */
+  timezone: string;
+  /** Preferred hour in user timezone (0-23) */
+  hour: number;
+}
+
+/**
+ * SEO velocity advisory level
+ */
+export type SeoVelocityLevel = 'safe' | 'moderate' | 'high' | 'aggressive';
+
+/**
+ * SEO velocity advisory information
+ */
+export interface ISeoVelocityAdvisory {
+  /** Advisory level */
+  level: SeoVelocityLevel;
+  /** Human-readable message */
+  message: string;
+  /** Whether this should block the operation */
+  blocksOperation: boolean;
 }

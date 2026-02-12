@@ -13,6 +13,8 @@ import {
   processStripeEvent,
   sleep,
 } from '../services/subscription-sync.service';
+import { MAX_CAMPAIGNS_PER_CRON_RUN } from '@shared/config/scheduling.config';
+import { campaignService } from '../services/campaign.service';
 import type Stripe from 'stripe';
 
 /**
@@ -23,6 +25,7 @@ import type Stripe from 'stripe';
  * - POST /api/cron/reconcile - Full subscription reconciliation
  * - POST /api/cron/recover-webhooks - Recover failed webhooks
  * - POST /api/cron/recover-stale-articles - Recover stale article generation jobs
+ * - POST /api/cron/process-scheduled-campaigns - Process scheduled campaigns due to run
  */
 export class CronController extends BaseController {
   /**
@@ -88,6 +91,9 @@ export class CronController extends BaseController {
     }
     if (path.endsWith('/recover-stale-articles') && this.isPost(req)) {
       return this.recoverStaleArticles(req);
+    }
+    if (path.endsWith('/process-scheduled-campaigns') && this.isPost(req)) {
+      return this.processScheduledCampaigns(req);
     }
 
     return this.error('METHOD_NOT_ALLOWED', 'Method not allowed', 405);
@@ -792,6 +798,80 @@ export class CronController extends BaseController {
       }
 
       return this.error('INTERNAL_ERROR', errorMessage, 500, { processed, recovered, failed });
+    }
+  }
+
+  /**
+   * POST /api/cron/process-scheduled-campaigns
+   * Process scheduled campaigns that are due to run
+   */
+  private async processScheduledCampaigns(_req: Request): Promise<Response> {
+    console.log('[CRON] Starting scheduled campaign processing...');
+
+    let processed = 0;
+    let skipped = 0;
+    let errors = 0;
+    const completedCampaigns: string[] = [];
+    const errorDetails: Array<{ campaignId: string; error: string }> = [];
+
+    try {
+      // Get campaigns due for processing
+      const dueCampaigns = await campaignService.getScheduledCampaignsDue(
+        MAX_CAMPAIGNS_PER_CRON_RUN
+      );
+
+      console.log(`[CRON] Found ${dueCampaigns.length} campaigns due for processing`);
+
+      for (const campaign of dueCampaigns) {
+        try {
+          const result = await campaignService.processScheduledBatch(campaign.id);
+
+          if (result.completed) {
+            completedCampaigns.push(campaign.id);
+            console.log(`[CRON] Campaign ${campaign.id} completed all keywords`);
+          } else if (result.paused) {
+            skipped++;
+            console.log(
+              `[CRON] Campaign ${campaign.id} paused: ${result.pauseReason || 'unknown reason'}`
+            );
+          } else {
+            processed++;
+            console.log(
+              `[CRON] Campaign ${campaign.id} processed batch: ${result.articlesQueued} articles queued, next run at ${result.nextRunAt}`
+            );
+          }
+        } catch (error: unknown) {
+          errors++;
+          const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+          errorDetails.push({ campaignId: campaign.id, error: errorMessage });
+          console.error(`[CRON] Failed to process campaign ${campaign.id}:`, errorMessage);
+        }
+      }
+
+      console.log(
+        `[CRON] Scheduled campaign processing complete: ${processed} processed, ${skipped} skipped, ${errors} errors, ${completedCampaigns.length} completed`
+      );
+
+      return this.json({
+        success: true,
+        processed,
+        skipped,
+        errors,
+        completedCampaigns,
+        errorDetails: errors > 0 ? errorDetails : undefined,
+        totalDue: dueCampaigns.length,
+      });
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      console.error('[CRON] Scheduled campaign processing failed:', errorMessage);
+
+      return this.error('INTERNAL_ERROR', errorMessage, 500, {
+        processed,
+        skipped,
+        errors,
+        completedCampaigns,
+        errorDetails,
+      });
     }
   }
 }

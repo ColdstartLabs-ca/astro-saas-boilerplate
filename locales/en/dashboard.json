@@ -684,6 +684,11 @@
       "starting": "Starting generation...",
       "queued": "{count} articles queued for generation."
     },
+    "schedule": {
+      "pausedInsufficientCredits": "Schedule Paused: Insufficient Credits",
+      "pausedInsufficientCreditsDescription": "Your scheduled campaign was paused because you don't have enough credits. Purchase more credits to resume automatic article generation.",
+      "buyCredits": "Buy More Credits"
+    },
     "newCampaign": {
       "title": "Create New Campaign",
       "step1": "Campaign Info",

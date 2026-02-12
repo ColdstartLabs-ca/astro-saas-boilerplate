@@ -19,6 +19,7 @@ import {
   type IUpdateCampaignInput,
   type ICampaignArticleStats,
   type ICampaignCreditStats,
+  type ScheduleFrequency,
   CampaignNotFoundError,
   InsufficientCreditsError,
   NoPendingKeywordsError,
@@ -27,20 +28,36 @@ import { isAvailableImagePreset } from '@shared/config/image-models.config';
 import { isAvailableWriterPreset } from '@shared/config/ai-models.config';
 import { calculateArticleCreditCost } from '@shared/constants';
 import { serverEnv } from '@shared/config/env';
+import { articleGenerationService } from './article-generation.service';
 import { AppError } from '@shared/utils/errors';
 import {
   createCampaignSchema,
   updateCampaignSchema,
   addKeywordsWithCampaignSchema,
 } from '@shared/validation/campaign.schema';
+import {
+  calculateNextRunAt,
+  DEFAULT_SCHEDULE_TIMEZONE,
+  DEFAULT_SCHEDULE_HOUR,
+} from '@shared/config/scheduling.config';
 
 // =============================================================================
 // Campaign Service Class
 // ============================================================================
 
+// In-memory test mode keyword (partial IKeyword for test mocking)
+interface ITestModeKeyword {
+  id: string;
+  campaign_id: string;
+  keyword: string;
+  status: 'pending' | 'queued' | 'generating' | 'generated' | 'failed';
+  difficulty: 'easy' | 'medium' | 'hard' | 'unknown';
+  priority: number;
+}
+
 // In-memory test data store for test mode
 // This avoids database operations when using mock users
-const testModeCampaigns = new Map<string, ICampaign & { keywords?: IKeyword[] }>();
+const testModeCampaigns = new Map<string, ICampaign & { keywords?: ITestModeKeyword[] }>();
 
 export class CampaignService {
   /**
@@ -158,7 +175,8 @@ export class CampaignService {
     let keywords: IKeyword[] = [];
     if (serverEnv.ENV === 'test' && userId.includes('mock_user_')) {
       const campaignWithKeywords = testModeCampaigns.get(campaignId);
-      keywords = campaignWithKeywords?.keywords ?? [];
+      // Cast test mode keywords to IKeyword (partial implementation for testing)
+      keywords = (campaignWithKeywords?.keywords ?? []) as unknown as IKeyword[];
     } else {
       // Get keywords from database
       const { data: keywordsData, error: keywordsError } = await supabaseAdmin
@@ -293,8 +311,13 @@ export class CampaignService {
     // In test mode with mock users, store in memory instead of database
     if (serverEnv.ENV === 'test' && userId.includes('mock_user_')) {
       const campaignId = crypto.randomUUID();
-      const keywords = this.buildKeywordRows(campaignId, validated.keywords);
-      const campaign: ICampaign & { keywords?: IKeyword[] } = {
+      const keywordRows = this.buildKeywordRows(campaignId, validated.keywords);
+      // Add ids to keywords for test mode
+      const keywords: ITestModeKeyword[] = keywordRows.map(kw => ({
+        ...kw,
+        id: crypto.randomUUID(),
+      }));
+      const campaign: ICampaign & { keywords?: ITestModeKeyword[] } = {
         id: campaignId,
         user_id: userId,
         project_id: validated.projectId,
@@ -308,6 +331,14 @@ export class CampaignService {
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
         generation_run_id: null,
+        // Schedule fields
+        schedule_frequency: validated.scheduleFrequency || null,
+        schedule_batch_size: validated.scheduleBatchSize || 1,
+        next_run_at: null,
+        last_run_at: null,
+        schedule_timezone: validated.scheduleTimezone || DEFAULT_SCHEDULE_TIMEZONE,
+        schedule_hour: validated.scheduleHour ?? DEFAULT_SCHEDULE_HOUR,
+        // Test mode keywords
         keywords,
       };
       testModeCampaigns.set(campaignId, campaign);
@@ -393,6 +424,15 @@ export class CampaignService {
       if (validated.targetWordCount !== undefined)
         campaign.target_word_count = validated.targetWordCount;
       if (validated.imagePreset !== undefined) campaign.image_preset = validated.imagePreset;
+      // Schedule fields
+      if (validated.scheduleFrequency !== undefined)
+        campaign.schedule_frequency = validated.scheduleFrequency;
+      if (validated.scheduleBatchSize !== undefined)
+        campaign.schedule_batch_size = validated.scheduleBatchSize;
+      if (validated.scheduleTimezone !== undefined)
+        campaign.schedule_timezone = validated.scheduleTimezone;
+      if (validated.scheduleHour !== undefined) campaign.schedule_hour = validated.scheduleHour;
+      if (validated.nextRunAt !== undefined) campaign.next_run_at = validated.nextRunAt;
 
       campaign.updated_at = new Date().toISOString();
       testModeCampaigns.set(campaignId, campaign);
@@ -409,6 +449,48 @@ export class CampaignService {
     if (validated.targetWordCount !== undefined)
       updates.target_word_count = validated.targetWordCount;
     if (validated.imagePreset !== undefined) updates.image_preset = validated.imagePreset;
+    // Schedule fields
+    if (validated.scheduleFrequency !== undefined)
+      updates.schedule_frequency = validated.scheduleFrequency;
+    if (validated.scheduleBatchSize !== undefined)
+      updates.schedule_batch_size = validated.scheduleBatchSize;
+    if (validated.scheduleTimezone !== undefined)
+      updates.schedule_timezone = validated.scheduleTimezone;
+    if (validated.scheduleHour !== undefined) updates.schedule_hour = validated.scheduleHour;
+    if (validated.nextRunAt !== undefined) updates.next_run_at = validated.nextRunAt;
+
+    // If schedule config changed on a scheduled campaign, recalculate next_run_at
+    const scheduleFieldsChanged =
+      validated.scheduleFrequency !== undefined ||
+      validated.scheduleTimezone !== undefined ||
+      validated.scheduleHour !== undefined;
+
+    if (scheduleFieldsChanged) {
+      // Get current campaign to check if it's scheduled
+      const { data: currentCampaign } = await supabaseAdmin
+        .from('campaigns')
+        .select('status, schedule_frequency, schedule_timezone, schedule_hour')
+        .eq('id', campaignId)
+        .eq('user_id', userId)
+        .single();
+
+      if (currentCampaign && currentCampaign.status === 'scheduled') {
+        // Recalculate next_run_at using the updated values (or current values if not updated)
+        const frequency = (validated.scheduleFrequency ??
+          currentCampaign.schedule_frequency) as ScheduleFrequency;
+        const timezone = validated.scheduleTimezone ?? currentCampaign.schedule_timezone;
+        const hour = validated.scheduleHour ?? currentCampaign.schedule_hour;
+
+        if (frequency) {
+          const newNextRunAt = calculateNextRunAt(
+            frequency,
+            timezone || DEFAULT_SCHEDULE_TIMEZONE,
+            hour ?? DEFAULT_SCHEDULE_HOUR
+          );
+          updates.next_run_at = newNextRunAt;
+        }
+      }
+    }
 
     // Update campaign with ownership check
     const { data, error } = await supabaseAdmin
@@ -695,10 +777,12 @@ export class CampaignService {
     if (serverEnv.ENV === 'test' && userId.includes('mock_user_')) {
       const campaignWithKeywords = testModeCampaigns.get(campaignId);
       const allKeywords = campaignWithKeywords?.keywords ?? [];
-      pendingKeywords = allKeywords.filter(k => k.status === 'pending').map(k => ({
-        id: k.id,
-        keyword: k.keyword,
-      }));
+      pendingKeywords = allKeywords
+        .filter(k => k.status === 'pending')
+        .map(k => ({
+          id: k.id,
+          keyword: k.keyword,
+        }));
 
       // Update keyword statuses in memory
       if (pendingKeywords.length > 0) {
@@ -708,11 +792,14 @@ export class CampaignService {
           }
         }
         // Update campaign status
-        (campaign as any).status = 'active';
-        testModeCampaigns.set(campaignId, campaign as any);
+        campaign.status = 'active';
+        testModeCampaigns.set(campaignId, campaign);
       }
 
-      const creditsPerKeyword = calculateArticleCreditCost(campaign.ai_model, campaign.image_preset);
+      const creditsPerKeyword = calculateArticleCreditCost(
+        campaign.ai_model,
+        campaign.image_preset
+      );
       const totalCreditsNeeded = pendingKeywords.length * creditsPerKeyword;
 
       return {
@@ -740,7 +827,10 @@ export class CampaignService {
       const keywordCount = pendingKeywords.length;
 
       // Calculate credits per keyword using centralized pricing model
-      const creditsPerKeyword = calculateArticleCreditCost(campaign.ai_model, campaign.image_preset);
+      const creditsPerKeyword = calculateArticleCreditCost(
+        campaign.ai_model,
+        campaign.image_preset
+      );
       const totalCreditsNeeded = keywordCount * creditsPerKeyword;
 
       // Extract keywords array
@@ -820,6 +910,426 @@ export class CampaignService {
 
     // No keywords to process
     throw new NoPendingKeywordsError();
+  }
+
+  // ===========================================================================
+  // Schedule Management Methods
+  // ===========================================================================
+
+  /**
+   * Start a scheduled campaign for drip-feed article generation.
+   * Validates campaign has schedule config and pending keywords, then sets status to 'scheduled'.
+   *
+   * @param campaignId - The campaign ID to start scheduling
+   * @param userId - The user ID making the request
+   * @returns Object with nextRunAt timestamp and pendingKeywords count
+   * @throws CampaignNotFoundError if campaign not found or not owned by user
+   * @throws Error if campaign lacks schedule config, has no pending keywords, or invalid state
+   */
+  async startSchedule(
+    campaignId: string,
+    userId: string
+  ): Promise<{ nextRunAt: string; pendingKeywords: number }> {
+    // Get campaign with ownership check
+    const campaign = await this.getById(campaignId, userId);
+    if (!campaign) {
+      throw new CampaignNotFoundError(campaignId);
+    }
+
+    // Validate campaign has schedule configuration
+    if (!campaign.schedule_frequency) {
+      throw new Error(
+        'Cannot start schedule: campaign has no schedule configuration. Please set a schedule frequency first.'
+      );
+    }
+
+    // Validate campaign is in a state that can start scheduling (draft or paused)
+    if (campaign.status !== 'draft' && campaign.status !== 'paused') {
+      throw new Error(
+        `Cannot start schedule: campaign status is '${campaign.status}'. Only draft or paused campaigns can be scheduled.`
+      );
+    }
+
+    // Get pending keywords count
+    const pendingKeywords = await this.getPendingKeywordCount(campaignId);
+
+    // Validate campaign has pending keywords
+    if (pendingKeywords === 0) {
+      throw new NoPendingKeywordsError();
+    }
+
+    // Calculate next run time using schedule config
+    const nextRunAt = calculateNextRunAt(
+      campaign.schedule_frequency as ScheduleFrequency,
+      campaign.schedule_timezone || DEFAULT_SCHEDULE_TIMEZONE,
+      campaign.schedule_hour ?? DEFAULT_SCHEDULE_HOUR
+    );
+
+    // In test mode with mock users, update in-memory store
+    if (serverEnv.ENV === 'test' && userId.includes('mock_user_')) {
+      const campaignData = testModeCampaigns.get(campaignId);
+      if (campaignData) {
+        campaignData.status = 'scheduled';
+        campaignData.next_run_at = nextRunAt;
+        testModeCampaigns.set(campaignId, campaignData);
+      }
+      return { nextRunAt, pendingKeywords };
+    }
+
+    // Update campaign status and next_run_at
+    const { error } = await supabaseAdmin
+      .from('campaigns')
+      .update({
+        status: 'scheduled',
+        next_run_at: nextRunAt,
+      })
+      .eq('id', campaignId)
+      .eq('user_id', userId);
+
+    if (error) {
+      throw new Error(`Failed to start schedule: ${error.message}`);
+    }
+
+    return { nextRunAt, pendingKeywords };
+  }
+
+  /**
+   * Pause a scheduled campaign.
+   * Sets status to 'paused' and clears next_run_at.
+   *
+   * @param campaignId - The campaign ID to pause
+   * @param userId - The user ID making the request
+   * @returns Object confirming pause
+   * @throws CampaignNotFoundError if campaign not found or not owned by user
+   * @throws Error if campaign is not in a pausable state
+   */
+  async pauseSchedule(campaignId: string, userId: string): Promise<{ paused: true }> {
+    // Get campaign with ownership check
+    const campaign = await this.getById(campaignId, userId);
+    if (!campaign) {
+      throw new CampaignNotFoundError(campaignId);
+    }
+
+    // Validate campaign is in a state that can be paused (scheduled or active)
+    if (campaign.status !== 'scheduled' && campaign.status !== 'active') {
+      throw new Error(
+        `Cannot pause schedule: campaign status is '${campaign.status}'. Only scheduled or active campaigns can be paused.`
+      );
+    }
+
+    // In test mode with mock users, update in-memory store
+    if (serverEnv.ENV === 'test' && userId.includes('mock_user_')) {
+      const campaignData = testModeCampaigns.get(campaignId);
+      if (campaignData) {
+        campaignData.status = 'paused';
+        campaignData.next_run_at = null;
+        testModeCampaigns.set(campaignId, campaignData);
+      }
+      return { paused: true };
+    }
+
+    // Update campaign status and clear next_run_at
+    const { error } = await supabaseAdmin
+      .from('campaigns')
+      .update({
+        status: 'paused',
+        next_run_at: null,
+      })
+      .eq('id', campaignId)
+      .eq('user_id', userId);
+
+    if (error) {
+      throw new Error(`Failed to pause schedule: ${error.message}`);
+    }
+
+    return { paused: true };
+  }
+
+  /**
+   * Resume a paused scheduled campaign.
+   * Recalculates next_run_at from schedule config and sets status to 'scheduled'.
+   *
+   * @param campaignId - The campaign ID to resume
+   * @param userId - The user ID making the request
+   * @returns Object with recalculated nextRunAt timestamp
+   * @throws CampaignNotFoundError if campaign not found or not owned by user
+   * @throws Error if campaign is not paused or lacks schedule config
+   */
+  async resumeSchedule(campaignId: string, userId: string): Promise<{ nextRunAt: string }> {
+    // Get campaign with ownership check
+    const campaign = await this.getById(campaignId, userId);
+    if (!campaign) {
+      throw new CampaignNotFoundError(campaignId);
+    }
+
+    // Validate campaign is paused
+    if (campaign.status !== 'paused') {
+      throw new Error(
+        `Cannot resume schedule: campaign status is '${campaign.status}'. Only paused campaigns can be resumed.`
+      );
+    }
+
+    // Validate campaign has schedule configuration
+    if (!campaign.schedule_frequency) {
+      throw new Error(
+        'Cannot resume schedule: campaign has no schedule configuration. Please set a schedule frequency first.'
+      );
+    }
+
+    // Calculate next run time using schedule config
+    const nextRunAt = calculateNextRunAt(
+      campaign.schedule_frequency as ScheduleFrequency,
+      campaign.schedule_timezone || DEFAULT_SCHEDULE_TIMEZONE,
+      campaign.schedule_hour ?? DEFAULT_SCHEDULE_HOUR
+    );
+
+    // In test mode with mock users, update in-memory store
+    if (serverEnv.ENV === 'test' && userId.includes('mock_user_')) {
+      const campaignData = testModeCampaigns.get(campaignId);
+      if (campaignData) {
+        campaignData.status = 'scheduled';
+        campaignData.next_run_at = nextRunAt;
+        testModeCampaigns.set(campaignId, campaignData);
+      }
+      return { nextRunAt };
+    }
+
+    // Update campaign status and next_run_at
+    const { error } = await supabaseAdmin
+      .from('campaigns')
+      .update({
+        status: 'scheduled',
+        next_run_at: nextRunAt,
+      })
+      .eq('id', campaignId)
+      .eq('user_id', userId);
+
+    if (error) {
+      throw new Error(`Failed to resume schedule: ${error.message}`);
+    }
+
+    return { nextRunAt };
+  }
+
+  /**
+   * Get campaigns that are due for scheduled processing.
+   * Returns campaigns where status='scheduled' AND next_run_at <= NOW().
+   *
+   * @param limit - Maximum number of campaigns to return (default from config)
+   * @returns Array of campaigns due for processing
+   */
+  async getScheduledCampaignsDue(limit: number): Promise<ICampaign[]> {
+    const { data, error } = await supabaseAdmin
+      .from('campaigns')
+      .select('*')
+      .eq('status', 'scheduled')
+      .lte('next_run_at', new Date().toISOString())
+      .order('next_run_at', { ascending: true })
+      .limit(limit);
+
+    if (error) {
+      throw new Error(`Failed to get scheduled campaigns: ${error.message}`);
+    }
+
+    return data || [];
+  }
+
+  /**
+   * Process a scheduled batch for a campaign.
+   * - Queues the next batch_size keywords
+   * - Deducts credits
+   * - Starts generation via fireAndForget
+   * - Updates next_run_at
+   * - Handles completion and insufficient credits
+   *
+   * @param campaignId - Campaign ID to process
+   * @returns Processing result with status
+   */
+  async processScheduledBatch(campaignId: string): Promise<{
+    completed?: boolean;
+    paused?: boolean;
+    pauseReason?: string;
+    articlesQueued?: number;
+    nextRunAt?: string;
+  }> {
+    // Get campaign (no user_id check for cron)
+    const { data: campaign, error: campaignError } = await supabaseAdmin
+      .from('campaigns')
+      .select('*')
+      .eq('id', campaignId)
+      .single();
+
+    if (campaignError || !campaign) {
+      throw new Error(`Campaign not found: ${campaignId}`);
+    }
+
+    // Set status to active
+    await supabaseAdmin.from('campaigns').update({ status: 'active' }).eq('id', campaignId);
+
+    // Get pending keywords (limit by batch_size)
+    const batchSize = campaign.schedule_batch_size || 1;
+    const { data: keywords, error: keywordsError } = await supabaseAdmin
+      .from('keywords')
+      .select('*')
+      .eq('campaign_id', campaignId)
+      .eq('status', 'pending')
+      .order('priority', { ascending: false })
+      .limit(batchSize);
+
+    if (keywordsError) {
+      throw new Error(`Failed to get pending keywords: ${keywordsError.message}`);
+    }
+
+    // If no pending keywords, mark campaign as completed
+    if (!keywords || keywords.length === 0) {
+      await supabaseAdmin
+        .from('campaigns')
+        .update({ status: 'completed', next_run_at: null })
+        .eq('id', campaignId);
+
+      return { completed: true };
+    }
+
+    // Try to deduct credits and queue articles
+    try {
+      // Call create_articles_with_credits RPC
+      const keywordIds = keywords.map(k => k.id);
+      const { error: rpcError } = await supabaseAdmin.rpc('create_articles_with_credits', {
+        p_user_id: campaign.user_id,
+        p_campaign_id: campaignId,
+        p_keyword_ids: keywordIds,
+      });
+
+      if (rpcError) {
+        // Check if error is due to insufficient credits
+        if (rpcError.message?.includes('Insufficient credits')) {
+          // Pause campaign with reason
+          const settings = {
+            ...(campaign.settings as object),
+            pause_reason: 'insufficient_credits',
+            paused_at: new Date().toISOString(),
+          };
+
+          await supabaseAdmin
+            .from('campaigns')
+            .update({
+              status: 'paused',
+              next_run_at: null,
+              settings,
+            })
+            .eq('id', campaignId);
+
+          return {
+            paused: true,
+            pauseReason: 'insufficient_credits',
+          };
+        }
+
+        throw rpcError;
+      }
+
+      // Start generation in background (same pattern as start.ts)
+      // Process articles sequentially in background
+      (async () => {
+        for (const keyword of keywords) {
+          try {
+            // Update keyword status to 'generating'
+            await supabaseAdmin
+              .from('keywords')
+              .update({ status: 'generating' })
+              .eq('id', keyword.id);
+
+            // Find the article for this keyword
+            const { data: article } = await supabaseAdmin
+              .from('articles')
+              .select('id')
+              .eq('campaign_id', campaignId)
+              .eq('primary_keyword', keyword.keyword)
+              .eq('status', 'queued')
+              .single();
+
+            if (!article) {
+              throw new Error(`Article not found for keyword: ${keyword.keyword}`);
+            }
+
+            // Generate article
+            await articleGenerationService.generateArticle(article.id, campaign.user_id, {
+              keyword: keyword.keyword,
+              projectId: campaign.project_id ?? '',
+              campaignId,
+              model: campaign.ai_model,
+              tone: campaign.tone,
+              targetWordCount: campaign.target_word_count,
+              imagePreset: campaign.image_preset ?? undefined,
+            });
+
+            // Update keyword status to 'generated' on success
+            await supabaseAdmin
+              .from('keywords')
+              .update({ status: 'generated' })
+              .eq('id', keyword.id);
+
+            console.log(`[ScheduledBatch] Generated article for keyword: ${keyword.keyword}`);
+          } catch (error) {
+            console.error(
+              `[ScheduledBatch] Failed to generate article for keyword ${keyword.id}:`,
+              error
+            );
+            // Update keyword status to 'failed' on error
+            await supabaseAdmin.from('keywords').update({ status: 'failed' }).eq('id', keyword.id);
+          }
+        }
+      })().catch(err =>
+        console.error('[processScheduledBatch] Background generation failed:', err)
+      );
+
+      // Calculate next run time
+      const nextRunAt = calculateNextRunAt(
+        campaign.schedule_frequency as ScheduleFrequency,
+        campaign.schedule_timezone || DEFAULT_SCHEDULE_TIMEZONE,
+        campaign.schedule_hour ?? DEFAULT_SCHEDULE_HOUR
+      );
+
+      // Update campaign back to scheduled with new next_run_at
+      await supabaseAdmin
+        .from('campaigns')
+        .update({
+          status: 'scheduled',
+          next_run_at: nextRunAt,
+          last_run_at: new Date().toISOString(),
+        })
+        .eq('id', campaignId);
+
+      return {
+        articlesQueued: keywords.length,
+        nextRunAt,
+      };
+    } catch (error: unknown) {
+      // On error, set back to scheduled (don't lose the schedule)
+      await supabaseAdmin.from('campaigns').update({ status: 'scheduled' }).eq('id', campaignId);
+
+      throw error;
+    }
+  }
+
+  /**
+   * Get the count of pending keywords for a campaign.
+   *
+   * @param campaignId - The campaign ID
+   * @returns Number of pending keywords
+   */
+  private async getPendingKeywordCount(campaignId: string): Promise<number> {
+    const { count, error } = await supabaseAdmin
+      .from('keywords')
+      .select('*', { count: 'exact', head: true })
+      .eq('campaign_id', campaignId)
+      .eq('status', 'pending');
+
+    if (error) {
+      throw new Error(`Failed to get pending keywords count: ${error.message}`);
+    }
+
+    return count ?? 0;
   }
 
   // ===========================================================================

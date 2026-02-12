@@ -14,8 +14,20 @@ import { isValidImagePreset } from '@shared/config/image-models.config';
 export const TONES = ['professional', 'casual', 'witty', 'academic'] as const;
 export type Tone = (typeof TONES)[number];
 
-export const CAMPAIGN_STATUSES = ['draft', 'active', 'paused', 'completed'] as const;
+export const CAMPAIGN_STATUSES = ['draft', 'active', 'paused', 'completed', 'scheduled'] as const;
 export type CampaignStatus = (typeof CAMPAIGN_STATUSES)[number];
+
+export const SCHEDULE_FREQUENCIES = [
+  '3x_daily',
+  '2x_daily',
+  'daily',
+  'every_other_day',
+  '3x_weekly',
+  '2x_weekly',
+  'weekly',
+  'every_2_weeks',
+] as const;
+export type ScheduleFrequency = (typeof SCHEDULE_FREQUENCIES)[number];
 
 // =============================================================================
 // Schemas
@@ -42,6 +54,11 @@ export const createCampaignSchema = z.object({
     .string()
     .optional()
     .refine(val => !val || isValidImagePreset(val), { message: 'Invalid image preset' }),
+  // Scheduling fields
+  scheduleFrequency: z.enum(SCHEDULE_FREQUENCIES).optional(),
+  scheduleBatchSize: z.number().int().min(1).max(50).optional(),
+  scheduleTimezone: z.string().min(1).max(100).optional(),
+  scheduleHour: z.number().int().min(0).max(23).optional(),
 });
 
 /**
@@ -57,6 +74,12 @@ export const updateCampaignSchema = z.object({
     .string()
     .optional()
     .refine(val => !val || isValidImagePreset(val), { message: 'Invalid image preset' }),
+  // Scheduling fields
+  scheduleFrequency: z.enum(SCHEDULE_FREQUENCIES).nullable().optional(),
+  scheduleBatchSize: z.number().int().min(1).max(50).optional(),
+  scheduleTimezone: z.string().min(1).max(100).optional(),
+  scheduleHour: z.number().int().min(0).max(23).optional(),
+  nextRunAt: z.string().datetime().nullable().optional(),
 });
 
 /**

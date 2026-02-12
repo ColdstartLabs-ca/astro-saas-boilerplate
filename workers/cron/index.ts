@@ -42,7 +42,10 @@ export default {
     let endpoint: string;
     let jobName: string;
 
-    if (cronPattern === '*/15 * * * *') {
+    if (cronPattern === '*/5 * * * *') {
+      endpoint = '/api/cron/process-scheduled-campaigns';
+      jobName = 'Scheduled Campaign Processing';
+    } else if (cronPattern === '*/15 * * * *') {
       endpoint = '/api/cron/recover-webhooks';
       jobName = 'Webhook Recovery';
     } else if (cronPattern === '5 * * * *') {

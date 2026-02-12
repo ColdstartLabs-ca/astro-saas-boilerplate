@@ -185,7 +185,7 @@ export function CampaignDetailView({
       <CampaignStatsGrid stats={stats} />
 
       {/* Campaign Metadata Section */}
-      <CampaignMetadata campaign={campaign} t={t} />
+      <CampaignMetadata campaign={campaign} keywords={keywords} t={t} />
 
       {/* Credit Usage Section */}
       {creditStats && <CampaignCreditUsage creditStats={creditStats} keywords={keywords} t={t} />}
@@ -218,9 +218,7 @@ export function CampaignDetailView({
             <p className="text-xs font-medium text-blue-200">Credit cost per article:</p>
             <div className="space-y-1.5">
               <div className="flex items-center justify-between text-xs">
-                <span className="text-blue-100/80">
-                  Writer ({campaign?.ai_model || 'budget'})
-                </span>
+                <span className="text-blue-100/80">Writer ({campaign?.ai_model || 'budget'})</span>
                 <span className="font-semibold text-white">{writerCost} credit</span>
               </div>
               {imageCost > 0 ? (
@@ -228,7 +226,9 @@ export function CampaignDetailView({
                   <span className="text-blue-100/80">
                     Images ({campaign?.image_preset || 'balanced'})
                   </span>
-                  <span className="font-semibold text-white">+{imageCost} credit{imageCost > 1 ? 's' : ''}</span>
+                  <span className="font-semibold text-white">
+                    +{imageCost} credit{imageCost > 1 ? 's' : ''}
+                  </span>
                 </div>
               ) : (
                 <div className="flex items-center justify-between text-xs">
@@ -239,14 +239,18 @@ export function CampaignDetailView({
               <div className="h-px bg-blue-500/20 my-1"></div>
               <div className="flex items-center justify-between text-xs">
                 <span className="text-blue-200 font-medium">Total per article</span>
-                <span className="font-bold text-white">{creditsPerArticle} credit{creditsPerArticle > 1 ? 's' : ''}</span>
+                <span className="font-bold text-white">
+                  {creditsPerArticle} credit{creditsPerArticle > 1 ? 's' : ''}
+                </span>
               </div>
               <div className="h-px bg-blue-500/20 my-1"></div>
               <div className="flex items-center gap-2 text-xs">
                 <Zap className="w-3 h-3 text-yellow-400" />
                 <span className="text-blue-200">
-                  <strong className="text-white">{totalCreditsNeeded} credit{totalCreditsNeeded > 1 ? 's' : ''}</strong> for{' '}
-                  {pendingCount} keyword{pendingCount === 1 ? '' : 's'}
+                  <strong className="text-white">
+                    {totalCreditsNeeded} credit{totalCreditsNeeded > 1 ? 's' : ''}
+                  </strong>{' '}
+                  for {pendingCount} keyword{pendingCount === 1 ? '' : 's'}
                 </span>
               </div>
             </div>
