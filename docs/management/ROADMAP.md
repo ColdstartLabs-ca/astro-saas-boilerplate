@@ -2,7 +2,7 @@
 
 > AI SEO Content Automation Platform - "Outrank's Automation + Surfer's Quality. Finally."
 
-**Last Updated:** 2026-02-09
+**Last Updated:** 2026-02-12
 **Launch Target:** Early March 2026
 
 ---
@@ -184,17 +184,51 @@ Annual discount: 20% off (~2 months free).
 
 ---
 
-### Milestone 6: WordPress Publishing
+### Milestone 6: Integrations & Scheduling ✅
 
-> **Why sixth:** Publishing is the final step in the user flow. Can be built in parallel with Milestone 5.
-> **Depends on:** Milestone 1 (projects table), Milestone 2 (articles exist)
-> **Can parallelize with:** Milestone 5
+> **Why sixth:** CMS publishing and scheduled generation complete the end-to-end automation loop.
+> **Depends on:** Milestone 4 (campaigns), Milestone 2 (articles)
+> **Completed:** 2026-02-12
 
-- [ ] WordPress REST API integration (Application Passwords auth)
-- [ ] Connect WordPress site flow: URL + credentials, test connection, save to `projects`
-- [ ] Publish article as draft or published post
-- [ ] Map article metadata (title, slug, categories, tags, featured image, meta description)
-- [ ] Publishing status sync (reflect WordPress status back in dashboard)
+**Integrations Framework:** PRD: `docs/PRDs/campaign-scheduling.md`
+
+- [x] Integration service with encrypted credentials (AES-256-GCM)
+- [x] WordPress REST API adapter (Application Passwords auth, test connection, publish)
+- [x] Webhook adapter (POST with HMAC-SHA256 signing)
+- [x] Campaign-integration linking (many-to-many with enable/disable)
+- [x] Auto-publish on article completion (configurable per campaign)
+- [x] Integration management UI: create, edit, delete, test connection
+- [x] Integration form modal with create/edit modes (locked fields in edit mode)
+- [x] IDOR prevention: ownership validation on all integration and campaign operations
+
+**Campaign Scheduling (Drip-Feed):**
+
+- [x] Schedule configuration: 8 frequency options (3x daily to every 2 weeks)
+- [x] Batch size, preferred hour, timezone support (13 common timezones)
+- [x] Schedule API endpoints: start-schedule, pause-schedule, resume-schedule
+- [x] Cron worker for processing scheduled campaigns (Cloudflare Workers Cron Trigger)
+- [x] Proper timezone math (Intl.DateTimeFormat-based, DST-safe)
+- [x] Schedule settings in campaign settings modal (with editability controls)
+- [x] Schedule actions wired in campaign detail UI (start/pause/resume with toast notifications)
+- [x] Auto-pause on insufficient credits with warning banner and buy-credits link
+- [x] SEO velocity advisory (soft warnings for high publication rates)
+- [x] 82 unit tests for scheduling configuration
+
+**Google Search Console Integration:**
+
+- [x] OAuth 2.0 flow with project ownership verification in state parameter
+- [x] GSC connection management (connect, disconnect, refresh tokens)
+- [x] GSC sites endpoint for listing verified properties
+- [x] Upsert conflict handling (user_id + project_id composite key)
+- [x] Opportunities analysis from GSC data
+
+**Database:**
+
+- [x] `integrations` table with encrypted credentials column
+- [x] `campaign_integrations` junction table
+- [x] `gsc_connections` table with OAuth tokens
+- [x] Campaign scheduling columns (schedule_frequency, batch_size, timezone, hour, next_run_at)
+- [x] ScheduleValidationError domain error class (returns 400, not 500)
 
 ---
 
@@ -232,13 +266,13 @@ Annual discount: 20% off (~2 months free).
 ### MVP Dependency Graph
 
 ```
-M1 Foundation
-├── M2 AI Generation Engine
-│   ├── M3 Humanizer
-│   ├── M4 Campaign Management UI
-│   │   └── M5 Article Dashboard
-│   └── M6 WordPress Publishing (parallel with M5)
-└────────── M7 Polish & Launch (after M1-M6)
+M1 Foundation ✅
+├── M2 AI Generation Engine ✅
+│   ├── M3 Humanizer ✅
+│   ├── M4 Campaign Management UI ✅
+│   │   └── M5 Article Dashboard ✅
+│   └── M6 Integrations & Scheduling ✅
+└────────── M7 Polish & Launch
 ```
 
 ### MVP Risk Mitigation
@@ -247,7 +281,7 @@ M1 Foundation
 | -------------------------------- | ------ | --------------------------------------------------------------- |
 | AI generation quality too low    | High   | Multi-model routing, humanizer pass, manual edit before publish |
 | OpenRouter API downtime          | High   | Direct API fallback to Anthropic/OpenAI                         |
-| WordPress integration complexity | Medium | Start with REST API + Application Passwords (simplest auth)     |
+| WordPress integration complexity | Medium | ~~Start with REST API + Application Passwords~~ DONE - adapter with encrypted credentials |
 | Slow generation time             | Medium | Async generation with notification when complete                |
 | Low beta signups                 | Medium | Personal outreach, SEO communities, free tier as hook           |
 
@@ -278,20 +312,20 @@ M1 Foundation
 - [ ] Annual billing option (20% off — "2 months free")
 - [ ] Overage charges: Starter $2.00, Growth $1.50, Agency $0.75 (see [Revenue Streams](../business/business-model-canvas/revenue-streams.md))
 - [ ] Upgrade prompts when approaching plan limits (80% threshold)
-- [ ] Scheduled publishing (queue articles for future dates)
+- [x] Scheduled publishing (drip-feed campaign scheduling — moved to Milestone 6)
 - [ ] Bulk actions: approve all, publish all, regenerate
 
-### P1 — Google Search Console Integration
+### P1 — Google Search Console Integration ✅ (Moved to Milestone 6)
 
-- [ ] OAuth flow for GSC connection
-- [ ] Import existing keyword performance data
-- [ ] Identify content opportunities (keywords ranking 5-20 with low impressions)
+- [x] OAuth flow for GSC connection (with project ownership verification)
+- [x] Identify content opportunities from GSC data
+- [ ] Import existing keyword performance data (deeper integration)
 - [ ] Auto-suggest article topics from GSC data
 
 ### P2 — Nice to Have
 
 - [ ] Brand voice customization (tone, style, vocabulary preferences)
-- [ ] Image generation for articles (DALL-E/Stability AI integration)
+- [x] Image generation for articles (multi-provider: DALL-E, Stability AI, Flux — completed in Milestone 5)
 - [ ] Internal linking suggestions within campaigns
 - [ ] Keyword research API integration (DataForSEO or Keywords Everywhere)
 - [ ] Keyword clustering (group related keywords into campaigns)
@@ -411,6 +445,7 @@ M1 Foundation
 
 | Date       | Change                                                                                                                                                                                                                                                                                                                                                                                                                            |
 | ---------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 2026-02-12 | **Milestone 6 Integrations & Scheduling completed!** WordPress + webhook integration framework with encrypted credentials. Campaign scheduling (8 frequencies, batch size, timezone-aware). GSC OAuth integration with opportunities analysis. Cron worker for automated drip-feed generation. Schedule management UI (start/pause/resume). Auto-pause on insufficient credits. 82 scheduling unit tests. PR review: 10 security/quality fixes applied (IDOR prevention, OAuth state binding, timezone math, error handling). |
 | 2026-02-09 | **Milestone 5 Article Management Dashboard completed!** ArticleList component refactor with filtering, search, inline editing. ArticleDetailModal with full Markdown content editing + live preview. AIDetectionScore component added. Approval workflow migration (approved/rejected/reviewed statuses). API endpoints for article updates (PUT/PATCH). Credit tracking already existed from Milestone 4.                        |
 | 2026-02-09 | **Image generation improvements!** Enhanced image generation service with better prompts. CampaignDetailView updated for image handling with 200+ lines of new functionality.                                                                                                                                                                                                                                                     |
 | 2026-02-09 | **Subscription fixes!** Two critical payment bug fixes ported from myimageupscaler.com: (1) Release existing Stripe subscription schedule before applying upgrade to prevent downgrade override, (2) Remove direct credit reset from schedule completion handler to prevent double-granting credits. Tests added.                                                                                                                 |

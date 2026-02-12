@@ -23,6 +23,7 @@ import {
   CampaignNotFoundError,
   InsufficientCreditsError,
   NoPendingKeywordsError,
+  ScheduleValidationError,
 } from '@shared/types/campaign.types';
 import { isAvailableImagePreset } from '@shared/config/image-models.config';
 import { isAvailableWriterPreset } from '@shared/config/ai-models.config';
@@ -358,6 +359,10 @@ export class CampaignService {
         target_word_count: validated.targetWordCount || 1500,
         settings: {},
         image_preset: validated.imagePreset || null,
+        schedule_frequency: validated.scheduleFrequency || null,
+        schedule_batch_size: validated.scheduleBatchSize || 1,
+        schedule_timezone: validated.scheduleTimezone || DEFAULT_SCHEDULE_TIMEZONE,
+        schedule_hour: validated.scheduleHour ?? DEFAULT_SCHEDULE_HOUR,
       })
       .select()
       .single();
@@ -418,7 +423,6 @@ export class CampaignService {
 
       // Update fields
       if (validated.name !== undefined) campaign.name = validated.name;
-      if (validated.status !== undefined) campaign.status = validated.status;
       if (validated.model !== undefined) campaign.ai_model = validated.model;
       if (validated.tone !== undefined) campaign.tone = validated.tone;
       if (validated.targetWordCount !== undefined)
@@ -432,7 +436,6 @@ export class CampaignService {
       if (validated.scheduleTimezone !== undefined)
         campaign.schedule_timezone = validated.scheduleTimezone;
       if (validated.scheduleHour !== undefined) campaign.schedule_hour = validated.scheduleHour;
-      if (validated.nextRunAt !== undefined) campaign.next_run_at = validated.nextRunAt;
 
       campaign.updated_at = new Date().toISOString();
       testModeCampaigns.set(campaignId, campaign);
@@ -443,7 +446,6 @@ export class CampaignService {
     const updates: Record<string, unknown> = {};
 
     if (validated.name !== undefined) updates.name = validated.name;
-    if (validated.status !== undefined) updates.status = validated.status;
     if (validated.model !== undefined) updates.ai_model = validated.model;
     if (validated.tone !== undefined) updates.tone = validated.tone;
     if (validated.targetWordCount !== undefined)
@@ -457,7 +459,6 @@ export class CampaignService {
     if (validated.scheduleTimezone !== undefined)
       updates.schedule_timezone = validated.scheduleTimezone;
     if (validated.scheduleHour !== undefined) updates.schedule_hour = validated.scheduleHour;
-    if (validated.nextRunAt !== undefined) updates.next_run_at = validated.nextRunAt;
 
     // If schedule config changed on a scheduled campaign, recalculate next_run_at
     const scheduleFieldsChanged =
@@ -777,15 +778,24 @@ export class CampaignService {
     if (serverEnv.ENV === 'test' && userId.includes('mock_user_')) {
       const campaignWithKeywords = testModeCampaigns.get(campaignId);
       const allKeywords = campaignWithKeywords?.keywords ?? [];
-      pendingKeywords = allKeywords
-        .filter(k => k.status === 'pending')
-        .map(k => ({
+      pendingKeywords = allKeywords;
+
+      // For initial start, look for pending keywords
+      // For resume, look for queued keywords (no pending keywords to process)
+      const keywordsToProcess = allKeywords.filter(k => k.status === 'pending' || k.status === 'queued');
+
+      if (keywordsToProcess.length === 0) {
+        // No keywords to process in test mode
+        throw new NoPendingKeywordsError();
+      }
+
+      pendingKeywords = keywordsToProcess.map(k => ({
           id: k.id,
           keyword: k.keyword,
         }));
 
       // Update keyword statuses in memory
-      if (pendingKeywords.length > 0) {
+      if (keywordsToProcess.length > 0) {
         for (const kw of allKeywords) {
           if (kw.status === 'pending') {
             kw.status = 'queued';
@@ -800,10 +810,10 @@ export class CampaignService {
         campaign.ai_model,
         campaign.image_preset
       );
-      const totalCreditsNeeded = pendingKeywords.length * creditsPerKeyword;
+      const totalCreditsNeeded = keywordsToProcess.length * creditsPerKeyword;
 
       return {
-        queued: pendingKeywords.length,
+        queued: keywordsToProcess.length,
         creditsRequired: totalCreditsNeeded,
       };
     }
@@ -938,14 +948,14 @@ export class CampaignService {
 
     // Validate campaign has schedule configuration
     if (!campaign.schedule_frequency) {
-      throw new Error(
+      throw new ScheduleValidationError(
         'Cannot start schedule: campaign has no schedule configuration. Please set a schedule frequency first.'
       );
     }
 
     // Validate campaign is in a state that can start scheduling (draft or paused)
     if (campaign.status !== 'draft' && campaign.status !== 'paused') {
-      throw new Error(
+      throw new ScheduleValidationError(
         `Cannot start schedule: campaign status is '${campaign.status}'. Only draft or paused campaigns can be scheduled.`
       );
     }
@@ -1012,7 +1022,7 @@ export class CampaignService {
 
     // Validate campaign is in a state that can be paused (scheduled or active)
     if (campaign.status !== 'scheduled' && campaign.status !== 'active') {
-      throw new Error(
+      throw new ScheduleValidationError(
         `Cannot pause schedule: campaign status is '${campaign.status}'. Only scheduled or active campaigns can be paused.`
       );
     }
@@ -1064,14 +1074,14 @@ export class CampaignService {
 
     // Validate campaign is paused
     if (campaign.status !== 'paused') {
-      throw new Error(
+      throw new ScheduleValidationError(
         `Cannot resume schedule: campaign status is '${campaign.status}'. Only paused campaigns can be resumed.`
       );
     }
 
     // Validate campaign has schedule configuration
     if (!campaign.schedule_frequency) {
-      throw new Error(
+      throw new ScheduleValidationError(
         'Cannot resume schedule: campaign has no schedule configuration. Please set a schedule frequency first.'
       );
     }
@@ -1152,19 +1162,25 @@ export class CampaignService {
     articlesQueued?: number;
     nextRunAt?: string;
   }> {
-    // Get campaign (no user_id check for cron)
-    const { data: campaign, error: campaignError } = await supabaseAdmin
+    // Atomically claim the campaign (prevents race conditions with concurrent cron runs).
+    // Only transitions from 'scheduled' to 'active' — if another run already claimed it,
+    // the WHERE clause won't match and we'll get no rows back.
+    const { data: claimed, error: claimError } = await supabaseAdmin
       .from('campaigns')
-      .select('*')
+      .update({ status: 'active' })
       .eq('id', campaignId)
+      .eq('status', 'scheduled')
+      .select('*')
       .single();
 
-    if (campaignError || !campaign) {
-      throw new Error(`Campaign not found: ${campaignId}`);
+    if (claimError || !claimed) {
+      console.log(
+        `[ScheduledBatch] Campaign ${campaignId} already claimed or status changed, skipping`
+      );
+      return {};
     }
 
-    // Set status to active
-    await supabaseAdmin.from('campaigns').update({ status: 'active' }).eq('id', campaignId);
+    const campaign = claimed;
 
     // Get pending keywords (limit by batch_size)
     const batchSize = campaign.schedule_batch_size || 1;
@@ -1177,6 +1193,8 @@ export class CampaignService {
       .limit(batchSize);
 
     if (keywordsError) {
+      // On error, set back to scheduled
+      await supabaseAdmin.from('campaigns').update({ status: 'scheduled' }).eq('id', campaignId);
       throw new Error(`Failed to get pending keywords: ${keywordsError.message}`);
     }
 
@@ -1192,12 +1210,22 @@ export class CampaignService {
 
     // Try to deduct credits and queue articles
     try {
-      // Call create_articles_with_credits RPC
-      const keywordIds = keywords.map(k => k.id);
+      // Calculate credits per article using centralized pricing model
+      const creditsPerArticle = calculateArticleCreditCost(
+        campaign.ai_model,
+        campaign.image_preset
+      );
+      const keywordTexts = keywords.map(k => k.keyword);
+
+      // Call create_articles_with_credits RPC with correct parameters
       const { error: rpcError } = await supabaseAdmin.rpc('create_articles_with_credits', {
         p_user_id: campaign.user_id,
         p_campaign_id: campaignId,
-        p_keyword_ids: keywordIds,
+        p_project_id: campaign.project_id,
+        p_keywords: keywordTexts,
+        p_credits_per_article: creditsPerArticle,
+        p_status: 'queued',
+        p_image_preset: campaign.image_preset,
       });
 
       if (rpcError) {
@@ -1228,60 +1256,61 @@ export class CampaignService {
         throw rpcError;
       }
 
-      // Start generation in background (same pattern as start.ts)
-      // Process articles sequentially in background
-      (async () => {
-        for (const keyword of keywords) {
-          try {
-            // Update keyword status to 'generating'
-            await supabaseAdmin
-              .from('keywords')
-              .update({ status: 'generating' })
-              .eq('id', keyword.id);
+      // Update keywords to 'queued' status (after successful article creation and credit deduction)
+      const keywordIds = keywords.map(k => k.id);
+      await supabaseAdmin.from('keywords').update({ status: 'queued' }).in('id', keywordIds);
 
-            // Find the article for this keyword
-            const { data: article } = await supabaseAdmin
-              .from('articles')
-              .select('id')
-              .eq('campaign_id', campaignId)
-              .eq('primary_keyword', keyword.keyword)
-              .eq('status', 'queued')
-              .single();
+      // Process articles sequentially (awaited — NOT fire-and-forget).
+      // Each article generation is mostly network I/O (AI API calls) so CPU time stays low.
+      // If any article fails, it stays in 'queued' and recover-stale-articles cron will retry.
+      for (const keyword of keywords) {
+        try {
+          // Update keyword status to 'generating'
+          await supabaseAdmin
+            .from('keywords')
+            .update({ status: 'generating' })
+            .eq('id', keyword.id);
 
-            if (!article) {
-              throw new Error(`Article not found for keyword: ${keyword.keyword}`);
-            }
+          // Find the article for this keyword
+          const { data: article } = await supabaseAdmin
+            .from('articles')
+            .select('id')
+            .eq('campaign_id', campaignId)
+            .eq('primary_keyword', keyword.keyword)
+            .eq('status', 'queued')
+            .single();
 
-            // Generate article
-            await articleGenerationService.generateArticle(article.id, campaign.user_id, {
-              keyword: keyword.keyword,
-              projectId: campaign.project_id ?? '',
-              campaignId,
-              model: campaign.ai_model,
-              tone: campaign.tone,
-              targetWordCount: campaign.target_word_count,
-              imagePreset: campaign.image_preset ?? undefined,
-            });
-
-            // Update keyword status to 'generated' on success
-            await supabaseAdmin
-              .from('keywords')
-              .update({ status: 'generated' })
-              .eq('id', keyword.id);
-
-            console.log(`[ScheduledBatch] Generated article for keyword: ${keyword.keyword}`);
-          } catch (error) {
-            console.error(
-              `[ScheduledBatch] Failed to generate article for keyword ${keyword.id}:`,
-              error
-            );
-            // Update keyword status to 'failed' on error
-            await supabaseAdmin.from('keywords').update({ status: 'failed' }).eq('id', keyword.id);
+          if (!article) {
+            throw new Error(`Article not found for keyword: ${keyword.keyword}`);
           }
+
+          // Generate article
+          await articleGenerationService.generateArticle(article.id, campaign.user_id, {
+            keyword: keyword.keyword,
+            projectId: campaign.project_id ?? '',
+            campaignId,
+            model: campaign.ai_model,
+            tone: campaign.tone,
+            targetWordCount: campaign.target_word_count,
+            imagePreset: campaign.image_preset ?? undefined,
+          });
+
+          // Update keyword status to 'generated' on success
+          await supabaseAdmin
+            .from('keywords')
+            .update({ status: 'generated' })
+            .eq('id', keyword.id);
+
+          console.log(`[ScheduledBatch] Generated article for keyword: ${keyword.keyword}`);
+        } catch (error) {
+          console.error(
+            `[ScheduledBatch] Failed to generate article for keyword ${keyword.id}:`,
+            error
+          );
+          // Update keyword status to 'failed' on error
+          await supabaseAdmin.from('keywords').update({ status: 'failed' }).eq('id', keyword.id);
         }
-      })().catch(err =>
-        console.error('[processScheduledBatch] Background generation failed:', err)
-      );
+      }
 
       // Calculate next run time
       const nextRunAt = calculateNextRunAt(

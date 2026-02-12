@@ -79,9 +79,10 @@ export class GscService {
 
   /**
    * Generate Google OAuth URL for GSC authorization.
-   * State param carries the projectId for the callback.
+   * State param carries userId:projectId for secure callback verification.
    */
-  getAuthUrl(projectId: string): string {
+  getAuthUrl(projectId: string, userId: string): string {
+    const state = `${userId}:${projectId}`;
     const params = new URLSearchParams({
       client_id: this.clientId,
       redirect_uri: this.redirectUri,
@@ -89,7 +90,7 @@ export class GscService {
       scope: GSC_SCOPES,
       access_type: 'offline',
       prompt: 'consent',
-      state: projectId,
+      state,
     });
 
     const authUrl = `${GOOGLE_AUTH_URL}?${params.toString()}`;

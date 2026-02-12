@@ -1,7 +1,7 @@
 # Cloudflare Workers Configuration for Cron Jobs
 # Documentation: https://developers.cloudflare.com/workers/configuration/cron-triggers/
 
-name = "myimageupscaler-cron"
+name = "autopilotrank-cron"
 main = "index.ts"
 compatibility_date = "2025-03-02"
 compatibility_flags = ["nodejs_compat"]
@@ -11,6 +11,8 @@ compatibility_flags = ["nodejs_compat"]
 crons = [
   # Scheduled campaign processing - every 5 minutes
   "*/5 * * * *",
+  # Recover stale articles - every 10 minutes at :03
+  "3/10 * * * *",
   # Webhook recovery - every 15 minutes
   "*/15 * * * *",
   # Expiration check - every hour at :05
@@ -22,7 +24,7 @@ crons = [
 # Environment Variables (non-sensitive defaults)
 # IMPORTANT: Set CRON_SECRET via Cloudflare dashboard or `wrangler secret put CRON_SECRET`
 [vars]
-API_BASE_URL = "https://myimageupscaler.com"
+API_BASE_URL = "https://autopilotrank.com"
 
 # Development environment
 [env.development]

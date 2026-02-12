@@ -24,9 +24,12 @@ test.afterAll(async () => {
 test.describe('API: Campaign Start/Pause/Resume', () => {
   let user: Awaited<ReturnType<typeof ctx.createUser>>;
   let projectId: string;
-  let campaignId: string;
 
   test.beforeEach(async () => {
+    // Generate unique idempotency key for each test
+    const idempotencyKey = `test-key-${Date.now()}-${Math.random()}`;
+
+    user = await ctx.createUser({ subscription: 'active', tier: 'pro', credits: 100 });
     user = await ctx.createUser({ subscription: 'active', tier: 'pro', credits: 100 });
     // Create a project via API for testing
     // Note: In test mode with mock users, we create a mock project ID
@@ -59,7 +62,7 @@ test.describe('API: Campaign Start/Pause/Resume', () => {
     });
     createResponse.expectStatus(201);
     const campaignData = await createResponse.getData();
-    campaignId = campaignData.campaign.id;
+    const campaignId = campaignData.campaign.id;
 
     // Start generation
     const startResponse = await api.post(`/api/campaigns/${campaignId}/start`);

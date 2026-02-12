@@ -45,6 +45,9 @@ export default {
     if (cronPattern === '*/5 * * * *') {
       endpoint = '/api/cron/process-scheduled-campaigns';
       jobName = 'Scheduled Campaign Processing';
+    } else if (cronPattern === '3/10 * * * *') {
+      endpoint = '/api/cron/recover-stale-articles';
+      jobName = 'Stale Article Recovery';
     } else if (cronPattern === '*/15 * * * *') {
       endpoint = '/api/cron/recover-webhooks';
       jobName = 'Webhook Recovery';

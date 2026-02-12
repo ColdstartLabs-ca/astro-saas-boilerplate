@@ -15,9 +15,8 @@ import {
   getSeoVelocityAdvisory,
 } from '@shared/config/scheduling.config';
 import type {
-  CampaignTone,
   ScheduleFrequency,
-  IScheduleConfig,
+  ICreateCampaignInput,
 } from '@shared/types/campaign.types';
 import {
   ArrowRight,
@@ -38,16 +37,7 @@ import { DashboardButton } from '../ui/DashboardButton';
 interface INewCampaignModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSubmit: (input: {
-    name: string;
-    projectId: string;
-    keywords: string[];
-    model?: string;
-    tone?: CampaignTone;
-    targetWordCount?: number;
-    imagePreset?: string;
-    scheduleConfig?: IScheduleConfig;
-  }) => Promise<void>;
+  onSubmit: (input: ICreateCampaignInput) => Promise<void>;
   projectId: string;
 }
 
@@ -292,15 +282,6 @@ export function NewCampaignModal({
 
     setLoading(true);
     try {
-      const scheduleConfig: IScheduleConfig | undefined = data.scheduleEnabled
-        ? {
-            frequency: data.scheduleFrequency as ScheduleFrequency,
-            batchSize: data.scheduleBatchSize ?? 3,
-            timezone: data.scheduleTimezone ?? 'UTC',
-            hour: data.scheduleHour ?? 9,
-          }
-        : undefined;
-
       await onSubmit({
         name: data.name,
         projectId,
@@ -309,7 +290,14 @@ export function NewCampaignModal({
         tone: data.tone,
         targetWordCount: data.targetWordCount,
         imagePreset: data.imagePreset,
-        scheduleConfig,
+        ...(data.scheduleEnabled
+          ? {
+              scheduleFrequency: data.scheduleFrequency as ScheduleFrequency,
+              scheduleBatchSize: data.scheduleBatchSize ?? 3,
+              scheduleTimezone: data.scheduleTimezone ?? 'UTC',
+              scheduleHour: data.scheduleHour ?? 9,
+            }
+          : {}),
       });
     } finally {
       setLoading(false);

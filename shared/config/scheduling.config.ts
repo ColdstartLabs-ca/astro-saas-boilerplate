@@ -129,11 +129,11 @@ export function calculateNextRunAt(
     return nextRun.toISOString();
   }
 
-  // For day-based frequencies, calculate next run at the specified hour
-  // Create a date in the target timezone
+  // For day-based frequencies, calculate next run at the specified hour in the user's timezone.
+  // Strategy: get "today" in the target timezone, construct the wall-clock time, then convert to UTC.
   const now = new Date(fromDate);
 
-  // Format the current time in the target timezone to get local date parts
+  // Get the current date parts in the target timezone
   const formatter = new Intl.DateTimeFormat('en-CA', {
     timeZone: timezone,
     year: 'numeric',
@@ -148,41 +148,93 @@ export function calculateNextRunAt(
   const getPart = (type: string) => parts.find(p => p.type === type)?.value;
 
   const currentYear = parseInt(getPart('year') || '0');
-  const currentMonth = parseInt(getPart('month') || '0') - 1; // JS months are 0-indexed
+  const currentMonth = parseInt(getPart('month') || '0'); // 1-based from en-CA
   const currentDay = parseInt(getPart('day') || '0');
-  // currentHour is not needed - we use the passed hour parameter instead
 
-  // Create target time at specified hour in the target timezone
-  // We use a simple approach: start from today at the target hour
-  let targetDate: Date;
+  // Build target date string as "YYYY-MM-DDThh:00:00" in the target timezone,
+  // then find the UTC equivalent by computing the offset at that local time.
+  let targetDate = localTimeToUtc(currentYear, currentMonth, currentDay, hour, timezone);
 
-  // Create date string for today at target hour in target timezone
-  const todayAtHour = new Date(Date.UTC(currentYear, currentMonth, currentDay, hour, 0, 0));
-
-  // Adjust for timezone offset
-  const tzOffset = getTimezoneOffset(timezone, todayAtHour);
-  targetDate = new Date(todayAtHour.getTime() - tzOffset);
-
-  // If the target time has already passed today, move to next occurrence
+  // If the target time has already passed, move to next occurrence
   if (targetDate <= now) {
     const intervalDays = Math.ceil(config.intervalHours / 24);
-    targetDate = new Date(targetDate.getTime() + intervalDays * 24 * 60 * 60 * 1000);
+    // Advance by intervalDays and recalculate (accounts for DST transitions)
+    const nextLocal = new Date(targetDate.getTime() + intervalDays * 24 * 60 * 60 * 1000);
+    const nextParts = new Intl.DateTimeFormat('en-CA', {
+      timeZone: timezone,
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour12: false,
+    }).formatToParts(nextLocal);
+    const getNextPart = (type: string) => nextParts.find(p => p.type === type)?.value;
+    targetDate = localTimeToUtc(
+      parseInt(getNextPart('year') || '0'),
+      parseInt(getNextPart('month') || '0'),
+      parseInt(getNextPart('day') || '0'),
+      hour,
+      timezone
+    );
   }
 
   return targetDate.toISOString();
 }
 
 /**
- * Get the timezone offset in milliseconds for a given timezone at a specific date.
- * This handles DST correctly.
+ * Convert a local wall-clock time (year, month 1-based, day, hour) in a timezone to a UTC Date.
+ * Uses Intl.DateTimeFormat.formatToParts to compute the offset without relying on
+ * `new Date(string)` which parses in the system's local timezone and breaks on non-UTC systems.
  */
-function getTimezoneOffset(timezone: string, date: Date): number {
-  // Get UTC time for the date
-  const utcDate = new Date(date.toLocaleString('en-US', { timeZone: 'UTC' }));
-  // Get local time for the date in the target timezone
-  const tzDate = new Date(date.toLocaleString('en-US', { timeZone: timezone }));
-  // Return the difference
-  return utcDate.getTime() - tzDate.getTime();
+function localTimeToUtc(
+  year: number,
+  month: number,
+  day: number,
+  hour: number,
+  timezone: string
+): Date {
+  // Start with a rough UTC guess (assuming the local time IS UTC)
+  const roughUtc = new Date(Date.UTC(year, month - 1, day, hour, 0, 0));
+
+  // Get what this UTC instant renders as in the target timezone using formatToParts
+  // (no `new Date(string)` which would parse in system local timezone)
+  const renderedOffset = getTimezoneOffsetMs(roughUtc, timezone);
+
+  // The correct UTC time = roughUtc - offset
+  const corrected = new Date(roughUtc.getTime() - renderedOffset);
+
+  // Verify the hour in the target timezone (handles DST edge cases)
+  const verifyOffset = getTimezoneOffsetMs(corrected, timezone);
+  if (verifyOffset !== renderedOffset) {
+    // DST transition caused offset change - recalculate with verified offset
+    return new Date(roughUtc.getTime() - verifyOffset);
+  }
+
+  return corrected;
+}
+
+/**
+ * Get the UTC offset in milliseconds for a given UTC instant in a timezone.
+ * Positive = timezone is ahead of UTC, negative = behind.
+ * Uses only Intl.DateTimeFormat.formatToParts + Date.UTC to avoid system timezone dependency.
+ */
+function getTimezoneOffsetMs(utcDate: Date, timezone: string): number {
+  const fmt = new Intl.DateTimeFormat('en-CA', {
+    timeZone: timezone,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hour12: false,
+  });
+  const parts = fmt.formatToParts(utcDate);
+  const get = (type: string) => parseInt(parts.find(p => p.type === type)?.value || '0');
+
+  // Reconstruct the timezone-local time as a UTC timestamp for comparison
+  const renderedAsUtc = Date.UTC(get('year'), get('month') - 1, get('day'), get('hour'), get('minute'), get('second'));
+
+  return renderedAsUtc - utcDate.getTime();
 }
 
 /**

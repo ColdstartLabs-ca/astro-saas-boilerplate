@@ -6,14 +6,17 @@
 import { supabaseAdmin } from '@server/supabase/supabaseAdmin';
 import { updateGscConnectionSchema } from '@shared/validation/gsc.schema';
 import type { IGscConnectionSafe } from '@shared/types/opportunity.types';
-import { withAuthAndBody, jsonResponse, errorResponse } from '../../_utils';
+import type { APIContext } from 'astro';
+import { withAuthAndBody, jsonResponse, errorResponse } from '../../../_utils';
 
 /**
  * PUT /api/gsc/connections/:id
  * Update a GSC connection's site_url.
  * Verifies user ownership before updating.
  */
-export const PUT = withAuthAndBody(updateGscConnectionSchema, async (userId, body, { params }) => {
+export const PUT = withAuthAndBody(
+  updateGscConnectionSchema,
+  async (userId: string, body: { siteUrl: string }, { params }: APIContext) => {
   const connectionId = params.id as string;
   if (!connectionId) {
     return errorResponse('VALIDATION_ERROR', 'Connection ID is required', 400);

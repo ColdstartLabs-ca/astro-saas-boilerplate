@@ -656,6 +656,8 @@
       "createFailed": "Failed to create campaign. Please try again.",
       "updateFailed": "Failed to update campaign. Please try again.",
       "startFailed": "Failed to start campaign. Please try again.",
+      "pauseFailed": "Failed to pause schedule. Please try again.",
+      "resumeFailed": "Failed to resume schedule. Please try again.",
       "insufficientCredits": "Insufficient credits. You need {required} but have {available}."
     },
     "success": {
@@ -685,6 +687,9 @@
       "queued": "{count} articles queued for generation."
     },
     "schedule": {
+      "started": "Schedule started successfully",
+      "paused": "Schedule paused",
+      "resumed": "Schedule resumed successfully",
       "pausedInsufficientCredits": "Schedule Paused: Insufficient Credits",
       "pausedInsufficientCreditsDescription": "Your scheduled campaign was paused because you don't have enough credits. Purchase more credits to resume automatic article generation.",
       "buyCredits": "Buy More Credits"

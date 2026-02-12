@@ -116,6 +116,43 @@ async function startCampaign(campaignId: string): Promise<{
   return data.data;
 }
 
+/**
+ * Start scheduled campaign
+ */
+async function startScheduleApi(campaignId: string): Promise<{
+  nextRunAt: string;
+  pendingKeywords: number;
+}> {
+  const data = await apiFetch<{ data: { nextRunAt: string; pendingKeywords: number } }>(
+    `/api/campaigns/${campaignId}/start-schedule`,
+    { method: 'POST' }
+  );
+  return data.data;
+}
+
+/**
+ * Pause scheduled campaign
+ */
+async function pauseScheduleApi(campaignId: string): Promise<void> {
+  await apiFetch<{ data: { paused: boolean } }>(
+    `/api/campaigns/${campaignId}/pause-schedule`,
+    { method: 'POST' }
+  );
+}
+
+/**
+ * Resume scheduled campaign
+ */
+async function resumeScheduleApi(campaignId: string): Promise<{
+  nextRunAt: string;
+}> {
+  const data = await apiFetch<{ data: { nextRunAt: string } }>(
+    `/api/campaigns/${campaignId}/resume-schedule`,
+    { method: 'POST' }
+  );
+  return data.data;
+}
+
 // =============================================================================
 // Hook
 // =============================================================================
@@ -135,6 +172,9 @@ interface IUseCampaignDetailReturn {
   removeKeyword: (keywordId: string) => Promise<void>;
   updateCampaign: (input: IUpdateCampaignInput) => Promise<ICampaign>;
   startCampaign: () => Promise<{ queued: number; creditsRequired: number }>;
+  startSchedule: () => Promise<void>;
+  pauseSchedule: () => Promise<void>;
+  resumeSchedule: () => Promise<void>;
   refetch: () => void;
 }
 
@@ -249,6 +289,78 @@ export function useCampaignDetail(campaignId: string | null | undefined): IUseCa
     loggerContext: 'Failed to start campaign',
   });
 
+  // Start schedule mutation
+  const startScheduleMutation = useMutation({
+    mutationFn: () =>
+      campaignId ? startScheduleApi(campaignId) : Promise.reject(new Error('No campaign ID')),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['campaign-detail', campaignId] });
+      queryClient.invalidateQueries({ queryKey: ['campaigns'] });
+    },
+  });
+
+  // Pause schedule mutation
+  const pauseScheduleMutation = useMutation({
+    mutationFn: () =>
+      campaignId ? pauseScheduleApi(campaignId) : Promise.reject(new Error('No campaign ID')),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['campaign-detail', campaignId] });
+      queryClient.invalidateQueries({ queryKey: ['campaigns'] });
+    },
+  });
+
+  // Resume schedule mutation
+  const resumeScheduleMutation = useMutation({
+    mutationFn: () =>
+      campaignId ? resumeScheduleApi(campaignId) : Promise.reject(new Error('No campaign ID')),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['campaign-detail', campaignId] });
+      queryClient.invalidateQueries({ queryKey: ['campaigns'] });
+    },
+  });
+
+  const startScheduleWithToast = useMutationWithToast(startScheduleMutation, {
+    successMessage: t('campaigns.schedule.started'),
+    errorMessage: (error: Error) =>
+      error instanceof Error ? error.message : t('campaigns.errors.startFailed'),
+    loggerContext: 'Failed to start schedule',
+  });
+
+  const pauseScheduleWithToast = useMutationWithToast(pauseScheduleMutation, {
+    successMessage: t('campaigns.schedule.paused'),
+    errorMessage: (error: Error) =>
+      error instanceof Error ? error.message : t('campaigns.errors.pauseFailed'),
+    loggerContext: 'Failed to pause schedule',
+  });
+
+  const resumeScheduleWithToast = useMutationWithToast(resumeScheduleMutation, {
+    successMessage: t('campaigns.schedule.resumed'),
+    errorMessage: (error: Error) =>
+      error instanceof Error ? error.message : t('campaigns.errors.resumeFailed'),
+    loggerContext: 'Failed to resume schedule',
+  });
+
+  const handleStartSchedule = useCallback(
+    async (): Promise<void> => {
+      await startScheduleWithToast(undefined);
+    },
+    [startScheduleWithToast]
+  );
+
+  const handlePauseSchedule = useCallback(
+    async (): Promise<void> => {
+      await pauseScheduleWithToast(undefined);
+    },
+    [pauseScheduleWithToast]
+  );
+
+  const handleResumeSchedule = useCallback(
+    async (): Promise<void> => {
+      await resumeScheduleWithToast(undefined);
+    },
+    [resumeScheduleWithToast]
+  );
+
   return {
     // Data
     campaign,
@@ -264,6 +376,9 @@ export function useCampaignDetail(campaignId: string | null | undefined): IUseCa
     removeKeyword: handleRemoveKeyword,
     updateCampaign: handleUpdateCampaign,
     startCampaign: handleStartCampaign,
+    startSchedule: handleStartSchedule,
+    pauseSchedule: handlePauseSchedule,
+    resumeSchedule: handleResumeSchedule,
     refetch: () => {
       queryClient.invalidateQueries({ queryKey: ['campaign-detail', campaignId] });
       queryClient.invalidateQueries({ queryKey: ['campaign-articles', campaignId] });

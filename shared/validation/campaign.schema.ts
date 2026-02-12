@@ -66,7 +66,8 @@ export const createCampaignSchema = z.object({
  */
 export const updateCampaignSchema = z.object({
   name: z.string().min(1).max(100).trim().optional(),
-  status: z.enum(CAMPAIGN_STATUSES).optional(),
+  // Note: status transitions are handled by dedicated endpoints (startSchedule, pauseSchedule, etc.)
+  // nextRunAt is server-calculated and not user-settable
   model: z.string().optional(),
   tone: z.enum(TONES).optional(),
   targetWordCount: z.number().int().min(800).max(3000).optional(),
@@ -79,7 +80,6 @@ export const updateCampaignSchema = z.object({
   scheduleBatchSize: z.number().int().min(1).max(50).optional(),
   scheduleTimezone: z.string().min(1).max(100).optional(),
   scheduleHour: z.number().int().min(0).max(23).optional(),
-  nextRunAt: z.string().datetime().nullable().optional(),
 });
 
 /**

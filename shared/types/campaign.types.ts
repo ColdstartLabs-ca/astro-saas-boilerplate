@@ -307,6 +307,16 @@ export class NoPendingKeywordsError extends Error {
 }
 
 /**
+ * Error thrown for schedule-related validation failures (invalid state, missing config)
+ */
+export class ScheduleValidationError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'ScheduleValidationError';
+  }
+}
+
+/**
  * Result data from a campaign generation run (stored for idempotency)
  */
 export interface ICampaignGenerationRunResult {

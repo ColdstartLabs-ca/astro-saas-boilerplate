@@ -27,21 +27,27 @@ export const GET: APIRoute = async ({ url }) => {
 
     // Validate query params
     const params = gscCallbackSchema.parse({ code, state });
-    const projectId = params.state;
 
-    // Verify the project exists and get its owner
+    // Parse state: "userId:projectId"
+    const stateParts = params.state.split(':');
+    if (stateParts.length !== 2) {
+      console.error('[GscCallback] Invalid state format:', params.state);
+      return Response.redirect(`${dashboardUrl}?error=connection_failed`, 302);
+    }
+    const [userId, projectId] = stateParts;
+
+    // Verify the project exists and belongs to the user from state
     const { data: project, error: projectError } = await supabaseAdmin
       .from('projects')
       .select('id, user_id')
       .eq('id', projectId)
+      .eq('user_id', userId)
       .single();
 
     if (projectError || !project) {
-      console.error('[GscCallback] Project not found:', projectId, projectError?.message);
+      console.error('[GscCallback] Project not found or ownership mismatch:', projectId, projectError?.message);
       return Response.redirect(`${dashboardUrl}?error=connection_failed`, 302);
     }
-
-    const userId = project.user_id;
 
     // Exchange authorization code for tokens
     const tokens = await gscService.exchangeCode(params.code);
@@ -65,7 +71,7 @@ export const GET: APIRoute = async ({ url }) => {
         updated_at: new Date().toISOString(),
       },
       {
-        onConflict: 'project_id',
+        onConflict: 'user_id,project_id',
       }
     );
 

@@ -26,6 +26,18 @@ import type {
 } from '@shared/types/integration.types';
 
 /**
+ * Redact sensitive fields from integration config before returning to clients.
+ * Removes webhook secrets that may have been stored in config historically.
+ */
+function redactConfig(config: unknown): IIntegrationConfig {
+  if (!config || typeof config !== 'object') return {} as IIntegrationConfig;
+  // Use type assertion to preserve original structure while removing secret
+  const result = { ...(config as IIntegrationConfig) };
+  delete (result as IIntegrationConfig & { secret?: unknown }).secret;
+  return result as IIntegrationConfig;
+}
+
+/**
  * Integration Service
  *
  * Manages user integrations with external CMS platforms.
@@ -54,7 +66,7 @@ export class IntegrationService {
       throw new Error(`Failed to list integrations: ${error.message}`);
     }
 
-    // Transform data to remove encrypted credentials and add campaign count
+    // Transform data to remove encrypted credentials, redact config secrets, and add campaign count
     return (
       data as Array<
         {
@@ -65,6 +77,7 @@ export class IntegrationService {
       const { encrypted_credentials: _, ...rest } = integration;
       return {
         ...rest,
+        config: redactConfig(rest.config),
         campaign_count: integration.campaign_integrations?.[0]?.count || 0,
       };
     });
@@ -96,9 +109,9 @@ export class IntegrationService {
       return null;
     }
 
-    // Remove encrypted credentials from response
+    // Remove encrypted credentials and redact config from response
     const { encrypted_credentials: _, ...rest } = data as IIntegration;
-    return rest;
+    return { ...rest, config: redactConfig(rest.config) };
   }
 
   /**
@@ -133,7 +146,6 @@ export class IntegrationService {
       };
       config = {
         url: webhookInput.url,
-        secret: webhookInput.secret,
       } as IWebhookConfig;
       encryptedCredentials = await encryptJSON(credentials);
     }
@@ -167,7 +179,7 @@ export class IntegrationService {
         user_id: integration.user_id,
         type: integration.type,
         name: integration.name,
-        config: integration.config as IIntegrationConfig,
+        config: redactConfig(integration.config),
         status: integration.status,
         last_tested_at: integration.last_tested_at,
         created_at: integration.created_at,
@@ -235,9 +247,9 @@ export class IntegrationService {
       throw new Error(`Failed to update integration: ${error?.message ?? 'Unknown error'}`);
     }
 
-    // Remove encrypted credentials from response
+    // Remove encrypted credentials and redact config from response
     const { encrypted_credentials: _, ...rest } = data as IIntegration;
-    return rest;
+    return { ...rest, config: redactConfig(rest.config) };
   }
 
   /**

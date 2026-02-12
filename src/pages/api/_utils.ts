@@ -238,6 +238,8 @@ export function handleApiError(error: unknown, context?: string): Response {
       case 'CampaignNotFoundError':
         return errorResponse('NOT_FOUND', error.message, 404);
       case 'NoPendingKeywordsError':
+        return errorResponse('NO_PENDING_KEYWORDS', error.message, 400);
+      case 'ScheduleValidationError':
         return errorResponse('VALIDATION_ERROR', error.message, 400);
       case 'InsufficientCreditsError':
         return errorResponse('INSUFFICIENT_CREDITS', error.message, 402);

@@ -44,6 +44,14 @@ const wordpressSchema = z.object({
   appPassword: z.string().min(1, { message: 'Application password is required' }),
 });
 
+const wordpressEditSchema = z.object({
+  type: z.literal('wordpress'),
+  name: z.string().min(1, { message: 'Name is required' }),
+  siteUrl: z.string().url({ message: 'Invalid URL' }),
+  username: z.string().min(1, { message: 'Username is required' }),
+  appPassword: z.string().optional(),
+});
+
 const webhookSchema = z.object({
   type: z.literal('webhook'),
   name: z.string().min(1, { message: 'Name is required' }),
@@ -52,7 +60,8 @@ const webhookSchema = z.object({
   description: z.string().optional(),
 });
 
-const integrationTypeSchema = z.discriminatedUnion('type', [wordpressSchema, webhookSchema]);
+const integrationCreateSchema = z.discriminatedUnion('type', [wordpressSchema, webhookSchema]);
+const integrationEditSchema = z.discriminatedUnion('type', [wordpressEditSchema, webhookSchema]);
 
 // Zod infers the discriminated union, but RHF doesn't support it well.
 // We use IFormFields (flat type) for the form and let Zod validate at runtime.
@@ -154,9 +163,10 @@ export function IntegrationFormModal({
   const [isTesting, setIsTesting] = useState(false);
   const [testResult, setTestResult] = useState<{ success: boolean; message?: string } | null>(null);
 
-  // Form setup
+  // Form setup - use edit schema (optional appPassword) in edit mode
+  const isEditMode = mode === 'edit';
   const form = useForm<IFormFields>({
-    resolver: zodResolver(integrationTypeSchema),
+    resolver: zodResolver(isEditMode ? integrationEditSchema : integrationCreateSchema),
     defaultValues: {
       type: 'wordpress',
       name: '',
@@ -315,7 +325,8 @@ export function IntegrationFormModal({
                     {...form.register('siteUrl')}
                     type="url"
                     placeholder={t('integrations.form.wordpress.siteUrlPlaceholder')}
-                    className="w-full px-3 py-2 bg-elevated border border-border rounded-lg text-white placeholder:text-secondary focus:outline-none focus:ring-2 focus:ring-accent/50"
+                    disabled={isEditMode}
+                    className={`w-full px-3 py-2 bg-elevated border border-border rounded-lg text-white placeholder:text-secondary focus:outline-none focus:ring-2 focus:ring-accent/50 ${isEditMode ? 'opacity-60 cursor-not-allowed' : ''}`}
                   />
                   <p className="text-xs text-muted mt-1">
                     {t('integrations.form.wordpress.siteUrlHelp')}
@@ -333,7 +344,8 @@ export function IntegrationFormModal({
                     {...form.register('username')}
                     type="text"
                     placeholder={t('integrations.form.wordpress.usernamePlaceholder')}
-                    className="w-full px-3 py-2 bg-elevated border border-border rounded-lg text-white placeholder:text-secondary focus:outline-none focus:ring-2 focus:ring-accent/50"
+                    disabled={isEditMode}
+                    className={`w-full px-3 py-2 bg-elevated border border-border rounded-lg text-white placeholder:text-secondary focus:outline-none focus:ring-2 focus:ring-accent/50 ${isEditMode ? 'opacity-60 cursor-not-allowed' : ''}`}
                   />
                   <p className="text-xs text-muted mt-1">
                     {t('integrations.form.wordpress.usernameHelp')}
@@ -350,7 +362,7 @@ export function IntegrationFormModal({
                   <input
                     {...form.register('appPassword')}
                     type="password"
-                    placeholder={t('integrations.form.wordpress.appPasswordPlaceholder')}
+                    placeholder={isEditMode ? 'Leave blank to keep current password' : t('integrations.form.wordpress.appPasswordPlaceholder')}
                     className="w-full px-3 py-2 bg-elevated border border-border rounded-lg text-white placeholder:text-secondary focus:outline-none focus:ring-2 focus:ring-accent/50"
                   />
                   <div className="flex items-center justify-between mt-1">
@@ -384,7 +396,8 @@ export function IntegrationFormModal({
                     {...form.register('url')}
                     type="url"
                     placeholder={t('integrations.form.webhook.urlPlaceholder')}
-                    className="w-full px-3 py-2 bg-elevated border border-border rounded-lg text-white placeholder:text-secondary focus:outline-none focus:ring-2 focus:ring-accent/50"
+                    disabled={isEditMode}
+                    className={`w-full px-3 py-2 bg-elevated border border-border rounded-lg text-white placeholder:text-secondary focus:outline-none focus:ring-2 focus:ring-accent/50 ${isEditMode ? 'opacity-60 cursor-not-allowed' : ''}`}
                   />
                   <p className="text-xs text-muted mt-1">
                     {t('integrations.form.webhook.urlHelp')}

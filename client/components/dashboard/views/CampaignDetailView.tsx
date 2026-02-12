@@ -50,6 +50,9 @@ export function CampaignDetailView({
     addKeywords,
     startCampaign,
     updateCampaign,
+    startSchedule,
+    pauseSchedule,
+    resumeSchedule,
   } = useCampaignDetail(campaignId);
 
   // Calculate stats from articles
@@ -136,6 +139,10 @@ export function CampaignDetailView({
       targetWordCount: settings.targetWordCount,
       model: settings.model,
       imagePreset: settings.imagePreset || undefined,
+      scheduleFrequency: settings.scheduleFrequency ?? undefined,
+      scheduleBatchSize: settings.scheduleBatchSize,
+      scheduleHour: settings.scheduleHour,
+      scheduleTimezone: settings.scheduleTimezone,
     });
   };
 
@@ -170,6 +177,9 @@ export function CampaignDetailView({
         onStartGeneration={handleStartGenerationClick}
         onAddKeywords={() => setIsAddKeywordsModalOpen(true)}
         onOpenSettings={handleOpenSettings}
+        onStartSchedule={startSchedule}
+        onPauseSchedule={pauseSchedule}
+        onResumeSchedule={resumeSchedule}
         t={t}
       />
 
@@ -276,10 +286,15 @@ export function CampaignDetailView({
           targetWordCount: campaign.target_word_count,
           model: campaign.ai_model,
           imagePreset: campaign.image_preset || '',
+          scheduleFrequency: campaign.schedule_frequency,
+          scheduleBatchSize: campaign.schedule_batch_size ?? undefined,
+          scheduleHour: campaign.schedule_hour ?? undefined,
+          scheduleTimezone: campaign.schedule_timezone ?? undefined,
         }}
         writerPresets={writerPresets}
         imagePresets={imagePresets}
         isSaving={isGenerating}
+        campaignStatus={campaign.status}
       />
 
       {/* Article Detail Modal */}

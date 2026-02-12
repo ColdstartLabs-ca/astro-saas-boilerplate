@@ -176,9 +176,22 @@ export const PUT = withAuthAndBody(
         .in('integration_id', toRemove);
     }
 
-    // Add new integrations
+    // Add new integrations (with ownership validation)
     const toAdd = [...newIds].filter(id => !existingIds.has(id));
     if (toAdd.length > 0) {
+      // Verify all new integration IDs belong to the same user
+      const { data: ownedIntegrations } = await supabaseAdmin
+        .from('integrations')
+        .select('id')
+        .eq('user_id', userId)
+        .in('id', toAdd);
+
+      const ownedIds = new Set(ownedIntegrations?.map(i => i.id) || []);
+      const unauthorizedIds = toAdd.filter(id => !ownedIds.has(id));
+      if (unauthorizedIds.length > 0) {
+        return errorResponse('FORBIDDEN', 'One or more integration IDs do not belong to you', 403);
+      }
+
       const inserts = toAdd.map(integrationId => ({
         campaign_id: campaignId,
         integration_id: integrationId,

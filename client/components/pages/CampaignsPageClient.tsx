@@ -7,7 +7,7 @@ import { CampaignDetailView } from '@client/components/dashboard/views/CampaignD
 import { NewCampaignModal } from '@client/components/dashboard/views/NewCampaignModal';
 import { useState, useEffect } from 'react';
 import { dashboardNavigate } from '@client/utils/dashboardNavigation';
-import type { CampaignTone } from '@shared/types/campaign.types';
+import type { ICreateCampaignInput } from '@shared/types/campaign.types';
 
 interface ICampaignsPageClientProps {
   campaignId?: string;
@@ -44,14 +44,7 @@ export default function CampaignsPage({ campaignId }: ICampaignsPageClientProps)
     dashboardNavigate(`/dashboard/campaigns/${id}`);
   };
 
-  const handleCreateCampaign = async (input: {
-    name: string;
-    projectId: string;
-    keywords: string[];
-    model?: string;
-    tone?: CampaignTone;
-    targetWordCount?: number;
-  }) => {
+  const handleCreateCampaign = async (input: ICreateCampaignInput) => {
     await createCampaign(input);
     setIsNewCampaignModalOpen(false);
   };
