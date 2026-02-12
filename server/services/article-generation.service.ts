@@ -288,6 +288,15 @@ export class ArticleGenerationService {
         `[ArticleGeneration] Article ${articleId} generated successfully in ${generationTimeMs}ms` +
           (imagePreset ? ` with ${successfulImageCount} images` : '')
       );
+
+      // Step 6.5: Trigger auto-delivery if campaign has auto_publish enabled
+      // Awaited (not fire-and-forget) because this runs inside ctx.waitUntil already;
+      // delivery failure is caught internally and won't fail the generation.
+      try {
+        await this.triggerAutoDeliveryIfNeeded(articleId, input.campaignId);
+      } catch (deliveryError) {
+        console.error(`[ArticleGeneration] Auto-delivery failed for article ${articleId}:`, deliveryError);
+      }
     } catch (error) {
       console.error(`[ArticleGeneration] Error generating article ${articleId}:`, error);
       // Pass 'unknown' as default stage - error classifier will detect from message
@@ -648,6 +657,46 @@ export class ArticleGenerationService {
 
     // Log structured failure metrics
     await this.logFailureMetrics(articleId, parsedError);
+  }
+
+  /**
+   * Trigger auto-delivery if campaign has auto_publish enabled
+   *
+   * This method checks the campaign settings and triggers delivery asynchronously
+   * if auto_publish is enabled. It's designed to be called without awaiting.
+   *
+   * @param articleId - The article ID to deliver
+   * @param campaignId - The campaign ID to check for auto_publish setting
+   */
+  private async triggerAutoDeliveryIfNeeded(
+    articleId: string,
+    campaignId: string
+  ): Promise<void> {
+    try {
+      // Dynamic import to avoid circular dependencies
+      // eslint-disable-next-line no-restricted-syntax
+      const { deliveryService } = await import('@server/services/delivery.service');
+
+      // Check if auto-publish is enabled for this campaign
+      const shouldDeliver = await deliveryService.shouldAutoDeliver(campaignId);
+
+      if (shouldDeliver) {
+        console.log(
+          `[ArticleGeneration] Auto-delivery enabled for campaign ${campaignId}, triggering delivery for article ${articleId}`
+        );
+        await deliveryService.deliverArticle(articleId);
+      } else {
+        console.log(
+          `[ArticleGeneration] Auto-delivery disabled for campaign ${campaignId}, skipping delivery for article ${articleId}`
+        );
+      }
+    } catch (error) {
+      // Don't throw - auto-delivery failure should not fail the generation
+      console.error(
+        `[ArticleGeneration] Failed to trigger auto-delivery for article ${articleId}:`,
+        error
+      );
+    }
   }
 
   /**

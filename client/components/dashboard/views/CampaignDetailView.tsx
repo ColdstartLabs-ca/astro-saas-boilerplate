@@ -19,6 +19,7 @@ import {
   CampaignMetadata,
   CampaignCreditUsage,
   ArticleQueueTable,
+  CampaignIntegrationsSection,
 } from './campaign-detail';
 import type { IArticle, IArticleWithCampaign } from '@shared/types/article.types';
 
@@ -188,6 +189,9 @@ export function CampaignDetailView({
 
       {/* Credit Usage Section */}
       {creditStats && <CampaignCreditUsage creditStats={creditStats} keywords={keywords} t={t} />}
+
+      {/* Integrations Section */}
+      <CampaignIntegrationsSection campaignId={campaignId} t={t} />
 
       {/* Article Queue Table */}
       <ArticleQueueTable articles={articles} onArticleClick={handleArticleClick} t={t} />

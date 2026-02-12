@@ -48,3 +48,18 @@ export function getProjectStatusStyles(status: string): string {
 
   return styles[status] ?? 'bg-secondary/10 text-secondary border-secondary/20';
 }
+
+/**
+ * Get CSS classes for integration status badges
+ * @param status - The integration status
+ * @returns CSS class string for the status badge
+ */
+export function getIntegrationStatusStyles(status: string): string {
+  const styles: Record<string, string> = {
+    active: 'bg-green-500/10 text-green-400 border-green-500/20',
+    error: 'bg-red-500/10 text-red-400 border-red-500/20',
+    disabled: 'bg-surface-light text-secondary border-border',
+  };
+
+  return styles[status] ?? 'bg-surface text-muted border-border';
+}

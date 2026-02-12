@@ -29,6 +29,7 @@ const createMockDayjs = (utcMode = false, inputDate?: Date | string) => {
     toISOString: vi.fn(() => baseDate.toISOString()),
     toDate: vi.fn(() => new Date(baseDate)),
     utc: vi.fn(() => createMockDayjs(true, baseDate)),
+    fromNow: vi.fn(() => 'a few seconds ago'),
     add: vi.fn((amount: number, unit: string) => {
       const newDate = new Date(baseDate);
       if (unit === 'day') newDate.setDate(newDate.getDate() + amount);
@@ -69,6 +70,10 @@ vi.mock('dayjs', () => {
 
 vi.mock('dayjs/plugin/utc', () => ({
   default: 'utc-plugin', // Return a string placeholder that can be passed to extend
+}));
+
+vi.mock('dayjs/plugin/relativeTime', () => ({
+  default: 'relativeTime-plugin', // Return a string placeholder that can be passed to extend
 }));
 
 // Mock React cache function - needed for data-loader tests
@@ -168,6 +173,7 @@ vi.mock('lucide-react', async () => {
     AlertTriangle: createMockIcon('AlertTriangle'),
     ArrowLeft: createMockIcon('ArrowLeft'),
     ArrowRight: createMockIcon('ArrowRight'),
+    Calendar: createMockIcon('Calendar'),
     Check: createMockIcon('Check'),
     CheckCircle: createMockIcon('CheckCircle'),
     CheckCircle2: createMockIcon('CheckCircle2'),
@@ -183,16 +189,21 @@ vi.mock('lucide-react', async () => {
     Download: createMockIcon('Download'),
     Edit: createMockIcon('Edit'),
     Edit2: createMockIcon('Edit2'),
+    Edit3: createMockIcon('Edit3'),
     Eye: createMockIcon('Eye'),
     EyeOff: createMockIcon('EyeOff'),
     ExternalLink: createMockIcon('ExternalLink'),
     File: createMockIcon('File'),
     FileUp: createMockIcon('FileUp'),
+    FileText: createMockIcon('FileText'),
     Filter: createMockIcon('Filter'),
     Folder: createMockIcon('Folder'),
+    Globe: createMockIcon('Globe'),
+    Hash: createMockIcon('Hash'),
     Heart: createMockIcon('Heart'),
     Home: createMockIcon('Home'),
     Image: createMockIcon('Image'),
+    ImageOff: createMockIcon('ImageOff'),
     Info: createMockIcon('Info'),
     Layers: createMockIcon('Layers'),
     Loader: createMockIcon('Loader'),
@@ -207,22 +218,27 @@ vi.mock('lucide-react', async () => {
     MoreVertical: createMockIcon('MoreVertical'),
     Pause: createMockIcon('Pause'),
     Play: createMockIcon('Play'),
+    Plug: createMockIcon('Plug'),
     Plus: createMockIcon('Plus'),
     RefreshCw: createMockIcon('RefreshCw'),
     RotateCcw: createMockIcon('RotateCcw'),
     Save: createMockIcon('Save'),
     Search: createMockIcon('Search'),
+    Send: createMockIcon('Send'),
     Settings: createMockIcon('Settings'),
     Share: createMockIcon('Share'),
     Sliders: createMockIcon('Sliders'),
     Sparkles: createMockIcon('Sparkles'),
     Star: createMockIcon('Star'),
     Sun: createMockIcon('Sun'),
+    ToggleLeft: createMockIcon('ToggleLeft'),
+    ToggleRight: createMockIcon('ToggleRight'),
     Trash: createMockIcon('Trash'),
     Trash2: createMockIcon('Trash2'),
     Upload: createMockIcon('Upload'),
     UploadCloud: createMockIcon('UploadCloud'),
     User: createMockIcon('User'),
+    Webhook: createMockIcon('Webhook'),
     X: createMockIcon('X'),
     XCircle: createMockIcon('XCircle'),
     Zap: createMockIcon('Zap'),
@@ -242,8 +258,41 @@ const localStorageMock = {
 };
 Object.defineProperty(globalThis, 'localStorage', { value: localStorageMock });
 
-// Mock fetch
-globalThis.fetch = vi.fn();
+// Mock fetch with Response object that includes headers
+const mockResponse = (init: {
+  ok?: boolean;
+  status?: number;
+  json?: () => Promise<unknown>;
+  headers?: Record<string, string>;
+}) => {
+  const headersGet = vi.fn((key: string) => {
+    // Simulate Response.headers.get() behavior
+    if (init.headers && key in init.headers) {
+      return (init.headers as Record<string, string>)[key];
+    }
+    // Return null for content-length when not in headers
+    return null;
+  });
+
+  return {
+    ok: init.ok ?? true,
+    status: init.status ?? 200,
+    json: init.json ?? (() => Promise.resolve({})),
+    headers: {
+      get: headersGet,
+    has: vi.fn(() => false),
+    forEach: vi.fn(),
+      entries: vi.fn(() => []),
+      keys: vi.fn(() => []),
+      values: vi.fn(() => []),
+    } as unknown as Headers,
+  } as unknown as Response;
+};
+
+globalThis.fetch = vi.fn((_url, _init) => {
+  // Return a promise that resolves to a mock Response
+  return Promise.resolve(mockResponse({ ok: true, status: 200, json: () => ({}) }));
+}) as unknown as typeof fetch;
 
 // Mock URL methods
 globalThis.URL.createObjectURL = vi.fn(() => 'mock-object-url');

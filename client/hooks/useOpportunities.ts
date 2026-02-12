@@ -44,21 +44,21 @@ async function fetchOpportunities(
     params.set('status', filters.status);
   }
 
-  const data = await apiFetch<IOpportunityListResponse>(`/api/opportunities?${params.toString()}`, {
+  const data = await apiFetch<{ data: IOpportunityListResponse }>(`/api/opportunities?${params.toString()}`, {
     method: 'GET',
   });
-  return data.opportunities ?? [];
+  return data.data?.opportunities ?? [];
 }
 
 /**
  * Trigger opportunity analysis for a project
  */
 async function analyzeOpportunities(projectId: string): Promise<IAnalyzeOpportunitiesResponse> {
-  const data = await apiFetch<IAnalyzeOpportunitiesResponse>('/api/opportunities/analyze', {
+  const data = await apiFetch<{ data: IAnalyzeOpportunitiesResponse }>('/api/opportunities/analyze', {
     method: 'POST',
     body: JSON.stringify({ projectId }),
   });
-  return data;
+  return data.data;
 }
 
 /**
@@ -68,14 +68,14 @@ async function updateOpportunityStatus(
   opportunityId: string,
   input: IUpdateOpportunityInput
 ): Promise<IOpportunity> {
-  const data = await apiFetch<{ opportunity: IOpportunity }>(
+  const data = await apiFetch<{ data: { opportunity: IOpportunity } }>(
     `/api/opportunities?opportunityId=${opportunityId}`,
     {
       method: 'PATCH',
       body: JSON.stringify(input),
     }
   );
-  return data.opportunity;
+  return data.data.opportunity;
 }
 
 /**
@@ -85,39 +85,39 @@ async function createArticleFromOpportunity(
   opportunityId: string,
   projectId: string
 ): Promise<ICreateArticleFromOpportunityResponse> {
-  const data = await apiFetch<ICreateArticleFromOpportunityResponse>(
+  const data = await apiFetch<{ data: ICreateArticleFromOpportunityResponse }>(
     `/api/opportunities/${opportunityId}/create-article`,
     {
       method: 'POST',
       body: JSON.stringify({ projectId }),
     }
   );
-  return data;
+  return data.data;
 }
 
 /**
  * Mark an opportunity as completed
  */
 async function markOpportunityComplete(opportunityId: string): Promise<IOpportunity> {
-  const data = await apiFetch<{ opportunity: IOpportunity }>(
+  const data = await apiFetch<{ data: { opportunity: IOpportunity } }>(
     `/api/opportunities/${opportunityId}`,
     {
       method: 'PATCH',
       body: JSON.stringify({ status: 'completed' }),
     }
   );
-  return data.opportunity;
+  return data.data.opportunity;
 }
 
 /**
  * Fetch GSC connections for a project
  */
 async function fetchGscConnections(projectId: string): Promise<IGscConnectionListResponse> {
-  const data = await apiFetch<IGscConnectionListResponse>(
+  const data = await apiFetch<{ data: IGscConnectionListResponse }>(
     `/api/gsc/connections?projectId=${projectId}`,
     { method: 'GET' }
   );
-  return data;
+  return data.data;
 }
 
 // =============================================================================

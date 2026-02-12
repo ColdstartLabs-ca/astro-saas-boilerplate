@@ -32,22 +32,22 @@ import { useMutationWithToast } from './useMutationWithToast';
  * Fetch the GSC connection for a project (returns the first active connection)
  */
 async function fetchConnection(projectId: string): Promise<IGscConnectionSafe | null> {
-  const data = await apiFetch<{ connections: IGscConnectionSafe[] }>(
+  const data = await apiFetch<{ data: { connections: IGscConnectionSafe[] } }>(
     `/api/gsc/connections?projectId=${projectId}`,
     { method: 'GET' }
   );
-  return data.connections?.[0] ?? null;
+  return data.data?.connections?.[0] ?? null;
 }
 
 /**
  * Initiate GSC OAuth flow — returns an authUrl to redirect to
  */
 async function connectGsc(projectId: string): Promise<IGscConnectResponse> {
-  const data = await apiFetch<IGscConnectResponse>('/api/gsc/connect', {
+  const data = await apiFetch<{ data: IGscConnectResponse }>('/api/gsc/connect', {
     method: 'POST',
     body: JSON.stringify({ projectId }),
   });
-  return data;
+  return data.data;
 }
 
 /**
@@ -63,24 +63,24 @@ async function disconnectGsc(connectionId: string): Promise<void> {
  * Update the selected site URL for a connection
  */
 async function updateSiteUrl(connectionId: string, siteUrl: string): Promise<IGscConnectionSafe> {
-  const data = await apiFetch<{ connection: IGscConnectionSafe }>(
+  const data = await apiFetch<{ data: { connection: IGscConnectionSafe } }>(
     `/api/gsc/connections/${connectionId}`,
     {
       method: 'PUT',
       body: JSON.stringify({ siteUrl }),
     }
   );
-  return data.connection;
+  return data.data.connection;
 }
 
 /**
  * Fetch verified sites for a connection
  */
 async function fetchSites(connectionId: string): Promise<IGscSite[]> {
-  const data = await apiFetch<IGscSitesResponse>(`/api/gsc/connections/${connectionId}/sites`, {
+  const data = await apiFetch<{ data: IGscSitesResponse }>(`/api/gsc/connections/${connectionId}/sites`, {
     method: 'GET',
   });
-  return data.sites ?? [];
+  return data.data?.sites ?? [];
 }
 
 // =============================================================================

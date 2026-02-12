@@ -26,6 +26,36 @@ import {
 } from '@client/utils/api-client';
 import { ProcessingStage } from '@shared/types/coreflow.types';
 
+// Helper to create a mock Response object with proper headers support
+const createMockResponse = (init: {
+  ok?: boolean;
+  status?: number;
+  json?: () => Promise<unknown>;
+  headers?: Record<string, string>;
+}) => {
+  const headersGet = vi.fn((key: string) => {
+    // Simulate Response.headers.get() behavior
+    if (init.headers && key in init.headers) {
+      return (init.headers as Record<string, string>)[key];
+    }
+    return null;
+  });
+
+  return {
+    ok: init.ok ?? true,
+    status: init.status ?? 200,
+    json: init.json ?? (() => Promise.resolve({})),
+    headers: {
+      get: headersGet,
+      has: vi.fn(() => false),
+      forEach: vi.fn(),
+      entries: vi.fn(() => []),
+      keys: vi.fn(() => []),
+      values: vi.fn(() => []),
+    } as unknown as Headers,
+  } as unknown as Response;
+};
+
 // Mock Supabase client
 const mockGetSession = vi.fn();
 vi.mock('@shared/utils/supabase/client', () => ({
@@ -137,10 +167,10 @@ describe('api-client', () => {
   describe('apiFetch', () => {
     it('should make successful GET request and return parsed JSON', async () => {
       const mockData = { id: 1, name: 'Test' };
-      global.fetch = vi.fn().mockResolvedValue({
+      global.fetch = vi.fn().mockResolvedValue(createMockResponse({
         ok: true,
         json: async () => mockData,
-      } as Response);
+      }));
       mockGetSession.mockResolvedValue({
         data: { session: null },
       });
@@ -161,10 +191,10 @@ describe('api-client', () => {
     it('should make successful POST request with body', async () => {
       const mockData = { success: true };
       const requestBody = { name: 'Test' };
-      global.fetch = vi.fn().mockResolvedValue({
+      global.fetch = vi.fn().mockResolvedValue(createMockResponse({
         ok: true,
         json: async () => mockData,
-      } as Response);
+      }));
       mockGetSession.mockResolvedValue({
         data: { session: null },
       });
@@ -190,10 +220,10 @@ describe('api-client', () => {
         data: { session: { access_token: mockToken } },
       });
 
-      global.fetch = vi.fn().mockResolvedValue({
+      global.fetch = vi.fn().mockResolvedValue(createMockResponse({
         ok: true,
         json: async () => ({}),
-      } as Response);
+      }));
 
       await apiFetch('/api/test');
 
@@ -212,10 +242,10 @@ describe('api-client', () => {
         data: { session: null },
       });
 
-      global.fetch = vi.fn().mockResolvedValue({
+      global.fetch = vi.fn().mockResolvedValue(createMockResponse({
         ok: true,
         json: async () => ({}),
-      } as Response);
+      }));
 
       const customHeaders = { 'X-Custom-Header': 'custom-value' };
       await apiFetch('/api/test', {
@@ -235,11 +265,11 @@ describe('api-client', () => {
 
     it('should throw error with message from response', async () => {
       const errorMessage = 'Resource not found';
-      global.fetch = vi.fn().mockResolvedValue({
+      global.fetch = vi.fn().mockResolvedValue(createMockResponse({
         ok: false,
         status: 404,
         json: async () => ({ error: errorMessage }),
-      } as Response);
+      }));
       mockGetSession.mockResolvedValue({
         data: { session: null },
       });
@@ -249,11 +279,11 @@ describe('api-client', () => {
 
     it('should handle nested error objects', async () => {
       const errorMessage = 'Validation failed';
-      global.fetch = vi.fn().mockResolvedValue({
+      global.fetch = vi.fn().mockResolvedValue(createMockResponse({
         ok: false,
         status: 400,
         json: async () => ({ error: { message: errorMessage } }),
-      } as Response);
+      }));
       mockGetSession.mockResolvedValue({
         data: { session: null },
       });
@@ -262,13 +292,13 @@ describe('api-client', () => {
     });
 
     it('should throw generic error when response JSON is invalid', async () => {
-      global.fetch = vi.fn().mockResolvedValue({
+      global.fetch = vi.fn().mockResolvedValue(createMockResponse({
         ok: false,
         status: 500,
         json: async () => {
           throw new Error('Invalid JSON');
         },
-      } as Response);
+      }));
       mockGetSession.mockResolvedValue({
         data: { session: null },
       });

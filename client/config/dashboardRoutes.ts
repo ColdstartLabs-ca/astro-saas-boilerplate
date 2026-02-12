@@ -25,6 +25,7 @@ import {
   HelpCircle,
   Shield,
   Lightbulb,
+  Plug,
 } from 'lucide-react';
 
 // Lazy-load page components
@@ -41,6 +42,9 @@ const SettingsPage = lazy(() => import('@client/components/pages/SettingsPageCli
 const BillingPage = lazy(() => import('@client/components/pages/BillingPageClient'));
 const _HistoryPage = lazy(() => import('@client/components/pages/HistoryPageClient'));
 const SupportPage = lazy(() => import('@client/components/pages/SupportPageClient'));
+const IntegrationsPage = lazy(() =>
+  import('@client/components/pages/IntegrationsPageClient')
+);
 
 // Admin pages
 const AdminDashboardLayout = lazy(() =>
@@ -118,6 +122,14 @@ export const DASHBOARD_ROUTES: readonly IDashboardRoute[] = [
         group: 'primary',
       },
     ],
+  },
+  {
+    path: '/dashboard/integrations',
+    labelKey: 'sidebar.integrations',
+    icon: Plug,
+    component: IntegrationsPage,
+    enabled: true,
+    group: 'primary',
   },
   {
     path: '/dashboard/opportunities',

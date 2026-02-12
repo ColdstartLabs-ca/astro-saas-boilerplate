@@ -24,7 +24,6 @@ import { useArticleGeneration } from '@client/hooks/useArticleGeneration';
 import { useAvailableModels } from '@client/hooks/useAvailableModels';
 import { useUserStore } from '@client/store/userStore';
 import { DashboardButton } from '@client/components/dashboard/ui/DashboardButton';
-import { calculateArticleCreditCost } from '@shared/constants';
 import { useTranslations } from '@client/hooks/useTranslations';
 import { ModelSelect } from '@client/components/ui/ModelSelect';
 import { imagePresetToOption } from '@client/utils/modelAdapters';
@@ -159,7 +158,6 @@ export function QuickGenerateModal({
 
   // Calculate total credit cost
   // QuickGenerate uses default writer (auto), which defaults to budget=1 when undefined
-  const defaultWriterPreset = 'budget'; // auto mode uses budget writer
   const writerCost = 1; // WRITER_CREDIT_COSTS.budget
   const imageCost =
     watchedImagePreset === 'budget'

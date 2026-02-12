@@ -77,6 +77,22 @@ vi.mock('lucide-react', () => ({
   Zap: ({ className }: { className: string }) => (
     <div data-testid="zap" className={className} />
   ),
+  // Additional icons needed by CampaignIntegrationsSection
+  Plug: ({ className }: { className: string }) => (
+    <div data-testid="plug" className={className} />
+  ),
+  Globe: ({ className }: { className: string }) => (
+    <div data-testid="globe" className={className} />
+  ),
+  Webhook: ({ className }: { className: string }) => (
+    <div data-testid="webhook" className={className} />
+  ),
+  ToggleLeft: ({ className }: { className: string }) => (
+    <div data-testid="toggle-left" className={className} />
+  ),
+  ToggleRight: ({ className }: { className: string }) => (
+    <div data-testid="toggle-right" className={className} />
+  ),
 }));
 
 // Mock ArticleDetailModal

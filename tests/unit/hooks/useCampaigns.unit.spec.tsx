@@ -7,6 +7,36 @@ import { useCampaignDetail } from '@client/hooks/useCampaignDetail';
 import type { ICampaignWithStats, ICampaign, IKeyword } from '@shared/types/campaign.types';
 import type { IArticle } from '@shared/types/article.types';
 
+// Helper to create a mock Response object with proper headers support
+const createMockResponse = (init: {
+  ok?: boolean;
+  status?: number;
+  json?: () => Promise<unknown>;
+  headers?: Record<string, string>;
+}) => {
+  const headersGet = vi.fn((key: string) => {
+    // Simulate Response.headers.get() behavior
+    if (init.headers && key in init.headers) {
+      return (init.headers as Record<string, string>)[key];
+    }
+    return null;
+  });
+
+  return {
+    ok: init.ok ?? true,
+    status: init.status ?? 200,
+    json: init.json ?? (() => Promise.resolve({})),
+    headers: {
+      get: headersGet,
+      has: vi.fn(() => false),
+      forEach: vi.fn(),
+      entries: vi.fn(() => []),
+      keys: vi.fn(() => []),
+      values: vi.fn(() => []),
+    } as unknown as Headers,
+  } as unknown as Response;
+};
+
 // Mock fetch globally
 const mockFetch = vi.fn();
 global.fetch = mockFetch;
@@ -157,10 +187,10 @@ describe('useCampaigns', () => {
   });
 
   it('should fetch campaigns for a project', async () => {
-    mockFetch.mockResolvedValueOnce({
+    mockFetch.mockResolvedValueOnce(createMockResponse({
       ok: true,
       json: async () => ({ data: { campaigns: mockCampaigns } }),
-    });
+    }));
 
     const { result } = renderHook(() => useCampaigns('project-1'), {
       wrapper: createWrapper(),
@@ -183,18 +213,18 @@ describe('useCampaigns', () => {
   it('should create a campaign and invalidate query', async () => {
     const newCampaign = mockCampaigns[0];
     mockFetch
-      .mockResolvedValueOnce({
+      .mockResolvedValueOnce(createMockResponse({
         ok: true,
         json: async () => ({ data: { campaigns: mockCampaigns } }),
-      })
-      .mockResolvedValueOnce({
+      }))
+      .mockResolvedValueOnce(createMockResponse({
         ok: true,
         json: async () => ({ data: { campaign: newCampaign } }),
-      })
-      .mockResolvedValueOnce({
+      }))
+      .mockResolvedValueOnce(createMockResponse({
         ok: true,
         json: async () => ({ data: { campaigns: [...mockCampaigns, newCampaign] } }),
-      });
+      }));
 
     const { result } = renderHook(() => useCampaigns('project-1'), {
       wrapper: createWrapper(),
@@ -213,18 +243,18 @@ describe('useCampaigns', () => {
 
   it('should delete a campaign and invalidate query', async () => {
     mockFetch
-      .mockResolvedValueOnce({
+      .mockResolvedValueOnce(createMockResponse({
         ok: true,
         json: async () => ({ data: { campaigns: mockCampaigns } }),
-      })
-      .mockResolvedValueOnce({
+      }))
+      .mockResolvedValueOnce(createMockResponse({
         ok: true,
         json: async () => ({ success: true }),
-      })
-      .mockResolvedValueOnce({
+      }))
+      .mockResolvedValueOnce(createMockResponse({
         ok: true,
         json: async () => ({ data: { campaigns: [mockCampaigns[1]] } }),
-      });
+      }));
 
     const { result } = renderHook(() => useCampaigns('project-1'), {
       wrapper: createWrapper(),
@@ -246,10 +276,10 @@ describe('useCampaigns', () => {
   });
 
   it('should handle fetch errors gracefully', async () => {
-    mockFetch.mockResolvedValueOnce({
+    mockFetch.mockResolvedValueOnce(createMockResponse({
       ok: false,
       json: async () => ({ error: { message: 'Failed to fetch' } }),
-    });
+    }));
 
     const { result } = renderHook(() => useCampaigns('project-1'), {
       wrapper: createWrapper(),
@@ -267,7 +297,7 @@ describe('useCampaignDetail', () => {
 
   it('should fetch campaign detail with keywords and articles', async () => {
     mockFetch
-      .mockResolvedValueOnce({
+      .mockResolvedValueOnce(createMockResponse({
         ok: true,
         json: async () => ({
           data: {
@@ -282,11 +312,11 @@ describe('useCampaignDetail', () => {
             },
           },
         }),
-      })
-      .mockResolvedValueOnce({
+      }))
+      .mockResolvedValueOnce(createMockResponse({
         ok: true,
         json: async () => ({ data: { articles: mockArticles } }),
-      });
+      }));
 
     const { result } = renderHook(() => useCampaignDetail('campaign-1'), {
       wrapper: createWrapper(),
@@ -301,7 +331,7 @@ describe('useCampaignDetail', () => {
 
   it('should start campaign generation', async () => {
     mockFetch
-      .mockResolvedValueOnce({
+      .mockResolvedValueOnce(createMockResponse({
         ok: true,
         json: async () => ({
           data: {
@@ -310,16 +340,16 @@ describe('useCampaignDetail', () => {
             articleStats: { queued: 0, generating: 0, draft: 0, published: 0, total: 0 },
           },
         }),
-      })
-      .mockResolvedValueOnce({
+      }))
+      .mockResolvedValueOnce(createMockResponse({
         ok: true,
         json: async () => ({ data: { articles: [] } }),
-      })
-      .mockResolvedValueOnce({
+      }))
+      .mockResolvedValueOnce(createMockResponse({
         ok: true,
         json: async () => ({ data: { queued: 5, creditsRequired: 5 } }),
-      })
-      .mockResolvedValueOnce({
+      }))
+      .mockResolvedValueOnce(createMockResponse({
         ok: true,
         json: async () => ({
           data: {
@@ -328,7 +358,7 @@ describe('useCampaignDetail', () => {
             articleStats: { queued: 0, generating: 0, draft: 0, published: 0, total: 0 },
           },
         }),
-      });
+      }));
 
     const { result } = renderHook(() => useCampaignDetail('campaign-1'), {
       wrapper: createWrapper(),
@@ -343,7 +373,7 @@ describe('useCampaignDetail', () => {
 
   it('should add keywords to campaign', async () => {
     mockFetch
-      .mockResolvedValueOnce({
+      .mockResolvedValueOnce(createMockResponse({
         ok: true,
         json: async () => ({
           data: {
@@ -352,16 +382,16 @@ describe('useCampaignDetail', () => {
             articleStats: { queued: 0, generating: 0, draft: 0, published: 0, total: 0 },
           },
         }),
-      })
-      .mockResolvedValueOnce({
+      }))
+      .mockResolvedValueOnce(createMockResponse({
         ok: true,
         json: async () => ({ data: { articles: [] } }),
-      })
-      .mockResolvedValueOnce({
+      }))
+      .mockResolvedValueOnce(createMockResponse({
         ok: true,
         json: async () => ({ data: { added: 2, duplicates: 0 } }),
-      })
-      .mockResolvedValueOnce({
+      }))
+      .mockResolvedValueOnce(createMockResponse({
         ok: true,
         json: async () => ({
           data: {
@@ -383,7 +413,7 @@ describe('useCampaignDetail', () => {
             articleStats: { queued: 0, generating: 0, draft: 0, published: 0, total: 0 },
           },
         }),
-      });
+      }));
 
     const { result } = renderHook(() => useCampaignDetail('campaign-1'), {
       wrapper: createWrapper(),
@@ -402,7 +432,7 @@ describe('useCampaignDetail', () => {
     vi.useFakeTimers();
 
     mockFetch
-      .mockResolvedValueOnce({
+      .mockResolvedValueOnce(createMockResponse({
         ok: true,
         json: async () => ({
           data: {
@@ -411,17 +441,17 @@ describe('useCampaignDetail', () => {
             articleStats: { queued: 0, generating: 1, draft: 0, published: 0, total: 1 },
           },
         }),
-      })
-      .mockResolvedValueOnce({
+      }))
+      .mockResolvedValueOnce(createMockResponse({
         ok: true,
         json: async () => ({ data: { articles: mockArticles } }),
-      })
-      .mockResolvedValueOnce({
+      }))
+      .mockResolvedValueOnce(createMockResponse({
         ok: true,
         json: async () => ({
           data: { articles: [...mockArticles, { ...mockArticles[0], id: 'article-2' }] },
         }),
-      });
+      }));
 
     const { result } = renderHook(() => useCampaignDetail('campaign-1'), {
       wrapper: createWrapper(),

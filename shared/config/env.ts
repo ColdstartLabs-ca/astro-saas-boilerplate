@@ -66,54 +66,58 @@ const clientEnvSchema = z.object({
 export type IClientEnv = z.infer<typeof clientEnvSchema>;
 
 function loadClientEnv(): IClientEnv {
+  // Guard against import.meta.env being undefined (e.g., in Playwright tests)
+  // In ESM, import.meta always exists, but import.meta.env may not
+  const metaEnv = (typeof import.meta !== 'undefined' && import.meta.env) ? import.meta.env : {} as Record<string, string | undefined>;
+
   const env = {
-    APP_NAME: import.meta.env.PUBLIC_APP_NAME || 'SaaS Boilerplate',
-    ENV: import.meta.env.PUBLIC_ENV || 'development',
-    BASE_URL: import.meta.env.PUBLIC_BASE_URL || 'http://localhost:4321',
-    SUPABASE_URL: import.meta.env.PUBLIC_SUPABASE_URL || 'https://example.supabase.co',
-    SUPABASE_ANON_KEY: import.meta.env.PUBLIC_SUPABASE_ANON_KEY || '',
-    GOOGLE_CLIENT_ID: import.meta.env.PUBLIC_GOOGLE_CLIENT_ID || '',
-    FACEBOOK_CLIENT_ID: import.meta.env.PUBLIC_FACEBOOK_CLIENT_ID || '',
-    AZURE_CLIENT_ID: import.meta.env.PUBLIC_AZURE_CLIENT_ID || '',
-    BASELIME_KEY: import.meta.env.PUBLIC_BASELIME_KEY || '',
+    APP_NAME: metaEnv.PUBLIC_APP_NAME || 'SaaS Boilerplate',
+    ENV: metaEnv.PUBLIC_ENV || 'development',
+    BASE_URL: metaEnv.PUBLIC_BASE_URL || 'http://localhost:4321',
+    SUPABASE_URL: metaEnv.PUBLIC_SUPABASE_URL || 'https://example.supabase.co',
+    SUPABASE_ANON_KEY: metaEnv.PUBLIC_SUPABASE_ANON_KEY || '',
+    GOOGLE_CLIENT_ID: metaEnv.PUBLIC_GOOGLE_CLIENT_ID || '',
+    FACEBOOK_CLIENT_ID: metaEnv.PUBLIC_FACEBOOK_CLIENT_ID || '',
+    AZURE_CLIENT_ID: metaEnv.PUBLIC_AZURE_CLIENT_ID || '',
+    BASELIME_KEY: metaEnv.PUBLIC_BASELIME_KEY || '',
     // Analytics
-    AMPLITUDE_API_KEY: import.meta.env.PUBLIC_AMPLITUDE_API_KEY || '',
-    GA_MEASUREMENT_ID: import.meta.env.PUBLIC_GA_MEASUREMENT_ID || '',
-    AHREFS_ANALYTICS_KEY: import.meta.env.PUBLIC_AHREFS_ANALYTICS_KEY || '',
+    AMPLITUDE_API_KEY: metaEnv.PUBLIC_AMPLITUDE_API_KEY || '',
+    GA_MEASUREMENT_ID: metaEnv.PUBLIC_GA_MEASUREMENT_ID || '',
+    AHREFS_ANALYTICS_KEY: metaEnv.PUBLIC_AHREFS_ANALYTICS_KEY || '',
     // OAuth Provider Toggles
-    ENABLE_GOOGLE_OAUTH: import.meta.env.PUBLIC_ENABLE_GOOGLE_OAUTH || 'true',
-    ENABLE_AZURE_OAUTH: import.meta.env.PUBLIC_ENABLE_AZURE_OAUTH || 'false',
+    ENABLE_GOOGLE_OAUTH: metaEnv.PUBLIC_ENABLE_GOOGLE_OAUTH || 'true',
+    ENABLE_AZURE_OAUTH: metaEnv.PUBLIC_ENABLE_AZURE_OAUTH || 'false',
     // Contact
-    ADMIN_EMAIL: import.meta.env.PUBLIC_ADMIN_EMAIL || 'admin@example.com',
-    SUPPORT_EMAIL: import.meta.env.PUBLIC_SUPPORT_EMAIL || 'support@example.com',
-    LEGAL_EMAIL: import.meta.env.PUBLIC_LEGAL_EMAIL || 'legal@example.com',
-    PRIVACY_EMAIL: import.meta.env.PUBLIC_PRIVACY_EMAIL || 'privacy@example.com',
-    SALES_EMAIL: import.meta.env.PUBLIC_SALES_EMAIL || 'sales@example.com',
-    TWITTER_HANDLE: import.meta.env.PUBLIC_TWITTER_HANDLE || 'example',
+    ADMIN_EMAIL: metaEnv.PUBLIC_ADMIN_EMAIL || 'admin@example.com',
+    SUPPORT_EMAIL: metaEnv.PUBLIC_SUPPORT_EMAIL || 'support@example.com',
+    LEGAL_EMAIL: metaEnv.PUBLIC_LEGAL_EMAIL || 'legal@example.com',
+    PRIVACY_EMAIL: metaEnv.PUBLIC_PRIVACY_EMAIL || 'privacy@example.com',
+    SALES_EMAIL: metaEnv.PUBLIC_SALES_EMAIL || 'sales@example.com',
+    TWITTER_HANDLE: metaEnv.PUBLIC_TWITTER_HANDLE || 'example',
     // App Configuration
-    APP_SLUG: import.meta.env.PUBLIC_APP_SLUG || 'saas-boilerplate',
-    DOWNLOAD_PREFIX: import.meta.env.PUBLIC_DOWNLOAD_PREFIX || 'saas-boilerplate',
-    BATCH_FOLDER_NAME: import.meta.env.PUBLIC_BATCH_FOLDER_NAME || 'saas-boilerplate_batch',
-    CACHE_USER_KEY_PREFIX: import.meta.env.PUBLIC_CACHE_USER_KEY_PREFIX || 'saas-boilerplate',
-    WEB_SERVICE_NAME: import.meta.env.PUBLIC_WEB_SERVICE_NAME || 'saas-boilerplate-web',
-    CRON_SERVICE_NAME: import.meta.env.PUBLIC_CRON_SERVICE_NAME || 'saas-boilerplate-cron',
+    APP_SLUG: metaEnv.PUBLIC_APP_SLUG || 'saas-boilerplate',
+    DOWNLOAD_PREFIX: metaEnv.PUBLIC_DOWNLOAD_PREFIX || 'saas-boilerplate',
+    BATCH_FOLDER_NAME: metaEnv.PUBLIC_BATCH_FOLDER_NAME || 'saas-boilerplate_batch',
+    CACHE_USER_KEY_PREFIX: metaEnv.PUBLIC_CACHE_USER_KEY_PREFIX || 'saas-boilerplate',
+    WEB_SERVICE_NAME: metaEnv.PUBLIC_WEB_SERVICE_NAME || 'saas-boilerplate-web',
+    CRON_SERVICE_NAME: metaEnv.PUBLIC_CRON_SERVICE_NAME || 'saas-boilerplate-cron',
     // GitHub
-    GITHUB_USER: import.meta.env.PUBLIC_GITHUB_USER || 'your-github-user',
-    GITHUB_REPO: import.meta.env.PUBLIC_GITHUB_REPO || 'saas-boilerplate',
+    GITHUB_USER: metaEnv.PUBLIC_GITHUB_USER || 'your-github-user',
+    GITHUB_REPO: metaEnv.PUBLIC_GITHUB_REPO || 'saas-boilerplate',
     // Legal
-    LAST_UPDATED_DATE: import.meta.env.PUBLIC_LAST_UPDATED_DATE || 'November 26, 2025',
+    LAST_UPDATED_DATE: metaEnv.PUBLIC_LAST_UPDATED_DATE || 'November 26, 2025',
     // Domains and URLs
-    PRIMARY_DOMAIN: import.meta.env.PUBLIC_PRIMARY_DOMAIN || 'example.com',
-    APP_DOMAIN: import.meta.env.PUBLIC_APP_DOMAIN || 'example.com',
+    PRIMARY_DOMAIN: metaEnv.PUBLIC_PRIMARY_DOMAIN || 'example.com',
+    APP_DOMAIN: metaEnv.PUBLIC_APP_DOMAIN || 'example.com',
     // Stripe
-    STRIPE_PUBLISHABLE_KEY: import.meta.env.PUBLIC_STRIPE_PUBLISHABLE_KEY || '',
+    STRIPE_PUBLISHABLE_KEY: metaEnv.PUBLIC_STRIPE_PUBLISHABLE_KEY || '',
     // Stripe Credit Pack Price IDs
     STRIPE_PRICE_CREDITS_SMALL:
-      import.meta.env.PUBLIC_STRIPE_PRICE_CREDITS_SMALL || 'price_credits_small',
+      metaEnv.PUBLIC_STRIPE_PRICE_CREDITS_SMALL || 'price_credits_small',
     STRIPE_PRICE_CREDITS_MEDIUM:
-      import.meta.env.PUBLIC_STRIPE_PRICE_CREDITS_MEDIUM || 'price_credits_medium',
+      metaEnv.PUBLIC_STRIPE_PRICE_CREDITS_MEDIUM || 'price_credits_medium',
     STRIPE_PRICE_CREDITS_LARGE:
-      import.meta.env.PUBLIC_STRIPE_PRICE_CREDITS_LARGE || 'price_credits_large',
+      metaEnv.PUBLIC_STRIPE_PRICE_CREDITS_LARGE || 'price_credits_large',
   };
 
   return clientEnvSchema.parse(env);
@@ -155,8 +159,8 @@ const serverEnvSchema = z.object({
   APP_NAME: z.string().default('SaaS Boilerplate'),
   // Node environment
   NODE_ENV: z.string().optional(),
-  // Test flags
-  PLAYWRIGHT_TEST: z.string().optional(),
+  // Test flags - Playwright sets this to "1" as a string, which Vite may coerce to number
+  PLAYWRIGHT_TEST: z.union([z.string(), z.number()]).optional(),
   // Public URLs (for server-side use)
   SUPABASE_URL: z.string().url().optional(),
   BASE_URL: z.string().url().optional(),
@@ -233,70 +237,74 @@ const serverEnvSchema = z.object({
 export type IServerEnv = z.infer<typeof serverEnvSchema>;
 
 function loadServerEnv(): IServerEnv {
+  // Guard against import.meta.env being undefined (e.g., in Playwright tests)
+  // In ESM, import.meta always exists, but import.meta.env may not
+  const metaEnv = (typeof import.meta !== 'undefined' && import.meta.env) ? import.meta.env : {} as Record<string, string | number | boolean | undefined>;
+
   const env = {
-    ENV: import.meta.env.ENV || import.meta.env.NODE_ENV || 'development',
+    ENV: metaEnv.ENV || metaEnv.NODE_ENV || 'development',
     // App Name
-    APP_NAME: import.meta.env.APP_NAME || import.meta.env.PUBLIC_APP_NAME || 'SaaS Boilerplate',
+    APP_NAME: metaEnv.APP_NAME || metaEnv.PUBLIC_APP_NAME || 'SaaS Boilerplate',
     // Node environment
-    NODE_ENV: import.meta.env.NODE_ENV,
-    // Test flags
-    PLAYWRIGHT_TEST: import.meta.env.PLAYWRIGHT_TEST,
+    NODE_ENV: metaEnv.NODE_ENV,
+    // Test flags - Playwright sets this to "1", accept string or number
+    PLAYWRIGHT_TEST: metaEnv.PLAYWRIGHT_TEST ?? undefined,
     // Public URLs
-    SUPABASE_URL: import.meta.env.PUBLIC_SUPABASE_URL,
-    BASE_URL: import.meta.env.PUBLIC_BASE_URL,
+    SUPABASE_URL: metaEnv.PUBLIC_SUPABASE_URL,
+    BASE_URL: metaEnv.PUBLIC_BASE_URL,
     // Supabase
-    SUPABASE_SERVICE_ROLE_KEY: import.meta.env.SUPABASE_SERVICE_ROLE_KEY || '',
+    SUPABASE_SERVICE_ROLE_KEY: metaEnv.SUPABASE_SERVICE_ROLE_KEY || '',
     // Stripe
-    STRIPE_SECRET_KEY: import.meta.env.STRIPE_SECRET_KEY || '',
-    STRIPE_WEBHOOK_SECRET: import.meta.env.STRIPE_WEBHOOK_SECRET || '',
+    STRIPE_SECRET_KEY: metaEnv.STRIPE_SECRET_KEY || '',
+    STRIPE_WEBHOOK_SECRET: metaEnv.STRIPE_WEBHOOK_SECRET || '',
     // Stripe Price IDs (legacy env vars — actual source of truth is subscription.config.ts)
-    STRIPE_STARTER_MONTHLY_PRICE_ID: import.meta.env.STRIPE_STARTER_MONTHLY_PRICE_ID || '',
-    STRIPE_GROWTH_MONTHLY_PRICE_ID: import.meta.env.STRIPE_GROWTH_MONTHLY_PRICE_ID || '',
-    STRIPE_AGENCY_MONTHLY_PRICE_ID: import.meta.env.STRIPE_AGENCY_MONTHLY_PRICE_ID || '',
+    STRIPE_STARTER_MONTHLY_PRICE_ID: metaEnv.STRIPE_STARTER_MONTHLY_PRICE_ID || '',
+    STRIPE_GROWTH_MONTHLY_PRICE_ID: metaEnv.STRIPE_GROWTH_MONTHLY_PRICE_ID || '',
+    STRIPE_AGENCY_MONTHLY_PRICE_ID: metaEnv.STRIPE_AGENCY_MONTHLY_PRICE_ID || '',
     // Baselime monitoring
-    BASELIME_API_KEY: import.meta.env.BASELIME_API_KEY || '',
+    BASELIME_API_KEY: metaEnv.BASELIME_API_KEY || '',
     // Analytics (server-side HTTP API)
-    AMPLITUDE_API_KEY: import.meta.env.AMPLITUDE_API_KEY || '',
+    AMPLITUDE_API_KEY: metaEnv.AMPLITUDE_API_KEY || '',
     // CORS
-    ALLOWED_ORIGIN: import.meta.env.ALLOWED_ORIGIN || '*',
+    ALLOWED_ORIGIN: metaEnv.ALLOWED_ORIGIN || '*',
     // Cloudflare
-    CF_PAGES_URL: import.meta.env.CF_PAGES_URL,
-    CLOUDFLARE_API_TOKEN: import.meta.env.CLOUDFLARE_API_TOKEN || '',
-    CLOUDFLARE_ACCOUNT_ID: import.meta.env.CLOUDFLARE_ACCOUNT_ID || '',
-    CLOUDFLARE_ZONE_ID: import.meta.env.CLOUDFLARE_ZONE_ID || '',
-    DOMAIN_NAME: import.meta.env.DOMAIN_NAME || 'example.com',
-    WORKER_NAME: import.meta.env.WORKER_NAME || 'saas-boilerplate',
+    CF_PAGES_URL: metaEnv.CF_PAGES_URL,
+    CLOUDFLARE_API_TOKEN: metaEnv.CLOUDFLARE_API_TOKEN || '',
+    CLOUDFLARE_ACCOUNT_ID: metaEnv.CLOUDFLARE_ACCOUNT_ID || '',
+    CLOUDFLARE_ZONE_ID: metaEnv.CLOUDFLARE_ZONE_ID || '',
+    DOMAIN_NAME: metaEnv.DOMAIN_NAME || 'example.com',
+    WORKER_NAME: metaEnv.WORKER_NAME || 'saas-boilerplate',
     // Cron Job Authentication
-    CRON_SECRET: import.meta.env.CRON_SECRET || '',
+    CRON_SECRET: metaEnv.CRON_SECRET || '',
     // Test Authentication
-    TEST_AUTH_TOKEN: import.meta.env.TEST_AUTH_TOKEN,
+    TEST_AUTH_TOKEN: metaEnv.TEST_AUTH_TOKEN,
 
     // Email Providers
-    BREVO_API_KEY: import.meta.env.BREVO_API_KEY || '',
-    RESEND_API_KEY: import.meta.env.RESEND_API_KEY || '',
-    EMAIL_FROM_ADDRESS: import.meta.env.EMAIL_FROM_ADDRESS || 'noreply@example.com',
+    BREVO_API_KEY: metaEnv.BREVO_API_KEY || '',
+    RESEND_API_KEY: metaEnv.RESEND_API_KEY || '',
+    EMAIL_FROM_ADDRESS: metaEnv.EMAIL_FROM_ADDRESS || 'noreply@example.com',
     SUPPORT_EMAIL:
-      import.meta.env.SUPPORT_EMAIL ||
-      import.meta.env.PUBLIC_SUPPORT_EMAIL ||
+      metaEnv.SUPPORT_EMAIL ||
+      metaEnv.PUBLIC_SUPPORT_EMAIL ||
       'support@example.com',
-    ALLOW_TRANSACTIONAL_EMAILS_IN_DEV: import.meta.env.ALLOW_TRANSACTIONAL_EMAILS_IN_DEV ?? 'false',
+    ALLOW_TRANSACTIONAL_EMAILS_IN_DEV: metaEnv.ALLOW_TRANSACTIONAL_EMAILS_IN_DEV ?? 'false',
 
     // AI Providers
-    OPENROUTER_API_KEY: import.meta.env.OPENROUTER_API_KEY || '',
-    OPENROUTER_VL_MODEL: import.meta.env.OPENROUTER_VL_MODEL || 'google/gemini-2.0-flash-exp:free',
-    OPENROUTER_TEXT_MODEL: import.meta.env.OPENROUTER_TEXT_MODEL || 'openai/gpt-4o',
+    OPENROUTER_API_KEY: metaEnv.OPENROUTER_API_KEY || '',
+    OPENROUTER_VL_MODEL: metaEnv.OPENROUTER_VL_MODEL || 'google/gemini-2.0-flash-exp:free',
+    OPENROUTER_TEXT_MODEL: metaEnv.OPENROUTER_TEXT_MODEL || 'openai/gpt-4o',
     // Replicate for image generation
-    REPLICATE_API_KEY: import.meta.env.REPLICATE_API_KEY || '',
+    REPLICATE_API_KEY: metaEnv.REPLICATE_API_KEY || '',
     // Available writer presets (key(model) format, empty = all)
-    AVAILABLE_WRITER_PRESETS: import.meta.env.AVAILABLE_WRITER_PRESETS || '',
+    AVAILABLE_WRITER_PRESETS: metaEnv.AVAILABLE_WRITER_PRESETS || '',
     // Available image presets (key(model) format, empty = all)
-    AVAILABLE_IMAGE_PRESETS: import.meta.env.AVAILABLE_IMAGE_PRESETS || '',
+    AVAILABLE_IMAGE_PRESETS: metaEnv.AVAILABLE_IMAGE_PRESETS || '',
     // OpenAI for semantic similarity and embeddings
-    OPENAI_API_KEY: import.meta.env.OPENAI_API_KEY || '',
+    OPENAI_API_KEY: metaEnv.OPENAI_API_KEY || '',
     // CMS encryption key
-    CMS_ENCRYPTION_KEY: import.meta.env.CMS_ENCRYPTION_KEY || '',
+    CMS_ENCRYPTION_KEY: metaEnv.CMS_ENCRYPTION_KEY || '',
     // Google OAuth
-    GOOGLE_OAUTH_CLIENT_SECRET: import.meta.env.GOOGLE_OAUTH_CLIENT_SECRET || '',
+    GOOGLE_OAUTH_CLIENT_SECRET: metaEnv.GOOGLE_OAUTH_CLIENT_SECRET || '',
   };
 
   return serverEnvSchema.parse(env);
@@ -333,10 +341,15 @@ export function isDevelopment(): boolean {
  */
 export function isTest(): boolean {
   // Check both the cached serverEnv and the raw import.meta.env for dynamic test detection
+  // Handle string, boolean, and numeric values (Playwright sets PLAYWRIGHT_TEST="1")
+  const playwrightTestValue = import.meta.env.PLAYWRIGHT_TEST as string | boolean | number | undefined;
   return (
     serverEnv.ENV === 'test' ||
     import.meta.env.ENV === 'test' ||
-    import.meta.env.PLAYWRIGHT_TEST === 'true'
+    playwrightTestValue === 'true' ||
+    playwrightTestValue === true ||
+    playwrightTestValue === 1 ||
+    playwrightTestValue === '1'
   );
 }
 

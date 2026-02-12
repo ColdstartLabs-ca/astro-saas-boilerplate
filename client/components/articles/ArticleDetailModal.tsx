@@ -16,6 +16,8 @@ import { DashboardButton } from '@client/components/dashboard/ui/DashboardButton
 import { createClient } from '@shared/utils/supabase/client';
 import { AIDetectionScore } from './AIDetectionScore';
 import { SEOScoreDisplay } from './SEOScoreDisplay';
+import { DeliveryStatusCard } from '@client/components/dashboard/views/articles/DeliveryStatusCard';
+import { useArticleDeliveries } from '@client/hooks/useArticleDeliveries';
 import { useTranslations } from '@client/hooks/useTranslations';
 import { ImageOff } from 'lucide-react';
 
@@ -111,6 +113,8 @@ export function ArticleDetailModal({
   const [showRejectDialog, setShowRejectDialog] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [currentArticle, setCurrentArticle] = useState<IArticleWithImages | null>(article as IArticleWithImages | null);
+  const articleId = isOpen ? currentArticle?.id ?? null : null;
+  const { deliveries, isLoading: deliveriesLoading, retryingId, retryDelivery } = useArticleDeliveries(articleId);
 
   // Fetch full article detail (with images) when modal opens
   useEffect(() => {
@@ -396,6 +400,19 @@ export function ArticleDetailModal({
               ) : (
                 <p className="text-muted italic">{t('articles.detailModal.noContent')}</p>
               )}
+            </div>
+          )}
+
+          {/* Delivery Status section */}
+          {!isEditing && (deliveries.length > 0 || deliveriesLoading) && (
+            <div className="mt-6 pt-6 border-t border-border">
+              <DeliveryStatusCard
+                deliveries={deliveries}
+                isLoading={deliveriesLoading}
+                retryingId={retryingId}
+                onRetry={() => currentArticle?.id && retryDelivery(currentArticle.id)}
+                t={t}
+              />
             </div>
           )}
 

@@ -1,11 +1,14 @@
 'use client';
 
-import React, { forwardRef, useEffect, useState } from 'react';
 import { Logo } from '@client/components/logo/Logo';
 import { useTranslations } from '@client/hooks/useTranslations';
+import { X } from 'lucide-react';
+import React, { forwardRef, useEffect, useState } from 'react';
+
+export type ModalSize = 'xs' | 'sm' | 'md' | 'lg' | 'xl' | '2xl' | 'full';
 
 interface IModalProps {
-  title: string;
+  title?: string;
   subtitle?: string;
   showLogo?: boolean;
   children: React.ReactNode;
@@ -13,10 +16,22 @@ interface IModalProps {
   isOpen: boolean;
   showCloseButton?: boolean;
   modalId?: string;
+  size?: ModalSize;
+  className?: string;
 }
 
 // Store scroll position when modal opens
 let scrollPosition = 0;
+
+const sizeClasses: Record<ModalSize, string> = {
+  xs: 'max-w-xs',
+  sm: 'max-w-sm',
+  md: 'max-w-md',
+  lg: 'max-w-lg',
+  xl: 'max-w-2xl',
+  '2xl': 'max-w-4xl',
+  full: 'max-w-[95vw]',
+};
 
 export const Modal = forwardRef<HTMLDivElement, IModalProps>(
   (
@@ -29,6 +44,8 @@ export const Modal = forwardRef<HTMLDivElement, IModalProps>(
       isOpen,
       showCloseButton = true,
       modalId,
+      size = 'md',
+      className = '',
     },
     ref
   ) => {
@@ -43,7 +60,7 @@ export const Modal = forwardRef<HTMLDivElement, IModalProps>(
 
         setShouldRender(true);
         // Small delay to ensure DOM is ready before animation
-        requestAnimationFrame(() => {
+        const animationFrame = requestAnimationFrame(() => {
           setIsAnimating(true);
         });
 
@@ -62,22 +79,22 @@ export const Modal = forwardRef<HTMLDivElement, IModalProps>(
         document.addEventListener('keydown', handleEscape);
 
         return () => {
+          cancelAnimationFrame(animationFrame);
           document.removeEventListener('keydown', handleEscape);
         };
       } else {
         setIsAnimating(false);
 
         // Restore scroll position after modal closes
-        requestAnimationFrame(() => {
+        const timer = setTimeout(() => {
+          setShouldRender(false);
           document.body.style.overflow = '';
           document.body.style.position = '';
           document.body.style.top = '';
           document.body.style.width = '';
           window.scrollTo(0, scrollPosition);
-        });
+        }, 200);
 
-        // Wait for animation to complete before removing from DOM
-        const timer = setTimeout(() => setShouldRender(false), 200);
         return () => clearTimeout(timer);
       }
     }, [isOpen, onClose]);
@@ -85,12 +102,11 @@ export const Modal = forwardRef<HTMLDivElement, IModalProps>(
     if (!shouldRender) return null;
 
     return (
-      <div className="fixed inset-0 z-[100] flex items-center justify-center font-sans">
+      <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6 font-sans">
         {/* Backdrop */}
         <div
-          className={`fixed inset-0 bg-black/60 backdrop-blur-sm transition-opacity duration-200 ${
-            isAnimating ? 'opacity-100' : 'opacity-0'
-          }`}
+          className={`fixed inset-0 bg-black/70 backdrop-blur-sm transition-opacity duration-300 ${isAnimating ? 'opacity-100' : 'opacity-0'
+            }`}
           onClick={onClose}
         />
 
@@ -99,65 +115,55 @@ export const Modal = forwardRef<HTMLDivElement, IModalProps>(
           ref={ref}
           id={modalId}
           data-testid="modal"
-          className={`relative w-11/12 max-w-md bg-card rounded-2xl shadow-2xl z-[101] max-h-[90vh] overflow-hidden border border-border/50 transition-all duration-200 ${
-            isAnimating ? 'opacity-100 scale-100 translate-y-0' : 'opacity-0 scale-95 translate-y-4'
-          }`}
+          className={`relative w-full ${sizeClasses[size]} bg-card rounded-2xl shadow-2xl z-[101] max-h-[90vh] flex flex-col overflow-hidden border border-border/50 transition-all duration-300 ${isAnimating ? 'opacity-100 scale-100 translate-y-0' : 'opacity-0 scale-95 translate-y-8'
+            } ${className}`}
           role="dialog"
           aria-labelledby="modal-title"
           onClick={e => e.stopPropagation()}
         >
           {/* Header */}
-          <div
-            className="sticky top-0 bg-card/95 backdrop-blur-sm border-b border-border/50 px-6 py-5 z-10"
-            id="modal-title"
-          >
-            {showLogo && (
-              <div className="flex justify-center mb-4">
-                <Logo variant="compact" />
-              </div>
-            )}
-            <h3
-              className={`text-2xl font-bold text-center text-foreground ${showCloseButton ? 'pr-8' : ''}`}
+          {(title || showLogo || showCloseButton) && (
+            <div
+              className={`flex flex-col shrink-0 px-6 py-5 border-b border-border/50 bg-card/50 backdrop-blur-md z-10`}
             >
-              {title}
-            </h3>
-            {subtitle && (
-              <p className="text-sm text-muted-foreground text-center mt-1">{subtitle}</p>
-            )}
-            {showCloseButton && (
-              <button
-                className="absolute right-4 top-4 text-muted-foreground hover:text-foreground transition-all duration-200 rounded-lg p-1.5 hover:bg-muted/50 active:scale-95"
-                onClick={onClose}
-                aria-label={t('aria.close')}
-              >
-                <svg
-                  className="w-5 h-5"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                  strokeWidth={2}
-                >
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
-            )}
-          </div>
+              {showLogo && (
+                <div className="flex justify-center mb-4">
+                  <Logo variant="compact" />
+                </div>
+              )}
 
-          {/* Body */}
-          <div className="px-6 py-5 overflow-y-auto max-h-[calc(90vh-180px)]">{children}</div>
+              <div className="flex items-start justify-between gap-4">
+                <div className="flex-1 text-center">
+                  {title && (
+                    <h3
+                      id="modal-title"
+                      className="text-xl sm:text-2xl font-bold text-white leading-tight"
+                    >
+                      {title}
+                    </h3>
+                  )}
+                  {subtitle && (
+                    <p className="text-sm text-secondary mt-1 max-w-sm mx-auto">{subtitle}</p>
+                  )}
+                </div>
 
-          {/* Footer */}
-          {showCloseButton && (
-            <div className="sticky bottom-0 bg-card/95 backdrop-blur-sm border-t border-border/50 px-6 py-4 z-10">
-              <button
-                className="w-full px-4 py-2.5 bg-muted hover:bg-muted/80 text-foreground font-medium rounded-lg transition-all duration-200 active:scale-98 hover:shadow-sm"
-                onClick={onClose}
-                aria-label={t('aria.close')}
-              >
-                {t('closeButton')}
-              </button>
+                {showCloseButton && (
+                  <button
+                    className="absolute right-4 top-4 text-muted hover:text-white transition-all duration-200 rounded-lg p-2 hover:bg-surface-light group active:scale-95 z-20"
+                    onClick={onClose}
+                    aria-label={t('aria.close')}
+                  >
+                    <X className="w-5 h-5 transition-transform group-hover:rotate-90" />
+                  </button>
+                )}
+              </div>
             </div>
           )}
+
+          {/* Body */}
+          <div className="px-6 py-6 overflow-y-auto flex-1 custom-scrollbar">
+            {children}
+          </div>
         </div>
       </div>
     );
@@ -165,3 +171,4 @@ export const Modal = forwardRef<HTMLDivElement, IModalProps>(
 );
 
 Modal.displayName = 'Modal';
+

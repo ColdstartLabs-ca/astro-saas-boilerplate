@@ -15,22 +15,22 @@
 
 'use client';
 
-import React, { useState, useEffect } from 'react';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod';
-import { Plug, Globe, Webhook, ArrowLeft, CheckCircle2, XCircle, Loader2 } from 'lucide-react';
-import { Modal } from '@client/components/modal/Modal';
 import { DashboardButton } from '@client/components/dashboard/ui/DashboardButton';
+import { Modal } from '@client/components/modal/Modal';
 import { useTranslations } from '@client/hooks/useTranslations';
 import { useLogger } from '@client/utils/logger';
+import { zodResolver } from '@hookform/resolvers/zod';
 import type {
-  IntegrationType,
-  IIntegrationWithCampaigns,
   ICreateIntegrationInput,
-  IWordPressConfig,
+  IIntegrationWithCampaigns,
+  IntegrationType,
   IWebhookConfig,
+  IWordPressConfig,
 } from '@shared/types/integration.types';
+import { ArrowLeft, CheckCircle2, Globe, Loader2, Plug, Webhook, XCircle } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { useForm } from 'react-hook-form';
+import { z } from 'zod';
 
 // =============================================================================
 // Validation Schemas
@@ -38,16 +38,16 @@ import type {
 
 const wordpressSchema = z.object({
   type: z.literal('wordpress'),
-  name: z.string().min(1, 'Name is required'),
-  siteUrl: z.string().url('Invalid URL'),
-  username: z.string().min(1, 'Username is required'),
-  appPassword: z.string().min(1, 'Application password is required'),
+  name: z.string().min(1, { message: 'Name is required' }),
+  siteUrl: z.string().url({ message: 'Invalid URL' }),
+  username: z.string().min(1, { message: 'Username is required' }),
+  appPassword: z.string().min(1, { message: 'Application password is required' }),
 });
 
 const webhookSchema = z.object({
   type: z.literal('webhook'),
-  name: z.string().min(1, 'Name is required'),
-  url: z.string().url('Invalid URL'),
+  name: z.string().min(1, { message: 'Name is required' }),
+  url: z.string().url({ message: 'Invalid URL' }),
   secret: z.string().optional(),
   description: z.string().optional(),
 });
@@ -105,26 +105,32 @@ function TypeCard({
   return (
     <button
       onClick={onSelect}
-      className={`p-6 rounded-xl border-2 transition-all text-left w-full ${
-        selected
-          ? 'border-accent bg-accent/10'
-          : 'border-border hover:border-accent/50 hover:bg-surface/50'
-      }`}
+      className={`relative p-5 rounded-xl border-2 transition-all text-left w-full h-full flex flex-col ${selected
+          ? 'border-accent bg-accent/5 ring-1 ring-accent/20'
+          : 'border-border/50 bg-main/40 hover:border-accent/40 hover:bg-surface/60'
+        }`}
     >
-      <div className="flex items-start gap-4">
+      <div className="flex items-center gap-4 mb-3">
         <div
-          className={`p-3 rounded-lg ${
-            selected ? 'bg-accent text-white' : 'bg-surface text-secondary'
-          }`}
+          className={`p-2.5 rounded-lg shrink-0 transition-colors ${selected ? 'bg-accent text-white shadow-lg shadow-accent/20' : 'bg-surface text-secondary border border-border/50'
+            }`}
         >
           {icon}
         </div>
-        <div className="flex-1">
-          <h3 className={`font-semibold ${selected ? 'text-white' : 'text-secondary'}`}>{title}</h3>
-          <p className="text-sm text-muted mt-1">{description}</p>
-        </div>
-        {selected && <CheckCircle2 className="w-6 h-6 text-accent shrink-0" />}
+        <h3 className={`font-bold transition-colors ${selected ? 'text-white' : 'text-secondary'}`}>
+          {title}
+        </h3>
       </div>
+
+      <p className="text-sm text-muted leading-relaxed flex-1">
+        {description}
+      </p>
+
+      {selected && (
+        <div className="absolute top-3 right-3">
+          <CheckCircle2 className="w-5 h-5 text-accent animate-in zoom-in duration-300" />
+        </div>
+      )}
     </button>
   );
 }
@@ -174,15 +180,15 @@ export function IntegrationFormModal({
           name: integration.name,
           ...(integration.type === 'wordpress'
             ? {
-                siteUrl: (integration.config as IWordPressConfig).site_url || '',
-                username: (integration.config as IWordPressConfig).username || '',
-                appPassword: '', // Never pre-fill password
-              }
+              siteUrl: (integration.config as IWordPressConfig).site_url || '',
+              username: (integration.config as IWordPressConfig).username || '',
+              appPassword: '', // Never pre-fill password
+            }
             : {
-                url: (integration.config as IWebhookConfig).url || '',
-                secret: '', // Never pre-fill secret
-                description: '',
-              }),
+              url: (integration.config as IWebhookConfig).url || '',
+              secret: '', // Never pre-fill secret
+              description: '',
+            }),
         });
       } else {
         setStep(1);
@@ -244,25 +250,16 @@ export function IntegrationFormModal({
       isOpen={isOpen}
       onClose={onClose}
       title={mode === 'edit' ? t('integrations.form.editTitle') : t('integrations.form.title')}
-      showCloseButton={!isSubmitting}
+      showCloseButton={true}
       showLogo={false}
+      size="xl"
     >
       <div className="space-y-6">
         {/* Step Progress */}
-        <div className="flex items-center gap-2 text-sm text-muted">
-          {step === 1 ? (
-            <>
-              <span className="text-accent-hover font-medium">{t('integrations.form.step1')}</span>
-              <span>→</span>
-              <span>{t('integrations.form.step2')}</span>
-            </>
-          ) : (
-            <>
-              <span>{t('integrations.form.step1')}</span>
-              <span>→</span>
-              <span className="text-accent-hover font-medium">{t('integrations.form.step2')}</span>
-            </>
-          )}
+        <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-muted mb-4">
+          <span className={step >= 1 ? 'text-accent' : ''}>{t('integrations.form.step1')}</span>
+          <span className="opacity-30">/</span>
+          <span className={step >= 2 ? 'text-accent' : ''}>{t('integrations.form.step2')}</span>
         </div>
 
         {/* Step 1: Select Type */}
@@ -427,11 +424,10 @@ export function IntegrationFormModal({
             {/* Test Result */}
             {testResult && (
               <div
-                className={`p-3 rounded-lg border ${
-                  testResult.success
+                className={`p-3 rounded-lg border ${testResult.success
                     ? 'bg-green-500/10 border-green-500/20'
                     : 'bg-red-500/10 border-red-500/20'
-                }`}
+                  }`}
               >
                 <div className="flex items-center gap-2">
                   {testResult.success ? (
@@ -510,7 +506,10 @@ export function IntegrationFormModal({
 
         {/* Step 1: Cancel Button */}
         {step === 1 && (
-          <div className="flex justify-end pt-2">
+          <div className="flex justify-between items-center pt-4 border-t border-border/30 mt-8">
+            <p className="text-xs text-muted">
+              Choose an integration type to continue setup
+            </p>
             <DashboardButton variant="ghost" size="sm" onClick={onClose}>
               {t('integrations.form.cancel')}
             </DashboardButton>

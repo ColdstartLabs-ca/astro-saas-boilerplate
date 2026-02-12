@@ -1,8 +1,8 @@
 'use client';
 
-import React, { useState } from 'react';
-import { AlertTriangle, Info, Zap } from 'lucide-react';
 import { Modal } from '@client/components/modal/Modal';
+import { AlertTriangle, Info } from 'lucide-react';
+import React, { useState } from 'react';
 
 export type ConfirmDialogVariant = 'danger' | 'warning' | 'info';
 
@@ -162,6 +162,7 @@ export function ConfirmDialog({
       title=""
       showCloseButton={!isConfirming}
       showLogo={false}
+      size="sm"
     >
       <div className="space-y-4">
         {/* Icon and Title */}

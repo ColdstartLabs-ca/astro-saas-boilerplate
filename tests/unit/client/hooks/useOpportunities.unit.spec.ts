@@ -105,13 +105,12 @@ describe('useOpportunities', () => {
       const mockOpportunities = [createMockOpportunity(), createMockOpportunity({ id: 'opp-2' })];
 
       mockApiFetch.mockResolvedValueOnce({
-        opportunities: mockOpportunities,
-        total: 2,
+        data: { opportunities: mockOpportunities, total: 2 },
       });
 
       // Also mock GSC connections query
       mockApiFetch.mockResolvedValueOnce({
-        connections: [{ id: 'conn-1', status: 'active' }],
+        data: { connections: [{ id: 'conn-1', status: 'active' }] },
       });
 
       const { result } = renderHook(() => useOpportunities('proj-1'), {
@@ -135,10 +134,9 @@ describe('useOpportunities', () => {
       ];
 
       mockApiFetch.mockResolvedValueOnce({
-        opportunities: mockOpportunities,
-        total: 2,
+        data: { opportunities: mockOpportunities, total: 2 },
       });
-      mockApiFetch.mockResolvedValueOnce({ connections: [] });
+      mockApiFetch.mockResolvedValueOnce({ data: { connections: [] } });
 
       const { result } = renderHook(() => useOpportunities('proj-1'), {
         wrapper: createWrapper(queryClient),
@@ -152,8 +150,8 @@ describe('useOpportunities', () => {
     });
 
     it('should return null for lastAnalyzedAt when no opportunities', async () => {
-      mockApiFetch.mockResolvedValueOnce({ opportunities: [], total: 0 });
-      mockApiFetch.mockResolvedValueOnce({ connections: [] });
+      mockApiFetch.mockResolvedValueOnce({ data: { opportunities: [], total: 0 } });
+      mockApiFetch.mockResolvedValueOnce({ data: { connections: [] } });
 
       const { result } = renderHook(() => useOpportunities('proj-1'), {
         wrapper: createWrapper(queryClient),
@@ -169,9 +167,9 @@ describe('useOpportunities', () => {
 
   describe('GSC connection status', () => {
     it('should detect active GSC connection', async () => {
-      mockApiFetch.mockResolvedValueOnce({ opportunities: [], total: 0 });
+      mockApiFetch.mockResolvedValueOnce({ data: { opportunities: [], total: 0 } });
       mockApiFetch.mockResolvedValueOnce({
-        connections: [{ id: 'conn-1', status: 'active', project_id: 'proj-1' }],
+        data: { connections: [{ id: 'conn-1', status: 'active', project_id: 'proj-1' }] },
       });
 
       const { result } = renderHook(() => useOpportunities('proj-1'), {
@@ -184,9 +182,9 @@ describe('useOpportunities', () => {
     });
 
     it('should return false when no active connection exists', async () => {
-      mockApiFetch.mockResolvedValueOnce({ opportunities: [], total: 0 });
+      mockApiFetch.mockResolvedValueOnce({ data: { opportunities: [], total: 0 } });
       mockApiFetch.mockResolvedValueOnce({
-        connections: [{ id: 'conn-1', status: 'disconnected' }],
+        data: { connections: [{ id: 'conn-1', status: 'disconnected' }] },
       });
 
       const { result } = renderHook(() => useOpportunities('proj-1'), {
@@ -201,8 +199,8 @@ describe('useOpportunities', () => {
     });
 
     it('should return false when no connections exist', async () => {
-      mockApiFetch.mockResolvedValueOnce({ opportunities: [], total: 0 });
-      mockApiFetch.mockResolvedValueOnce({ connections: [] });
+      mockApiFetch.mockResolvedValueOnce({ data: { opportunities: [], total: 0 } });
+      mockApiFetch.mockResolvedValueOnce({ data: { connections: [] } });
 
       const { result } = renderHook(() => useOpportunities('proj-1'), {
         wrapper: createWrapper(queryClient),
@@ -225,8 +223,8 @@ describe('useOpportunities', () => {
       };
 
       // Initial fetch
-      mockApiFetch.mockResolvedValueOnce({ opportunities: [], total: 0 });
-      mockApiFetch.mockResolvedValueOnce({ connections: [{ id: 'c1', status: 'active' }] });
+      mockApiFetch.mockResolvedValueOnce({ data: { opportunities: [], total: 0 } });
+      mockApiFetch.mockResolvedValueOnce({ data: { connections: [{ id: 'c1', status: 'active' }] } });
 
       const { result } = renderHook(() => useOpportunities('proj-1'), {
         wrapper: createWrapper(queryClient),
@@ -237,7 +235,7 @@ describe('useOpportunities', () => {
       });
 
       // Analyze
-      mockApiFetch.mockResolvedValueOnce(analyzeResponse);
+      mockApiFetch.mockResolvedValueOnce({ data: analyzeResponse });
 
       await act(async () => {
         await result.current.analyzeOpportunities();
@@ -256,10 +254,9 @@ describe('useOpportunities', () => {
 
       // Initial fetch
       mockApiFetch.mockResolvedValueOnce({
-        opportunities: [mockOpportunity],
-        total: 1,
+        data: { opportunities: [mockOpportunity], total: 1 },
       });
-      mockApiFetch.mockResolvedValueOnce({ connections: [{ id: 'c1', status: 'active' }] });
+      mockApiFetch.mockResolvedValueOnce({ data: { connections: [{ id: 'c1', status: 'active' }] } });
 
       const { result } = renderHook(() => useOpportunities('proj-1'), {
         wrapper: createWrapper(queryClient),
@@ -271,7 +268,7 @@ describe('useOpportunities', () => {
 
       // Dismiss
       mockApiFetch.mockResolvedValueOnce({
-        opportunity: { ...mockOpportunity, status: 'dismissed' },
+        data: { opportunity: { ...mockOpportunity, status: 'dismissed' } },
       });
 
       await act(async () => {

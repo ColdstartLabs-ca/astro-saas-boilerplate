@@ -5,8 +5,25 @@
 
 set -e
 
-# Load test environment variables (filter out comments and empty lines)
-export $(grep -v '^#' .env.test | grep -v '^$' | xargs)
+# Load test environment variables properly (handle values with spaces and commas)
+# Use a while loop to properly parse KEY=VALUE format
+while IFS='=' read -r key value; do
+  # Skip comments and empty lines
+  [[ "$key" =~ ^#.*$ ]] && continue
+  [[ -z "$key" ]] && continue
+
+  # Remove leading/trailing whitespace from key
+  key=$(echo "$key" | xargs)
+  # Remove leading/trailing whitespace from value
+  value=$(echo "$value" | xargs)
+
+  # Remove quotes from value if present (bash export will handle them)
+  value="${value%\"}"
+  value="${value#\"}"
+
+  # Export the variable
+  export "$key=$value"
+done < .env.test
 
 # Use ports from environment or defaults
 TEST_PORT=${TEST_PORT:-3100}

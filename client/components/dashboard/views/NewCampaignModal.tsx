@@ -1,18 +1,19 @@
 'use client';
 
+import { Modal } from '@client/components/modal/Modal';
+import { ModelSelect } from '@client/components/ui/ModelSelect';
+import { useAvailableModels } from '@client/hooks/useAvailableModels';
+import { useTranslations } from '@client/hooks/useTranslations';
+import { useUserStore } from '@client/store/userStore';
+import { imagePresetToOption, writerPresetToOption } from '@client/utils/modelAdapters';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { getImagePresetCreditCost } from '@shared/config/image-models.config';
+import type { CampaignTone } from '@shared/types/campaign.types';
+import { ArrowRight, Loader2, Upload, Zap } from 'lucide-react';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { X, ArrowRight, Loader2, Zap, Upload } from 'lucide-react';
 import { DashboardButton } from '../ui/DashboardButton';
-import { ModelSelect } from '@client/components/ui/ModelSelect';
-import { writerPresetToOption, imagePresetToOption } from '@client/utils/modelAdapters';
-import { getImagePresetCreditCost } from '@shared/config/image-models.config';
-import { useUserStore } from '@client/store/userStore';
-import { useTranslations } from '@client/hooks/useTranslations';
-import { useAvailableModels } from '@client/hooks/useAvailableModels';
-import type { CampaignTone } from '@shared/types/campaign.types';
 
 interface INewCampaignModalProps {
   isOpen: boolean;
@@ -161,141 +162,116 @@ export function NewCampaignModal({
   // Block campaign creation if no project is selected
   if (!projectId) {
     return (
-      <div
-        className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm animate-fadeIn p-4"
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="no-project-title"
+      <Modal
+        isOpen={isOpen}
+        onClose={onClose}
+        title="No Project Selected"
+        showCloseButton={true}
+        size="sm"
       >
-        <div className="bg-surface border border-border rounded-xl w-full max-w-md shadow-2xl p-8 text-center">
-          <h3 id="no-project-title" className="text-lg font-semibold text-white mb-2">
-            No Project Selected
-          </h3>
+        <div className="text-center py-4">
           <p className="text-secondary text-sm mb-6">
             Please create or select a project before creating a campaign.
           </p>
-          <DashboardButton variant="primary" onClick={onClose}>
+          <DashboardButton variant="primary" onClick={onClose} className="w-full">
             Close
           </DashboardButton>
         </div>
-      </div>
+      </Modal>
     );
   }
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm animate-fadeIn p-4"
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="new-campaign-title"
+    <Modal
+      isOpen={isOpen}
+      onClose={onClose}
+      title={t('campaigns.newCampaign.title')}
+      subtitle={t('campaigns.newCampaign.stepOf', { current: step, total: 2 })}
+      size="xl"
+      showCloseButton={true}
     >
-      <div className="bg-surface border border-border rounded-xl w-full max-w-2xl shadow-2xl flex flex-col max-h-[90vh]">
-        {/* Header */}
-        <div className="flex justify-between items-center p-6 border-b border-border">
-          <div>
-            <h2 id="new-campaign-title" className="text-xl font-bold text-white">
-              {t('campaigns.newCampaign.title')}
-            </h2>
-            <p className="text-secondary text-sm mt-1">
-              {t('campaigns.newCampaign.stepOf', { current: step, total: 2 })}
-            </p>
-          </div>
-          <button
-            onClick={onClose}
-            className="text-muted hover:text-white"
-            aria-label="Close dialog"
-          >
-            <X className="w-5 h-5" />
-          </button>
-        </div>
-
-        {/* Content */}
-        <div className="p-6 md:p-8 flex-1 overflow-y-auto">
-          {step === 1 && (
-            <div className="space-y-6 animate-fadeIn">
-              {/* Campaign Name */}
-              <div>
-                <label
-                  htmlFor="campaign-name"
-                  className="block text-sm font-medium text-secondary mb-2"
-                >
-                  {t('campaigns.newCampaign.name')}
-                </label>
-                <input
-                  {...register('name')}
-                  id="campaign-name"
-                  type="text"
-                  placeholder={t('campaigns.newCampaign.namePlaceholder')}
-                  className={`w-full bg-main border border-border rounded-lg px-4 py-2.5 text-white focus:ring-1 focus:ring-accent outline-none ${
-                    errors.name ? 'border-red-500' : ''
+      <div className="space-y-6">
+        {/* Step 1: Campaign Info */}
+        {step === 1 && (
+          <div className="space-y-6 animate-fadeIn">
+            {/* Campaign Name */}
+            <div>
+              <label
+                htmlFor="campaign-name"
+                className="block text-sm font-medium text-white mb-2"
+              >
+                {t('campaigns.newCampaign.name')}
+              </label>
+              <input
+                {...register('name')}
+                id="campaign-name"
+                type="text"
+                placeholder={t('campaigns.newCampaign.namePlaceholder')}
+                className={`w-full bg-main border border-border rounded-lg px-4 py-2.5 text-white focus:ring-1 focus:ring-accent outline-none transition-all ${errors.name ? 'border-red-500 ring-1 ring-red-500/20' : ''
                   }`}
-                  autoFocus
-                />
-                {errors.name && <p className="text-red-400 text-xs mt-1">{errors.name.message}</p>}
-              </div>
+                autoFocus
+              />
+              {errors.name && <p className="text-red-400 text-xs mt-1">{errors.name.message}</p>}
+            </div>
 
-              {/* Keywords Input */}
-              <div>
-                <label
-                  htmlFor="keywords-textarea"
-                  className="block text-sm font-medium text-secondary mb-2"
-                >
-                  {t('campaigns.newCampaign.keywords')}
-                </label>
-                <div className="space-y-4">
-                  {/* Tabs */}
-                  <div className="flex border-b border-border">
-                    <button
-                      type="button"
-                      onClick={() => setKeywordInputTab('manual')}
-                      className={`px-4 py-2 text-sm border-b-2 transition-colors ${
-                        keywordInputTab === 'manual'
-                          ? 'text-accent-hover border-accent font-medium'
-                          : 'text-muted hover:text-secondary border-transparent'
+            {/* Keywords Input */}
+            <div>
+              <label
+                htmlFor="keywords-textarea"
+                className="block text-sm font-medium text-white mb-2"
+              >
+                {t('campaigns.newCampaign.keywords')}
+              </label>
+              <div className="bg-main/50 border border-border rounded-xl overflow-hidden">
+                {/* Tabs */}
+                <div className="flex bg-surface-light/30 border-b border-border">
+                  <button
+                    type="button"
+                    onClick={() => setKeywordInputTab('manual')}
+                    className={`flex-1 px-4 py-3 text-sm font-medium transition-colors ${keywordInputTab === 'manual'
+                      ? 'text-accent bg-accent/5'
+                      : 'text-muted hover:text-secondary hover:bg-surface-light/50'
                       }`}
-                    >
-                      {t('campaigns.newCampaign.keywordsManual')}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setKeywordInputTab('csv')}
-                      className={`px-4 py-2 text-sm border-b-2 transition-colors ${
-                        keywordInputTab === 'csv'
-                          ? 'text-accent-hover border-accent font-medium'
-                          : 'text-muted hover:text-secondary border-transparent'
+                  >
+                    {t('campaigns.newCampaign.keywordsManual')}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setKeywordInputTab('csv')}
+                    className={`flex-1 px-4 py-3 text-sm font-medium transition-colors ${keywordInputTab === 'csv'
+                      ? 'text-accent bg-accent/5 border-l border-border'
+                      : 'text-muted hover:text-secondary hover:bg-surface-light/50 border-l border-border'
                       }`}
-                    >
-                      {t('campaigns.newCampaign.keywordsCsv')}
-                    </button>
-                  </div>
+                  >
+                    {t('campaigns.newCampaign.keywordsCsv')}
+                  </button>
+                </div>
 
+                <div className="p-4">
                   {/* Manual Input - Textarea */}
                   {keywordInputTab === 'manual' && (
-                    <>
+                    <div className="space-y-3">
                       <textarea
                         {...register('keywords')}
                         id="keywords-textarea"
-                        className={`w-full h-32 bg-main border border-border rounded-lg p-4 text-white focus:ring-1 focus:ring-accent outline-none resize-none font-mono text-sm ${
-                          errors.keywords ? 'border-red-500' : ''
-                        }`}
+                        className={`w-full h-40 bg-transparent text-white focus:outline-none outline-none resize-none font-mono text-sm ${errors.keywords ? 'placeholder:text-red-400/50' : ''
+                          }`}
                         placeholder={t('campaigns.newCampaign.keywordsPlaceholder')}
                       ></textarea>
-                      {errors.keywords && (
-                        <p className="text-red-400 text-xs mt-1">{errors.keywords.message}</p>
-                      )}
-
-                      {/* Keyword count badge */}
-                      <div className="flex items-center justify-between">
-                        <span className="text-xs text-muted">
+                      <div className="flex items-center justify-between pt-2 border-t border-border/30">
+                        <span className="text-xs font-semibold text-accent uppercase tracking-wider">
                           {t('campaigns.newCampaign.keywordsCount', { count: keywordCount })}
                         </span>
+                        {errors.keywords && (
+                          <p className="text-red-400 text-xs">{errors.keywords.message}</p>
+                        )}
                       </div>
-                    </>
+                    </div>
                   )}
 
                   {/* CSV Upload */}
                   {keywordInputTab === 'csv' && (
-                    <div className="relative">
+                    <div className="relative h-40">
                       <input
                         type="file"
                         accept=".csv,.txt"
@@ -303,173 +279,89 @@ export function NewCampaignModal({
                           const file = e.target.files?.[0];
                           if (file) handleCsvUpload(file);
                         }}
-                        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
                       />
-                      <div className="flex items-center justify-center border-2 border-dashed border-border rounded-lg p-6 hover:border-accent/50 transition-colors cursor-pointer bg-surface/50">
-                        <div className="text-center">
-                          <Upload className="w-8 h-8 text-muted mx-auto mb-2" />
-                          <span className="text-sm text-secondary block">
-                            {t('campaigns.newCampaign.csvDrop')}
-                          </span>
-                          <span className="text-xs text-muted block mt-1">
-                            {t('campaigns.newCampaign.csvBrowse')}
-                          </span>
-                        </div>
+                      <div className="h-full flex flex-col items-center justify-center border-2 border-dashed border-border rounded-lg p-6 hover:border-accent/40 hover:bg-accent/5 transition-all text-center">
+                        <Upload className="w-10 h-10 text-muted mb-3 group-hover:text-accent transition-colors" />
+                        <span className="text-sm font-medium text-secondary">
+                          {watchedKeywords ? `Selected ${keywordCount} keywords` : t('campaigns.newCampaign.csvDrop')}
+                        </span>
+                        <span className="text-xs text-muted mt-1">
+                          {t('campaigns.newCampaign.csvBrowse')}
+                        </span>
                       </div>
                     </div>
                   )}
                 </div>
-                <p className="text-xs text-muted mt-2 flex items-center">
-                  <Zap className="w-3 h-3 mr-1 text-accent" />
-                  We&apos;ll automatically cluster keywords to prevent cannibalization.
-                </p>
+              </div>
+              <p className="text-xs text-muted mt-3 flex items-start gap-2 bg-accent/5 p-3 rounded-lg border border-accent/10">
+                <Zap className="w-3.5 h-3.5 mt-0.5 text-accent shrink-0" />
+                <span>Smart Clustering: We&apos;ll automatically group similar keywords to prevent content cannibalization and ensure each article covers its topic comprehensively.</span>
+              </p>
+            </div>
+          </div>
+        )}
+
+        {/* Step 2: Generation Settings */}
+        {step === 2 && (
+          <div className="space-y-8 animate-fadeIn">
+            {/* AI Selection Section */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Writer */}
+              <div className="space-y-2">
+                <label className="block text-sm font-semibold text-white uppercase tracking-wider">Writer Engine</label>
+                {modelsLoading ? (
+                  <div className="w-full h-12 bg-main border border-border rounded-lg px-3 py-2.5 text-muted flex items-center gap-2">
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    <span className="text-sm">Loading models...</span>
+                  </div>
+                ) : (
+                  <ModelSelect
+                    options={writerPresets.map(writerPresetToOption)}
+                    selectedId={watch('model') || null}
+                    onSelect={id => setValue('model', id || 'balanced')}
+                    placeholder="Select writer engine..."
+                    showCreditCost
+                  />
+                )}
+              </div>
+
+              {/* Images */}
+              <div className="space-y-2">
+                <label className="block text-sm font-semibold text-white uppercase tracking-wider">Visual Assets</label>
+                {modelsLoading ? (
+                  <div className="w-full h-12 bg-main border border-border rounded-lg px-3 py-2.5 text-muted flex items-center gap-2">
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    <span className="text-sm">Loading presets...</span>
+                  </div>
+                ) : (
+                  <ModelSelect
+                    options={imagePresets.map(imagePresetToOption)}
+                    selectedId={watchedImagePreset || null}
+                    onSelect={preset => setValue('imagePreset', preset || 'balanced')}
+                    allowNone
+                    noneLabel="No images"
+                    noneDescription="Text-only article"
+                    placeholder="Select image style..."
+                    showCreditCost
+                  />
+                )}
               </div>
             </div>
-          )}
 
-          {step === 2 && (
-            <div className="space-y-6 animate-fadeIn">
-              {/* AI Models Section */}
-              <div className="space-y-5 pb-5 border-b border-border">
-                <div>
-                  <h3 className="text-sm font-semibold text-white mb-4">AI Models</h3>
-                </div>
-
-                {/* Writer */}
-                <div>
-                  <label className="block text-sm font-medium text-secondary mb-2">Writer</label>
-                  {modelsLoading ? (
-                    <div className="w-full bg-main border border-border rounded-lg px-3 py-2.5 text-muted flex items-center gap-2">
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                      <span>Loading models...</span>
-                    </div>
-                  ) : (
-                    <ModelSelect
-                      options={writerPresets.map(writerPresetToOption)}
-                      selectedId={watch('model') || null}
-                      onSelect={id => setValue('model', id || 'balanced')}
-                      placeholder="Select writer model..."
-                      showCreditCost
-                    />
-                  )}
-                </div>
-
-                {/* Images */}
-                <div>
-                  <label className="block text-sm font-medium text-secondary mb-2">Images</label>
-                  {modelsLoading ? (
-                    <div className="w-full bg-main border border-border rounded-lg px-3 py-2.5 text-muted flex items-center gap-2">
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                      <span>Loading image presets...</span>
-                    </div>
-                  ) : (
-                    <ModelSelect
-                      options={imagePresets.map(imagePresetToOption)}
-                      selectedId={watchedImagePreset || null}
-                      onSelect={preset => setValue('imagePreset', preset || 'balanced')}
-                      allowNone
-                      noneLabel="No images"
-                      noneDescription="Text-only article"
-                      placeholder="Select image preset..."
-                      showCreditCost
-                    />
-                  )}
-                  <p className="text-xs text-muted mt-2">
-                    Budget images are included, balanced/pro cost +1 credit, ultra costs +2 credits.
-                  </p>
-                  {!watchedImagePreset && (
-                    <p className="text-xs text-amber-400 mt-1.5 flex items-start gap-1.5">
-                      <span>⚠️</span>
-                      <span>For better SEO results, your articles should include images.</span>
-                    </p>
-                  )}
-                </div>
-
-                {/* Total Cost Summary */}
-                <div
-                  className={`p-3 rounded-lg border ${
-                    creditsPerKeyword > 3
-                      ? 'bg-amber-900/10 border-amber-500/20'
-                      : 'bg-blue-900/10 border-blue-500/20'
-                  }`}
-                >
-                  <div className="flex items-start gap-2">
-                    <Zap
-                      className={`w-4 h-4 mt-0.5 ${creditsPerKeyword > 3 ? 'text-amber-400' : 'text-blue-400'}`}
-                    />
-                    <div className="flex-1">
-                      <p
-                        className={`text-xs font-medium mb-2 ${creditsPerKeyword > 3 ? 'text-amber-200' : 'text-blue-200'}`}
-                      >
-                        Cost per article:
-                      </p>
-                      <div className="space-y-1.5">
-                        <div className="flex justify-between text-xs">
-                          <span className={creditsPerKeyword > 3 ? 'text-amber-100/80' : 'text-blue-100/80'}>
-                            Writer ({watchedModel || 'budget'})
-                          </span>
-                          <span className="font-semibold text-white">{writerCreditCost} credit</span>
-                        </div>
-                        {watchedImagePreset ? (
-                          <div className="flex justify-between text-xs">
-                            <span className={creditsPerKeyword > 3 ? 'text-amber-100/80' : 'text-blue-100/80'}>
-                              Images ({watchedImagePreset})
-                            </span>
-                            <span className="font-semibold text-white">+{imageCreditCost} credit{imageCreditCost > 1 ? 's' : ''}</span>
-                          </div>
-                        ) : (
-                          <div className="flex justify-between text-xs text-muted">
-                            <span>Images</span>
-                            <span>none (text-only)</span>
-                          </div>
-                        )}
-                        <div className="h-px bg-white/10 my-1"></div>
-                        <div className="flex justify-between text-xs">
-                          <span className={`font-semibold ${creditsPerKeyword > 3 ? 'text-amber-200' : 'text-blue-200'}`}>
-                            Total
-                          </span>
-                          <span className="font-bold text-white">{creditsPerKeyword} credit{creditsPerKeyword > 1 ? 's' : ''}</span>
-                        </div>
-                      </div>
-                      {creditsPerKeyword > 3 && (
-                        <p className="text-xs text-amber-300/80 mt-2">
-                          Premium model combination — uses more credits per article
-                        </p>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Word Count Target */}
-              <div>
-                <label className="block text-sm font-medium text-secondary mb-2">
-                  {t('campaigns.newCampaign.wordCount')}
-                </label>
-                <select
-                  {...register('targetWordCount', { valueAsNumber: true })}
-                  className="w-full bg-main border border-border rounded-lg px-3 py-2.5 text-white focus:ring-1 focus:ring-accent outline-none"
-                >
-                  {WORD_COUNT_OPTIONS.map(opt => (
-                    <option key={opt.value} value={opt.value}>
-                      {opt.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
+            {/* Advanced Settings */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4 border-t border-border/30">
               {/* Tone of Voice */}
-              <div>
-                <label className="block text-sm font-medium text-secondary mb-2">
-                  {t('campaigns.newCampaign.tone')}
-                </label>
-                <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-3">
+                <label className="block text-sm font-semibold text-white uppercase tracking-wider">{t('campaigns.newCampaign.tone')}</label>
+                <div className="grid grid-cols-2 gap-2">
                   {TONE_OPTIONS.map(tone => (
                     <label
                       key={tone.value}
-                      className={`flex items-center p-3 bg-main border rounded-lg cursor-pointer hover:border-border hover:bg-surface transition-colors ${
-                        watchedTone === tone.value ? 'border-accent bg-accent/10' : 'border-border'
-                      }`}
+                      className={`flex items-center justify-center p-2.5 border rounded-lg cursor-pointer transition-all ${watchedTone === tone.value
+                        ? 'border-accent bg-accent/10 shadow-sm text-white ring-1 ring-accent/20'
+                        : 'border-border bg-main/40 text-secondary hover:border-accent/30 hover:bg-surface/60'
+                        }`}
                     >
                       <input
                         {...register('tone')}
@@ -477,89 +369,113 @@ export function NewCampaignModal({
                         value={tone.value}
                         className="sr-only"
                       />
-                      <span className="text-sm text-secondary">{tone.label}</span>
+                      <span className="text-xs font-bold uppercase tracking-wide">{tone.label}</span>
                     </label>
                   ))}
                 </div>
               </div>
 
-              {/* Credit Cost */}
-              <div
-                className={`p-4 rounded-lg border ${
-                  hasEnoughCredits
-                    ? 'bg-blue-900/10 border-blue-500/20'
-                    : 'bg-red-900/10 border-red-500/20'
+              {/* Word Count */}
+              <div className="space-y-3">
+                <label className="block text-sm font-semibold text-white uppercase tracking-wider">{t('campaigns.newCampaign.wordCount')}</label>
+                <select
+                  {...register('targetWordCount', { valueAsNumber: true })}
+                  className="w-full bg-main border border-border rounded-lg px-3 py-2 h-[42px] text-sm text-white focus:ring-1 focus:ring-accent outline-none appearance-none cursor-pointer"
+                  style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='currentColor'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 0.75rem center', backgroundSize: '1rem' }}
+                >
+                  {WORD_COUNT_OPTIONS.map(opt => (
+                    <option key={opt.value} value={opt.value}>
+                      {opt.label}
+                    </option>
+                  ))}
+                </select>
+                <p className="text-[10px] text-muted uppercase tracking-widest pl-1 font-semibold">Average content length</p>
+              </div>
+            </div>
+
+            {/* Summary Box */}
+            <div
+              className={`p-6 rounded-2xl border transition-colors ${hasEnoughCredits
+                ? 'bg-accent/5 border-accent/20'
+                : 'bg-red-500/5 border-red-500/20'
                 }`}
-              >
-                <div className="flex items-start gap-3">
+            >
+              <div className="flex items-start gap-4">
+                <div className={`p-3 rounded-xl shrink-0 ${hasEnoughCredits ? 'bg-accent/10 border border-accent/20' : 'bg-red-500/10 border border-red-500/20'}`}>
                   <Zap
-                    className={`w-5 h-5 mt-0.5 ${hasEnoughCredits ? 'text-blue-400' : 'text-red-400'}`}
+                    className={`w-6 h-6 ${hasEnoughCredits ? 'text-accent' : 'text-red-400'}`}
                   />
-                  <div>
-                    <h4
-                      className={`text-sm font-medium ${hasEnoughCredits ? 'text-blue-200' : 'text-red-200'}`}
-                    >
+                </div>
+                <div className="flex-1">
+                  <div className="flex justify-between items-center mb-1">
+                    <h4 className={`text-sm font-bold uppercase tracking-wider ${hasEnoughCredits ? 'text-white' : 'text-red-200'}`}>
                       {hasEnoughCredits
                         ? t('campaigns.newCampaign.creditCost')
                         : t('campaigns.newCampaign.insufficientCredits')}
                     </h4>
-                    <p
-                      className={`text-xs mt-1 ${hasEnoughCredits ? 'text-secondary' : 'text-red-300'}`}
-                    >
-                      {keywordCount} keywords × {creditsPerKeyword} credit
-                      {creditsPerKeyword > 1 ? 's' : ''} per article = {creditCost} total credits
-                      {!hasEnoughCredits && (
-                        <span className="block mt-1">
-                          {t('campaigns.newCampaign.insufficientCreditsDetail', {
-                            required: creditCost,
-                            available: userCredits,
-                          })}
-                        </span>
-                      )}
-                    </p>
+                    <span className={`text-xl font-black ${hasEnoughCredits ? 'text-accent' : 'text-red-400'}`}>
+                      {creditCost} <span className="text-xs uppercase font-bold text-muted ml-0.5">Credits</span>
+                    </span>
                   </div>
+
+                  <p className={`text-xs ${hasEnoughCredits ? 'text-secondary' : 'text-red-300'}`}>
+                    {keywordCount} articles × {creditsPerKeyword} credits each
+                    {!hasEnoughCredits && (
+                      <span className="block mt-2 font-bold bg-red-500/10 p-2 rounded border border-red-500/20 uppercase tracking-tight">
+                        {t('campaigns.newCampaign.insufficientCreditsDetail', {
+                          required: creditCost,
+                          available: userCredits,
+                        })}
+                      </span>
+                    )}
+                  </p>
                 </div>
               </div>
             </div>
-          )}
-        </div>
+          </div>
+        )}
 
-        {/* Footer */}
-        <div className="p-6 border-t border-border bg-main/30 rounded-b-xl flex justify-between">
-          {step === 1 ? (
-            <DashboardButton variant="ghost" onClick={onClose}>
-              {t('campaigns.newCampaign.cancel')}
-            </DashboardButton>
-          ) : (
-            <DashboardButton variant="ghost" onClick={() => setStep(1)} disabled={loading}>
-              {t('campaigns.newCampaign.back')}
-            </DashboardButton>
-          )}
+        {/* Action Buttons */}
+        <div className="flex items-center justify-between pt-6 border-t border-border/30 mt-4">
+          <div>
+            {step === 2 && (
+              <DashboardButton variant="ghost" size="sm" onClick={() => setStep(1)} disabled={loading} className="px-6">
+                Back to Content
+              </DashboardButton>
+            )}
+            {step === 1 && (
+              <DashboardButton variant="ghost" size="sm" onClick={onClose} className="px-6">
+                Cancel
+              </DashboardButton>
+            )}
+          </div>
 
-          {step === 1 ? (
-            <DashboardButton onClick={handleStep1Next}>
-              {t('campaigns.newCampaign.next')} <ArrowRight className="w-4 h-4 ml-2" />
-            </DashboardButton>
-          ) : (
-            <DashboardButton
-              onClick={handleSubmit(handleLaunch)}
-              disabled={loading || !hasEnoughCredits}
-              className="min-w-[140px]"
-            >
-              {loading ? (
-                <>
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />{' '}
-                  {t('campaigns.newCampaign.creating')}
-                </>
-              ) : (
-                <>
-                  <Zap className="w-4 h-4 mr-2" /> {t('campaigns.newCampaign.create')}
-                </>
-              )}
-            </DashboardButton>
-          )}
+          <div className="flex gap-3">
+            {step === 1 ? (
+              <DashboardButton onClick={handleStep1Next} className="shadow-lg shadow-accent/20 px-8">
+                {t('campaigns.newCampaign.next')} <ArrowRight className="w-4 h-4 ml-2" />
+              </DashboardButton>
+            ) : (
+              <DashboardButton
+                onClick={handleSubmit(handleLaunch)}
+                disabled={loading || !hasEnoughCredits}
+                className={`shadow-lg px-10 ${hasEnoughCredits ? 'shadow-accent/20' : 'opacity-50 grayscale cursor-not-allowed shadow-none'}`}
+              >
+                {loading ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />{' '}
+                    {t('campaigns.newCampaign.creating')}
+                  </>
+                ) : (
+                  <>
+                    <Zap className="w-4 h-4 mr-2" /> {t('campaigns.newCampaign.create')}
+                  </>
+                )}
+              </DashboardButton>
+            )}
+          </div>
         </div>
       </div>
-    </div>
+    </Modal>
   );
 }

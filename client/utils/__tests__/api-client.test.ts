@@ -1,6 +1,36 @@
 import { apiFetch } from '@client/utils/api-client';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
+// Helper to create a mock Response object with proper headers support
+const createMockResponse = (init: {
+  ok?: boolean;
+  status?: number;
+  json?: () => Promise<unknown>;
+  headers?: Record<string, string>;
+}) => {
+  const headersGet = vi.fn((key: string) => {
+    // Simulate Response.headers.get() behavior
+    if (init.headers && key in init.headers) {
+      return (init.headers as Record<string, string>)[key];
+    }
+    return null;
+  });
+
+  return {
+    ok: init.ok ?? true,
+    status: init.status ?? 200,
+    json: init.json ?? (() => Promise.resolve({})),
+    headers: {
+      get: headersGet,
+      has: vi.fn(() => false),
+      forEach: vi.fn(),
+      entries: vi.fn(() => []),
+      keys: vi.fn(() => []),
+      values: vi.fn(() => []),
+    } as unknown as Response,
+  };
+};
+
 // Mock the Supabase client module before importing api-client
 const mockGetSession = vi.fn();
 vi.mock('@shared/utils/supabase/client', () => ({
@@ -26,10 +56,10 @@ describe('apiFetch', () => {
       mockGetSession.mockResolvedValue({
         data: { session: { access_token: mockToken } },
       });
-      mockFetch.mockResolvedValue({
+      mockFetch.mockResolvedValue(createMockResponse({
         ok: true,
         json: async () => ({ data: 'test' }),
-      });
+      }));
 
       await apiFetch<{ data: string }>('/api/test');
 
@@ -48,10 +78,10 @@ describe('apiFetch', () => {
       mockGetSession.mockResolvedValue({
         data: { session: null },
       });
-      mockFetch.mockResolvedValue({
+      mockFetch.mockResolvedValue(createMockResponse({
         ok: true,
         json: async () => ({ success: true }),
-      });
+      }));
 
       await apiFetch<{ success: boolean }>('/api/test');
 
@@ -71,10 +101,10 @@ describe('apiFetch', () => {
       mockGetSession.mockResolvedValue({
         data: { session: null },
       });
-      mockFetch.mockResolvedValue({
+      mockFetch.mockResolvedValue(createMockResponse({
         ok: false,
         json: async () => ({ error: 'Test error message' }),
-      });
+      }));
 
       await expect(apiFetch('/api/test')).rejects.toThrow('Test error message');
     });
@@ -83,10 +113,10 @@ describe('apiFetch', () => {
       mockGetSession.mockResolvedValue({
         data: { session: null },
       });
-      mockFetch.mockResolvedValue({
+      mockFetch.mockResolvedValue(createMockResponse({
         ok: false,
         json: async () => ({ error: { message: 'Nested error message' } }),
-      });
+      }));
 
       await expect(apiFetch('/api/test')).rejects.toThrow('Nested error message');
     });
@@ -95,13 +125,13 @@ describe('apiFetch', () => {
       mockGetSession.mockResolvedValue({
         data: { session: null },
       });
-      mockFetch.mockResolvedValue({
+      mockFetch.mockResolvedValue(createMockResponse({
         ok: false,
         status: 500,
         json: async () => {
           throw new Error('JSON parse error');
         },
-      });
+      }));
 
       await expect(apiFetch('/api/test')).rejects.toThrow('Unknown error');
     });
@@ -113,10 +143,10 @@ describe('apiFetch', () => {
       mockGetSession.mockResolvedValue({
         data: { session: null },
       });
-      mockFetch.mockResolvedValue({
+      mockFetch.mockResolvedValue(createMockResponse({
         ok: true,
         json: async () => mockData,
-      });
+      }));
 
       const result = await apiFetch<{ success: boolean; count: number }>('/api/test');
       expect(result).toEqual(mockData);
@@ -129,10 +159,10 @@ describe('apiFetch', () => {
       mockGetSession.mockResolvedValue({
         data: { session: { access_token: mockToken } },
       });
-      mockFetch.mockResolvedValue({
+      mockFetch.mockResolvedValue(createMockResponse({
         ok: true,
         json: async () => ({}),
-      });
+      }));
 
       await apiFetch('/api/test', {
         headers: { 'X-Custom-Header': 'custom-value' },
@@ -154,10 +184,10 @@ describe('apiFetch', () => {
       mockGetSession.mockResolvedValue({
         data: { session: null },
       });
-      mockFetch.mockResolvedValue({
+      mockFetch.mockResolvedValue(createMockResponse({
         ok: true,
         json: async () => ({}),
-      });
+      }));
 
       await apiFetch('/api/test', {
         method: 'POST',

@@ -22,6 +22,7 @@
       "@server/*": ["./server/*"],
       "@shared/*": ["./shared/*"],
       "@src/*": ["./src/*"],
+      "@pages/*": ["./src/pages/*"],
       "@app/*": ["./app/*"],
       "@lib/*": ["./lib/*"],
       "@locales/*": ["./locales/*"]
