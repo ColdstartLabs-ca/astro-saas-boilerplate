@@ -428,6 +428,8 @@ export class CampaignService {
       if (validated.targetWordCount !== undefined)
         campaign.target_word_count = validated.targetWordCount;
       if (validated.imagePreset !== undefined) campaign.image_preset = validated.imagePreset;
+      // Status for pause/resume (non-scheduled campaigns)
+      if (validated.status !== undefined) campaign.status = validated.status;
       // Schedule fields
       if (validated.scheduleFrequency !== undefined)
         campaign.schedule_frequency = validated.scheduleFrequency;
@@ -451,6 +453,8 @@ export class CampaignService {
     if (validated.targetWordCount !== undefined)
       updates.target_word_count = validated.targetWordCount;
     if (validated.imagePreset !== undefined) updates.image_preset = validated.imagePreset;
+    // Status for pause/resume (non-scheduled campaigns)
+    if (validated.status !== undefined) updates.status = validated.status;
     // Schedule fields
     if (validated.scheduleFrequency !== undefined)
       updates.schedule_frequency = validated.scheduleFrequency;
@@ -782,7 +786,9 @@ export class CampaignService {
 
       // For initial start, look for pending keywords
       // For resume, look for queued keywords (no pending keywords to process)
-      const keywordsToProcess = allKeywords.filter(k => k.status === 'pending' || k.status === 'queued');
+      const keywordsToProcess = allKeywords.filter(
+        k => k.status === 'pending' || k.status === 'queued'
+      );
 
       if (keywordsToProcess.length === 0) {
         // No keywords to process in test mode
@@ -790,9 +796,9 @@ export class CampaignService {
       }
 
       pendingKeywords = keywordsToProcess.map(k => ({
-          id: k.id,
-          keyword: k.keyword,
-        }));
+        id: k.id,
+        keyword: k.keyword,
+      }));
 
       // Update keyword statuses in memory
       if (keywordsToProcess.length > 0) {
@@ -1296,10 +1302,7 @@ export class CampaignService {
           });
 
           // Update keyword status to 'generated' on success
-          await supabaseAdmin
-            .from('keywords')
-            .update({ status: 'generated' })
-            .eq('id', keyword.id);
+          await supabaseAdmin.from('keywords').update({ status: 'generated' }).eq('id', keyword.id);
 
           console.log(`[ScheduledBatch] Generated article for keyword: ${keyword.keyword}`);
         } catch (error) {
@@ -1319,6 +1322,31 @@ export class CampaignService {
         campaign.schedule_hour ?? DEFAULT_SCHEDULE_HOUR
       );
 
+      // Check if campaign was paused during batch processing (user pause request)
+      // Only set back to scheduled if still active (no user pause intervened)
+      const { data: currentCampaign } = await supabaseAdmin
+        .from('campaigns')
+        .select('status')
+        .eq('id', campaignId)
+        .single();
+
+      if (currentCampaign?.status === 'paused') {
+        console.log(
+          `[ScheduledBatch] Campaign ${campaignId} was paused during processing, not resetting to scheduled`
+        );
+        // Update last_run_at but respect the paused status
+        await supabaseAdmin
+          .from('campaigns')
+          .update({ last_run_at: new Date().toISOString() })
+          .eq('id', campaignId);
+
+        return {
+          articlesQueued: keywords.length,
+          paused: true,
+          pauseReason: 'user_requested',
+        };
+      }
+
       // Update campaign back to scheduled with new next_run_at
       await supabaseAdmin
         .from('campaigns')
@@ -1334,8 +1362,17 @@ export class CampaignService {
         nextRunAt,
       };
     } catch (error: unknown) {
-      // On error, set back to scheduled (don't lose the schedule)
-      await supabaseAdmin.from('campaigns').update({ status: 'scheduled' }).eq('id', campaignId);
+      // On error, check if campaign was paused before resetting to scheduled
+      const { data: currentCampaign } = await supabaseAdmin
+        .from('campaigns')
+        .select('status')
+        .eq('id', campaignId)
+        .single();
+
+      // Only reset to scheduled if not paused (user pause takes priority)
+      if (currentCampaign?.status !== 'paused') {
+        await supabaseAdmin.from('campaigns').update({ status: 'scheduled' }).eq('id', campaignId);
+      }
 
       throw error;
     }

@@ -27,7 +27,7 @@ export const POST = withAuthAndBody(connectGscSchema, async (userId, body) => {
     return errorResponse('NOT_FOUND', 'Project not found', 404);
   }
 
-  const authUrl = gscService.getAuthUrl(body.projectId, userId);
+  const authUrl = await gscService.getAuthUrl(body.projectId, userId);
 
   const response: IGscConnectResponse = { authUrl };
   return jsonResponse(response);

@@ -232,7 +232,14 @@ function getTimezoneOffsetMs(utcDate: Date, timezone: string): number {
   const get = (type: string) => parseInt(parts.find(p => p.type === type)?.value || '0');
 
   // Reconstruct the timezone-local time as a UTC timestamp for comparison
-  const renderedAsUtc = Date.UTC(get('year'), get('month') - 1, get('day'), get('hour'), get('minute'), get('second'));
+  const renderedAsUtc = Date.UTC(
+    get('year'),
+    get('month') - 1,
+    get('day'),
+    get('hour'),
+    get('minute'),
+    get('second')
+  );
 
   return renderedAsUtc - utcDate.getTime();
 }
@@ -441,4 +448,40 @@ export function getEffectiveRate(frequency: ScheduleFrequency, batchSize: number
   const articlesPerMonth = 30 / daysPerArticle;
   const rounded = Math.round(articlesPerMonth * 10) / 10;
   return `~${rounded} articles/month`;
+}
+
+// =============================================================================
+// Timezone Validation
+// =============================================================================
+
+/**
+ * Cache of validated timezones to avoid repeated Intl lookups.
+ */
+const timezoneCache = new Map<string, boolean>();
+
+/**
+ * Validate an IANA timezone string.
+ * Uses Intl.DateTimeFormat to check if the timezone is recognized.
+ * Results are cached for performance.
+ *
+ * @param timezone - The timezone string to validate
+ * @returns True if valid IANA timezone, false otherwise
+ */
+export function isValidTimezone(timezone: string): boolean {
+  // Check cache first
+  const cached = timezoneCache.get(timezone);
+  if (cached !== undefined) {
+    return cached;
+  }
+
+  try {
+    // Attempt to format a date in the given timezone
+    // This will throw RangeError for invalid timezones
+    Intl.DateTimeFormat(undefined, { timeZone: timezone }).format(new Date());
+    timezoneCache.set(timezone, true);
+    return true;
+  } catch {
+    timezoneCache.set(timezone, false);
+    return false;
+  }
 }

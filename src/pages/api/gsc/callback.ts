@@ -10,7 +10,8 @@ import type { APIRoute } from 'astro';
 import { gscService } from '@server/services/gsc.service';
 import { gscCallbackSchema } from '@shared/validation/gsc.schema';
 import { supabaseAdmin } from '@server/supabase/supabaseAdmin';
-import { clientEnv } from '@shared/config/env';
+import { clientEnv, serverEnv } from '@shared/config/env';
+import { verifyOAuthState } from '@shared/utils/crypto';
 
 /**
  * GET /api/gsc/callback
@@ -28,10 +29,18 @@ export const GET: APIRoute = async ({ url }) => {
     // Validate query params
     const params = gscCallbackSchema.parse({ code, state });
 
-    // Parse state: "userId:projectId"
-    const stateParts = params.state.split(':');
+    // Verify signed state token
+    const stateResult = await verifyOAuthState(params.state, serverEnv.CRON_SECRET);
+
+    if (!stateResult.valid || !stateResult.data) {
+      console.error('[GscCallback] Invalid state token:', stateResult.error);
+      return Response.redirect(`${dashboardUrl}?error=connection_failed`, 302);
+    }
+
+    // Parse state data: "userId:projectId"
+    const stateParts = stateResult.data.split(':');
     if (stateParts.length !== 2) {
-      console.error('[GscCallback] Invalid state format:', params.state);
+      console.error('[GscCallback] Invalid state data format:', stateResult.data);
       return Response.redirect(`${dashboardUrl}?error=connection_failed`, 302);
     }
     const [userId, projectId] = stateParts;
@@ -45,7 +54,11 @@ export const GET: APIRoute = async ({ url }) => {
       .single();
 
     if (projectError || !project) {
-      console.error('[GscCallback] Project not found or ownership mismatch:', projectId, projectError?.message);
+      console.error(
+        '[GscCallback] Project not found or ownership mismatch:',
+        projectId,
+        projectError?.message
+      );
       return Response.redirect(`${dashboardUrl}?error=connection_failed`, 302);
     }
 

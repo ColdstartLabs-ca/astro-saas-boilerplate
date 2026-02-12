@@ -128,6 +128,29 @@ export function CampaignSettingsModal({
     setShowScheduleSettings(!!initialSettings.scheduleFrequency);
   }, [initialSettings]);
 
+  // Default schedule values for new schedules
+  const DEFAULT_SCHEDULE = {
+    frequency: 'weekly' as ScheduleFrequency,
+    batchSize: 3,
+    hour: 9,
+    timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC',
+  };
+
+  // Handle schedule toggle with defaults
+  const handleScheduleToggle = (enabled: boolean) => {
+    setShowScheduleSettings(enabled);
+    if (enabled && !settings.scheduleFrequency) {
+      // Set defaults when enabling schedule for the first time
+      setSettings(prev => ({
+        ...prev,
+        scheduleFrequency: DEFAULT_SCHEDULE.frequency,
+        scheduleBatchSize: DEFAULT_SCHEDULE.batchSize,
+        scheduleHour: DEFAULT_SCHEDULE.hour,
+        scheduleTimezone: DEFAULT_SCHEDULE.timezone,
+      }));
+    }
+  };
+
   const scheduleEditable = isScheduleEditable(campaignStatus);
 
   const handleSave = async () => {
@@ -328,7 +351,7 @@ export function CampaignSettingsModal({
                   <input
                     type="checkbox"
                     checked={showScheduleSettings}
-                    onChange={e => setShowScheduleSettings(e.target.checked)}
+                    onChange={e => handleScheduleToggle(e.target.checked)}
                     className="sr-only peer"
                     disabled={isSaving}
                   />
@@ -338,7 +361,7 @@ export function CampaignSettingsModal({
             )}
 
             {/* Schedule Configuration */}
-            {(showScheduleSettings || !scheduleEditable) && settings.scheduleFrequency && (
+            {showScheduleSettings && (
               <div className="space-y-4">
                 {/* Frequency Selector */}
                 <div className="space-y-2">

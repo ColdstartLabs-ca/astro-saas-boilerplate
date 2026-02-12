@@ -114,8 +114,28 @@ export default {
       );
     }
 
-    // Manual trigger endpoint for testing
+    // Manual trigger endpoint for testing (requires authentication)
     if (url.pathname === '/trigger' && request.method === 'POST') {
+      // Verify authentication using CRON_SECRET
+      const authHeader = request.headers.get('Authorization');
+      const providedSecret = authHeader?.startsWith('Bearer ')
+        ? authHeader.slice(7)
+        : request.headers.get('X-Cron-Secret');
+
+      if (!env.CRON_SECRET || providedSecret !== env.CRON_SECRET) {
+        return new Response(
+          JSON.stringify({
+            error: 'Unauthorized',
+            message:
+              'Valid CRON_SECRET required via Authorization: Bearer <secret> or X-Cron-Secret header',
+          }),
+          {
+            status: 401,
+            headers: { 'Content-Type': 'application/json' },
+          }
+        );
+      }
+
       const pattern = url.searchParams.get('pattern');
 
       if (!pattern) {

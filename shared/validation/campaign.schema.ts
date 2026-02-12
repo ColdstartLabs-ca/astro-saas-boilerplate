@@ -6,6 +6,7 @@
 
 import { z } from 'zod';
 import { isValidImagePreset } from '@shared/config/image-models.config';
+import { isValidTimezone } from '@shared/config/scheduling.config';
 
 // =============================================================================
 // Constants
@@ -57,7 +58,12 @@ export const createCampaignSchema = z.object({
   // Scheduling fields
   scheduleFrequency: z.enum(SCHEDULE_FREQUENCIES).optional(),
   scheduleBatchSize: z.number().int().min(1).max(50).optional(),
-  scheduleTimezone: z.string().min(1).max(100).optional(),
+  scheduleTimezone: z
+    .string()
+    .min(1, 'Timezone is required')
+    .max(100)
+    .refine(isValidTimezone, { message: 'Invalid IANA timezone (e.g., America/New_York)' })
+    .optional(),
   scheduleHour: z.number().int().min(0).max(23).optional(),
 });
 
@@ -66,8 +72,9 @@ export const createCampaignSchema = z.object({
  */
 export const updateCampaignSchema = z.object({
   name: z.string().min(1).max(100).trim().optional(),
-  // Note: status transitions are handled by dedicated endpoints (startSchedule, pauseSchedule, etc.)
-  // nextRunAt is server-calculated and not user-settable
+  // Status is allowed for simple pause/resume transitions on non-scheduled campaigns
+  // For scheduled campaigns, use dedicated endpoints: startSchedule, pauseSchedule, resumeSchedule
+  status: z.enum(['active', 'paused']).optional(),
   model: z.string().optional(),
   tone: z.enum(TONES).optional(),
   targetWordCount: z.number().int().min(800).max(3000).optional(),
@@ -78,7 +85,12 @@ export const updateCampaignSchema = z.object({
   // Scheduling fields
   scheduleFrequency: z.enum(SCHEDULE_FREQUENCIES).nullable().optional(),
   scheduleBatchSize: z.number().int().min(1).max(50).optional(),
-  scheduleTimezone: z.string().min(1).max(100).optional(),
+  scheduleTimezone: z
+    .string()
+    .min(1, 'Timezone is required')
+    .max(100)
+    .refine(isValidTimezone, { message: 'Invalid IANA timezone (e.g., America/New_York)' })
+    .optional(),
   scheduleHour: z.number().int().min(0).max(23).optional(),
 });
 

@@ -14,6 +14,7 @@ vi.mock('@shared/config/env', () => ({
   },
   serverEnv: {
     GOOGLE_OAUTH_CLIENT_SECRET: 'test-client-secret',
+    CRON_SECRET: 'test-cron-secret-for-oauth-state',
   },
 }));
 
@@ -40,31 +41,41 @@ describe('GscService', () => {
   });
 
   describe('getAuthUrl', () => {
-    it('should generate a valid Google OAuth URL', () => {
+    it('should generate a valid Google OAuth URL with signed state', async () => {
       const projectId = '550e8400-e29b-41d4-a716-446655440000';
-      const authUrl = service.getAuthUrl(projectId);
+      const userId = 'user-123';
+      const authUrl = await service.getAuthUrl(projectId, userId);
 
       expect(authUrl).toContain('https://accounts.google.com/o/oauth2/v2/auth');
       expect(authUrl).toContain('client_id=test-client-id');
-      expect(authUrl).toContain(`state=${projectId}`);
       expect(authUrl).toContain('response_type=code');
       expect(authUrl).toContain('access_type=offline');
       expect(authUrl).toContain('prompt=consent');
+
+      // Verify state is a signed token (data.timestamp.signature format)
+      const stateParam = new URL(authUrl).searchParams.get('state');
+      expect(stateParam).not.toBeNull();
+      const stateParts = stateParam!.split('.');
+      expect(stateParts).toHaveLength(3); // data.timestamp.signature
+
+      // Verify the data portion contains userId:projectId (URL encoded)
+      const dataPart = decodeURIComponent(stateParts[0]);
+      expect(dataPart).toBe(`${userId}:${projectId}`);
     });
 
-    it('should include webmasters.readonly scope', () => {
-      const authUrl = service.getAuthUrl('test-project');
+    it('should include webmasters.readonly scope', async () => {
+      const authUrl = await service.getAuthUrl('test-project', 'test-user');
       expect(authUrl).toContain('webmasters.readonly');
     });
 
-    it('should include openid and email scopes', () => {
-      const authUrl = service.getAuthUrl('test-project');
+    it('should include openid and email scopes', async () => {
+      const authUrl = await service.getAuthUrl('test-project', 'test-user');
       expect(authUrl).toContain('openid');
       expect(authUrl).toContain('email');
     });
 
-    it('should set redirect_uri to the callback endpoint', () => {
-      const authUrl = service.getAuthUrl('test-project');
+    it('should set redirect_uri to the callback endpoint', async () => {
+      const authUrl = await service.getAuthUrl('test-project', 'test-user');
       expect(authUrl).toContain(encodeURIComponent('https://app.example.com/api/gsc/callback'));
     });
   });

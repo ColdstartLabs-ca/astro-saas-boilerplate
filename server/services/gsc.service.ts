@@ -5,6 +5,7 @@
 
 import { clientEnv, serverEnv } from '@shared/config/env';
 import { supabaseAdmin } from '@server/supabase/supabaseAdmin';
+import { signOAuthState } from '@shared/utils/crypto';
 import type { IGscConnection, IGscSite } from '@shared/types/opportunity.types';
 
 // =============================================================================
@@ -79,10 +80,13 @@ export class GscService {
 
   /**
    * Generate Google OAuth URL for GSC authorization.
-   * State param carries userId:projectId for secure callback verification.
+   * State param is cryptographically signed to prevent CSRF attacks.
    */
-  getAuthUrl(projectId: string, userId: string): string {
-    const state = `${userId}:${projectId}`;
+  async getAuthUrl(projectId: string, userId: string): Promise<string> {
+    // Create signed state token with HMAC protection
+    const stateData = `${userId}:${projectId}`;
+    const state = await signOAuthState(stateData, serverEnv.CRON_SECRET);
+
     const params = new URLSearchParams({
       client_id: this.clientId,
       redirect_uri: this.redirectUri,
