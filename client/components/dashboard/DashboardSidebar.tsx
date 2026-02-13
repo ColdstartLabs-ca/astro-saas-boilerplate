@@ -8,12 +8,13 @@ import {
   isPathActive,
   type IDashboardRoute,
 } from '@client/config/dashboardRoutes';
+import { usePendingActions } from '@client/hooks/usePendingActions';
 import { useIsAdmin, useUserStore } from '@client/store/userStore';
 import { cn } from '@client/utils/cn';
 import { dashboardNavigate, onDashboardNavigate } from '@client/utils/dashboardNavigation';
 import { useLogger } from '@client/utils/logger';
 import { getTranslations, type TFunction } from '@src/i18n/utils';
-import { LogOut, X } from 'lucide-react';
+import { LogOut, X, Badge } from 'lucide-react';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 
 interface IDashboardSidebarProps {
@@ -29,11 +30,13 @@ function SidebarItem({
   pathname,
   onNavigate,
   t,
+  showBadge,
 }: {
   route: IDashboardRoute;
   pathname: string;
   onNavigate: (href: string) => void;
   t: TFunction;
+  showBadge?: boolean;
 }): JSX.Element {
   const Icon = route.icon;
   const isActive = isPathActive(pathname, route.path);
@@ -69,7 +72,8 @@ function SidebarItem({
       )}
     >
       <Icon className={cn('w-5 h-5', isActive ? 'text-white' : 'text-secondary')} />
-      <span>{label}</span>
+      <span className="flex-1">{label}</span>
+      {showBadge && <Badge className="w-5 h-5 flex-shrink-0 animate-pulse" />}
     </a>
   );
 }
@@ -79,6 +83,7 @@ export const DashboardSidebar: React.FC<IDashboardSidebarProps> = ({ isOpen, onC
   const { signOut, user } = useUserStore();
   const isAdmin = useIsAdmin();
   const logger = useLogger('DashboardSidebar');
+  const { hasCampaigns, skippedIntegrations, isOnboardingComplete } = usePendingActions();
 
   const [pathname, setPathname] = useState(() =>
     typeof window !== 'undefined' ? window.location.pathname : '/dashboard'
@@ -89,6 +94,14 @@ export const DashboardSidebar: React.FC<IDashboardSidebarProps> = ({ isOpen, onC
 
   // Onboarding modal state
   const [showOnboarding, setShowOnboarding] = useState(false);
+
+  // Determine which routes should show badges
+  const getShowBadge = (path: string) => {
+    if (!isOnboardingComplete) return false;
+    if (path === '/dashboard/campaigns') return !hasCampaigns;
+    if (path === '/dashboard/integrations') return skippedIntegrations;
+    return false;
+  };
 
   // Get routes from centralized config
   const primaryItems = useMemo(() => getRoutesByGroup('primary'), []);
@@ -172,6 +185,7 @@ export const DashboardSidebar: React.FC<IDashboardSidebarProps> = ({ isOpen, onC
               pathname={pathname}
               onNavigate={handleNavigation}
               t={t}
+              showBadge={getShowBadge(item.path)}
             />
           ))}
 

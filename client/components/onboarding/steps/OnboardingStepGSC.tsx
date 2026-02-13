@@ -7,7 +7,14 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { Search, ExternalLink, Loader2, CheckCircle2, ArrowRight, SkipForward, AlertTriangle } from 'lucide-react';
+import {
+  ExternalLink,
+  Loader2,
+  CheckCircle2,
+  ArrowRight,
+  SkipForward,
+  AlertTriangle,
+} from 'lucide-react';
 import { DashboardButton } from '@client/components/dashboard/ui/DashboardButton';
 import { useOnboardingStore } from '@client/store/onboardingStore';
 import { useOnboardingProgress } from '@client/hooks/useOnboardingProgress';
@@ -154,7 +161,7 @@ export function OnboardingStepGSC({ onComplete, onSkip }: IOnboardingStepGSCProp
   // Loading state
   if (isLoadingConnection) {
     return (
-      <div className="space-y-6">
+      <div className="space-y-4">
         <div className="flex items-center justify-center py-12">
           <Loader2 className="w-8 h-8 animate-spin text-accent" />
         </div>
@@ -163,19 +170,7 @@ export function OnboardingStepGSC({ onComplete, onSkip }: IOnboardingStepGSCProp
   }
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="text-center">
-        <div className="w-14 h-14 mx-auto mb-4 rounded-full bg-primary/10 flex items-center justify-center">
-          <Search className="w-7 h-7 text-primary" />
-        </div>
-        <h2 className="text-xl sm:text-2xl font-bold text-white">Connect Google Search Console</h2>
-        <p className="text-sm text-secondary mt-2 max-w-md mx-auto">
-          Link your Google Search Console account to discover keyword opportunities from your
-          actual search data.
-        </p>
-      </div>
-
+    <div className="space-y-4">
       {/* Already Connected State */}
       {connection?.status === 'active' && (
         <div className="bg-emerald-500/10 border border-emerald-500/30 rounded-xl p-6">
@@ -222,7 +217,9 @@ export function OnboardingStepGSC({ onComplete, onSkip }: IOnboardingStepGSCProp
                 </div>
                 <div>
                   <p className="text-sm text-white">Discover Real Keywords</p>
-                  <p className="text-xs text-muted">Find keywords you already rank for but could improve</p>
+                  <p className="text-xs text-muted">
+                    Find keywords you already rank for but could improve
+                  </p>
                 </div>
               </li>
               <li className="flex items-start gap-3">
@@ -231,7 +228,9 @@ export function OnboardingStepGSC({ onComplete, onSkip }: IOnboardingStepGSCProp
                 </div>
                 <div>
                   <p className="text-sm text-white">Track Performance</p>
-                  <p className="text-xs text-muted">Monitor impressions, clicks, and rankings over time</p>
+                  <p className="text-xs text-muted">
+                    Monitor impressions, clicks, and rankings over time
+                  </p>
                 </div>
               </li>
               <li className="flex items-start gap-3">

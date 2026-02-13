@@ -7,6 +7,7 @@ import { useState } from 'react';
 import type {
   IIntegrationWithCampaigns,
   ICreateIntegrationInput,
+  ITestConnectionResult,
 } from '@shared/types/integration.types';
 
 export default function IntegrationsPage(): JSX.Element {
@@ -55,7 +56,7 @@ export default function IntegrationsPage(): JSX.Element {
     await deleteIntegration(integrationId);
   };
 
-  const handleTestIntegration = async (integrationId: string) => {
+  const handleTestIntegration = async (integrationId: string): Promise<ITestConnectionResult> => {
     return await testIntegration(integrationId);
   };
 

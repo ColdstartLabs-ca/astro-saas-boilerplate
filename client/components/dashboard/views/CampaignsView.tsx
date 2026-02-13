@@ -14,6 +14,8 @@ import {
 } from 'lucide-react';
 import { DashboardButton } from '../ui/DashboardButton';
 import { ConfirmDialog } from '@client/components/ui/ConfirmDialog';
+import { FirstCampaignPrompt } from '../prompts';
+import { usePendingActions } from '@client/hooks/usePendingActions';
 import type { ICampaignWithStats } from '@shared/types/campaign.types';
 import type { IProject } from '@shared/types/project.types';
 import { useTranslations } from '@client/hooks/useTranslations';
@@ -46,6 +48,7 @@ export function CampaignsView({
   activeProject,
 }: ICampaignsViewProps): JSX.Element {
   const t = useTranslations('dashboard');
+  const { hasCampaigns, isOnboardingComplete } = usePendingActions();
   const [viewMode, setViewMode] = useState<'list' | 'detail'>('list');
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
   const [campaignToDelete, setCampaignToDelete] = useState<ICampaignWithStats | null>(null);
@@ -53,6 +56,9 @@ export function CampaignsView({
 
   // Get selected campaign from campaigns list
   const selectedCampaign = campaigns.find(c => c.id === selectedCampaignId) ?? null;
+
+  // Show FirstCampaignPrompt when onboarding is complete but no campaigns yet
+  const shouldShowCampaignPrompt = isOnboardingComplete && !hasCampaigns && !isLoading;
 
   const handleDeleteClick = (campaign: ICampaignWithStats) => {
     setOpenMenuId(null);
@@ -88,7 +94,11 @@ export function CampaignsView({
           <DashboardButton size="sm" onClick={() => dashboardNavigate('/dashboard')}>
             <span>Select Project</span>
           </DashboardButton>
-          <DashboardButton size="sm" variant="ghost" onClick={() => dashboardNavigate('/dashboard')}>
+          <DashboardButton
+            size="sm"
+            variant="ghost"
+            onClick={() => dashboardNavigate('/dashboard')}
+          >
             <span>Create Project</span>
           </DashboardButton>
         </div>
@@ -120,6 +130,9 @@ export function CampaignsView({
   if (!isLoading && campaigns.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center h-full py-20 animate-fadeIn">
+        {/* Show FirstCampaignPrompt if onboarding is complete */}
+        {shouldShowCampaignPrompt && <FirstCampaignPrompt onCreateCampaign={onNewCampaign} />}
+
         <div className="w-20 h-20 rounded-full bg-surface border border-border flex items-center justify-center mb-6">
           <Layers className="w-10 h-10 text-muted" />
         </div>
@@ -199,7 +212,7 @@ export function CampaignsView({
             className="bg-surface border border-border rounded-xl p-6 hover:border-border transition-all cursor-pointer group hover:shadow-xl hover:shadow-black/20 text-left w-full"
             role="button"
             tabIndex={0}
-            onKeyPress={(e) => {
+            onKeyPress={e => {
               if (e.key === 'Enter' || e.key === ' ') {
                 setViewMode('detail');
                 onCampaignClick(campaign.id);

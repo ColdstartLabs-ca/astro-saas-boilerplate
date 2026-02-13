@@ -32,24 +32,22 @@ import { useLogger } from '@client/utils/logger';
 /**
  * Update onboarding progress
  */
-async function updateProgress(
-  input: IUpdateOnboardingProgressInput
-): Promise<IOnboardingStatus> {
-  const data = await apiFetch<IUpdateOnboardingResponse>('/api/onboarding/progress', {
+async function updateProgress(input: IUpdateOnboardingProgressInput): Promise<IOnboardingStatus> {
+  const data = await apiFetch<{ data: IUpdateOnboardingResponse }>('/api/onboarding/progress', {
     method: 'PUT',
     body: JSON.stringify(input),
   });
-  return data.onboarding;
+  return data.data.onboarding;
 }
 
 /**
  * Complete onboarding
  */
 async function completeOnboarding(): Promise<IOnboardingStatus> {
-  const data = await apiFetch<IUpdateOnboardingResponse>('/api/onboarding/complete', {
+  const data = await apiFetch<{ data: IUpdateOnboardingResponse }>('/api/onboarding/complete', {
     method: 'POST',
   });
-  return data.onboarding;
+  return data.data.onboarding;
 }
 
 // =============================================================================
@@ -164,6 +162,8 @@ export function useOnboardingProgress(): IUseOnboardingProgressReturn {
       queryClient.setQueryData(['onboarding-status', user?.id], { onboarding: data });
       // Invalidate to ensure fresh data
       queryClient.invalidateQueries({ queryKey: ['onboarding-status', user?.id] });
+      // Invalidate projects cache so OverviewView sees newly created project
+      queryClient.invalidateQueries({ queryKey: ['projects', user?.id] });
     },
     onError: error => {
       logger.error('Failed to complete onboarding', {

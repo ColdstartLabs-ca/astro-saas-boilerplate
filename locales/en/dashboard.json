@@ -207,6 +207,10 @@
     "onboarding": {
       "title": "Add New Project",
       "stepOf": "Step {step} of 3",
+      "progressSaved": "Progress saved",
+      "progressError": "Failed to save progress",
+      "completeSuccess": "Onboarding complete!",
+      "completeError": "Failed to complete onboarding",
       "step1": {
         "title": "Basic Information",
         "projectName": "Project Name",
@@ -847,7 +851,9 @@
         "description": "Description",
         "descriptionPlaceholder": "Optional description for this webhook",
         "urlRequired": "Webhook URL is required",
-        "urlInvalid": "Please enter a valid URL"
+        "urlInvalid": "Please enter a valid URL",
+        "docsLink": "How to set up webhooks",
+        "docsUrl": "#webhook-setup-guide"
       },
       "name": "Integration Name",
       "namePlaceholder": "My WordPress Blog",

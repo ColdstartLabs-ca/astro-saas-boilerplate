@@ -246,18 +246,7 @@ export function OnboardingStepIntegrations({
   const isLoading = isSubmitting || isUpdating || isSkipping;
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="text-center">
-        <div className="w-14 h-14 mx-auto mb-4 rounded-full bg-primary/10 flex items-center justify-center">
-          <Plug className="w-7 h-7 text-primary" />
-        </div>
-        <h2 className="text-xl sm:text-2xl font-bold text-white">Connect Your CMS</h2>
-        <p className="text-sm text-secondary mt-2 max-w-md mx-auto">
-          Auto-publish articles directly to your website. You can always set this up later.
-        </p>
-      </div>
-
+    <div className="space-y-4">
       {/* Integration Type Selection */}
       {!selectedType && (
         <div className="space-y-3">
@@ -315,8 +304,7 @@ export function OnboardingStepIntegrations({
                 htmlFor={`integration-${field.name}`}
                 className="block text-sm font-medium text-white"
               >
-                {field.label}{' '}
-                {field.required && <span className="text-red-400">*</span>}
+                {field.label} {field.required && <span className="text-red-400">*</span>}
               </label>
               <input
                 id={`integration-${field.name}`}

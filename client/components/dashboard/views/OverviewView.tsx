@@ -8,6 +8,8 @@ import { ProjectOnboarding } from '@client/components/projects/ProjectOnboarding
 import { CreditsDisplay } from '@client/components/stripe/CreditsDisplay';
 import { useProjects } from '@client/hooks/useProjects';
 import { useSubscription, useUserStore } from '@client/store/userStore';
+import { useOnboardingStore } from '@client/store/onboardingStore';
+import { OnboardingStep } from '@shared/types/onboarding.types';
 import { cn } from '@client/utils/cn';
 import { dashboardNavigate } from '@client/utils/dashboardNavigation';
 import { getGreeting } from '@client/utils/timeUtils';
@@ -28,7 +30,7 @@ import {
   Plus,
   Search,
   Trash2,
-  Zap
+  Zap,
 } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 
@@ -38,6 +40,9 @@ export function OverviewView(): JSX.Element {
   const { user } = useUserStore();
   const subscription = useSubscription();
   const { projects, activeProject, isLoading, deleteProject, updateProject } = useProjects();
+  const isOnboardingComplete = useOnboardingStore(state =>
+    state.completedSteps.has(OnboardingStep.COMPLETION)
+  );
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [projectToDelete, setProjectToDelete] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -60,14 +65,20 @@ export function OverviewView(): JSX.Element {
   // Time-based greeting
   const greeting = getGreeting();
 
-  // Auto-show onboarding modal for first-time users (only once per session)
+  // Auto-show onboarding modal for users with no projects (only once per session).
+  // Skip if onboarding wizard is already complete (projects cache may still be refreshing).
   useEffect(() => {
-    if (!isLoading && projects.length === 0 && !showOnboarding && !hasAutoOpenedOnboarding) {
+    if (
+      !isLoading &&
+      projects.length === 0 &&
+      !showOnboarding &&
+      !hasAutoOpenedOnboarding &&
+      isOnboardingComplete
+    ) {
       setShowOnboarding(true);
-      // Mark that we've auto-opened onboarding this session
       sessionStorage.setItem('hasAutoOpenedOnboarding', 'true');
     }
-  }, [isLoading, projects.length, showOnboarding, hasAutoOpenedOnboarding]);
+  }, [isLoading, projects.length, showOnboarding, hasAutoOpenedOnboarding, isOnboardingComplete]);
 
   const handleDeleteClick = (projectId: string) => {
     setProjectToDelete(projectId);
@@ -132,9 +143,9 @@ export function OverviewView(): JSX.Element {
     visible: {
       opacity: 1,
       transition: {
-        staggerChildren: 0.1
-      }
-    }
+        staggerChildren: 0.1,
+      },
+    },
   };
 
   const itemVariants = {
@@ -142,8 +153,8 @@ export function OverviewView(): JSX.Element {
     visible: {
       y: 0,
       opacity: 1,
-      transition: { duration: 0.4 }
-    }
+      transition: { duration: 0.4 },
+    },
   };
 
   return (
@@ -154,10 +165,16 @@ export function OverviewView(): JSX.Element {
       className="space-y-8 pb-10"
     >
       {/* Welcome Header */}
-      <motion.div variants={itemVariants} className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+      <motion.div
+        variants={itemVariants}
+        className="flex flex-col md:flex-row md:items-center md:justify-between gap-4"
+      >
         <div>
           <h1 className="text-2xl font-bold text-white tracking-tight">
-            {greeting}, <span className="text-transparent bg-clip-text bg-gradient-to-r from-white to-white/70">{displayName}</span>
+            {greeting},{' '}
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-white to-white/70">
+              {displayName}
+            </span>
           </h1>
           <p className="text-secondary mt-1 text-sm font-medium">
             {activeProject
@@ -233,10 +250,7 @@ export function OverviewView(): JSX.Element {
           </h2>
 
           {activeProject ? (
-            <DashboardCard
-              className="border-accent/20 ring-1 ring-accent/5 p-5 md:p-6"
-              gradient
-            >
+            <DashboardCard className="border-accent/20 ring-1 ring-accent/5 p-5 md:p-6" gradient>
               <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-5 relative z-10">
                 <div className="flex items-start gap-4">
                   <div className="w-14 h-14 rounded-xl bg-surface-light/80 border border-white/10 flex items-center justify-center text-2xl font-bold text-white shadow-inner backdrop-blur-sm">
@@ -270,15 +284,20 @@ export function OverviewView(): JSX.Element {
 
                     <div className="grid grid-cols-2 gap-x-8 gap-y-2 mt-4">
                       <div>
-                        <div className="text-[10px] text-secondary uppercase tracking-wider font-bold mb-0.5">Platform</div>
+                        <div className="text-[10px] text-secondary uppercase tracking-wider font-bold mb-0.5">
+                          Platform
+                        </div>
                         <div className="text-sm text-white font-medium capitalize flex items-center gap-1.5">
                           {activeProject.cms_type}
                         </div>
                       </div>
                       <div>
-                        <div className="text-[10px] text-secondary uppercase tracking-wider font-bold mb-0.5">Frequency</div>
+                        <div className="text-[10px] text-secondary uppercase tracking-wider font-bold mb-0.5">
+                          Frequency
+                        </div>
                         <div className="text-sm text-white font-medium capitalize">
-                          {activeProject.content_preferences?.frequency?.replace('_', ' ') || 'Not set'}
+                          {activeProject.content_preferences?.frequency?.replace('_', ' ') ||
+                            'Not set'}
                         </div>
                       </div>
                     </div>
@@ -309,8 +328,12 @@ export function OverviewView(): JSX.Element {
                 <div className="w-16 h-16 bg-surface-light rounded-full flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-300">
                   <Plus className="w-8 h-8 text-muted group-hover:text-accent transition-colors" />
                 </div>
-                <h3 className="text-lg font-semibold text-white mb-2">{t('projects.noProjects')}</h3>
-                <p className="text-secondary max-w-sm mx-auto mb-6">{t('projects.noProjectsDescription')}</p>
+                <h3 className="text-lg font-semibold text-white mb-2">
+                  {t('projects.noProjects')}
+                </h3>
+                <p className="text-secondary max-w-sm mx-auto mb-6">
+                  {t('projects.noProjectsDescription')}
+                </p>
                 <button
                   onClick={() => setShowOnboarding(true)}
                   className="bg-accent hover:bg-accent-hover text-white px-6 py-2 rounded-lg transition-colors font-medium shadow-lg shadow-accent/20"
@@ -342,8 +365,12 @@ export function OverviewView(): JSX.Element {
                   <FileText className="w-4 h-4" />
                 </div>
                 <div>
-                  <h3 className="text-sm font-semibold text-white group-hover:text-blue-400 transition-colors">Start Campaign</h3>
-                  <p className="text-[11px] text-secondary mt-0.5">Generate SEO content for your site</p>
+                  <h3 className="text-sm font-semibold text-white group-hover:text-blue-400 transition-colors">
+                    Start Campaign
+                  </h3>
+                  <p className="text-[11px] text-secondary mt-0.5">
+                    Generate SEO content for your site
+                  </p>
                 </div>
               </div>
             </DashboardCard>
@@ -418,4 +445,3 @@ export function OverviewView(): JSX.Element {
     </motion.div>
   );
 }
-

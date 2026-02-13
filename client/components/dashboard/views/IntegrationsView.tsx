@@ -24,7 +24,13 @@ import {
 } from 'lucide-react';
 import { DashboardButton } from '../ui/DashboardButton';
 import { ConfirmDialog } from '@client/components/ui/ConfirmDialog';
-import type { IIntegrationWithCampaigns } from '@shared/types/integration.types';
+import { IntegrationsPrompt } from '../prompts';
+import { usePendingActions } from '@client/hooks/usePendingActions';
+import { useToastStore } from '@client/store/toastStore';
+import type {
+  IIntegrationWithCampaigns,
+  ITestConnectionResult,
+} from '@shared/types/integration.types';
 import { useTranslations } from '@client/hooks/useTranslations';
 import { getIntegrationStatusStyles } from '@client/utils/statusStyles';
 import dayjs from 'dayjs';
@@ -38,7 +44,7 @@ interface IIntegrationsViewProps {
   onNewIntegration: () => void;
   onEditIntegration: (integration: IIntegrationWithCampaigns) => void;
   onDeleteIntegration: (integrationId: string) => Promise<void>;
-  onTestIntegration: (integrationId: string) => Promise<{ success: boolean; error?: string }>;
+  onTestIntegration: (integrationId: string) => Promise<ITestConnectionResult>;
 }
 
 export function IntegrationsView({
@@ -50,12 +56,17 @@ export function IntegrationsView({
   onTestIntegration,
 }: IIntegrationsViewProps): JSX.Element {
   const t = useTranslations('dashboard');
+  const { skippedIntegrations, isOnboardingComplete } = usePendingActions();
+  const { showToast } = useToastStore();
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
   const [integrationToDelete, setIntegrationToDelete] = useState<IIntegrationWithCampaigns | null>(
     null
   );
   const [isDeleting, setIsDeleting] = useState(false);
   const [testingIds, setTestingIds] = useState<Set<string>>(new Set());
+
+  // Show IntegrationsPrompt when integrations step was skipped during onboarding
+  const shouldShowIntegrationPrompt = skippedIntegrations && isOnboardingComplete;
 
   const handleDeleteClick = (integration: IIntegrationWithCampaigns) => {
     setOpenMenuId(null);
@@ -80,9 +91,20 @@ export function IntegrationsView({
     setOpenMenuId(null);
     setTestingIds(prev => new Set(prev).add(integrationId));
     try {
-      await onTestIntegration(integrationId);
+      const result = await onTestIntegration(integrationId);
+      if (result.success) {
+        showToast({ type: 'success', message: t('integrations.testSuccess') });
+      } else {
+        // Show more detailed error message
+        const errorMsg = result.error || t('integrations.testError');
+        showToast({ type: 'error', message: errorMsg });
+      }
     } catch (error) {
       console.error('Failed to test integration:', error);
+      showToast({
+        type: 'error',
+        message: error instanceof Error ? error.message : t('integrations.testError'),
+      });
     } finally {
       setTestingIds(prev => {
         const next = new Set(prev);
@@ -124,7 +146,13 @@ export function IntegrationsView({
   // Show empty state when no integrations exist
   if (!isLoading && integrations.length === 0) {
     return (
-      <div data-testid="integrations-empty-state" className="flex flex-col items-center justify-center h-full py-20 animate-fadeIn">
+      <div
+        data-testid="integrations-empty-state"
+        className="flex flex-col items-center justify-center h-full py-20 animate-fadeIn"
+      >
+        {/* Show IntegrationsPrompt if step was skipped during onboarding */}
+        {shouldShowIntegrationPrompt && <IntegrationsPrompt />}
+
         <div className="w-20 h-20 rounded-full bg-surface border border-border flex items-center justify-center mb-6">
           <Plug className="w-10 h-10 text-muted" />
         </div>

@@ -61,9 +61,7 @@ function SummaryItem({ label, value, isCompleted, isSkipped }: ISummaryItemProps
 // Main Component
 // =============================================================================
 
-export function OnboardingStepComplete({
-  onClose,
-}: IOnboardingStepCompleteProps): JSX.Element {
+export function OnboardingStepComplete({ onClose }: IOnboardingStepCompleteProps): JSX.Element {
   const [isCompleting, setIsCompleting] = useState(false);
 
   const { completedSteps, skippedSteps, keywordCount } = useOnboardingStore();
@@ -89,18 +87,7 @@ export function OnboardingStepComplete({
   const isIntegrationsSkipped = skippedSteps.has(OnboardingStep.INTEGRATIONS);
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="text-center">
-        <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-emerald-500/10 flex items-center justify-center">
-          <Rocket className="w-8 h-8 text-emerald-400" />
-        </div>
-        <h2 className="text-xl sm:text-2xl font-bold text-white">You&apos;re All Set!</h2>
-        <p className="text-sm text-secondary mt-2 max-w-md mx-auto">
-          Your workspace is ready. Here&apos;s a summary of what was set up.
-        </p>
-      </div>
-
+    <div className="space-y-4">
       {/* Setup Summary */}
       <div className="bg-surface border border-border rounded-xl p-5 divide-y divide-border/50">
         <SummaryItem
@@ -117,22 +104,14 @@ export function OnboardingStepComplete({
         />
         <SummaryItem
           label="Keywords"
-          value={
-            isKeywordsComplete
-              ? `${keywordCount} uploaded`
-              : 'Pending'
-          }
+          value={isKeywordsComplete ? `${keywordCount} uploaded` : 'Pending'}
           isCompleted={isKeywordsComplete}
           isSkipped={false}
         />
         <SummaryItem
           label="CMS Integration"
           value={
-            isIntegrationsComplete
-              ? 'Connected'
-              : isIntegrationsSkipped
-                ? 'Skipped'
-                : 'Pending'
+            isIntegrationsComplete ? 'Connected' : isIntegrationsSkipped ? 'Skipped' : 'Pending'
           }
           isCompleted={isIntegrationsComplete}
           isSkipped={isIntegrationsSkipped}
@@ -184,7 +163,7 @@ export function OnboardingStepComplete({
           ) : (
             <>
               <Rocket className="w-4 h-4 mr-2" />
-              Go to Dashboard
+              Create Your First Campaign
             </>
           )}
         </DashboardButton>

@@ -206,7 +206,7 @@ export class WebhookAdapter implements ICMSAdapter {
         return {
           success: false,
           timestamp: new Date().toISOString(),
-          error: `Webhook returned ${response.status}: ${responseText.substring(0, 200)}`,
+          error: `Webhook endpoint returned status ${response.status}. Your endpoint should return a 2xx status code. Response: ${responseText.substring(0, 100)}`,
         };
       }
 
@@ -216,6 +216,31 @@ export class WebhookAdapter implements ICMSAdapter {
       };
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
+
+      // Enhance error messages for common issues
+      if (
+        message.includes('fetch failed') ||
+        message.includes('ENOTFOUND') ||
+        message.includes('ECONNREFUSED') ||
+        message.includes('NetworkError')
+      ) {
+        return {
+          success: false,
+          timestamp: new Date().toISOString(),
+          error:
+            'Unable to reach the webhook endpoint. Please verify the URL is correct and the server is accessible from the internet.',
+        };
+      }
+
+      if (message.includes('abort') || message.includes('timeout')) {
+        return {
+          success: false,
+          timestamp: new Date().toISOString(),
+          error:
+            'The webhook endpoint took too long to respond (timeout after 30 seconds). Please check if the server is responding.',
+        };
+      }
+
       return {
         success: false,
         timestamp: new Date().toISOString(),

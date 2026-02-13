@@ -27,7 +27,16 @@ import type {
   IWebhookConfig,
   IWordPressConfig,
 } from '@shared/types/integration.types';
-import { ArrowLeft, CheckCircle2, Globe, Loader2, Plug, Webhook, XCircle } from 'lucide-react';
+import {
+  ArrowLeft,
+  CheckCircle2,
+  Globe,
+  HelpCircle,
+  Loader2,
+  Plug,
+  Webhook,
+  XCircle,
+} from 'lucide-react';
 import React, { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
@@ -114,15 +123,19 @@ function TypeCard({
   return (
     <button
       onClick={onSelect}
-      className={`relative p-5 rounded-xl border-2 transition-all text-left w-full h-full flex flex-col ${selected
+      className={`relative p-5 rounded-xl border-2 transition-all text-left w-full h-full flex flex-col ${
+        selected
           ? 'border-accent bg-accent/5 ring-1 ring-accent/20'
           : 'border-border/50 bg-main/40 hover:border-accent/40 hover:bg-surface/60'
-        }`}
+      }`}
     >
       <div className="flex items-center gap-4 mb-3">
         <div
-          className={`p-2.5 rounded-lg shrink-0 transition-colors ${selected ? 'bg-accent text-white shadow-lg shadow-accent/20' : 'bg-surface text-secondary border border-border/50'
-            }`}
+          className={`p-2.5 rounded-lg shrink-0 transition-colors ${
+            selected
+              ? 'bg-accent text-white shadow-lg shadow-accent/20'
+              : 'bg-surface text-secondary border border-border/50'
+          }`}
         >
           {icon}
         </div>
@@ -131,9 +144,7 @@ function TypeCard({
         </h3>
       </div>
 
-      <p className="text-sm text-muted leading-relaxed flex-1">
-        {description}
-      </p>
+      <p className="text-sm text-muted leading-relaxed flex-1">{description}</p>
 
       {selected && (
         <div className="absolute top-3 right-3">
@@ -162,6 +173,7 @@ export function IntegrationFormModal({
   const [selectedType, setSelectedType] = useState<IntegrationType | null>(null);
   const [isTesting, setIsTesting] = useState(false);
   const [testResult, setTestResult] = useState<{ success: boolean; message?: string } | null>(null);
+  const [showWebhookHelp, setShowWebhookHelp] = useState(false);
 
   // Form setup - use edit schema (optional appPassword) in edit mode
   const isEditMode = mode === 'edit';
@@ -190,15 +202,15 @@ export function IntegrationFormModal({
           name: integration.name,
           ...(integration.type === 'wordpress'
             ? {
-              siteUrl: (integration.config as IWordPressConfig).site_url || '',
-              username: (integration.config as IWordPressConfig).username || '',
-              appPassword: '', // Never pre-fill password
-            }
+                siteUrl: (integration.config as IWordPressConfig).site_url || '',
+                username: (integration.config as IWordPressConfig).username || '',
+                appPassword: '', // Never pre-fill password
+              }
             : {
-              url: (integration.config as IWebhookConfig).url || '',
-              secret: '', // Never pre-fill secret
-              description: '',
-            }),
+                url: (integration.config as IWebhookConfig).url || '',
+                secret: '', // Never pre-fill secret
+                description: '',
+              }),
         });
       } else {
         setStep(1);
@@ -206,6 +218,7 @@ export function IntegrationFormModal({
         form.reset();
       }
       setTestResult(null);
+      setShowWebhookHelp(false);
     }
   }, [isOpen, mode, integration, form]);
 
@@ -221,20 +234,72 @@ export function IntegrationFormModal({
   };
 
   const handleTestConnection = async () => {
-    setIsTesting(true);
-    setTestResult(null);
-    try {
-      // For now, we'll just validate and show a success message
-      // The actual test happens on the server during save
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      setTestResult({ success: true, message: 'Configuration looks valid' });
-    } catch (error) {
-      setTestResult({
-        success: false,
-        message: error instanceof Error ? error.message : 'Connection test failed',
-      });
-    } finally {
-      setIsTesting(false);
+    const values = form.getValues();
+
+    if (values.type === 'webhook') {
+      // For webhooks, make a real test request to the endpoint
+      setIsTesting(true);
+      setTestResult(null);
+
+      try {
+        const response = await fetch('/api/integrations/validate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            type: 'webhook',
+            url: values.url,
+            secret: values.secret || undefined,
+          }),
+        });
+
+        const data = await response.json();
+
+        if (data.success && data.result?.success) {
+          setTestResult({
+            success: true,
+            message: 'Connection successful! The webhook endpoint is reachable.',
+          });
+        } else {
+          setTestResult({
+            success: false,
+            message: data.result?.error || data.error || 'Connection test failed',
+          });
+        }
+      } catch (error) {
+        setTestResult({
+          success: false,
+          message: error instanceof Error ? error.message : 'Connection test failed',
+        });
+      } finally {
+        setIsTesting(false);
+      }
+    } else {
+      // For WordPress, validate the form fields
+      setIsTesting(true);
+      setTestResult(null);
+
+      try {
+        // Trigger validation
+        const isValid = await form.trigger(['siteUrl', 'username', 'appPassword']);
+        if (isValid) {
+          setTestResult({
+            success: true,
+            message: 'Configuration looks valid. The connection will be tested when you save.',
+          });
+        } else {
+          setTestResult({
+            success: false,
+            message: 'Please fill in all required fields correctly.',
+          });
+        }
+      } catch (error) {
+        setTestResult({
+          success: false,
+          message: error instanceof Error ? error.message : 'Validation failed',
+        });
+      } finally {
+        setIsTesting(false);
+      }
     }
   };
 
@@ -362,7 +427,11 @@ export function IntegrationFormModal({
                   <input
                     {...form.register('appPassword')}
                     type="password"
-                    placeholder={isEditMode ? 'Leave blank to keep current password' : t('integrations.form.wordpress.appPasswordPlaceholder')}
+                    placeholder={
+                      isEditMode
+                        ? 'Leave blank to keep current password'
+                        : t('integrations.form.wordpress.appPasswordPlaceholder')
+                    }
                     className="w-full px-3 py-2 bg-elevated border border-border rounded-lg text-white placeholder:text-secondary focus:outline-none focus:ring-2 focus:ring-accent/50"
                   />
                   <div className="flex items-center justify-between mt-1">
@@ -399,11 +468,63 @@ export function IntegrationFormModal({
                     disabled={isEditMode}
                     className={`w-full px-3 py-2 bg-elevated border border-border rounded-lg text-white placeholder:text-secondary focus:outline-none focus:ring-2 focus:ring-accent/50 ${isEditMode ? 'opacity-60 cursor-not-allowed' : ''}`}
                   />
-                  <p className="text-xs text-muted mt-1">
-                    {t('integrations.form.webhook.urlHelp')}
-                  </p>
+                  <div className="flex items-center justify-between mt-1">
+                    <p className="text-xs text-muted">{t('integrations.form.webhook.urlHelp')}</p>
+                    <button
+                      type="button"
+                      onClick={() => setShowWebhookHelp(!showWebhookHelp)}
+                      className="text-xs text-accent-hover hover:underline flex items-center gap-1"
+                    >
+                      <HelpCircle className="w-3 h-3" />
+                      {t('integrations.form.webhook.docsLink')}
+                    </button>
+                  </div>
                   {errors.url && <p className="text-red-400 text-sm mt-1">{errors.url.message}</p>}
                 </div>
+
+                {/* Webhook Help Panel */}
+                {showWebhookHelp && (
+                  <div className="bg-surface border border-border rounded-lg p-4 text-sm space-y-3">
+                    <h4 className="font-medium text-white flex items-center gap-2">
+                      <Webhook className="w-4 h-4" />
+                      How to Set Up Webhooks
+                    </h4>
+                    <div className="text-secondary space-y-2">
+                      <p>
+                        Webhooks allow you to send article data to any HTTP endpoint. Here is how to
+                        set one up:
+                      </p>
+                      <ol className="list-decimal list-inside space-y-1 text-xs">
+                        <li>Create an HTTP endpoint on your server that accepts POST requests</li>
+                        <li>The endpoint should return a 2xx status code to confirm receipt</li>
+                        <li>Optionally, provide a secret to verify payloads using HMAC-SHA256</li>
+                      </ol>
+                      <div className="mt-3 p-3 bg-main rounded border border-border/50">
+                        <p className="text-xs font-medium text-white mb-2">
+                          Expected Payload Format:
+                        </p>
+                        <pre className="text-xs text-muted overflow-x-auto">{`{
+  "event": "article.published",
+  "timestamp": "2024-01-15T10:30:00Z",
+  "article": {
+    "id": "uuid",
+    "title": "Article Title",
+    "content": "Markdown content...",
+    "content_html": "<p>HTML content...</p>",
+    "slug": "article-slug",
+    "primary_keyword": "target keyword"
+  },
+  "campaign": { "id": "uuid", "name": "Campaign" },
+  "project": { "id": "uuid", "name": "Project" }
+}`}</pre>
+                      </div>
+                      <p className="text-xs text-muted mt-2">
+                        The <code className="text-accent">X-Signature-256</code> header contains an
+                        HMAC-SHA256 signature if a secret is configured.
+                      </p>
+                    </div>
+                  </div>
+                )}
 
                 <div>
                   <label className="block text-sm font-medium text-white mb-2">
@@ -437,10 +558,11 @@ export function IntegrationFormModal({
             {/* Test Result */}
             {testResult && (
               <div
-                className={`p-3 rounded-lg border ${testResult.success
+                className={`p-3 rounded-lg border ${
+                  testResult.success
                     ? 'bg-green-500/10 border-green-500/20'
                     : 'bg-red-500/10 border-red-500/20'
-                  }`}
+                }`}
               >
                 <div className="flex items-center gap-2">
                   {testResult.success ? (
@@ -520,9 +642,7 @@ export function IntegrationFormModal({
         {/* Step 1: Cancel Button */}
         {step === 1 && (
           <div className="flex justify-between items-center pt-4 border-t border-border/30 mt-8">
-            <p className="text-xs text-muted">
-              Choose an integration type to continue setup
-            </p>
+            <p className="text-xs text-muted">Choose an integration type to continue setup</p>
             <DashboardButton variant="ghost" size="sm" onClick={onClose}>
               {t('integrations.form.cancel')}
             </DashboardButton>

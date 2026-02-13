@@ -6,6 +6,7 @@ import type { AuthChangeEvent, Session } from '@supabase/supabase-js';
 import { create } from 'zustand';
 import { useShallow } from 'zustand/react/shallow';
 import { handleAuthRedirect } from '@client/utils/authRedirectManager';
+import { useProjectStore } from '@client/store/projectStore';
 
 // Cache keys
 const USER_CACHE_KEY = `${clientEnv.CACHE_USER_KEY_PREFIX}_user_cache`;
@@ -87,14 +88,24 @@ export const useUserStore = create<IUserState>((set, get) => ({
   lastFetched: null,
 
   initialize: async () => {
-    // Load cache first for instant UI
+    // Load cache first for instant UI, but validate against current session
     const cached = loadUserCache();
     if (cached) {
-      set({
-        user: cached,
-        isAuthenticated: true,
-        isLoading: false,
-      });
+      // Quick session check - if session user doesn't match cache, discard it
+      const {
+        data: { session },
+      } = await getSupabase().auth.getSession();
+      if (session?.user.id === cached.id) {
+        set({
+          user: cached,
+          isAuthenticated: true,
+          isLoading: false,
+        });
+      } else {
+        // Cache is stale (different user or no session) - clear it
+        clearUserCache();
+        set({ isLoading: false });
+      }
     } else {
       // No cache = likely unauthenticated, show UI immediately
       set({ isLoading: false });
@@ -334,6 +345,8 @@ if (typeof window !== 'undefined') {
 
     if (event === 'SIGNED_OUT' || !session) {
       store.reset();
+      // Clear stale project selection from localStorage
+      useProjectStore.getState().clearActiveProjectId();
       // Redirect to home page after sign out (skip in test mode to avoid flaky tests)
       if (typeof window !== 'undefined' && event === 'SIGNED_OUT' && clientEnv.ENV !== 'test') {
         window.location.href = '/';
@@ -344,6 +357,12 @@ if (typeof window !== 'undefined') {
     if (session?.user) {
       const currentUser = store.user;
       const isSameUser = currentUser?.id === session.user.id;
+
+      // Different user detected (e.g., new account login) - clear stale state
+      if (!isSameUser && currentUser) {
+        clearUserCache();
+        useProjectStore.getState().clearActiveProjectId();
+      }
 
       // If same user, preserve existing profile/subscription data (avoids flicker on visibility change)
       // Only reset to null for new users or fresh logins

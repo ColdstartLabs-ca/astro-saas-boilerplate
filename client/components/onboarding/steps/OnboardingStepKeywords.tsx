@@ -7,7 +7,7 @@
 'use client';
 
 import { useState, useCallback, useMemo } from 'react';
-import { Loader2, FileText, ArrowRight } from 'lucide-react';
+import { Loader2, ArrowRight } from 'lucide-react';
 import { DashboardButton } from '@client/components/dashboard/ui/DashboardButton';
 import { useOnboardingStore } from '@client/store/onboardingStore';
 import { useCampaigns } from '@client/hooks/useCampaigns';
@@ -50,9 +50,7 @@ function parseKeywords(raw: string): string[] {
 // Main Component
 // =============================================================================
 
-export function OnboardingStepKeywords({
-  onComplete,
-}: IOnboardingStepKeywordsProps): JSX.Element {
+export function OnboardingStepKeywords({ onComplete }: IOnboardingStepKeywordsProps): JSX.Element {
   const [rawInput, setRawInput] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -97,9 +95,7 @@ export function OnboardingStepKeywords({
       onComplete();
     } catch (err) {
       console.error('Failed to create campaign with keywords:', err);
-      setError(
-        err instanceof Error ? err.message : 'Failed to upload keywords. Please try again.'
-      );
+      setError(err instanceof Error ? err.message : 'Failed to upload keywords. Please try again.');
     } finally {
       setIsSubmitting(false);
     }
@@ -120,19 +116,7 @@ export function OnboardingStepKeywords({
   const isLoading = isSubmitting || isUpdating;
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="text-center">
-        <div className="w-14 h-14 mx-auto mb-4 rounded-full bg-accent/10 flex items-center justify-center">
-          <FileText className="w-7 h-7 text-accent" />
-        </div>
-        <h2 className="text-xl sm:text-2xl font-bold text-white">Add Your Keywords</h2>
-        <p className="text-sm text-secondary mt-2 max-w-md mx-auto">
-          Enter the keywords you want to target. We&apos;ll create your first campaign with these
-          keywords.
-        </p>
-      </div>
-
+    <div className="space-y-4">
       {/* Keyword Input */}
       <div className="space-y-2">
         <label htmlFor="keywords-input" className="block text-sm font-medium text-white">
@@ -170,9 +154,7 @@ export function OnboardingStepKeywords({
         </div>
 
         {keywordCount > MAX_KEYWORDS && (
-          <p className="text-red-400 text-xs">
-            Too many keywords. Maximum is {MAX_KEYWORDS}.
-          </p>
+          <p className="text-red-400 text-xs">Too many keywords. Maximum is {MAX_KEYWORDS}.</p>
         )}
       </div>
 
@@ -209,9 +191,7 @@ export function OnboardingStepKeywords({
                 {keyword}
               </span>
             ))}
-            <span className="px-2.5 py-1 text-muted text-xs">
-              +{keywordCount - 20} more
-            </span>
+            <span className="px-2.5 py-1 text-muted text-xs">+{keywordCount - 20} more</span>
           </div>
         </div>
       )}

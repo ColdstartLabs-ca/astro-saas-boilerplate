@@ -51,7 +51,13 @@ interface IStepIndicatorProps {
   isLast: boolean;
 }
 
-function StepIndicator({ step, isActive, isCompleted, isSkipped, isLast }: IStepIndicatorProps): JSX.Element {
+function StepIndicator({
+  step,
+  isActive,
+  isCompleted,
+  isSkipped,
+  isLast,
+}: IStepIndicatorProps): JSX.Element {
   // Determine the status colors
   const getStepColors = () => {
     if (isCompleted) {
@@ -135,7 +141,7 @@ export function OnboardingStepperProgress({
   skippedSteps,
 }: IOnboardingStepperProgressProps): JSX.Element {
   return (
-    <div data-testid="onboarding-stepper" className="w-full py-4 sm:py-6">
+    <div data-testid="onboarding-stepper" className="w-full py-3 sm:py-4">
       {/* Desktop/Tablet: Horizontal layout */}
       <div data-testid="stepper-desktop" className="hidden sm:flex items-center justify-center">
         {STEPS.map((step, index) => (

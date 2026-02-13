@@ -22,6 +22,18 @@ import type { ICreateProjectInput } from '@shared/types/project.types';
 // Validation Schema
 // =============================================================================
 
+/**
+ * Normalize a domain input into a valid URL.
+ * Handles: "example.com", "www.example.com", "http://example.com", "localhost:3000"
+ */
+function normalizeDomain(val: string): string {
+  const trimmed = val.trim();
+  if (!trimmed) return '';
+  if (trimmed.startsWith('localhost')) return trimmed;
+  if (!/^https?:\/\//i.test(trimmed)) return `https://${trimmed}`;
+  return trimmed;
+}
+
 const projectSchema = z.object({
   name: z
     .string()
@@ -30,10 +42,10 @@ const projectSchema = z.object({
   domain: z
     .string()
     .optional()
-    .refine(
-      val => !val || z.string().url().safeParse(val).success || val.startsWith('localhost'),
-      { message: 'Please enter a valid URL (e.g., https://example.com)' }
-    ),
+    .transform(val => (val ? normalizeDomain(val) : val))
+    .refine(val => !val || val.startsWith('localhost') || z.string().url().safeParse(val).success, {
+      message: 'Please enter a valid domain (e.g., example.com)',
+    }),
   industry: z.string().optional(),
 });
 
@@ -133,20 +145,9 @@ export function OnboardingStepProject({ onComplete }: IOnboardingStepProjectProp
   const isLoading = isSubmitting || isUpdating;
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="text-center">
-        <div className="w-14 h-14 mx-auto mb-4 rounded-full bg-accent/10 flex items-center justify-center">
-          <FolderPlus className="w-7 h-7 text-accent" />
-        </div>
-        <h2 className="text-xl sm:text-2xl font-bold text-white">Create Your First Project</h2>
-        <p className="text-sm text-secondary mt-2 max-w-md mx-auto">
-          Projects help you organize your SEO campaigns. Start by naming your first project.
-        </p>
-      </div>
-
+    <div className="space-y-4">
       {/* Form */}
-      <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
+      <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
         {/* Project Name */}
         <div className="space-y-2">
           <label htmlFor="project-name" className="block text-sm font-medium text-white">
@@ -180,8 +181,8 @@ export function OnboardingStepProject({ onComplete }: IOnboardingStepProjectProp
             <input
               {...register('domain')}
               id="project-domain"
-              type="url"
-              placeholder="https://example.com"
+              type="text"
+              placeholder="example.com"
               className={`w-full bg-main border rounded-lg pl-10 pr-4 py-2.5 text-white placeholder:text-muted focus:ring-1 focus:ring-accent outline-none transition-all ${
                 errors.domain ? 'border-red-500 ring-1 ring-red-500/20' : 'border-border'
               }`}
@@ -189,7 +190,7 @@ export function OnboardingStepProject({ onComplete }: IOnboardingStepProjectProp
             />
           </div>
           {errors.domain && <p className="text-red-400 text-xs mt-1">{errors.domain.message}</p>}
-          <p className="text-xs text-muted">Enter your website URL for better SEO insights</p>
+          <p className="text-xs text-muted">We&apos;ll add https:// automatically if missing</p>
         </div>
 
         {/* Industry */}
@@ -224,7 +225,7 @@ export function OnboardingStepProject({ onComplete }: IOnboardingStepProjectProp
         </div>
 
         {/* Submit Button */}
-        <div className="pt-4">
+        <div className="pt-2">
           <DashboardButton
             type="submit"
             className="w-full shadow-lg shadow-accent/20"

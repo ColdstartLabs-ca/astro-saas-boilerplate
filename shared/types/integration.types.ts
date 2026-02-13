@@ -141,6 +141,7 @@ export interface ITestConnectionResult {
   success: boolean;
   timestamp: string;
   error?: string;
+  errorType?: 'network_error' | 'timeout' | 'ssl_error' | 'http_error' | 'unknown';
 }
 
 /**

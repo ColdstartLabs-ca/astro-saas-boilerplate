@@ -13,10 +13,7 @@
 
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useCallback, useEffect } from 'react';
-import type {
-  IOnboardingStatus,
-  IOnboardingStatusResponse,
-} from '@shared/types/onboarding.types';
+import type { IOnboardingStatus, IOnboardingStatusResponse } from '@shared/types/onboarding.types';
 import { useUserStore } from '@client/store/userStore';
 import { useOnboardingStore } from '@client/store/onboardingStore';
 import { apiFetch } from '@client/utils/api-client';
@@ -30,10 +27,10 @@ import { useLogger } from '@client/utils/logger';
  * Fetch onboarding status from API
  */
 async function fetchOnboardingStatus(): Promise<IOnboardingStatus> {
-  const data = await apiFetch<IOnboardingStatusResponse>('/api/onboarding/status', {
+  const data = await apiFetch<{ data: IOnboardingStatusResponse }>('/api/onboarding/status', {
     method: 'GET',
   });
-  return data.onboarding;
+  return data.data.onboarding;
 }
 
 // =============================================================================
