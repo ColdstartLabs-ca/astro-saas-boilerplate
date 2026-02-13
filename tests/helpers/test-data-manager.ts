@@ -17,22 +17,21 @@ export class TestDataManager {
   constructor() {
     this.isTestMode = process.env.ENV === 'test';
 
-    if (!this.isTestMode) {
-      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-      const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+    const supabaseUrl =
+      process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.PUBLIC_SUPABASE_URL;
+    const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
-      if (!supabaseUrl || !supabaseServiceKey) {
-        throw new Error(
-          'Missing Supabase environment variables: NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY are required'
-        );
-      }
-
+    if (supabaseUrl && supabaseServiceKey) {
       this.supabase = createClient(supabaseUrl, supabaseServiceKey, {
         auth: {
           autoRefreshToken: false,
           persistSession: false,
         },
       });
+    } else if (!this.isTestMode) {
+      throw new Error(
+        'Missing Supabase environment variables: NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY are required'
+      );
     }
   }
 
@@ -183,16 +182,39 @@ export class TestDataManager {
       `test-${Date.now()}-${Math.random().toString(36).substring(7)}@test.local`;
     const testPassword = overrides?.password || 'test-password-123';
 
-    // In test environment, use mock authentication to avoid rate limiting
+    // In test environment, create a real auth user but use mock token for API calls
+    // This ensures FK constraints work (auth.users → profiles → projects) while avoiding sign-in rate limits
     if (process.env.ENV === 'test') {
-      console.log('Creating mock test user for test environment');
-      // Generate a proper UUID for test users to avoid database type issues
+      if (this.supabase) {
+        try {
+          const { data: adminData, error: adminError } =
+            await this.supabase.auth.admin.createUser({
+              email: testEmail,
+              password: testPassword,
+              email_confirm: true,
+            });
+
+          if (!adminError && adminData.user) {
+            const userId = adminData.user.id;
+            // Use mock token to avoid sign-in rate limits
+            const mockToken = `test_token_mock_user_${userId}`;
+            this.createdUsers.push(userId);
+            return {
+              id: userId,
+              email: testEmail,
+              token: mockToken,
+            };
+          }
+          // If admin create fails, fall through to mock user
+          console.warn('Auth user creation failed, using mock user:', adminError?.message);
+        } catch {
+          console.warn('Auth user creation failed, using mock user');
+        }
+      }
+
+      // Fallback: pure mock user (no DB entries - limited to tests that don't need FK)
       const mockUserId = this.generateUUID();
-      // Token format: test_token_mock_user_{userId} - API routes extract userId after 'test_token_mock_user_'
       const mockToken = `test_token_mock_user_${mockUserId}`;
-
-      // Skip all database operations for mock users - use in-memory only
-
       this.createdUsers.push(mockUserId);
       return {
         id: mockUserId,
@@ -592,16 +614,9 @@ export class TestDataManager {
    * Cleans up a test user and all their data
    */
   async cleanupUser(userId: string): Promise<void> {
-    // Skip cleanup in test mode - no real users were created
-    if (this.isTestMode) {
-      console.log(`Skipping cleanup for user in test mode: ${userId}`);
-      // Remove from tracking
-      this.createdUsers = this.createdUsers.filter(id => id !== userId);
-      return;
-    }
-
     if (!this.supabase) {
       console.warn('Supabase client not available for cleanup');
+      this.createdUsers = this.createdUsers.filter(id => id !== userId);
       return;
     }
 
@@ -613,7 +628,8 @@ export class TestDataManager {
       this.createdUsers = this.createdUsers.filter(id => id !== userId);
     } catch (error) {
       console.warn(`Failed to cleanup test user ${userId}:`, error);
-      throw error;
+      // Still remove from tracking to avoid repeated cleanup attempts
+      this.createdUsers = this.createdUsers.filter(id => id !== userId);
     }
   }
 
@@ -621,12 +637,7 @@ export class TestDataManager {
    * Cleans up all created test users
    */
   async cleanupAllUsers(): Promise<void> {
-    // Skip cleanup in test mode - no real users were created
-    if (this.isTestMode) {
-      console.log('Skipping cleanup for all users in test mode');
-      this.createdUsers = [];
-      return;
-    }
+    if (this.createdUsers.length === 0) return;
 
     const cleanupPromises = this.createdUsers.map(userId => this.cleanupUser(userId));
     await Promise.allSettled(cleanupPromises);
@@ -641,11 +652,58 @@ export class TestDataManager {
     tier?: 'starter' | 'growth' | 'agency',
     initialCredits: number = 10
   ): Promise<ITestUser> {
-    // For test environment, create a user with subscription info encoded in token
+    // For test environment, create real auth user but use mock token
     if (process.env.ENV === 'test') {
-      const mockUserId = this.generateUUID();
+      const testEmail = `test-${Date.now()}-${Math.random().toString(36).substring(7)}@test.local`;
 
-      // Create token with subscription info: test_token_mock_user_{userId}_sub_{status}_{tier}
+      if (this.supabase) {
+        try {
+          const { data: adminData, error: adminError } =
+            await this.supabase.auth.admin.createUser({
+              email: testEmail,
+              password: 'test-password-123',
+              email_confirm: true,
+            });
+
+          if (!adminError && adminData.user) {
+            const userId = adminData.user.id;
+            const mockToken =
+              status === 'free'
+                ? `test_token_mock_user_${userId}`
+                : `test_token_mock_user_${userId}_sub_${status}_${tier || 'growth'}`;
+
+            // Set subscription status and credits on the profile
+            if (status !== 'free') {
+              await this.supabase
+                .from('profiles')
+                .update({
+                  subscription_status: status,
+                  subscription_tier: tier || 'growth',
+                  credits_balance: initialCredits,
+                })
+                .eq('id', userId);
+            } else if (initialCredits !== 10) {
+              await this.supabase
+                .from('profiles')
+                .update({ credits_balance: initialCredits })
+                .eq('id', userId);
+            }
+
+            this.createdUsers.push(userId);
+            return {
+              id: userId,
+              email: testEmail,
+              token: mockToken,
+            };
+          }
+          console.warn('Auth user creation failed, using mock user:', adminError?.message);
+        } catch {
+          console.warn('Auth user creation failed, using mock user');
+        }
+      }
+
+      // Fallback: pure mock user
+      const mockUserId = this.generateUUID();
       const mockToken =
         status === 'free'
           ? `test_token_mock_user_${mockUserId}`
@@ -654,7 +712,7 @@ export class TestDataManager {
       this.createdUsers.push(mockUserId);
       return {
         id: mockUserId,
-        email: `test-${mockUserId}@example.com`,
+        email: testEmail,
         token: mockToken,
       };
     }

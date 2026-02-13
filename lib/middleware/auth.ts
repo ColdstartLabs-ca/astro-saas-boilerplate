@@ -138,9 +138,20 @@ export async function verifyApiAuth(
     }
 
     // Handle mock authentication tokens
-    // Token format: test_token_{userId} where userId is 'mock_user_{uniquePart}'
+    // Token formats:
+    //   test_token_mock_user_{uuid}
+    //   test_token_mock_user_{uuid}_sub_{status}_{tier}
+    //   test_token_{userId}
     if (token.startsWith('test_token_')) {
-      const mockUserId = token.replace('test_token_', '');
+      let mockUserId: string;
+      if (token.startsWith('test_token_mock_user_')) {
+        // Extract UUID from mock_user token (strip prefix and any _sub_ suffix)
+        const withoutPrefix = token.replace('test_token_mock_user_', '');
+        const subIndex = withoutPrefix.indexOf('_sub_');
+        mockUserId = subIndex !== -1 ? withoutPrefix.substring(0, subIndex) : withoutPrefix;
+      } else {
+        mockUserId = token.replace('test_token_', '');
+      }
       return {
         user: {
           id: mockUserId,

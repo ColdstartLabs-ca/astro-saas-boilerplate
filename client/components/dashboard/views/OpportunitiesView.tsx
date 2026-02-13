@@ -84,7 +84,7 @@ function PriorityBadge({ score }: { score: number }): JSX.Element {
     colorClass = 'text-amber-400';
   }
 
-  return <span className={`font-mono text-sm font-semibold ${colorClass}`}>{score}</span>;
+  return <span data-testid="priority-score" className={`font-mono text-sm font-semibold ${colorClass}`}>{score}</span>;
 }
 
 function StatusBadge({
@@ -120,7 +120,7 @@ function TypeLabel({
   const Icon = TYPE_ICONS[type] ?? Lightbulb;
 
   return (
-    <span className="inline-flex items-center gap-1.5 text-xs text-secondary">
+    <span data-testid="opportunity-type-badge" className="inline-flex items-center gap-1.5 text-xs text-secondary">
       <Icon className="w-3.5 h-3.5" />
       {t(`opportunities.type.${type}`)}
     </span>
@@ -193,7 +193,7 @@ export function OpportunitiesView({
   // ---- Empty state: No project selected ----
   if (!isLoading && !activeProject) {
     return (
-      <div className="flex flex-col items-center justify-center h-full py-20 animate-fadeIn">
+      <div data-testid="opportunities-empty-state" className="flex flex-col items-center justify-center h-full py-20 animate-fadeIn">
         <div className="w-20 h-20 rounded-full bg-surface border border-border flex items-center justify-center mb-6">
           <Lightbulb className="w-10 h-10 text-muted" />
         </div>
@@ -269,7 +269,7 @@ export function OpportunitiesView({
           </DashboardButton>
         </div>
 
-        <div className="flex flex-col items-center justify-center py-16 bg-surface border border-border rounded-xl">
+        <div data-testid="opportunities-empty-state" className="flex flex-col items-center justify-center py-16 bg-surface border border-border rounded-xl">
           <div className="w-20 h-20 rounded-full bg-main border border-border flex items-center justify-center mb-6">
             <Lightbulb className="w-10 h-10 text-muted" />
           </div>
@@ -391,7 +391,7 @@ export function OpportunitiesView({
             No opportunities match your filters.
           </div>
         ) : (
-          <div className="divide-y divide-border">
+          <div data-testid="opportunities-list" className="divide-y divide-border">
             {filteredOpportunities.map(opportunity => (
               <OpportunityRow
                 key={opportunity.id}
@@ -456,6 +456,7 @@ function OpportunityRow({
 
   return (
     <div
+      data-testid="opportunity-card"
       className="grid grid-cols-1 md:grid-cols-[60px_140px_1fr_140px_200px_100px_80px] gap-2 md:gap-4 px-4 py-3 hover:bg-surface-light/50 cursor-pointer transition-colors group"
       onClick={onClick}
       role="button"
@@ -480,7 +481,7 @@ function OpportunityRow({
 
       {/* Title / Query */}
       <div className="flex flex-col justify-center min-w-0">
-        <span className="text-sm text-white font-medium truncate group-hover:text-accent-hover transition-colors">
+        <span data-testid="opportunity-title" className="text-sm text-white font-medium truncate group-hover:text-accent-hover transition-colors">
           {opportunity.title}
         </span>
         {opportunity.query && (

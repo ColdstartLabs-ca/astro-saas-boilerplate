@@ -50,7 +50,7 @@ function NotConnectedState({
   t: (key: string) => string;
 }): JSX.Element {
   return (
-    <div className="bg-surface border border-border rounded-xl p-6">
+    <div data-testid="gsc-connection-card" className="bg-surface border border-border rounded-xl p-6">
       <div className="flex flex-col items-center text-center">
         <div className="w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center mb-4">
           <Search className="w-7 h-7 text-primary" />
@@ -111,7 +111,7 @@ function ConnectedState({
   };
 
   return (
-    <div className="bg-surface border border-border rounded-xl p-4">
+    <div data-testid="gsc-connection-card" className="bg-surface border border-border rounded-xl p-4">
       <div className="flex items-center justify-between">
         {/* Left: Status & Info */}
         <div className="flex items-center gap-3 min-w-0">
@@ -201,7 +201,7 @@ function ErrorState({
   t: (key: string) => string;
 }): JSX.Element {
   return (
-    <div className="bg-surface border border-red-500/30 rounded-xl p-4">
+    <div data-testid="gsc-connection-card" className="bg-surface border border-red-500/30 rounded-xl p-4">
       <div className="flex items-center justify-between">
         {/* Left: Error status */}
         <div className="flex items-center gap-3 min-w-0">
@@ -249,7 +249,7 @@ export function GscConnectionCard({
   // Loading skeleton
   if (isLoading) {
     return (
-      <div className="bg-surface border border-border rounded-xl p-6 animate-pulse">
+      <div data-testid="gsc-connection-card" className="bg-surface border border-border rounded-xl p-6 animate-pulse">
         <div className="flex items-center gap-4">
           <div className="w-14 h-14 rounded-full bg-surface-light" />
           <div className="flex-1 space-y-2">

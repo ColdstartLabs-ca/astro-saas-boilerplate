@@ -82,6 +82,7 @@ function CategoryBadge({
 
   return (
     <span
+      data-testid="opportunity-category-badge"
       className={`inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium border ${styles[category]}`}
     >
       {t(`opportunities.filter.${category}`)}
@@ -226,7 +227,7 @@ export function OpportunityDetailPanel({
       />
 
       {/* Panel */}
-      <div className="fixed inset-y-0 right-0 z-50 w-full max-w-lg bg-surface border-l border-border shadow-2xl flex flex-col animate-slideInRight">
+      <div data-testid="opportunity-detail-panel" className="fixed inset-y-0 right-0 z-50 w-full max-w-lg bg-surface border-l border-border shadow-2xl flex flex-col animate-slideInRight">
         {/* Header */}
         <div className="flex items-start justify-between p-6 border-b border-border">
           <div className="flex-1 min-w-0 pr-4">
@@ -284,7 +285,7 @@ export function OpportunityDetailPanel({
           )}
 
           {/* Metrics Card */}
-          <div className="bg-main rounded-lg border border-border p-4">
+          <div data-testid="opportunity-metrics" className="bg-main rounded-lg border border-border p-4">
             <h3 className="text-sm font-medium text-white mb-3">
               {t('opportunities.detail.metrics')}
             </h3>

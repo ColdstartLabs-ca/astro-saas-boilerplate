@@ -119,7 +119,8 @@ async function getCurrentCredits(
  * Run this manually or in a maintenance script to clean up pollution
  */
 export async function cleanupOldTestUsers(): Promise<number> {
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const supabaseUrl =
+    process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.PUBLIC_SUPABASE_URL;
   const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
   if (!supabaseUrl || !supabaseServiceKey) {

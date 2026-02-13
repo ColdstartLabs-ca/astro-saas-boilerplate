@@ -1,5 +1,6 @@
 'use client';
 
+import { useMemo } from 'react';
 import { clientEnv } from '@shared/config/env';
 
 type LogLevel = 'info' | 'warn' | 'error';
@@ -77,12 +78,15 @@ export function useLogger(componentName: string): {
   warn: (message: string, context?: ILogContext) => void;
   error: (message: string, context?: ILogContext) => void;
 } {
-  return {
-    info: (message: string, context?: ILogContext) =>
-      ClientLogger.info(message, { component: componentName, ...context }),
-    warn: (message: string, context?: ILogContext) =>
-      ClientLogger.warn(message, { component: componentName, ...context }),
-    error: (message: string, context?: ILogContext) =>
-      ClientLogger.error(message, { component: componentName, ...context }),
-  };
+  return useMemo(
+    () => ({
+      info: (message: string, context?: ILogContext) =>
+        ClientLogger.info(message, { component: componentName, ...context }),
+      warn: (message: string, context?: ILogContext) =>
+        ClientLogger.warn(message, { component: componentName, ...context }),
+      error: (message: string, context?: ILogContext) =>
+        ClientLogger.error(message, { component: componentName, ...context }),
+    }),
+    [componentName]
+  );
 }

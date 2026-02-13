@@ -124,7 +124,7 @@ export function IntegrationsView({
   // Show empty state when no integrations exist
   if (!isLoading && integrations.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center h-full py-20 animate-fadeIn">
+      <div data-testid="integrations-empty-state" className="flex flex-col items-center justify-center h-full py-20 animate-fadeIn">
         <div className="w-20 h-20 rounded-full bg-surface border border-border flex items-center justify-center mb-6">
           <Plug className="w-10 h-10 text-muted" />
         </div>
@@ -160,6 +160,7 @@ export function IntegrationsView({
           return (
             <div
               key={integration.id}
+              data-testid="integration-card"
               className="bg-surface border border-border rounded-xl p-6 hover:border-border transition-all text-left w-full"
             >
               <div className="flex justify-between items-start mb-4">

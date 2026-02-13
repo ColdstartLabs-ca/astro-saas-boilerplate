@@ -13,6 +13,7 @@ vi.mock('@server/supabase/supabaseAdmin', () => {
   const mockInsert = vi.fn();
   const mockUpdate = vi.fn();
   const mockDelete = vi.fn();
+  const mockUpsert = vi.fn();
   const mockEq = vi.fn();
   const mockSingle = vi.fn();
   const mockMaybeSingle = vi.fn();
@@ -22,6 +23,7 @@ vi.mock('@server/supabase/supabaseAdmin', () => {
   const insertChain = () => ({ select: mockSelect });
   const updateChain = () => ({ eq: mockEq });
   const deleteChain = () => ({ eq: mockEq });
+  const upsertChain = () => ({ select: mockSelect });
   const eqChain = () => ({ single: mockSingle, maybeSingle: mockMaybeSingle });
 
   mockFrom.mockImplementation(() => ({
@@ -29,6 +31,7 @@ vi.mock('@server/supabase/supabaseAdmin', () => {
     insert: mockInsert,
     update: mockUpdate,
     delete: mockDelete,
+    upsert: mockUpsert,
     eq: mockEq,
     single: mockSingle,
     maybeSingle: mockMaybeSingle,
@@ -37,6 +40,7 @@ vi.mock('@server/supabase/supabaseAdmin', () => {
   mockInsert.mockImplementation(insertChain);
   mockUpdate.mockImplementation(updateChain);
   mockDelete.mockImplementation(deleteChain);
+  mockUpsert.mockImplementation(upsertChain);
   mockEq.mockImplementation(eqChain);
   mockSingle.mockReturnValue({ data: null, error: null });
   mockMaybeSingle.mockReturnValue({ data: null, error: null });
@@ -107,7 +111,7 @@ describe('OnboardingService', () => {
       (supabaseAdmin.from as unknown as ReturnType<typeof vi.fn>).mockImplementation(() => {
         callCount++;
         if (callCount === 1) {
-          // First call: check for existing record
+          // First call: check for existing onboarding record
           return {
             select: vi.fn().mockReturnValue({
               eq: vi.fn().mockReturnValue({
@@ -116,7 +120,18 @@ describe('OnboardingService', () => {
             }),
           } as unknown;
         } else if (callCount === 2) {
-          // Second call: insert new record
+          // Second call: check for existing projects (edge case for existing users)
+          return {
+            select: vi.fn().mockReturnValue({
+              eq: vi.fn().mockReturnValue({
+                limit: vi.fn().mockReturnValue({
+                  maybeSingle: vi.fn().mockResolvedValue({ data: null, error: null }),
+                }),
+              }),
+            }),
+          } as unknown;
+        } else if (callCount === 3) {
+          // Third call: insert new onboarding record
           return {
             insert: vi.fn().mockReturnValue({
               select: vi.fn().mockReturnValue({
@@ -148,7 +163,7 @@ describe('OnboardingService', () => {
       (supabaseAdmin.from as unknown as ReturnType<typeof vi.fn>).mockImplementation(() => {
         callCount++;
         if (callCount === 1) {
-          // First call: check for existing record
+          // First call: check for existing onboarding record
           return {
             select: vi.fn().mockReturnValue({
               eq: vi.fn().mockReturnValue({
@@ -157,7 +172,18 @@ describe('OnboardingService', () => {
             }),
           } as unknown;
         } else if (callCount === 2) {
-          // Second call: insert fails with unique violation
+          // Second call: check for existing projects
+          return {
+            select: vi.fn().mockReturnValue({
+              eq: vi.fn().mockReturnValue({
+                limit: vi.fn().mockReturnValue({
+                  maybeSingle: vi.fn().mockResolvedValue({ data: null, error: null }),
+                }),
+              }),
+            }),
+          } as unknown;
+        } else if (callCount === 3) {
+          // Third call: insert fails with unique violation
           return {
             insert: vi.fn().mockReturnValue({
               select: vi.fn().mockReturnValue({
@@ -169,7 +195,7 @@ describe('OnboardingService', () => {
             }),
           } as unknown;
         } else {
-          // Third call: retry fetch
+          // Fourth call: retry fetch
           return {
             select: vi.fn().mockReturnValue({
               eq: vi.fn().mockReturnValue({
@@ -207,6 +233,59 @@ describe('OnboardingService', () => {
       await expect(onboardingService.getStatus(mockUserId)).rejects.toThrow(
         'Failed to get onboarding status'
       );
+    });
+
+    it('should auto-complete onboarding for existing users with projects', async () => {
+      const { supabaseAdmin } = await import('@server/supabase/supabaseAdmin');
+
+      let callCount = 0;
+      (supabaseAdmin.from as unknown as ReturnType<typeof vi.fn>).mockImplementation(() => {
+        callCount++;
+        if (callCount === 1) {
+          // First call: check for existing onboarding record - not found
+          return {
+            select: vi.fn().mockReturnValue({
+              eq: vi.fn().mockReturnValue({
+                maybeSingle: vi.fn().mockResolvedValue({ data: null, error: null }),
+              }),
+            }),
+          } as unknown;
+        } else if (callCount === 2) {
+          // Second call: check for existing projects - FOUND
+          return {
+            select: vi.fn().mockReturnValue({
+              eq: vi.fn().mockReturnValue({
+                limit: vi.fn().mockReturnValue({
+                  maybeSingle: vi.fn().mockResolvedValue({ data: { id: 'existing-project' }, error: null }),
+                }),
+              }),
+            }),
+          } as unknown;
+        } else if (callCount === 3) {
+          // Third call: insert complete onboarding record
+          return {
+            insert: vi.fn().mockReturnValue({
+              select: vi.fn().mockReturnValue({
+                single: vi.fn().mockResolvedValue({
+                  data: { ...mockOnboarding, is_complete: true, current_step: 5 },
+                  error: null,
+                }),
+              }),
+            }),
+          } as unknown;
+        }
+        return {} as unknown;
+      });
+
+      const status = await onboardingService.getStatus(mockUserId);
+
+      // Existing users with projects should have onboarding auto-completed
+      expect(status).toEqual({
+        isComplete: true,
+        currentStep: 5,
+        completedSteps: [1, 2, 3, 4],
+        skippedSteps: [],
+      });
     });
   });
 

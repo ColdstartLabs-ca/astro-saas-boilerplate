@@ -100,16 +100,43 @@ export class OnboardingService {
       };
     }
 
-    // Create new record with defaults
+    // EDGE CASE: Check if user already has projects (existing user)
+    // If so, auto-complete their onboarding instead of forcing them through the wizard
+    const { data: existingProjects, error: projectsError } = await supabaseAdmin
+      .from('projects')
+      .select('id')
+      .eq('user_id', userId)
+      .limit(1)
+      .maybeSingle();
+
+    if (projectsError) {
+      // Log but don't fail - fall back to normal onboarding
+      console.error('[OnboardingService] Failed to check existing projects:', projectsError.message);
+    }
+
+    const hasExistingProjects = !!existingProjects;
+
+    // Create new record - complete if user already has projects
+    const newRecordData = hasExistingProjects
+      ? {
+          user_id: userId,
+          current_step: MAX_STEP,
+          completed_steps: [1, 2, 3, 4] as number[],
+          skipped_steps: [] as number[],
+          is_complete: true,
+          completed_at: new Date().toISOString(),
+        }
+      : {
+          user_id: userId,
+          current_step: 1,
+          completed_steps: [] as number[],
+          skipped_steps: [] as number[],
+          is_complete: false,
+        };
+
     const { data: _newRecord, error: createError } = await supabaseAdmin
       .from('user_onboarding')
-      .insert({
-        user_id: userId,
-        current_step: 1,
-        completed_steps: [],
-        skipped_steps: [],
-        is_complete: false,
-      })
+      .insert(newRecordData)
       .select()
       .single();
 
@@ -137,6 +164,16 @@ export class OnboardingService {
       }
 
       throw new Error(`Failed to create onboarding record: ${createError.message}`);
+    }
+
+    // Return based on whether user has existing projects
+    if (hasExistingProjects) {
+      return {
+        isComplete: true,
+        currentStep: MAX_STEP,
+        completedSteps: [1, 2, 3, 4],
+        skippedSteps: [],
+      };
     }
 
     return {

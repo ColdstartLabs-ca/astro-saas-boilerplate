@@ -272,7 +272,7 @@ export class TestContext {
     options: {
       name: string;
       url?: string;
-      description?: string;
+      domain?: string;
     }
   ): Promise<{ id: string }> {
     const projectId = this.generateUUID();
@@ -281,8 +281,7 @@ export class TestContext {
       id: projectId,
       user_id: userId,
       name: options.name,
-      url: options.url || null,
-      description: options.description || null,
+      domain: options.domain || options.url || null,
     });
 
     if (error) {

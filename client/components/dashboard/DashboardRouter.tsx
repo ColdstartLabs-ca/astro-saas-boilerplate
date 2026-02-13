@@ -141,7 +141,7 @@ export function DashboardRouter(): JSX.Element {
     typeof window !== 'undefined' ? window.location.pathname : '/dashboard'
   );
   const [isPending, startTransition] = useTransition();
-  const { isComplete, isLoading: isOnboardingLoading } = useOnboardingStatus();
+  const { isComplete, isLoading: isOnboardingLoading, error: onboardingError } = useOnboardingStatus();
 
   // Wrap pathname updates in startTransition so React keeps showing
   // the current page while the next lazy component loads,
@@ -157,7 +157,9 @@ export function DashboardRouter(): JSX.Element {
 
   // Redirect to onboarding if not complete and not on an escape route
   useEffect(() => {
+    // Don't redirect while loading or if there was an error fetching status
     if (isOnboardingLoading) return;
+    if (onboardingError) return;
     if (isComplete) return;
 
     const isEscapeRoute = ONBOARDING_ESCAPE_ROUTES.some(route =>
@@ -167,7 +169,7 @@ export function DashboardRouter(): JSX.Element {
 
     // Redirect to onboarding
     dashboardNavigate('/dashboard/onboarding');
-  }, [pathname, isComplete, isOnboardingLoading]);
+  }, [pathname, isComplete, isOnboardingLoading, onboardingError]);
 
   return (
     <Suspense fallback={<LoadingSpinner />}>

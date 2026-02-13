@@ -89,7 +89,7 @@ function StepIndicator({ step, isActive, isCompleted, isSkipped, isLast }: IStep
   const colors = getStepColors();
 
   return (
-    <div className="flex items-center flex-1 last:flex-none">
+    <div data-testid="stepper-step" className="flex items-center flex-1 last:flex-none">
       {/* Step Circle */}
       <div className="flex flex-col items-center">
         <div
@@ -135,9 +135,9 @@ export function OnboardingStepperProgress({
   skippedSteps,
 }: IOnboardingStepperProgressProps): JSX.Element {
   return (
-    <div className="w-full py-4 sm:py-6">
+    <div data-testid="onboarding-stepper" className="w-full py-4 sm:py-6">
       {/* Desktop/Tablet: Horizontal layout */}
-      <div className="hidden sm:flex items-center justify-center">
+      <div data-testid="stepper-desktop" className="hidden sm:flex items-center justify-center">
         {STEPS.map((step, index) => (
           <StepIndicator
             key={step.number}

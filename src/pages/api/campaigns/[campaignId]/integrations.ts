@@ -26,25 +26,29 @@ interface ICampaignSettings {
 }
 
 /**
- * Supabase join response shape - returns joined data as array under table name
+ * Supabase join response shape - returns single object for many-to-one FK relationships
  */
+interface ISupabaseIntegrationRow {
+  id: string;
+  user_id: string;
+  type: string;
+  name: string;
+  config: unknown;
+  status: string;
+  last_tested_at: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
 interface ISupabaseCampaignIntegrationJoin {
   id: string;
   campaign_id: string;
   integration_id: string;
   enabled: boolean;
   created_at: string;
-  integrations: Array<{
-    id: string;
-    user_id: string;
-    type: string;
-    name: string;
-    config: unknown;
-    status: string;
-    last_tested_at: string | null;
-    created_at: string;
-    updated_at: string;
-  }>;
+  // Supabase generated types may return array for FK joins;
+  // at runtime it's a single object for many-to-one, but we accept both
+  integrations: ISupabaseIntegrationRow | ISupabaseIntegrationRow[] | null;
 }
 
 /**
@@ -108,10 +112,11 @@ export const GET = withAuth(async (userId, { params }) => {
   const autoPublish = settings.auto_publish === true;
 
   // Transform Supabase response to match expected type
-  // Note: Supabase returns joined data as an array, extract first element
+  // Supabase returns a single object (not array) for many-to-one FK joins
   const integrations: ICampaignIntegrationWithDetails[] = (campaignIntegrations || [])
     .map((ci: ISupabaseCampaignIntegrationJoin) => {
-      const integration = ci.integrations && ci.integrations.length > 0 ? ci.integrations[0] : null;
+      const raw = ci.integrations;
+      const integration = Array.isArray(raw) ? raw[0] : raw;
       if (!integration) return null;
       return {
         id: ci.id,
@@ -248,11 +253,10 @@ export const PUT = withAuthAndBody(
       .eq('campaign_id', campaignId);
 
     // Transform Supabase response to match expected type
-    // Note: Supabase returns joined data as an array, extract first element
+    // Supabase returns a single object (not array) for many-to-one FK joins
     const integrations: ICampaignIntegrationWithDetails[] = (updatedIntegrations || [])
       .map((ci: ISupabaseCampaignIntegrationJoin) => {
-        const integration =
-          ci.integrations && ci.integrations.length > 0 ? ci.integrations[0] : null;
+        const integration = ci.integrations;
         if (!integration) return null;
         return {
           id: ci.id,
