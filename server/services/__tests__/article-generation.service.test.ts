@@ -816,4 +816,198 @@ Even more content...`;
       expect(supabaseAdmin.rpc).toHaveBeenCalled();
     });
   });
+
+  describe('Auto-delivery gating by article status', () => {
+    const mockInput: IGenerateArticleInput = {
+      keyword: 'test keyword',
+      projectId: 'test-project-id',
+      campaignId: 'test-campaign-id',
+      targetWordCount: 1000,
+    };
+
+    // Mock delivery service
+    const mockDeliverArticle = vi.fn().mockResolvedValue({ total: 1, successful: 1, failed: 0 });
+    const mockShouldAutoDeliver = vi.fn().mockResolvedValue(true);
+
+    beforeEach(() => {
+      // Mock the dynamic import of delivery service
+      vi.doMock('@server/services/delivery.service', () => ({
+        deliveryService: {
+          deliverArticle: mockDeliverArticle,
+          shouldAutoDeliver: mockShouldAutoDeliver,
+        },
+      }));
+      mockDeliverArticle.mockClear();
+      mockShouldAutoDeliver.mockClear();
+    });
+
+    it('should trigger auto-delivery when article passes QA (qa_passed)', async () => {
+      // QA passes
+      mockCheckQualityGates.mockCheckQualityGates.mockReturnValue({
+        passed: true,
+        details: {
+          wordCountCheck: { passed: true, actual: 700, target: 1000, percentage: 70 },
+          headingCheck: { passed: true, h2Count: 3, required: 3 },
+          metadataCheck: { passed: true, hasTitle: true, hasMetaDescription: true, hasSlug: true },
+          completionCheck: { passed: true, finishReason: 'stop' },
+        },
+      });
+
+      // Mock QA service to pass
+      const { qaService } = await import('../qa.service');
+      (qaService.runQAChecks as any).mockResolvedValueOnce({
+        passed: true,
+        failureReason: undefined,
+        results: {
+          plagiarism: { passed: true, similarityScore: 0, flaggedPhrases: [] },
+          factConsistency: { passed: true, score: 1, inconsistencyCount: 0 },
+          readability: { passed: true, fleschKincaidGrade: 8, fleschReadingEase: 65 },
+          aiLikelihood: { passed: true, aiScore: 0.2, confidence: 'low' },
+        },
+      });
+
+      mockOpenRouter.chatCompletionWithRetry
+        .mockResolvedValueOnce({
+          content: JSON.stringify(mockOutline),
+          usage: { promptTokens: 100, completionTokens: 200, totalTokens: 300 },
+          model: 'openai/gpt-4o',
+          finishReason: 'stop',
+        })
+        .mockResolvedValueOnce({
+          content: mockArticleContent,
+          usage: { promptTokens: 50, completionTokens: 400, totalTokens: 450 },
+          model: 'openai/gpt-4o',
+          finishReason: 'stop',
+        });
+
+      await service.generateArticle('article-qa-pass', 'user-1', mockInput);
+
+      // Auto-delivery should have been checked
+      expect(mockShouldAutoDeliver).toHaveBeenCalledWith('test-campaign-id');
+    });
+
+    it('should trigger auto-delivery when QA is unavailable (draft status)', async () => {
+      // QA passes quality gate
+      mockCheckQualityGates.mockCheckQualityGates.mockReturnValue({
+        passed: true,
+        details: {
+          wordCountCheck: { passed: true, actual: 700, target: 1000, percentage: 70 },
+          headingCheck: { passed: true, h2Count: 3, required: 3 },
+          metadataCheck: { passed: true, hasTitle: true, hasMetaDescription: true, hasSlug: true },
+          completionCheck: { passed: true, finishReason: 'stop' },
+        },
+      });
+
+      // QA service throws (unavailable)
+      const { qaService } = await import('../qa.service');
+      (qaService.runQAChecks as any).mockRejectedValueOnce(new Error('QA service unavailable'));
+
+      mockOpenRouter.chatCompletionWithRetry
+        .mockResolvedValueOnce({
+          content: JSON.stringify(mockOutline),
+          usage: { promptTokens: 100, completionTokens: 200, totalTokens: 300 },
+          model: 'openai/gpt-4o',
+          finishReason: 'stop',
+        })
+        .mockResolvedValueOnce({
+          content: mockArticleContent,
+          usage: { promptTokens: 50, completionTokens: 400, totalTokens: 450 },
+          model: 'openai/gpt-4o',
+          finishReason: 'stop',
+        });
+
+      await service.generateArticle('article-draft', 'user-1', mockInput);
+
+      // Auto-delivery should still be checked (draft is deliverable)
+      expect(mockShouldAutoDeliver).toHaveBeenCalledWith('test-campaign-id');
+    });
+
+    it('should NOT trigger auto-delivery when article fails QA (qa_failed)', async () => {
+      // Quality gate passes but QA fails
+      mockCheckQualityGates.mockCheckQualityGates.mockReturnValue({
+        passed: true,
+        details: {
+          wordCountCheck: { passed: true, actual: 700, target: 1000, percentage: 70 },
+          headingCheck: { passed: true, h2Count: 3, required: 3 },
+          metadataCheck: { passed: true, hasTitle: true, hasMetaDescription: true, hasSlug: true },
+          completionCheck: { passed: true, finishReason: 'stop' },
+        },
+      });
+
+      // QA service returns failure
+      const { qaService } = await import('../qa.service');
+      (qaService.runQAChecks as any).mockResolvedValueOnce({
+        passed: false,
+        failureReason: 'High AI detection score',
+        results: {
+          plagiarism: { passed: true, similarityScore: 0, flaggedPhrases: [] },
+          factConsistency: { passed: true, score: 1, inconsistencyCount: 0 },
+          readability: { passed: true, fleschKincaidGrade: 8, fleschReadingEase: 65 },
+          aiLikelihood: { passed: false, aiScore: 0.9, confidence: 'high' },
+        },
+      });
+
+      mockOpenRouter.chatCompletionWithRetry
+        .mockResolvedValueOnce({
+          content: JSON.stringify(mockOutline),
+          usage: { promptTokens: 100, completionTokens: 200, totalTokens: 300 },
+          model: 'openai/gpt-4o',
+          finishReason: 'stop',
+        })
+        .mockResolvedValueOnce({
+          content: mockArticleContent,
+          usage: { promptTokens: 50, completionTokens: 400, totalTokens: 450 },
+          model: 'openai/gpt-4o',
+          finishReason: 'stop',
+        });
+
+      await service.generateArticle('article-qa-fail', 'user-1', mockInput);
+
+      // Auto-delivery should NOT have been called
+      expect(mockShouldAutoDeliver).not.toHaveBeenCalled();
+      expect(mockDeliverArticle).not.toHaveBeenCalled();
+    });
+
+    it('should NOT trigger auto-delivery for quality gate failures (failed_quality)', async () => {
+      // Both quality checks: fail
+      mockCheckQualityGates.mockCheckQualityGates.mockReturnValue({
+        passed: false,
+        failureReason: 'Word count 3 is only 0% of target 1000 (minimum 70%)',
+        details: {
+          wordCountCheck: { passed: false, actual: 3, target: 1000, percentage: 0 },
+          headingCheck: { passed: false, h2Count: 1, required: 3 },
+          metadataCheck: { passed: true, hasTitle: true, hasMetaDescription: true, hasSlug: true },
+          completionCheck: { passed: true, finishReason: 'stop' },
+        },
+      });
+
+      const shortContent = '## Intro\n\nToo short.';
+
+      mockOpenRouter.chatCompletionWithRetry
+        .mockResolvedValueOnce({
+          content: JSON.stringify(mockOutline),
+          usage: { promptTokens: 100, completionTokens: 200, totalTokens: 300 },
+          model: 'openai/gpt-4o',
+          finishReason: 'stop',
+        })
+        .mockResolvedValueOnce({
+          content: shortContent,
+          usage: { promptTokens: 50, completionTokens: 100, totalTokens: 150 },
+          model: 'openai/gpt-4o',
+          finishReason: 'stop',
+        })
+        .mockResolvedValueOnce({
+          content: shortContent,
+          usage: { promptTokens: 50, completionTokens: 100, totalTokens: 150 },
+          model: 'openai/gpt-4o',
+          finishReason: 'stop',
+        });
+
+      await service.generateArticle('article-quality-fail', 'user-1', mockInput);
+
+      // Auto-delivery should NOT have been called (quality gate failure returns early)
+      expect(mockShouldAutoDeliver).not.toHaveBeenCalled();
+      expect(mockDeliverArticle).not.toHaveBeenCalled();
+    });
+  });
 });

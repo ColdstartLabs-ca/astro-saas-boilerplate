@@ -290,12 +290,18 @@ export class ArticleGenerationService {
       );
 
       // Step 6.5: Trigger auto-delivery if campaign has auto_publish enabled
-      // Awaited (not fire-and-forget) because this runs inside ctx.waitUntil already;
-      // delivery failure is caught internally and won't fail the generation.
-      try {
-        await this.triggerAutoDeliveryIfNeeded(articleId, input.campaignId);
-      } catch (deliveryError) {
-        console.error(`[ArticleGeneration] Auto-delivery failed for article ${articleId}:`, deliveryError);
+      // Only deliver articles that passed QA or are in draft status (QA disabled/unavailable).
+      // Never auto-deliver qa_failed articles — those need human review first.
+      if (finalStatus === 'qa_passed' || finalStatus === 'draft') {
+        try {
+          await this.triggerAutoDeliveryIfNeeded(articleId, input.campaignId);
+        } catch (deliveryError) {
+          console.error(`[ArticleGeneration] Auto-delivery failed for article ${articleId}:`, deliveryError);
+        }
+      } else {
+        console.log(
+          `[ArticleGeneration] Skipping auto-delivery for article ${articleId} (status=${finalStatus})`
+        );
       }
     } catch (error) {
       console.error(`[ArticleGeneration] Error generating article ${articleId}:`, error);

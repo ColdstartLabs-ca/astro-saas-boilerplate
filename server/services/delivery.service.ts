@@ -62,11 +62,11 @@ export class DeliveryService {
    * @returns Delivery operation result
    */
   async deliverArticle(articleId: string, retryFailed = false): Promise<IDeliveryOperationResult> {
-    // Get article with campaign info
+    // Get article with campaign info and images (needed for webhook payloads)
     const { data: article, error: articleError } = await supabaseAdmin
       .from('articles')
       .select(
-        'id, title, content, slug, meta_description, primary_keyword, word_count, seo_score, featured_image_url, campaign_id, user_id'
+        'id, title, content, slug, meta_description, primary_keyword, word_count, seo_score, featured_image_url, campaign_id, user_id, article_images(position, image_url, status)'
       )
       .eq('id', articleId)
       .single();
@@ -80,18 +80,23 @@ export class DeliveryService {
     }
 
     // Get campaign with project info
+    // Supabase returns a single object for many-to-one FK joins (project_id → projects)
     const { data: campaign } = await supabaseAdmin
       .from('campaigns')
       .select('id, name, settings, project_id, projects(id, name, domain)')
       .eq('id', article.campaign_id)
       .single();
 
-    const projects = campaign?.projects as Array<{
-      id: string;
-      name: string;
-      domain: string;
-    }> | null;
-    const project = projects && projects.length > 0 ? projects[0] : null;
+    // Supabase FK joins return a single object for many-to-one relationships,
+    // but may return an array for ambiguous relationships. Handle both.
+    type ProjectInfo = { id: string; name: string; domain: string };
+    const rawProjects = campaign?.projects as unknown;
+    let project: ProjectInfo | null = null;
+    if (Array.isArray(rawProjects) && rawProjects.length > 0) {
+      project = rawProjects[0] as ProjectInfo;
+    } else if (rawProjects && typeof rawProjects === 'object' && !Array.isArray(rawProjects)) {
+      project = rawProjects as ProjectInfo;
+    }
 
     // Get integrations to deliver to
     let integrationIds: string[];
