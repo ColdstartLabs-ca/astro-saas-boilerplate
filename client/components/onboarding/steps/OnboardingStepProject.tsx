@@ -13,6 +13,7 @@ import { z } from 'zod';
 import { Loader2, FolderPlus, Globe, Briefcase } from 'lucide-react';
 import { DashboardButton } from '@client/components/dashboard/ui/DashboardButton';
 import { useOnboardingStore } from '@client/store/onboardingStore';
+import { useProjectStore } from '@client/store/projectStore';
 import { useProjects } from '@client/hooks/useProjects';
 import { useOnboardingProgress } from '@client/hooks/useOnboardingProgress';
 import { OnboardingStep } from '@shared/types/onboarding.types';
@@ -90,6 +91,7 @@ export function OnboardingStepProject({ onComplete }: IOnboardingStepProjectProp
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const { setProjectId, markStepComplete } = useOnboardingStore();
+  const { setActiveProjectId } = useProjectStore();
   const { createProject } = useProjects();
   const { updateProgress, isUpdating } = useOnboardingProgress();
 
@@ -120,8 +122,9 @@ export function OnboardingStepProject({ onComplete }: IOnboardingStepProjectProp
           industry: data.industry || undefined,
         } as ICreateProjectInput);
 
-        // Update onboarding store
+        // Update onboarding store + persist project selection
         setProjectId(project.id);
+        setActiveProjectId(project.id);
         markStepComplete(OnboardingStep.PROJECT_CREATION);
 
         // Persist progress to server
@@ -139,7 +142,7 @@ export function OnboardingStepProject({ onComplete }: IOnboardingStepProjectProp
         setIsSubmitting(false);
       }
     },
-    [createProject, setProjectId, markStepComplete, updateProgress, onComplete]
+    [createProject, setProjectId, setActiveProjectId, markStepComplete, updateProgress, onComplete]
   );
 
   const isLoading = isSubmitting || isUpdating;

@@ -10,6 +10,7 @@ import { useState, useCallback, useMemo } from 'react';
 import { Loader2, ArrowRight } from 'lucide-react';
 import { DashboardButton } from '@client/components/dashboard/ui/DashboardButton';
 import { useOnboardingStore } from '@client/store/onboardingStore';
+import { useProjectStore } from '@client/store/projectStore';
 import { useCampaigns } from '@client/hooks/useCampaigns';
 import { useOnboardingProgress } from '@client/hooks/useOnboardingProgress';
 import { OnboardingStep } from '@shared/types/onboarding.types';
@@ -55,8 +56,15 @@ export function OnboardingStepKeywords({ onComplete }: IOnboardingStepKeywordsPr
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const { projectId, completedSteps, skippedSteps, setKeywordCount, markStepComplete } =
-    useOnboardingStore();
+  const {
+    projectId: onboardingProjectId,
+    completedSteps,
+    skippedSteps,
+    setKeywordCount,
+    markStepComplete,
+  } = useOnboardingStore();
+  const { activeProjectId } = useProjectStore();
+  const projectId = onboardingProjectId || activeProjectId;
   const { createCampaign } = useCampaigns(projectId);
   const { updateProgress, isUpdating } = useOnboardingProgress();
 

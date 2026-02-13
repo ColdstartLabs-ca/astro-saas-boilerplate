@@ -18,6 +18,7 @@ import type {
   IUpdateOnboardingProgressInput,
   IUpdateOnboardingResponse,
 } from '@shared/types/onboarding.types';
+import { OnboardingStep } from '@shared/types/onboarding.types';
 import { useUserStore } from '@client/store/userStore';
 import { useOnboardingStore } from '@client/store/onboardingStore';
 import { apiFetch } from '@client/utils/api-client';
@@ -29,13 +30,46 @@ import { useLogger } from '@client/utils/logger';
 // API Functions
 // =============================================================================
 
+/** Optional steps that can be auto-skipped when filling gaps */
+const OPTIONAL_STEPS = new Set([OnboardingStep.GSC_CONNECTION, OnboardingStep.INTEGRATIONS]);
+
+/**
+ * Ensure all steps before currentStep are accounted for as completed or skipped.
+ * The server rejects payloads with gaps (e.g., step 2 missing when moving to step 4).
+ * Required steps are auto-completed (you can't reach later steps without them).
+ * Optional steps are auto-skipped.
+ */
+function normalizeProgressInput(
+  input: IUpdateOnboardingProgressInput
+): IUpdateOnboardingProgressInput {
+  const completed = new Set(input.completedSteps);
+  const skipped = new Set(input.skippedSteps);
+
+  for (let step = 1; step < input.currentStep; step++) {
+    if (!completed.has(step) && !skipped.has(step)) {
+      if (OPTIONAL_STEPS.has(step)) {
+        skipped.add(step);
+      } else {
+        completed.add(step);
+      }
+    }
+  }
+
+  return {
+    ...input,
+    completedSteps: Array.from(completed),
+    skippedSteps: Array.from(skipped),
+  };
+}
+
 /**
  * Update onboarding progress
  */
 async function updateProgress(input: IUpdateOnboardingProgressInput): Promise<IOnboardingStatus> {
+  const normalized = normalizeProgressInput(input);
   const data = await apiFetch<{ data: IUpdateOnboardingResponse }>('/api/onboarding/progress', {
     method: 'PUT',
-    body: JSON.stringify(input),
+    body: JSON.stringify(normalized),
   });
   return data.data.onboarding;
 }
@@ -140,8 +174,8 @@ export function useOnboardingProgress(): IUseOnboardingProgressReturn {
       });
     },
     onSuccess: data => {
-      // Update query cache
-      queryClient.setQueryData(['onboarding-status', user?.id], { onboarding: data });
+      // Update query cache (must match shape returned by fetchOnboardingStatus)
+      queryClient.setQueryData(['onboarding-status', user?.id], data);
     },
     onError: (error, variables) => {
       logger.error('Failed to update progress', {
@@ -158,8 +192,8 @@ export function useOnboardingProgress(): IUseOnboardingProgressReturn {
       logger.info('Optimistically completing onboarding');
     },
     onSuccess: data => {
-      // Update query cache
-      queryClient.setQueryData(['onboarding-status', user?.id], { onboarding: data });
+      // Update query cache (must match shape returned by fetchOnboardingStatus)
+      queryClient.setQueryData(['onboarding-status', user?.id], data);
       // Invalidate to ensure fresh data
       queryClient.invalidateQueries({ queryKey: ['onboarding-status', user?.id] });
       // Invalidate projects cache so OverviewView sees newly created project

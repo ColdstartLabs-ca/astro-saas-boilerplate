@@ -19,10 +19,18 @@ export const GET = withAuth(async (userId, { url }) => {
     return errorResponse('VALIDATION_ERROR', 'projectId query parameter is required', 400);
   }
 
-  const campaigns = await campaignService.listByProject(userId, projectId);
-
-  const response: ICampaignListResponse = { campaigns };
-  return jsonResponse(response);
+  try {
+    const campaigns = await campaignService.listByProject(userId, projectId);
+    const response: ICampaignListResponse = { campaigns };
+    return jsonResponse(response);
+  } catch (err) {
+    // Project not found (e.g. deleted) - return empty list instead of 500
+    if (err instanceof Error && err.message.includes('not found')) {
+      const response: ICampaignListResponse = { campaigns: [] };
+      return jsonResponse(response);
+    }
+    throw err;
+  }
 });
 
 /**

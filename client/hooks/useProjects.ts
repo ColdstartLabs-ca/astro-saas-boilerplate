@@ -158,6 +158,8 @@ export function useProjects(): IUseProjectsReturn {
   const deleteMutation = useMutation({
     mutationFn: deleteProject,
     onSuccess: (_, deletedProjectId) => {
+      // Remove stale campaigns cache for deleted project (prevents 500 errors)
+      queryClient.removeQueries({ queryKey: ['campaigns', deletedProjectId] });
       queryClient.invalidateQueries({ queryKey: ['projects', user?.id] });
       // If deleted project was active, clear active project
       if (activeProjectId === deletedProjectId) {

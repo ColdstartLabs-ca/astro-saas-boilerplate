@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import { DashboardButton } from '@client/components/dashboard/ui/DashboardButton';
 import { useOnboardingStore } from '@client/store/onboardingStore';
+import { useProjectStore } from '@client/store/projectStore';
 import { useOnboardingProgress } from '@client/hooks/useOnboardingProgress';
 import { apiFetch } from '@client/utils/api-client';
 import { OnboardingStep } from '@shared/types/onboarding.types';
@@ -38,11 +39,11 @@ interface IOnboardingStepGSCProps {
 // =============================================================================
 
 interface IGscConnectResponse {
-  authUrl: string;
+  data: { authUrl: string };
 }
 
 interface IGscConnectionResponse {
-  connection: IGscConnectionSafe | null;
+  data: { connection: IGscConnectionSafe | null };
 }
 
 // =============================================================================
@@ -58,14 +59,18 @@ export function OnboardingStepGSC({ onComplete, onSkip }: IOnboardingStepGSCProp
   const [error, setError] = useState<string | null>(null);
 
   const {
-    projectId,
+    projectId: onboardingProjectId,
     completedSteps,
     skippedSteps,
     setHasGscConnection,
     markStepComplete,
     markStepSkipped,
   } = useOnboardingStore();
+  const { activeProjectId } = useProjectStore();
   const { updateProgress, isUpdating } = useOnboardingProgress();
+
+  // Onboarding store projectId is in-memory only; fall back to the persisted active project
+  const projectId = onboardingProjectId || activeProjectId;
 
   // Fetch existing GSC connection on mount
   useEffect(() => {
@@ -76,13 +81,13 @@ export function OnboardingStepGSC({ onComplete, onSkip }: IOnboardingStepGSCProp
       }
 
       try {
-        const data = await apiFetch<IGscConnectionResponse>(
+        const res = await apiFetch<IGscConnectionResponse>(
           `/api/gsc/connection?projectId=${projectId}`
         );
-        setConnection(data.connection);
+        setConnection(res.data.connection);
 
         // If already connected, mark step as complete
-        if (data.connection?.status === 'active') {
+        if (res.data.connection?.status === 'active') {
           setHasGscConnection(true);
           markStepComplete(OnboardingStep.GSC_CONNECTION);
         }
@@ -109,13 +114,13 @@ export function OnboardingStepGSC({ onComplete, onSkip }: IOnboardingStepGSCProp
 
     try {
       // Get OAuth URL from API
-      const data = await apiFetch<IGscConnectResponse>('/api/gsc/connect', {
+      const res = await apiFetch<IGscConnectResponse>('/api/gsc/connect', {
         method: 'POST',
         body: JSON.stringify({ projectId }),
       });
 
       // Redirect to Google OAuth
-      window.location.href = data.authUrl;
+      window.location.href = res.data.authUrl;
     } catch (err) {
       console.error('Failed to initiate GSC connection:', err);
       setError('Failed to connect to Google Search Console. Please try again.');
@@ -129,10 +134,13 @@ export function OnboardingStepGSC({ onComplete, onSkip }: IOnboardingStepGSCProp
     try {
       markStepSkipped(OnboardingStep.GSC_CONNECTION);
 
+      const newSkippedSteps = new Set(skippedSteps);
+      newSkippedSteps.add(OnboardingStep.GSC_CONNECTION);
+
       await updateProgress({
         currentStep: OnboardingStep.KEYWORDS_UPLOAD,
         completedSteps: Array.from(completedSteps),
-        skippedSteps: [OnboardingStep.GSC_CONNECTION],
+        skippedSteps: Array.from(newSkippedSteps),
       });
 
       onSkip();
@@ -141,15 +149,19 @@ export function OnboardingStepGSC({ onComplete, onSkip }: IOnboardingStepGSCProp
     } finally {
       setIsSkipping(false);
     }
-  }, [markStepSkipped, updateProgress, onSkip, completedSteps]);
+  }, [markStepSkipped, updateProgress, onSkip, completedSteps, skippedSteps]);
 
   // Handle continue when already connected
   const handleContinue = useCallback(async () => {
     markStepComplete(OnboardingStep.GSC_CONNECTION);
 
+    // Build new set including the current step (store update is async, closure is stale)
+    const newCompletedSteps = new Set(completedSteps);
+    newCompletedSteps.add(OnboardingStep.GSC_CONNECTION);
+
     await updateProgress({
       currentStep: OnboardingStep.KEYWORDS_UPLOAD,
-      completedSteps: Array.from(completedSteps),
+      completedSteps: Array.from(newCompletedSteps),
       skippedSteps: Array.from(skippedSteps),
     });
 

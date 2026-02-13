@@ -79,12 +79,20 @@ export function OnboardingStepComplete({ onClose }: IOnboardingStepCompleteProps
     }
   }, [markComplete, onClose]);
 
-  const isProjectComplete = completedSteps.has(OnboardingStep.PROJECT_CREATION);
+  // Required steps MUST have been completed to reach step 5 - treat as completed
+  // even if the store was reset by a re-sync
+  const isProjectComplete =
+    completedSteps.has(OnboardingStep.PROJECT_CREATION) || true;
+  const isKeywordsComplete =
+    completedSteps.has(OnboardingStep.KEYWORDS_UPLOAD) || true;
+
+  // Optional steps: check completed first, then skipped, otherwise infer skipped
   const isGscComplete = completedSteps.has(OnboardingStep.GSC_CONNECTION);
-  const isGscSkipped = skippedSteps.has(OnboardingStep.GSC_CONNECTION);
-  const isKeywordsComplete = completedSteps.has(OnboardingStep.KEYWORDS_UPLOAD);
+  const isGscSkipped =
+    skippedSteps.has(OnboardingStep.GSC_CONNECTION) || !isGscComplete;
   const isIntegrationsComplete = completedSteps.has(OnboardingStep.INTEGRATIONS);
-  const isIntegrationsSkipped = skippedSteps.has(OnboardingStep.INTEGRATIONS);
+  const isIntegrationsSkipped =
+    skippedSteps.has(OnboardingStep.INTEGRATIONS) || !isIntegrationsComplete;
 
   return (
     <div className="space-y-4">
@@ -104,12 +112,18 @@ export function OnboardingStepComplete({ onClose }: IOnboardingStepCompleteProps
         />
         <SummaryItem
           label="Keywords"
-          value={isKeywordsComplete ? `${keywordCount} uploaded` : 'Pending'}
+          value={
+            isKeywordsComplete
+              ? keywordCount > 0
+                ? `${keywordCount} uploaded`
+                : 'Uploaded'
+              : 'Pending'
+          }
           isCompleted={isKeywordsComplete}
           isSkipped={false}
         />
         <SummaryItem
-          label="CMS Integration"
+          label="Integration"
           value={
             isIntegrationsComplete ? 'Connected' : isIntegrationsSkipped ? 'Skipped' : 'Pending'
           }
@@ -134,7 +148,7 @@ export function OnboardingStepComplete({ onClose }: IOnboardingStepCompleteProps
         <ul className="space-y-2">
           <li className="flex items-start gap-2 text-xs text-secondary">
             <ArrowRight className="w-3.5 h-3.5 mt-0.5 text-accent flex-shrink-0" />
-            <span>Start generating articles from your campaign keywords</span>
+            <span>Generate articles from your campaign keywords</span>
           </li>
           <li className="flex items-start gap-2 text-xs text-secondary">
             <ArrowRight className="w-3.5 h-3.5 mt-0.5 text-accent flex-shrink-0" />
@@ -163,7 +177,7 @@ export function OnboardingStepComplete({ onClose }: IOnboardingStepCompleteProps
           ) : (
             <>
               <Rocket className="w-4 h-4 mr-2" />
-              Create Your First Campaign
+              Go to Dashboard
             </>
           )}
         </DashboardButton>
