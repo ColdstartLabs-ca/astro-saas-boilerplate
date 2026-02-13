@@ -223,6 +223,8 @@ export function withAuthAndBody<T extends z.ZodType>(
  * - InsufficientCreditsError → 402 INSUFFICIENT_CREDITS
  * - ProjectLimitError → 403 FORBIDDEN
  * - IntegrationNotFoundError → 404 NOT_FOUND
+ * - OnboardingNotFoundError → 404 NOT_FOUND
+ * - OnboardingStepError → 400 VALIDATION_ERROR
  * - EncryptionKeyError → 500 INTERNAL_ERROR
  * - DecryptionError → 500 INTERNAL_ERROR
  * - Everything else → 500 INTERNAL_ERROR
@@ -251,6 +253,10 @@ export function handleApiError(error: unknown, context?: string): Response {
         return errorResponse('NOT_FOUND', error.message, 404);
       case 'IntegrationNotFoundError':
         return errorResponse('NOT_FOUND', error.message, 404);
+      case 'OnboardingNotFoundError':
+        return errorResponse('NOT_FOUND', error.message, 404);
+      case 'OnboardingStepError':
+        return errorResponse('VALIDATION_ERROR', error.message, 400);
       case 'EncryptionKeyError':
       case 'DecryptionError':
         return errorResponse('INTERNAL_ERROR', error.message, 500);

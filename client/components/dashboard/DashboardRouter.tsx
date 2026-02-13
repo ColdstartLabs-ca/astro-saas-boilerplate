@@ -4,7 +4,20 @@ import React, { Suspense, useState, useEffect, useTransition, useCallback } from
 import { dashboardNavigate, onDashboardNavigate } from '@client/utils/dashboardNavigation';
 import { useIsAdmin } from '@client/store/userStore';
 import { getRouteByPath, matchDynamicRoute } from '@client/config/dashboardRoutes';
+import { useOnboardingStatus } from '@client/hooks/useOnboardingStatus';
 import { Home, ArrowLeft } from 'lucide-react';
+
+/**
+ * Routes that are accessible even when onboarding is incomplete.
+ * These "escape hatch" routes allow users to access settings, billing, support, etc.
+ */
+const ONBOARDING_ESCAPE_ROUTES = [
+  '/dashboard/onboarding',
+  '/dashboard/settings',
+  '/dashboard/support',
+  '/dashboard/billing',
+  '/dashboard/admin',
+];
 
 function LoadingSpinner(): JSX.Element {
   return (
@@ -128,6 +141,7 @@ export function DashboardRouter(): JSX.Element {
     typeof window !== 'undefined' ? window.location.pathname : '/dashboard'
   );
   const [isPending, startTransition] = useTransition();
+  const { isComplete, isLoading: isOnboardingLoading } = useOnboardingStatus();
 
   // Wrap pathname updates in startTransition so React keeps showing
   // the current page while the next lazy component loads,
@@ -140,6 +154,20 @@ export function DashboardRouter(): JSX.Element {
   useEffect(() => {
     return onDashboardNavigate(setPathnameTransition);
   }, [setPathnameTransition]);
+
+  // Redirect to onboarding if not complete and not on an escape route
+  useEffect(() => {
+    if (isOnboardingLoading) return;
+    if (isComplete) return;
+
+    const isEscapeRoute = ONBOARDING_ESCAPE_ROUTES.some(route =>
+      pathname.startsWith(route)
+    );
+    if (isEscapeRoute) return;
+
+    // Redirect to onboarding
+    dashboardNavigate('/dashboard/onboarding');
+  }, [pathname, isComplete, isOnboardingLoading]);
 
   return (
     <Suspense fallback={<LoadingSpinner />}>

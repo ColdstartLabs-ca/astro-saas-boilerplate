@@ -26,6 +26,7 @@ import {
   Shield,
   Lightbulb,
   Plug,
+  Rocket,
 } from 'lucide-react';
 
 // Lazy-load page components
@@ -45,6 +46,7 @@ const SupportPage = lazy(() => import('@client/components/pages/SupportPageClien
 const IntegrationsPage = lazy(() =>
   import('@client/components/pages/IntegrationsPageClient')
 );
+const OnboardingPage = lazy(() => import('@client/components/pages/OnboardingPageClient'));
 
 // Admin pages
 const AdminDashboardLayout = lazy(() =>
@@ -66,7 +68,7 @@ export type RouteGuard = 'admin' | 'auth' | 'public';
 /**
  * Route group types for sidebar organization
  */
-export type RouteGroup = 'primary' | 'secondary' | 'bottom' | 'admin';
+export type RouteGroup = 'primary' | 'secondary' | 'bottom' | 'admin' | 'hidden';
 
 /**
  * Dashboard route configuration
@@ -214,6 +216,16 @@ export const DASHBOARD_ROUTES: readonly IDashboardRoute[] = [
     component: SupportPage,
     enabled: true,
     group: 'bottom',
+  },
+
+  // Hidden routes (not shown in sidebar)
+  {
+    path: '/dashboard/onboarding',
+    labelKey: 'sidebar.onboarding',
+    icon: Rocket,
+    component: OnboardingPage,
+    enabled: true,
+    group: 'hidden',
   },
 
   // Admin routes

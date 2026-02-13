@@ -277,6 +277,11 @@ const mockCampaign: ICampaign = {
   target_word_count: 1500,
   settings: {},
   image_preset: 'budget',
+  schedule_frequency: null,
+  schedule_batch_size: null,
+  schedule_hour: null,
+  schedule_timezone: null,
+  next_run_at: null,
   created_at: '2024-01-01T00:00:00Z',
   updated_at: '2024-01-01T00:00:00Z',
 };
