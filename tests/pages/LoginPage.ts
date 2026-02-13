@@ -49,12 +49,9 @@ export class LoginPage extends BasePage {
 
     // Try to find and click the sign in button with multiple strategies
     try {
-      // First, try desktop sign in button
-      const desktopSignInButton = this.page
-        .locator('button:has-text("Sign In"):not([hidden])')
-        .first();
-      if (await desktopSignInButton.isVisible({ timeout: 5000 })) {
-        await desktopSignInButton.click();
+      // First, try desktop auth button
+      if (await this.signInButton.isVisible({ timeout: 5000 })) {
+        await this.signInButton.click();
       } else {
         // If not visible on desktop, try mobile menu
         await this.openMobileMenuAndSignIn();
@@ -64,8 +61,10 @@ export class LoginPage extends BasePage {
       try {
         await this.openMobileMenuAndSignIn();
       } catch {
-        // Last resort - look for any sign in button
-        const anySignInButton = this.page.locator('button:has-text("Sign In")').first();
+        // Last resort - look for any auth entry button.
+        const anySignInButton = this.page
+          .locator('button:has-text("Log in"):visible, button:has-text("Sign In"):visible')
+          .first();
         await anySignInButton.click({ timeout: 5000 });
       }
     }
@@ -95,7 +94,9 @@ export class LoginPage extends BasePage {
 
       // Click sign in button inside mobile menu
       const mobileSignInButton = this.page
-        .locator('[role="navigation"] button:has-text("Sign In"), nav button:has-text("Sign In")')
+        .locator(
+          '[role="navigation"] button:has-text("Log in"):visible, [role="navigation"] button:has-text("Sign In"):visible, nav button:has-text("Log in"):visible, nav button:has-text("Sign In"):visible'
+        )
         .first();
       await expect(mobileSignInButton).toBeVisible({ timeout: 5000 });
       await mobileSignInButton.click();

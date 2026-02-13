@@ -4,7 +4,25 @@ import { isDevelopment, serverEnv } from '@shared/config/env';
 interface ILogContext {
   requestId?: string;
   userId?: string;
+  waitUntil?: (promise: Promise<unknown>) => void;
   [key: string]: unknown;
+}
+
+function ensureWaitUntil(context?: ILogContext): ILogContext {
+  const ctx = context ? { ...context } : {};
+
+  // `@baselime/edge-logger` expects a Worker-like `ctx.waitUntil`.
+  // In Node-based Playwright runs this is missing, which crashes the dev server.
+  if (typeof ctx.waitUntil !== 'function') {
+    Object.defineProperty(ctx, 'waitUntil', {
+      value: (_promise: Promise<unknown>) => {},
+      enumerable: false,
+      writable: false,
+      configurable: true,
+    });
+  }
+
+  return ctx;
 }
 
 /**
@@ -41,7 +59,7 @@ export function createLogger(
     service: 'saas-boilerplate-api',
     namespace,
     apiKey: apiKey || '',
-    ctx: (context || {}) as never,
+    ctx: ensureWaitUntil(context) as never,
     isLocalDev: !apiKey || isDevelopment(),
   });
 
@@ -116,7 +134,11 @@ export function withLogging(
         { status: statusCode }
       );
     } finally {
-      await logger.flush();
+      try {
+        await logger.flush();
+      } catch {
+        // Never fail API responses because logging transport failed.
+      }
     }
   };
 }

@@ -18,8 +18,9 @@ import { verifyOAuthState } from '@shared/utils/crypto';
  * Handles the OAuth callback from Google after user grants access.
  * Stores the connection and redirects to the dashboard.
  */
-export const GET: APIRoute = async ({ url }) => {
-  const dashboardUrl = `${clientEnv.BASE_URL}/dashboard/opportunities`;
+export const GET: APIRoute = async ({ request, url }) => {
+  const baseUrl = request.headers.get('origin') || clientEnv.BASE_URL;
+  const dashboardUrl = `${baseUrl}/dashboard/opportunities`;
 
   try {
     // Parse query parameters

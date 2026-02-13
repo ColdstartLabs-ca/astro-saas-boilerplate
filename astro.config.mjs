@@ -7,6 +7,7 @@ import cloudflare from '@astrojs/cloudflare';
 // i18n locale configuration (synced with i18n/config.ts)
 const SUPPORTED_LOCALES = ['en'];
 const DEFAULT_LOCALE = 'en';
+const isPlaywrightTest = process.env.PLAYWRIGHT_TEST === '1' || process.env.ENV === 'test';
 
 // https://astro.build/config
 export default defineConfig({
@@ -75,6 +76,10 @@ export default defineConfig({
     inlineStylesheets: 'auto',
   },
   // Security headers are applied in middleware
+  // Disable Astro dev toolbar during Playwright runs to avoid test DOM pollution.
+  devToolbar: {
+    enabled: !isPlaywrightTest,
+  },
   // Image optimization (uses sharp in Cloudflare Workers)
   image: {
     remotePatterns: [

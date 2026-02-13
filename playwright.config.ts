@@ -7,13 +7,25 @@ dotenv.config({ path: '.env.test', quiet: true });
 const isCI = !!process.env.CI;
 
 // Generate random ports for each test run to avoid conflicts with dev server
-const TEST_PORT = process.env.TEST_PORT || (3100 + Math.floor(Math.random() * 900)).toString();
+// Use dedicated Playwright-specific env vars to avoid collisions with other tooling.
+const TEST_PORT =
+  process.env.PLAYWRIGHT_TEST_PORT ||
+  process.env.TEST_PORT ||
+  (3100 + Math.floor(Math.random() * 900)).toString();
 const TEST_WRANGLER_PORT =
-  process.env.TEST_WRANGLER_PORT || (8800 + Math.floor(Math.random() * 200)).toString();
+  process.env.PLAYWRIGHT_TEST_WRANGLER_PORT ||
+  process.env.TEST_WRANGLER_PORT ||
+  (8800 + Math.floor(Math.random() * 200)).toString();
+const PLAYWRIGHT_MOCK_DB_PATH =
+  process.env.PLAYWRIGHT_MOCK_DB_PATH ||
+  `/tmp/autopilotrank-playwright-mock-db-${TEST_PORT}.json`;
 
 // Export for use in tests if needed
+process.env.PLAYWRIGHT_TEST_PORT = TEST_PORT;
+process.env.PLAYWRIGHT_TEST_WRANGLER_PORT = TEST_WRANGLER_PORT;
 process.env.TEST_PORT = TEST_PORT;
 process.env.TEST_WRANGLER_PORT = TEST_WRANGLER_PORT;
+process.env.PLAYWRIGHT_MOCK_DB_PATH = PLAYWRIGHT_MOCK_DB_PATH;
 
 export default defineConfig({
   testDir: './tests',
@@ -102,11 +114,11 @@ export default defineConfig({
   // Automatically start dev server for tests on random ports
   // This avoids clashing with the regular dev server
   webServer: {
-    command: `TEST_PORT=${TEST_PORT} TEST_WRANGLER_PORT=${TEST_WRANGLER_PORT} yarn dev:test`,
+    command: `ENV=test PLAYWRIGHT_TEST=1 PLAYWRIGHT_TEST_PORT=${TEST_PORT} PLAYWRIGHT_TEST_WRANGLER_PORT=${TEST_WRANGLER_PORT} TEST_PORT=${TEST_PORT} TEST_WRANGLER_PORT=${TEST_WRANGLER_PORT} PLAYWRIGHT_MOCK_DB_PATH=${PLAYWRIGHT_MOCK_DB_PATH} yarn dev:test`,
     url: `http://localhost:${TEST_PORT}`,
-    reuseExistingServer: true, // Reuse existing server if available
+    reuseExistingServer: false, // Always start a dedicated server for this Playwright run
     timeout: 120000, // 2 minutes to start server
-    stdout: 'ignore',
-    stderr: 'ignore',
+    stdout: 'pipe',
+    stderr: 'pipe',
   },
 });

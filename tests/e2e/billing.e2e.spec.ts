@@ -260,9 +260,9 @@ test.describe('Billing E2E Tests', () => {
         }
       }
 
-      // For test purposes, we'll consider the test passing if we can see the Professional plan
+      // For test purposes, we'll consider the test passing if we can see the Growth plan
       // Since the recommended badge might not show in all test environments
-      await expect(page.getByRole('heading', { name: 'Professional', exact: true })).toBeVisible();
+      await expect(page.getByRole('heading', { name: 'Growth', exact: true })).toBeVisible();
 
       // Screenshot with badges visible
       await pricingPage.screenshot('recommended-badges-visible');
@@ -291,10 +291,8 @@ test.describe('Billing E2E Tests', () => {
         expect(badgeText?.trim().length).toBeGreaterThan(0);
       } else {
         // If no badges found, at least verify the pricing plans are visible with proper contrast
-        await expect(page.getByRole('heading', { name: 'Hobby', exact: true })).toBeVisible();
-        await expect(
-          page.getByRole('heading', { name: 'Professional', exact: true })
-        ).toBeVisible();
+        await expect(page.getByRole('heading', { name: 'Starter', exact: true })).toBeVisible();
+        await expect(page.getByRole('heading', { name: 'Growth', exact: true })).toBeVisible();
 
         // Check that pricing cards have proper styling (they should have borders/shadows)
         const pricingCards = pricingPage.pricingGrid.locator('> div');
@@ -323,19 +321,19 @@ test.describe('Billing E2E Tests', () => {
         name: 'Starter',
         exact: true,
       });
-      const hobbyHeading = pricingPage.pricingGrid.getByRole('heading', {
-        name: 'Hobby',
+      const growthHeading = pricingPage.pricingGrid.getByRole('heading', {
+        name: 'Growth',
         exact: true,
       });
-      const proHeading = pricingPage.pricingGrid.getByRole('heading', {
-        name: 'Professional',
+      const agencyHeading = pricingPage.pricingGrid.getByRole('heading', {
+        name: 'Agency',
         exact: true,
       });
 
       // These assertions should pass immediately since goto() waited for them
       await expect(starterHeading).toBeVisible();
-      await expect(hobbyHeading).toBeVisible();
-      await expect(proHeading).toBeVisible();
+      await expect(growthHeading).toBeVisible();
+      await expect(agencyHeading).toBeVisible();
 
       // Check Starter tier displays $9/per month
       const starterCard = page.locator('div').filter({ hasText: 'Starter' }).first();
@@ -367,7 +365,7 @@ test.describe('Billing E2E Tests', () => {
       // This should already be visible after goto() completes
       await expect(page.getByRole('heading', { name: 'Starter' })).toBeVisible();
 
-      // Check the order: Starter, Hobby, Pro, Business
+      // Check the order: Starter, Growth, Agency
       const pricingGrid = pricingPage.pricingGrid;
       const cards = pricingGrid.locator('> div');
 
@@ -375,16 +373,16 @@ test.describe('Billing E2E Tests', () => {
       const starterTier = page.getByRole('heading', { name: 'Starter' });
       await expect(starterTier).toBeVisible();
 
-      // Verify Hobby tier is visible and comes after Starter
-      const hobbyTier = page.getByRole('heading', { name: 'Hobby' });
-      await expect(hobbyTier).toBeVisible();
+      // Verify Growth tier is visible and comes after Starter
+      const growthTier = page.getByRole('heading', { name: 'Growth' });
+      await expect(growthTier).toBeVisible();
 
       // Check that Starter is not the last card (there should be plans after it)
       const cardCount = await cards.count();
-      expect(cardCount).toBeGreaterThan(2); // At least Starter + Hobby + one more
+      expect(cardCount).toBeGreaterThan(2); // At least Starter + Growth + one more
     });
 
-    test('should handle Pro tier Get Started button click', async ({ page }) => {
+    test('should handle Growth tier Get Started button click', async ({ page }) => {
       // Handle alerts
       page.on('dialog', async dialog => {
         await dialog.accept();
@@ -400,9 +398,12 @@ test.describe('Billing E2E Tests', () => {
       });
       await expect(starterHeading).toBeVisible();
 
-      // Find and click Pro tier Get Started button
-      const proCard = page.locator('div').filter({ hasText: 'Professional' }).first();
-      const getStartedButton = proCard.locator('button').filter({ hasText: 'Get Started' }).first();
+      // Find and click Growth tier Get Started button
+      const growthCard = page.locator('div').filter({ hasText: 'Growth' }).first();
+      const getStartedButton = growthCard
+        .locator('button')
+        .filter({ hasText: 'Get Started' })
+        .first();
 
       await expect(getStartedButton).toBeVisible();
       await getStartedButton.click();
@@ -434,7 +435,7 @@ test.describe('Billing E2E Tests', () => {
       expect(isModalVisible || isToastVisible).toBe(true);
 
       // Screenshot after action
-      await pricingPage.screenshot('pro-get-started-click');
+      await pricingPage.screenshot('growth-get-started-click');
     });
   });
 });

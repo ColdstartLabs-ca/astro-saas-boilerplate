@@ -1,4 +1,15 @@
 import { createClient } from '@supabase/supabase-js';
+import { supabaseAdmin } from '@server/supabase/supabaseAdmin';
+
+function isTestRuntime(): boolean {
+  const playwrightTest = process.env.PLAYWRIGHT_TEST;
+  return (
+    process.env.ENV === 'test' ||
+    process.env.NODE_ENV === 'test' ||
+    playwrightTest === '1' ||
+    playwrightTest === 'true'
+  );
+}
 
 export type ITestUser = {
   id: string;
@@ -15,13 +26,16 @@ export class TestDataManager {
   private testModeProfiles: Map<string, Record<string, unknown>> = new Map();
 
   constructor() {
-    this.isTestMode = process.env.ENV === 'test';
+    this.isTestMode = isTestRuntime();
 
     const supabaseUrl =
       process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.PUBLIC_SUPABASE_URL;
     const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
-    if (supabaseUrl && supabaseServiceKey) {
+    if (this.isTestMode) {
+      // Reuse the same in-memory Supabase admin instance used by API routes.
+      this.supabase = supabaseAdmin as ReturnType<typeof createClient>;
+    } else if (supabaseUrl && supabaseServiceKey) {
       this.supabase = createClient(supabaseUrl, supabaseServiceKey, {
         auth: {
           autoRefreshToken: false,
@@ -51,7 +65,7 @@ export class TestDataManager {
     if (this.poolInitialized) return;
 
     // Skip pool initialization in test mode - use mock users instead
-    if (process.env.ENV === 'test') {
+    if (isTestRuntime()) {
       this.poolInitialized = true;
       return;
     }
@@ -182,40 +196,23 @@ export class TestDataManager {
       `test-${Date.now()}-${Math.random().toString(36).substring(7)}@test.local`;
     const testPassword = overrides?.password || 'test-password-123';
 
-    // In test environment, create a real auth user but use mock token for API calls
-    // This ensures FK constraints work (auth.users → profiles → projects) while avoiding sign-in rate limits
-    if (process.env.ENV === 'test') {
-      if (this.supabase) {
-        try {
-          const { data: adminData, error: adminError } =
-            await this.supabase.auth.admin.createUser({
-              email: testEmail,
-              password: testPassword,
-              email_confirm: true,
-            });
-
-          if (!adminError && adminData.user) {
-            const userId = adminData.user.id;
-            // Use mock token to avoid sign-in rate limits
-            const mockToken = `test_token_mock_user_${userId}`;
-            this.createdUsers.push(userId);
-            return {
-              id: userId,
-              email: testEmail,
-              token: mockToken,
-            };
-          }
-          // If admin create fails, fall through to mock user
-          console.warn('Auth user creation failed, using mock user:', adminError?.message);
-        } catch {
-          console.warn('Auth user creation failed, using mock user');
-        }
-      }
-
-      // Fallback: pure mock user (no DB entries - limited to tests that don't need FK)
-      const mockUserId = this.generateUUID();
+    // In test mode, always use pure mock users to avoid real Supabase operations.
+    if (this.isTestMode) {
+      const mockUserId = `mock_user_${this.generateUUID()}`;
       const mockToken = `test_token_mock_user_${mockUserId}`;
+      const now = new Date().toISOString();
+
       this.createdUsers.push(mockUserId);
+      this.testModeProfiles.set(mockUserId, {
+        id: mockUserId,
+        credits_balance: 10,
+        subscription_status: 'free',
+        subscription_tier: null,
+        stripe_subscription_id: null,
+        created_at: now,
+        updated_at: now,
+      });
+
       return {
         id: mockUserId,
         email: testEmail,
@@ -307,8 +304,8 @@ export class TestDataManager {
 
         // Create a mock token for testing (in test environment)
         // Note: This path shouldn't be reached when ENV=test due to early return above
-        if (process.env.ENV === 'test') {
-          const mockToken = `test_token_${adminData.user.id}`;
+        if (this.isTestMode) {
+          const mockToken = `test_token_mock_user_${adminData.user.id}`;
           this.createdUsers.push(adminData.user.id);
           return {
             id: adminData.user.id,
@@ -334,12 +331,21 @@ export class TestDataManager {
       };
     } catch (error) {
       // Final fallback for test environment
-      if (process.env.ENV === 'test') {
+      if (this.isTestMode) {
         console.warn('Creating mock test user due to authentication issues');
-        const mockUserId = `mock_user_${Date.now()}_${Math.random().toString(36).substring(7)}`;
-        const mockToken = `test_token_${mockUserId}`;
+        const mockUserId = `mock_user_${this.generateUUID()}`;
+        const mockToken = `test_token_mock_user_${mockUserId}`;
 
         this.createdUsers.push(mockUserId);
+        this.testModeProfiles.set(mockUserId, {
+          id: mockUserId,
+          credits_balance: 10,
+          subscription_status: 'free',
+          subscription_tier: null,
+          stripe_subscription_id: null,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        });
         return {
           id: mockUserId,
           email: testEmail,
@@ -652,64 +658,26 @@ export class TestDataManager {
     tier?: 'starter' | 'growth' | 'agency',
     initialCredits: number = 10
   ): Promise<ITestUser> {
-    // For test environment, create real auth user but use mock token
-    if (process.env.ENV === 'test') {
+    // In test mode, always use mock users to avoid real Supabase operations.
+    if (this.isTestMode) {
       const testEmail = `test-${Date.now()}-${Math.random().toString(36).substring(7)}@test.local`;
-
-      if (this.supabase) {
-        try {
-          const { data: adminData, error: adminError } =
-            await this.supabase.auth.admin.createUser({
-              email: testEmail,
-              password: 'test-password-123',
-              email_confirm: true,
-            });
-
-          if (!adminError && adminData.user) {
-            const userId = adminData.user.id;
-            const mockToken =
-              status === 'free'
-                ? `test_token_mock_user_${userId}`
-                : `test_token_mock_user_${userId}_sub_${status}_${tier || 'growth'}`;
-
-            // Set subscription status and credits on the profile
-            if (status !== 'free') {
-              await this.supabase
-                .from('profiles')
-                .update({
-                  subscription_status: status,
-                  subscription_tier: tier || 'growth',
-                  credits_balance: initialCredits,
-                })
-                .eq('id', userId);
-            } else if (initialCredits !== 10) {
-              await this.supabase
-                .from('profiles')
-                .update({ credits_balance: initialCredits })
-                .eq('id', userId);
-            }
-
-            this.createdUsers.push(userId);
-            return {
-              id: userId,
-              email: testEmail,
-              token: mockToken,
-            };
-          }
-          console.warn('Auth user creation failed, using mock user:', adminError?.message);
-        } catch {
-          console.warn('Auth user creation failed, using mock user');
-        }
-      }
-
-      // Fallback: pure mock user
-      const mockUserId = this.generateUUID();
+      const mockUserId = `mock_user_${this.generateUUID()}`;
       const mockToken =
         status === 'free'
           ? `test_token_mock_user_${mockUserId}`
           : `test_token_mock_user_${mockUserId}_sub_${status}_${tier || 'growth'}`;
 
       this.createdUsers.push(mockUserId);
+      this.testModeProfiles.set(mockUserId, {
+        id: mockUserId,
+        credits_balance: initialCredits,
+        subscription_status: status,
+        subscription_tier: status === 'free' ? null : tier || 'growth',
+        stripe_subscription_id: status === 'free' ? null : `sub_test_${mockUserId}`,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      });
+
       return {
         id: mockUserId,
         email: testEmail,
@@ -743,7 +711,7 @@ export class TestDataManager {
    */
   private async ensureUserProfile(userId: string, _email: string): Promise<void> {
     // For mock users in test environment, skip profile creation
-    if (userId.includes('mock_user_') && process.env.ENV === 'test') {
+    if (userId.includes('mock_user_') && this.isTestMode) {
       console.log(`Skipping profile creation for mock user: ${userId}`);
       return;
     }

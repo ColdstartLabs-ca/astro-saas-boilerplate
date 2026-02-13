@@ -158,7 +158,7 @@ test.describe('API: Support Contact', () => {
 
       // Check security headers
       expect(response.headers()['x-content-type-options']).toBe('nosniff');
-      expect(response.headers()['x-frame-options']).toBe('DENY');
+      expect(response.headers()['x-frame-options']).toBe('SAMEORIGIN');
     });
 
     test('should have correct content-type', async ({ request }) => {

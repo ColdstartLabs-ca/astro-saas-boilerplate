@@ -75,27 +75,16 @@ export class BasePage {
    * Gets the main header element
    */
   get header(): Locator {
-    return this.page.locator('header');
+    return this.page.getByRole('banner').first();
   }
 
   /**
    * Gets the sign in button from header
    */
   get signInButton(): Locator {
-    // Try multiple strategies to find the sign in button
-    // The button has different visibility states on mobile vs desktop
     return this.page
-      .locator(
-        [
-          'button:has-text("Sign In")',
-          'button[data-testid="sign-in-button"]',
-          'header button:has-text("Sign In")',
-          'nav button:has-text("Sign In")',
-          // Also look for it in mobile menu
-          '[role="navigation"] button:has-text("Sign In")',
-          '.mobile-menu button:has-text("Sign In")',
-        ].join(', ')
-      )
+      .locator('button:visible, [role="navigation"] button:visible, nav button:visible')
+      .filter({ hasText: /log in|sign in/i })
       .first();
   }
 
@@ -103,7 +92,10 @@ export class BasePage {
    * Gets the sign out button
    */
   get signOutButton(): Locator {
-    return this.header.getByRole('button', { name: 'Sign Out' }).first();
+    return this.page
+      .locator('button')
+      .filter({ hasText: /sign out|log out/i })
+      .first();
   }
 
   /**
@@ -263,7 +255,7 @@ export class BasePage {
 
       // Wait for auth buttons to be visible (sign in or user avatar)
       const authButtons = this.page.locator(
-        'button:has-text("Sign In"), [data-testid="user-menu"], [aria-label="User menu"]'
+        'button:has-text("Log in"):visible, button:has-text("Sign In"):visible, [data-testid="user-menu"], [aria-label="User menu"]'
       );
       await authButtons
         .first()

@@ -59,7 +59,9 @@ export class CheckoutController extends BaseController {
       if (token.startsWith('test_token_')) {
         let mockUserId: string;
         if (token.startsWith('test_token_mock_user_')) {
-          mockUserId = token.replace('test_token_mock_user_', '');
+          const withoutPrefix = token.replace('test_token_mock_user_', '');
+          const subIndex = withoutPrefix.indexOf('_sub_');
+          mockUserId = subIndex !== -1 ? withoutPrefix.substring(0, subIndex) : withoutPrefix;
         } else {
           mockUserId = token.replace('test_token_', '');
         }

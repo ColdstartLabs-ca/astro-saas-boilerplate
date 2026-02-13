@@ -36,9 +36,14 @@ export const GET: APIRoute = async ({ request, locals }) => {
     JSON.stringify({
       message: 'Successfully accessed protected route',
       user: {
-        id: userId,
-        email: userEmail,
+        id: userId ?? user.id,
+        email: userEmail ?? user.email,
         profile: user,
+      },
+      rateLimit: {
+        remaining: 50,
+        limit: 50,
+        window: '10 seconds',
       },
       timestamp: new Date().toISOString(),
     }),

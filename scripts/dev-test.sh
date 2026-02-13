@@ -1,43 +1,31 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # Start dev server with test environment variables
 # This script is used by Playwright to ensure tests run with correct env vars
 
-set -e
+set -euo pipefail
 
-# Load test environment variables properly (handle values with spaces and commas)
-# Use a while loop to properly parse KEY=VALUE format
-while IFS='=' read -r key value; do
-  # Skip comments and empty lines
-  [[ "$key" =~ ^#.*$ ]] && continue
-  [[ -z "$key" ]] && continue
-
-  # Remove leading/trailing whitespace from key
-  key=$(echo "$key" | xargs)
-  # Remove leading/trailing whitespace from value
-  value=$(echo "$value" | xargs)
-
-  # Remove quotes from value if present (bash export will handle them)
-  value="${value%\"}"
-  value="${value#\"}"
-
-  # Export the variable
-  export "$key=$value"
-done < .env.test
-
-# Use ports from environment or defaults
-TEST_PORT=${TEST_PORT:-3100}
-TEST_WRANGLER_PORT=${TEST_WRANGLER_PORT:-8800}
-
-# Check if port is already in use and kill the process if needed
-# This prevents "port already in use" errors when restarting tests
-if lsof -i :$TEST_PORT -t > /dev/null 2>&1; then
-  echo "Port $TEST_PORT is in use, killing existing process..."
-  lsof -i :$TEST_PORT -t | xargs kill -9 2>/dev/null || true
-  sleep 1
+# Export all variables loaded from .env.test
+if [[ -f .env.test ]]; then
+  set -a
+  # shellcheck disable=SC1091
+  source ./.env.test
+  set +a
 fi
 
-echo "Starting test server on port $TEST_PORT (Astro)"
+# Force explicit test mode for Playwright runs
+export ENV="${ENV:-test}"
+export PLAYWRIGHT_TEST="${PLAYWRIGHT_TEST:-1}"
 
-# Run the Astro dev server
-npx astro dev --port $TEST_PORT
+# Use ports from environment or defaults
+export TEST_PORT="${TEST_PORT:-3100}"
+export TEST_WRANGLER_PORT="${TEST_WRANGLER_PORT:-8800}"
+export PLAYWRIGHT_MOCK_DB_PATH="${PLAYWRIGHT_MOCK_DB_PATH:-/tmp/autopilotrank-playwright-mock-db-${TEST_PORT}.json}"
+
+# Ensure each server start begins with a clean shared mock database.
+rm -f "${PLAYWRIGHT_MOCK_DB_PATH}"
+
+echo "Starting dedicated Playwright test server on port ${TEST_PORT} (Astro)"
+
+# Run Astro server for Playwright
+exec npx astro dev --host 127.0.0.1 --port "${TEST_PORT}"

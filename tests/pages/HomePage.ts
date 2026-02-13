@@ -40,8 +40,8 @@ export class HomePage extends BasePage {
     super(page);
 
     // Navigation elements (only those not provided by BasePage)
-    this.navbar = page.locator('header').first();
-    this.logo = page.locator('header a[href="/"]').first();
+    this.navbar = page.getByRole('banner').first();
+    this.logo = this.navbar.locator('a[href="/"]').first();
     this.mobileMenuButton = page
       .locator('header button')
       .filter({ hasNot: page.locator('a') })

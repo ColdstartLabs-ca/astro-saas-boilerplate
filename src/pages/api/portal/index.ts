@@ -7,7 +7,7 @@ import { clientEnv, serverEnv } from '@shared/config/env';
 
 // Request schema
 const portalSchema = z.object({
-  returnUrl: z.string().url().optional(),
+  returnUrl: z.string().optional(),
 });
 
 export const POST: APIRoute = async ({ request, locals }) => {
@@ -21,7 +21,12 @@ export const POST: APIRoute = async ({ request, locals }) => {
     // 3. Validate return URL if provided
     let returnUrl: string;
     if (body.returnUrl) {
-      const url = new URL(body.returnUrl);
+      let url: URL;
+      try {
+        url = new URL(body.returnUrl);
+      } catch {
+        return errorResponse('INVALID_RETURN_URL', 'Invalid return URL format', 400);
+      }
 
       // Only allow http and https protocols
       if (!['http:', 'https:'].includes(url.protocol)) {
@@ -30,7 +35,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
 
       // Domain allowlist to prevent open redirect
       const baseUrlHostname = new URL(clientEnv.BASE_URL).hostname;
-      const allowedDomains = [baseUrlHostname, 'localhost', '127.0.1'];
+      const allowedDomains = [baseUrlHostname, 'localhost', '127.0.0.1'];
 
       const isAllowedDomain = allowedDomains.some(domain => {
         return url.hostname === domain || url.hostname.endsWith(`.${domain}`);

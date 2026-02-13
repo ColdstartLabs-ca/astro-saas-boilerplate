@@ -58,8 +58,8 @@ export const POST = withAuthAndBody(checkoutSchema, async (userId, body, { reque
     const authHeader = request.headers.get('authorization') || '';
     const token = authHeader.replace('Bearer ', '');
     // Token format: test_token_mock_user_{id}_sub_{status}_{tier}
-    const match = token.match(/test_token_mock_user_[^_]+_sub_(active|trialing)_/);
-    return match !== null;
+    // `{id}` may contain underscores (e.g., mock_user_<uuid>), so match by suffix.
+    return /_sub_(active|trialing)(?:_|$)/.test(token);
   };
 
   // Check for existing active subscription (only for subscription purchases)
@@ -108,7 +108,7 @@ export const POST = withAuthAndBody(checkoutSchema, async (userId, body, { reque
     const mockSessionId = `cs_test_${Date.now()}_${Math.random().toString(36).substring(7)}`;
 
     return jsonResponse({
-      url: `${clientEnv.BASE_URL}/success?session_id=${mockSessionId}`,
+      url: `${request.headers.get('origin') || clientEnv.BASE_URL}/success?session_id=${mockSessionId}`,
       sessionId: mockSessionId,
       mock: true,
     });
