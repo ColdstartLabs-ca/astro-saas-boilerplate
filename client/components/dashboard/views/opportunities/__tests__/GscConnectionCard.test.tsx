@@ -22,6 +22,9 @@ vi.mock('lucide-react', () => ({
   AlertCircle: ({ className }: { className?: string }) => (
     <span className={className} data-icon="AlertCircle" />
   ),
+  AlertTriangle: ({ className }: { className?: string }) => (
+    <span className={className} data-icon="AlertTriangle" />
+  ),
   Unlink: ({ className }: { className?: string }) => (
     <span className={className} data-icon="Unlink" />
   ),
@@ -33,6 +36,21 @@ vi.mock('lucide-react', () => ({
   ),
   Globe: ({ className }: { className?: string }) => (
     <span className={className} data-icon="Globe" />
+  ),
+  Zap: ({ className }: { className?: string }) => (
+    <span className={className} data-icon="Zap" />
+  ),
+  TrendingUp: ({ className }: { className?: string }) => (
+    <span className={className} data-icon="TrendingUp" />
+  ),
+  FileText: ({ className }: { className?: string }) => (
+    <span className={className} data-icon="FileText" />
+  ),
+  Clock: ({ className }: { className?: string }) => (
+    <span className={className} data-icon="Clock" />
+  ),
+  Settings: ({ className }: { className?: string }) => (
+    <span className={className} data-icon="Settings" />
   ),
 }));
 
@@ -52,6 +70,12 @@ const mockTranslations: Record<string, string> = {
   'opportunities.gsc.selectSite': 'Select a site to monitor',
   'opportunities.gsc.lastSynced': 'Last synced',
   'opportunities.gsc.noSites': 'No verified sites found in your Google Search Console account',
+  'opportunities.gsc.warningTitle': 'GSC Connection Required',
+  'opportunities.gsc.warningDescription': 'Connect Google Search Console to unlock full opportunity features:',
+  'opportunities.gsc.warningFeature1': 'AI-powered opportunity detection',
+  'opportunities.gsc.warningFeature2': 'Performance tracking for created articles',
+  'opportunities.gsc.warningFeature3': 'GSC-optimized article generation prompts',
+  'opportunities.gsc.warningNote': 'You can still create articles from opportunities without GSC, but they won\'t have GSC-optimized prompts or performance tracking.',
 };
 
 vi.mock('@client/hooks/useTranslations', () => ({

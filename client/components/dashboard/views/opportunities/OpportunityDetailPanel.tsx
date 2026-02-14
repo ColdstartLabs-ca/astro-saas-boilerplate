@@ -21,14 +21,28 @@ import {
   Loader2,
   CheckCircle,
   ArrowRight,
+  ArrowUpRight,
+  Minus,
+  ArrowDownRight,
+  HelpCircle,
+  Clock,
+  Sparkles,
+  AlertTriangle,
+  ExternalLink,
 } from 'lucide-react';
 import { DashboardButton } from '../../ui/DashboardButton';
 import { useTranslations } from '@client/hooks/useTranslations';
 import type {
   IOpportunity,
+  IOpportunityPerformanceCheck,
   OpportunityType,
   OpportunityCategory,
+  PerformanceStatus,
 } from '@shared/types/opportunity.types';
+import dayjs from 'dayjs';
+import relativeTime from 'dayjs/plugin/relativeTime';
+
+dayjs.extend(relativeTime);
 
 // =============================================================================
 // Constants
@@ -62,6 +76,12 @@ interface IOpportunityDetailPanelProps {
   onDismiss: (opportunityId: string) => void;
   onMarkComplete: (opportunityId: string) => void;
   isCreatingArticle?: boolean;
+  /** Performance check history for the opportunity */
+  performanceChecks?: IOpportunityPerformanceCheck[];
+  /** Latest performance check (derived from performanceChecks[0] if not provided) */
+  latestPerformanceCheck?: IOpportunityPerformanceCheck | null;
+  /** Callback to connect GSC (shown when status is 'no_gsc') */
+  onConnectGsc?: () => void;
 }
 
 // =============================================================================
@@ -160,6 +180,186 @@ function StatusTimeline({
 }
 
 // =============================================================================
+// Performance Components
+// =============================================================================
+
+function PerformanceCard({
+  status,
+  positionBefore,
+  positionAfter,
+  t,
+  onConnectGsc,
+}: {
+  status: PerformanceStatus;
+  positionBefore: number | null;
+  positionAfter: number | null;
+  t: (key: string) => string;
+  onConnectGsc?: () => void;
+}): JSX.Element {
+  const config: Record<
+    PerformanceStatus,
+    { bg: string; border: string; icon: typeof ArrowUpRight; iconColor: string }
+  > = {
+    pending: {
+      bg: 'bg-blue-500/10',
+      border: 'border-blue-500/30',
+      icon: Clock,
+      iconColor: 'text-blue-400',
+    },
+    improved: {
+      bg: 'bg-emerald-500/10',
+      border: 'border-emerald-500/30',
+      icon: ArrowUpRight,
+      iconColor: 'text-emerald-400',
+    },
+    stable: {
+      bg: 'bg-amber-500/10',
+      border: 'border-amber-500/30',
+      icon: Minus,
+      iconColor: 'text-amber-400',
+    },
+    declined: {
+      bg: 'bg-red-500/10',
+      border: 'border-red-500/30',
+      icon: ArrowDownRight,
+      iconColor: 'text-red-400',
+    },
+    not_found: {
+      bg: 'bg-zinc-500/10',
+      border: 'border-zinc-500/30',
+      icon: HelpCircle,
+      iconColor: 'text-zinc-400',
+    },
+    no_gsc: {
+      bg: 'bg-amber-500/10',
+      border: 'border-amber-500/30',
+      icon: AlertTriangle,
+      iconColor: 'text-amber-400',
+    },
+  };
+
+  const { bg, border, icon: Icon, iconColor } = config[status];
+
+  const formatPosition = (pos: number | null | undefined): string => {
+    if (pos === null || pos === undefined) return '-';
+    return pos.toFixed(1);
+  };
+
+  return (
+    <div className={`rounded-lg border p-4 ${bg} ${border}`}>
+      <div className="flex items-start gap-3">
+        <div className={`mt-0.5 ${iconColor}`}>
+          <Icon className="w-5 h-5" />
+        </div>
+        <div className="flex-1">
+          <h4 className="text-sm font-medium text-white">
+            {status === 'no_gsc'
+              ? t('opportunities.performance.noGsc')
+              : t(`opportunities.performance.${status}`)}
+          </h4>
+          <p className="text-xs text-secondary mt-1">
+            {status === 'improved' &&
+              t('opportunities.performance.improvedDescription')
+                .replace('{before}', formatPosition(positionBefore))
+                .replace('{after}', formatPosition(positionAfter))}
+            {status === 'stable' &&
+              t('opportunities.performance.stableDescription').replace(
+                '{current}',
+                formatPosition(positionAfter)
+              )}
+            {status === 'declined' &&
+              t('opportunities.performance.declinedDescription')
+                .replace('{before}', formatPosition(positionBefore))
+                .replace('{after}', formatPosition(positionAfter))}
+            {status === 'not_found' && t('opportunities.performance.notFoundDescription')}
+            {status === 'no_gsc' && t('opportunities.performance.noGscDescription')}
+          </p>
+
+          {status === 'no_gsc' && onConnectGsc && (
+            <button
+              onClick={onConnectGsc}
+              className="mt-3 inline-flex items-center gap-1.5 text-xs text-primary hover:text-primary-hover transition-colors"
+            >
+              <ExternalLink className="w-3.5 h-3.5" />
+              {t('opportunities.performance.noGscConnect')}
+            </button>
+          )}
+
+          {status === 'declined' && (
+            <div className="mt-3 space-y-1">
+              <p className="text-xs font-medium text-secondary">
+                {t('opportunities.performance.suggestions')}:
+              </p>
+              <ul className="text-xs text-muted space-y-0.5">
+                {(
+                  t('opportunities.performance.suggestionsDeclined') as unknown as string[]
+                ).map((suggestion, i) => (
+                  <li key={i} className="flex items-start gap-1.5">
+                    <Sparkles className="w-3 h-3 mt-0.5 text-amber-400 shrink-0" />
+                    <span>{suggestion}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function PerformanceHistory({
+  checks,
+  t,
+}: {
+  checks: IOpportunityPerformanceCheck[];
+  t: (key: string) => string;
+}): JSX.Element {
+  if (checks.length === 0) {
+    return (
+      <div className="text-xs text-muted italic">
+        {t('opportunities.performance.noChecks')}
+      </div>
+    );
+  }
+
+  const statusColors: Record<string, string> = {
+    improved: 'bg-emerald-500',
+    stable: 'bg-amber-500',
+    declined: 'bg-red-500',
+    not_found: 'bg-zinc-500',
+    no_gsc: 'bg-amber-500',
+    pending: 'bg-blue-500',
+  };
+
+  return (
+    <div className="space-y-2">
+      {checks.map(check => (
+        <div
+          key={check.id}
+          className="flex items-center gap-3 text-xs py-2 px-3 rounded-lg bg-main border border-border"
+        >
+          <div
+            className={`w-2 h-2 rounded-full ${
+              statusColors[check.status] ?? 'bg-zinc-500'
+            }`}
+          />
+          <span className="text-muted">
+            {t('opportunities.performance.checkDate')}{' '}
+            {dayjs(check.check_date).fromNow()}
+          </span>
+          <span className="text-secondary ml-auto">
+            {check.position_before?.toFixed(1) ?? '-'}{' '}
+            <ArrowRight className="w-3 h-3 inline mx-1 text-muted" />{' '}
+            {check.position_after?.toFixed(1) ?? '-'}
+          </span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// =============================================================================
 // Main Component
 // =============================================================================
 
@@ -171,8 +371,17 @@ export function OpportunityDetailPanel({
   onDismiss,
   onMarkComplete,
   isCreatingArticle = false,
+  performanceChecks = [],
+  latestPerformanceCheck,
+  onConnectGsc,
 }: IOpportunityDetailPanelProps): JSX.Element | null {
   const t = useTranslations('dashboard');
+
+  // Get the latest performance check
+  const latestCheck = latestPerformanceCheck ?? performanceChecks[0] ?? null;
+
+  // Determine the performance status to display
+  const performanceStatus = opportunity?.performance_status ?? latestCheck?.status ?? null;
 
   // Close on Escape key
   const handleKeyDown = useCallback(
@@ -326,6 +535,31 @@ export function OpportunityDetailPanel({
                 {t('opportunities.detail.recommendations')}
               </h3>
               <p className="text-sm text-secondary leading-relaxed">{opportunity.description}</p>
+            </div>
+          )}
+
+          {/* Performance Tracking Section */}
+          {performanceStatus && (
+            <div data-testid="opportunity-performance-section">
+              <h3 className="text-sm font-medium text-white mb-3 flex items-center gap-2">
+                <Clock className="w-4 h-4 text-muted" />
+                {t('opportunities.performance.title')}
+              </h3>
+              <PerformanceCard
+                status={performanceStatus as PerformanceStatus}
+                positionBefore={latestCheck?.position_before ?? opportunity.metrics.position ?? null}
+                positionAfter={latestCheck?.position_after ?? null}
+                t={t}
+                onConnectGsc={onConnectGsc}
+              />
+              {performanceChecks.length > 0 && (
+                <div className="mt-4">
+                  <h4 className="text-xs text-muted uppercase tracking-wider mb-2">
+                    {t('opportunities.performance.history')}
+                  </h4>
+                  <PerformanceHistory checks={performanceChecks} t={t} />
+                </div>
+              )}
             </div>
           )}
 

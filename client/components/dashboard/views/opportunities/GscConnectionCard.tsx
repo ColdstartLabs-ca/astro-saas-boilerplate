@@ -9,7 +9,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Search, ExternalLink, CheckCircle2, AlertCircle, Unlink, Loader2, Clock, Settings } from 'lucide-react';
+import { Search, ExternalLink, CheckCircle2, AlertCircle, Unlink, Loader2, Clock, Settings, AlertTriangle, Zap, TrendingUp, FileText } from 'lucide-react';
 import { DashboardButton } from '../../ui/DashboardButton';
 import { GscSiteSelector } from './GscSiteSelector';
 import { useTranslations } from '@client/hooks/useTranslations';
@@ -40,7 +40,7 @@ interface IGscConnectionCardProps {
 // Sub-Components
 // =============================================================================
 
-/** Not connected state — full CTA card */
+/** Not connected state — full CTA card with feature warnings */
 function NotConnectedState({
   onConnect,
   isConnecting,
@@ -51,8 +51,42 @@ function NotConnectedState({
   t: (key: string) => string;
 }): JSX.Element {
   return (
-    <div data-testid="gsc-connection-card" className="bg-surface border border-border rounded-xl p-6">
-      <div className="flex flex-col items-center text-center">
+    <div data-testid="gsc-connection-card" className="bg-surface border border-border rounded-xl overflow-hidden">
+      {/* Warning banner */}
+      <div className="bg-amber-500/10 border-b border-amber-500/20 px-4 py-3">
+        <div className="flex items-start gap-3">
+          <AlertTriangle className="w-5 h-5 text-amber-400 flex-shrink-0 mt-0.5" />
+          <div>
+            <h4 className="text-sm font-medium text-amber-400">
+              {t('opportunities.gsc.warningTitle')}
+            </h4>
+            <p className="text-xs text-secondary mt-1">
+              {t('opportunities.gsc.warningDescription')}
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* Features list */}
+      <div className="px-6 py-4 border-b border-border">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <div className="flex items-center gap-2 text-xs text-secondary">
+            <Zap className="w-4 h-4 text-primary flex-shrink-0" />
+            <span>{t('opportunities.gsc.warningFeature1')}</span>
+          </div>
+          <div className="flex items-center gap-2 text-xs text-secondary">
+            <TrendingUp className="w-4 h-4 text-primary flex-shrink-0" />
+            <span>{t('opportunities.gsc.warningFeature2')}</span>
+          </div>
+          <div className="flex items-center gap-2 text-xs text-secondary">
+            <FileText className="w-4 h-4 text-primary flex-shrink-0" />
+            <span>{t('opportunities.gsc.warningFeature3')}</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Connect CTA */}
+      <div className="flex flex-col items-center text-center p-6">
         <div className="w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center mb-4">
           <Search className="w-7 h-7 text-primary" />
         </div>
@@ -73,6 +107,11 @@ function NotConnectedState({
         </DashboardButton>
 
         <p className="text-xs text-muted mt-3">{t('opportunities.gsc.freeNote')}</p>
+
+        {/* Note about backwards compatibility */}
+        <p className="text-xs text-muted mt-4 max-w-md">
+          {t('opportunities.gsc.warningNote')}
+        </p>
       </div>
     </div>
   );

@@ -525,7 +525,13 @@
       "disconnectConfirm": "Are you sure you want to disconnect Google Search Console?",
       "selectSite": "Select a site to monitor",
       "lastSynced": "Last synced",
-      "noSites": "No verified sites found in your Google Search Console account"
+      "noSites": "No verified sites found in your Google Search Console account",
+      "warningTitle": "GSC Connection Required",
+      "warningDescription": "Connect Google Search Console to unlock full opportunity features:",
+      "warningFeature1": "AI-powered opportunity detection",
+      "warningFeature2": "Performance tracking for created articles",
+      "warningFeature3": "GSC-optimized article generation prompts",
+      "warningNote": "You can still create articles from opportunities without GSC, but they won't have GSC-optimized prompts or performance tracking."
     },
     "analyzeNow": "Analyze Now",
     "analyzing": "Analyzing...",
@@ -533,7 +539,14 @@
     "filter": {
       "all": "All",
       "content": "Content",
-      "technical": "Technical"
+      "technical": "Technical",
+      "performance": "Performance",
+      "performanceAll": "All Performance",
+      "performanceImproved": "Improved",
+      "performanceStable": "Stable",
+      "performanceDeclined": "Declined",
+      "performanceNotFound": "Not Found",
+      "performancePending": "Pending Check"
     },
     "dismiss": "Dismiss",
     "createArticle": "Create Article",
@@ -547,6 +560,31 @@
       "impressions": "Impressions",
       "clicks": "Clicks",
       "recommendations": "Recommendations"
+    },
+    "performance": {
+      "title": "Performance Tracking",
+      "improved": "Position Improved",
+      "improvedDescription": "Position improved from {before} to {after}",
+      "stable": "Position Stable",
+      "stableDescription": "Position stable at ~{current}",
+      "declined": "Position Declined",
+      "declinedDescription": "Position declined from {before} to {after}",
+      "notFound": "Not Found in GSC",
+      "notFoundDescription": "No data found for this query in the last 7 days",
+      "noGsc": "GSC Connection Required",
+      "noGscDescription": "Performance tracking requires an active Google Search Console connection. Connect GSC to track ranking changes.",
+      "noGscConnect": "Connect GSC",
+      "suggestions": "Suggestions",
+      "suggestionsDeclined": [
+        "Review and refresh the article content",
+        "Check for new competitors ranking higher",
+        "Update meta title and description",
+        "Add more internal links to this page"
+      ],
+      "history": "Performance History",
+      "checkDate": "Checked",
+      "noChecks": "No performance checks yet",
+      "pending": "Pending"
     },
     "type": {
       "content_gap": "Content Gap",

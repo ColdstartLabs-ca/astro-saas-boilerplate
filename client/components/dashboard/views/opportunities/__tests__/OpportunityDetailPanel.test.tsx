@@ -27,6 +27,14 @@ vi.mock('lucide-react', () => {
     Loader2: icon,
     CheckCircle: icon,
     ArrowRight: icon,
+    ArrowUpRight: icon,
+    Minus: icon,
+    ArrowDownRight: icon,
+    HelpCircle: icon,
+    Clock: icon,
+    Sparkles: icon,
+    AlertTriangle: icon,
+    ExternalLink: icon,
   };
 });
 
@@ -52,6 +60,10 @@ const mockTranslations: Record<string, string> = {
   'opportunities.status.in_progress': 'In Progress',
   'opportunities.status.completed': 'Completed',
   'opportunities.status.dismissed': 'Dismissed',
+  'opportunities.performance.title': 'Performance Tracking',
+  'opportunities.performance.noGsc': 'GSC Connection Required',
+  'opportunities.performance.noGscDescription': 'Performance tracking requires an active Google Search Console connection.',
+  'opportunities.performance.noGscConnect': 'Connect GSC',
 };
 
 vi.mock('@client/hooks/useTranslations', () => ({
@@ -76,6 +88,8 @@ describe('OpportunityDetailPanel', () => {
     status: 'open',
     action_type: null,
     action_ref_id: null,
+    performance_status: null,
+    last_checked_at: null,
     created_at: '2026-01-15T10:00:00Z',
     updated_at: '2026-01-15T10:00:00Z',
   };

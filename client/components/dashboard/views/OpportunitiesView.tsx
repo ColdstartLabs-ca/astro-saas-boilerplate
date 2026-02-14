@@ -25,6 +25,7 @@ import type {
   OpportunityStatus,
   IGscConnectionSafe,
   IGscSite,
+  PerformanceStatus,
 } from '@shared/types/opportunity.types';
 import type { IProject } from '@shared/types/project.types';
 import dayjs from 'dayjs';
@@ -127,6 +128,25 @@ function TypeLabel({
   );
 }
 
+function PerformanceBadge({ status }: { status: PerformanceStatus }): JSX.Element {
+  const colors: Record<PerformanceStatus, string> = {
+    pending: 'bg-blue-500',
+    improved: 'bg-emerald-500',
+    stable: 'bg-amber-500',
+    declined: 'bg-red-500',
+    not_found: 'bg-zinc-500',
+    no_gsc: 'bg-amber-500',
+  };
+
+  return (
+    <span
+      className={`w-2.5 h-2.5 rounded-full ${colors[status] ?? 'bg-zinc-500'}`}
+      title={`Performance: ${status}`}
+      data-testid="performance-badge"
+    />
+  );
+}
+
 // =============================================================================
 // Main Component
 // =============================================================================
@@ -157,6 +177,7 @@ export function OpportunitiesView({
   // Local filter state
   const [categoryFilter, setCategoryFilter] = useState<'all' | OpportunityCategory>('all');
   const [statusFilter, setStatusFilter] = useState<'all' | OpportunityStatus>('all');
+  const [performanceFilter, setPerformanceFilter] = useState<'all' | PerformanceStatus | 'pending'>('all');
   const [searchQuery, setSearchQuery] = useState('');
 
   // Filter and sort opportunities
@@ -171,6 +192,15 @@ export function OpportunitiesView({
     // Status filter
     if (statusFilter !== 'all') {
       filtered = filtered.filter(o => o.status === statusFilter);
+    }
+
+    // Performance filter
+    if (performanceFilter !== 'all') {
+      if (performanceFilter === 'pending') {
+        filtered = filtered.filter(o => !o.performance_status);
+      } else {
+        filtered = filtered.filter(o => o.performance_status === performanceFilter);
+      }
     }
 
     // Search filter
@@ -188,7 +218,7 @@ export function OpportunitiesView({
     filtered.sort((a, b) => b.priority_score - a.priority_score);
 
     return filtered;
-  }, [opportunities, categoryFilter, statusFilter, searchQuery]);
+  }, [opportunities, categoryFilter, statusFilter, performanceFilter, searchQuery]);
 
   // ---- Empty state: No project selected ----
   if (!isLoading && !activeProject) {
@@ -351,6 +381,20 @@ export function OpportunitiesView({
           <option value="dismissed">{t('opportunities.status.dismissed')}</option>
         </select>
 
+        {/* Performance filter */}
+        <select
+          value={performanceFilter}
+          onChange={e => setPerformanceFilter(e.target.value as 'all' | PerformanceStatus | 'pending')}
+          className="bg-surface border border-border rounded-lg px-3 py-2 text-sm text-secondary focus:outline-none focus:ring-2 focus:ring-accent focus:border-transparent"
+        >
+          <option value="all">{t('opportunities.filter.performanceAll')}</option>
+          <option value="improved">{t('opportunities.filter.performanceImproved')}</option>
+          <option value="stable">{t('opportunities.filter.performanceStable')}</option>
+          <option value="declined">{t('opportunities.filter.performanceDeclined')}</option>
+          <option value="not_found">{t('opportunities.filter.performanceNotFound')}</option>
+          <option value="pending">{t('opportunities.filter.performancePending')}</option>
+        </select>
+
         {/* Search input */}
         <div className="relative flex-1 max-w-sm">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted" />
@@ -490,8 +534,11 @@ function OpportunityRow({
       </div>
 
       {/* Status */}
-      <div className="flex items-center">
+      <div className="flex items-center gap-1.5">
         <StatusBadge status={opportunity.status} t={t} />
+        {opportunity.performance_status && (
+          <PerformanceBadge status={opportunity.performance_status} />
+        )}
       </div>
 
       {/* Metrics */}

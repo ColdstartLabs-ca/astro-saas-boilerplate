@@ -149,6 +149,8 @@ export class OpportunityAnalysisService {
         status: 'open' as const,
         action_type: null,
         action_ref_id: null,
+        performance_status: null,
+        last_checked_at: null,
         created_at: now,
         updated_at: now,
       };

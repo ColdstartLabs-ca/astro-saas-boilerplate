@@ -27,7 +27,7 @@ export type OpportunityCategory = 'content' | 'technical';
 export type OpportunityStatus = 'open' | 'in_progress' | 'completed' | 'dismissed';
 
 /** Performance status for tracking ranking changes after action */
-export type PerformanceStatus = 'pending' | 'improved' | 'stable' | 'declined' | 'not_found';
+export type PerformanceStatus = 'pending' | 'improved' | 'stable' | 'declined' | 'not_found' | 'no_gsc';
 
 /** Opportunity estimated impact */
 export type OpportunityImpact = 'high' | 'medium' | 'low';
