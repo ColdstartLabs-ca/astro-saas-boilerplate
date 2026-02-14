@@ -36,6 +36,10 @@ Disallow: /
 # Sitemap
 Sitemap: ${BASE_URL}/sitemap-static.xml
 Sitemap: ${BASE_URL}/sitemap-blog.xml
+Sitemap: ${BASE_URL}/sitemap-alternatives.xml
+Sitemap: ${BASE_URL}/sitemap-comparisons.xml
+Sitemap: ${BASE_URL}/sitemap-use-cases.xml
+Sitemap: ${BASE_URL}/sitemap-tools.xml
 
 # Host
 Host: ${BASE_URL}

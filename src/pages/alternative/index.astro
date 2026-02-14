@@ -1,0 +1,79 @@
+---
+/**
+ * Alternatives Index Page
+ *
+ * Lists all alternative comparison pages for programmatic SEO.
+ * Prerendered at build time.
+ */
+
+import Layout from '../../layouts/Layout.astro';
+import SEO from '../../components/SEO.astro';
+import { getAllAlternatives } from '@server/pseo/alternatives';
+
+export const prerender = true;
+
+const alternatives = getAllAlternatives();
+---
+
+<Layout title="AutopilotRank Alternatives - Compare AI SEO Tools">
+  <Fragment slot="head">
+    <SEO
+      title="AutopilotRank Alternatives - Compare AI SEO Tools"
+      description="Compare AutopilotRank with other AI SEO content tools. Find the best alternative for your needs with detailed feature comparisons."
+      path="/alternative"
+    />
+  </Fragment>
+
+  <div class="min-h-screen bg-main">
+    <!-- Hero Section -->
+    <section class="max-w-5xl mx-auto px-4 py-12 text-center">
+      <h1 class="text-4xl md:text-5xl font-bold text-white mb-4">
+        AutopilotRank Alternatives
+      </h1>
+      <p class="text-xl text-muted-foreground mb-8 max-w-3xl mx-auto">
+        See how AutopilotRank compares to other AI SEO content tools.
+        Make an informed decision with detailed feature comparisons.
+      </p>
+    </section>
+
+    <!-- Alternatives Grid -->
+    <section class="max-w-5xl mx-auto px-4 py-12">
+      <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {alternatives.map(alt => (
+          <a
+            href={`/alternative/${alt.slug}`}
+            class="block bg-surface/30 hover:bg-surface/50 p-6 rounded-lg transition-colors group border border-border hover:border-accent/50"
+          >
+            <h2 class="text-xl font-semibold text-white group-hover:text-accent transition-colors mb-2">
+              {alt.competitorName} Alternative
+            </h2>
+            <p class="text-muted-foreground text-sm">
+              {alt.metaDescription.slice(0, 120)}...
+            </p>
+            <span class="inline-block mt-4 text-accent text-sm font-medium">
+              View Comparison &rarr;
+            </span>
+          </a>
+        ))}
+      </div>
+    </section>
+
+    <!-- CTA Section -->
+    <section class="max-w-5xl mx-auto px-4 py-16 text-center">
+      <div class="bg-gradient-to-r from-accent/20 to-accent/5 rounded-xl p-12 border border-accent/20">
+        <h2 class="text-3xl font-bold text-white mb-4">
+          Ready to Try AutopilotRank?
+        </h2>
+        <p class="text-xl text-muted-foreground mb-8">
+          Start your free trial and see the difference.
+        </p>
+        <a
+          href="/pricing"
+          class="inline-block bg-accent text-white px-8 py-3 rounded-lg font-semibold hover:bg-accent/90 transition-colors"
+        >
+          Start Free Trial
+        </a>
+      </div>
+    </section>
+  </div>
+</Layout>

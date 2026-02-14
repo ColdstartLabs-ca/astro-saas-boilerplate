@@ -54,7 +54,12 @@
     "termsOfService": "Terms of Service",
     "privacy": "Privacy",
     "terms": "Terms",
-    "help": "Help"
+    "help": "Help",
+    "resources": "Resources",
+    "alternatives": "Alternatives",
+    "comparisons": "Comparisons",
+    "useCases": "Use Cases",
+    "freeSeoTools": "Free SEO Tools"
   },
   "nav": {
     "dashboard": "Dashboard",

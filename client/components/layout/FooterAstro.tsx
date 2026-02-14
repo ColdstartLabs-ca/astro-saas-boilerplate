@@ -17,7 +17,7 @@ export function FooterAstro(): JSX.Element {
   return (
     <footer className="bg-main text-text-muted mt-auto border-t border-border">
       <div className="max-w-[1600px] mx-auto px-6 py-20">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-12 mb-16">
+        <div className="grid grid-cols-1 md:grid-cols-5 gap-12 mb-16">
           {/* Company Info */}
           <div className="space-y-4">
             <a href="/">
@@ -42,6 +42,35 @@ export function FooterAstro(): JSX.Element {
               <li>
                 <a href={localizedPath('/blog')} className="hover:text-accent transition-colors">
                   {t('latestUpdates')}
+                </a>
+              </li>
+            </ul>
+          </div>
+
+          {/* Resources - pSEO Links */}
+          <div>
+            <h4 className="text-white font-bold mb-6 uppercase text-xs tracking-widest">
+              {t('resources')}
+            </h4>
+            <ul className="space-y-4 text-sm font-medium">
+              <li>
+                <a href="/alternative" className="hover:text-accent transition-colors">
+                  {t('alternatives')}
+                </a>
+              </li>
+              <li>
+                <a href="/compare" className="hover:text-accent transition-colors">
+                  {t('comparisons')}
+                </a>
+              </li>
+              <li>
+                <a href="/use-cases" className="hover:text-accent transition-colors">
+                  {t('useCases')}
+                </a>
+              </li>
+              <li>
+                <a href="/tools" className="hover:text-accent transition-colors">
+                  {t('freeSeoTools')}
                 </a>
               </li>
             </ul>

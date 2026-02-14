@@ -1,0 +1,269 @@
+---
+/**
+ * Alternative Page Dynamic Route
+ *
+ * Programmatic SEO alternative comparison pages.
+ * Prerendered at build time for zero runtime cost on Cloudflare Workers.
+ */
+
+import Layout from '../../layouts/Layout.astro';
+import SEO from '../../components/SEO.astro';
+import ComparisonTable from '../../components/pseo/ComparisonTable.astro';
+import {
+  getAlternativeBySlug,
+  getAllAlternativeSlugs,
+  getAlternativesBySlugs,
+} from '@server/pseo/alternatives';
+import { clientEnv } from '@shared/config/env';
+
+export const prerender = true;
+
+export function getStaticPaths() {
+  const slugs = getAllAlternativeSlugs();
+  return slugs.map(slug => ({
+    params: { slug },
+  }));
+}
+
+const { slug } = Astro.params;
+const page = getAlternativeBySlug(slug);
+
+if (!page) {
+  return Astro.redirect('/404');
+}
+
+// Get related alternatives for linking
+const relatedAlternatives = getAlternativesBySlugs(page.relatedAlternatives);
+
+// Build JSON-LD structured data
+const softwareAppJsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'SoftwareApplication',
+  name: clientEnv.APP_NAME,
+  applicationCategory: 'BusinessApplication',
+  operatingSystem: 'Web',
+  offers: {
+    '@type': 'Offer',
+    price: '9',
+    priceCurrency: 'USD',
+  },
+  aggregateRating: {
+    '@type': 'AggregateRating',
+    ratingValue: '4.8',
+    ratingCount: '250',
+  },
+};
+
+const faqJsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'FAQPage',
+  mainEntity: page.faqs.map(faq => ({
+    '@type': 'Question',
+    name: faq.question,
+    acceptedAnswer: {
+      '@type': 'Answer',
+      text: faq.answer,
+    },
+  })),
+};
+
+const breadcrumbJsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'BreadcrumbList',
+  itemListElement: [
+    {
+      '@type': 'ListItem',
+      position: 1,
+      name: 'Home',
+      item: clientEnv.BASE_URL,
+    },
+    {
+      '@type': 'ListItem',
+      position: 2,
+      name: 'Alternatives',
+      item: `${clientEnv.BASE_URL}/alternative`,
+    },
+    {
+      '@type': 'ListItem',
+      position: 3,
+      name: page.competitorName,
+      item: `${clientEnv.BASE_URL}/alternative/${page.slug}`,
+    },
+  ],
+};
+
+const pageUrl = `/alternative/${page.slug}`;
+---
+
+<Layout title={page.metaTitle}>
+  <Fragment slot="head">
+    <SEO
+      title={page.metaTitle}
+      description={page.metaDescription}
+      path={pageUrl}
+      additionalMeta={[
+        { name: 'keywords', content: [page.primaryKeyword, ...page.secondaryKeywords].join(', ') },
+      ]}
+    />
+    <!-- JSON-LD structured data -->
+    <script type="application/ld+json" set:html={JSON.stringify(softwareAppJsonLd)} />
+    <script type="application/ld+json" set:html={JSON.stringify(faqJsonLd)} />
+    <script type="application/ld+json" set:html={JSON.stringify(breadcrumbJsonLd)} />
+  </Fragment>
+
+  <div class="min-h-screen bg-main">
+    <!-- Breadcrumb Navigation -->
+    <nav class="max-w-5xl mx-auto px-4 py-4">
+      <ol class="flex items-center space-x-2 text-sm text-muted-foreground">
+        <li><a href="/" class="hover:text-accent transition-colors">Home</a></li>
+        <li><span class="mx-2">/</span></li>
+        <li><a href="/alternative" class="hover:text-accent transition-colors">Alternatives</a></li>
+        <li><span class="mx-2">/</span></li>
+        <li class="text-white">{page.competitorName}</li>
+      </ol>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="max-w-5xl mx-auto px-4 py-12 text-center">
+      <h1 class="text-4xl md:text-5xl font-bold text-white mb-4">{page.h1}</h1>
+      <p class="text-xl text-muted-foreground mb-8 max-w-3xl mx-auto">{page.heroSubtitle}</p>
+      <a
+        href="/pricing"
+        class="inline-block bg-accent text-white px-8 py-3 rounded-lg font-semibold hover:bg-accent/90 transition-colors"
+      >
+        Start Free Trial
+      </a>
+    </section>
+
+    <!-- Why Switch Section -->
+    <section class="max-w-5xl mx-auto px-4 py-12">
+      <h2 class="text-3xl font-bold text-white mb-8 text-center">
+        Why Switch from {page.competitorName}?
+      </h2>
+      <ul class="grid md:grid-cols-2 gap-4 max-w-3xl mx-auto">
+        {page.whySwitchReasons.map(reason => (
+          <li class="flex items-start space-x-3 bg-surface/30 p-4 rounded-lg">
+            <span class="text-accent text-xl">&#10003;</span>
+            <span class="text-white">{reason}</span>
+          </li>
+        ))}
+      </ul>
+    </section>
+
+    <!-- Feature Comparison Table -->
+    <section class="max-w-5xl mx-auto px-4 py-12">
+      <h2 class="text-3xl font-bold text-white mb-8 text-center">
+        {page.competitorName} vs AutopilotRank: Feature Comparison
+      </h2>
+      <div class="bg-surface/50 rounded-lg p-6">
+        <ComparisonTable
+          features={page.featureComparison}
+          ourName="AutopilotRank"
+          theirName={page.competitorName}
+        />
+      </div>
+    </section>
+
+    <!-- Our Advantages Section -->
+    <section class="max-w-5xl mx-auto px-4 py-12">
+      <h2 class="text-3xl font-bold text-white mb-8 text-center">
+        Why Choose AutopilotRank
+      </h2>
+      <ul class="grid md:grid-cols-2 gap-4 max-w-3xl mx-auto">
+        {page.ourAdvantages.map(advantage => (
+          <li class="flex items-start space-x-3 bg-accent/10 border border-accent/20 p-4 rounded-lg">
+            <span class="text-accent text-xl">&#10003;</span>
+            <span class="text-white">{advantage}</span>
+          </li>
+        ))}
+      </ul>
+    </section>
+
+    <!-- {page.competitorName} Weaknesses Section -->
+    <section class="max-w-5xl mx-auto px-4 py-12">
+      <h2 class="text-3xl font-bold text-white mb-8 text-center">
+        {page.competitorName} Limitations
+      </h2>
+      <ul class="grid md:grid-cols-1 gap-4 max-w-2xl mx-auto">
+        {page.competitorWeaknesses.map(weakness => (
+          <li class="flex items-start space-x-3 bg-red-500/10 border border-red-500/20 p-4 rounded-lg">
+            <span class="text-red-400 text-xl">&#10007;</span>
+            <span class="text-white">{weakness}</span>
+          </li>
+        ))}
+      </ul>
+    </section>
+
+    <!-- FAQ Section -->
+    <section class="max-w-5xl mx-auto px-4 py-12">
+      <h2 class="text-3xl font-bold text-white mb-8 text-center">
+        Frequently Asked Questions
+      </h2>
+      <div class="space-y-4 max-w-3xl mx-auto">
+        {page.faqs.map(faq => (
+          <div class="bg-surface/30 rounded-lg p-6">
+            <h3 class="text-lg font-semibold text-white mb-2">{faq.question}</h3>
+            <p class="text-muted-foreground">{faq.answer}</p>
+          </div>
+        ))}
+      </div>
+    </section>
+
+    <!-- Bottom CTA Section -->
+    <section class="max-w-5xl mx-auto px-4 py-16 text-center">
+      <div class="bg-gradient-to-r from-accent/20 to-accent/5 rounded-xl p-12 border border-accent/20">
+        <h2 class="text-3xl font-bold text-white mb-4">
+          Ready to Try a Better {page.competitorName} Alternative?
+        </h2>
+        <p class="text-xl text-muted-foreground mb-8 max-w-2xl mx-auto">
+          Join thousands of businesses using AutopilotRank for human-quality AI SEO content.
+        </p>
+        <div class="flex flex-col sm:flex-row gap-4 justify-center">
+          <a
+            href="/pricing"
+            class="inline-block bg-accent text-white px-8 py-3 rounded-lg font-semibold hover:bg-accent/90 transition-colors"
+          >
+            Start Free Trial
+          </a>
+          <a
+            href="/"
+            class="inline-block bg-transparent border border-white/20 text-white px-8 py-3 rounded-lg font-semibold hover:bg-white/5 transition-colors"
+          >
+            Learn More
+          </a>
+        </div>
+      </div>
+    </section>
+
+    <!-- Related Alternatives Section -->
+    {relatedAlternatives.length > 0 && (
+      <section class="max-w-5xl mx-auto px-4 py-12">
+        <h2 class="text-2xl font-bold text-white mb-6 text-center">
+          Other Alternatives You Might Like
+        </h2>
+        <div class="grid md:grid-cols-2 gap-4 max-w-2xl mx-auto">
+          {relatedAlternatives.map(alt => (
+            <a
+              href={`/alternative/${alt.slug}`}
+              class="block bg-surface/30 hover:bg-surface/50 p-6 rounded-lg transition-colors group"
+            >
+              <h3 class="text-lg font-semibold text-white group-hover:text-accent transition-colors">
+                {alt.title}
+              </h3>
+              <p class="text-muted-foreground text-sm mt-2">{alt.metaDescription.slice(0, 100)}...</p>
+            </a>
+          ))}
+        </div>
+      </section>
+    )}
+
+    <!-- Last Updated -->
+    <div class="max-w-5xl mx-auto px-4 py-6 text-center text-sm text-muted-foreground">
+      Last updated: {new Date(page.lastUpdated).toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+      })}
+    </div>
+  </div>
+</Layout>

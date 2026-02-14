@@ -1,0 +1,72 @@
+---
+/**
+ * Breadcrumbs Component
+ *
+ * Reusable breadcrumb navigation with JSON-LD structured data.
+ * Used across pSEO pages for consistent navigation and SEO.
+ */
+
+import { clientEnv } from '@shared/config/env';
+
+interface IBreadcrumbItem {
+  label: string;
+  href?: string;
+}
+
+interface IProps {
+  items: IBreadcrumbItem[];
+  class?: string;
+}
+
+const { items, class: className = '' } = Astro.props;
+
+// Build JSON-LD structured data
+const breadcrumbJsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'BreadcrumbList',
+  itemListElement: [
+    {
+      '@type': 'ListItem',
+      position: 1,
+      name: 'Home',
+      item: clientEnv.BASE_URL,
+    },
+    ...items.map((item, index) => ({
+      '@type': 'ListItem',
+      position: index + 2,
+      name: item.label,
+      ...(item.href ? { item: `${clientEnv.BASE_URL}${item.href}` } : {}),
+    })),
+  ],
+};
+---
+
+<nav class={`max-w-5xl mx-auto px-4 py-4 ${className}`} aria-label="Breadcrumb">
+  <!-- JSON-LD structured data -->
+  <script type="application/ld+json" set:html={JSON.stringify(breadcrumbJsonLd)} />
+
+  <ol class="flex items-center flex-wrap gap-x-2 text-sm text-muted-foreground">
+    <!-- Home link -->
+    <li>
+      <a href="/" class="hover:text-accent transition-colors">
+        Home
+      </a>
+    </li>
+
+    <!-- Breadcrumb items -->
+    {items.map((item, index) => (
+      <li class="flex items-center gap-x-2">
+        <span class="text-muted-foreground/50">/</span>
+        {item.href && index < items.length - 1 ? (
+          <a href={item.href} class="hover:text-accent transition-colors">
+            {item.label}
+          </a>
+        ) : (
+          <span class="text-white" aria-current={index === items.length - 1 ? 'page' : undefined}>
+            {item.label}
+          </span>
+        )}
+      </li>
+    ))}
+  </ol>
+</nav>

@@ -18,6 +18,14 @@ const staticPages = [
   { path: '/help', priority: '0.6', changefreq: 'monthly' },
   { path: '/privacy', priority: '0.3', changefreq: 'yearly' },
   { path: '/terms', priority: '0.3', changefreq: 'yearly' },
+  // pSEO index pages
+  { path: '/alternative', priority: '0.8', changefreq: 'weekly' },
+  { path: '/compare', priority: '0.8', changefreq: 'weekly' },
+  { path: '/use-cases', priority: '0.8', changefreq: 'weekly' },
+  { path: '/tools', priority: '0.8', changefreq: 'weekly' },
+  // Resources
+  { path: '/resources', priority: '0.7', changefreq: 'weekly' },
+  { path: '/resources/best-ai-seo-tools-2026', priority: '0.8', changefreq: 'monthly' },
 ];
 
 export const GET: APIRoute = () => {

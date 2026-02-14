@@ -1,0 +1,134 @@
+---
+/**
+ * RelatedPages Component
+ *
+ * Displays related pages from the same pSEO category.
+ * Used for internal linking and improved SEO structure.
+ */
+
+import alternativesData from '@content/alternatives-data.json';
+import comparisonsData from '@content/comparisons-data.json';
+import useCasesData from '@content/use-cases-data.json';
+import toolsData from '@content/tools-data.json';
+
+type Category = 'alternatives' | 'comparisons' | 'use-cases' | 'tools';
+
+interface IProps {
+  currentSlug: string;
+  category: Category;
+  limit?: number;
+  class?: string;
+}
+
+const { currentSlug, category, limit = 3, class: className = '' } = Astro.props;
+
+// Get the appropriate data based on category
+const getDataByCategory = (cat: Category) => {
+  switch (cat) {
+    case 'alternatives':
+      return alternativesData.pages;
+    case 'comparisons':
+      return comparisonsData.pages;
+    case 'use-cases':
+      return useCasesData.pages;
+    case 'tools':
+      return toolsData.pages;
+    default:
+      return [];
+  }
+};
+
+// Get the URL prefix based on category
+const getUrlPrefix = (cat: Category) => {
+  switch (cat) {
+    case 'alternatives':
+      return '/alternative';
+    case 'comparisons':
+      return '/compare';
+    case 'use-cases':
+      return '/use-cases';
+    case 'tools':
+      return '/tools';
+    default:
+      return '';
+  }
+};
+
+// Get category label
+const getCategoryLabel = (cat: Category) => {
+  switch (cat) {
+    case 'alternatives':
+      return 'Alternative Comparisons';
+    case 'comparisons':
+      return 'Related Comparisons';
+    case 'use-cases':
+      return 'Related Use Cases';
+    case 'tools':
+      return 'Related Tools';
+    default:
+      return 'Related Pages';
+  }
+};
+
+// Get display title for a page
+const getPageTitle = (page: any, cat: Category) => {
+  switch (cat) {
+    case 'alternatives':
+      return `${page.competitorName} Alternative`;
+    case 'comparisons':
+      return page.title.split(':')[0] || page.title;
+    case 'use-cases':
+      return page.title;
+    case 'tools':
+      return page.toolName || page.title;
+    default:
+      return page.title;
+  }
+};
+
+// Get description for a page
+const getPageDescription = (page: any, cat: Category) => {
+  switch (cat) {
+    case 'alternatives':
+      return page.heroSubtitle || page.metaDescription?.slice(0, 100);
+    case 'comparisons':
+      return page.verdict?.slice(0, 100) || page.metaDescription?.slice(0, 100);
+    case 'use-cases':
+      return page.solutionDescription?.slice(0, 100) || page.metaDescription?.slice(0, 100);
+    case 'tools':
+      return page.toolDescription?.slice(0, 100) || page.metaDescription?.slice(0, 100);
+    default:
+      return page.metaDescription?.slice(0, 100);
+  }
+};
+
+const allPages = getDataByCategory(category);
+const urlPrefix = getUrlPrefix(category);
+const categoryLabel = getCategoryLabel(category);
+
+// Filter out current page and limit results
+const relatedPages = allPages
+  .filter((page: any) => page.slug !== currentSlug)
+  .slice(0, limit);
+---
+
+{relatedPages.length > 0 && (
+  <section class={`max-w-5xl mx-auto px-4 py-8 ${className}`}>
+    <h2 class="text-xl font-bold text-white mb-6">{categoryLabel}</h2>
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+      {relatedPages.map((page: any) => (
+        <a
+          href={`${urlPrefix}/${page.slug}`}
+          class="group bg-secondary/30 border border-border rounded-lg p-4 hover:border-accent/50 transition-all duration-200"
+        >
+          <h3 class="text-accent font-semibold mb-2 group-hover:text-accent/80 transition-colors">
+            {getPageTitle(page, category)}
+          </h3>
+          <p class="text-sm text-muted-foreground line-clamp-2">
+            {getPageDescription(page, category)}
+          </p>
+        </a>
+      ))}
+    </div>
+  </section>
+)}

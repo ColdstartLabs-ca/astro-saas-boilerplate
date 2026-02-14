@@ -1,0 +1,132 @@
+{
+  "pages": [
+    {
+      "slug": "keyword-density-checker",
+      "title": "Free Keyword Density Checker Tool",
+      "metaTitle": "Keyword Density Checker — Free SEO Tool",
+      "metaDescription": "Check keyword density in your content. Free online tool to analyze and optimize your content's keyword usage for better SEO.",
+      "h1": "Keyword Density Checker",
+      "primaryKeyword": "keyword density checker",
+      "secondaryKeywords": [
+        "keyword density tool",
+        "check keyword density",
+        "seo density analyzer"
+      ],
+      "lastUpdated": "2026-02-13",
+      "toolName": "Keyword Density Checker",
+      "toolDescription": "Analyze the keyword density of your content to ensure optimal SEO performance. Ideal density is 1-2%.",
+      "componentName": "KeywordDensityTool",
+      "howToUse": [
+        "Paste your content into the text area",
+        "Enter the keyword you want to analyze",
+        "Click 'Analyze' to see the density percentage",
+        "Review recommendations for optimization"
+      ],
+      "whyUseIt": [
+        "Avoid keyword stuffing penalties",
+        "Ensure optimal keyword usage for SEO",
+        "Quickly analyze multiple pieces of content",
+        "Free with no signup required"
+      ],
+      "faqs": [
+        {
+          "question": "What is keyword density?",
+          "answer": "Keyword density is the percentage of times a keyword appears in your content compared to the total word count. An ideal density is 1-2%."
+        },
+        {
+          "question": "Why does keyword density matter for SEO?",
+          "answer": "Too low means search engines might not understand your topic. Too high can look like keyword stuffing and hurt rankings."
+        },
+        {
+          "question": "Is this tool free?",
+          "answer": "Yes, this keyword density checker is completely free with no signup required."
+        }
+      ],
+      "relatedTools": ["meta-description-validator", "title-tag-optimizer"]
+    },
+    {
+      "slug": "meta-description-validator",
+      "title": "Free Meta Description Validator Tool",
+      "metaTitle": "Meta Description Validator — Free SEO Tool",
+      "metaDescription": "Validate your meta descriptions for length, keyword usage, and SEO best practices. Free online tool.",
+      "h1": "Meta Description Validator",
+      "primaryKeyword": "meta description validator",
+      "secondaryKeywords": [
+        "meta description checker",
+        "meta description length",
+        "seo meta description tool"
+      ],
+      "lastUpdated": "2026-02-13",
+      "toolName": "Meta Description Validator",
+      "toolDescription": "Check if your meta description meets SEO best practices: ideal length (150-160 chars), keyword presence, and compelling copy.",
+      "componentName": "MetaDescriptionTool",
+      "howToUse": [
+        "Enter your meta description",
+        "Enter your target keyword (optional)",
+        "Get instant feedback on length and optimization",
+        "Receive suggestions for improvement"
+      ],
+      "whyUseIt": [
+        "Ensure proper length for Google snippets",
+        "Check keyword presence in description",
+        "Improve click-through rates from search",
+        "Free with instant results"
+      ],
+      "faqs": [
+        {
+          "question": "What is the ideal meta description length?",
+          "answer": "The ideal length is 150-160 characters. Longer descriptions get truncated, shorter ones miss opportunities."
+        },
+        {
+          "question": "Should my keyword be in the meta description?",
+          "answer": "Yes, including your target keyword helps with relevance and appears bold in search results."
+        },
+        {
+          "question": "How does this help my SEO?",
+          "answer": "Well-optimized meta descriptions improve click-through rates, which can positively impact rankings."
+        }
+      ],
+      "relatedTools": ["keyword-density-checker", "title-tag-optimizer"]
+    },
+    {
+      "slug": "title-tag-optimizer",
+      "title": "Free Title Tag Optimizer Tool",
+      "metaTitle": "Title Tag Optimizer — Free SEO Tool",
+      "metaDescription": "Optimize your page titles for SEO. Check length, keyword placement, and get suggestions for better title tags.",
+      "h1": "Title Tag Optimizer",
+      "primaryKeyword": "title tag optimizer",
+      "secondaryKeywords": ["seo title checker", "title tag length", "page title optimizer"],
+      "lastUpdated": "2026-02-13",
+      "toolName": "Title Tag Optimizer",
+      "toolDescription": "Analyze your page titles for optimal SEO: check length (50-60 chars), keyword presence, and get improvement suggestions.",
+      "componentName": "TitleTagTool",
+      "howToUse": [
+        "Enter your page title",
+        "Enter your target keyword",
+        "Get an instant SEO score",
+        "Review suggestions for optimization"
+      ],
+      "whyUseIt": [
+        "Titles are the most important on-page SEO factor",
+        "Ensure proper length for search display",
+        "Verify keyword placement",
+        "Improve click-through rates"
+      ],
+      "faqs": [
+        {
+          "question": "What is the ideal title tag length?",
+          "answer": "The ideal length is 50-60 characters. Google truncates longer titles, shorter ones waste valuable space."
+        },
+        {
+          "question": "Where should my keyword appear?",
+          "answer": "Ideally at the beginning of the title, but natural placement is more important than exact position."
+        },
+        {
+          "question": "Can I use the same title as my H1?",
+          "answer": "While similar, they can differ. Your title is for search results, H1 is for on-page content. Both should include your keyword."
+        }
+      ],
+      "relatedTools": ["keyword-density-checker", "meta-description-validator"]
+    }
+  ]
+}

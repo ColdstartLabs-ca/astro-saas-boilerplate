@@ -1,0 +1,54 @@
+---
+/**
+ * CTASection Component
+ *
+ * Reusable call-to-action section for pSEO pages.
+ * Styled with gradient background and prominent buttons.
+ */
+
+interface ICTAButton {
+  text: string;
+  href: string;
+}
+
+interface IProps {
+  heading?: string;
+  subtext?: string;
+  primaryCta?: ICTAButton;
+  secondaryCta?: ICTAButton;
+}
+
+const {
+  heading = 'Start Creating AI SEO Content Today',
+  subtext = 'Join thousands of businesses using AutopilotRank for human-quality AI SEO content.',
+  primaryCta = { text: 'Start Free Trial', href: '/pricing' },
+  secondaryCta,
+} = Astro.props;
+---
+
+<section class="max-w-5xl mx-auto px-4 py-16 text-center">
+  <div class="bg-gradient-to-r from-accent/20 to-accent/5 rounded-xl p-12 border border-accent/20">
+    <h2 class="text-3xl font-bold text-white mb-4">
+      {heading}
+    </h2>
+    <p class="text-xl text-muted-foreground mb-8 max-w-2xl mx-auto">
+      {subtext}
+    </p>
+    <div class="flex flex-col sm:flex-row gap-4 justify-center">
+      <a
+        href={primaryCta.href}
+        class="inline-block bg-accent text-white px-8 py-3 rounded-lg font-semibold hover:bg-accent/90 transition-colors"
+      >
+        {primaryCta.text}
+      </a>
+      {secondaryCta && (
+        <a
+          href={secondaryCta.href}
+          class="inline-block bg-transparent border border-white/20 text-white px-8 py-3 rounded-lg font-semibold hover:bg-white/5 transition-colors"
+        >
+          {secondaryCta.text}
+        </a>
+      )}
+    </div>
+  </div>
+</section>
