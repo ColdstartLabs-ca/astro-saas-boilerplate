@@ -13,6 +13,7 @@ import type {
   IIntegrationCredentials,
   ITestConnectionResult,
   IDeliveryResult,
+  IntegrationType,
 } from '@shared/types/integration.types';
 
 /**
@@ -67,5 +68,5 @@ export interface ICMSAdapter {
   /**
    * Get the adapter type identifier
    */
-  readonly type: 'wordpress' | 'webhook';
+  readonly type: IntegrationType;
 }

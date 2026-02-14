@@ -3,10 +3,12 @@
  *
  * Orchestrates article delivery to integrations (WordPress, webhooks).
  * Creates delivery records, dispatches to adapters, and tracks results.
+ * Fires webhook events for Zapier/Make integration on successful delivery.
  */
 
 import { supabaseAdmin } from '@server/supabase/supabaseAdmin';
 import { integrationService } from './integration.service';
+import { webhookEventService } from './webhook-event.service';
 import { getAdapter } from '@server/integrations';
 import type {
   IIntegrationDelivery,
@@ -267,7 +269,19 @@ export class DeliveryService {
                 published_at: new Date().toISOString(),
               })
               .eq('id', articleId);
+
+            // Update local article reference for webhook payload
+            (article as Record<string, unknown>).published_url = publishResult.externalUrl;
           }
+
+          // Fire article.published webhook event (fire-and-forget)
+          this.fireArticlePublishedEvent(
+            article as unknown as IArticle & { published_url?: string },
+            campaign as unknown as ICampaign | null,
+            project as unknown as IProject | null
+          ).catch(err => {
+            serviceLogger.error('[DeliveryService] Failed to fire webhook event', err);
+          });
 
           results.successful++;
         } else {
@@ -382,6 +396,43 @@ export class DeliveryService {
 
     const settings = (data.settings as ICampaignSettings) || {};
     return settings.auto_publish === true;
+  }
+
+  /**
+   * Fire article.published webhook event for Zapier/Make integration
+   * Uses fire-and-forget pattern - errors are logged but don't block delivery.
+   *
+   * @param article - Article that was published
+   * @param campaign - Campaign the article belongs to
+   * @param project - Project the campaign belongs to
+   */
+  private async fireArticlePublishedEvent(
+    article: IArticle & { published_url?: string },
+    campaign: ICampaign | null,
+    project: IProject | null
+  ): Promise<void> {
+    try {
+      const articleData = webhookEventService.buildArticleEventData(
+        {
+          id: article.id,
+          title: article.title,
+          slug: article.slug,
+          primary_keyword: article.primary_keyword,
+          word_count: article.word_count,
+          seo_score: article.seo_score,
+          published_url: article.published_url || null,
+          campaign_id: article.campaign_id,
+          project_id: article.project_id,
+        },
+        campaign ? { id: campaign.id, name: campaign.name } : null,
+        project ? { id: project.id, name: project.name } : null
+      );
+
+      await webhookEventService.dispatch(article.user_id, 'article.published', articleData);
+    } catch (error) {
+      // Log but don't throw - webhook delivery should not block the main operation
+      serviceLogger.error('[DeliveryService] Error firing article.published event', error);
+    }
   }
 }
 

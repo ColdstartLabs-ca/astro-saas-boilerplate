@@ -16,6 +16,8 @@ import {
   ArrowRight,
   SkipForward,
   AlertTriangle,
+  Hexagon,
+  BookOpen,
 } from 'lucide-react';
 import { DashboardButton } from '@client/components/dashboard/ui/DashboardButton';
 import { useOnboardingStore } from '@client/store/onboardingStore';
@@ -97,6 +99,42 @@ const INTEGRATION_OPTIONS: IIntegrationOption[] = [
     ],
   },
   {
+    type: 'wix',
+    name: 'Wix',
+    description: 'Publish articles to your Wix blog',
+    icon: Hexagon,
+    fields: [
+      {
+        name: 'name',
+        label: 'Integration Name',
+        type: 'text',
+        placeholder: 'My Wix Site',
+        required: true,
+      },
+      {
+        name: 'siteId',
+        label: 'Site ID',
+        type: 'text',
+        placeholder: 'From Wix Dashboard > Settings > Developer Tools',
+        required: true,
+      },
+      {
+        name: 'apiKey',
+        label: 'API Key',
+        type: 'password',
+        placeholder: 'From Wix Dashboard > Headless Settings > API Keys',
+        required: true,
+      },
+      {
+        name: 'accountId',
+        label: 'Account ID',
+        type: 'text',
+        placeholder: 'From Wix Dashboard > Settings > Developer Tools',
+        required: true,
+      },
+    ],
+  },
+  {
     type: 'webhook',
     name: 'Webhook',
     description: 'Send articles to any endpoint via webhook',
@@ -122,6 +160,35 @@ const INTEGRATION_OPTIONS: IIntegrationOption[] = [
         type: 'password',
         placeholder: 'Webhook signing secret',
         required: false,
+      },
+    ],
+  },
+  {
+    type: 'ghost',
+    name: 'Ghost',
+    description: 'Auto-publish articles to your Ghost blog',
+    icon: BookOpen,
+    fields: [
+      {
+        name: 'name',
+        label: 'Integration Name',
+        type: 'text',
+        placeholder: 'My Ghost Blog',
+        required: true,
+      },
+      {
+        name: 'siteUrl',
+        label: 'Site URL',
+        type: 'url',
+        placeholder: 'https://myblog.ghost.io',
+        required: true,
+      },
+      {
+        name: 'adminApiKey',
+        label: 'Admin API Key',
+        type: 'password',
+        placeholder: 'From Ghost Settings > Integrations > Custom Integration',
+        required: true,
       },
     ],
   },
@@ -167,21 +234,38 @@ export function OnboardingStepIntegrations({
 
     try {
       // Build the integration input based on type
-      const input =
-        selectedType === 'wordpress'
-          ? {
-              type: 'wordpress' as const,
-              name: formData.name,
-              siteUrl: formData.siteUrl,
-              username: formData.username,
-              appPassword: formData.appPassword,
-            }
-          : {
-              type: 'webhook' as const,
-              name: formData.name,
-              url: formData.url,
-              secret: formData.secret || undefined,
-            };
+      let input;
+      if (selectedType === 'wordpress') {
+        input = {
+          type: 'wordpress' as const,
+          name: formData.name,
+          siteUrl: formData.siteUrl,
+          username: formData.username,
+          appPassword: formData.appPassword,
+        };
+      } else if (selectedType === 'wix') {
+        input = {
+          type: 'wix' as const,
+          name: formData.name,
+          siteId: formData.siteId,
+          apiKey: formData.apiKey,
+          accountId: formData.accountId,
+        };
+      } else if (selectedType === 'ghost') {
+        input = {
+          type: 'ghost' as const,
+          name: formData.name,
+          siteUrl: formData.siteUrl,
+          adminApiKey: formData.adminApiKey,
+        };
+      } else {
+        input = {
+          type: 'webhook' as const,
+          name: formData.name,
+          url: formData.url,
+          secret: formData.secret || undefined,
+        };
+      }
 
       await createIntegration(input);
 

@@ -275,22 +275,34 @@ class InMemoryQueryBuilder implements PromiseLike<QueryResult<unknown>> {
   }
 
   gt(column: string, value: unknown): this {
-    this.filters.push(row => (row[column] as number | string | null) > (value as number | string));
+    this.filters.push(row => {
+      const cellValue = row[column] as number | string | null;
+      return cellValue !== null && cellValue > (value as number | string);
+    });
     return this;
   }
 
   gte(column: string, value: unknown): this {
-    this.filters.push(row => (row[column] as number | string | null) >= (value as number | string));
+    this.filters.push(row => {
+      const cellValue = row[column] as number | string | null;
+      return cellValue !== null && cellValue >= (value as number | string);
+    });
     return this;
   }
 
   lt(column: string, value: unknown): this {
-    this.filters.push(row => (row[column] as number | string | null) < (value as number | string));
+    this.filters.push(row => {
+      const cellValue = row[column] as number | string | null;
+      return cellValue !== null && cellValue < (value as number | string);
+    });
     return this;
   }
 
   lte(column: string, value: unknown): this {
-    this.filters.push(row => (row[column] as number | string | null) <= (value as number | string));
+    this.filters.push(row => {
+      const cellValue = row[column] as number | string | null;
+      return cellValue !== null && cellValue <= (value as number | string);
+    });
     return this;
   }
 

@@ -113,4 +113,5 @@ export const PUBLIC_API_ROUTES = [
   '/api/proxy-image', // Download proxy for CORS bypass (validates allowed domains internally)
   '/api/support/*', // Support contact form (public, uses validation and rate limiting)
   '/api/gsc/callback', // Google OAuth callback (uses state param + project lookup for auth)
+  '/api/feeds/*', // RSS feeds (public, uses feed token auth)
 ] as const;

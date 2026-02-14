@@ -25,6 +25,22 @@ we deliver true automation with Surfer-level quality and rock-solid reliability.
 
 ## Underserved Needs → Value Mapping
 
+```mermaid
+quadrantChart
+    title Importance vs Satisfaction (Market Gap Analysis)
+    x-axis Low Satisfaction --> High Satisfaction
+    y-axis Low Importance --> High Importance
+    quadrant-1 Maintain Lead
+    quadrant-2 Biggest Opportunities
+    quadrant-3 Low Priority
+    quadrant-4 Monitor
+    Quality content that ranks: [0.20, 0.90]
+    Platform reliability: [0.15, 0.85]
+    Responsive support: [0.18, 0.82]
+    Full automation: [0.40, 0.88]
+    Easy setup: [0.50, 0.55]
+```
+
 | Underserved Need           | Importance | Satisfaction | AutopilotRank Solution              |
 | -------------------------- | ---------- | ------------ | ----------------------------------- |
 | Quality content that ranks | HIGH       | LOW          | Multi-model AI + Humanizer engine   |
@@ -36,6 +52,70 @@ we deliver true automation with Surfer-level quality and rock-solid reliability.
 ---
 
 ## Value Proposition Canvas
+
+```mermaid
+block-beta
+    columns 2
+
+    block:valuemap["🎯 Value Map"]:1
+        columns 1
+        block:ps["Products & Services"]
+            columns 1
+            A["Multi-model AI (GPT-4, Claude, Gemini)"]
+            B["Pre-publication QA"]
+            C["Native CMS Integrations"]
+            D["Demand Sniffer"]
+            E["Directory Submission"]
+        end
+        block:pr["Pain Relievers"]
+            columns 1
+            F["Humanizer → human-quality content"]
+            G["Multi-layer validation"]
+            H["One-click publishing"]
+            I["Auto content gap discovery"]
+        end
+        block:gc["Gain Creators"]
+            columns 1
+            J["100+ articles/month auto"]
+            K["Publish-ready, no editing"]
+            L["Zero manual workflow"]
+        end
+    end
+
+    block:customer["👤 Customer Profile"]:1
+        columns 1
+        block:jobs["Customer Jobs"]
+            columns 1
+            M["Rank on Google"]
+            N["Scale content production"]
+            O["Beat competitors in search"]
+            P["Prove ROI to stakeholders"]
+        end
+        block:pains["Pains"]
+            columns 1
+            Q["No time to write content"]
+            R["Writers expensive & inconsistent"]
+            S["Existing AI tools → generic"]
+            T["Platform bugs waste time"]
+        end
+        block:gains["Gains"]
+            columns 1
+            U["Consistent organic leads"]
+            V["90% cost reduction"]
+            W["Competitive advantage"]
+            X["Clear traffic/ranking metrics"]
+        end
+    end
+
+    style valuemap fill:#1e3a5f,color:#fff
+    style customer fill:#2d5016,color:#fff
+    style ps fill:#2a4a7f,color:#fff
+    style pr fill:#2a4a7f,color:#fff
+    style gc fill:#2a4a7f,color:#fff
+    style jobs fill:#3a6a1f,color:#fff
+    style pains fill:#3a6a1f,color:#fff
+    style gains fill:#3a6a1f,color:#fff
+```
 
 ### Customer Profile (Right Side)
 
@@ -63,6 +143,38 @@ we deliver true automation with Surfer-level quality and rock-solid reliability.
 
 ## Kano Model Feature Classification
 
+```mermaid
+graph LR
+    subgraph MH["🔴 Must-Have (P0)"]
+        direction TB
+        M1["AI Content Generation"]
+        M2["CMS Publishing"]
+        M3["Keyword Research"]
+    end
+
+    subgraph PF["🟡 Performance (P1)"]
+        direction TB
+        P1["Humanizer Engine"]
+        P2["Multi-Model AI"]
+        P3["Pre-Publication QA"]
+    end
+
+    subgraph DL["🟢 Delighter (P2-P3)"]
+        direction TB
+        D1["AI Detection Scoring"]
+        D2["Auto Internal Linking"]
+        D3["Demand Sniffer"]
+        D4["Directory Submission"]
+        D5["Brand Voice (P3)"]
+    end
+
+    MH -->|"Foundation"| PF -->|"Differentiation"| DL
+
+    style MH fill:#7f1d1d,color:#fff
+    style PF fill:#78350f,color:#fff
+    style DL fill:#14532d,color:#fff
+```
+
 | Feature                       | Category        | Strategy                            | Priority |
 | ----------------------------- | --------------- | ----------------------------------- | -------- |
 | AI content generation         | **Must-Have**   | Ensure 100% reliable                | P0       |
@@ -85,11 +197,53 @@ The SEO content automation market is fragmented. No single competitor delivers:
 
 - **Outrank's automation** + **Surfer's quality** + **Jasper's creativity** + **Reliable support**
 
+```mermaid
+graph TB
+    subgraph gap["🎯 The Market Gap"]
+        direction TB
+        center["AutopilotRank<br/><b>All Four Combined</b>"]
+    end
+
+    A["🤖 Outrank<br/>Automation"] -->|"Has automation<br/>but generic content"| center
+    B["📊 Surfer SEO<br/>Quality"] -->|"Has quality<br/>but manual work"| center
+    C["✍️ Jasper AI<br/>Creativity"] -->|"Has creativity<br/>but not SEO-specific"| center
+    D["🎧 Premium Support<br/>Reliability"] -->|"Industry-wide<br/>complaints"| center
+
+    style center fill:#1e40af,color:#fff,stroke:#3b82f6,stroke-width:3px
+    style gap fill:#1e3a5f22,stroke:#1e3a5f
+    style A fill:#991b1b,color:#fff
+    style B fill:#065f46,color:#fff
+    style C fill:#78350f,color:#fff
+    style D fill:#581c87,color:#fff
+```
+
 This gap represents a significant opportunity for AutopilotRank.
 
 ---
 
 ## Competitor Analysis
+
+### Competitive Landscape Map
+
+```mermaid
+quadrantChart
+    title Automation Level vs Content Quality
+    x-axis Low Automation --> Full Automation
+    y-axis Low Quality --> High Quality
+    quadrant-1 The Goal
+    quadrant-2 Quality but Manual
+    quadrant-3 Weak Overall
+    quadrant-4 Automated but Generic
+    AutopilotRank: [0.90, 0.90]
+    Surfer SEO: [0.15, 0.88]
+    Jasper AI: [0.20, 0.82]
+    Frase.io: [0.25, 0.75]
+    RankYak: [0.70, 0.70]
+    SEO.ai: [0.65, 0.65]
+    Byword: [0.60, 0.55]
+    Outrank.so: [0.80, 0.35]
+    Soogle: [0.30, 0.30]
+```
 
 ### Competitor Ratings Overview
 
@@ -209,9 +363,10 @@ This gap represents a significant opportunity for AutopilotRank.
 
 | Feature                     | AutopilotRank | Outrank.so | RankYak | Byword | Surfer | Frase | Jasper | SEO.ai |
 | --------------------------- | ------------- | ---------- | ------- | ------ | ------ | ----- | ------ | ------ |
-| **AI Image Generation**     | ✅            | ✅         | ❌      | ❌     | ❌     | ❌    | ✅     | ❌     |
+| **AI Image Generation**     | ✅            | ✅         | ✅      | ❌     | ❌     | ❌    | ✅     | ❌     |
 | **Image Placement Control** | ✅            | ❌         | ❌      | ❌     | ❌     | ❌    | ❌     | ❌     |
 | **Stock Image Integration** | ✅            | ✅         | ❌      | ❌     | ❌     | ❌    | ❌     | ❌     |
+| **Video Embedding**         | ❌            | ❌         | ✅      | ❌     | ❌     | ❌    | ❌     | ❌     |
 
 ### SEO Tools & Automation (Bonus Features)
 
@@ -272,6 +427,33 @@ This gap represents a significant opportunity for AutopilotRank.
 
 ## AutopilotRank Value Propositions
 
+### Customer Segments & Value Delivery
+
+```mermaid
+mindmap
+    root((AutopilotRank<br/>Value Props))
+        🏪 SMB / Solopreneurs
+            100+ articles/month auto
+            90% cost savings
+            No tech knowledge needed
+            Long-tail traffic capture
+        🏢 Marketing Agencies
+            White-label ready
+            10x faster fulfillment
+            Multi-site discounts
+            Margin expansion
+        🛒 E-commerce Brands
+            1000s of category pages
+            Product description at scale
+            Capture shopping intent
+            Reduce CAC
+        🏛️ Enterprise Teams
+            Brand safety controls
+            API-first architecture
+            Approval workflows
+            SOC 2 ready
+```
+
 ### By Customer Segment
 
 #### For SMB Owners & Solopreneurs
@@ -315,6 +497,50 @@ This gap represents a significant opportunity for AutopilotRank.
 ---
 
 ## Unique Competitive Advantages
+
+### AutopilotRank End-to-End Workflow
+
+```mermaid
+flowchart LR
+    subgraph INPUT["📥 Input"]
+        KW["Keyword Research<br/>+ Custom Upload"]
+        GSC["GSC Integration<br/>+ Demand Sniffer"]
+    end
+
+    subgraph ENGINE["⚙️ Content Engine"]
+        AI["Multi-Model AI<br/>(GPT-4, Claude, Gemini)"]
+        HM["Humanizer<br/>Engine"]
+        QA["Pre-Publication<br/>QA Checks"]
+    end
+
+    subgraph OUTPUT["📤 Publish"]
+        WP["WordPress"]
+        WF["Webflow"]
+        SH["Shopify"]
+        GH["Ghost"]
+        NT["Notion"]
+        WH["Webhooks / API"]
+    end
+
+    subgraph MONITOR["📊 Monitor"]
+        RT["Rank Tracking"]
+        TA["Traffic Analytics"]
+        RF["Auto Refresh Recs"]
+    end
+
+    KW --> AI
+    GSC --> AI
+    AI --> HM --> QA
+    QA --> WP & WF & SH & GH & NT & WH
+    WP & WF & SH & GH & NT & WH --> RT
+    RT --> TA --> RF
+    RF -->|"Content refresh"| AI
+
+    style INPUT fill:#1e3a5f,color:#fff
+    style ENGINE fill:#78350f,color:#fff
+    style OUTPUT fill:#14532d,color:#fff
+    style MONITOR fill:#581c87,color:#fff
+```
 
 ### 1. True Autonomy
 
@@ -381,6 +607,20 @@ Built specifically for pSEO with:
 
 ## Competitive Positioning Matrix
 
+```mermaid
+---
+config:
+    xyChart:
+        chartOrientation: horizontal
+---
+xychart-beta
+    title "AutopilotRank Competitive Positioning (1-5 Scale)"
+    x-axis ["Automation", "Quality", "Reliability", "Features", "Support", "Value"]
+    y-axis "Score" 0 --> 5
+    bar [5, 5, 5, 5, 5, 5]
+    line [5, 5, 5, 5, 5, 5]
+```
+
 | Dimension                | AutopilotRank Position                              |
 | ------------------------ | --------------------------------------------------- |
 | **Automation Level**     | Highest (vs. Surfer/Frase that require manual work) |
@@ -409,6 +649,54 @@ How we measure value delivery:
 ---
 
 ## Why Customers Will Switch to AutopilotRank
+
+```mermaid
+flowchart LR
+    subgraph TRIGGERS["⚡ Switch Triggers"]
+        direction TB
+        T1["Poor content quality"]
+        T2["Platform bugs & instability"]
+        T3["Still requires manual work"]
+        T4["Fragmented toolstack"]
+        T5["High cost ($50-200/article)"]
+    end
+
+    subgraph FROM["📤 Switching From"]
+        direction TB
+        F1["Outrank.so"]
+        F2["Byword"]
+        F3["Surfer SEO"]
+        F4["Frase.io"]
+        F5["Jasper AI"]
+        F6["Multiple tools"]
+        F7["Agencies"]
+    end
+
+    subgraph AP["✅ AutopilotRank"]
+        direction TB
+        A1["Quality + Reliability"]
+        A2["Full automation"]
+        A3["All-in-one platform"]
+        A4["90%+ cost savings"]
+    end
+
+    F1 -->|"bugs, generic"| T1 & T2
+    F2 -->|"no backlinks, CMS issues"| T2 & T4
+    F3 -->|"manual work"| T3
+    F4 -->|"instability"| T2 & T3
+    F5 -->|"not SEO-specific"| T4
+    F6 -->|"expensive stack"| T4 & T5
+    F7 -->|"$50-200/article"| T5
+
+    T1 & T2 --> A1
+    T3 --> A2
+    T4 --> A3
+    T5 --> A4
+
+    style TRIGGERS fill:#7f1d1d,color:#fff
+    style FROM fill:#78350f,color:#fff
+    style AP fill:#14532d,color:#fff
+```
 
 | From                     | Switch Trigger                           | AutopilotRank Advantage                              |
 | ------------------------ | ---------------------------------------- | ---------------------------------------------------- |

@@ -1,0 +1,72 @@
+{
+  "apiKeys": {
+    "title": "API Keys",
+    "subtitle": "Manage API keys for programmatic access",
+    "description": "Use API keys to programmatically create campaigns and fetch content.",
+    "createButton": "Create API Key",
+    "empty": "No API keys yet",
+    "emptyDescription": "Create an API key to access the AutopilotRank API programmatically.",
+    "listHeader": {
+      "name": "Name",
+      "key": "Key Prefix",
+      "scopes": "Scopes",
+      "lastUsed": "Last Used",
+      "created": "Created",
+      "actions": "Actions"
+    },
+    "scopes": {
+      "articles:read": "Articles: Read",
+      "articles:write": "Articles: Write",
+      "campaigns:read": "Campaigns: Read",
+      "campaigns:write": "Campaigns: Write",
+      "integrations:read": "Integrations: Read"
+    },
+    "neverUsed": "Never used",
+    "revoke": "Revoke",
+    "revoking": "Revoking...",
+    "revokeConfirm": "Are you sure you want to revoke this API key? This action cannot be undone.",
+    "revokeSuccess": "API key revoked successfully",
+    "revokeError": "Failed to revoke API key",
+    "createSuccess": "API key created successfully",
+    "createError": "Failed to create API key",
+    "loadError": "Failed to load API keys",
+    "form": {
+      "title": "Create API Key",
+      "name": "Key Name",
+      "namePlaceholder": "e.g., Production Server, Zapier Integration",
+      "nameHelp": "A descriptive name to identify this key",
+      "nameRequired": "Key name is required",
+      "scopes": "Permissions",
+      "scopesHelp": "Select the permissions this key will have",
+      "scopesRequired": "Select at least one permission",
+      "selectAll": "Select All",
+      "deselectAll": "Deselect All",
+      "cancel": "Cancel",
+      "create": "Create Key",
+      "creating": "Creating..."
+    },
+    "createdDialog": {
+      "title": "API Key Created",
+      "subtitle": "Save this key now - it will not be shown again",
+      "warning": "This is the only time you will see this API key. Store it securely - it cannot be retrieved later.",
+      "copied": "Copied to clipboard!",
+      "copyButton": "Copy API Key",
+      "done": "Done"
+    }
+  },
+  "rssFeed": {
+    "title": "RSS Feed",
+    "subtitle": "Subscribe to your published articles via RSS",
+    "description": "Use this RSS feed URL to subscribe to your published articles in any RSS reader.",
+    "feedUrl": "Feed URL",
+    "copied": "Feed URL copied to clipboard!",
+    "copyButton": "Copy URL",
+    "regenerate": "Regenerate Token",
+    "regenerating": "Regenerating...",
+    "regenerateConfirm": "Are you sure you want to regenerate your feed token? Your existing RSS subscriptions will stop working until you update them with the new URL.",
+    "regenerateSuccess": "Feed token regenerated successfully",
+    "regenerateError": "Failed to regenerate feed token",
+    "loadError": "Failed to load feed token",
+    "warning": "Keep this URL private - anyone with access can view your published articles."
+  }
+}

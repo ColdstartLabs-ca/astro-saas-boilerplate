@@ -225,6 +225,10 @@ export function withAuthAndBody<T extends z.ZodType>(
  * - IntegrationNotFoundError → 404 NOT_FOUND
  * - OnboardingNotFoundError → 404 NOT_FOUND
  * - OnboardingStepError → 400 VALIDATION_ERROR
+ * - ApiKeyNotFoundError → 404 NOT_FOUND
+ * - ApiKeyValidationError → 401 UNAUTHORIZED
+ * - ApiKeyScopeError → 403 FORBIDDEN
+ * - ApiKeyRateLimitError → 429 RATE_LIMITED
  * - EncryptionKeyError → 500 INTERNAL_ERROR
  * - DecryptionError → 500 INTERNAL_ERROR
  * - Everything else → 500 INTERNAL_ERROR
@@ -257,6 +261,14 @@ export function handleApiError(error: unknown, context?: string): Response {
         return errorResponse('NOT_FOUND', error.message, 404);
       case 'OnboardingStepError':
         return errorResponse('VALIDATION_ERROR', error.message, 400);
+      case 'ApiKeyNotFoundError':
+        return errorResponse('NOT_FOUND', error.message, 404);
+      case 'ApiKeyValidationError':
+        return errorResponse('UNAUTHORIZED', error.message, 401);
+      case 'ApiKeyScopeError':
+        return errorResponse('FORBIDDEN', error.message, 403);
+      case 'ApiKeyRateLimitError':
+        return errorResponse('RATE_LIMITED', error.message, 429);
       case 'EncryptionKeyError':
       case 'DecryptionError':
         return errorResponse('INTERNAL_ERROR', error.message, 500);

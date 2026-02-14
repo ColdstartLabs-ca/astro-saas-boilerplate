@@ -1,9 +1,11 @@
 'use client';
 
 import { useState } from 'react';
-import { UserCircle, CreditCard, Globe, BellRing, Key, User, Check, Plus, Database } from 'lucide-react';
+import { UserCircle, CreditCard, Globe, BellRing, Key, User, Check, Database } from 'lucide-react';
 import { DashboardButton } from '../ui/DashboardButton';
 import { InternalTabs } from '../ui/InternalTabs';
+import { ApiKeysSection } from '@client/components/settings/ApiKeysSection';
+import { RssFeedSection } from '@client/components/settings/RssFeedSection';
 
 export function SettingsView(): JSX.Element {
   const [activeTab, setActiveTab] = useState('profile');
@@ -182,30 +184,10 @@ export function SettingsView(): JSX.Element {
             )}
 
             {activeTab === 'api' && (
-                <div className="p-8 space-y-8 animate-fadeIn">
-                    <div>
-                        <h3 className="text-lg font-medium text-white mb-4">API Access</h3>
-                        <p className="text-sm text-secondary mb-4">Use the API to programmatically create campaigns and fetch content.</p>
-                        <div className="flex gap-2">
-                            <input type="password" value="apr_live_xxxxxxxxxxxxxxxxxxxxxxxx" readOnly className="flex-1 bg-main border border-border rounded-lg px-3 py-2 text-sm text-secondary font-mono" />
-                            <DashboardButton size="sm" variant="outline">Copy</DashboardButton>
-                            <DashboardButton size="sm" variant="outline">Regenerate</DashboardButton>
-                        </div>
-                    </div>
+                <div className="p-8 space-y-10 animate-fadeIn">
+                    <ApiKeysSection />
                     <div className="pt-8 border-t border-border">
-                        <h3 className="text-lg font-medium text-white mb-4">Team Members</h3>
-                        <div className="space-y-4">
-                            <div className="flex items-center justify-between bg-main p-3 rounded-lg border border-border">
-                                <div className="flex items-center gap-3">
-                                    <div className="w-8 h-8 rounded-full bg-accent/50 text-accent-hover flex items-center justify-center text-xs font-bold">DU</div>
-                                    <div>
-                                        <div className="text-sm font-medium text-white">Demo User</div>
-                                        <div className="text-xs text-muted">Owner</div>
-                                    </div>
-                                </div>
-                            </div>
-                            <DashboardButton variant="outline" size="sm" className="w-full border-dashed"><Plus className="w-4 h-4 mr-2"/> Invite Member</DashboardButton>
-                        </div>
+                        <RssFeedSection />
                     </div>
                 </div>
             )}
