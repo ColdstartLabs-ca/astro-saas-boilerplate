@@ -2,7 +2,7 @@
 
 > AI SEO Content Automation Platform - "Outrank's Automation + Surfer's Quality. Finally."
 
-**Last Updated:** 2026-02-12
+**Last Updated:** 2026-02-13
 **Launch Target:** Early March 2026
 
 ---
@@ -245,7 +245,7 @@ Annual discount: 20% off (~2 months free).
 
 **Onboarding:**
 
-- [ ] Simple in-app onboarding: connect WordPress → enter keywords → generate first article
+- [x] Simple in-app onboarding: connect WordPress → enter keywords → generate first article
 
 **Landing Page & Content:**
 
@@ -445,6 +445,11 @@ M1 Foundation ✅
 
 | Date       | Change                                                                                                                                                                                                                                                                                                                                                                                                                            |
 | ---------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 2026-02-13 | **Integrations Deep Dive PRD completed!** Competitive analysis of 14 SEO tools (Outrank, RankYa, Surfer SEO, Semrush, Ahrefs, etc.). Prioritized integration roadmap: Zapier/Make (Phase 1), Shopify/Webflow (Phase 2-3), Notion (Phase 3, market gap!), RSS Feed (Phase 1). Adapter pattern (`ICMSAdapter`) enables rapid new CMS integration. Integration frequency: WordPress 71%, GSC 57%, Zapier 50%, Shopify 29%. |
+| 2026-02-13 | **Programmatic SEO (pSEO) Strategy PRD completed!** 5-category pSEO system design: Alternatives, Comparisons, Use Cases, Free Tools, Feature Deep-dives. Data-driven JSON pattern following blog system. Category-specific sitemaps + per-page JSON-LD (FAQPage, SoftwareApplication, BreadcrumbList). SEO.astro component adoption. 30%+ traffic opportunity from low-competition keywords ($5-26 CPC). |
+| 2026-02-13 | **Onboarding Flow completed!** 5-step wizard (Project → GSC → Keywords → Integrations → Complete). OnboardingStore for progress persistence. Auto-redirect on dashboard entry for new users. All onboarding components with i18n. Full test coverage (11 test files). Migration: user_onboarding table. |
+| 2026-02-13 | **E2E testing improvements!** Fixed accessibility issues (aria-label on project name input). Multiple test fixes for reliable CI. |
+| 2026-02-13 | **More integrations!** Expanded integration framework with additional adapters and connection types. |
 | 2026-02-12 | **Milestone 6 Integrations & Scheduling completed!** WordPress + webhook integration framework with encrypted credentials. Campaign scheduling (8 frequencies, batch size, timezone-aware). GSC OAuth integration with opportunities analysis. Cron worker for automated drip-feed generation. Schedule management UI (start/pause/resume). Auto-pause on insufficient credits. 82 scheduling unit tests. PR review: 10 security/quality fixes applied (IDOR prevention, OAuth state binding, timezone math, error handling). |
 | 2026-02-09 | **Milestone 5 Article Management Dashboard completed!** ArticleList component refactor with filtering, search, inline editing. ArticleDetailModal with full Markdown content editing + live preview. AIDetectionScore component added. Approval workflow migration (approved/rejected/reviewed statuses). API endpoints for article updates (PUT/PATCH). Credit tracking already existed from Milestone 4.                        |
 | 2026-02-09 | **Image generation improvements!** Enhanced image generation service with better prompts. CampaignDetailView updated for image handling with 200+ lines of new functionality.                                                                                                                                                                                                                                                     |
