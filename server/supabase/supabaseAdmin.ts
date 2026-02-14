@@ -4,9 +4,8 @@ import { inMemorySupabaseAdmin } from './inMemorySupabaseAdmin';
 
 const isTestRuntime =
   serverEnv.ENV === 'test' ||
-  process.env.ENV === 'test' ||
-  process.env.PLAYWRIGHT_TEST === '1' ||
-  process.env.PLAYWRIGHT_TEST === 'true';
+  serverEnv.PLAYWRIGHT_TEST === '1' ||
+  serverEnv.PLAYWRIGHT_TEST === 'true';
 
 if (!isTestRuntime && !clientEnv.SUPABASE_URL) {
   console.warn('Warning: SUPABASE_URL is not set.');

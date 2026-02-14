@@ -68,12 +68,16 @@ export type IClientEnv = z.infer<typeof clientEnvSchema>;
 function loadClientEnv(): IClientEnv {
   // Guard against import.meta.env being undefined (e.g., in Playwright tests)
   // In ESM, import.meta always exists, but import.meta.env may not
-  const metaEnv = (typeof import.meta !== 'undefined' && import.meta.env) ? import.meta.env : {} as Record<string, string | undefined>;
+  const metaEnv =
+    typeof import.meta !== 'undefined' && import.meta.env
+      ? import.meta.env
+      : ({} as Record<string, string | undefined>);
 
   const env = {
     APP_NAME: metaEnv.PUBLIC_APP_NAME || 'SaaS Boilerplate',
     ENV: metaEnv.PUBLIC_ENV || 'development',
     BASE_URL: metaEnv.PUBLIC_BASE_URL || 'http://localhost:4321',
+    PUBLIC_BASE_URL: metaEnv.PUBLIC_BASE_URL || 'https://autopilotrank.com',
     SUPABASE_URL: metaEnv.PUBLIC_SUPABASE_URL || 'https://example.supabase.co',
     SUPABASE_ANON_KEY: metaEnv.PUBLIC_SUPABASE_ANON_KEY || '',
     GOOGLE_CLIENT_ID: metaEnv.PUBLIC_GOOGLE_CLIENT_ID || '',
@@ -112,12 +116,10 @@ function loadClientEnv(): IClientEnv {
     // Stripe
     STRIPE_PUBLISHABLE_KEY: metaEnv.PUBLIC_STRIPE_PUBLISHABLE_KEY || '',
     // Stripe Credit Pack Price IDs
-    STRIPE_PRICE_CREDITS_SMALL:
-      metaEnv.PUBLIC_STRIPE_PRICE_CREDITS_SMALL || 'price_credits_small',
+    STRIPE_PRICE_CREDITS_SMALL: metaEnv.PUBLIC_STRIPE_PRICE_CREDITS_SMALL || 'price_credits_small',
     STRIPE_PRICE_CREDITS_MEDIUM:
       metaEnv.PUBLIC_STRIPE_PRICE_CREDITS_MEDIUM || 'price_credits_medium',
-    STRIPE_PRICE_CREDITS_LARGE:
-      metaEnv.PUBLIC_STRIPE_PRICE_CREDITS_LARGE || 'price_credits_large',
+    STRIPE_PRICE_CREDITS_LARGE: metaEnv.PUBLIC_STRIPE_PRICE_CREDITS_LARGE || 'price_credits_large',
   };
 
   return clientEnvSchema.parse(env);
@@ -161,7 +163,10 @@ const serverEnvSchema = z.object({
   NODE_ENV: z.string().optional(),
   // Test flags - Playwright sets this to "1" as a string, which Vite may coerce to number
   PLAYWRIGHT_TEST: z.union([z.string(), z.number()]).optional(),
+  // Path to mock database file for Playwright tests
+  PLAYWRIGHT_MOCK_DB_PATH: z.string().optional(),
   // Public URLs (for server-side use)
+  PUBLIC_BASE_URL: z.string().url().optional(),
   SUPABASE_URL: z.string().url().optional(),
   BASE_URL: z.string().url().optional(),
   // Supabase
@@ -239,7 +244,10 @@ export type IServerEnv = z.infer<typeof serverEnvSchema>;
 function loadServerEnv(): IServerEnv {
   // Guard against import.meta.env being undefined (e.g., in Playwright tests)
   // In ESM, import.meta always exists, but import.meta.env may not
-  const metaEnv = (typeof import.meta !== 'undefined' && import.meta.env) ? import.meta.env : {} as Record<string, string | number | boolean | undefined>;
+  const metaEnv =
+    typeof import.meta !== 'undefined' && import.meta.env
+      ? import.meta.env
+      : ({} as Record<string, string | number | boolean | undefined>);
 
   // IMPORTANT: Use process.env for non-prefixed environment variables
   // Vite only exposes variables with VITE_* or PUBLIC_* prefixes to import.meta.env
@@ -254,6 +262,8 @@ function loadServerEnv(): IServerEnv {
     NODE_ENV: metaEnv.NODE_ENV,
     // Test flags - Playwright sets this to "1", accept string or number
     PLAYWRIGHT_TEST: metaEnv.PLAYWRIGHT_TEST ?? undefined,
+    // Path to mock database for Playwright tests
+    PLAYWRIGHT_MOCK_DB_PATH: metaEnv.PLAYWRIGHT_MOCK_DB_PATH ?? undefined,
     // Public URLs
     SUPABASE_URL: metaEnv.PUBLIC_SUPABASE_URL,
     BASE_URL: metaEnv.PUBLIC_BASE_URL,
@@ -288,10 +298,7 @@ function loadServerEnv(): IServerEnv {
     BREVO_API_KEY: metaEnv.BREVO_API_KEY || '',
     RESEND_API_KEY: metaEnv.RESEND_API_KEY || '',
     EMAIL_FROM_ADDRESS: metaEnv.EMAIL_FROM_ADDRESS || 'noreply@example.com',
-    SUPPORT_EMAIL:
-      metaEnv.SUPPORT_EMAIL ||
-      metaEnv.PUBLIC_SUPPORT_EMAIL ||
-      'support@example.com',
+    SUPPORT_EMAIL: metaEnv.SUPPORT_EMAIL || metaEnv.PUBLIC_SUPPORT_EMAIL || 'support@example.com',
     ALLOW_TRANSACTIONAL_EMAILS_IN_DEV: metaEnv.ALLOW_TRANSACTIONAL_EMAILS_IN_DEV ?? 'false',
 
     // AI Providers
@@ -359,7 +366,11 @@ export function isDevelopment(): boolean {
 export function isTest(): boolean {
   // Check both the cached serverEnv and the raw import.meta.env for dynamic test detection
   // Handle string, boolean, and numeric values (Playwright sets PLAYWRIGHT_TEST="1")
-  const playwrightTestValue = import.meta.env.PLAYWRIGHT_TEST as string | boolean | number | undefined;
+  const playwrightTestValue = import.meta.env.PLAYWRIGHT_TEST as
+    | string
+    | boolean
+    | number
+    | undefined;
   return (
     serverEnv.ENV === 'test' ||
     import.meta.env.ENV === 'test' ||

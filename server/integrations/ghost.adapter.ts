@@ -15,7 +15,7 @@ import type {
 } from './adapter.interface';
 
 // RequestInit type definition for fetch API (simplified to avoid DOM dependency issues in ESLint)
- 
+
 interface IRequestInit {
   method?: string;
   headers?: Record<string, string> | { get(name: string): string | null };
@@ -156,7 +156,7 @@ export class GhostAdapter implements ICMSAdapter {
    * Sign a message with HMAC-SHA256 synchronously
    * Uses a simple implementation compatible with Cloudflare Workers
    */
-  private signSync(message: string, _key: Uint8Array): string {
+  private signSync(_message: string, _key: Uint8Array): string {
     // For Cloudflare Workers, we need to use crypto.subtle which is async
     // But JWT generation needs to be sync in this context
     // We'll use a workaround by pre-computing during adapter creation
@@ -368,7 +368,8 @@ export class GhostAdapter implements ICMSAdapter {
         return {
           success: false,
           timestamp: new Date().toISOString(),
-          error: 'Invalid API key format. Please copy the Admin API key from your Ghost admin settings.',
+          error:
+            'Invalid API key format. Please copy the Admin API key from your Ghost admin settings.',
           errorType: 'http_error',
         };
       }
@@ -503,6 +504,7 @@ export class GhostAdapter implements ICMSAdapter {
     if (!markdown) return '';
 
     // Dynamic import to avoid issues in test environments
+    // eslint-disable-next-line no-restricted-syntax -- Dynamic imports required for avoiding test environment issues
     const { marked } = await import('marked');
     const result = marked(markdown);
     return typeof result === 'string' ? result : await result;

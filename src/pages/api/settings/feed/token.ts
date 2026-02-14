@@ -6,8 +6,9 @@
  * These endpoints allow users to manage their RSS feed token from the settings UI.
  */
 
+import { serverEnv } from '@shared/config/env';
 import { feedService } from '@server/services/feed.service';
-import { withAuth, jsonResponse, errorResponse, handleApiError } from '@pages/api/_utils';
+import { withAuth, jsonResponse, handleApiError } from '@pages/api/_utils';
 
 interface IFeedTokenResponse {
   feedToken: string | null;
@@ -25,7 +26,7 @@ export const GET = withAuth(async userId => {
   // Format: /api/feeds/:userId/articles.xml?token=xxx
   let feedUrl: string | null = null;
   if (feedToken) {
-    const baseUrl = process.env.PUBLIC_BASE_URL || 'https://autopilotrank.com';
+    const baseUrl = serverEnv.BASE_URL ?? 'https://autopilotrank.com';
     feedUrl = `${baseUrl}/api/feeds/${userId}/articles.xml?token=${feedToken}`;
   }
 
@@ -45,7 +46,7 @@ export const POST = withAuth(async userId => {
   const newToken = await feedService.regenerateFeedToken(userId);
 
   // Build the new feed URL
-  const baseUrl = process.env.PUBLIC_BASE_URL || 'https://autopilotrank.com';
+  const baseUrl = serverEnv.BASE_URL ?? 'https://autopilotrank.com';
   const feedUrl = `${baseUrl}/api/feeds/${userId}/articles.xml?token=${newToken}`;
 
   const response: IFeedTokenResponse = {

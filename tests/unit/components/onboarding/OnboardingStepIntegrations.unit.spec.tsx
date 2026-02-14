@@ -9,30 +9,26 @@ import { OnboardingStepIntegrations } from '@client/components/onboarding/steps/
 import { OnboardingStep } from '@shared/types/onboarding.types';
 
 // Mock lucide-react icons
-vi.mock('lucide-react', () => ({
-  Loader2: ({ className }: { className?: string }) => (
-    <span className={className} data-icon="Loader2" />
-  ),
-  Plug: ({ className }: { className?: string }) => <span className={className} data-icon="Plug" />,
-  Globe: ({ className }: { className?: string }) => (
-    <span className={className} data-icon="Globe" />
-  ),
-  Webhook: ({ className }: { className?: string }) => (
-    <span className={className} data-icon="Webhook" />
-  ),
-  CheckCircle2: ({ className }: { className?: string }) => (
-    <span className={className} data-icon="CheckCircle2" />
-  ),
-  ArrowRight: ({ className }: { className?: string }) => (
-    <span className={className} data-icon="ArrowRight" />
-  ),
-  SkipForward: ({ className }: { className?: string }) => (
-    <span className={className} data-icon="SkipForward" />
-  ),
-  AlertTriangle: ({ className }: { className?: string }) => (
-    <span className={className} data-icon="AlertTriangle" />
-  ),
-}));
+vi.mock('lucide-react', () => {
+  const icon = ({ className }: { className?: string }) => <span className={className} />;
+  return {
+    Loader2: icon,
+    Plug: icon,
+    Globe: icon,
+    Webhook: icon,
+    CheckCircle2: icon,
+    ArrowRight: icon,
+    SkipForward: icon,
+    AlertTriangle: icon,
+    Hexagon: icon,
+    BookOpen: icon,
+    HelpCircle: icon,
+    ExternalLink: icon,
+    Zap: icon,
+    RefreshCw: icon,
+    Clock: icon,
+  };
+});
 
 // Mutable store state
 let mockStoreState = {
@@ -287,5 +283,88 @@ describe('OnboardingStepIntegrations', () => {
     );
 
     expect(getByText(/Without an integration/)).toBeDefined();
+  });
+
+  it('should show "Why Connect a CMS?" benefits section', () => {
+    const { getByText } = render(
+      <OnboardingStepIntegrations onComplete={mockOnComplete} onSkip={mockOnSkip} />
+    );
+
+    expect(getByText('Why Connect a CMS?')).toBeDefined();
+    expect(getByText('Auto-Publish Articles')).toBeDefined();
+    expect(getByText('Save Hours Every Week')).toBeDefined();
+    expect(getByText('Works With Any Platform')).toBeDefined();
+  });
+
+  it('should show "Choose your platform" label', () => {
+    const { getByText } = render(
+      <OnboardingStepIntegrations onComplete={mockOnComplete} onSkip={mockOnSkip} />
+    );
+
+    expect(getByText('Choose your platform')).toBeDefined();
+  });
+
+  it('should show webhook help toggle when webhook is selected', () => {
+    const { getByText } = render(
+      <OnboardingStepIntegrations onComplete={mockOnComplete} onSkip={mockOnSkip} />
+    );
+
+    fireEvent.click(getByText('Webhook'));
+
+    expect(getByText('How webhooks work')).toBeDefined();
+  });
+
+  it('should toggle webhook help panel', () => {
+    const { getByText, queryByText } = render(
+      <OnboardingStepIntegrations onComplete={mockOnComplete} onSkip={mockOnSkip} />
+    );
+
+    fireEvent.click(getByText('Webhook'));
+
+    // Initially hidden
+    expect(queryByText('How Webhooks Work')).toBeNull();
+
+    // Click to show
+    fireEvent.click(getByText('How webhooks work'));
+    expect(getByText('How Webhooks Work')).toBeDefined();
+    expect(getByText('Payload Format:')).toBeDefined();
+
+    // Click to hide
+    fireEvent.click(getByText('Hide details'));
+    expect(queryByText('How Webhooks Work')).toBeNull();
+  });
+
+  it('should show setup guide link for WordPress', () => {
+    const { getByText } = render(
+      <OnboardingStepIntegrations onComplete={mockOnComplete} onSkip={mockOnSkip} />
+    );
+
+    fireEvent.click(getByText('WordPress'));
+
+    expect(getByText('How to create an App Password')).toBeDefined();
+  });
+
+  it('should show field help text when form is visible', () => {
+    const { getByText } = render(
+      <OnboardingStepIntegrations onComplete={mockOnComplete} onSkip={mockOnSkip} />
+    );
+
+    fireEvent.click(getByText('Webhook'));
+
+    expect(
+      getByText('Your endpoint must accept POST requests and return a 2xx status')
+    ).toBeDefined();
+  });
+
+  it('should hide benefits section when a type is selected', () => {
+    const { getByText, queryByText } = render(
+      <OnboardingStepIntegrations onComplete={mockOnComplete} onSkip={mockOnSkip} />
+    );
+
+    expect(getByText('Why Connect a CMS?')).toBeDefined();
+
+    fireEvent.click(getByText('WordPress'));
+
+    expect(queryByText('Why Connect a CMS?')).toBeNull();
   });
 });

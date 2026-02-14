@@ -1,4 +1,5 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
+import { serverEnv } from '@shared/config/env';
 import fs from 'node:fs';
 import path from 'node:path';
 
@@ -15,7 +16,7 @@ type MutationOperation = 'select' | 'insert' | 'update' | 'delete' | 'upsert';
 
 const GLOBAL_STORE_KEY = '__AUTOPILOTRANK_IN_MEMORY_SUPABASE__';
 const DEFAULT_DB_PATH = '/tmp/autopilotrank-playwright-mock-db.json';
-const DB_PATH = process.env.PLAYWRIGHT_MOCK_DB_PATH || DEFAULT_DB_PATH;
+const DB_PATH = serverEnv.PLAYWRIGHT_MOCK_DB_PATH ?? DEFAULT_DB_PATH;
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
@@ -113,11 +114,7 @@ class InMemoryStore {
         const value = parsed[table];
         this.tables.set(
           table,
-          Array.isArray(value)
-            ? value
-                .filter(isRecord)
-                .map(item => clone(item))
-            : []
+          Array.isArray(value) ? value.filter(isRecord).map(item => clone(item)) : []
         );
       }
     } catch {
@@ -179,7 +176,11 @@ function parseOrClause(orClause: string): FilterFn[] {
     if (ilikeMatch) {
       const [, column, rawPattern] = ilikeMatch;
       const pattern = rawPattern.replace(/^%/, '').replace(/%$/, '').toLowerCase();
-      filters.push(row => String(row[column] ?? '').toLowerCase().includes(pattern));
+      filters.push(row =>
+        String(row[column] ?? '')
+          .toLowerCase()
+          .includes(pattern)
+      );
       continue;
     }
 
@@ -308,7 +309,11 @@ class InMemoryQueryBuilder implements PromiseLike<QueryResult<unknown>> {
 
   ilike(column: string, pattern: string): this {
     const normalized = pattern.replace(/^%/, '').replace(/%$/, '').toLowerCase();
-    this.filters.push(row => String(row[column] ?? '').toLowerCase().includes(normalized));
+    this.filters.push(row =>
+      String(row[column] ?? '')
+        .toLowerCase()
+        .includes(normalized)
+    );
     return this;
   }
 
@@ -415,7 +420,9 @@ class InMemoryQueryBuilder implements PromiseLike<QueryResult<unknown>> {
   private executeSelect(): QueryResult<unknown> {
     const rows = this.applyReadTransforms(this.filterRows(store.get(this.tableName)));
     const count =
-      this.selectOptions.count === 'exact' ? this.filterRows(store.get(this.tableName)).length : null;
+      this.selectOptions.count === 'exact'
+        ? this.filterRows(store.get(this.tableName)).length
+        : null;
 
     return {
       data: this.selectOptions.head === true ? null : this.projectRows(rows),
@@ -661,10 +668,7 @@ class InMemoryQueryBuilder implements PromiseLike<QueryResult<unknown>> {
 
     // Handle campaign integration details join:
     // select("..., integrations (...)")
-    if (
-      this.tableName === 'campaign_integrations' &&
-      normalizedSelect.includes('integrations (')
-    ) {
+    if (this.tableName === 'campaign_integrations' && normalizedSelect.includes('integrations (')) {
       const integrations = store.get('integrations');
       return rows.map(row => {
         const integration = integrations.find(item => item.id === row.integration_id);
@@ -699,7 +703,10 @@ class InMemorySupabaseAdmin {
     return new InMemoryQueryBuilder(tableName);
   }
 
-  async rpc(functionName: string, params: Record<string, unknown> = {}): Promise<QueryResult<unknown>> {
+  async rpc(
+    functionName: string,
+    params: Record<string, unknown> = {}
+  ): Promise<QueryResult<unknown>> {
     store.hydrateFromDisk();
 
     // Minimal RPC support for test flows that mutate credits in-memory.

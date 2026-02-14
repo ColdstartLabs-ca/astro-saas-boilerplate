@@ -18,6 +18,11 @@ import {
   AlertTriangle,
   Hexagon,
   BookOpen,
+  HelpCircle,
+  ExternalLink,
+  Zap,
+  RefreshCw,
+  Clock,
 } from 'lucide-react';
 import { DashboardButton } from '@client/components/dashboard/ui/DashboardButton';
 import { useOnboardingStore } from '@client/store/onboardingStore';
@@ -47,6 +52,8 @@ interface IIntegrationOption {
   description: string;
   icon: typeof Globe;
   fields: IFieldConfig[];
+  helpUrl?: string;
+  helpLabel?: string;
 }
 
 interface IFieldConfig {
@@ -55,6 +62,9 @@ interface IFieldConfig {
   type: 'text' | 'url' | 'password';
   placeholder: string;
   required: boolean;
+  helpText?: string;
+  helpUrl?: string;
+  helpUrlLabel?: string;
 }
 
 // =============================================================================
@@ -67,6 +77,8 @@ const INTEGRATION_OPTIONS: IIntegrationOption[] = [
     name: 'WordPress',
     description: 'Auto-publish articles directly to your WordPress site',
     icon: Globe,
+    helpUrl: 'https://make.wordpress.org/core/2022/11/02/application-passwords-integration-guide/',
+    helpLabel: 'How to create an App Password',
     fields: [
       {
         name: 'name',
@@ -81,6 +93,7 @@ const INTEGRATION_OPTIONS: IIntegrationOption[] = [
         type: 'url',
         placeholder: 'https://yoursite.com',
         required: true,
+        helpText: 'Your WordPress site address (must have REST API enabled)',
       },
       {
         name: 'username',
@@ -88,6 +101,7 @@ const INTEGRATION_OPTIONS: IIntegrationOption[] = [
         type: 'text',
         placeholder: 'WordPress username',
         required: true,
+        helpText: 'Use an admin or editor account',
       },
       {
         name: 'appPassword',
@@ -95,6 +109,10 @@ const INTEGRATION_OPTIONS: IIntegrationOption[] = [
         type: 'password',
         placeholder: 'WordPress application password',
         required: true,
+        helpText: 'Go to Users > Profile > Application Passwords in WordPress',
+        helpUrl:
+          'https://make.wordpress.org/core/2022/11/02/application-passwords-integration-guide/',
+        helpUrlLabel: 'Setup guide',
       },
     ],
   },
@@ -103,6 +121,8 @@ const INTEGRATION_OPTIONS: IIntegrationOption[] = [
     name: 'Wix',
     description: 'Publish articles to your Wix blog',
     icon: Hexagon,
+    helpUrl: 'https://dev.wix.com/docs/rest/account-level-apis/api-keys/introduction',
+    helpLabel: 'How to get your API Key',
     fields: [
       {
         name: 'name',
@@ -117,6 +137,7 @@ const INTEGRATION_OPTIONS: IIntegrationOption[] = [
         type: 'text',
         placeholder: 'From Wix Dashboard > Settings > Developer Tools',
         required: true,
+        helpText: 'Found under Settings > Developer Tools in your Wix Dashboard',
       },
       {
         name: 'apiKey',
@@ -124,6 +145,9 @@ const INTEGRATION_OPTIONS: IIntegrationOption[] = [
         type: 'password',
         placeholder: 'From Wix Dashboard > Headless Settings > API Keys',
         required: true,
+        helpText: 'Create an API key with Blog permissions',
+        helpUrl: 'https://dev.wix.com/docs/rest/account-level-apis/api-keys/introduction',
+        helpUrlLabel: 'API key docs',
       },
       {
         name: 'accountId',
@@ -131,6 +155,7 @@ const INTEGRATION_OPTIONS: IIntegrationOption[] = [
         type: 'text',
         placeholder: 'From Wix Dashboard > Settings > Developer Tools',
         required: true,
+        helpText: 'Found under Settings > Developer Tools in your Wix Dashboard',
       },
     ],
   },
@@ -153,6 +178,7 @@ const INTEGRATION_OPTIONS: IIntegrationOption[] = [
         type: 'url',
         placeholder: 'https://api.example.com/articles',
         required: true,
+        helpText: 'Your endpoint must accept POST requests and return a 2xx status',
       },
       {
         name: 'secret',
@@ -160,6 +186,7 @@ const INTEGRATION_OPTIONS: IIntegrationOption[] = [
         type: 'password',
         placeholder: 'Webhook signing secret',
         required: false,
+        helpText: 'Used to sign payloads with HMAC-SHA256 via the X-Signature-256 header',
       },
     ],
   },
@@ -168,6 +195,8 @@ const INTEGRATION_OPTIONS: IIntegrationOption[] = [
     name: 'Ghost',
     description: 'Auto-publish articles to your Ghost blog',
     icon: BookOpen,
+    helpUrl: 'https://ghost.org/docs/admin-api/',
+    helpLabel: 'Ghost Admin API docs',
     fields: [
       {
         name: 'name',
@@ -182,6 +211,7 @@ const INTEGRATION_OPTIONS: IIntegrationOption[] = [
         type: 'url',
         placeholder: 'https://myblog.ghost.io',
         required: true,
+        helpText: 'Your Ghost site URL (e.g., https://myblog.ghost.io)',
       },
       {
         name: 'adminApiKey',
@@ -189,10 +219,59 @@ const INTEGRATION_OPTIONS: IIntegrationOption[] = [
         type: 'password',
         placeholder: 'From Ghost Settings > Integrations > Custom Integration',
         required: true,
+        helpText: 'Create a Custom Integration in Ghost Settings > Integrations',
+        helpUrl: 'https://ghost.org/docs/admin-api/',
+        helpUrlLabel: 'Setup guide',
       },
     ],
   },
 ];
+
+// =============================================================================
+// Sub-Components
+// =============================================================================
+
+function WebhookHelpPanel(): JSX.Element {
+  return (
+    <div className="bg-surface border border-border rounded-lg p-4 text-sm space-y-3">
+      <h4 className="font-medium text-white flex items-center gap-2">
+        <Webhook className="w-4 h-4 text-accent" />
+        How Webhooks Work
+      </h4>
+      <div className="text-secondary space-y-2">
+        <p>
+          When an article is published, we send a POST request to your endpoint with the article
+          data.
+        </p>
+        <ol className="list-decimal list-inside space-y-1 text-xs">
+          <li>Create an HTTP endpoint that accepts POST requests</li>
+          <li>Return a 2xx status code to confirm receipt</li>
+          <li>Optionally add a secret to verify payloads via HMAC-SHA256</li>
+        </ol>
+        <div className="mt-3 p-3 bg-main rounded border border-border/50">
+          <p className="text-xs font-medium text-white mb-2">Payload Format:</p>
+          <pre className="text-xs text-muted overflow-x-auto">{`{
+  "event": "article.published",
+  "timestamp": "2024-01-15T10:30:00Z",
+  "article": {
+    "title": "Article Title",
+    "content": "Markdown content...",
+    "content_html": "<p>HTML content...</p>",
+    "slug": "article-slug",
+    "primary_keyword": "target keyword"
+  },
+  "campaign": { "id": "uuid", "name": "..." },
+  "project": { "id": "uuid", "name": "..." }
+}`}</pre>
+        </div>
+        <p className="text-xs text-muted">
+          The <code className="text-accent">X-Signature-256</code> header contains an HMAC-SHA256
+          signature when a secret is configured.
+        </p>
+      </div>
+    </div>
+  );
+}
 
 // =============================================================================
 // Main Component
@@ -207,6 +286,7 @@ export function OnboardingStepIntegrations({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSkipping, setIsSkipping] = useState(false);
   const [showSkipConfirm, setShowSkipConfirm] = useState(false);
+  const [showWebhookHelp, setShowWebhookHelp] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const { completedSteps, skippedSteps, setHasIntegration, markStepComplete, markStepSkipped } =
@@ -331,30 +411,82 @@ export function OnboardingStepIntegrations({
 
   return (
     <div className="space-y-4">
+      {/* Benefits Section - shown before type selection */}
+      {!selectedType && (
+        <div className="bg-surface border border-border rounded-xl p-5 space-y-4">
+          <h3 className="text-sm font-semibold text-white uppercase tracking-wider">
+            Why Connect a CMS?
+          </h3>
+          <ul className="space-y-3">
+            <li className="flex items-start gap-3">
+              <div className="w-6 h-6 rounded-full bg-accent/10 flex items-center justify-center flex-shrink-0 mt-0.5">
+                <Zap className="w-3.5 h-3.5 text-accent" />
+              </div>
+              <div>
+                <p className="text-sm text-white">Auto-Publish Articles</p>
+                <p className="text-xs text-muted">
+                  Generated articles go straight to your site, no copy-paste needed
+                </p>
+              </div>
+            </li>
+            <li className="flex items-start gap-3">
+              <div className="w-6 h-6 rounded-full bg-accent/10 flex items-center justify-center flex-shrink-0 mt-0.5">
+                <Clock className="w-3.5 h-3.5 text-accent" />
+              </div>
+              <div>
+                <p className="text-sm text-white">Save Hours Every Week</p>
+                <p className="text-xs text-muted">
+                  Automate publishing and focus on strategy instead
+                </p>
+              </div>
+            </li>
+            <li className="flex items-start gap-3">
+              <div className="w-6 h-6 rounded-full bg-accent/10 flex items-center justify-center flex-shrink-0 mt-0.5">
+                <RefreshCw className="w-3.5 h-3.5 text-accent" />
+              </div>
+              <div>
+                <p className="text-sm text-white">Works With Any Platform</p>
+                <p className="text-xs text-muted">
+                  WordPress, Wix, Ghost, or any custom site via webhook
+                </p>
+              </div>
+            </li>
+          </ul>
+        </div>
+      )}
+
       {/* Integration Type Selection */}
       {!selectedType && (
-        <div className="space-y-3">
-          {INTEGRATION_OPTIONS.map(option => {
-            const Icon = option.icon;
-            return (
-              <button
-                key={option.type}
-                type="button"
-                onClick={() => setSelectedType(option.type)}
-                disabled={isLoading}
-                className="w-full flex items-center gap-4 p-4 bg-surface border border-border rounded-xl hover:border-accent/50 hover:bg-surface-light transition-all text-left"
-              >
-                <div className="w-12 h-12 rounded-full bg-accent/10 flex items-center justify-center flex-shrink-0">
-                  <Icon className="w-6 h-6 text-accent" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <h3 className="text-sm font-semibold text-white">{option.name}</h3>
-                  <p className="text-xs text-muted mt-0.5">{option.description}</p>
-                </div>
-                <ArrowRight className="w-4 h-4 text-muted flex-shrink-0" />
-              </button>
-            );
-          })}
+        <div className="space-y-2">
+          <p className="text-xs font-medium text-secondary uppercase tracking-wider">
+            Choose your platform
+          </p>
+          <div className="space-y-2">
+            {INTEGRATION_OPTIONS.map(option => {
+              const Icon = option.icon;
+              return (
+                <button
+                  key={option.type}
+                  type="button"
+                  onClick={() => {
+                    setSelectedType(option.type);
+                    setShowWebhookHelp(false);
+                  }}
+                  disabled={isLoading}
+                  className="w-full flex items-center gap-4 p-4 bg-surface border border-border rounded-xl hover:border-accent/50 hover:bg-surface-light transition-all text-left"
+                >
+                  <div className="w-12 h-12 rounded-full bg-accent/10 flex items-center justify-center flex-shrink-0">
+                    <Icon className="w-6 h-6 text-accent" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <h3 className="text-sm font-semibold text-white">{option.name}</h3>
+                    <p className="text-xs text-muted mt-0.5">{option.description}</p>
+                  </div>
+                  <ArrowRight className="w-4 h-4 text-muted flex-shrink-0" />
+                </button>
+              );
+            })}
+          </div>
         </div>
       )}
 
@@ -368,6 +500,7 @@ export function OnboardingStepIntegrations({
               setSelectedType(null);
               setFormData({});
               setError(null);
+              setShowWebhookHelp(false);
             }}
             disabled={isLoading}
             className="text-sm text-muted hover:text-secondary transition-colors"
@@ -375,11 +508,37 @@ export function OnboardingStepIntegrations({
             &larr; Choose different type
           </button>
 
-          {/* Selected type indicator */}
-          <div className="flex items-center gap-3 p-3 bg-accent/5 border border-accent/10 rounded-lg">
-            <CheckCircle2 className="w-5 h-5 text-accent flex-shrink-0" />
-            <span className="text-sm text-white font-medium">{selectedOption.name}</span>
+          {/* Selected type indicator with optional help link */}
+          <div className="flex items-center justify-between p-3 bg-accent/5 border border-accent/10 rounded-lg">
+            <div className="flex items-center gap-3">
+              <CheckCircle2 className="w-5 h-5 text-accent flex-shrink-0" />
+              <span className="text-sm text-white font-medium">{selectedOption.name}</span>
+            </div>
+            {selectedOption.helpUrl && (
+              <a
+                href={selectedOption.helpUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-xs text-accent hover:text-accent-hover flex items-center gap-1 transition-colors"
+              >
+                <ExternalLink className="w-3 h-3" />
+                {selectedOption.helpLabel || 'Setup guide'}
+              </a>
+            )}
+            {selectedType === 'webhook' && (
+              <button
+                type="button"
+                onClick={() => setShowWebhookHelp(!showWebhookHelp)}
+                className="text-xs text-accent hover:text-accent-hover flex items-center gap-1 transition-colors"
+              >
+                <HelpCircle className="w-3 h-3" />
+                {showWebhookHelp ? 'Hide details' : 'How webhooks work'}
+              </button>
+            )}
           </div>
+
+          {/* Webhook Help Panel */}
+          {selectedType === 'webhook' && showWebhookHelp && <WebhookHelpPanel />}
 
           {/* Form Fields */}
           {selectedOption.fields.map(field => (
@@ -399,6 +558,22 @@ export function OnboardingStepIntegrations({
                 disabled={isLoading}
                 className="w-full bg-main border border-border rounded-lg px-4 py-2.5 text-white placeholder:text-muted focus:ring-1 focus:ring-accent outline-none transition-all"
               />
+              {(field.helpText || field.helpUrl) && (
+                <div className="flex items-center justify-between">
+                  {field.helpText && <p className="text-xs text-muted">{field.helpText}</p>}
+                  {field.helpUrl && (
+                    <a
+                      href={field.helpUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-xs text-accent hover:text-accent-hover flex items-center gap-1 transition-colors flex-shrink-0 ml-2"
+                    >
+                      <ExternalLink className="w-3 h-3" />
+                      {field.helpUrlLabel || 'Docs'}
+                    </a>
+                  )}
+                </div>
+              )}
             </div>
           ))}
 

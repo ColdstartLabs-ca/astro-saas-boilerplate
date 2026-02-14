@@ -16,6 +16,7 @@ import type {
 } from './adapter.interface';
 
 // RequestInit type definition for fetch API (simplified to avoid DOM dependency issues in ESLint)
+// eslint-disable-next-line @typescript-eslint/no-unused-vars -- Type export for external use
 interface IRequestInit {
   method?: string;
   headers?: Record<string, string> | { get(name: string): string | null };
@@ -410,7 +411,9 @@ export class ShopifyAdapter implements ICMSAdapter {
 
       // Check for user errors
       if (articleCreate.userErrors && articleCreate.userErrors.length > 0) {
-        const errorMessages = articleCreate.userErrors.map(e => `${e.field.join('.')}: ${e.message}`).join('; ');
+        const errorMessages = articleCreate.userErrors
+          .map(e => `${e.field.join('.')}: ${e.message}`)
+          .join('; ');
         return {
           success: false,
           error: `Shopify validation error: ${errorMessages}`,
