@@ -66,25 +66,43 @@ configure_supabase_credentials() {
     echo ""
 
     # Read current values as defaults
-    local current_url=$(grep "^NEXT_PUBLIC_SUPABASE_URL=" .env.client 2>/dev/null | cut -d'=' -f2 || echo "")
-    local current_anon=$(grep "^NEXT_PUBLIC_SUPABASE_ANON_KEY=" .env.client 2>/dev/null | cut -d'=' -f2 || echo "")
-    local current_service=$(grep "^SUPABASE_SERVICE_ROLE_KEY=" .env.api 2>/dev/null | cut -d'=' -f2 || echo "")
+    local current_url
+    local current_anon
+    local current_service
+
+    current_url="$(get_env_value .env.client PUBLIC_SUPABASE_URL)"
+    if [[ -z "$current_url" ]]; then
+        current_url="$(get_env_value .env.client NEXT_PUBLIC_SUPABASE_URL)"
+    fi
+
+    current_anon="$(get_env_value .env.client PUBLIC_SUPABASE_ANON_KEY)"
+    if [[ -z "$current_anon" ]]; then
+        current_anon="$(get_env_value .env.client NEXT_PUBLIC_SUPABASE_ANON_KEY)"
+    fi
+
+    current_service="$(get_env_value .env.api SUPABASE_SERVICE_ROLE_KEY)"
 
     prompt_value "  Project URL (e.g., https://xxx.supabase.co)" "$current_url" SUPABASE_URL
     prompt_value "  Anon Key (public)" "$current_anon" SUPABASE_ANON_KEY
     prompt_value "  Service Role Key (secret)" "$current_service" SUPABASE_SERVICE_KEY true
 
-    # Update .env.client
+    # Update .env.client (PUBLIC_* is canonical, NEXT_PUBLIC_* kept for compatibility)
     if [[ -n "$SUPABASE_URL" ]]; then
-        sed -i "s|^NEXT_PUBLIC_SUPABASE_URL=.*|NEXT_PUBLIC_SUPABASE_URL=$SUPABASE_URL|" .env.client
+        upsert_env_value .env.client PUBLIC_SUPABASE_URL "$SUPABASE_URL"
+        if grep -qE "^[[:space:]]*NEXT_PUBLIC_SUPABASE_URL=" .env.client; then
+            upsert_env_value .env.client NEXT_PUBLIC_SUPABASE_URL "$SUPABASE_URL"
+        fi
     fi
     if [[ -n "$SUPABASE_ANON_KEY" ]]; then
-        sed -i "s|^NEXT_PUBLIC_SUPABASE_ANON_KEY=.*|NEXT_PUBLIC_SUPABASE_ANON_KEY=$SUPABASE_ANON_KEY|" .env.client
+        upsert_env_value .env.client PUBLIC_SUPABASE_ANON_KEY "$SUPABASE_ANON_KEY"
+        if grep -qE "^[[:space:]]*NEXT_PUBLIC_SUPABASE_ANON_KEY=" .env.client; then
+            upsert_env_value .env.client NEXT_PUBLIC_SUPABASE_ANON_KEY "$SUPABASE_ANON_KEY"
+        fi
     fi
 
     # Update .env.api
     if [[ -n "$SUPABASE_SERVICE_KEY" ]]; then
-        sed -i "s|^SUPABASE_SERVICE_ROLE_KEY=.*|SUPABASE_SERVICE_ROLE_KEY=$SUPABASE_SERVICE_KEY|" .env.api
+        upsert_env_value .env.api SUPABASE_SERVICE_ROLE_KEY "$SUPABASE_SERVICE_KEY"
     fi
 
     log_success "Supabase credentials configured"
@@ -107,10 +125,10 @@ configure_stripe_credentials() {
     prompt_value "  Stripe Webhook Secret (whsec_...)" "$current_webhook" STRIPE_WEBHOOK true
 
     if [[ -n "$STRIPE_SECRET" ]]; then
-        sed -i "s|^STRIPE_SECRET_KEY=.*|STRIPE_SECRET_KEY=$STRIPE_SECRET|" .env.api
+        upsert_env_value .env.api STRIPE_SECRET_KEY "$STRIPE_SECRET"
     fi
     if [[ -n "$STRIPE_WEBHOOK" ]]; then
-        sed -i "s|^STRIPE_WEBHOOK_SECRET=.*|STRIPE_WEBHOOK_SECRET=$STRIPE_WEBHOOK|" .env.api
+        upsert_env_value .env.api STRIPE_WEBHOOK_SECRET "$STRIPE_WEBHOOK"
     fi
 
     log_success "Stripe credentials configured"

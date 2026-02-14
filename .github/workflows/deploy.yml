@@ -1,4 +1,4 @@
-name: Deploy to Cloudflare Workers (OpenNext)
+name: Deploy to Cloudflare Pages (Astro)
 
 on:
   push:
@@ -45,7 +45,7 @@ jobs:
     needs: quality
     environment:
       name: production
-      url: ${{ steps.deploy.outputs.deployment-url }}
+      url: ${{ vars.PUBLIC_BASE_URL || vars.NEXT_PUBLIC_BASE_URL }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -59,20 +59,22 @@ jobs:
       - name: Install dependencies
         run: yarn install --frozen-lockfile
 
-      - name: Build for Cloudflare Workers (OpenNext)
-        run: npx opennextjs-cloudflare build
+      - name: Build Astro app
+        run: |
+          npx tsx scripts/build-blog.ts
+          yarn build
         env:
-          # Public environment variables (NEXT_PUBLIC_*)
+          # Public environment variables (PUBLIC_*, with NEXT_PUBLIC_* fallback)
           # See .env.example for full list
-          NEXT_PUBLIC_SUPABASE_URL: ${{ vars.NEXT_PUBLIC_SUPABASE_URL }}
-          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ vars.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
-          NEXT_PUBLIC_BASE_URL: ${{ vars.NEXT_PUBLIC_BASE_URL }}
-          NEXT_PUBLIC_APP_NAME: ${{ vars.NEXT_PUBLIC_APP_NAME }}
-          NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: ${{ vars.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY }}
+          PUBLIC_SUPABASE_URL: ${{ vars.PUBLIC_SUPABASE_URL || vars.NEXT_PUBLIC_SUPABASE_URL }}
+          PUBLIC_SUPABASE_ANON_KEY: ${{ vars.PUBLIC_SUPABASE_ANON_KEY || vars.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
+          PUBLIC_BASE_URL: ${{ vars.PUBLIC_BASE_URL || vars.NEXT_PUBLIC_BASE_URL }}
+          PUBLIC_APP_NAME: ${{ vars.PUBLIC_APP_NAME || vars.NEXT_PUBLIC_APP_NAME }}
+          PUBLIC_STRIPE_PUBLISHABLE_KEY: ${{ vars.PUBLIC_STRIPE_PUBLISHABLE_KEY || vars.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY }}
           # Stripe Price IDs are now configured in shared/config/stripe.ts
-          NEXT_PUBLIC_BASELIME_KEY: ${{ vars.NEXT_PUBLIC_BASELIME_KEY }}
-          NEXT_PUBLIC_AMPLITUDE_API_KEY: ${{ vars.NEXT_PUBLIC_AMPLITUDE_API_KEY }}
-          NEXT_PUBLIC_GA_MEASUREMENT_ID: ${{ vars.NEXT_PUBLIC_GA_MEASUREMENT_ID }}
+          PUBLIC_BASELIME_KEY: ${{ vars.PUBLIC_BASELIME_KEY || vars.NEXT_PUBLIC_BASELIME_KEY }}
+          PUBLIC_AMPLITUDE_API_KEY: ${{ vars.PUBLIC_AMPLITUDE_API_KEY || vars.NEXT_PUBLIC_AMPLITUDE_API_KEY }}
+          PUBLIC_GA_MEASUREMENT_ID: ${{ vars.PUBLIC_GA_MEASUREMENT_ID || vars.NEXT_PUBLIC_GA_MEASUREMENT_ID }}
           # Server-side environment variables
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
           STRIPE_SECRET_KEY: ${{ secrets.STRIPE_SECRET_KEY }}
@@ -80,16 +82,18 @@ jobs:
           REPLICATE_API_TOKEN: ${{ secrets.REPLICATE_API_TOKEN }}
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
 
-      - name: Deploy to Cloudflare Workers
+      - name: Deploy to Cloudflare Pages
         id: deploy
         uses: cloudflare/wrangler-action@v3
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          command: opennextjs-cloudflare deploy
+          command: >-
+            pages deploy dist
+            --project-name=${{ vars.CLOUDFLARE_PAGES_PROJECT_NAME || vars.WORKER_NAME }}
 
       - name: Output deployment URL
-        run: echo "Deployed to ${{ steps.deploy.outputs.deployment-url }}"
+        run: echo "Deployed to ${{ vars.PUBLIC_BASE_URL || vars.NEXT_PUBLIC_BASE_URL }}"
 
   health-check:
     name: Verify Deployment
@@ -101,7 +105,7 @@ jobs:
 
       - name: Health check
         run: |
-          HEALTH_URL="${{ vars.NEXT_PUBLIC_BASE_URL }}/api/health"
+          HEALTH_URL="${{ vars.PUBLIC_BASE_URL || vars.NEXT_PUBLIC_BASE_URL }}/api/health"
           echo "Checking health endpoint: $HEALTH_URL"
 
           for i in {1..5}; do
@@ -119,7 +123,7 @@ jobs:
 
       - name: Verify homepage loads
         run: |
-          HOMEPAGE="${{ vars.NEXT_PUBLIC_BASE_URL }}"
+          HOMEPAGE="${{ vars.PUBLIC_BASE_URL || vars.NEXT_PUBLIC_BASE_URL }}"
           STATUS=$(curl -s -o /dev/null -w "%{http_code}" "$HOMEPAGE")
           if [ "$STATUS" = "200" ]; then
             echo "Homepage check passed!"

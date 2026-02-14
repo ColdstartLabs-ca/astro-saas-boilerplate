@@ -18,7 +18,8 @@ validate_supabase() {
     load_env "$PROJECT_ROOT"
 
     # Check URL is configured
-    if [[ -z "${NEXT_PUBLIC_SUPABASE_URL:-}" || "$NEXT_PUBLIC_SUPABASE_URL" == "https://your-project.supabase.co" ]]; then
+    local supabase_url="${PUBLIC_SUPABASE_URL:-${NEXT_PUBLIC_SUPABASE_URL:-}}"
+    if [[ -z "$supabase_url" || "$supabase_url" == "https://your-project.supabase.co" ]]; then
         log_error "Supabase URL not configured in .env.client"
         log_info "Run: yarn setup (without --skip-env)"
         return 1
@@ -44,7 +45,7 @@ validate_supabase() {
         log_error "Failed to connect to Supabase (HTTP $response)"
         echo ""
         echo "Please verify:"
-        echo "  - NEXT_PUBLIC_SUPABASE_URL is correct"
+        echo "  - PUBLIC_SUPABASE_URL is correct"
         echo "  - SUPABASE_SERVICE_ROLE_KEY is valid (not anon key)"
         echo "  - Network connectivity"
         return 1

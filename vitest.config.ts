@@ -17,6 +17,8 @@ export default defineConfig({
       '__tests__/**/*.{test,spec}.{ts,tsx}',
     ],
     exclude: ['node_modules'], // Playwright tests are in tests/api, tests/e2e, tests/integration
+    // Use default reporter unless explicitly overridden to verbose
+    reporter: process.env.VITEST_REPORTER === 'verbose' ? 'verbose' : 'default',
     coverage: {
       provider: 'v8',
       reporter: ['text', 'json', 'html'],

@@ -57,34 +57,92 @@ command_exists() {
     command -v "$1" &> /dev/null
 }
 
+# Read KEY value from an env file
+get_env_value() {
+    local file="$1"
+    local key="$2"
+
+    if [[ ! -f "$file" ]]; then
+        return 0
+    fi
+
+    awk -F'=' -v key="$key" '
+        /^[[:space:]]*#/ { next }
+        /^[[:space:]]*$/ { next }
+        {
+            k=$1
+            gsub(/^[[:space:]]+|[[:space:]]+$/, "", k)
+            if (k == key) {
+                print substr($0, index($0, "=") + 1)
+                exit
+            }
+        }
+    ' "$file"
+}
+
+# Upsert KEY=VALUE in an env file without evaluating the value
+upsert_env_value() {
+    local file="$1"
+    local key="$2"
+    local value="$3"
+
+    touch "$file"
+    local tmp_file
+    tmp_file="$(mktemp)"
+
+    awk -v key="$key" -v value="$value" '
+        BEGIN { updated=0 }
+        {
+            if ($0 ~ "^[[:space:]]*" key "=") {
+                print key "=" value
+                updated=1
+            } else {
+                print $0
+            }
+        }
+        END {
+            if (!updated) print key "=" value
+        }
+    ' "$file" > "$tmp_file"
+
+    mv "$tmp_file" "$file"
+}
+
+# Load one env file safely (supports values with spaces)
+load_env_file() {
+    local file="$1"
+
+    [[ -f "$file" ]] || return 0
+
+    while IFS= read -r line || [[ -n "$line" ]]; do
+        [[ $line =~ ^[[:space:]]*# ]] && continue
+        [[ $line =~ ^[[:space:]]*$ ]] && continue
+
+        if [[ $line =~ ^[[:space:]]*(export[[:space:]]+)?([A-Za-z_][A-Za-z0-9_]*)=(.*)$ ]]; then
+            local key="${BASH_REMATCH[2]}"
+            local value="${BASH_REMATCH[3]}"
+            export "$key=$value"
+        fi
+    done < "$file"
+}
+
 # Load environment files
 load_env() {
     local project_root="$1"
 
-    if [[ -f "$project_root/.env.client" ]]; then
-        set -a
-        # shellcheck source=/dev/null
-        source "$project_root/.env.client"
-        set +a
-    fi
-
-    if [[ -f "$project_root/.env.api" ]]; then
-        set -a
-        # shellcheck source=/dev/null
-        source "$project_root/.env.api"
-        set +a
-    fi
+    load_env_file "$project_root/.env.client"
+    load_env_file "$project_root/.env.api"
 }
 
 # Extract Supabase project ref from URL
 get_supabase_project_ref() {
-    local url="${1:-$NEXT_PUBLIC_SUPABASE_URL}"
+    local url="${1:-${PUBLIC_SUPABASE_URL:-${NEXT_PUBLIC_SUPABASE_URL:-}}}"
     echo "$url" | sed -E 's|https://([^.]+)\.supabase\.co.*|\1|'
 }
 
 # Test Supabase connection
 test_supabase_connection() {
-    local url="${1:-$NEXT_PUBLIC_SUPABASE_URL}"
+    local url="${1:-${PUBLIC_SUPABASE_URL:-${NEXT_PUBLIC_SUPABASE_URL:-}}}"
     local key="${2:-$SUPABASE_SERVICE_ROLE_KEY}"
 
     local response=$(curl -s -o /dev/null -w "%{http_code}" \

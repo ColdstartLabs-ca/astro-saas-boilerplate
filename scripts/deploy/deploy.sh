@@ -34,7 +34,7 @@ trap cleanup_prod_secrets EXIT
 
 echo ""
 echo -e "${CYAN}══════════════════════════════════════${NC}"
-echo -e "${CYAN}  MyImageUpscaler Deploy${NC}"
+echo -e "${CYAN}  AutopilotRank Deploy${NC}"
 echo -e "${CYAN}══════════════════════════════════════${NC}"
 echo ""
 

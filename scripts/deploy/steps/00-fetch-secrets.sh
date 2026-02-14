@@ -1,10 +1,10 @@
 #!/bin/bash
 
 # Configuration
-GCLOUD_PROJECT="myimageupscaler-auth"
-GCLOUD_ACCOUNT="myimageupscaler@myimageupscaler-auth.iam.gserviceaccount.com"
-GCLOUD_SECRET_API="myimageupscaler-api-prod"
-GCLOUD_SECRET_CLIENT="myimageupscaler-client-prod"
+GCLOUD_PROJECT="${GCLOUD_PROJECT:-autopilotrank-auth}"
+GCLOUD_ACCOUNT="${GCLOUD_ACCOUNT:-autopilotrank@autopilotrank-auth.iam.gserviceaccount.com}"
+GCLOUD_SECRET_API="${GCLOUD_SECRET_API:-autopilotrank-api-prod}"
+GCLOUD_SECRET_CLIENT="${GCLOUD_SECRET_CLIENT:-autopilotrank-client-prod}"
 ENV_API_PROD="$PROJECT_ROOT/.env.api.prod"
 ENV_CLIENT_PROD="$PROJECT_ROOT/.env.client.prod"
 
@@ -23,7 +23,7 @@ step_fetch_secrets() {
     fi
     log_success "gcloud authenticated"
 
-    # Switch to the correct account for myimageupscaler project
+    # Switch to the configured account/project
     log_info "Switching to account $GCLOUD_ACCOUNT..."
     gcloud config set account "$GCLOUD_ACCOUNT" --quiet
     log_success "Using account $GCLOUD_ACCOUNT"

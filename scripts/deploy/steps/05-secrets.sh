@@ -3,7 +3,7 @@
 step_secrets() {
     log_step 5 "Uploading secrets"
 
-    local worker="${WORKER_NAME:-myimageupscaler.com}"
+    local worker="${WORKER_NAME:-autopilotrank.com}"
     local skip_secrets="${SKIP_SECRETS:-false}"
 
     # Get existing secrets (only needed when skipping)
@@ -32,6 +32,25 @@ step_secrets() {
         fi
     }
 
+    upload_secret_alias() {
+        local target_name="$1"
+        local primary_name="$2"
+        local fallback_name="$3"
+
+        local value="${!primary_name:-}"
+        if [[ -z "$value" && -n "${fallback_name:-}" ]]; then
+            value="${!fallback_name:-}"
+        fi
+        [[ -z "$value" ]] && return
+
+        if [[ "$skip_secrets" == "true" ]] && secret_exists "$target_name"; then
+            log_info "$target_name (skipped)"
+        else
+            echo "$value" | npx wrangler secret put "$target_name" --name "$worker" 2>/dev/null
+            log_success "$target_name"
+        fi
+    }
+
     # Secrets from .env.api
     local secrets=(
         SUPABASE_SERVICE_ROLE_KEY
@@ -46,8 +65,8 @@ step_secrets() {
         upload_secret "$secret"
     done
 
-    # Public vars needed server-side
-    for var in NEXT_PUBLIC_SUPABASE_URL NEXT_PUBLIC_SUPABASE_ANON_KEY NEXT_PUBLIC_BASE_URL; do
-        upload_secret "$var"
-    done
+    # Public vars needed server-side (PUBLIC_* canonical, NEXT_PUBLIC_* fallback)
+    upload_secret_alias "PUBLIC_SUPABASE_URL" "PUBLIC_SUPABASE_URL" "NEXT_PUBLIC_SUPABASE_URL"
+    upload_secret_alias "PUBLIC_SUPABASE_ANON_KEY" "PUBLIC_SUPABASE_ANON_KEY" "NEXT_PUBLIC_SUPABASE_ANON_KEY"
+    upload_secret_alias "PUBLIC_BASE_URL" "PUBLIC_BASE_URL" "NEXT_PUBLIC_BASE_URL"
 }
