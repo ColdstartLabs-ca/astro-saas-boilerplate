@@ -63,6 +63,10 @@ export interface IGscConnectionSafe {
   site_url: string | null;
   last_synced_at: string | null;
   status: GscConnectionStatus;
+  auto_analyze: boolean;
+  analyze_frequency: 'daily' | 'weekly' | 'biweekly';
+  next_analyze_at: string | null;
+  last_analyzed_at: string | null;
   created_at: string;
 }
 
@@ -88,6 +92,18 @@ export interface IGscSnapshotData {
   queries: IGscQueryRow[];
   pages: IGscPageRow[];
   totals: IGscMetrics;
+  /** Raw query+page pairs for detailed analysis (e.g., cannibalization detection) */
+  queryPagePairs?: IGscQueryPagePair[];
+}
+
+/** Single query+page pair row from GSC search analytics (raw, pre-aggregation) */
+export interface IGscQueryPagePair {
+  query: string;
+  page: string;
+  clicks: number;
+  impressions: number;
+  ctr: number;
+  position: number;
 }
 
 /** Single query row from GSC search analytics */
@@ -153,6 +169,10 @@ export interface IOpportunityMetrics {
   positionChange?: number;
   avgCtrForPosition?: number;
   competingPages?: string[];
+  /** Related queries for topic cluster opportunities */
+  relatedQueries?: string[];
+  /** Total impressions across all queries in the cluster */
+  totalClusterImpressions?: number;
 }
 
 /**

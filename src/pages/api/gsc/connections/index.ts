@@ -23,7 +23,9 @@ export const GET = withAuth(async (userId, { url }) => {
 
   const { data: connections, error } = await supabaseAdmin
     .from('gsc_connections')
-    .select('id, project_id, google_email, site_url, last_synced_at, status, created_at')
+    .select(
+      'id, project_id, google_email, site_url, last_synced_at, status, auto_analyze, analyze_frequency, next_analyze_at, last_analyzed_at, created_at'
+    )
     .eq('project_id', projectId)
     .eq('user_id', userId);
 
@@ -39,6 +41,10 @@ export const GET = withAuth(async (userId, { url }) => {
     site_url: conn.site_url,
     last_synced_at: conn.last_synced_at,
     status: conn.status,
+    auto_analyze: conn.auto_analyze ?? false,
+    analyze_frequency: conn.analyze_frequency ?? 'weekly',
+    next_analyze_at: conn.next_analyze_at,
+    last_analyzed_at: conn.last_analyzed_at,
     created_at: conn.created_at,
   }));
 

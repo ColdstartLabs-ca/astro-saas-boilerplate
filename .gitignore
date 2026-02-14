@@ -80,3 +80,4 @@ template
 cloud/keys/
 
 UI_TEMPLATE
+logs/

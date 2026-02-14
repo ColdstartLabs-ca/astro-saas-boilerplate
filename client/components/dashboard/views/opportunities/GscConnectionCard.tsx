@@ -2,14 +2,14 @@
  * GscConnectionCard Component
  * Displays Google Search Console connection status with three states:
  * - Not connected: Prominent CTA to connect
- * - Connected: Compact inline status with site info
+ * - Connected: Compact inline status with site info and auto-analyze toggle
  * - Error: Error state with reconnect option
  */
 
 'use client';
 
 import { useState } from 'react';
-import { Search, ExternalLink, CheckCircle2, AlertCircle, Unlink, Loader2 } from 'lucide-react';
+import { Search, ExternalLink, CheckCircle2, AlertCircle, Unlink, Loader2, Clock, Settings } from 'lucide-react';
 import { DashboardButton } from '../../ui/DashboardButton';
 import { GscSiteSelector } from './GscSiteSelector';
 import { useTranslations } from '@client/hooks/useTranslations';
@@ -33,6 +33,7 @@ interface IGscConnectionCardProps {
   isConnecting?: boolean;
   isDisconnecting?: boolean;
   isLoadingSites?: boolean;
+  onUpdateSchedule?: (connectionId: string, settings: { autoAnalyze?: boolean; analyzeFrequency?: 'daily' | 'weekly' | 'biweekly' }) => Promise<void>;
 }
 
 // =============================================================================
@@ -77,7 +78,7 @@ function NotConnectedState({
   );
 }
 
-/** Connected state — compact inline card */
+/** Connected state — compact inline card with auto-analyze toggle */
 function ConnectedState({
   connection,
   sites,
@@ -85,6 +86,7 @@ function ConnectedState({
   onSelectSite,
   isDisconnecting,
   isLoadingSites,
+  onUpdateSchedule,
   t,
 }: {
   connection: IGscConnectionSafe;
@@ -93,9 +95,12 @@ function ConnectedState({
   onSelectSite: (siteUrl: string) => void;
   isDisconnecting: boolean;
   isLoadingSites: boolean;
+  onUpdateSchedule?: (connectionId: string, settings: { autoAnalyze?: boolean; analyzeFrequency?: 'daily' | 'weekly' | 'biweekly' }) => Promise<void>;
   t: (key: string) => string;
 }): JSX.Element {
   const [showDisconnectConfirm, setShowDisconnectConfirm] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
+  const [isUpdatingSchedule, setIsUpdatingSchedule] = useState(false);
 
   const handleDisconnectClick = () => {
     setShowDisconnectConfirm(true);
@@ -108,6 +113,26 @@ function ConnectedState({
 
   const handleCancelDisconnect = () => {
     setShowDisconnectConfirm(false);
+  };
+
+  const handleToggleAutoAnalyze = async () => {
+    if (!onUpdateSchedule) return;
+    setIsUpdatingSchedule(true);
+    try {
+      await onUpdateSchedule(connection.id, { autoAnalyze: !connection.auto_analyze });
+    } finally {
+      setIsUpdatingSchedule(false);
+    }
+  };
+
+  const handleFrequencyChange = async (frequency: 'daily' | 'weekly' | 'biweekly') => {
+    if (!onUpdateSchedule) return;
+    setIsUpdatingSchedule(true);
+    try {
+      await onUpdateSchedule(connection.id, { analyzeFrequency: frequency });
+    } finally {
+      setIsUpdatingSchedule(false);
+    }
   };
 
   return (
@@ -137,8 +162,19 @@ function ConnectedState({
           </div>
         </div>
 
-        {/* Right: Disconnect */}
-        <div className="flex-shrink-0 ml-4">
+        {/* Right: Actions */}
+        <div className="flex-shrink-0 ml-4 flex items-center gap-2">
+          {/* Settings button */}
+          {onUpdateSchedule && (
+            <button
+              onClick={() => setShowSettings(!showSettings)}
+              className="text-xs text-muted hover:text-secondary transition-colors flex items-center gap-1"
+              title="Auto-analyze settings"
+            >
+              <Settings className="w-3.5 h-3.5" />
+            </button>
+          )}
+
           {showDisconnectConfirm ? (
             <div className="flex items-center gap-2">
               <span className="text-xs text-secondary">
@@ -172,6 +208,74 @@ function ConnectedState({
           )}
         </div>
       </div>
+
+      {/* Auto-analyze settings panel */}
+      {showSettings && onUpdateSchedule && (
+        <div className="mt-4 border-t border-border pt-4">
+          <div className="flex flex-col gap-3">
+            {/* Auto-analyze toggle */}
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Clock className="w-4 h-4 text-secondary" />
+                <span className="text-sm text-secondary">Auto-analyze</span>
+              </div>
+              <label className="relative inline-flex items-center cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={connection.auto_analyze}
+                  onChange={handleToggleAutoAnalyze}
+                  disabled={isUpdatingSchedule}
+                  className="sr-only peer"
+                />
+                <div className="w-9 h-5 bg-surface-light rounded-full peer peer-checked:bg-primary peer-focus:ring-1 peer-focus:ring-primary/50 after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:after:translate-x-4"></div>
+              </label>
+            </div>
+
+            {/* Frequency selector - only show when auto-analyze is enabled */}
+            {connection.auto_analyze && (
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-muted">Frequency</span>
+                <div className="flex items-center gap-1">
+                  {(['daily', 'weekly', 'biweekly'] as const).map(freq => (
+                    <button
+                      key={freq}
+                      onClick={() => handleFrequencyChange(freq)}
+                      disabled={isUpdatingSchedule}
+                      className={`px-2 py-1 text-xs rounded transition-colors ${
+                        connection.analyze_frequency === freq
+                          ? 'bg-primary text-white'
+                          : 'bg-surface-light text-secondary hover:text-white'
+                      }`}
+                    >
+                      {freq === 'daily' ? 'Daily' : freq === 'weekly' ? 'Weekly' : 'Bi-weekly'}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Next analysis date */}
+            {connection.auto_analyze && connection.next_analyze_at && (
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-muted">Next analysis</span>
+                <span className="text-xs text-secondary">
+                  {dayjs(connection.next_analyze_at).format('MMM D, YYYY')}
+                </span>
+              </div>
+            )}
+
+            {/* Last analyzed date */}
+            {connection.last_analyzed_at && (
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-muted">Last analyzed</span>
+                <span className="text-xs text-secondary">
+                  {dayjs(connection.last_analyzed_at).fromNow()}
+                </span>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Site selector — show if no site selected yet */}
       {!connection.site_url && (
@@ -243,6 +347,7 @@ export function GscConnectionCard({
   isConnecting = false,
   isDisconnecting = false,
   isLoadingSites = false,
+  onUpdateSchedule,
 }: IGscConnectionCardProps): JSX.Element {
   const t = useTranslations('dashboard');
 
@@ -278,6 +383,7 @@ export function GscConnectionCard({
         onSelectSite={onSelectSite}
         isDisconnecting={isDisconnecting}
         isLoadingSites={isLoadingSites}
+        onUpdateSchedule={onUpdateSchedule}
         t={t}
       />
     );

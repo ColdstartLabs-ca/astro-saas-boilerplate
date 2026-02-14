@@ -26,6 +26,7 @@ import type {
   IGscPageRow,
   IGscSnapshot,
   IOpportunity,
+  IGscQueryPagePair,
 } from '@shared/types/opportunity.types';
 import { withAuthAndBody, jsonResponse, errorResponse } from '../_utils';
 
@@ -120,13 +121,27 @@ export const POST = withAuthAndBody(analyzeOpportunitiesSchema, async (userId, b
     .eq('project_id', projectId)
     .eq('user_id', userId);
 
-  // 8. Run analysis
+  // 8. Fetch the most recent previous snapshot for declining position detection
+  const { data: previousSnapshotData } = await supabaseAdmin
+    .from('gsc_snapshots')
+    .select('*')
+    .eq('connection_id', gscConnection.id)
+    .eq('project_id', projectId)
+    .neq('id', snapshot.id) // Exclude the current snapshot
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  const previousSnapshot = previousSnapshotData as IGscSnapshot | null;
+
+  // 9. Run analysis (with previous snapshot for declining position detection)
   const { newOpportunities, updatedOpportunities } =
     await opportunityAnalysisService.analyzeSnapshot(
       snapshot as IGscSnapshot,
       (existingOpportunities as IOpportunity[]) ?? [],
       projectId,
-      userId
+      userId,
+      previousSnapshot ?? undefined
     );
 
   // 9. Upsert results to DB
@@ -189,10 +204,12 @@ interface IRawGscRow {
 /**
  * Transform raw GSC API rows (query + page dimensions) into the snapshot data format.
  * Aggregates per-query and per-page data, plus totals.
+ * Also preserves raw query+page pairs for detailed analysis (cannibalization detection).
  */
 function transformToSnapshotData(rows: IRawGscRow[]): IGscSnapshotData {
   const queryMap = new Map<string, IGscQueryRow>();
   const pageMap = new Map<string, IGscPageRow>();
+  const queryPagePairs: IGscQueryPagePair[] = [];
   let totalClicks = 0;
   let totalImpressions = 0;
   let totalCtr = 0;
@@ -204,6 +221,18 @@ function transformToSnapshotData(rows: IRawGscRow[]): IGscSnapshotData {
 
     totalClicks += row.clicks;
     totalImpressions += row.impressions;
+
+    // Preserve raw query+page pair for detailed analysis
+    if (query && page) {
+      queryPagePairs.push({
+        query,
+        page,
+        clicks: row.clicks,
+        impressions: row.impressions,
+        ctr: row.ctr,
+        position: row.position,
+      });
+    }
 
     // Aggregate by query
     const existing = queryMap.get(query);
@@ -268,5 +297,7 @@ function transformToSnapshotData(rows: IRawGscRow[]): IGscSnapshotData {
       ctr: totalCtr,
       position: totalPosition,
     },
+    // Include raw query+page pairs for cannibalization detection
+    queryPagePairs,
   };
 }

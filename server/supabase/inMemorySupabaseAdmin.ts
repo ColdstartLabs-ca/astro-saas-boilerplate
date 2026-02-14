@@ -172,6 +172,26 @@ function parseOrClause(orClause: string): FilterFn[] {
   const filters: FilterFn[] = [];
 
   for (const part of parts) {
+    // Handle column.is.null pattern
+    const isNullMatch = part.match(/^([a-zA-Z0-9_]+)\.is\.null$/);
+    if (isNullMatch) {
+      const [, column] = isNullMatch;
+      filters.push(row => row[column] === null || row[column] === undefined);
+      continue;
+    }
+
+    // Handle column.lte.value pattern (for date comparisons)
+    const lteMatch = part.match(/^([a-zA-Z0-9_]+)\.lte\.(.+)$/);
+    if (lteMatch) {
+      const [, column, rawValue] = lteMatch;
+      filters.push(row => {
+        const cellValue = row[column];
+        if (cellValue === null || cellValue === undefined) return false;
+        return cellValue <= rawValue;
+      });
+      continue;
+    }
+
     const ilikeMatch = part.match(/^([a-zA-Z0-9_]+)\.ilike\.(.+)$/);
     if (ilikeMatch) {
       const [, column, rawPattern] = ilikeMatch;
@@ -266,6 +286,51 @@ class InMemoryQueryBuilder implements PromiseLike<QueryResult<unknown>> {
       this.filters.push(row => row[column] === null || row[column] === undefined);
     } else {
       this.filters.push(row => row[column] === value);
+    }
+    return this;
+  }
+
+  /**
+   * Negate a filter. Supports: not(column, 'is', null), not(column, 'in', [...])
+   */
+  not(column: string, operator: string, value: unknown): this {
+    if (operator === 'is') {
+      if (value === null) {
+        // NOT IS NULL means column has a value
+        this.filters.push(row => row[column] !== null && row[column] !== undefined);
+      } else {
+        this.filters.push(row => row[column] !== value);
+      }
+    } else if (operator === 'in') {
+      const values = value as unknown[];
+      this.filters.push(row => !values.includes(row[column]));
+    } else if (operator === 'eq') {
+      this.filters.push(row => row[column] !== value);
+    } else if (operator === 'neq') {
+      this.filters.push(row => row[column] === value);
+    } else if (operator === 'gt') {
+      this.filters.push(row => {
+        const cellValue = row[column] as number | string | null;
+        return cellValue === null || cellValue <= (value as number | string);
+      });
+    } else if (operator === 'gte') {
+      this.filters.push(row => {
+        const cellValue = row[column] as number | string | null;
+        return cellValue === null || cellValue < (value as number | string);
+      });
+    } else if (operator === 'lt') {
+      this.filters.push(row => {
+        const cellValue = row[column] as number | string | null;
+        return cellValue === null || cellValue >= (value as number | string);
+      });
+    } else if (operator === 'lte') {
+      this.filters.push(row => {
+        const cellValue = row[column] as number | string | null;
+        return cellValue === null || cellValue > (value as number | string);
+      });
+    } else {
+      // Fallback: negate equality
+      this.filters.push(row => row[column] !== value);
     }
     return this;
   }

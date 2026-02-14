@@ -23,6 +23,28 @@ export const OPPORTUNITY_THRESHOLDS = {
   CONTENT_GAP: { minImpressions: 50 },
   /** Very low impressions despite ranking — needs content expansion */
   THIN_CONTENT: { maxImpressions: 10 },
+  /** Topic cluster detection — groups semantically similar queries */
+  TOPIC_CLUSTER: {
+    /** Minimum queries required to form a cluster */
+    minClusterSize: 3,
+    /** Cosine similarity threshold for clustering (0-1) */
+    similarityThreshold: 0.75,
+    /** Cluster must have meaningful total impressions */
+    minTotalImpressions: 200,
+    /** Maximum clusters to create per analysis */
+    maxClusters: 10,
+    /** Minimum impressions for a query to be considered for clustering */
+    minQueryImpressions: 10,
+  },
+  /** Multiple pages competing for the same query */
+  CANNIBALIZATION: {
+    /** Minimum pages ranking for the same query to flag as cannibalization */
+    minPages: 2,
+    /** Query must have minimum impressions to be meaningful */
+    minImpressions: 30,
+    /** All competing pages must be within this position threshold */
+    maxPosition: 20,
+  },
 } as const;
 
 // =============================================================================

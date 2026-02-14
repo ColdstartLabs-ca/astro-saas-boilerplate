@@ -25,6 +25,14 @@ export const updateGscConnectionSchema = z.object({
 });
 
 /**
+ * Schema for updating GSC connection scheduling settings
+ */
+export const updateGscConnectionScheduleSchema = z.object({
+  autoAnalyze: z.boolean().optional(),
+  analyzeFrequency: z.enum(['daily', 'weekly', 'biweekly']).optional(),
+});
+
+/**
  * Schema for GSC OAuth callback query parameters
  */
 export const gscCallbackSchema = z.object({
@@ -38,4 +46,5 @@ export const gscCallbackSchema = z.object({
 
 export type IConnectGscInput = z.infer<typeof connectGscSchema>;
 export type IUpdateGscConnectionInput = z.infer<typeof updateGscConnectionSchema>;
+export type IUpdateGscConnectionScheduleInput = z.infer<typeof updateGscConnectionScheduleSchema>;
 export type IGscCallbackInput = z.infer<typeof gscCallbackSchema>;

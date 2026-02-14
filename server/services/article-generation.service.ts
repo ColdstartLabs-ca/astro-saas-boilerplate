@@ -30,6 +30,7 @@ import type {
   IImageMarker,
   IImageResult,
 } from '@shared/types/article.types';
+import type { IGscArticleContext } from '@shared/types/opportunity.types';
 import { serverEnv } from '@shared/config/env';
 import {
   getImageCountForWordCount,
@@ -99,8 +100,8 @@ export class ArticleGenerationService {
         .eq('id', articleId)
         .eq('user_id', userId);
 
-      // Step 1: Generate outline
-      const outline = await this.generateOutline(input);
+      // Step 1: Generate outline (with GSC context if provided)
+      const outline = await this.generateOutline(input, input.gscContext);
       totalTokens += outline.usage.totalTokens;
 
       // Save outline to article
@@ -314,7 +315,10 @@ export class ArticleGenerationService {
   /**
    * Generate an article outline.
    */
-  private async generateOutline(input: IGenerateArticleInput): Promise<{
+  private async generateOutline(
+    input: IGenerateArticleInput,
+    gscContext?: IGscArticleContext
+  ): Promise<{
     data: IArticleOutline;
     usage: { totalTokens: number };
   }> {
@@ -322,7 +326,7 @@ export class ArticleGenerationService {
     const targetWordCount = input.targetWordCount || 1500;
     const model = resolveWriterModel(input.model || 'auto', serverEnv.AVAILABLE_WRITER_PRESETS);
 
-    const systemPrompt = getOutlinePrompt(input.keyword, tone, targetWordCount);
+    const systemPrompt = getOutlinePrompt(input.keyword, tone, targetWordCount, gscContext);
 
     try {
       const result = await this.openRouter.chatCompletionWithRetry({

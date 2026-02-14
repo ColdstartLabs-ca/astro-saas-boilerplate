@@ -18,6 +18,7 @@ import type {
   IGscSnapshot,
   IGscSnapshotData,
   IGscQueryRow,
+  IGscQueryPagePair,
 } from '@shared/types/opportunity.types';
 import {
   OPPORTUNITY_THRESHOLDS,
@@ -27,6 +28,7 @@ import {
   getExpectedCtrForPosition,
 } from '@shared/config/opportunity.config';
 import { OpenRouterService } from '@server/services/openrouter.service';
+import { openaiEmbeddingsService } from '@server/services/openai-embeddings.service';
 
 // =============================================================================
 // Internal Types
@@ -47,6 +49,24 @@ interface IAiEnrichment {
   description: string;
   category: OpportunityCategory;
   estimated_impact: OpportunityImpact;
+}
+
+/** Query with embedding for clustering */
+interface IQueryWithEmbedding {
+  query: string;
+  impressions: number;
+  clicks: number;
+  ctr: number;
+  position: number;
+  embedding: number[];
+}
+
+/** Cluster of similar queries */
+interface IQueryCluster {
+  hubQuery: string;
+  relatedQueries: string[];
+  totalImpressions: number;
+  avgPosition: number;
 }
 
 // =============================================================================
@@ -71,30 +91,42 @@ export class OpportunityAnalysisService {
    * @param existingOpportunities - Current opportunities for deduplication
    * @param projectId - The project these opportunities belong to
    * @param userId - The user who owns the project
+   * @param previousSnapshot - Optional previous snapshot for declining position detection
    * @returns Array of opportunities ready for DB upsert
    */
   async analyzeSnapshot(
     snapshot: IGscSnapshot,
     existingOpportunities: IOpportunity[],
     projectId: string,
-    userId: string
+    userId: string,
+    previousSnapshot?: IGscSnapshot
   ): Promise<{ newOpportunities: IOpportunity[]; updatedOpportunities: IOpportunity[] }> {
     console.log('[OpportunityAnalysis] Starting analysis for project:', projectId);
 
     // Step 1: Rule-based detection
-    const rawOpportunities = this.detectOpportunities(snapshot.data);
+    const rawOpportunities = this.detectOpportunities(snapshot.data, previousSnapshot?.data);
     console.log('[OpportunityAnalysis] Detected', rawOpportunities.length, 'raw opportunities');
+
+    // Step 2: Topic cluster detection (uses embeddings)
+    try {
+      const clusterOpportunities = await this.detectTopicClusters(snapshot.data);
+      console.log('[OpportunityAnalysis] Detected', clusterOpportunities.length, 'topic clusters');
+      rawOpportunities.push(...clusterOpportunities);
+    } catch (error) {
+      console.error('[OpportunityAnalysis] Topic cluster detection failed:', error);
+      // Continue without clusters - don't fail the whole analysis
+    }
 
     if (rawOpportunities.length === 0) {
       console.log('[OpportunityAnalysis] No opportunities detected');
       return { newOpportunities: [], updatedOpportunities: [] };
     }
 
-    // Step 2: AI enrichment (titles, descriptions, categories)
+    // Step 3: AI enrichment (titles, descriptions, categories)
     const enrichments = await this.enrichWithAI(rawOpportunities);
     console.log('[OpportunityAnalysis] AI enriched', enrichments.length, 'opportunities');
 
-    // Step 3: Build full opportunity objects with priority scores
+    // Step 4: Build full opportunity objects with priority scores
     const now = new Date().toISOString();
     const fullOpportunities: IOpportunity[] = rawOpportunities.map((raw, index) => {
       const enrichment = enrichments.find(e => e.index === index);
@@ -122,7 +154,7 @@ export class OpportunityAnalysisService {
       };
     });
 
-    // Step 4: Merge with existing (deduplicate by query + type)
+    // Step 5: Merge with existing (deduplicate by query + type)
     const { newOpportunities, updatedOpportunities } = this.mergeWithExisting(
       fullOpportunities,
       existingOpportunities
@@ -146,14 +178,23 @@ export class OpportunityAnalysisService {
   /**
    * Detect opportunities from GSC snapshot data using configurable thresholds.
    * Runs entirely on CPU — no external calls.
+   *
+   * @param data - Current snapshot data
+   * @param previousData - Optional previous snapshot data for declining position detection
    */
-  private detectOpportunities(data: IGscSnapshotData): IRawOpportunity[] {
+  private detectOpportunities(
+    data: IGscSnapshotData,
+    previousData?: IGscSnapshotData
+  ): IRawOpportunity[] {
     const opportunities: IRawOpportunity[] = [];
     const { queries } = data;
 
     if (!queries || queries.length === 0) {
       return opportunities;
     }
+
+    // Build lookup map from previous snapshot for declining position detection
+    const previousPositionMap = this.buildPreviousPositionMap(previousData);
 
     for (const row of queries) {
       // Content Gap: impressions but no page — highest specificity (no page + no clicks)
@@ -205,8 +246,169 @@ export class OpportunityAnalysisService {
       }
     }
 
-    // Declining Position: only if previousPosition data is available in metrics
-    // (This would come from comparing two snapshots — future enhancement)
+    // Declining Position: detect queries that dropped significantly
+    // Requires previous snapshot data for comparison
+    if (previousData) {
+      const decliningOpps = this.detectDecliningPositions(queries, previousPositionMap);
+      opportunities.push(...decliningOpps);
+    }
+
+    // Cannibalization: detect multiple pages ranking for the same query
+    // Requires queryPagePairs data from the snapshot
+    const cannibalizationOpps = this.detectCannibalization(data);
+    opportunities.push(...cannibalizationOpps);
+
+    return opportunities;
+  }
+
+  /**
+   * Build a lookup map of query -> position from previous snapshot data.
+   * Used for declining position detection.
+   */
+  private buildPreviousPositionMap(previousData?: IGscSnapshotData): Map<string, number> {
+    const map = new Map<string, number>();
+
+    if (!previousData?.queries) {
+      return map;
+    }
+
+    for (const row of previousData.queries) {
+      map.set(row.query, row.position);
+    }
+
+    return map;
+  }
+
+  /**
+   * Detect queries that have dropped significantly in ranking position.
+   *
+   * Criteria:
+   * - Query exists in both current and previous snapshots
+   * - Position drop >= positionDropThreshold (default: 5)
+   * - Impressions >= 50 (meaningful volume)
+   *
+   * @param currentQueries - Queries from current snapshot
+   * @param previousPositionMap - Map of query -> position from previous snapshot
+   * @returns Array of declining_position opportunities
+   */
+  private detectDecliningPositions(
+    currentQueries: IGscQueryRow[],
+    previousPositionMap: Map<string, number>
+  ): IRawOpportunity[] {
+    const opportunities: IRawOpportunity[] = [];
+    const { positionDropThreshold } = OPPORTUNITY_THRESHOLDS.DECLINING_POSITION;
+    const minImpressions = 50;
+
+    for (const row of currentQueries) {
+      const previousPosition = previousPositionMap.get(row.query);
+
+      // Skip queries that are brand new (not in previous snapshot)
+      if (previousPosition === undefined) {
+        continue;
+      }
+
+      // Skip queries without meaningful volume
+      if (row.impressions < minImpressions) {
+        continue;
+      }
+
+      const positionDrop = row.position - previousPosition;
+
+      // Position increased (number got bigger) means ranking dropped
+      // We only flag if the drop is >= threshold
+      if (positionDrop >= positionDropThreshold) {
+        opportunities.push({
+          type: 'declining_position',
+          query: row.query,
+          page_url: row.page ?? null,
+          metrics: {
+            ...this.extractMetrics(row),
+            previousPosition,
+            positionChange: positionDrop,
+          },
+        });
+      }
+    }
+
+    return opportunities;
+  }
+
+  /**
+   * Detect keyword cannibalization - when multiple pages rank for the same query.
+   *
+   * Criteria:
+   * - Query has 2+ different pages ranking
+   * - All competing pages must have position <= maxPosition (default: 20)
+   * - Query must have >= minImpressions (default: 30) total impressions
+   * - Creates opportunity with type 'cannibalization'
+   * - Category is 'technical' (requires page consolidation, not new content)
+   *
+   * @param data - GSC snapshot data containing queryPagePairs
+   * @returns Array of cannibalization opportunities
+   */
+  private detectCannibalization(data: IGscSnapshotData): IRawOpportunity[] {
+    const opportunities: IRawOpportunity[] = [];
+    const { minPages, minImpressions, maxPosition } = OPPORTUNITY_THRESHOLDS.CANNIBALIZATION;
+
+    // Need queryPagePairs data for this analysis
+    const queryPagePairs = data.queryPagePairs;
+    if (!queryPagePairs || queryPagePairs.length === 0) {
+      return opportunities;
+    }
+
+    // Group pairs by query
+    const queryToPagesMap = new Map<string, IGscQueryPagePair[]>();
+
+    for (const pair of queryPagePairs) {
+      const existing = queryToPagesMap.get(pair.query) ?? [];
+      existing.push(pair);
+      queryToPagesMap.set(pair.query, existing);
+    }
+
+    // Find queries with multiple pages
+    for (const [query, pairs] of queryToPagesMap) {
+      // Filter to pages within position threshold
+      const pagesWithinThreshold = pairs.filter(p => p.position <= maxPosition);
+
+      // Need at least minPages different pages
+      if (pagesWithinThreshold.length < minPages) {
+        continue;
+      }
+
+      // Get unique page URLs
+      const uniquePages = [...new Set(pagesWithinThreshold.map(p => p.page))];
+
+      if (uniquePages.length < minPages) {
+        continue;
+      }
+
+      // Calculate total impressions for the query
+      const totalImpressions = pairs.reduce((sum, p) => sum + p.impressions, 0);
+
+      // Query must have meaningful volume
+      if (totalImpressions < minImpressions) {
+        continue;
+      }
+
+      // Find the highest-ranking page (lowest position number)
+      const bestRankingPair = pagesWithinThreshold.reduce((best, current) =>
+        current.position < best.position ? current : best
+      );
+
+      // Create opportunity
+      opportunities.push({
+        type: 'cannibalization',
+        query,
+        page_url: bestRankingPair.page, // Use the highest-ranking page
+        metrics: {
+          position: bestRankingPair.position,
+          ctr: bestRankingPair.ctr,
+          impressions: totalImpressions,
+          clicks: pairs.reduce((sum, p) => sum + p.clicks, 0),
+          competingPages: uniquePages,
+        },
+      });
+    }
 
     return opportunities;
   }
@@ -250,6 +452,271 @@ export class OpportunityAnalysisService {
       impressions: row.impressions,
       clicks: row.clicks,
     };
+  }
+
+  // ===========================================================================
+  // Topic Cluster Detection
+  // ===========================================================================
+
+  /**
+   * Detect topic clusters from GSC snapshot data using semantic embeddings.
+   *
+   * Algorithm:
+   * 1. Filter queries with impressions > minQueryImpressions
+   * 2. Generate embeddings for all queries
+   * 3. Agglomerative clustering: group queries with pairwise cosine similarity > threshold
+   * 4. Filter clusters with fewer than minClusterSize queries
+   * 5. For each cluster, select highest-impression query as hub
+   *
+   * @param data - GSC snapshot data
+   * @returns Array of raw topic_cluster opportunities
+   */
+  async detectTopicClusters(data: IGscSnapshotData): Promise<IRawOpportunity[]> {
+    const { queries } = data;
+    const config = OPPORTUNITY_THRESHOLDS.TOPIC_CLUSTER;
+
+    if (!queries || queries.length < config.minClusterSize) {
+      return [];
+    }
+
+    // Check if embeddings service is available
+    if (!openaiEmbeddingsService.isConfigured()) {
+      console.log('[OpportunityAnalysis] Embeddings service not configured, skipping cluster detection');
+      return [];
+    }
+
+    // Step 1: Filter queries with sufficient impressions
+    const candidateQueries = queries.filter(q => q.impressions >= config.minQueryImpressions);
+
+    if (candidateQueries.length < config.minClusterSize) {
+      return [];
+    }
+
+    console.log(
+      `[OpportunityAnalysis] Generating embeddings for ${candidateQueries.length} candidate queries`
+    );
+
+    // Step 2: Generate embeddings for all candidate queries
+    let queriesWithEmbeddings: IQueryWithEmbedding[];
+    try {
+      queriesWithEmbeddings = await this.generateQueryEmbeddings(candidateQueries);
+    } catch (error) {
+      console.error('[OpportunityAnalysis] Failed to generate embeddings:', error);
+      return [];
+    }
+
+    // Step 3: Perform agglomerative clustering
+    const clusters = this.clusterQueries(queriesWithEmbeddings, config.similarityThreshold);
+
+    // Step 4: Filter clusters by size and total impressions
+    const validClusters = clusters.filter(cluster => {
+      const hasMinSize = cluster.relatedQueries.length + 1 >= config.minClusterSize;
+      const hasMinImpressions = cluster.totalImpressions >= config.minTotalImpressions;
+      return hasMinSize && hasMinImpressions;
+    });
+
+    // Step 5: Limit to maxClusters
+    const limitedClusters = validClusters
+      .sort((a, b) => b.totalImpressions - a.totalImpressions)
+      .slice(0, config.maxClusters);
+
+    console.log(
+      `[OpportunityAnalysis] Found ${limitedClusters.length} valid topic clusters (of ${clusters.length} total)`
+    );
+
+    // Convert clusters to raw opportunities
+    return limitedClusters.map(cluster => ({
+      type: 'topic_cluster' as OpportunityType,
+      query: cluster.hubQuery,
+      page_url: null,
+      metrics: {
+        position: cluster.avgPosition,
+        impressions: cluster.totalImpressions,
+        totalClusterImpressions: cluster.totalImpressions,
+        relatedQueries: cluster.relatedQueries,
+      } as IOpportunityMetrics,
+    }));
+  }
+
+  /**
+   * Generate embeddings for a list of queries.
+   * Batches requests to stay within API limits.
+   */
+  private async generateQueryEmbeddings(queries: IGscQueryRow[]): Promise<IQueryWithEmbedding[]> {
+    const results: IQueryWithEmbedding[] = [];
+
+    // Process in batches of 20 to avoid rate limits
+    const batchSize = 20;
+    for (let i = 0; i < queries.length; i += batchSize) {
+      const batch = queries.slice(i, i + batchSize);
+
+      // Generate embeddings in parallel for this batch
+      const embeddings = await Promise.all(
+        batch.map(async q => {
+          try {
+            const embedding = await openaiEmbeddingsService.generateEmbedding(q.query);
+            return {
+              query: q.query,
+              impressions: q.impressions,
+              clicks: q.clicks,
+              ctr: q.ctr,
+              position: q.position,
+              embedding,
+            };
+          } catch {
+            console.warn(`[OpportunityAnalysis] Failed to embed query: ${q.query}`);
+            return null;
+          }
+        })
+      );
+
+      // Add successful embeddings to results
+      for (const result of embeddings) {
+        if (result) {
+          results.push(result);
+        }
+      }
+    }
+
+    return results;
+  }
+
+  /**
+   * Perform agglomerative clustering on queries based on cosine similarity.
+   *
+   * Uses a simple greedy approach:
+   * 1. Start with each query as its own cluster
+   * 2. Merge clusters if any pair has similarity > threshold
+   * 3. Repeat until no more merges possible
+   *
+   * @param queries - Queries with embeddings
+   * @param threshold - Minimum cosine similarity to merge
+   * @returns Array of query clusters
+   */
+  private clusterQueries(queries: IQueryWithEmbedding[], threshold: number): IQueryCluster[] {
+    if (queries.length === 0) {
+      return [];
+    }
+
+    // Initialize: each query starts in its own cluster
+    const clusters: Array<Set<number>> = queries.map((_, i) => new Set([i]));
+
+    // Pre-compute similarity matrix
+    const similarityMatrix = this.computeSimilarityMatrix(queries);
+
+    let merged = true;
+    while (merged) {
+      merged = false;
+
+      // Find the best pair to merge
+      let bestI = -1;
+      let bestJ = -1;
+      let bestSimilarity = threshold;
+
+      for (let i = 0; i < clusters.length; i++) {
+        if (clusters[i].size === 0) continue;
+
+        for (let j = i + 1; j < clusters.length; j++) {
+          if (clusters[j].size === 0) continue;
+
+          // Check if any pair between clusters has similarity >= threshold
+          const maxSim = this.maxInterClusterSimilarity(
+            clusters[i],
+            clusters[j],
+            similarityMatrix
+          );
+
+          if (maxSim >= bestSimilarity) {
+            bestSimilarity = maxSim;
+            bestI = i;
+            bestJ = j;
+            merged = true;
+          }
+        }
+      }
+
+      // Merge clusters
+      if (merged && bestI >= 0 && bestJ >= 0) {
+        // Merge j into i
+        for (const idx of clusters[bestJ]) {
+          clusters[bestI].add(idx);
+        }
+        clusters[bestJ].clear();
+      }
+    }
+
+    // Convert sets to clusters
+    const result: IQueryCluster[] = [];
+    for (const clusterSet of clusters) {
+      if (clusterSet.size < OPPORTUNITY_THRESHOLDS.TOPIC_CLUSTER.minClusterSize) {
+        continue;
+      }
+
+      // Get all queries in cluster
+      const clusterQueries = Array.from(clusterSet).map(i => queries[i]);
+
+      // Select hub query (highest impressions)
+      clusterQueries.sort((a, b) => b.impressions - a.impressions);
+      const hubQuery = clusterQueries[0];
+      const relatedQueries = clusterQueries.slice(1).map(q => q.query);
+
+      // Calculate aggregate metrics
+      const totalImpressions = clusterQueries.reduce((sum, q) => sum + q.impressions, 0);
+      const avgPosition =
+        clusterQueries.reduce((sum, q) => sum + q.position, 0) / clusterQueries.length;
+
+      result.push({
+        hubQuery: hubQuery.query,
+        relatedQueries,
+        totalImpressions,
+        avgPosition,
+      });
+    }
+
+    return result;
+  }
+
+  /**
+   * Pre-compute pairwise cosine similarity matrix.
+   */
+  private computeSimilarityMatrix(queries: IQueryWithEmbedding[]): number[][] {
+    const n = queries.length;
+    const matrix: number[][] = Array.from({ length: n }, () => new Array(n).fill(0));
+
+    for (let i = 0; i < n; i++) {
+      matrix[i][i] = 1; // Self-similarity
+      for (let j = i + 1; j < n; j++) {
+        const sim = openaiEmbeddingsService.calculateCosineSimilarity(
+          queries[i].embedding,
+          queries[j].embedding
+        );
+        matrix[i][j] = sim;
+        matrix[j][i] = sim;
+      }
+    }
+
+    return matrix;
+  }
+
+  /**
+   * Find maximum similarity between any pair of queries across two clusters.
+   */
+  private maxInterClusterSimilarity(
+    clusterA: Set<number>,
+    clusterB: Set<number>,
+    similarityMatrix: number[][]
+  ): number {
+    let maxSim = 0;
+
+    for (const i of clusterA) {
+      for (const j of clusterB) {
+        if (similarityMatrix[i][j] > maxSim) {
+          maxSim = similarityMatrix[i][j];
+        }
+      }
+    }
+
+    return maxSim;
   }
 
   // ===========================================================================

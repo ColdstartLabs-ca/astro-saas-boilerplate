@@ -74,15 +74,27 @@ export const POST = withAuthAndBody(
       );
     }
 
-    // 5. Create campaign with the opportunity's query as keyword
+    // 5. Build keywords list
+    //    For topic_cluster: include hub query + all related queries
+    //    For other types: just the main query
+    let keywords: string[];
+    if (opp.type === 'topic_cluster' && opp.metrics.relatedQueries?.length) {
+      // Topic cluster: hub query + all related queries
+      keywords = [opp.query, ...opp.metrics.relatedQueries];
+    } else {
+      // Single query opportunity
+      keywords = [opp.query];
+    }
+
+    // 6. Create campaign with the opportunity's query(s) as keyword(s)
     //    Credit checking happens inside campaignService.create
     const campaign = await campaignService.create(userId, {
       name: opp.title,
       projectId: opp.project_id,
-      keywords: [opp.query],
+      keywords,
     });
 
-    // 6. Update opportunity: status = in_progress, action details
+    // 7. Update opportunity: status = in_progress, action details
     const { error: updateError } = await supabaseAdmin
       .from('opportunities')
       .update({
