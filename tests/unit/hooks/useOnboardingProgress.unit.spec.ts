@@ -148,7 +148,7 @@ describe('useOnboardingProgress Hook', () => {
         createMockResponse({
           ok: true,
           json: async () => ({
-            onboarding: mockUpdatedStatus,
+            data: { onboarding: mockUpdatedStatus },
           }),
         })
       );
@@ -197,7 +197,7 @@ describe('useOnboardingProgress Hook', () => {
                 createMockResponse({
                   ok: true,
                   json: async () => ({
-                    onboarding: mockUpdatedStatus,
+                    data: { onboarding: mockUpdatedStatus },
                   }),
                 })
               );
@@ -233,7 +233,7 @@ describe('useOnboardingProgress Hook', () => {
         createMockResponse({
           ok: true,
           json: async () => ({
-            onboarding: mockCompletedStatus,
+            data: { onboarding: mockCompletedStatus },
           }),
         })
       );
@@ -265,10 +265,12 @@ describe('useOnboardingProgress Hook', () => {
         createMockResponse({
           ok: true,
           json: async () => ({
-            onboarding: {
-              ...mockUpdatedStatus,
-              currentStep: 2,
-              completedSteps: [1],
+            data: {
+              onboarding: {
+                ...mockUpdatedStatus,
+                currentStep: 2,
+                completedSteps: [1],
+              },
             },
           }),
         })
@@ -308,9 +310,11 @@ describe('useOnboardingProgress Hook', () => {
         createMockResponse({
           ok: true,
           json: async () => ({
-            onboarding: {
-              ...mockUpdatedStatus,
-              currentStep: 3,
+            data: {
+              onboarding: {
+                ...mockUpdatedStatus,
+                currentStep: 3,
+              },
             },
           }),
         })

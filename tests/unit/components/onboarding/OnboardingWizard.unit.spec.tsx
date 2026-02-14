@@ -100,13 +100,7 @@ vi.mock('@client/components/onboarding/steps/OnboardingStepProject', () => ({
 
 // Mock OnboardingStepGSC
 vi.mock('@client/components/onboarding/steps/OnboardingStepGSC', () => ({
-  OnboardingStepGSC: ({
-    onComplete,
-    onSkip,
-  }: {
-    onComplete: () => void;
-    onSkip: () => void;
-  }) => (
+  OnboardingStepGSC: ({ onComplete, onSkip }: { onComplete: () => void; onSkip: () => void }) => (
     <div data-testid="step-gsc">
       <span>GSC Step</span>
       <button data-testid="gsc-complete" onClick={onComplete}>
@@ -176,7 +170,8 @@ let mockStoreState = {
   markStepComplete: vi.fn((step: number) => {
     mockStoreState.completedSteps.add(step);
   }),
-  canSkipStep: (step: number) => step === OnboardingStep.GSC_CONNECTION || step === OnboardingStep.INTEGRATIONS,
+  canSkipStep: (step: number) =>
+    step === OnboardingStep.GSC_CONNECTION || step === OnboardingStep.INTEGRATIONS,
 };
 
 // Mock Zustand store - use a factory function to return the selector result
@@ -221,7 +216,8 @@ describe('OnboardingWizard', () => {
       markStepComplete: vi.fn((step: number) => {
         mockStoreState.completedSteps.add(step);
       }),
-      canSkipStep: (step: number) => step === OnboardingStep.GSC_CONNECTION || step === OnboardingStep.INTEGRATIONS,
+      canSkipStep: (step: number) =>
+        step === OnboardingStep.GSC_CONNECTION || step === OnboardingStep.INTEGRATIONS,
     };
   });
 
@@ -255,7 +251,7 @@ describe('OnboardingWizard', () => {
     it('should show step title in modal header', () => {
       const { getByTestId } = render(<OnboardingWizard isOpen={true} onClose={mockOnClose} />);
 
-      expect(getByTestId('modal-title').textContent).toContain('Create Project');
+      expect(getByTestId('modal-title').textContent).toContain('Create Your First Project');
     });
 
     it('should call setCurrentStep when step is completed', async () => {
@@ -288,14 +284,14 @@ describe('OnboardingWizard', () => {
 
   describe('Loading State', () => {
     it('should show loading spinner while fetching status', async () => {
-      vi.mocked(await import('@client/hooks/useOnboardingStatus')).useOnboardingStatus.mockReturnValue(
-        {
-          isLoading: true,
-          status: null,
-          isComplete: false,
-          currentStep: 1,
-        } as ReturnType<typeof import('@client/hooks/useOnboardingStatus').useOnboardingStatus>
-      );
+      vi.mocked(
+        await import('@client/hooks/useOnboardingStatus')
+      ).useOnboardingStatus.mockReturnValue({
+        isLoading: true,
+        status: null,
+        isComplete: false,
+        currentStep: 1,
+      } as ReturnType<typeof import('@client/hooks/useOnboardingStatus').useOnboardingStatus>);
 
       const { container } = render(<OnboardingWizard isOpen={true} onClose={mockOnClose} />);
 

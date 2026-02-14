@@ -54,7 +54,9 @@ test.describe('Billing E2E Tests', () => {
       // Check that auth modal is shown - now opens register modal for new users
       const authModal = page
         .locator('#authenticationModal')
-        .or(page.locator('div[role="dialog"]').filter({ hasText: /create account|register|email/i }));
+        .or(
+          page.locator('div[role="dialog"]').filter({ hasText: /create account|register|email/i })
+        );
 
       // Also check for toast notification
       const toast = page
@@ -335,24 +337,28 @@ test.describe('Billing E2E Tests', () => {
       await expect(growthHeading).toBeVisible();
       await expect(agencyHeading).toBeVisible();
 
-      // Check Starter tier displays $9/per month
-      const starterCard = page.locator('div').filter({ hasText: 'Starter' }).first();
-      await expect(starterCard).toContainText('$9');
+      // Check Starter tier displays $49/per month
+      const starterCard = pricingPage.pricingGrid
+        .locator('> div')
+        .filter({ hasText: 'Starter' })
+        .first();
+      await expect(starterCard).toContainText('$49');
       await expect(starterCard).toContainText('per month');
 
       // Check Starter tier features
-      await expect(starterCard).toContainText('100 credits per month');
-      await expect(starterCard).toContainText('Credits roll over (up to 300)');
+      await expect(starterCard).toContainText('30 articles per month');
+      await expect(starterCard).toContainText('Credits roll over (up to 90)');
+      await expect(starterCard).toContainText('Multi-model AI');
+      await expect(starterCard).toContainText('Humanizer engine');
+      await expect(starterCard).toContainText('1 WordPress site');
       await expect(starterCard).toContainText('Email support');
-      await expect(starterCard).toContainText('All API features included');
-      await expect(starterCard).toContainText('Batch up to 5 requests');
 
       // Check for "Get Started" button
       const starterGetStarted = starterCard.getByRole('button', { name: 'Get Started' }).first();
       await expect(starterGetStarted).toBeVisible();
 
       // Verify the description
-      await expect(starterCard).toContainText('Perfect for getting started');
+      await expect(starterCard).toContainText('Perfect for getting started with SEO content');
 
       // Screenshot for visual verification
       await pricingPage.screenshot('starter-tier-display');
@@ -399,7 +405,10 @@ test.describe('Billing E2E Tests', () => {
       await expect(starterHeading).toBeVisible();
 
       // Find and click Growth tier Get Started button
-      const growthCard = page.locator('div').filter({ hasText: 'Growth' }).first();
+      const growthCard = pricingPage.pricingGrid
+        .locator('> div')
+        .filter({ hasText: 'Growth' })
+        .first();
       const getStartedButton = growthCard
         .locator('button')
         .filter({ hasText: 'Get Started' })
@@ -418,7 +427,9 @@ test.describe('Billing E2E Tests', () => {
       // Check for auth modal or toast notification
       const authModal = page
         .locator('#authenticationModal')
-        .or(page.locator('div[role="dialog"]').filter({ hasText: /create account|register|email/i }));
+        .or(
+          page.locator('div[role="dialog"]').filter({ hasText: /create account|register|email/i })
+        );
 
       const toast = page
         .locator('[role="status"]')

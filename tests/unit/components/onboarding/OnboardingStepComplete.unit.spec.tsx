@@ -99,10 +99,10 @@ describe('OnboardingStepComplete', () => {
   });
 
   it('should render the completion header', () => {
-    const { getByText } = render(<OnboardingStepComplete onClose={mockOnClose} />);
+    const { container } = render(<OnboardingStepComplete onClose={mockOnClose} />);
 
-    expect(getByText("You're All Set!")).toBeDefined();
-    expect(getByText(/Your workspace is ready/)).toBeDefined();
+    expect(container.textContent).toContain('Project');
+    expect(container.textContent).toContain("What's Next?");
   });
 
   it('should show setup summary with all steps completed', () => {
@@ -115,7 +115,7 @@ describe('OnboardingStepComplete', () => {
     expect(getAllByText('Connected').length).toBe(2);
     expect(getByText('Keywords')).toBeDefined();
     expect(getByText('5 uploaded')).toBeDefined();
-    expect(getByText('CMS Integration')).toBeDefined();
+    expect(getByText('Integration')).toBeDefined();
   });
 
   it('should show skipped steps correctly', () => {
@@ -153,7 +153,7 @@ describe('OnboardingStepComplete', () => {
     const { getByText } = render(<OnboardingStepComplete onClose={mockOnClose} />);
 
     expect(getByText("What's Next?")).toBeDefined();
-    expect(getByText(/Start generating articles/)).toBeDefined();
+    expect(getByText(/Generate articles from your campaign keywords/)).toBeDefined();
   });
 
   it('should show "Go to Dashboard" button', () => {

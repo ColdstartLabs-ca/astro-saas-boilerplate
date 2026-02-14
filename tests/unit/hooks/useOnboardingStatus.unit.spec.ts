@@ -126,7 +126,7 @@ describe('useOnboardingStatus Hook', () => {
         createMockResponse({
           ok: true,
           json: async () => ({
-            onboarding: mockOnboardingStatus,
+            data: { onboarding: mockOnboardingStatus },
           }),
         })
       );
@@ -148,7 +148,7 @@ describe('useOnboardingStatus Hook', () => {
         createMockResponse({
           ok: true,
           json: async () => ({
-            onboarding: mockCompletedStatus,
+            data: { onboarding: mockCompletedStatus },
           }),
         })
       );
@@ -217,7 +217,7 @@ describe('useOnboardingStatus Hook', () => {
         createMockResponse({
           ok: true,
           json: async () => ({
-            onboarding: mockOnboardingStatus,
+            data: { onboarding: mockOnboardingStatus },
           }),
         })
       );
@@ -247,7 +247,7 @@ describe('useOnboardingStatus Hook', () => {
           createMockResponse({
             ok: true,
             json: async () => ({
-              onboarding: mockOnboardingStatus,
+              data: { onboarding: mockOnboardingStatus },
             }),
           })
         )
@@ -255,7 +255,7 @@ describe('useOnboardingStatus Hook', () => {
           createMockResponse({
             ok: true,
             json: async () => ({
-              onboarding: mockCompletedStatus,
+              data: { onboarding: mockCompletedStatus },
             }),
           })
         );
@@ -284,7 +284,7 @@ describe('useOnboardingStatus Hook', () => {
           createMockResponse({
             ok: true,
             json: async () => ({
-              onboarding: mockOnboardingStatus,
+              data: { onboarding: mockOnboardingStatus },
             }),
           })
         )
@@ -292,7 +292,7 @@ describe('useOnboardingStatus Hook', () => {
           createMockResponse({
             ok: true,
             json: async () => ({
-              onboarding: mockOnboardingStatus,
+              data: { onboarding: mockOnboardingStatus },
             }),
           })
         );

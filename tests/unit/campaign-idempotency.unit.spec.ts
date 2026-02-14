@@ -22,6 +22,13 @@ vi.mock('@server/supabase/supabaseAdmin', () => ({
   },
 }));
 
+// Ensure service uses database/RPC code paths in unit tests
+vi.mock('@shared/config/env', () => ({
+  serverEnv: {
+    ENV: 'development',
+  },
+}));
+
 import { supabaseAdmin } from '@server/supabase/supabaseAdmin';
 
 const mockRpc = supabaseAdmin.rpc as vi.Mock;

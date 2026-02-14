@@ -450,7 +450,9 @@ export class BasePage {
    */
   async checkAriaLabels(): Promise<void> {
     // Check buttons have accessible names
-    const buttons = this.page.locator('button:not([aria-label]):not([aria-labelledby])');
+    const buttons = this.page.locator(
+      'button:visible:not([aria-label]):not([aria-labelledby]):not([title])'
+    );
     const buttonCount = await buttons.count();
 
     for (let i = 0; i < buttonCount; i++) {

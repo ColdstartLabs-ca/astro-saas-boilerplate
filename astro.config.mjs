@@ -8,6 +8,33 @@ import cloudflare from '@astrojs/cloudflare';
 const SUPPORTED_LOCALES = ['en'];
 const DEFAULT_LOCALE = 'en';
 const isPlaywrightTest = process.env.PLAYWRIGHT_TEST === '1' || process.env.ENV === 'test';
+const baseOptimizeDeps = [
+  '@stripe/react-stripe-js',
+  '@stripe/stripe-js',
+  'react-hook-form',
+  '@hookform/resolvers/zod',
+  'framer-motion',
+  'dayjs',
+  'dayjs/plugin/relativeTime',
+];
+const playwrightOptimizeDeps = [
+  'lucide-react',
+  'country-flag-icons/react/3x2',
+  'zustand',
+  'zustand/react/shallow',
+  'zod',
+  '@baselime/react-rum',
+  '@supabase/ssr',
+  '@supabase/supabase-js',
+  '@tanstack/react-query',
+  'react-icons/fa',
+  '@amplitude/analytics-browser',
+  'papaparse',
+  'xlsx',
+  'react-markdown',
+  '@uiw/react-md-editor',
+  'dayjs/plugin/utc',
+];
 
 // https://astro.build/config
 export default defineConfig({
@@ -41,13 +68,8 @@ export default defineConfig({
   vite: {
     optimizeDeps: {
       include: [
-        '@stripe/react-stripe-js',
-        '@stripe/stripe-js',
-        'react-hook-form',
-        '@hookform/resolvers/zod',
-        'framer-motion',
-        'dayjs',
-        'dayjs/plugin/relativeTime',
+        ...baseOptimizeDeps,
+        ...(isPlaywrightTest ? playwrightOptimizeDeps : []),
       ],
     },
     // Preserve existing path aliases

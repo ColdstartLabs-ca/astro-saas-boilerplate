@@ -102,7 +102,7 @@ describe('OnboardingStepGSC', () => {
 
   describe('Rendering', () => {
     it('should render the GSC connection UI', async () => {
-      (apiFetch as ReturnType<typeof vi.fn>).mockResolvedValueOnce({ connection: null });
+      (apiFetch as ReturnType<typeof vi.fn>).mockResolvedValueOnce({ data: { connection: null } });
 
       const { container } = render(
         <OnboardingStepGSC onComplete={mockOnComplete} onSkip={mockOnSkip} />
@@ -114,7 +114,7 @@ describe('OnboardingStepGSC', () => {
     });
 
     it('should show benefits of connecting GSC', async () => {
-      (apiFetch as ReturnType<typeof vi.fn>).mockResolvedValueOnce({ connection: null });
+      (apiFetch as ReturnType<typeof vi.fn>).mockResolvedValueOnce({ data: { connection: null } });
 
       const { container } = render(
         <OnboardingStepGSC onComplete={mockOnComplete} onSkip={mockOnSkip} />
@@ -127,7 +127,7 @@ describe('OnboardingStepGSC', () => {
     });
 
     it('should show skip button', async () => {
-      (apiFetch as ReturnType<typeof vi.fn>).mockResolvedValueOnce({ connection: null });
+      (apiFetch as ReturnType<typeof vi.fn>).mockResolvedValueOnce({ data: { connection: null } });
 
       const { container } = render(
         <OnboardingStepGSC onComplete={mockOnComplete} onSkip={mockOnSkip} />
@@ -142,9 +142,7 @@ describe('OnboardingStepGSC', () => {
   describe('Loading State', () => {
     it('should show loading spinner while fetching connection', () => {
       // Don't resolve the promise yet
-      (apiFetch as ReturnType<typeof vi.fn>).mockImplementation(
-        () => new Promise(() => {})
-      );
+      (apiFetch as ReturnType<typeof vi.fn>).mockImplementation(() => new Promise(() => {}));
 
       const { container } = render(
         <OnboardingStepGSC onComplete={mockOnComplete} onSkip={mockOnSkip} />
@@ -158,8 +156,8 @@ describe('OnboardingStepGSC', () => {
   describe('Connect Flow', () => {
     it('should call connect API when connect button is clicked', async () => {
       (apiFetch as ReturnType<typeof vi.fn>)
-        .mockResolvedValueOnce({ connection: null }) // Initial fetch
-        .mockResolvedValueOnce({ authUrl: 'https://accounts.google.com/oauth' }); // Connect
+        .mockResolvedValueOnce({ data: { connection: null } }) // Initial fetch
+        .mockResolvedValueOnce({ data: { authUrl: 'https://accounts.google.com/oauth' } }); // Connect
 
       // Mock window.location.href
       const originalLocation = window.location;
@@ -199,7 +197,7 @@ describe('OnboardingStepGSC', () => {
 
     it('should show error when connect fails', async () => {
       (apiFetch as ReturnType<typeof vi.fn>)
-        .mockResolvedValueOnce({ connection: null }) // Initial fetch
+        .mockResolvedValueOnce({ data: { connection: null } }) // Initial fetch
         .mockRejectedValueOnce(new Error('Connection failed')); // Connect
 
       const { container } = render(
@@ -228,7 +226,7 @@ describe('OnboardingStepGSC', () => {
 
   describe('Skip Flow', () => {
     it('should show skip confirmation when skip button is clicked', async () => {
-      (apiFetch as ReturnType<typeof vi.fn>).mockResolvedValueOnce({ connection: null });
+      (apiFetch as ReturnType<typeof vi.fn>).mockResolvedValueOnce({ data: { connection: null } });
 
       const { container } = render(
         <OnboardingStepGSC onComplete={mockOnComplete} onSkip={mockOnSkip} />
@@ -251,7 +249,7 @@ describe('OnboardingStepGSC', () => {
     });
 
     it('should mark step as skipped when Skip Anyway is clicked', async () => {
-      (apiFetch as ReturnType<typeof vi.fn>).mockResolvedValueOnce({ connection: null });
+      (apiFetch as ReturnType<typeof vi.fn>).mockResolvedValueOnce({ data: { connection: null } });
 
       const { container } = render(
         <OnboardingStepGSC onComplete={mockOnComplete} onSkip={mockOnSkip} />
@@ -278,7 +276,7 @@ describe('OnboardingStepGSC', () => {
     });
 
     it('should hide confirmation when Go Back is clicked', async () => {
-      (apiFetch as ReturnType<typeof vi.fn>).mockResolvedValueOnce({ connection: null });
+      (apiFetch as ReturnType<typeof vi.fn>).mockResolvedValueOnce({ data: { connection: null } });
 
       const { container } = render(
         <OnboardingStepGSC onComplete={mockOnComplete} onSkip={mockOnSkip} />
@@ -321,7 +319,7 @@ describe('OnboardingStepGSC', () => {
       };
 
       (apiFetch as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
-        connection: activeConnection,
+        data: { connection: activeConnection },
       });
 
       const { container } = render(
@@ -345,7 +343,7 @@ describe('OnboardingStepGSC', () => {
       };
 
       (apiFetch as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
-        connection: activeConnection,
+        data: { connection: activeConnection },
       });
 
       const { container } = render(

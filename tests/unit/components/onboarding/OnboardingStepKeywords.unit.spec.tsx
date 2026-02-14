@@ -96,15 +96,19 @@ describe('OnboardingStepKeywords', () => {
       isUpdating: false,
     };
     mockCampaignState = {
-      createCampaign: vi.fn().mockResolvedValue({ id: 'campaign-123', name: 'Onboarding Campaign' }),
+      createCampaign: vi
+        .fn()
+        .mockResolvedValue({ id: 'campaign-123', name: 'Onboarding Campaign' }),
     };
   });
 
   it('should render the keywords step header', () => {
-    const { getByText } = render(<OnboardingStepKeywords onComplete={mockOnComplete} />);
+    const { getByLabelText, getByText } = render(
+      <OnboardingStepKeywords onComplete={mockOnComplete} />
+    );
 
-    expect(getByText('Add Your Keywords')).toBeDefined();
-    expect(getByText(/Enter the keywords you want to target/)).toBeDefined();
+    expect(getByLabelText(/Keywords/i)).toBeDefined();
+    expect(getByText('1-500 keywords allowed')).toBeDefined();
   });
 
   it('should render the textarea for keyword input', () => {
@@ -122,9 +126,7 @@ describe('OnboardingStepKeywords', () => {
   });
 
   it('should parse comma-separated keywords', () => {
-    const { container, getByText } = render(
-      <OnboardingStepKeywords onComplete={mockOnComplete} />
-    );
+    const { container, getByText } = render(<OnboardingStepKeywords onComplete={mockOnComplete} />);
 
     const textarea = container.querySelector('textarea')!;
     fireEvent.change(textarea, { target: { value: 'seo tips, content marketing, blog writing' } });
@@ -133,9 +135,7 @@ describe('OnboardingStepKeywords', () => {
   });
 
   it('should parse line-separated keywords', () => {
-    const { container, getByText } = render(
-      <OnboardingStepKeywords onComplete={mockOnComplete} />
-    );
+    const { container, getByText } = render(<OnboardingStepKeywords onComplete={mockOnComplete} />);
 
     const textarea = container.querySelector('textarea')!;
     fireEvent.change(textarea, {
@@ -146,9 +146,7 @@ describe('OnboardingStepKeywords', () => {
   });
 
   it('should show keyword preview when count <= 20', () => {
-    const { container, getByText } = render(
-      <OnboardingStepKeywords onComplete={mockOnComplete} />
-    );
+    const { container, getByText } = render(<OnboardingStepKeywords onComplete={mockOnComplete} />);
 
     const textarea = container.querySelector('textarea')!;
     fireEvent.change(textarea, { target: { value: 'seo tips, content marketing' } });
@@ -235,9 +233,7 @@ describe('OnboardingStepKeywords', () => {
   });
 
   it('should filter out empty keywords', () => {
-    const { container, getByText } = render(
-      <OnboardingStepKeywords onComplete={mockOnComplete} />
-    );
+    const { container, getByText } = render(<OnboardingStepKeywords onComplete={mockOnComplete} />);
 
     const textarea = container.querySelector('textarea')!;
     fireEvent.change(textarea, { target: { value: 'seo tips,,, ,content marketing' } });

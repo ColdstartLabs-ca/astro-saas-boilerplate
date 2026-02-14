@@ -64,16 +64,80 @@ vi.mock('@shared/config/ai-models.config', () => ({
 vi.mock('@client/hooks/useAvailableModels', () => ({
   useAvailableModels: () => ({
     writerPresets: [
-      { key: 'budget', displayName: 'Budget', model: 'openai/gpt-4o-mini', tier: 'budget', creditCost: 1, description: 'Fast, cost-effective text generation' },
-      { key: 'balanced', displayName: 'Balanced', model: 'openai/gpt-4o', tier: 'balanced', creditCost: 1, description: 'Strong all-round writing quality' },
-      { key: 'pro', displayName: 'Pro', model: 'anthropic/claude-sonnet-4-5', tier: 'balanced', creditCost: 2, description: 'Professional-grade AI writing' },
-      { key: 'ultra', displayName: 'Ultra', model: 'anthropic/claude-opus-4-6', tier: 'ultra', creditCost: 3, description: 'Premium writing with nuance and depth' },
+      {
+        key: 'budget',
+        displayName: 'Budget',
+        model: 'openai/gpt-4o-mini',
+        tier: 'budget',
+        creditCost: 1,
+        description: 'Fast, cost-effective text generation',
+      },
+      {
+        key: 'balanced',
+        displayName: 'Balanced',
+        model: 'openai/gpt-4o',
+        tier: 'balanced',
+        creditCost: 1,
+        description: 'Strong all-round writing quality',
+      },
+      {
+        key: 'pro',
+        displayName: 'Pro',
+        model: 'anthropic/claude-sonnet-4-5',
+        tier: 'balanced',
+        creditCost: 2,
+        description: 'Professional-grade AI writing',
+      },
+      {
+        key: 'ultra',
+        displayName: 'Ultra',
+        model: 'anthropic/claude-opus-4-6',
+        tier: 'ultra',
+        creditCost: 3,
+        description: 'Premium writing with nuance and depth',
+      },
     ],
     imagePresets: [
-      { key: 'budget', displayName: 'Budget', replicateModel: 'black-forest-labs/flux-schnell', tier: 'budget', creditCost: 0, description: 'Fast, good-quality images', bestFor: 'Quick drafts, blog posts', aspectRatio: '16:9' },
-      { key: 'balanced', displayName: 'Balanced', replicateModel: 'black-forest-labs/flux-dev', tier: 'balanced', creditCost: 0, description: 'Higher quality, slower generation', bestFor: 'Standard articles, featured posts', aspectRatio: '16:9' },
-      { key: 'pro', displayName: 'Pro', replicateModel: 'black-forest-labs/flux-1.1-pro', tier: 'pro', creditCost: 1, description: 'Professional editorial-quality images', bestFor: 'High-quality editorial content', aspectRatio: '16:9' },
-      { key: 'ultra', displayName: 'Ultra', replicateModel: 'bytedance/seedream-4.5', tier: 'ultra', creditCost: 1, description: 'Best quality, photorealistic imagery', bestFor: 'Premium content, hero images', aspectRatio: '16:9' },
+      {
+        key: 'budget',
+        displayName: 'Budget',
+        replicateModel: 'black-forest-labs/flux-schnell',
+        tier: 'budget',
+        creditCost: 0,
+        description: 'Fast, good-quality images',
+        bestFor: 'Quick drafts, blog posts',
+        aspectRatio: '16:9',
+      },
+      {
+        key: 'balanced',
+        displayName: 'Balanced',
+        replicateModel: 'black-forest-labs/flux-dev',
+        tier: 'balanced',
+        creditCost: 0,
+        description: 'Higher quality, slower generation',
+        bestFor: 'Standard articles, featured posts',
+        aspectRatio: '16:9',
+      },
+      {
+        key: 'pro',
+        displayName: 'Pro',
+        replicateModel: 'black-forest-labs/flux-1.1-pro',
+        tier: 'pro',
+        creditCost: 1,
+        description: 'Professional editorial-quality images',
+        bestFor: 'High-quality editorial content',
+        aspectRatio: '16:9',
+      },
+      {
+        key: 'ultra',
+        displayName: 'Ultra',
+        replicateModel: 'bytedance/seedream-4.5',
+        tier: 'ultra',
+        creditCost: 1,
+        description: 'Best quality, photorealistic imagery',
+        bestFor: 'Premium content, hero images',
+        aspectRatio: '16:9',
+      },
     ],
     isLoading: false,
   }),
@@ -126,7 +190,7 @@ describe('NewCampaignModal', () => {
     );
 
     expect(screen.getByText('Create New Campaign')).toBeInTheDocument();
-    expect(screen.getByText('Step 1 of 2')).toBeInTheDocument();
+    expect(screen.getByText('Step 1 of 3')).toBeInTheDocument();
     expect(screen.getByLabelText('Campaign Name')).toBeInTheDocument();
     expect(screen.getByPlaceholderText(/Enter one keyword per line/)).toBeInTheDocument();
   });
@@ -172,7 +236,7 @@ describe('NewCampaignModal', () => {
     fireEvent.click(nextButton);
 
     await waitFor(() => {
-      expect(screen.getByText('Step 2 of 2')).toBeInTheDocument();
+      expect(screen.getByText('Step 2 of 3')).toBeInTheDocument();
     });
   });
 
@@ -231,6 +295,14 @@ describe('NewCampaignModal', () => {
       expect(screen.getByText('Insufficient Credits')).toBeInTheDocument();
     });
 
+    // Navigate to step 3
+    const nextFromStep2 = screen.getByRole('button', { name: /Next Step/i });
+    fireEvent.click(nextFromStep2);
+
+    await waitFor(() => {
+      expect(screen.getByText('Step 3 of 3')).toBeInTheDocument();
+    });
+
     const createButton = screen.getByRole('button', { name: /Create Campaign/i });
     expect(createButton).toBeDisabled();
   });
@@ -260,7 +332,15 @@ describe('NewCampaignModal', () => {
     fireEvent.click(nextButton);
 
     await waitFor(() => {
-      expect(screen.getByText('Step 2 of 2')).toBeInTheDocument();
+      expect(screen.getByText('Step 2 of 3')).toBeInTheDocument();
+    });
+
+    // Go to step 3
+    const nextFromStep2 = screen.getByRole('button', { name: /Next Step/i });
+    fireEvent.click(nextFromStep2);
+
+    await waitFor(() => {
+      expect(screen.getByText('Step 3 of 3')).toBeInTheDocument();
     });
 
     // Submit

@@ -13,9 +13,7 @@ vi.mock('lucide-react', () => ({
   Loader2: ({ className }: { className?: string }) => (
     <span className={className} data-icon="Loader2" />
   ),
-  Plug: ({ className }: { className?: string }) => (
-    <span className={className} data-icon="Plug" />
-  ),
+  Plug: ({ className }: { className?: string }) => <span className={className} data-icon="Plug" />,
   Globe: ({ className }: { className?: string }) => (
     <span className={className} data-icon="Globe" />
   ),
@@ -129,8 +127,9 @@ describe('OnboardingStepIntegrations', () => {
       <OnboardingStepIntegrations onComplete={mockOnComplete} onSkip={mockOnSkip} />
     );
 
-    expect(getByText('Connect Your CMS')).toBeDefined();
-    expect(getByText(/Auto-publish articles directly to your website/)).toBeDefined();
+    expect(getByText('WordPress')).toBeDefined();
+    expect(getByText('Webhook')).toBeDefined();
+    expect(getByText('Auto-publish articles directly to your WordPress site')).toBeDefined();
   });
 
   it('should show integration type cards', () => {
@@ -257,7 +256,9 @@ describe('OnboardingStepIntegrations', () => {
   });
 
   it('should show error on integration failure', async () => {
-    mockIntegrationState.createIntegration = vi.fn().mockRejectedValue(new Error('Connection failed'));
+    mockIntegrationState.createIntegration = vi
+      .fn()
+      .mockRejectedValue(new Error('Connection failed'));
 
     const { getByText, container } = render(
       <OnboardingStepIntegrations onComplete={mockOnComplete} onSkip={mockOnSkip} />

@@ -1,9 +1,6 @@
 import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
 import { onboardingService } from '@server/services/onboarding.service';
-import {
-  OnboardingNotFoundError,
-  OnboardingStepError,
-} from '@shared/types/onboarding.types';
+import { OnboardingStepError } from '@shared/types/onboarding.types';
 
 // Mock supabaseAdmin - must use factory function
 vi.mock('@server/supabase/supabaseAdmin', () => {
@@ -23,7 +20,6 @@ vi.mock('@server/supabase/supabaseAdmin', () => {
   const insertChain = () => ({ select: mockSelect });
   const updateChain = () => ({ eq: mockEq });
   const deleteChain = () => ({ eq: mockEq });
-  const upsertChain = () => ({ select: mockSelect });
   const eqChain = () => ({ single: mockSingle, maybeSingle: mockMaybeSingle });
 
   mockFrom.mockImplementation(() => ({
@@ -40,7 +36,7 @@ vi.mock('@server/supabase/supabaseAdmin', () => {
   mockInsert.mockImplementation(insertChain);
   mockUpdate.mockImplementation(updateChain);
   mockDelete.mockImplementation(deleteChain);
-  mockUpsert.mockImplementation(upsertChain);
+  mockUpsert.mockResolvedValue({ data: null, error: null });
   mockEq.mockImplementation(eqChain);
   mockSingle.mockReturnValue({ data: null, error: null });
   mockMaybeSingle.mockReturnValue({ data: null, error: null });
@@ -256,7 +252,9 @@ describe('OnboardingService', () => {
             select: vi.fn().mockReturnValue({
               eq: vi.fn().mockReturnValue({
                 limit: vi.fn().mockReturnValue({
-                  maybeSingle: vi.fn().mockResolvedValue({ data: { id: 'existing-project' }, error: null }),
+                  maybeSingle: vi
+                    .fn()
+                    .mockResolvedValue({ data: { id: 'existing-project' }, error: null }),
                 }),
               }),
             }),
@@ -294,9 +292,7 @@ describe('OnboardingService', () => {
       const { supabaseAdmin } = await import('@server/supabase/supabaseAdmin');
 
       (supabaseAdmin.from as unknown as ReturnType<typeof vi.fn>).mockReturnValueOnce({
-        update: vi.fn().mockReturnValue({
-          eq: vi.fn().mockResolvedValue({ error: null, count: 1 }),
-        }),
+        upsert: vi.fn().mockResolvedValue({ error: null }),
       } as unknown);
 
       await onboardingService.updateProgress(mockUserId, {
@@ -308,13 +304,11 @@ describe('OnboardingService', () => {
       // Success - no error thrown
     });
 
-    it('should throw OnboardingNotFoundError if record does not exist', async () => {
+    it('should create onboarding record if record does not exist (upsert)', async () => {
       const { supabaseAdmin } = await import('@server/supabase/supabaseAdmin');
 
       (supabaseAdmin.from as unknown as ReturnType<typeof vi.fn>).mockReturnValueOnce({
-        update: vi.fn().mockReturnValue({
-          eq: vi.fn().mockResolvedValue({ error: null, count: 0 }),
-        }),
+        upsert: vi.fn().mockResolvedValue({ error: null }),
       } as unknown);
 
       await expect(
@@ -323,7 +317,7 @@ describe('OnboardingService', () => {
           completedSteps: [1],
           skippedSteps: [],
         })
-      ).rejects.toThrow(OnboardingNotFoundError);
+      ).resolves.toBeUndefined();
     });
 
     it('should throw error if step is both completed and skipped', async () => {
@@ -350,11 +344,8 @@ describe('OnboardingService', () => {
       const { supabaseAdmin } = await import('@server/supabase/supabaseAdmin');
 
       (supabaseAdmin.from as unknown as ReturnType<typeof vi.fn>).mockReturnValueOnce({
-        update: vi.fn().mockReturnValue({
-          eq: vi.fn().mockResolvedValue({
-            error: { message: 'Update failed' },
-            count: 0,
-          }),
+        upsert: vi.fn().mockResolvedValue({
+          error: { message: 'Update failed' },
         }),
       } as unknown);
 
@@ -395,11 +386,9 @@ describe('OnboardingService', () => {
             }),
           } as unknown;
         } else {
-          // updateProgress: update record
+          // updateProgress: upsert record
           return {
-            update: vi.fn().mockReturnValue({
-              eq: vi.fn().mockResolvedValue({ error: null, count: 1 }),
-            }),
+            upsert: vi.fn().mockResolvedValue({ error: null }),
           } as unknown;
         }
       });
@@ -453,9 +442,7 @@ describe('OnboardingService', () => {
           } as unknown;
         } else {
           return {
-            update: vi.fn().mockReturnValue({
-              eq: vi.fn().mockResolvedValue({ error: null, count: 1 }),
-            }),
+            upsert: vi.fn().mockResolvedValue({ error: null }),
           } as unknown;
         }
       });
@@ -531,9 +518,7 @@ describe('OnboardingService', () => {
           } as unknown;
         } else {
           return {
-            update: vi.fn().mockReturnValue({
-              eq: vi.fn().mockResolvedValue({ error: null, count: 1 }),
-            }),
+            upsert: vi.fn().mockResolvedValue({ error: null }),
           } as unknown;
         }
       });
@@ -602,11 +587,9 @@ describe('OnboardingService', () => {
 
       let updateCall: Record<string, unknown> | null = null;
       (supabaseAdmin.from as unknown as ReturnType<typeof vi.fn>).mockReturnValueOnce({
-        update: vi.fn().mockImplementation((data: unknown) => {
+        upsert: vi.fn().mockImplementation((data: unknown) => {
           updateCall = data as Record<string, unknown>;
-          return {
-            eq: vi.fn().mockResolvedValue({ error: null, count: 1 }),
-          };
+          return Promise.resolve({ error: null });
         }),
       } as unknown);
 
@@ -619,27 +602,21 @@ describe('OnboardingService', () => {
       expect(updateCall?.completed_at).toBeDefined();
     });
 
-    it('should throw OnboardingNotFoundError if record does not exist', async () => {
+    it('should upsert completion when record does not exist', async () => {
       const { supabaseAdmin } = await import('@server/supabase/supabaseAdmin');
 
       (supabaseAdmin.from as unknown as ReturnType<typeof vi.fn>).mockReturnValueOnce({
-        update: vi.fn().mockReturnValue({
-          eq: vi.fn().mockResolvedValue({ error: null, count: 0 }),
-        }),
+        upsert: vi.fn().mockResolvedValue({ error: null }),
       } as unknown);
 
-      await expect(onboardingService.markComplete(mockUserId)).rejects.toThrow(
-        OnboardingNotFoundError
-      );
+      await expect(onboardingService.markComplete(mockUserId)).resolves.toBeUndefined();
     });
 
     it('should throw error on database failure', async () => {
       const { supabaseAdmin } = await import('@server/supabase/supabaseAdmin');
 
       (supabaseAdmin.from as unknown as ReturnType<typeof vi.fn>).mockReturnValueOnce({
-        update: vi.fn().mockReturnValue({
-          eq: vi.fn().mockResolvedValue({ error: { message: 'Update failed' }, count: 0 }),
-        }),
+        upsert: vi.fn().mockResolvedValue({ error: { message: 'Update failed' } }),
       } as unknown);
 
       await expect(onboardingService.markComplete(mockUserId)).rejects.toThrow(

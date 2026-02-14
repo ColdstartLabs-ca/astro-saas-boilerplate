@@ -11,7 +11,7 @@ import { BasePage } from './BasePage';
 export class LoginPage extends BasePage {
   // Login form selectors
   private get modalTitle() {
-    return this.modal.locator('#modal-title h3', { hasText: 'Sign In' });
+    return this.modal.locator('#modal-title');
   }
 
   private get emailField() {

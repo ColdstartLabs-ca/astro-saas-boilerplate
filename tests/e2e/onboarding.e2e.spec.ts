@@ -400,7 +400,7 @@ test.describe('Onboarding Wizard E2E Tests', () => {
       // The component should normalize this to https://example.com
       await onboardingPage.fillStep1({
         name: 'My Project',
-        website: 'example.com',  // No https:// prefix
+        website: 'example.com', // No https:// prefix
       });
 
       // Set up request capture before submitting
@@ -576,16 +576,26 @@ test.describe('Onboarding Wizard E2E Tests', () => {
       await mockGscConnect(page);
 
       await onboardingPage.goto();
+      await onboardingPage.assertStep1Visible();
 
       // Complete step 1
-      await onboardingPage.fillStep1({
-        name: 'My Test Project',
-        website: 'https://example.com',
-      });
-      await onboardingPage.nextButton.click();
-      await onboardingPage.waitForStepTransition();
+      const completeStep1 = async () => {
+        await onboardingPage.fillStep1({
+          name: 'My Test Project',
+          website: 'https://example.com',
+        });
+        await expect(onboardingPage.nextButton).toBeEnabled({ timeout: 10000 });
+        await onboardingPage.nextButton.click();
+        await onboardingPage.waitForStepTransition();
+      };
+      await completeStep1();
 
       // Verify we're on step 2
+      // Astro dev can do a one-time dependency optimization reload; retry step 1 once if needed.
+      if (!(await onboardingPage.step2Elements.connectButton.isVisible().catch(() => false))) {
+        await onboardingPage.assertStep1Visible();
+        await completeStep1();
+      }
       await onboardingPage.assertStep2Visible();
 
       // Set up request capture before clicking
@@ -808,18 +818,30 @@ test.describe('Onboarding Wizard E2E Tests', () => {
   test.describe('Step 4 - Integrations (Optional)', () => {
     test('should allow skipping integrations', async () => {
       await onboardingPage.goto();
+      await onboardingPage.assertStep1Visible();
 
-      // Complete step 1
-      await onboardingPage.fillStep1({
-        name: 'My Test Project',
-        website: 'https://example.com',
-      });
-      await onboardingPage.nextButton.click();
-      await onboardingPage.waitForStepTransition();
+      const reachStep3 = async () => {
+        // Complete step 1
+        await onboardingPage.fillStep1({
+          name: 'My Test Project',
+          website: 'https://example.com',
+        });
+        await expect(onboardingPage.nextButton).toBeEnabled({ timeout: 10000 });
+        await onboardingPage.nextButton.click();
+        await onboardingPage.waitForStepTransition();
 
-      // Skip step 2
-      await onboardingPage.skipStep2();
-      await onboardingPage.waitForStepTransition();
+        // Skip step 2
+        await onboardingPage.skipStep2();
+        await onboardingPage.waitForStepTransition();
+      };
+      await reachStep3();
+
+      // Astro dev can do a one-time dependency optimization reload; recover once if it reset.
+      if (!(await onboardingPage.step3Elements.keywordsInput.isVisible().catch(() => false))) {
+        await onboardingPage.assertStep1Visible();
+        await reachStep3();
+      }
+      await onboardingPage.assertStep3Visible();
 
       // Fill step 3 keywords
       await onboardingPage.fillStep3Keywords('seo tools, keyword research, content marketing');
@@ -909,9 +931,9 @@ test.describe('Onboarding Wizard E2E Tests', () => {
       await onboardingPage.assertStep4Visible();
 
       // Click on WordPress integration option
-      const wordpressOption = page.getByRole('button', { name: /connect wordpress/i }).or(
-        page.locator('[data-testid="wordpress-option"], button:has-text("WordPress")').first()
-      );
+      const wordpressOption = page
+        .getByRole('button', { name: /connect wordpress/i })
+        .or(page.locator('[data-testid="wordpress-option"], button:has-text("WordPress")').first());
 
       // Check if WordPress option is visible and clickable
       const isVisible = await wordpressOption.isVisible().catch(() => false);
@@ -920,16 +942,25 @@ test.describe('Onboarding Wizard E2E Tests', () => {
 
         // Look for WordPress form fields (name, URL, username, password)
         // These fields should appear after selecting WordPress
-        const nameField = page.getByLabel(/site name|wordpress.*name/i).or(page.locator('input[name="name"]').first());
-        const urlField = page.getByLabel(/site url|wordpress.*url/i).or(page.locator('input[name="url"]').first());
-        const usernameField = page.getByLabel(/username/i).or(page.locator('input[name="username"]').first());
-        const passwordField = page.getByLabel(/password/i).or(page.locator('input[name="password"]').first());
+        const nameField = page
+          .getByLabel(/site name|wordpress.*name/i)
+          .or(page.locator('input[name="name"]').first());
+        const urlField = page
+          .getByLabel(/site url|wordpress.*url/i)
+          .or(page.locator('input[name="url"]').first());
+        const usernameField = page
+          .getByLabel(/username/i)
+          .or(page.locator('input[name="username"]').first());
+        const passwordField = page
+          .getByLabel(/password/i)
+          .or(page.locator('input[name="password"]').first());
 
         // At least one form field should be visible after selecting WordPress
-        const hasAnyField = await nameField.isVisible().catch(() => false) ||
-          await urlField.isVisible().catch(() => false) ||
-          await usernameField.isVisible().catch(() => false) ||
-          await passwordField.isVisible().catch(() => false);
+        const hasAnyField =
+          (await nameField.isVisible().catch(() => false)) ||
+          (await urlField.isVisible().catch(() => false)) ||
+          (await usernameField.isVisible().catch(() => false)) ||
+          (await passwordField.isVisible().catch(() => false));
 
         // If no fields are visible, the component might use a different pattern
         // Just verify we're still on step 4 and have interaction options
@@ -978,18 +1009,21 @@ test.describe('Onboarding Wizard E2E Tests', () => {
 
     test('should show summary with completed and skipped steps', async () => {
       await onboardingPage.goto();
+      await onboardingPage.assertStep1Visible();
 
       // Complete step 1
       await onboardingPage.fillStep1({
         name: 'My Test Project',
         website: 'https://example.com',
       });
+      await expect(onboardingPage.nextButton).toBeEnabled({ timeout: 10000 });
       await onboardingPage.nextButton.click();
       await onboardingPage.waitForStepTransition();
 
       // Skip step 2 (GSC)
       await onboardingPage.skipStep2();
       await onboardingPage.waitForStepTransition();
+      await onboardingPage.assertStep3Visible();
 
       // Complete step 3
       await onboardingPage.fillStep3Keywords('test keyword');

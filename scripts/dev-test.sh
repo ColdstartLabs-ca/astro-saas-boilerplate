@@ -27,5 +27,6 @@ rm -f "${PLAYWRIGHT_MOCK_DB_PATH}"
 
 echo "Starting dedicated Playwright test server on port ${TEST_PORT} (Astro)"
 
-# Run Astro server for Playwright
-exec npx astro dev --host 127.0.0.1 --port "${TEST_PORT}"
+# Run Astro server for Playwright.
+# --force pre-bundles Vite deps up front to reduce mid-run re-optimization reloads.
+exec npx astro dev --force --host 127.0.0.1 --port "${TEST_PORT}"

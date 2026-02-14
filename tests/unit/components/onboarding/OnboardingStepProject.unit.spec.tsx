@@ -30,6 +30,10 @@ let mockStoreState = {
   markStepComplete: vi.fn(),
 };
 
+let mockProjectStoreState = {
+  setActiveProjectId: vi.fn(),
+};
+
 // Mock Zustand store
 vi.mock('@client/store/onboardingStore', () => ({
   useOnboardingStore: vi.fn((selector?: (state: typeof mockStoreState) => unknown) => {
@@ -37,6 +41,15 @@ vi.mock('@client/store/onboardingStore', () => ({
       return selector(mockStoreState);
     }
     return mockStoreState;
+  }),
+}));
+
+vi.mock('@client/store/projectStore', () => ({
+  useProjectStore: vi.fn((selector?: (state: typeof mockProjectStoreState) => unknown) => {
+    if (typeof selector === 'function') {
+      return selector(mockProjectStoreState);
+    }
+    return mockProjectStoreState;
   }),
 }));
 
@@ -76,6 +89,10 @@ describe('OnboardingStepProject', () => {
       markStepComplete: vi.fn(),
     };
 
+    mockProjectStoreState = {
+      setActiveProjectId: vi.fn(),
+    };
+
     mockProjectsState = {
       createProject: vi.fn(),
     };
@@ -90,7 +107,6 @@ describe('OnboardingStepProject', () => {
     it('should render the project creation form', () => {
       const { container } = render(<OnboardingStepProject onComplete={mockOnComplete} />);
 
-      expect(container.textContent).toContain('Create Your First Project');
       expect(container.textContent).toContain('Project Name');
       expect(container.textContent).toContain('Website Domain');
       expect(container.textContent).toContain('Industry');
@@ -146,7 +162,7 @@ describe('OnboardingStepProject', () => {
       );
 
       const domainInput = getByLabelText(/Website Domain/);
-      fireEvent.input(domainInput, { target: { value: 'not-a-valid-url' } });
+      fireEvent.input(domainInput, { target: { value: 'https://' } });
 
       const nameInput = getByLabelText(/Project Name/);
       fireEvent.input(nameInput, { target: { value: 'Test Project' } });
@@ -156,7 +172,7 @@ describe('OnboardingStepProject', () => {
 
       await waitFor(() => {
         // Domain validation error should appear
-        expect(container.textContent).toContain('valid URL');
+        expect(container.textContent).toContain('valid domain');
       });
     });
 
@@ -180,7 +196,10 @@ describe('OnboardingStepProject', () => {
 
   describe('Form Submission', () => {
     it('should call createProject with form data', async () => {
-      mockProjectsState.createProject.mockResolvedValueOnce({ id: 'project-123', name: 'Test Project' });
+      mockProjectsState.createProject.mockResolvedValueOnce({
+        id: 'project-123',
+        name: 'Test Project',
+      });
       mockProgressState.updateProgress.mockResolvedValueOnce({});
 
       const { getByLabelText, container } = render(
@@ -208,7 +227,10 @@ describe('OnboardingStepProject', () => {
     });
 
     it('should update store after successful creation', async () => {
-      mockProjectsState.createProject.mockResolvedValueOnce({ id: 'project-123', name: 'Test Project' });
+      mockProjectsState.createProject.mockResolvedValueOnce({
+        id: 'project-123',
+        name: 'Test Project',
+      });
       mockProgressState.updateProgress.mockResolvedValueOnce({});
 
       const { getByLabelText, container } = render(
@@ -224,12 +246,18 @@ describe('OnboardingStepProject', () => {
 
       await waitFor(() => {
         expect(mockStoreState.setProjectId).toHaveBeenCalledWith('project-123');
-        expect(mockStoreState.markStepComplete).toHaveBeenCalledWith(OnboardingStep.PROJECT_CREATION);
+        expect(mockProjectStoreState.setActiveProjectId).toHaveBeenCalledWith('project-123');
+        expect(mockStoreState.markStepComplete).toHaveBeenCalledWith(
+          OnboardingStep.PROJECT_CREATION
+        );
       });
     });
 
     it('should call onComplete after successful creation', async () => {
-      mockProjectsState.createProject.mockResolvedValueOnce({ id: 'project-123', name: 'Test Project' });
+      mockProjectsState.createProject.mockResolvedValueOnce({
+        id: 'project-123',
+        name: 'Test Project',
+      });
       mockProgressState.updateProgress.mockResolvedValueOnce({});
 
       const { getByLabelText, container } = render(

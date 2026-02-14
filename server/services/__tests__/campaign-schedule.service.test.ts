@@ -45,11 +45,15 @@ vi.mock('@server/supabase/supabaseAdmin', () => ({
 }));
 
 // Mock the scheduling config
-vi.mock('@shared/config/scheduling.config', () => ({
-  calculateNextRunAt: vi.fn(() => '2024-02-15T10:00:00.000Z'),
-  DEFAULT_SCHEDULE_TIMEZONE: 'UTC',
-  DEFAULT_SCHEDULE_HOUR: 9,
-}));
+vi.mock('@shared/config/scheduling.config', async importOriginal => {
+  const actual = await importOriginal();
+  return {
+    ...actual,
+    calculateNextRunAt: vi.fn(() => '2024-02-15T10:00:00.000Z'),
+    DEFAULT_SCHEDULE_TIMEZONE: 'UTC',
+    DEFAULT_SCHEDULE_HOUR: 9,
+  };
+});
 
 // Import after mocking
 import { supabaseAdmin } from '@server/supabase/supabaseAdmin';

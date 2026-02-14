@@ -34,6 +34,19 @@ vi.mock('@client/utils/statusStyles', () => ({
   getIntegrationStatusStyles: () => 'bg-green-500/10 text-green-400 border-green-500/20',
 }));
 
+vi.mock('@client/hooks/usePendingActions', () => ({
+  usePendingActions: () => ({
+    skippedIntegrations: false,
+    isOnboardingComplete: false,
+  }),
+}));
+
+vi.mock('@client/store/toastStore', () => ({
+  useToastStore: () => ({
+    showToast: vi.fn(),
+  }),
+}));
+
 // Test data
 const mockIntegrations: IIntegrationWithCampaigns[] = [
   {
@@ -73,8 +86,8 @@ describe('IntegrationsView Component', () => {
     isLoading: false,
     onNewIntegration: vi.fn(),
     onEditIntegration: vi.fn(),
-    onDeleteIntegration: vi.fn(),
-    onTestIntegration: vi.fn(),
+    onDeleteIntegration: vi.fn().mockResolvedValue(undefined),
+    onTestIntegration: vi.fn().mockResolvedValue({ success: true }),
   };
 
   describe('Empty State', () => {
