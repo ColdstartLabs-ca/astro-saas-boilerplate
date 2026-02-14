@@ -26,6 +26,9 @@ export type OpportunityCategory = 'content' | 'technical';
 /** Opportunity status lifecycle */
 export type OpportunityStatus = 'open' | 'in_progress' | 'completed' | 'dismissed';
 
+/** Performance status for tracking ranking changes after action */
+export type PerformanceStatus = 'pending' | 'improved' | 'stable' | 'declined' | 'not_found';
+
 /** Opportunity estimated impact */
 export type OpportunityImpact = 'high' | 'medium' | 'low';
 
@@ -155,6 +158,10 @@ export interface IOpportunity {
   status: OpportunityStatus;
   action_type: OpportunityActionType | null;
   action_ref_id: string | null;
+  /** Performance status tracking ranking changes after action taken */
+  performance_status: PerformanceStatus | null;
+  /** Last time the opportunity was checked for performance */
+  last_checked_at: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -254,6 +261,28 @@ export interface IGscSitesResponse {
 export interface IGscSite {
   siteUrl: string;
   permissionLevel: string;
+}
+
+// =============================================================================
+// Performance Checks
+// =============================================================================
+
+/** Performance check record for tracking ranking changes after opportunity action */
+export interface IOpportunityPerformanceCheck {
+  id: string;
+  opportunity_id: string;
+  article_id: string | null;
+  check_date: string;
+  position_before: number | null;
+  position_after: number | null;
+  ctr_before: number | null;
+  ctr_after: number | null;
+  impressions_before: number | null;
+  impressions_after: number | null;
+  clicks_before: number | null;
+  clicks_after: number | null;
+  status: 'improved' | 'stable' | 'declined' | 'not_found';
+  created_at: string;
 }
 
 // =============================================================================
