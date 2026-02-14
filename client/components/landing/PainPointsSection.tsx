@@ -12,17 +12,17 @@ export function PainPointsSection({ className = '' }: IProps): JSX.Element {
     {
       icon: <Bot className="h-8 w-8 text-red-400" />,
       title: 'AI Content That Screams AI',
-      desc: "You've tried AI writers. The output is generic, repetitive, and needs hours of editing. Google knows. Your readers know.",
+      desc: "You've tried AI writers. The output sounds like every other AI article. You spend 2-4 hours editing. Google's algorithm catches the patterns. Your readers notice.",
     },
     {
       icon: <Bug className="h-8 w-8 text-orange-400" />,
       title: 'Buggy Tools, Zero Support',
-      desc: "Outrank crashes. Byword doesn't work with your host. Support takes days. You're paying $99/month for frustration.",
+      desc: "You set up your campaign, come back next day, and it crashed. Again. Support takes 2-3 days to respond. You're paying for frustration.",
     },
     {
       icon: <Wrench className="h-8 w-8 text-yellow-400" />,
       title: '3 Tools Just for SEO Content',
-      desc: 'Surfer for optimization. Jasper for writing. Ahrefs for keywords. $300/month and you still do all the work.',
+      desc: 'Surfer for optimization. Jasper for writing. Ahrefs for keywords. $300/month and you&apos;re still manually connecting dots. Where&apos;s the actual automation?',
     },
   ];
 
@@ -54,7 +54,7 @@ export function PainPointsSection({ className = '' }: IProps): JSX.Element {
             href="#solution"
             className="inline-flex items-center text-brand-400 hover:text-brand-300 font-medium text-lg transition-colors group"
           >
-            There&apos;s a better way
+            There&apos;s a reason 500+ businesses switched to AutopilotRank
             <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform" />
           </a>
         </div>

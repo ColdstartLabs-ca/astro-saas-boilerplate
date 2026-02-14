@@ -508,15 +508,14 @@ export function HeroSection(): JSX.Element {
           className={`text-4xl md:text-6xl lg:text-7xl font-bold tracking-tight text-white mb-6 leading-[1.15] transition-all duration-700 delay-100 transform ${isVisible ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0'}`}
         >
           Scale Your Organic Traffic <br className="hidden md:block" />
-          <span className="gradient-text">on Autopilot</span>
+          <span className="gradient-text">on Autopilot—With Quality That Doesn&apos;t Sound Like AI</span>
         </h1>
 
         {/* Subheadline */}
         <p
           className={`max-w-2xl mx-auto text-lg md:text-xl text-slate-400 mb-10 leading-relaxed transition-all duration-700 delay-200 transform ${isVisible ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0'}`}
         >
-          The only AI SEO platform that truly does it all – automating content creation,
-          optimization, and publishing with human-level quality. No bugs. No generic content.
+          Multi-model AI engine + humanizer for undetectable content + native CMS publishing. All the automation, none of the &ldquo;this was obviously written by AI&rdquo; problems.
         </p>
 
         {/* CTAs */}

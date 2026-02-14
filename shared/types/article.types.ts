@@ -4,6 +4,8 @@
  * Defines interfaces for articles, generation input/output, and related structures.
  */
 
+import type { IGscArticleContext } from './opportunity.types';
+
 /**
  * Article status enum representing the lifecycle of an article
  */
@@ -101,6 +103,8 @@ export interface IGenerateArticleInput {
   forceRegenerate?: boolean;
   /** Skip semantic deduplication check (for admin/advanced users) */
   skipSemanticDedup?: boolean;
+  /** GSC context for GSC-aware article generation (optional) */
+  gscContext?: IGscArticleContext;
 }
 
 /**

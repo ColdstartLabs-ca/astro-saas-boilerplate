@@ -17,6 +17,9 @@ export type OpportunityType =
   | 'thin_content'
   | 'cannibalization';
 
+/** Article content strategies based on opportunity type */
+export type ArticleStrategy = 'new_content' | 'optimize_existing' | 'topic_hub';
+
 /** Opportunity category */
 export type OpportunityCategory = 'content' | 'technical';
 
@@ -150,6 +153,27 @@ export interface IOpportunityMetrics {
   positionChange?: number;
   avgCtrForPosition?: number;
   competingPages?: string[];
+}
+
+/**
+ * GSC context passed to article generation prompts.
+ * This enables GSC-aware article generation based on opportunity type.
+ */
+export interface IGscArticleContext {
+  /** ID of the opportunity this context was derived from */
+  opportunityId: string;
+  /** The opportunity type (determines article strategy) */
+  opportunityType: OpportunityType;
+  /** The target search query */
+  query: string;
+  /** GSC metrics for the query */
+  metrics: IOpportunityMetrics;
+  /** The content strategy to use for article generation */
+  articleStrategy: ArticleStrategy;
+  /** Related queries for topic clusters (optional) */
+  relatedQueries?: string[];
+  /** The existing page URL if applicable (optional) */
+  pageUrl?: string;
 }
 
 // =============================================================================

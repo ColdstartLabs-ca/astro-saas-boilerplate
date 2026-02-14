@@ -24,8 +24,8 @@ export function SolutionSection({ className = '' }: IProps): JSX.Element {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center mb-20">
           <h2 className="text-3xl md:text-5xl font-bold text-white mb-6">
-            One Platform. Complete Automation. <br />
-            <span className="text-brand-500">Human-Quality Content.</span>
+            Set It Up Once. Get Quality SEO Content Forever. <br />
+            <span className="text-brand-500">No Manual Work.</span>
           </h2>
           <p className="text-slate-400 max-w-2xl mx-auto text-lg">
             Stop stitching together 5 different tools. We handle the entire lifecycle.
@@ -70,19 +70,19 @@ export function SolutionSection({ className = '' }: IProps): JSX.Element {
           {[
             {
               title: "Set It & Forget It",
-              desc: "Configure once, get fresh content daily. No constant management needed."
+              desc: "Configure campaigns once. Generate fresh content automatically. Wake up to new articles ready for review."
             },
             {
               title: "Publish-Ready Quality",
-              desc: "Our Humanizer engine makes AI undetectable and engaging to read."
+              desc: "Our Humanizer engine makes AI content undetectable. 95%+ pass rate on AI detection tools. Zero to minimal editing required."
             },
             {
               title: "All-In-One",
-              desc: "Keywords, writing, optimization, publishing, and tracking in one place."
+              desc: "Keyword research. AI writing with multiple models. SEO scoring. CMS publishing. GSC integration. One platform, not four separate subscriptions."
             },
             {
               title: "Works With Your Stack",
-              desc: "WordPress, Webflow, Shopify, Ghost + webhooks for everything else."
+              desc: "Native WordPress integration. Webhooks for Webflow, Shopify, Ghost, and custom platforms. Actually tested, not &apos;maybe compatible.&apos;"
             }
           ].map((item, i) => (
             <div key={i} className="glass-card-template p-6 rounded-xl hover:bg-slate-800/80 transition-all duration-300 group hover:-translate-y-1">

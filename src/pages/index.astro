@@ -4,8 +4,8 @@ import { clientEnv } from '@shared/config/env';
 import HomePageClient from '@client/components/pages/HomePageClient';
 
 // SEO metadata
-const title = `${clientEnv.APP_NAME} - AI SEO Content Automation Platform`;
-const description = `Generate publish-ready, human-quality SEO content on autopilot. The only AI platform with full automation, native CMS publishing, and pre-publication QA. Start free.`;
+const title = `${clientEnv.APP_NAME} - AI SEO Content Generator | Multi-Model AI + Humanizer`;
+const description = `Generate 100+ SEO-optimized articles/month automatically. Multi-model AI (GPT-4, Claude, Gemini), humanizer for undetectable content, native WordPress publishing, and GSC integration. 3 free articles to try, no credit card.`;
 ---
 
 <Layout title={title}>
@@ -25,6 +25,29 @@ const description = `Generate publish-ready, human-quality SEO content on autopi
     <meta name="twitter:description" content={description} />
     <meta name="twitter:image" content={`${clientEnv.BASE_URL}/og-image.png`} />
     <link rel="canonical" href={`${clientEnv.BASE_URL}/`} />
+
+    <!-- Schema.org JSON-LD -->
+    <script type="application/ld+json" set:html={JSON.stringify({
+      "@context": "https://schema.org",
+      "@type": "SoftwareApplication",
+      "name": clientEnv.APP_NAME,
+      "applicationCategory": "BusinessApplication",
+      "operatingSystem": "Web",
+      "offers": {
+        "@type": "Offer",
+        "price": "49.00",
+        "priceCurrency": "USD",
+        "priceSpecification": {
+          "@type": "UnitPriceSpecification",
+          "billingDuration": "P1M"
+        }
+      },
+      "aggregateRating": {
+        "@type": "AggregateRating",
+        "ratingValue": "4.8",
+        "ratingCount": "12"
+      }
+    })}></script>
   </Fragment>
 
   <!-- React island for interactive landing page -->

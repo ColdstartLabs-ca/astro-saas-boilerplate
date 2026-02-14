@@ -31,7 +31,9 @@ export const GET: APIRoute = async ({ request, url }) => {
     const params = gscCallbackSchema.parse({ code, state });
 
     // Verify signed state token
-    const stateResult = await verifyOAuthState(params.state, serverEnv.CRON_SECRET);
+    // Use dedicated OAuth state secret (not CRON_SECRET) for security isolation
+    const stateSecret = serverEnv.OAUTH_STATE_SECRET || serverEnv.CRON_SECRET;
+    const stateResult = await verifyOAuthState(params.state, stateSecret);
 
     if (!stateResult.valid || !stateResult.data) {
       console.error('[GscCallback] Invalid state token:', stateResult.error);

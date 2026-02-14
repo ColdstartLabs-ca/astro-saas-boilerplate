@@ -85,7 +85,9 @@ export class GscService {
   async getAuthUrl(projectId: string, userId: string): Promise<string> {
     // Create signed state token with HMAC protection
     const stateData = `${userId}:${projectId}`;
-    const state = await signOAuthState(stateData, serverEnv.CRON_SECRET);
+    // Use dedicated OAuth state secret (not CRON_SECRET) for security isolation
+    const stateSecret = serverEnv.OAUTH_STATE_SECRET || serverEnv.CRON_SECRET;
+    const state = await signOAuthState(stateData, stateSecret);
 
     const params = new URLSearchParams({
       client_id: this.clientId,

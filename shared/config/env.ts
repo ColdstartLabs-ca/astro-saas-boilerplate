@@ -237,6 +237,9 @@ const serverEnvSchema = z.object({
   // GOOGLE OAUTH (GSC + future Google APIs)
   // ==========================================
   GOOGLE_OAUTH_CLIENT_SECRET: z.string().default(''),
+  // OAuth state signing secret (separate from CRON_SECRET for security)
+  // Generate with: openssl rand -hex 32
+  OAUTH_STATE_SECRET: z.string().default(''),
 });
 
 export type IServerEnv = z.infer<typeof serverEnvSchema>;
@@ -317,6 +320,8 @@ function loadServerEnv(): IServerEnv {
     CMS_ENCRYPTION_KEY: metaEnv.CMS_ENCRYPTION_KEY || '',
     // Google OAuth
     GOOGLE_OAUTH_CLIENT_SECRET: metaEnv.GOOGLE_OAUTH_CLIENT_SECRET || '',
+    // OAuth state signing (separate from CRON_SECRET for security)
+    OAUTH_STATE_SECRET: metaEnv.OAUTH_STATE_SECRET || '',
   };
 
   return serverEnvSchema.parse(env);

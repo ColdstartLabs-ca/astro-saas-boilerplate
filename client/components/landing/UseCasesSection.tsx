@@ -15,7 +15,7 @@ export function UseCasesSection({ className = '' }: IProps): JSX.Element {
       id: 0,
       label: "SMB Owners",
       icon: <Building2 className="w-5 h-5" />,
-      headline: "Scale Without Hiring a Content Team",
+      headline: "Generate 100 SEO Articles/Month Without a $3K+/Mo Agency",
       points: [
         "Generate 100+ SEO articles/month automatically",
         "90% cost savings vs. agencies ($0.50 vs $50/article)",
@@ -29,7 +29,7 @@ export function UseCasesSection({ className = '' }: IProps): JSX.Element {
       id: 1,
       label: "Content Sites",
       icon: <FileText className="w-5 h-5" />,
-      headline: "Unlimited Content at Fixed Cost",
+      headline: "Capture Long-Tail Traffic at Scale (Without Writing 12 Hours/Day)",
       points: [
         "Daily fresh content on autopilot",
         "Long-tail keyword capture at scale",
@@ -43,7 +43,7 @@ export function UseCasesSection({ className = '' }: IProps): JSX.Element {
       id: 2,
       label: "Agencies",
       icon: <Landmark className="w-5 h-5" />,
-      headline: "White-Label SEO Content at Scale",
+      headline: "Fulfill Client Content Orders 10x Faster (Expand Your Margins)",
       points: [
         "Resell under your brand",
         "10x your content capacity overnight",

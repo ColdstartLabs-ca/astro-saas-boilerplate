@@ -3,7 +3,7 @@
  * Thresholds, priority weights, and AI prompt for GSC data analysis.
  */
 
-import type { OpportunityType } from '@shared/types/opportunity.types';
+import type { OpportunityType, ArticleStrategy } from '@shared/types/opportunity.types';
 
 // =============================================================================
 // Detection Thresholds
@@ -79,6 +79,104 @@ export function getExpectedCtrForPosition(position: number): number {
   if (position <= 10) return EXPECTED_CTR_BY_POSITION['8-10'];
   if (position <= 20) return EXPECTED_CTR_BY_POSITION['11-20'];
   return EXPECTED_CTR_BY_POSITION['21+'];
+}
+
+// =============================================================================
+// Article Strategy Mapping
+// =============================================================================
+
+/**
+ * Maps opportunity types to content strategies for article generation.
+ * Only 'content' category opportunities are mapped (technical ones return undefined).
+ */
+export const ARTICLE_STRATEGY_MAP: Partial<Record<OpportunityType, ArticleStrategy>> = {
+  content_gap: 'new_content',
+  low_hanging_fruit: 'optimize_existing',
+  topic_cluster: 'topic_hub',
+};
+
+/**
+ * Get the article strategy for a given opportunity type.
+ * Returns undefined for non-content opportunity types.
+ */
+export function getArticleStrategyForType(type: OpportunityType): ArticleStrategy | undefined {
+  return ARTICLE_STRATEGY_MAP[type];
+}
+
+// =============================================================================
+// Strategy-Specific Prompt Instructions
+// =============================================================================
+
+/**
+ * Strategy-specific instructions injected into article prompts.
+ * These provide GSC-aware context for article generation.
+ */
+export const STRATEGY_PROMPT_INSTRUCTIONS: Record<ArticleStrategy, string> = {
+  new_content: `GSC CONTEXT: Create a comprehensive, authoritative article on this topic. The user's site has NO existing content for this query. The article must be THE definitive resource on this topic. Target position 1-3 in search results.
+
+Metrics context:
+- Estimated monthly impressions: {impressions}
+- This is a content gap opportunity with untapped search demand
+
+Focus on:
+- Complete topic coverage that outperforms all current ranking content
+- Strong topical authority signals
+- Comprehensive answer to user search intent
+- Long-form, in-depth analysis (aim for 2000+ words)`,
+
+  optimize_existing: `GSC CONTEXT: The user already ranks at position {position} for this query with {ctr}% CTR. Create content that is significantly better and more comprehensive than what currently ranks at positions 1-7.
+
+Metrics context:
+- Current position: {position}
+- Current CTR: {ctr}%
+- Monthly impressions: {impressions}
+
+Focus on:
+- Depth and comprehensiveness beyond current top-ranking content
+- Unique insights and original data not found elsewhere
+- Better structure and readability
+- Enhanced E-E-A-T signals (experience, expertise, authoritativeness, trustworthiness)
+- Clear competitive advantage over existing ranking content`,
+
+  topic_hub: `GSC CONTEXT: Create a pillar/hub article that serves as the central resource for this topic cluster. This article should comprehensively cover the main topic while naturally referencing related sub-topics.
+
+Metrics context:
+- Estimated monthly impressions: {impressions}
+- Related sub-topics to reference: {relatedQueries}
+
+Focus on:
+- Comprehensive pillar content that establishes topical authority
+- Clear section structure that naturally links to future sub-topic articles
+- Broad coverage that addresses the main query and related searches
+- Internal linking opportunities for future cluster content
+- Content architecture that supports a topic cluster strategy`,
+};
+
+/**
+ * Build strategy-specific instructions with metrics interpolated.
+ *
+ * @param strategy - The article strategy
+ * @param metrics - GSC metrics for interpolation
+ * @param relatedQueries - Related queries for topic_hub strategy
+ * @returns Interpolated prompt instructions
+ */
+export function buildStrategyPrompt(
+  strategy: ArticleStrategy,
+  metrics: { impressions?: number; position?: number; ctr?: number },
+  relatedQueries?: string[]
+): string {
+  let prompt = STRATEGY_PROMPT_INSTRUCTIONS[strategy];
+
+  // Interpolate metrics
+  prompt = prompt.replace(/{impressions}/g, String(metrics.impressions ?? 'N/A'));
+  prompt = prompt.replace(/{position}/g, String(metrics.position ?? 'N/A'));
+  prompt = prompt.replace(/{ctr}/g, String(metrics.ctr ? (metrics.ctr * 100).toFixed(1) : 'N/A'));
+  prompt = prompt.replace(
+    /{relatedQueries}/g,
+    relatedQueries && relatedQueries.length > 0 ? relatedQueries.join(', ') : 'N/A'
+  );
+
+  return prompt;
 }
 
 // =============================================================================

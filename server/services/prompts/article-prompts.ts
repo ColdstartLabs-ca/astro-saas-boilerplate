@@ -6,7 +6,9 @@
  */
 
 import type { IArticleOutline } from '@shared/types/article.types';
+import type { IGscArticleContext } from '@shared/types/opportunity.types';
 import { buildWritingGuidelinesPrompt } from '@shared/constants/writing-guidelines';
+import { buildStrategyPrompt } from '@shared/config/opportunity.config';
 
 /**
  * Generate the system prompt for outline generation.
@@ -14,15 +16,22 @@ import { buildWritingGuidelinesPrompt } from '@shared/constants/writing-guidelin
  * @param keyword - The primary keyword for the article
  * @param tone - Desired tone of the article
  * @param targetWordCount - Target word count for the final article
+ * @param gscContext - Optional GSC context for GSC-aware article generation
  * @returns System prompt for outline generation
  */
 export function getOutlinePrompt(
   keyword: string,
   tone: string = 'professional',
-  targetWordCount: number = 1500
+  targetWordCount: number = 1500,
+  gscContext?: IGscArticleContext
 ): string {
+  // Build GSC context section if provided
+  const gscContextSection = gscContext
+    ? `\n\n${buildStrategyPrompt(gscContext.articleStrategy, gscContext.metrics, gscContext.relatedQueries)}`
+    : '';
+
   return `You are an expert SEO content strategist. Generate a structured article outline for the given keyword.
-The outline must be optimized for search engine ranking.
+The outline must be optimized for search engine ranking.${gscContextSection}
 
 Requirements:
 - Title: Compelling, keyword-rich, 50-60 characters

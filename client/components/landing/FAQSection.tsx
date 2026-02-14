@@ -36,7 +36,7 @@ export function FAQSection({ className = '' }: IProps): JSX.Element {
   const faqs = [
     {
       question: "Will Google penalize AI-generated content?",
-      answer: "No. Google's policy targets low-quality content, not AI content specifically. Our Humanizer engine produces content that's indistinguishable from human writing, with 95%+ AI detection pass rates. We also run quality checks before publishing to ensure value."
+      answer: "Google Search Central has stated AI content is fine when it's helpful, reliable, and people-first. Our Humanizer engine ensures your content meets those standards by avoiding detectable patterns."
     },
     {
       question: "How is this different from Outrank.so?",
@@ -48,7 +48,7 @@ export function FAQSection({ className = '' }: IProps): JSX.Element {
     },
     {
       question: "What CMS platforms do you support?",
-      answer: "Native integrations: WordPress, Webflow, Shopify, Ghost, Notion. Plus webhooks and API for custom platforms. Unlike some competitors, we test compatibility with 50+ hosting providers."
+      answer: "Native: WordPress (REST API with Application Passwords). Via webhook: Webflow, Shopify, Ghost, Notion, and custom platforms. Unlike some competitors, we test compatibility across 50+ hosting providers."
     },
     {
       question: "Can I review content before it publishes?",

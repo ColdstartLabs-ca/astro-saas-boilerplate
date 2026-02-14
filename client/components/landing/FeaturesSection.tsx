@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { Brain, Sparkles, ShieldCheck, Zap } from 'lucide-react';
+import { Brain, Sparkles, ShieldCheck, UploadCloud, BarChart3, Zap } from 'lucide-react';
 
 interface IProps {
   className?: string;
@@ -10,31 +10,49 @@ interface IProps {
 export function FeaturesSection({ className = '' }: IProps): JSX.Element {
   const features = [
     {
-      title: 'Not Just GPT-4. The Best Model for Each Task.',
-      desc: 'While competitors lock you into one AI model, AutopilotRank uses GPT-4, Claude, Gemini, and Llama strategically. Different models for different content types means more variety, less repetition, better quality.',
-      sub: 'Unlike single-model tools that produce repetitive content.',
+      title: 'Why Most AI SEO Tools Sound Identical (And How We&apos;re Different)',
+      desc: 'Most tools: GPT-4 or Claude. Pick one. Get repetitive output. AutopilotRank: GPT-4o, Claude Sonnet, Gemini Flash. Use each strategically for different content types. More variety. Less repetition. Better rankings.',
+      sub: 'Google&apos;s systems detect repetitive patterns across sites using the same AI model. Multi-model approach = more natural content footprint.',
       icon: <Brain className="h-6 w-6 text-brand-400" />,
       image:
         'https://images.unsplash.com/photo-1677442136019-21780ecad995?auto=format&fit=crop&q=80&w=800&h=600',
       alt: 'AI Model Selection Interface',
     },
     {
-      title: 'AI Content That Actually Sounds Human',
-      desc: "Our proprietary Humanizer engine rewrites AI patterns into natural prose. 95%+ pass rate on AI detection tools. No more 'In today's digital landscape' intros.",
-      sub: 'Average editing time: 0 minutes (vs. 2-4 hours with Outrank)',
+      title: 'Stop Editing AI Content For 2-4 Hours Per Article',
+      desc: 'Problem: Even &apos;good&apos; AI content has tells—overuse of transition words, predictable sentence structures, generic phrases, lack of specific opinions. Solution: Our Humanizer engine rewrites content to avoid 24+ known AI patterns. Result: 95%+ pass rate on AI detection tools. Average editing time: 0 minutes.',
+      sub: 'No more &apos;In today&apos;s digital landscape&apos; intros that scream AI.',
       icon: <Sparkles className="h-6 w-6 text-purple-400" />,
       image:
         'https://images.unsplash.com/photo-1555421689-d68471e189f2?auto=format&fit=crop&q=80&w=800&h=600',
       alt: 'Human-like content editor',
     },
     {
-      title: 'Multi-Layer Quality Checks',
-      desc: 'Plagiarism check. AI detection score. SEO optimization score. Readability analysis. Fact verification. All automatic. Nothing slips through.',
+      title: 'Quality Checks That Catch Issues Before They Cost You Rankings',
+      desc: 'Before publishing, we check: SEO optimization score (keyword density, heading structure, meta description), AI detection score (will this flag as AI?), readability analysis (grade level, sentence length), plagiarism check (original content verification). Nothing gets published that doesn&apos;t meet thresholds.',
       sub: 'Most tools publish first, let you find problems later.',
       icon: <ShieldCheck className="h-6 w-6 text-blue-400" />,
       image:
         'https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&q=80&w=800&h=600',
       alt: 'Quality Assurance Dashboard',
+    },
+    {
+      title: 'Publish Directly to Your CMS (Not Export/Import Hell)',
+      desc: 'Other tools: Export as file. You copy-paste into WordPress. Hope formatting works. AutopilotRank: Connect your site. Articles publish directly. Categories, tags, featured image, status—handled automatically. Supported: Native WordPress REST API. Webhooks for Webflow, Shopify, Ghost, custom platforms.',
+      sub: 'Unlike some competitors, we test compatibility across hosting providers.',
+      icon: <UploadCloud className="h-6 w-6 text-green-400" />,
+      image:
+        'https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&q=80&w=800&h=600',
+      alt: 'CMS Publishing Interface',
+    },
+    {
+      title: 'Stop Guessing—Let Your Own Search Data Guide Content Strategy',
+      desc: 'Connect Google Search Console. We analyze: Keywords you&apos;re already ranking for (positions 11-30), content gaps (keywords where competitors rank but you don&apos;t have content), quick wins (low competition, decent volume, you&apos;re close to ranking). Result: Data-driven content roadmap, not &apos;this keyword seems good&apos; guesses.',
+      sub: 'Your search data knows best. We help you listen to it.',
+      icon: <BarChart3 className="h-6 w-6 text-orange-400" />,
+      image:
+        'https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&q=80&w=800&h=600',
+      alt: 'GSC Analytics Dashboard',
     },
   ];
 
