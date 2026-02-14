@@ -163,6 +163,7 @@ export function OnboardingStepProject({ onComplete }: IOnboardingStepProjectProp
               id="project-name"
               type="text"
               placeholder="e.g., My Blog, Company Website"
+              aria-label="project name"
               className={`w-full bg-main border rounded-lg pl-10 pr-4 py-2.5 text-white placeholder:text-muted focus:ring-1 focus:ring-accent outline-none transition-all ${
                 errors.name ? 'border-red-500 ring-1 ring-red-500/20' : 'border-border'
               }`}
