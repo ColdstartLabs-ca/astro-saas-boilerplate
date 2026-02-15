@@ -24,6 +24,7 @@ import { motion } from 'framer-motion';
 import { useModalStore } from '@client/store/modalStore';
 import { getTranslations } from '@src/i18n/utils';
 import { useMemo } from 'react';
+import { HeroGrowthLine } from './HeroGrowthLine';
 
 // --- Sub-components defined outside to prevent re-renders ---
 
@@ -481,6 +482,9 @@ export function HeroSection(): JSX.Element {
       {/* Background Elements */}
       <div className="absolute inset-0 z-0 bg-grid-pattern opacity-30 h-[800px] pointer-events-none"></div>
 
+      {/* Growth Chart Line */}
+      <HeroGrowthLine className="z-[1] opacity-50 h-[800px]" />
+
       {/* Animated Blobs */}
       <div className="absolute top-0 -left-4 w-72 h-72 bg-purple-500 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob"></div>
       <div className="absolute top-0 -right-4 w-72 h-72 bg-brand-500 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob animation-delay-2000"></div>
@@ -491,14 +495,15 @@ export function HeroSection(): JSX.Element {
         <h1
           className={`text-4xl md:text-6xl lg:text-7xl font-bold tracking-tight text-white mb-6 leading-[1.15] transition-all duration-700 transform ${isVisible ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0'}`}
         >
-          Turn Keywords Into Traffic
+          Scale Your Organic Traffic <br className="hidden md:block" />
+          <span className="gradient-text">on Autopilot</span>
         </h1>
 
         {/* Subheadline */}
         <p
           className={`max-w-2xl mx-auto text-lg md:text-xl text-slate-400 mb-10 leading-relaxed transition-all duration-700 delay-100 transform ${isVisible ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0'}`}
         >
-          AI content that ranks and reads human. Generate 100+ articles/month with multi-model AI, built-in humanizer, and one-click publishing to your CMS.
+          AI content that ranks and reads human. Set it, forget it, watch traffic grow.
         </p>
 
         {/* CTAs */}

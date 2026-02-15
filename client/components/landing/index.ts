@@ -12,5 +12,6 @@ export { PricingPreviewSection } from './PricingPreviewSection';
 export { FAQSection } from './FAQSection';
 export { FinalCTASection } from './FinalCTASection';
 
-// Re-export AmbientBackground for convenience
+// Re-export background components for convenience
 export { AmbientBackground } from './AmbientBackground';
+export { HeroGrowthLine } from './HeroGrowthLine';
