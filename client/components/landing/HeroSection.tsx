@@ -487,35 +487,18 @@ export function HeroSection(): JSX.Element {
       <div className="absolute -bottom-8 left-20 w-72 h-72 bg-pink-500 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob animation-delay-4000"></div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center relative z-10">
-        {/* Animated Badge */}
-        <div
-          className={`transition-all duration-700 transform ${isVisible ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0'}`}
-        >
-          <div className="inline-flex items-center space-x-2 bg-slate-900/50 border border-slate-700/50 rounded-full px-4 py-1.5 mb-8 backdrop-blur-md shadow-lg shadow-brand-500/10 hover:border-brand-500/50 transition-colors cursor-default group">
-            <span className="flex relative h-2 w-2">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-brand-400 opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-2 w-2 bg-brand-500"></span>
-            </span>
-            <span className="text-sm font-medium text-slate-300 group-hover:text-white transition-colors">
-              Trusted by 500+ businesses
-            </span>
-            <ArrowRight className="w-3 h-3 text-slate-500 group-hover:text-brand-400 transition-colors ml-1" />
-          </div>
-        </div>
-
         {/* Headline */}
         <h1
-          className={`text-4xl md:text-6xl lg:text-7xl font-bold tracking-tight text-white mb-6 leading-[1.15] transition-all duration-700 delay-100 transform ${isVisible ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0'}`}
+          className={`text-4xl md:text-6xl lg:text-7xl font-bold tracking-tight text-white mb-6 leading-[1.15] transition-all duration-700 transform ${isVisible ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0'}`}
         >
-          Scale Your Organic Traffic <br className="hidden md:block" />
-          <span className="gradient-text">on Autopilot—With Quality That Doesn&apos;t Sound Like AI</span>
+          Turn Keywords Into Traffic
         </h1>
 
         {/* Subheadline */}
         <p
-          className={`max-w-2xl mx-auto text-lg md:text-xl text-slate-400 mb-10 leading-relaxed transition-all duration-700 delay-200 transform ${isVisible ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0'}`}
+          className={`max-w-2xl mx-auto text-lg md:text-xl text-slate-400 mb-10 leading-relaxed transition-all duration-700 delay-100 transform ${isVisible ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0'}`}
         >
-          Multi-model AI engine + humanizer for undetectable content + native CMS publishing. All the automation, none of the &ldquo;this was obviously written by AI&rdquo; problems.
+          AI content that ranks and reads human. Generate 100+ articles/month with multi-model AI, built-in humanizer, and one-click publishing to your CMS.
         </p>
 
         {/* CTAs */}

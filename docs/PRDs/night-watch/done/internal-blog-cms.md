@@ -48,6 +48,31 @@ No existing files are deleted. No existing behavior changes. Only new capabiliti
 **Is this user-facing?**
 - [x] YES → Public blog pages (listing, post, category, tag) + Admin CMS panel
 
+### UI Navigation Hooks (CRITICAL)
+
+**Public Header Navigation:**
+- [ ] Add "Blog" link to public site header (next to Pricing, etc.)
+- File: `client/components/layout/Header.tsx` or equivalent navigation component
+- Link target: `/blog`
+- Mobile menu: Include in mobile nav drawer
+
+**Empty State CTAs (Admin Discovery):**
+- [ ] When `/blog` has no posts, show contextual empty state:
+  - **For non-logged-in users**: "Check back soon for new content" + optional email signup
+  - **For logged-in admins**: "No posts yet. [Create your first post →]" button linking to `/dashboard/admin/blog`
+  - Detection: Use `useAuth()` hook to check `user?.role === 'admin'`
+- File: `src/pages/blog/index.astro` (pass admin status to client component)
+
+**Admin Sidebar Navigation:**
+- [ ] Add "Blog" item to admin dashboard sidebar under "Content" section (or create section)
+- Icon: `FileText` or `Newspaper` from lucide-react
+- File: `client/components/admin/AdminDashboardLayout.tsx` or sidebar component
+- Position: After "Users", before "Settings" (or logical grouping)
+
+**Admin Dashboard Quick Access:**
+- [ ] Optional: Add blog stats card to admin dashboard home (post count, drafts, recent activity)
+- Helps admins discover blog management from main admin landing
+
 **Full user flow:**
 1. Admin navigates to `/dashboard/admin/blog` → sees list of all DB posts (draft + published)
 2. Admin clicks "New Post" → markdown editor with title, slug, meta, category, tags, cover image upload
@@ -335,14 +360,16 @@ curl http://localhost:4321/api/admin/blog/posts \
 
 ### Phase 3: Admin Blog UI — "Admin can create and manage blog posts from the dashboard"
 
-**Files (5):**
+**Files (8):**
 - `client/components/pages/AdminBlogPageClient.tsx` - NEW: Blog post list + media library tabs
 - `client/components/admin/BlogPostEditor.tsx` - NEW: Post editor with markdown editor + media picker
 - `client/components/admin/BlogPostList.tsx` - NEW: Posts table with status, actions
 - `client/components/admin/MediaLibrary.tsx` - NEW: Image library grid with search, upload, metadata editing
 - `client/hooks/useAdminBlog.ts` - NEW: API hooks for blog CRUD + media library
 
-**Additional file (wiring):**
+**Navigation Hook Files (3):**
+- `client/components/layout/Header.tsx` - ADD: "Blog" link in public header navigation
+- `client/components/admin/AdminDashboardLayout.tsx` - ADD: "Blog" item in admin sidebar
 - `client/config/dashboardRoutes.ts` - Register admin blog route
 
 **Implementation:**

@@ -2,6 +2,7 @@
 import Layout from '../layouts/Layout.astro';
 import { clientEnv } from '@shared/config/env';
 import { getTranslations } from '../i18n/utils';
+import HelpPageClient from '@client/components/pages/HelpPageClient';
 
 const t = getTranslations('help');
 
@@ -24,6 +25,9 @@ const description = t('page.subtitle', { appName: clientEnv.APP_NAME });
   <main class="min-h-screen bg-main">
     <!-- Hero Section -->
     <section class="relative py-20 md:py-32 overflow-hidden">
+      <!-- Background gradient -->
+      <div class="absolute inset-0 bg-gradient-to-br from-accent/5 via-transparent to-secondary/5 pointer-events-none" />
+
       <div class="container mx-auto px-4 max-w-5xl text-center relative z-10">
         <h1 class="font-display text-4xl md:text-6xl font-bold text-white mb-6 tracking-tight">
           {title}
@@ -38,15 +42,31 @@ const description = t('page.subtitle', { appName: clientEnv.APP_NAME });
     <section class="py-12">
       <div class="container mx-auto px-4 max-w-6xl">
         <div class="grid md:grid-cols-3 gap-6">
-          <a href="#getting-started" class="block bg-surface rounded-2xl p-6 border border-border hover:border-accent/50 transition-all">
+          <a href="#getting-started" class="group block bg-surface rounded-2xl p-6 border border-border hover:border-accent/50 transition-all duration-300 hover:-translate-y-1">
+            <div class="w-12 h-12 bg-accent/10 rounded-xl flex items-center justify-center mb-4 group-hover:bg-accent/20 transition-colors">
+              <svg class="w-6 h-6 text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+              </svg>
+            </div>
             <h3 class="font-semibold text-primary mb-2">{t('quickLinks.gettingStarted')}</h3>
             <p class="text-sm text-muted-foreground">{t('quickLinks.gettingStartedDesc')}</p>
           </a>
-          <a href="#credits-billing" class="block bg-surface rounded-2xl p-6 border border-border hover:border-accent/50 transition-all">
+          <a href="#credits-billing" class="group block bg-surface rounded-2xl p-6 border border-border hover:border-accent/50 transition-all duration-300 hover:-translate-y-1">
+            <div class="w-12 h-12 bg-accent/10 rounded-xl flex items-center justify-center mb-4 group-hover:bg-accent/20 transition-colors">
+              <svg class="w-6 h-6 text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+              </svg>
+            </div>
             <h3 class="font-semibold text-primary mb-2">{t('quickLinks.creditsBilling')}</h3>
             <p class="text-sm text-muted-foreground">{t('quickLinks.creditsBillingDesc')}</p>
           </a>
-          <a href="#technical" class="block bg-surface rounded-2xl p-6 border border-border hover:border-accent/50 transition-all">
+          <a href="#technical" class="group block bg-surface rounded-2xl p-6 border border-border hover:border-accent/50 transition-all duration-300 hover:-translate-y-1">
+            <div class="w-12 h-12 bg-accent/10 rounded-xl flex items-center justify-center mb-4 group-hover:bg-accent/20 transition-colors">
+              <svg class="w-6 h-6 text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+              </svg>
+            </div>
             <h3 class="font-semibold text-primary mb-2">{t('quickLinks.technicalSupport')}</h3>
             <p class="text-sm text-muted-foreground">{t('quickLinks.technicalSupportDesc')}</p>
           </a>
@@ -68,23 +88,7 @@ const description = t('page.subtitle', { appName: clientEnv.APP_NAME });
       </div>
     </section>
 
-    <!-- Contact CTA -->
-    <section class="relative py-20 overflow-hidden">
-      <div class="absolute inset-0 bg-gradient-to-br from-accent via-tertiary to-accent" />
-      <div class="container mx-auto px-4 max-w-4xl text-center relative z-10">
-        <h2 class="font-display text-3xl md:text-4xl font-bold text-white mb-4">
-          Still Need Help?
-        </h2>
-        <p class="text-white/80 mb-8 text-lg max-w-xl mx-auto">
-          Our support team is here to assist you with any questions.
-        </p>
-        <a
-          href="mailto:{clientEnv.SUPPORT_EMAIL}"
-          class="inline-flex items-center gap-2 px-8 py-4 bg-white text-accent font-semibold rounded-xl hover:bg-white/90 hover:shadow-lg transition-all duration-300"
-        >
-          Contact Support
-        </a>
-      </div>
-    </section>
+    <!-- Contact CTA (React Island) -->
+    <HelpPageClient client:visible />
   </main>
 </Layout>

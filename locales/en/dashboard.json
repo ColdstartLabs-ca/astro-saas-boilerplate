@@ -16,6 +16,8 @@
     "billing": "Billing",
     "settings": "Settings",
     "admin": "Admin",
+    "adminUsers": "Users",
+    "adminBlog": "Blog",
     "helpSupport": "Help & Support",
     "signOut": "Sign Out",
     "closeMenu": "Close menu",

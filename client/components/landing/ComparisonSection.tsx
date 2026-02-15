@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { Check, X, AlertTriangle } from 'lucide-react';
+import { Check } from 'lucide-react';
 import { useModalStore } from '@client/store/modalStore';
 
 type CellValue = boolean | string;
@@ -9,11 +9,10 @@ type CellValue = boolean | string;
 interface ICompetitorData {
   feature: string;
   autopilotrank: CellValue;
-  outrank: CellValue;
-  rankya: CellValue;
-  byword: CellValue;
-  surfer: CellValue;
-  frase: CellValue;
+  competitorA: CellValue;
+  competitorB: CellValue;
+  competitorC: CellValue;
+  competitorD: CellValue;
 }
 
 interface IProps {
@@ -22,11 +21,10 @@ interface IProps {
 
 const COMPETITORS = [
   { key: 'autopilotrank', name: 'AutopilotRank', highlight: true, price: '$49/mo' },
-  { key: 'outrank', name: 'Outrank.so', highlight: false, price: '$99/mo' },
-  { key: 'rankya', name: 'RankYa', highlight: false, price: '$99/mo' },
-  { key: 'byword', name: 'Byword', highlight: false, price: '$99/mo' },
-  { key: 'surfer', name: 'Surfer SEO', highlight: false, price: '$99/mo' },
-  { key: 'frase', name: 'Frase.io', highlight: false, price: '$45/mo' },
+  { key: 'competitorA', name: 'Competitor A', highlight: false, price: '$99/mo' },
+  { key: 'competitorB', name: 'Competitor B', highlight: false, price: '$89/mo' },
+  { key: 'competitorC', name: 'Competitor C', highlight: false, price: '$99/mo' },
+  { key: 'competitorD', name: 'Competitor D', highlight: false, price: '$45/mo' },
 ] as const;
 
 export function ComparisonSection({ className = '' }: IProps): JSX.Element {
@@ -34,93 +32,75 @@ export function ComparisonSection({ className = '' }: IProps): JSX.Element {
 
   const data: ICompetitorData[] = [
     {
-      feature: 'Full Automation',
+      feature: 'Automated Content Generation',
       autopilotrank: true,
-      outrank: true,
-      rankya: true,
-      byword: false,
-      surfer: false,
-      frase: false,
+      competitorA: true,
+      competitorB: 'Partial',
+      competitorC: true,
+      competitorD: 'Partial',
     },
     {
-      feature: 'Human-Quality Content',
+      feature: 'Built-in Humanizer',
       autopilotrank: true,
-      outrank: false,
-      rankya: 'N/A',
-      byword: false,
-      surfer: 'N/A',
-      frase: false,
+      competitorA: false,
+      competitorB: false,
+      competitorC: false,
+      competitorD: false,
     },
     {
-      feature: 'Platform Reliability',
-      autopilotrank: '99.9% uptime',
-      outrank: 'Buggy',
-      rankya: true,
-      byword: 'warn',
-      surfer: true,
-      frase: 'warn',
+      feature: 'GSC Keyword Integration',
+      autopilotrank: true,
+      competitorA: false,
+      competitorB: false,
+      competitorC: false,
+      competitorD: true,
+    },
+    {
+      feature: 'Multi-Model AI (GPT-4, Claude, Gemini)',
+      autopilotrank: true,
+      competitorA: false,
+      competitorB: false,
+      competitorC: false,
+      competitorD: false,
     },
     {
       feature: 'Native CMS Publishing',
       autopilotrank: '5+ platforms',
-      outrank: 'Limited',
-      rankya: true,
-      byword: 'WordPress only',
-      surfer: false,
-      frase: false,
+      competitorA: 'WordPress',
+      competitorB: 'WordPress',
+      competitorC: 'WordPress',
+      competitorD: false,
     },
     {
-      feature: 'GSC Integration',
+      feature: 'Internal Blog CMS',
       autopilotrank: true,
-      outrank: false,
-      rankya: false,
-      byword: false,
-      surfer: false,
-      frase: true,
+      competitorA: false,
+      competitorB: false,
+      competitorC: false,
+      competitorD: false,
     },
     {
-      feature: 'Humanizer/AI Detection',
+      feature: 'Pre-Publication Quality Audit',
       autopilotrank: true,
-      outrank: false,
-      rankya: false,
-      byword: false,
-      surfer: false,
-      frase: false,
-    },
-    {
-      feature: 'Pre-Publication QA',
-      autopilotrank: 'Multi-layer',
-      outrank: false,
-      rankya: false,
-      byword: false,
-      surfer: false,
-      frase: false,
-    },
-    {
-      feature: 'Support Quality',
-      autopilotrank: '24/7 chat',
-      outrank: '"Support sucks"',
-      rankya: 'warn',
-      byword: 'warn',
-      surfer: true,
-      frase: 'warn',
+      competitorA: false,
+      competitorB: true,
+      competitorC: false,
+      competitorD: true,
     },
     {
       feature: 'Starting Price',
       autopilotrank: '$49/mo',
-      outrank: '$99/mo',
-      rankya: '$99/mo',
-      byword: '$99/mo',
-      surfer: '$99/mo',
-      frase: '$45/mo',
+      competitorA: '$79/mo',
+      competitorB: '$89/mo',
+      competitorC: '$99/mo',
+      competitorD: '$45/mo',
     },
   ];
 
   const renderCell = (value: CellValue): React.ReactNode => {
     if (value === true) return <Check className="h-5 w-5 text-brand-500 mx-auto" />;
-    if (value === false) return <X className="h-5 w-5 text-red-500 mx-auto" />;
-    if (value === 'warn' || value === 'N/A') return <AlertTriangle className="h-5 w-5 text-yellow-500 mx-auto" />;
-    return <span className="text-sm font-medium">{value}</span>;
+    if (value === false) return <span className="text-slate-600">—</span>;
+    return <span className="text-sm font-medium text-slate-300">{value}</span>;
   };
 
   const getColumnClass = (index: number): string => {
@@ -133,7 +113,7 @@ export function ComparisonSection({ className = '' }: IProps): JSX.Element {
 
   const getCellClass = (rowIndex: number, colIndex: number): string => {
     const competitor = COMPETITORS[colIndex];
-    if (!competitor) return 'text-slate-400';
+    if (!competitor) return 'text-slate-400 text-center';
     return competitor.highlight
       ? 'text-center bg-brand-900/10 py-1 rounded border border-brand-900/20 text-brand-200'
       : 'text-center text-slate-400';
@@ -158,9 +138,9 @@ export function ComparisonSection({ className = '' }: IProps): JSX.Element {
         </div>
 
         <div className="overflow-x-auto pb-4">
-          <div className="min-w-[1200px] bg-slate-900 rounded-xl border border-slate-800 shadow-xl overflow-hidden">
+          <div className="min-w-[900px] bg-slate-900 rounded-xl border border-slate-800 shadow-xl overflow-hidden">
             {/* Header */}
-            <div className="grid grid-cols-7 p-4 border-b border-slate-800 bg-slate-900/50 text-sm font-semibold">
+            <div className="grid grid-cols-6 p-4 border-b border-slate-800 bg-slate-900/50 text-sm font-semibold">
               <div className="pl-4 text-left text-slate-300">Feature</div>
               {COMPETITORS.map((competitor, index) => (
                 <div key={competitor.key} className={`text-center ${getColumnClass(index)}`}>
@@ -173,7 +153,7 @@ export function ComparisonSection({ className = '' }: IProps): JSX.Element {
             {data.map((row, rowIndex) => (
               <div
                 key={rowIndex}
-                className="grid grid-cols-7 p-4 border-b border-slate-800 last:border-0 hover:bg-slate-800/30 transition-colors items-center"
+                className="grid grid-cols-6 p-4 border-b border-slate-800 last:border-0 hover:bg-slate-800/30 transition-colors items-center"
               >
                 <div className="pl-4 text-sm font-medium text-slate-200 text-left">
                   {row.feature}

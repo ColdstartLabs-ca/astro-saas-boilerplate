@@ -72,10 +72,22 @@ export function NavBarAstro(): JSX.Element {
             {t('pricing')}
           </a>
           <a
+            href={localizedPath('/blog')}
+            className={`text-sm font-bold transition-colors pb-1 ${isActive('/blog') ? 'text-white border-b-2 border-accent' : 'text-text-muted hover:text-white border-b-2 border-transparent'}`}
+          >
+            {t('blog')}
+          </a>
+          <a
             href={localizedPath('/#faq')}
             className="text-sm font-bold transition-colors pb-1 text-text-muted hover:text-white border-b-2 border-transparent"
           >
             {t('faq')}
+          </a>
+          <a
+            href={localizedPath('/help')}
+            className={`text-sm font-bold transition-colors pb-1 ${isActive('/help') ? 'text-white border-b-2 border-accent' : 'text-text-muted hover:text-white border-b-2 border-transparent'}`}
+          >
+            {t('support')}
           </a>
         </nav>
 
@@ -265,10 +277,22 @@ export function NavBarAstro(): JSX.Element {
               {t('pricing')}
             </a>
             <a
+              href={localizedPath('/blog')}
+              className={`block px-4 py-2 text-sm font-medium rounded-lg transition-colors ${isActive('/blog') ? 'text-white bg-white/5' : 'text-muted-foreground hover:bg-surface/10 hover:text-white'}`}
+            >
+              {t('blog')}
+            </a>
+            <a
               href={localizedPath('/#faq')}
               className="block px-4 py-2 text-sm font-medium rounded-lg transition-colors text-muted-foreground hover:bg-surface/10 hover:text-white"
             >
               {t('faq')}
+            </a>
+            <a
+              href={localizedPath('/help')}
+              className={`block px-4 py-2 text-sm font-medium rounded-lg transition-colors ${isActive('/help') ? 'text-white bg-white/5' : 'text-muted-foreground hover:bg-surface/10 hover:text-white'}`}
+            >
+              {t('support')}
             </a>
             {!isAuthenticated && (
               <>

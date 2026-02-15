@@ -3,6 +3,7 @@ import Layout from '../../layouts/Layout.astro';
 import { clientEnv } from '@shared/config/env';
 import { getAllPosts } from '@server/blog';
 import { getTranslations } from '../../i18n/utils';
+import { BlogEmptyState } from '@client/components/blog/BlogEmptyState';
 
 const t = getTranslations('blog');
 const allPosts = getAllPosts();
@@ -196,12 +197,7 @@ const description = `Learn about AI image upscaling, photo enhancement technique
             </div>
           </>
         ) : (
-          <div class="text-center py-20 bg-surface rounded-3xl border border-border">
-            <svg class="w-12 h-12 text-accent/50 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-9.714 5.143L13 21l-2.286-6.857L5 9l9.714-5.143L11 3z" />
-            </svg>
-            <p class="text-text-secondary text-lg">No blog posts yet. Check back soon!</p>
-          </div>
+          <BlogEmptyState client:load />
         )}
       </div>
     </section>

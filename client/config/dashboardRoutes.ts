@@ -245,7 +245,7 @@ export const DASHBOARD_ROUTES: readonly IDashboardRoute[] = [
     children: [
       {
         path: '/dashboard/admin/users',
-        labelKey: 'sidebar.admin.users',
+        labelKey: 'sidebar.adminUsers',
         icon: Shield,
         component: AdminUsersPage,
         enabled: true,
@@ -255,7 +255,7 @@ export const DASHBOARD_ROUTES: readonly IDashboardRoute[] = [
       },
       {
         path: '/dashboard/admin/blog',
-        labelKey: 'sidebar.admin.blog',
+        labelKey: 'sidebar.adminBlog',
         icon: FileText,
         component: AdminBlogPage,
         enabled: true,
