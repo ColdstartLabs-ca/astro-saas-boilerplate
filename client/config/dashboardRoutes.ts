@@ -59,6 +59,10 @@ const AdminUsersPage = lazy(() => import('@client/components/pages/AdminUsersPag
 const _AdminUserDetailPage = lazy(
   () => import('@client/components/pages/AdminUserDetailPageClient')
 );
+const AdminBlogPage = lazy(() => import('@client/components/pages/AdminBlogPageClient'));
+const _AdminBlogPostEditPage = lazy(
+  () => import('@client/components/pages/AdminBlogPostEditPageClient')
+);
 
 /**
  * Route guard types
@@ -244,6 +248,16 @@ export const DASHBOARD_ROUTES: readonly IDashboardRoute[] = [
         labelKey: 'sidebar.admin.users',
         icon: Shield,
         component: AdminUsersPage,
+        enabled: true,
+        guard: 'admin',
+        group: 'admin',
+        layout: AdminDashboardLayout,
+      },
+      {
+        path: '/dashboard/admin/blog',
+        labelKey: 'sidebar.admin.blog',
+        icon: FileText,
+        component: AdminBlogPage,
         enabled: true,
         guard: 'admin',
         group: 'admin',

@@ -86,6 +86,42 @@ function getRouteElement(pathname: string): JSX.Element {
     }
   }
 
+  // Check for blog admin routes: /dashboard/admin/blog/new and /dashboard/admin/blog/:postId
+  if (path === '/dashboard/admin/blog/new') {
+    const adminRoute = getRouteByPath('/dashboard/admin');
+    if (adminRoute?.layout) {
+      const Layout = adminRoute.layout;
+      const AdminBlogPostEditPage = React.lazy(
+        () => import('@client/components/pages/AdminBlogPostEditPageClient')
+      );
+      return (
+        <AdminGuard>
+          <Layout>
+            <AdminBlogPostEditPage />
+          </Layout>
+        </AdminGuard>
+      );
+    }
+  }
+
+  const blogPostParams = matchDynamicRoute(path, '/dashboard/admin/blog/:postId');
+  if (blogPostParams) {
+    const adminRoute = getRouteByPath('/dashboard/admin');
+    if (adminRoute?.layout) {
+      const Layout = adminRoute.layout;
+      const AdminBlogPostEditPage = React.lazy(
+        () => import('@client/components/pages/AdminBlogPostEditPageClient')
+      );
+      return (
+        <AdminGuard>
+          <Layout>
+            <AdminBlogPostEditPage postId={blogPostParams.postId} />
+          </Layout>
+        </AdminGuard>
+      );
+    }
+  }
+
   // Check for dynamic campaign routes: /dashboard/campaigns/:campaignId
   const campaignDetailParams = matchDynamicRoute(path, '/dashboard/campaigns/:campaignId');
   if (campaignDetailParams) {

@@ -4,7 +4,7 @@
  */
 
 import type { APIRoute } from 'astro';
-import { getAllPosts } from '@server/blog';
+import { getAllPostsAsync } from '@server/blog';
 import { clientEnv } from '@shared/config/env';
 
 const BASE_URL = `https://${clientEnv.PRIMARY_DOMAIN}`;
@@ -21,8 +21,8 @@ function escapeXml(unsafe: string): string {
     .replace(/'/g, '&apos;');
 }
 
-export const GET: APIRoute = () => {
-  const posts = getAllPosts();
+export const GET: APIRoute = async () => {
+  const posts = await getAllPostsAsync();
 
   const xml = `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
