@@ -1,7 +1,6 @@
 import { describe, it, expect } from 'vitest';
+import { generateSlug, calculateReadingTime } from '@shared/utils/string';
 import {
-  generateSlug,
-  calculateReadingTime,
   renderMarkdownToHtml,
   dbPostToPublicPost,
   dbPostToMeta,

@@ -15,7 +15,8 @@ export class BillingPage extends BasePage {
   readonly planStatusBadge: Locator;
   readonly creditsBalanceLabel: Locator;
   readonly creditsBalanceValue: Locator;
-  readonly upgradeOrBuyButton: Locator;
+  readonly choosePlanButton: Locator;
+  readonly changePlanButton: Locator;
 
   // Subscription details
   readonly subscriptionDetails: Locator;
@@ -43,8 +44,8 @@ export class BillingPage extends BasePage {
   constructor(page: Page) {
     super(page);
 
-    // Page header
-    this.pageTitle = page.getByRole('heading', { name: 'Billing' });
+    // Page header - use exact match and level 1 to avoid conflicts with "Billing History" h2
+    this.pageTitle = page.getByRole('heading', { name: 'Billing', level: 1, exact: true });
     this.pageDescription = page.getByText('Manage your subscription and payment methods');
     this.refreshButton = page.getByRole('button', { name: /Refresh/i }).first();
 
@@ -62,7 +63,8 @@ export class BillingPage extends BasePage {
       .first();
     this.creditsBalanceLabel = page.getByText('Credits balance');
     this.creditsBalanceValue = page.locator('p').filter({ hasText: /^\d+$/ }).first();
-    this.upgradeOrBuyButton = page.getByRole('button', { name: /(Upgrade Plan|Buy More Credits)/ });
+    this.choosePlanButton = page.getByRole('button', { name: 'Choose Plan' });
+    this.changePlanButton = page.getByRole('button', { name: 'Change Plan' });
 
     // Subscription details
     this.subscriptionDetails = page.locator(
@@ -154,10 +156,24 @@ export class BillingPage extends BasePage {
   }
 
   /**
-   * Click upgrade or buy credits button
+   * Click choose plan button (for free users)
+   */
+  async clickChoosePlan(): Promise<void> {
+    await this.choosePlanButton.click();
+  }
+
+  /**
+   * Click change plan button (for subscribed users)
+   */
+  async clickChangePlan(): Promise<void> {
+    await this.changePlanButton.click();
+  }
+
+  /**
+   * Click upgrade or buy credits button (legacy method for compatibility)
    */
   async clickUpgradeOrBuyCredits(): Promise<void> {
-    await this.upgradeOrBuyButton.click();
+    await this.choosePlanButton.click();
   }
 
   /**
@@ -198,7 +214,7 @@ export class BillingPage extends BasePage {
   async verifyFreeUserState(): Promise<void> {
     await expect(this.currentPlanName).toContainText('Free');
     await expect(this.creditsBalanceValue).toBeVisible();
-    await expect(this.upgradeOrBuyButton).toContainText('Upgrade Plan');
+    await expect(this.choosePlanButton).toBeVisible();
     await expect(this.manageSubscriptionButton).not.toBeVisible();
     await expect(this.viewPricingButton).toBeVisible();
   }
@@ -210,7 +226,7 @@ export class BillingPage extends BasePage {
     await expect(this.currentPlanName).toContainText(planName);
     await expect(this.planStatusBadge).toContainText(status);
     await expect(this.creditsBalanceValue).toBeVisible();
-    await expect(this.upgradeOrBuyButton).toContainText('Buy More Credits');
+    await expect(this.changePlanButton).toBeVisible();
     await expect(this.manageSubscriptionButton).toBeVisible();
     await expect(this.currentPeriodEndValue).toBeVisible();
   }

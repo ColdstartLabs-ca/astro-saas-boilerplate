@@ -34,7 +34,10 @@ export interface IPerformanceCheckResult {
   error?: string;
 }
 
-export interface IOpportunityForCheck extends Pick<IOpportunity, 'id' | 'project_id' | 'user_id' | 'query' | 'metrics' | 'action_ref_id' | 'created_at'> {
+export interface IOpportunityForCheck extends Pick<
+  IOpportunity,
+  'id' | 'project_id' | 'user_id' | 'query' | 'metrics' | 'action_ref_id' | 'created_at'
+> {
   action_type: string | null;
 }
 
@@ -184,7 +187,7 @@ export class OpportunityPerformanceService {
         const status: PerformanceStatus = 'no_gsc';
 
         // Update opportunity's performance_status
-        await supabaseAdmin
+        const { error: updateError } = await supabaseAdmin
           .from('opportunities')
           .update({
             performance_status: status,
@@ -193,11 +196,22 @@ export class OpportunityPerformanceService {
           })
           .eq('id', opportunity.id);
 
+        if (updateError) {
+          console.error(
+            '[OpportunityPerformance] Failed to update opportunity status for no_gsc:',
+            updateError.message
+          );
+          result.error = `Failed to update opportunity: ${updateError.message}`;
+          return result;
+        }
+
         result.success = true;
         result.status = status;
         result.error = 'No active GSC connection for project';
 
-        console.log(`[OpportunityPerformance] No GSC connection for ${opportunity.id}, status set to no_gsc`);
+        console.log(
+          `[OpportunityPerformance] No GSC connection for ${opportunity.id}, status set to no_gsc`
+        );
         return result;
       }
 
@@ -285,7 +299,10 @@ export class OpportunityPerformanceService {
         });
 
       if (insertError) {
-        console.error('[OpportunityPerformance] Failed to insert check record:', insertError.message);
+        console.error(
+          '[OpportunityPerformance] Failed to insert check record:',
+          insertError.message
+        );
         throw new Error(`Failed to insert performance check: ${insertError.message}`);
       }
 
@@ -315,7 +332,10 @@ export class OpportunityPerformanceService {
         .eq('id', opportunity.id);
 
       if (updateError) {
-        console.error('[OpportunityPerformance] Failed to update opportunity:', updateError.message);
+        console.error(
+          '[OpportunityPerformance] Failed to update opportunity:',
+          updateError.message
+        );
         throw new Error(`Failed to update opportunity: ${updateError.message}`);
       }
 

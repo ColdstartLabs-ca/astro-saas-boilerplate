@@ -71,14 +71,17 @@
 ## 3. Integration Points
 
 **How will this feature be reached?**
+
 - [x] Entry point: All existing dashboard routes remain identical
 - [x] This is a pure refactoring — no new routes, no new features, no behavior changes
 - [x] All existing imports will be updated to point to new file locations
 
 **Is this user-facing?**
+
 - [x] NO → Internal refactoring only. Zero visual/behavioral changes.
 
 **Full user flow:**
+
 1. User navigates to dashboard → Same UI, same behavior
 2. All components render identically
 3. All API calls work identically
@@ -108,11 +111,11 @@
 
 **Tests Required:**
 
-| Test File | Test Name | Assertion |
-|-----------|-----------|-----------|
+| Test File                                   | Test Name                                     | Assertion                     |
+| ------------------------------------------- | --------------------------------------------- | ----------------------------- |
 | `client/utils/__tests__/api-client.test.ts` | `should add auth headers when session exists` | Headers include Authorization |
-| `client/utils/__tests__/api-client.test.ts` | `should throw on non-ok response` | Error thrown with message |
-| `client/utils/__tests__/api-client.test.ts` | `should parse JSON response` | Returns parsed data |
+| `client/utils/__tests__/api-client.test.ts` | `should throw on non-ok response`             | Error thrown with message     |
+| `client/utils/__tests__/api-client.test.ts` | `should parse JSON response`                  | Returns parsed data           |
 
 **User Verification:**
 
@@ -141,10 +144,10 @@
 
 **Tests Required:**
 
-| Test File | Test Name | Assertion |
-|-----------|-----------|-----------|
+| Test File                                     | Test Name                                        | Assertion                 |
+| --------------------------------------------- | ------------------------------------------------ | ------------------------- |
 | `client/utils/__tests__/statusStyles.test.ts` | `should return green styles for active campaign` | Contains `text-green-400` |
-| `client/utils/__tests__/statusStyles.test.ts` | `should return fallback for unknown status` | Returns default classes |
+| `client/utils/__tests__/statusStyles.test.ts` | `should return fallback for unknown status`      | Returns default classes   |
 
 **User Verification:**
 
@@ -177,11 +180,11 @@
 
 **Tests Required:**
 
-| Test File | Test Name | Assertion |
-|-----------|-----------|-----------|
+| Test File                                             | Test Name                                       | Assertion                      |
+| ----------------------------------------------------- | ----------------------------------------------- | ------------------------------ |
 | `client/hooks/__tests__/useMutationWithToast.test.ts` | `should show success toast on mutation success` | Toast called with success type |
-| `client/hooks/__tests__/useMutationWithToast.test.ts` | `should show error toast and log on failure` | Toast + logger called |
-| `client/hooks/__tests__/useMutationWithToast.test.ts` | `should rethrow error after handling` | Error propagated |
+| `client/hooks/__tests__/useMutationWithToast.test.ts` | `should show error toast and log on failure`    | Toast + logger called          |
+| `client/hooks/__tests__/useMutationWithToast.test.ts` | `should rethrow error after handling`           | Error propagated               |
 
 **User Verification:**
 
@@ -213,8 +216,8 @@
 
 **Tests Required:**
 
-| Test File | Test Name | Assertion |
-|-----------|-----------|-----------|
+| Test File               | Test Name                     | Assertion     |
+| ----------------------- | ----------------------------- | ------------- |
 | Existing campaign tests | All existing tests still pass | No regression |
 
 **User Verification:**
@@ -247,8 +250,8 @@
 
 **Tests Required:**
 
-| Test File | Test Name | Assertion |
-|-----------|-----------|-----------|
+| Test File               | Test Name                     | Assertion     |
+| ----------------------- | ----------------------------- | ------------- |
 | Existing campaign tests | All existing tests still pass | No regression |
 
 **User Verification:**
@@ -279,10 +282,10 @@
 
 **Tests Required:**
 
-| Test File | Test Name | Assertion |
-|-----------|-----------|-----------|
+| Test File                                  | Test Name                                | Assertion                |
+| ------------------------------------------ | ---------------------------------------- | ------------------------ |
 | `client/utils/__tests__/timeUtils.test.ts` | `should return Good morning before noon` | Returns correct greeting |
-| `client/utils/__tests__/timeUtils.test.ts` | `should return Good evening after 6pm` | Returns correct greeting |
+| `client/utils/__tests__/timeUtils.test.ts` | `should return Good evening after 6pm`   | Returns correct greeting |
 
 **User Verification:**
 
@@ -312,8 +315,8 @@
 
 **Tests Required:**
 
-| Test File | Test Name | Assertion |
-|-----------|-----------|-----------|
+| Test File   | Test Name            | Assertion                         |
+| ----------- | -------------------- | --------------------------------- |
 | Build check | `yarn verify` passes | No broken imports, no type errors |
 
 **User Verification:**
@@ -339,12 +342,12 @@
 
 ## 6. Metrics
 
-| Metric | Before | After (Target) |
-|--------|--------|-----------------|
-| `CampaignDetailView` lines | 912 | ~100 (orchestrator) |
-| Duplicated auth functions | 6 hooks × 2 functions | 0 (centralized) |
-| Inline modal implementations | 5 (3 in detail, 1 in overview, 1 in campaigns) | 0 |
-| Status ternary duplications | 4 files | 0 (utility function) |
-| Mutation error wrappers | 9 identical patterns | 0 (useMutationWithToast) |
-| Dead code (disabled views) | ~687 lines | 0 |
-| Total estimated lines saved | ~800+ | — |
+| Metric                       | Before                                         | After (Target)           |
+| ---------------------------- | ---------------------------------------------- | ------------------------ |
+| `CampaignDetailView` lines   | 912                                            | ~100 (orchestrator)      |
+| Duplicated auth functions    | 6 hooks × 2 functions                          | 0 (centralized)          |
+| Inline modal implementations | 5 (3 in detail, 1 in overview, 1 in campaigns) | 0                        |
+| Status ternary duplications  | 4 files                                        | 0 (utility function)     |
+| Mutation error wrappers      | 9 identical patterns                           | 0 (useMutationWithToast) |
+| Dead code (disabled views)   | ~687 lines                                     | 0                        |
+| Total estimated lines saved  | ~800+                                          | —                        |

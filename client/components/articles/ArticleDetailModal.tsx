@@ -6,8 +6,18 @@
 
 'use client';
 
-import React, { useState, useCallback, useEffect } from 'react';
-import { X, Loader2, Trash2, RotateCcw, ExternalLink, Edit3, Check, Image as ImageIcon, AlertCircle } from 'lucide-react';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
+import {
+  X,
+  Loader2,
+  Trash2,
+  RotateCcw,
+  ExternalLink,
+  Edit3,
+  Check,
+  Image as ImageIcon,
+  AlertCircle,
+} from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import MDEditor from '@uiw/react-md-editor';
 import '@uiw/react-md-editor/markdown-editor.css';
@@ -38,13 +48,17 @@ function GalleryImage({ src, alt, className }: { src: string; alt: string; class
   const [broken, setBroken] = useState(false);
   if (broken) {
     return (
-      <div className={`${className ?? 'w-full h-36'} flex flex-col items-center justify-center gap-1.5 text-muted`}>
+      <div
+        className={`${className ?? 'w-full h-36'} flex flex-col items-center justify-center gap-1.5 text-muted`}
+      >
         <ImageOff className="w-5 h-5" />
         <span className="text-[10px] font-medium uppercase tracking-wider">Expired</span>
       </div>
     );
   }
-  return <img src={src} alt={alt} className={className} loading="lazy" onError={() => setBroken(true)} />;
+  return (
+    <img src={src} alt={alt} className={className} loading="lazy" onError={() => setBroken(true)} />
+  );
 }
 
 // Helper to get access token
@@ -112,14 +126,34 @@ export function ArticleDetailModal({
   const [rejectionReason, setRejectionReason] = useState('');
   const [showRejectDialog, setShowRejectDialog] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [currentArticle, setCurrentArticle] = useState<IArticleWithImages | null>(article as IArticleWithImages | null);
-  const articleId = isOpen ? currentArticle?.id ?? null : null;
-  const { deliveries, isLoading: deliveriesLoading, retryingId, retryDelivery } = useArticleDeliveries(articleId);
+  const [currentArticle, setCurrentArticle] = useState<IArticleWithImages | null>(
+    article as IArticleWithImages | null
+  );
+  const articleId = isOpen ? (currentArticle?.id ?? null) : null;
+  const {
+    deliveries,
+    isLoading: deliveriesLoading,
+    retryingId,
+    retryDelivery,
+  } = useArticleDeliveries(articleId);
+
+  // Track previous article id to avoid unnecessary re-fetches
+  const prevArticleIdRef = useRef<string | null>(null);
 
   // Fetch full article detail (with images) when modal opens
   useEffect(() => {
     if (!article || !isOpen) {
       setCurrentArticle(article as IArticleWithImages | null);
+      prevArticleIdRef.current = null;
+      return;
+    }
+
+    // Check if this is the same article we already loaded
+    const isSameArticle = prevArticleIdRef.current === article.id;
+    prevArticleIdRef.current = article.id;
+
+    // Skip fetching if it's the same article (just a re-render with same data)
+    if (isSameArticle) {
       return;
     }
 
@@ -150,8 +184,10 @@ export function ArticleDetailModal({
       }
     })();
 
-    return () => { cancelled = true; };
-  }, [article?.id, isOpen]);
+    return () => {
+      cancelled = true;
+    };
+  }, [article, isOpen]);
 
   const handleSave = useCallback(async () => {
     if (!currentArticle) return;
@@ -218,7 +254,11 @@ export function ArticleDetailModal({
   }, [currentArticle, onClose, onUpdate]);
 
   const handleRegenerate = useCallback(async () => {
-    if (!currentArticle || !confirm('Regenerate this article? This will use credits based on your current settings.')) return;
+    if (
+      !currentArticle ||
+      !confirm('Regenerate this article? This will use credits based on your current settings.')
+    )
+      return;
 
     setIsRegenerating(true);
     setError(null);
@@ -279,44 +319,50 @@ export function ArticleDetailModal({
     }
   }, [currentArticle, onUpdate]);
 
-  const handleReject = useCallback(async (reason: string) => {
-    if (!currentArticle) return;
-    setIsRejecting(true);
-    setError(null);
+  const handleReject = useCallback(
+    async (reason: string) => {
+      if (!currentArticle) return;
+      setIsRejecting(true);
+      setError(null);
 
-    try {
-      const accessToken = await getAccessToken();
-      const response = await fetch(`/api/articles/${currentArticle.id}`, {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${accessToken}`,
-        },
-        body: JSON.stringify({ status: 'rejected', rejection_reason: reason }),
-      });
+      try {
+        const accessToken = await getAccessToken();
+        const response = await fetch(`/api/articles/${currentArticle.id}`, {
+          method: 'PATCH',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${accessToken}`,
+          },
+          body: JSON.stringify({ status: 'rejected', rejection_reason: reason }),
+        });
 
-      if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.error?.message || 'Failed to reject article');
+        if (!response.ok) {
+          const data = await response.json();
+          throw new Error(data.error?.message || 'Failed to reject article');
+        }
+
+        const result = await response.json();
+        const updatedArticle = result.data.article as IArticleWithCampaign;
+        setCurrentArticle(updatedArticle);
+        onUpdate?.(updatedArticle);
+        setShowRejectDialog(false);
+        setRejectionReason('');
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Failed to reject');
+      } finally {
+        setIsRejecting(false);
       }
-
-      const result = await response.json();
-      const updatedArticle = result.data.article as IArticleWithCampaign;
-      setCurrentArticle(updatedArticle);
-      onUpdate?.(updatedArticle);
-      setShowRejectDialog(false);
-      setRejectionReason('');
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to reject');
-    } finally {
-      setIsRejecting(false);
-    }
-  }, [currentArticle, onUpdate]);
+    },
+    [currentArticle, onUpdate]
+  );
 
   if (!isOpen || !currentArticle) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm animate-fadeIn p-4">
+    <div
+      data-testid="article-detail-modal"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm animate-fadeIn p-4"
+    >
       <div className="bg-surface border border-border rounded-xl w-full max-w-3xl max-h-[90vh] shadow-2xl flex flex-col">
         {/* Header */}
         <div className="flex justify-between items-center p-6 border-b border-border">
@@ -330,8 +376,9 @@ export function ArticleDetailModal({
                 <span className="text-xs text-muted">
                   {isEditing
                     ? t('articles.detailModal.wordCount', { count: countWords(editedContent) })
-                    : t('articles.detailModal.wordCount', { count: currentArticle.word_count ?? 0 })
-                  }
+                    : t('articles.detailModal.wordCount', {
+                        count: currentArticle.word_count ?? 0,
+                      })}
                 </span>
               )}
             </div>
@@ -367,7 +414,7 @@ export function ArticleDetailModal({
             <div className="border border-border rounded-lg overflow-hidden" data-color-mode="dark">
               <MDEditor
                 value={editedContent}
-                onChange={(value) => setEditedContent(value || '')}
+                onChange={value => setEditedContent(value || '')}
                 height={400}
                 preview="edit"
                 hideToolbar={false}
@@ -385,13 +432,17 @@ export function ArticleDetailModal({
                     </>
                   )}
                 </div>
-                <span>{t('articles.detailModal.wordCount', { count: countWords(editedContent) })}</span>
+                <span>
+                  {t('articles.detailModal.wordCount', { count: countWords(editedContent) })}
+                </span>
               </div>
             </div>
           ) : (
             <div className="prose prose-invert max-w-none text-sm">
               {currentArticle.content ? (
-                <ReactMarkdown components={{ img: MarkdownImage }}>{currentArticle.content}</ReactMarkdown>
+                <ReactMarkdown components={{ img: MarkdownImage }}>
+                  {currentArticle.content}
+                </ReactMarkdown>
               ) : currentArticle.generation_error ? (
                 <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-4 text-red-400">
                   <p className="font-medium mb-2">{t('articles.detailModal.generationFailed')}</p>
@@ -417,56 +468,67 @@ export function ArticleDetailModal({
           )}
 
           {/* Images section */}
-          {!isEditing && currentArticle.article_images && currentArticle.article_images.length > 0 && (
-            <div className="mt-6 pt-6 border-t border-border">
-              <div className="flex items-center gap-2 mb-3">
-                <ImageIcon className="w-4 h-4 text-muted" />
-                <h3 className="text-sm font-semibold text-text-primary">
-                  {t('articles.detailModal.generatedImages', { count: currentArticle.article_images.length })}
-                </h3>
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                {currentArticle.article_images
-                  .sort((a, b) => a.position - b.position)
-                  .map((img) => (
-                    <div key={img.id} className="relative group rounded-lg overflow-hidden border border-border bg-surface-light">
-                      {img.status === 'completed' && img.image_url ? (
-                        <>
-                          <GalleryImage
-                            src={img.image_url}
-                            alt={img.prompt.substring(0, 80)}
-                            className="w-full h-36 object-cover"
-                          />
-                          <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
-                            <a
-                              href={img.image_url}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="text-white text-xs px-3 py-1.5 bg-accent/90 rounded-md hover:bg-accent transition-colors backdrop-blur-sm"
-                            >
-                              {t('articles.detailModal.viewFullSize')}
-                            </a>
+          {!isEditing &&
+            currentArticle.article_images &&
+            currentArticle.article_images.length > 0 && (
+              <div className="mt-6 pt-6 border-t border-border">
+                <div className="flex items-center gap-2 mb-3">
+                  <ImageIcon className="w-4 h-4 text-muted" />
+                  <h3 className="text-sm font-semibold text-text-primary">
+                    {t('articles.detailModal.generatedImages', {
+                      count: currentArticle.article_images.length,
+                    })}
+                  </h3>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  {currentArticle.article_images
+                    .sort((a, b) => a.position - b.position)
+                    .map(img => (
+                      <div
+                        key={img.id}
+                        className="relative group rounded-lg overflow-hidden border border-border bg-surface-light"
+                      >
+                        {img.status === 'completed' && img.image_url ? (
+                          <>
+                            <GalleryImage
+                              src={img.image_url}
+                              alt={img.prompt.substring(0, 80)}
+                              className="w-full h-36 object-cover"
+                            />
+                            <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                              <a
+                                href={img.image_url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-white text-xs px-3 py-1.5 bg-accent/90 rounded-md hover:bg-accent transition-colors backdrop-blur-sm"
+                              >
+                                {t('articles.detailModal.viewFullSize')}
+                              </a>
+                            </div>
+                            <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                              <p className="text-[10px] text-white/80 truncate">{img.prompt}</p>
+                            </div>
+                          </>
+                        ) : img.status === 'failed' ? (
+                          <div className="w-full h-36 flex flex-col items-center justify-center gap-1.5 text-red-400">
+                            <AlertCircle className="w-5 h-5" />
+                            <span className="text-[10px] font-medium uppercase tracking-wider">
+                              Failed
+                            </span>
                           </div>
-                          <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                            <p className="text-[10px] text-white/80 truncate">{img.prompt}</p>
+                        ) : (
+                          <div className="w-full h-36 flex flex-col items-center justify-center gap-1.5 text-muted">
+                            <Loader2 className="w-5 h-5 animate-spin" />
+                            <span className="text-[10px] font-medium uppercase tracking-wider">
+                              {img.status}
+                            </span>
                           </div>
-                        </>
-                      ) : img.status === 'failed' ? (
-                        <div className="w-full h-36 flex flex-col items-center justify-center gap-1.5 text-red-400">
-                          <AlertCircle className="w-5 h-5" />
-                          <span className="text-[10px] font-medium uppercase tracking-wider">Failed</span>
-                        </div>
-                      ) : (
-                        <div className="w-full h-36 flex flex-col items-center justify-center gap-1.5 text-muted">
-                          <Loader2 className="w-5 h-5 animate-spin" />
-                          <span className="text-[10px] font-medium uppercase tracking-wider">{img.status}</span>
-                        </div>
-                      )}
-                    </div>
-                  ))}
+                        )}
+                      </div>
+                    ))}
+                </div>
               </div>
-            </div>
-          )}
+            )}
         </div>
 
         {/* Footer */}
@@ -494,38 +556,46 @@ export function ArticleDetailModal({
             )}
 
             {/* Approve/Reject buttons - show for draft, reviewed articles */}
-            {!isEditing && (currentArticle.status === 'draft' || currentArticle.status === 'reviewed') && (
-              <>
-                <DashboardButton
-                  variant="outline"
-                  onClick={handleApprove}
-                  disabled={isApproving || isRejecting}
-                  className="text-green-400 border-green-400/30 hover:bg-green-400/10"
-                >
-                  <Check className="w-4 h-4 mr-2" />
-                  {isApproving ? t('articles.detailModal.approving') : t('articles.detailModal.approve')}
-                </DashboardButton>
-                <DashboardButton
-                  variant="outline"
-                  onClick={() => setShowRejectDialog(true)}
-                  disabled={isApproving || isRejecting}
-                  className="text-red-400 border-red-400/30 hover:bg-red-400/10"
-                >
-                  <X className="w-4 h-4 mr-2" />
-                  {t('articles.detailModal.reject')}
-                </DashboardButton>
-              </>
-            )}
+            {!isEditing &&
+              (currentArticle.status === 'draft' || currentArticle.status === 'reviewed') && (
+                <>
+                  <DashboardButton
+                    data-testid="approve-button"
+                    variant="outline"
+                    onClick={handleApprove}
+                    disabled={isApproving || isRejecting}
+                    className="text-green-400 border-green-400/30 hover:bg-green-400/10"
+                  >
+                    <Check className="w-4 h-4 mr-2" />
+                    {isApproving
+                      ? t('articles.detailModal.approving')
+                      : t('articles.detailModal.approve')}
+                  </DashboardButton>
+                  <DashboardButton
+                    data-testid="reject-button"
+                    variant="outline"
+                    onClick={() => setShowRejectDialog(true)}
+                    disabled={isApproving || isRejecting}
+                    className="text-red-400 border-red-400/30 hover:bg-red-400/10"
+                  >
+                    <X className="w-4 h-4 mr-2" />
+                    {t('articles.detailModal.reject')}
+                  </DashboardButton>
+                </>
+              )}
 
             {/* Regenerate button (for failed articles) */}
             {!isEditing && currentArticle.status === 'failed' && (
               <DashboardButton
+                data-testid="regenerate-button"
                 variant="outline"
                 onClick={handleRegenerate}
                 disabled={isSaving || isDeleting || isRegenerating}
               >
                 <RotateCcw className="w-4 h-4 mr-2" />
-                {isRegenerating ? t('articles.detailModal.regenerating') : t('articles.detailModal.regenerate')}
+                {isRegenerating
+                  ? t('articles.detailModal.regenerating')
+                  : t('articles.detailModal.regenerate')}
               </DashboardButton>
             )}
 
@@ -550,7 +620,12 @@ export function ArticleDetailModal({
             <DashboardButton
               variant="primary"
               onClick={handleSave}
-              disabled={isSaving || isDeleting || isRegenerating || !hasUnsavedChanges(currentArticle.content || '', editedContent)}
+              disabled={
+                isSaving ||
+                isDeleting ||
+                isRegenerating ||
+                !hasUnsavedChanges(currentArticle.content || '', editedContent)
+              }
             >
               {isSaving ? (
                 <>
@@ -585,12 +660,10 @@ export function ArticleDetailModal({
             <h3 className="text-lg font-semibold text-white mb-2">
               {t('articles.detailModal.rejectArticle')}
             </h3>
-            <p className="text-sm text-muted mb-4">
-              {t('articles.detailModal.rejectReason')}
-            </p>
+            <p className="text-sm text-muted mb-4">{t('articles.detailModal.rejectReason')}</p>
             <textarea
               value={rejectionReason}
-              onChange={(e) => setRejectionReason(e.target.value)}
+              onChange={e => setRejectionReason(e.target.value)}
               placeholder={t('articles.detailModal.rejectReasonPlaceholder')}
               className="w-full h-24 px-3 py-2 bg-surface-light border border-border rounded-lg text-sm text-white focus:outline-none focus:ring-2 focus:ring-accent resize-none"
             />
@@ -611,7 +684,9 @@ export function ArticleDetailModal({
                 disabled={isRejecting}
                 className="bg-red-500 hover:bg-red-600"
               >
-                {isRejecting ? t('articles.detailModal.rejecting') : t('articles.detailModal.confirmReject')}
+                {isRejecting
+                  ? t('articles.detailModal.rejecting')
+                  : t('articles.detailModal.confirmReject')}
               </DashboardButton>
             </div>
           </div>
@@ -639,7 +714,9 @@ const STATUS_STYLES: Record<string, string> = {
 function StatusBadge({ status }: { status: string }) {
   const style = STATUS_STYLES[status] || STATUS_STYLES.draft;
   return (
-    <span className={`inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-semibold uppercase tracking-wider border ${style}`}>
+    <span
+      className={`inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-semibold uppercase tracking-wider border ${style}`}
+    >
       {status}
     </span>
   );

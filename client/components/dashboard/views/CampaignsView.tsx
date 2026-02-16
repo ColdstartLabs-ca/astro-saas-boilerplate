@@ -129,7 +129,10 @@ export function CampaignsView({
   // Show empty state when no campaigns exist
   if (!isLoading && campaigns.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center h-full py-20 animate-fadeIn">
+      <div
+        className="flex flex-col items-center justify-center h-full py-20 animate-fadeIn"
+        data-testid="campaigns-empty-state"
+      >
         {/* Show FirstCampaignPrompt if onboarding is complete */}
         {shouldShowCampaignPrompt && <FirstCampaignPrompt onCreateCampaign={onNewCampaign} />}
 
@@ -200,10 +203,14 @@ export function CampaignsView({
         </DashboardButton>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div
+        className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
+        data-testid="campaigns-list"
+      >
         {campaigns.map(campaign => (
           <div
             key={campaign.id}
+            data-testid="campaign-card"
             onClick={() => {
               setViewMode('detail');
               onCampaignClick(campaign.id);
@@ -306,6 +313,7 @@ export function CampaignsView({
 
         {/* Add New Card */}
         <button
+          data-testid="new-campaign-button"
           onClick={onNewCampaign}
           className="border-2 border-dashed border-border rounded-xl p-6 flex flex-col items-center justify-center text-muted hover:border-accent/50 hover:text-accent-hover hover:bg-surface/50 transition-all gap-3 group h-full min-h-[200px]"
         >

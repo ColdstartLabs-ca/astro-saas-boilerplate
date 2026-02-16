@@ -39,17 +39,22 @@ const t = (key: string, params?: Record<string, string | number>) => {
     'subscription.confirmed.noChargesToday': 'No charges today',
     'subscription.confirmed.nextBillWillBe': 'Next bill will be {amount} for {planName}',
     'subscription.confirmed.whatHappensNext': 'What happens next?',
-    'subscription.confirmed.continueUsingFeatures': 'Continue using {planName} features until the end of your billing period.',
+    'subscription.confirmed.continueUsingFeatures':
+      'Continue using {planName} features until the end of your billing period.',
     'subscription.confirmed.creditsWillReset': 'Your monthly credits will reset to {credits}.',
-    'subscription.confirmed.cancelChangeAnytime': 'You can cancel this change anytime before it takes effect.',
+    'subscription.confirmed.cancelChangeAnytime':
+      'You can cancel this change anytime before it takes effect.',
     'subscription.confirmed.newPlanActive': 'Your new plan is now active!',
     'subscription.confirmed.accessToCredits': 'You now have access to {credits} credits per month.',
     'subscription.confirmed.proratedCharge': 'Prorated Charge',
-    'subscription.confirmed.chargedForRemainder': 'You were charged {amount} for the remainder of this billing cycle.',
-    'subscription.confirmed.creditForUnusedTime': 'You received a credit of {amount} for unused time.',
+    'subscription.confirmed.chargedForRemainder':
+      'You were charged {amount} for the remainder of this billing cycle.',
+    'subscription.confirmed.creditForUnusedTime':
+      'You received a credit of {amount} for unused time.',
     'subscription.confirmed.whatsIncluded': "What's included",
     'subscription.confirmed.creditsPerMonthIncluded': '{credits} credits per month included',
-    'subscription.confirmed.creditsRefreshStart': 'Credits refresh at the start of each billing cycle.',
+    'subscription.confirmed.creditsRefreshStart':
+      'Credits refresh at the start of each billing cycle.',
     'subscription.confirmed.unusedCreditsDontRollover': 'Unused credits do not rollover.',
     'subscription.confirmed.goToDashboard': 'Go to Dashboard',
     'subscription.confirmed.viewPlans': 'View Plans',
@@ -68,14 +73,36 @@ const t = (key: string, params?: Record<string, string | number>) => {
 };
 
 function SubscriptionConfirmedContent() {
-  // Parse URL search params for client-side routing
-  const searchParams = new URLSearchParams(window.location.search);
+  // Parse URL search params for client-side routing (avoid SSR issues)
+  const [urlParams, setUrlParams] = React.useState<{
+    type: string | null;
+    newPriceId: string | null;
+    oldPriceId: string | null;
+    effectiveDate: string | null;
+    prorationAmount: string | null;
+  }>({
+    type: null,
+    newPriceId: null,
+    oldPriceId: null,
+    effectiveDate: null,
+    prorationAmount: null,
+  });
 
-  const type = searchParams.get('type'); // 'upgrade' | 'downgrade'
-  const newPriceId = searchParams.get('new_price_id');
-  const oldPriceId = searchParams.get('old_price_id');
-  const effectiveDate = searchParams.get('effective_date');
-  const prorationAmount = searchParams.get('proration_amount');
+  // Parse URL params on client side only
+  React.useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const searchParams = new URLSearchParams(window.location.search);
+      setUrlParams({
+        type: searchParams.get('type'),
+        newPriceId: searchParams.get('new_price_id'),
+        oldPriceId: searchParams.get('old_price_id'),
+        effectiveDate: searchParams.get('effective_date'),
+        prorationAmount: searchParams.get('proration_amount'),
+      });
+    }
+  }, []);
+
+  const { type, newPriceId, oldPriceId, effectiveDate, prorationAmount } = urlParams;
 
   // Use unified resolver first for consistent plan lookup
   const resolvedNewPlan = newPriceId ? resolvePlanOrPack(newPriceId) : null;
@@ -128,10 +155,14 @@ function SubscriptionConfirmedContent() {
             <CheckCircle className={`w-8 h-8 ${isDowngrade ? 'text-warning' : 'text-success'}`} />
           </div>
           <h1 className="text-2xl font-bold text-primary mb-2">
-            {isDowngrade ? t('subscription.confirmed.downgradeScheduled') : t('subscription.confirmed.upgradeComplete')}
+            {isDowngrade
+              ? t('subscription.confirmed.downgradeScheduled')
+              : t('subscription.confirmed.upgradeComplete')}
           </h1>
           <p className="text-muted-foreground">
-            {isDowngrade ? t('subscription.confirmed.downgradeSuccess') : t('subscription.confirmed.upgradeSuccess')}
+            {isDowngrade
+              ? t('subscription.confirmed.downgradeSuccess')
+              : t('subscription.confirmed.upgradeSuccess')}
           </p>
         </div>
 
@@ -142,7 +173,9 @@ function SubscriptionConfirmedContent() {
             <div className="flex items-center justify-between">
               <div className="text-center flex-1">
                 <p className="text-xs text-muted-foreground uppercase tracking-wide mb-1">
-                  {isDowngrade ? t('subscription.confirmed.currentPlan') : t('subscription.confirmed.previousPlan')}
+                  {isDowngrade
+                    ? t('subscription.confirmed.currentPlan')
+                    : t('subscription.confirmed.previousPlan')}
                 </p>
                 <p className="font-semibold text-muted-foreground">
                   {resolvedOldPlan?.name || oldPlan?.name || 'N/A'}
@@ -160,7 +193,9 @@ function SubscriptionConfirmedContent() {
 
               <div className="text-center flex-1">
                 <p className="text-xs text-muted-foreground uppercase tracking-wide mb-1">
-                  {isDowngrade ? t('subscription.confirmed.scheduledPlan') : t('subscription.confirmed.newPlan')}
+                  {isDowngrade
+                    ? t('subscription.confirmed.scheduledPlan')
+                    : t('subscription.confirmed.newPlan')}
                 </p>
                 <p className={`font-semibold ${isDowngrade ? 'text-warning' : 'text-success'}`}>
                   {resolvedNewPlan?.name || newPlan?.name}
@@ -185,7 +220,9 @@ function SubscriptionConfirmedContent() {
                     <p className="font-medium text-primary">
                       {t('subscription.confirmed.keepUsingUntil', {
                         planName:
-                          resolvedOldPlan?.name || oldPlan?.name || t('subscription.confirmed.currentPlan'),
+                          resolvedOldPlan?.name ||
+                          oldPlan?.name ||
+                          t('subscription.confirmed.currentPlan'),
                       })}
                     </p>
                     <p className="text-lg font-semibold text-warning">
@@ -199,7 +236,9 @@ function SubscriptionConfirmedContent() {
                 <div className="flex items-start gap-3 p-4 bg-surface rounded-lg">
                   <CreditCard className="w-5 h-5 text-muted-foreground mt-0.5 flex-shrink-0" />
                   <div>
-                    <p className="font-medium text-primary">{t('subscription.confirmed.noChargesToday')}</p>
+                    <p className="font-medium text-primary">
+                      {t('subscription.confirmed.noChargesToday')}
+                    </p>
                     <p className="text-sm text-muted-foreground">
                       {t('subscription.confirmed.nextBillWillBe', {
                         amount: formatCurrency(newPlan?.priceInCents || 0),
@@ -210,12 +249,16 @@ function SubscriptionConfirmedContent() {
                 </div>
 
                 <div className="text-sm text-muted-foreground bg-accent/10 p-4 rounded-lg">
-                  <p className="font-medium text-primary mb-1">{t('subscription.confirmed.whatHappensNext')}</p>
+                  <p className="font-medium text-primary mb-1">
+                    {t('subscription.confirmed.whatHappensNext')}
+                  </p>
                   <ul className="space-y-1 list-disc list-inside">
                     <li>
                       {t('subscription.confirmed.continueUsingFeatures', {
                         planName:
-                          resolvedOldPlan?.name || oldPlan?.name || t('subscription.confirmed.currentPlan'),
+                          resolvedOldPlan?.name ||
+                          oldPlan?.name ||
+                          t('subscription.confirmed.currentPlan'),
                       })}
                     </li>
                     <li>
@@ -233,7 +276,9 @@ function SubscriptionConfirmedContent() {
                 <div className="flex items-start gap-3 p-4 bg-success/20 rounded-lg">
                   <Sparkles className="w-5 h-5 text-success mt-0.5 flex-shrink-0" />
                   <div>
-                    <p className="font-medium text-primary">{t('subscription.confirmed.newPlanActive')}</p>
+                    <p className="font-medium text-primary">
+                      {t('subscription.confirmed.newPlanActive')}
+                    </p>
                     <p className="text-sm text-muted-foreground">
                       {t('subscription.confirmed.accessToCredits', {
                         credits: resolvedNewPlan?.creditsPerCycle || newPlan?.creditsPerCycle || 0,
@@ -246,7 +291,9 @@ function SubscriptionConfirmedContent() {
                   <div className="flex items-start gap-3 p-4 bg-surface rounded-lg">
                     <CreditCard className="w-5 h-5 text-muted-foreground mt-0.5 flex-shrink-0" />
                     <div>
-                      <p className="font-medium text-primary">{t('subscription.confirmed.proratedCharge')}</p>
+                      <p className="font-medium text-primary">
+                        {t('subscription.confirmed.proratedCharge')}
+                      </p>
                       <p className="text-sm text-muted-foreground">
                         {Number(prorationAmount) > 0
                           ? t('subscription.confirmed.chargedForRemainder', {
@@ -261,7 +308,9 @@ function SubscriptionConfirmedContent() {
                 )}
 
                 <div className="text-sm text-muted-foreground bg-accent/10 p-4 rounded-lg">
-                  <p className="font-medium text-primary mb-1">{t('subscription.confirmed.whatsIncluded')}</p>
+                  <p className="font-medium text-primary mb-1">
+                    {t('subscription.confirmed.whatsIncluded')}
+                  </p>
                   <ul className="space-y-1 list-disc list-inside">
                     <li>
                       {t('subscription.confirmed.creditsPerMonthIncluded', {

@@ -4,7 +4,7 @@ import type { ISubscription, IUserProfile } from '@/shared/types/stripe.types';
 import { CancelSubscriptionModal } from '@client/components/stripe/CancelSubscriptionModal';
 import { CreditPackSelector } from '@client/components/stripe/CreditPackSelector';
 import { StripeService } from '@client/services/stripeService';
-import { useTranslations } from '@src/i18n/utils';
+import { useTranslations } from '@client/hooks/useTranslations';
 import { useToastStore } from '@client/store/toastStore';
 import { getPlanDisplayName, getPlanForPriceId } from '@shared/config/stripe';
 import dayjs from 'dayjs';
@@ -21,7 +21,7 @@ import {
   RefreshCw,
 } from 'lucide-react';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 
 // Extend dayjs with relativeTime plugin
 dayjs.extend(relativeTime);
@@ -36,12 +36,7 @@ export default function BillingPage(): JSX.Element {
   const [error, setError] = useState<string | null>(null);
   const [showCancelModal, setShowCancelModal] = useState(false);
 
-   
-  useEffect(() => {
-    loadBillingData();
-  }, [t]);
-
-  const loadBillingData = async () => {
+  const loadBillingData = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
@@ -57,7 +52,11 @@ export default function BillingPage(): JSX.Element {
     } finally {
       setLoading(false);
     }
-  };
+  }, [t]);
+
+  useEffect(() => {
+    loadBillingData();
+  }, [loadBillingData]);
 
   const handleManageSubscription = async () => {
     try {
@@ -179,7 +178,10 @@ export default function BillingPage(): JSX.Element {
       {/* Current Plan */}
       <div className="bg-surface rounded-xl border border-border p-6">
         <div className="flex items-center gap-3 mb-4">
-          <div className="w-10 h-10 rounded-lg bg-accent/20 flex items-center justify-center">
+          <div
+            data-testid="plan-icon"
+            className="w-10 h-10 rounded-lg bg-accent/20 flex items-center justify-center"
+          >
             <Package size={20} className="text-accent" />
           </div>
           <div className="flex-1">
@@ -223,7 +225,10 @@ export default function BillingPage(): JSX.Element {
 
         {/* Subscription Details */}
         {subscription && (
-          <div className="mt-4 pt-4 border-t border-border space-y-2">
+          <div
+            data-testid="subscription-details"
+            className="mt-4 pt-4 border-t border-border space-y-2"
+          >
             <div className="flex justify-between text-sm">
               <span className="text-muted-foreground">
                 {subscription.status === 'trialing' ? t('trialEnds') : t('currentPeriodEnds')}
@@ -321,7 +326,10 @@ export default function BillingPage(): JSX.Element {
       {/* Payment Methods / Manage Subscription */}
       <div className="bg-surface rounded-xl border border-border p-6">
         <div className="flex items-center gap-3 mb-4">
-          <div className="w-10 h-10 rounded-lg bg-surface-light flex items-center justify-center">
+          <div
+            data-testid="payment-icon"
+            className="w-10 h-10 rounded-lg bg-surface-light flex items-center justify-center"
+          >
             <CreditCard size={20} className="text-muted-foreground" />
           </div>
           <div>
@@ -365,7 +373,10 @@ export default function BillingPage(): JSX.Element {
       {/* Billing History */}
       <div className="bg-surface rounded-xl border border-border p-6">
         <div className="flex items-center gap-3 mb-4">
-          <div className="w-10 h-10 rounded-lg bg-surface-light flex items-center justify-center">
+          <div
+            data-testid="billing-icon"
+            className="w-10 h-10 rounded-lg bg-surface-light flex items-center justify-center"
+          >
             <Receipt size={20} className="text-muted-foreground" />
           </div>
           <div>

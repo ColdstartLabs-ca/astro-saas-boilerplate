@@ -627,6 +627,7 @@ describe('OpportunityPerformanceService', () => {
       };
 
       const fromMock = vi.fn();
+      // First call: articles lookup
       fromMock.mockImplementationOnce(() => ({
         select: vi.fn().mockReturnValue({
           eq: vi.fn().mockReturnValue({
@@ -637,6 +638,7 @@ describe('OpportunityPerformanceService', () => {
           }),
         }),
       }));
+      // Second call: GSC connection lookup (returns null - no connection)
       fromMock.mockImplementationOnce(() => ({
         select: vi.fn().mockReturnValue({
           eq: vi.fn().mockReturnValue({
@@ -648,13 +650,73 @@ describe('OpportunityPerformanceService', () => {
           }),
         }),
       }));
+      // Third call: update opportunity with no_gsc status
+      fromMock.mockImplementationOnce(() => ({
+        update: vi.fn().mockReturnValue({
+          eq: vi.fn().mockResolvedValue({ error: null }),
+        }),
+      }));
 
       vi.mocked(supabaseAdmin.from).mockImplementation(fromMock as never);
 
       const result = await service.checkPerformance(opportunity);
 
-      expect(result.success).toBe(false);
+      expect(result.success).toBe(true); // Service returns success=true with no_gsc status
       expect(result.error).toContain('No active GSC connection');
+      expect(result.status).toBe('no_gsc');
+    });
+
+    it('should return failure when no GSC connection AND update fails', async () => {
+      const opportunity: IOpportunityForCheck = {
+        id: 'opp-1',
+        project_id: 'proj-1',
+        user_id: 'user-1',
+        query: 'test query',
+        metrics: { position: 10 },
+        action_type: 'create_article',
+        action_ref_id: 'campaign-1',
+        created_at: dayjs().subtract(15, 'day').toISOString(),
+      };
+
+      const fromMock = vi.fn();
+      // First call: articles lookup
+      fromMock.mockImplementationOnce(() => ({
+        select: vi.fn().mockReturnValue({
+          eq: vi.fn().mockReturnValue({
+            in: vi.fn().mockResolvedValue({
+              data: [{ id: 'article-1', primary_keyword: 'test query' }],
+              error: null,
+            }),
+          }),
+        }),
+      }));
+      // Second call: GSC connection lookup (returns null - no connection)
+      fromMock.mockImplementationOnce(() => ({
+        select: vi.fn().mockReturnValue({
+          eq: vi.fn().mockReturnValue({
+            eq: vi.fn().mockReturnValue({
+              not: vi.fn().mockReturnValue({
+                maybeSingle: vi.fn().mockResolvedValue({ data: null, error: null }), // No connection
+              }),
+            }),
+          }),
+        }),
+      }));
+      // Third call: update opportunity with no_gsc status - FAILS
+      fromMock.mockImplementationOnce(() => ({
+        update: vi.fn().mockReturnValue({
+          eq: vi.fn().mockResolvedValue({ error: { message: 'Database update failed' } }),
+        }),
+      }));
+
+      vi.mocked(supabaseAdmin.from).mockImplementation(fromMock as never);
+
+      const result = await service.checkPerformance(opportunity);
+
+      // Should NOT report success when update fails
+      expect(result.success).toBe(false);
+      expect(result.error).toContain('Failed to update opportunity');
+      expect(result.status).toBeNull();
     });
   });
 

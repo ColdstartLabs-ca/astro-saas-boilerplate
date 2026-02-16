@@ -141,7 +141,10 @@ export function CampaignDetailHeader({
 
       <div className="flex justify-between items-start">
         <div>
-          <h2 className="text-2xl font-bold text-white flex items-center gap-3">
+          <h2
+            className="text-2xl font-bold text-white flex items-center gap-3"
+            data-testid="campaign-name"
+          >
             {campaign.name}
             <span
               className={`text-xs px-2 py-1 rounded-full border ${getCampaignStatusStyles(campaign.status)} capitalize`}

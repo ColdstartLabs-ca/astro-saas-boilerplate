@@ -1,32 +1,22 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { StripeService } from '@client/services/stripeService';
-import { supabase } from '@server/supabase/supabaseClient';
 
-// Mock Supabase
-vi.mock('@server/supabase/supabaseClient', () => ({
-  supabase: {
+// Create mock functions that will be reused
+const mockGetSession = vi.fn();
+const mockGetUser = vi.fn();
+const mockFrom = vi.fn();
+const mockRpc = vi.fn();
+
+// Mock the Supabase client factory - must return the same mock instance
+vi.mock('@shared/utils/supabase/client', () => ({
+  createClient: vi.fn(() => ({
     auth: {
-      getSession: vi.fn(),
-      getUser: vi.fn(),
+      getSession: mockGetSession,
+      getUser: mockGetUser,
     },
-    from: vi.fn(() => ({
-      select: vi.fn(() => ({
-        eq: vi.fn(() => ({
-          single: vi.fn(),
-          maybeSingle: vi.fn(),
-          in: vi.fn(() => ({
-            order: vi.fn(() => ({
-              limit: vi.fn(() => ({
-                single: vi.fn(),
-                maybeSingle: vi.fn(),
-              })),
-            })),
-          })),
-        })),
-      })),
-    })),
-    rpc: vi.fn(),
-  },
+    from: mockFrom,
+    rpc: mockRpc,
+  })),
 }));
 
 // Mock fetch
@@ -46,7 +36,7 @@ describe('StripeService', () => {
 
   describe('createCheckoutSession', () => {
     it('should throw error when user is not authenticated', async () => {
-      vi.mocked(supabase.auth.getSession).mockResolvedValue({
+      mockGetSession.mockResolvedValue({
         data: { session: null },
         error: null,
       });
@@ -58,7 +48,7 @@ describe('StripeService', () => {
 
     it('should create checkout session with valid data', async () => {
       const mockSession = { access_token: 'test_token' };
-      vi.mocked(supabase.auth.getSession).mockResolvedValue({
+      mockGetSession.mockResolvedValue({
         data: { session: mockSession },
         error: null,
       });
@@ -99,7 +89,7 @@ describe('StripeService', () => {
 
     it('should handle unwrapped response format', async () => {
       const mockSession = { access_token: 'test_token' };
-      vi.mocked(supabase.auth.getSession).mockResolvedValue({
+      mockGetSession.mockResolvedValue({
         data: { session: mockSession },
         error: null,
       });
@@ -121,7 +111,7 @@ describe('StripeService', () => {
 
     it('should throw error when API call fails', async () => {
       const mockSession = { access_token: 'test_token' };
-      vi.mocked(supabase.auth.getSession).mockResolvedValue({
+      mockGetSession.mockResolvedValue({
         data: { session: mockSession },
         error: null,
       });
@@ -141,7 +131,7 @@ describe('StripeService', () => {
 
     it('should throw error when no error message in response', async () => {
       const mockSession = { access_token: 'test_token' };
-      vi.mocked(supabase.auth.getSession).mockResolvedValue({
+      mockGetSession.mockResolvedValue({
         data: { session: mockSession },
         error: null,
       });
@@ -161,7 +151,7 @@ describe('StripeService', () => {
   describe('redirectToCheckout', () => {
     it('should redirect to checkout URL', async () => {
       const mockSession = { access_token: 'test_token' };
-      vi.mocked(supabase.auth.getSession).mockResolvedValue({
+      mockGetSession.mockResolvedValue({
         data: { session: mockSession },
         error: null,
       });
@@ -183,7 +173,7 @@ describe('StripeService', () => {
 
   describe('getUserProfile', () => {
     it('should return null when user is not authenticated', async () => {
-      vi.mocked(supabase.auth.getUser).mockResolvedValue({
+      mockGetUser.mockResolvedValue({
         data: { user: null },
         error: null,
       });
@@ -194,12 +184,12 @@ describe('StripeService', () => {
 
     it('should return null when profile fetch fails', async () => {
       const mockUser = { id: 'user_123' };
-      vi.mocked(supabase.auth.getUser).mockResolvedValue({
+      mockGetUser.mockResolvedValue({
         data: { user: mockUser },
         error: null,
       });
 
-      const mockFrom = vi.fn().mockReturnValue({
+      mockFrom.mockReturnValue({
         select: vi.fn().mockReturnValue({
           eq: vi.fn().mockReturnValue({
             maybeSingle: vi.fn().mockResolvedValue({
@@ -209,8 +199,6 @@ describe('StripeService', () => {
           }),
         }),
       });
-
-      vi.mocked(supabase.from).mockImplementation(mockFrom);
 
       const result = await StripeService.getUserProfile();
       expect(result).toBeNull();
@@ -224,12 +212,12 @@ describe('StripeService', () => {
         stripe_customer_id: 'cus_123',
       };
 
-      vi.mocked(supabase.auth.getUser).mockResolvedValue({
+      mockGetUser.mockResolvedValue({
         data: { user: mockUser },
         error: null,
       });
 
-      const mockFrom = vi.fn().mockReturnValue({
+      mockFrom.mockReturnValue({
         select: vi.fn().mockReturnValue({
           eq: vi.fn().mockReturnValue({
             maybeSingle: vi.fn().mockResolvedValue({
@@ -240,8 +228,6 @@ describe('StripeService', () => {
         }),
       });
 
-      vi.mocked(supabase.from).mockImplementation(mockFrom);
-
       const result = await StripeService.getUserProfile();
       expect(result).toEqual(mockProfile);
     });
@@ -249,7 +235,7 @@ describe('StripeService', () => {
 
   describe('getActiveSubscription', () => {
     it('should return null when user is not authenticated', async () => {
-      vi.mocked(supabase.auth.getUser).mockResolvedValue({
+      mockGetUser.mockResolvedValue({
         data: { user: null },
         error: null,
       });
@@ -260,12 +246,12 @@ describe('StripeService', () => {
 
     it('should return null when no active subscription', async () => {
       const mockUser = { id: 'user_123' };
-      vi.mocked(supabase.auth.getUser).mockResolvedValue({
+      mockGetUser.mockResolvedValue({
         data: { user: mockUser },
         error: null,
       });
 
-      const mockFrom = vi.fn().mockReturnValue({
+      mockFrom.mockReturnValue({
         select: vi.fn().mockReturnValue({
           eq: vi.fn().mockReturnValue({
             in: vi.fn().mockReturnValue({
@@ -282,8 +268,6 @@ describe('StripeService', () => {
         }),
       });
 
-      vi.mocked(supabase.from).mockImplementation(mockFrom);
-
       const result = await StripeService.getActiveSubscription();
       expect(result).toBeNull();
     });
@@ -297,12 +281,12 @@ describe('StripeService', () => {
         price_id: 'price_123',
       };
 
-      vi.mocked(supabase.auth.getUser).mockResolvedValue({
+      mockGetUser.mockResolvedValue({
         data: { user: mockUser },
         error: null,
       });
 
-      const mockFrom = vi.fn().mockReturnValue({
+      mockFrom.mockReturnValue({
         select: vi.fn().mockReturnValue({
           eq: vi.fn().mockReturnValue({
             in: vi.fn().mockReturnValue({
@@ -319,8 +303,6 @@ describe('StripeService', () => {
         }),
       });
 
-      vi.mocked(supabase.from).mockImplementation(mockFrom);
-
       const result = await StripeService.getActiveSubscription();
       expect(result).toEqual(mockSubscription);
     });
@@ -328,7 +310,7 @@ describe('StripeService', () => {
 
   describe('hasSufficientCredits', () => {
     it('should return false when user is not authenticated', async () => {
-      vi.mocked(supabase.auth.getUser).mockResolvedValue({
+      mockGetUser.mockResolvedValue({
         data: { user: null },
         error: null,
       });
@@ -339,12 +321,12 @@ describe('StripeService', () => {
 
     it('should return false when RPC call fails', async () => {
       const mockUser = { id: 'user_123' };
-      vi.mocked(supabase.auth.getUser).mockResolvedValue({
+      mockGetUser.mockResolvedValue({
         data: { user: mockUser },
         error: null,
       });
 
-      vi.mocked(supabase.rpc).mockResolvedValue({
+      mockRpc.mockResolvedValue({
         data: null,
         error: { message: 'RPC error' },
       });
@@ -355,12 +337,12 @@ describe('StripeService', () => {
 
     it('should return true when user has sufficient credits', async () => {
       const mockUser = { id: 'user_123' };
-      vi.mocked(supabase.auth.getUser).mockResolvedValue({
+      mockGetUser.mockResolvedValue({
         data: { user: mockUser },
         error: null,
       });
 
-      vi.mocked(supabase.rpc).mockResolvedValue({
+      mockRpc.mockResolvedValue({
         data: true,
         error: null,
       });
@@ -368,7 +350,7 @@ describe('StripeService', () => {
       const result = await StripeService.hasSufficientCredits(50);
       expect(result).toBe(true);
 
-      expect(supabase.rpc).toHaveBeenCalledWith('has_sufficient_credits', {
+      expect(mockRpc).toHaveBeenCalledWith('has_sufficient_credits', {
         target_user_id: 'user_123',
         required_amount: 50,
       });
@@ -377,7 +359,7 @@ describe('StripeService', () => {
 
   describe('decrementCredits', () => {
     it('should throw error when user is not authenticated', async () => {
-      vi.mocked(supabase.auth.getUser).mockResolvedValue({
+      mockGetUser.mockResolvedValue({
         data: { user: null },
         error: null,
       });
@@ -387,12 +369,12 @@ describe('StripeService', () => {
 
     it('should throw error when RPC call fails', async () => {
       const mockUser = { id: 'user_123' };
-      vi.mocked(supabase.auth.getUser).mockResolvedValue({
+      mockGetUser.mockResolvedValue({
         data: { user: mockUser },
         error: null,
       });
 
-      vi.mocked(supabase.rpc).mockResolvedValue({
+      mockRpc.mockResolvedValue({
         data: null,
         error: { message: 'Insufficient credits' },
       });
@@ -402,12 +384,12 @@ describe('StripeService', () => {
 
     it('should return new credits balance when successful', async () => {
       const mockUser = { id: 'user_123' };
-      vi.mocked(supabase.auth.getUser).mockResolvedValue({
+      mockGetUser.mockResolvedValue({
         data: { user: mockUser },
         error: null,
       });
 
-      vi.mocked(supabase.rpc).mockResolvedValue({
+      mockRpc.mockResolvedValue({
         data: 90,
         error: null,
       });
@@ -415,7 +397,7 @@ describe('StripeService', () => {
       const result = await StripeService.decrementCredits(10);
       expect(result).toBe(90);
 
-      expect(supabase.rpc).toHaveBeenCalledWith('decrement_credits', {
+      expect(mockRpc).toHaveBeenCalledWith('decrement_credits', {
         target_user_id: 'user_123',
         amount: 10,
       });
@@ -424,7 +406,7 @@ describe('StripeService', () => {
 
   describe('createPortalSession', () => {
     it('should throw error when user is not authenticated', async () => {
-      vi.mocked(supabase.auth.getSession).mockResolvedValue({
+      mockGetSession.mockResolvedValue({
         data: { session: null },
         error: null,
       });
@@ -434,7 +416,7 @@ describe('StripeService', () => {
 
     it('should create portal session with valid session', async () => {
       const mockSession = { access_token: 'test_token' };
-      vi.mocked(supabase.auth.getSession).mockResolvedValue({
+      mockGetSession.mockResolvedValue({
         data: { session: mockSession },
         error: null,
       });
@@ -465,7 +447,7 @@ describe('StripeService', () => {
 
     it('should throw error when API call fails', async () => {
       const mockSession = { access_token: 'test_token' };
-      vi.mocked(supabase.auth.getSession).mockResolvedValue({
+      mockGetSession.mockResolvedValue({
         data: { session: mockSession },
         error: null,
       });
@@ -485,7 +467,7 @@ describe('StripeService', () => {
   describe('redirectToPortal', () => {
     it('should redirect to portal URL', async () => {
       const mockSession = { access_token: 'test_token' };
-      vi.mocked(supabase.auth.getSession).mockResolvedValue({
+      mockGetSession.mockResolvedValue({
         data: { session: mockSession },
         error: null,
       });
@@ -506,7 +488,7 @@ describe('StripeService', () => {
 
     it('should handle undefined URL gracefully', async () => {
       const mockSession = { access_token: 'test_token' };
-      vi.mocked(supabase.auth.getSession).mockResolvedValue({
+      mockGetSession.mockResolvedValue({
         data: { session: mockSession },
         error: null,
       });

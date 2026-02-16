@@ -9,7 +9,8 @@
 
 import { BaseController } from './BaseController';
 import { requireAdmin, type IAdminCheckResult } from '../middleware/requireAdmin';
-import { blogService, generateSlug } from '../services/blog.service';
+import { blogService } from '../services/blog.service';
+import { generateSlug } from '@shared/utils/string';
 import { supabaseAdmin } from '../supabase/supabaseAdmin';
 import type {
   IBlogPostCreate,
@@ -381,7 +382,11 @@ export class BlogController extends BaseController {
 
       const allowedTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
       if (!allowedTypes.includes(file.type)) {
-        return this.error('VALIDATION_ERROR', 'Invalid file type. Allowed: JPEG, PNG, WebP, GIF', 400);
+        return this.error(
+          'VALIDATION_ERROR',
+          'Invalid file type. Allowed: JPEG, PNG, WebP, GIF',
+          400
+        );
       }
 
       const maxSize = 5 * 1024 * 1024;

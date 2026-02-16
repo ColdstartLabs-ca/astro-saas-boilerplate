@@ -1,16 +1,15 @@
 /**
  * Campaign Service
- * Server-side business logic for campaign CRUD and bulk article generation
  *
- * Handles:
- * - Campaign creation with keyword batch insertion
- * - Campaign retrieval with ownership enforcement
- * - Campaign updates and deletion
- * - Keyword management (add, remove, list)
- * - Bulk article generation orchestration
+ * Facade for campaign-related operations.
+ * Delegates to specialized services:
+ * - CampaignLifecycleService: creation, updates, status transitions, deletion
+ * - CampaignKeywordService: keyword management operations
+ * - CampaignSchedulingService: scheduling execution and cron handling
+ *
+ * Maintains backward compatibility with existing API.
  */
 
-import { supabaseAdmin } from '@server/supabase/supabaseAdmin';
 import {
   type ICampaign,
   type IKeyword,
@@ -19,140 +18,45 @@ import {
   type IUpdateCampaignInput,
   type ICampaignArticleStats,
   type ICampaignCreditStats,
-  type ScheduleFrequency,
   CampaignNotFoundError,
   InsufficientCreditsError,
   NoPendingKeywordsError,
-  ScheduleValidationError,
 } from '@shared/types/campaign.types';
-import { isAvailableImagePreset } from '@shared/config/image-models.config';
-import { isAvailableWriterPreset } from '@shared/config/ai-models.config';
-import { calculateArticleCreditCost } from '@shared/constants';
 import { serverEnv } from '@shared/config/env';
-import { articleGenerationService } from './article-generation.service';
-import { AppError } from '@shared/utils/errors';
-import {
-  createCampaignSchema,
-  updateCampaignSchema,
-  addKeywordsWithCampaignSchema,
-} from '@shared/validation/campaign.schema';
-import {
-  calculateNextRunAt,
-  DEFAULT_SCHEDULE_TIMEZONE,
-  DEFAULT_SCHEDULE_HOUR,
-} from '@shared/config/scheduling.config';
+import { calculateArticleCreditCost } from '@shared/constants';
+import { campaignLifecycleService, testModeCampaigns } from './campaign-lifecycle.service';
+import { campaignKeywordService } from './campaign-keyword.service';
+import { campaignSchedulingService } from './campaign-scheduling.service';
+import { supabaseAdmin } from '@server/supabase/supabaseAdmin';
 
 // =============================================================================
-// Campaign Service Class
-// ============================================================================
+// Re-export test mode campaigns for backward compatibility
+// =============================================================================
 
-// In-memory test mode keyword (partial IKeyword for test mocking)
-interface ITestModeKeyword {
-  id: string;
-  campaign_id: string;
-  keyword: string;
-  status: 'pending' | 'queued' | 'generating' | 'generated' | 'failed';
-  difficulty: 'easy' | 'medium' | 'hard' | 'unknown';
-  priority: number;
-}
+// Re-export for any code that imports directly from campaign.service
+export { testModeCampaigns } from './campaign-lifecycle.service';
 
-// In-memory test data store for test mode
-// This avoids database operations when using mock users
-const testModeCampaigns = new Map<string, ICampaign & { keywords?: ITestModeKeyword[] }>();
+// =============================================================================
+// Campaign Service Class (Facade)
+// =============================================================================
 
 export class CampaignService {
+  // ===========================================================================
+  // Lifecycle Methods - Delegate to CampaignLifecycleService
+  // ===========================================================================
+
   /**
    * List all campaigns for a project with aggregated stats
    */
   async listByProject(userId: string, projectId: string): Promise<ICampaignWithStats[]> {
-    await this.verifyProjectOwnership(projectId, userId);
-
-    // Get campaigns with keyword and article counts
-    const { data, error } = await supabaseAdmin
-      .from('campaigns')
-      .select(
-        `
-        *,
-        keywords(count),
-        articles(count)
-      `
-      )
-      .eq('project_id', projectId)
-      .eq('user_id', userId)
-      .order('created_at', { ascending: false });
-
-    if (error) {
-      throw new Error(`Failed to list campaigns: ${error.message}`);
-    }
-
-    // Get campaign IDs
-    const campaignIds = (data as ICampaign[]).map(c => c.id);
-
-    // Fetch completed keyword counts for all campaigns in one query
-    let completedCounts: Record<string, number> = {};
-    if (campaignIds.length > 0) {
-      const { data: completedKeywords } = await supabaseAdmin
-        .from('keywords')
-        .select('campaign_id')
-        .eq('status', 'generated')
-        .in('campaign_id', campaignIds);
-
-      if (completedKeywords) {
-        // Count generated keywords per campaign
-        completedCounts = completedKeywords.reduce(
-          (acc, kw) => {
-            acc[kw.campaign_id] = (acc[kw.campaign_id] || 0) + 1;
-            return acc;
-          },
-          {} as Record<string, number>
-        );
-      }
-    }
-
-    // Transform data to include stats
-    return (
-      data as Array<
-        {
-          keywords: { count: number }[] | null;
-          articles: { count: number }[] | null;
-        } & ICampaign
-      >
-    ).map(campaign => ({
-      ...campaign,
-      keyword_count: campaign.keywords?.[0]?.count ?? 0,
-      article_count: campaign.articles?.[0]?.count ?? 0,
-      completed_count: completedCounts[campaign.id] ?? 0,
-    })) as ICampaignWithStats[];
+    return campaignLifecycleService.listByProject(userId, projectId);
   }
 
   /**
    * Get a single campaign by ID, enforcing ownership
    */
   async getById(campaignId: string, userId: string): Promise<ICampaign | null> {
-    // In test mode with mock users, check the in-memory store
-    if (serverEnv.ENV === 'test' && userId.includes('mock_user_')) {
-      const campaign = testModeCampaigns.get(campaignId);
-      if (campaign && campaign.user_id === userId) {
-        return campaign;
-      }
-      return null;
-    }
-
-    const { data, error } = await supabaseAdmin
-      .from('campaigns')
-      .select('*')
-      .eq('id', campaignId)
-      .eq('user_id', userId)
-      .single();
-
-    if (error) {
-      if (error.code === 'PGRST116') {
-        return null;
-      }
-      throw new Error(`Failed to get campaign: ${error.message}`);
-    }
-
-    return data as ICampaign;
+    return campaignLifecycleService.getById(campaignId, userId);
   }
 
   /**
@@ -172,219 +76,17 @@ export class CampaignService {
       return null;
     }
 
-    // In test mode, get keywords from in-memory store
-    let keywords: IKeyword[] = [];
-    if (serverEnv.ENV === 'test' && userId.includes('mock_user_')) {
-      const campaignWithKeywords = testModeCampaigns.get(campaignId);
-      // Cast test mode keywords to IKeyword (partial implementation for testing)
-      keywords = (campaignWithKeywords?.keywords ?? []) as unknown as IKeyword[];
-    } else {
-      // Get keywords from database
-      const { data: keywordsData, error: keywordsError } = await supabaseAdmin
-        .from('keywords')
-        .select('*')
-        .eq('campaign_id', campaignId)
-        .order('priority', { ascending: false })
-        .order('created_at', { ascending: true });
+    // Get keywords via keyword service
+    const keywords = await this.getKeywords(campaignId, userId);
 
-      if (keywordsError) {
-        throw new Error(`Failed to get keywords: ${keywordsError.message}`);
-      }
-      keywords = keywordsData as IKeyword[];
-    }
-
-    // Get article stats (empty in test mode)
-    let articles: Array<{ status: string; credits_used?: number }> = [];
-    if (serverEnv.ENV === 'test' && userId.includes('mock_user_')) {
-      // In test mode, articles are always empty (no real generation happens)
-      articles = [];
-    } else {
-      // Get article stats from database
-      const { data: articlesData, error: articlesError } = await supabaseAdmin
-        .from('articles')
-        .select('status, credits_used')
-        .eq('campaign_id', campaignId);
-
-      if (articlesError) {
-        throw new Error(`Failed to get article stats: ${articlesError.message}`);
-      }
-      articles = articlesData as Array<{ status: string; credits_used?: number }>;
-    }
-
-    // Compute article stats
-    const stats: ICampaignArticleStats = {
-      queued: 0,
-      generating: 0,
-      draft: 0,
-      published: 0,
-      total: articles?.length ?? 0,
-    };
-
-    // Compute credit stats
-    const creditStats: ICampaignCreditStats = {
-      creditsUsed: 0,
-      creditsRefunded: 0,
-      successfulCount: 0,
-      failedCount: 0,
-      costPerArticle: calculateArticleCreditCost(campaign.ai_model, campaign.image_preset),
-      estimatedCreditsRemaining: 0,
-      totalCreditsRequired: 0,
-    };
-
-    for (const article of articles ?? []) {
-      switch (article.status) {
-        // Intermediate statuses - credits pre-charged, article not yet complete
-        case 'queued':
-          stats.queued++;
-          break;
-        case 'generating':
-        case 'qa_checking':
-          stats.generating++;
-          creditStats.creditsUsed += article.credits_used ?? 0;
-          break;
-
-        // Success statuses - generation completed, credits stay charged
-        case 'draft':
-        case 'reviewed':
-        case 'qa_passed':
-        case 'approved':
-        case 'published':
-          stats.draft++;
-          if (article.status === 'published') {
-            stats.published++;
-          }
-          creditStats.creditsUsed += article.credits_used ?? 0;
-          creditStats.successfulCount++;
-          break;
-
-        // Failure statuses - credits refunded
-        case 'failed':
-        case 'failed_quality':
-        case 'failed_timeout':
-        case 'qa_failed':
-        case 'rejected':
-          creditStats.creditsRefunded += article.credits_used ?? 0;
-          creditStats.failedCount++;
-          break;
-      }
-    }
-
-    // Count pending keywords for remaining credits estimate
-    const pendingCount =
-      keywords?.filter(k => k.status === 'pending' || k.status === 'queued').length ?? 0;
-    creditStats.estimatedCreditsRemaining = pendingCount * creditStats.costPerArticle;
-    creditStats.totalCreditsRequired =
-      creditStats.creditsUsed + creditStats.estimatedCreditsRemaining;
-
-    return {
-      campaign,
-      keywords: keywords as IKeyword[],
-      articleStats: stats,
-      creditStats,
-    };
+    return campaignLifecycleService.getDetail(campaignId, userId, keywords);
   }
 
   /**
    * Create a new campaign with keywords
    */
   async create(userId: string, input: ICreateCampaignInput): Promise<ICampaign> {
-    // Validate input
-    const validated = createCampaignSchema.parse(input);
-
-    // Server-side validation: check if model is available
-    if (
-      validated.model &&
-      !isAvailableWriterPreset(validated.model, serverEnv.AVAILABLE_WRITER_PRESETS)
-    ) {
-      throw new AppError('MODEL_NOT_AVAILABLE', 'Selected writer model is not available', 400);
-    }
-
-    // Server-side validation: check if image preset is available
-    if (
-      validated.imagePreset &&
-      !isAvailableImagePreset(validated.imagePreset, serverEnv.AVAILABLE_IMAGE_PRESETS)
-    ) {
-      throw new AppError('MODEL_NOT_AVAILABLE', 'Selected image preset is not available', 400);
-    }
-
-    await this.verifyProjectOwnership(validated.projectId, userId);
-
-    // In test mode with mock users, store in memory instead of database
-    if (serverEnv.ENV === 'test' && userId.includes('mock_user_')) {
-      const campaignId = crypto.randomUUID();
-      const keywordRows = this.buildKeywordRows(campaignId, validated.keywords);
-      // Add ids to keywords for test mode
-      const keywords: ITestModeKeyword[] = keywordRows.map(kw => ({
-        ...kw,
-        id: crypto.randomUUID(),
-      }));
-      const campaign: ICampaign & { keywords?: ITestModeKeyword[] } = {
-        id: campaignId,
-        user_id: userId,
-        project_id: validated.projectId,
-        name: validated.name,
-        status: 'draft',
-        ai_model: validated.model || 'pro',
-        tone: validated.tone || 'professional',
-        target_word_count: validated.targetWordCount || 1500,
-        settings: {},
-        image_preset: validated.imagePreset || null,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-        generation_run_id: null,
-        // Schedule fields
-        schedule_frequency: validated.scheduleFrequency || null,
-        schedule_batch_size: validated.scheduleBatchSize || 1,
-        next_run_at: null,
-        last_run_at: null,
-        schedule_timezone: validated.scheduleTimezone || DEFAULT_SCHEDULE_TIMEZONE,
-        schedule_hour: validated.scheduleHour ?? DEFAULT_SCHEDULE_HOUR,
-        // Test mode keywords
-        keywords,
-      };
-      testModeCampaigns.set(campaignId, campaign);
-      return campaign;
-    }
-
-    // Create campaign
-    const { data: campaign, error: campaignError } = await supabaseAdmin
-      .from('campaigns')
-      .insert({
-        user_id: userId,
-        project_id: validated.projectId,
-        name: validated.name,
-        status: 'draft',
-        ai_model: validated.model || 'pro',
-        tone: validated.tone || 'professional',
-        target_word_count: validated.targetWordCount || 1500,
-        settings: {},
-        image_preset: validated.imagePreset || null,
-        schedule_frequency: validated.scheduleFrequency || null,
-        schedule_batch_size: validated.scheduleBatchSize || 1,
-        schedule_timezone: validated.scheduleTimezone || DEFAULT_SCHEDULE_TIMEZONE,
-        schedule_hour: validated.scheduleHour ?? DEFAULT_SCHEDULE_HOUR,
-      })
-      .select()
-      .single();
-
-    if (campaignError || !campaign) {
-      throw new Error(`Failed to create campaign: ${campaignError?.message ?? 'Unknown error'}`);
-    }
-
-    // Batch insert keywords (skip duplicates via ON CONFLICT)
-    const keywordRows = this.buildKeywordRows(
-      campaign.id,
-      validated.keywords.map(k => k.trim())
-    );
-
-    const { error: keywordsError } = await supabaseAdmin.from('keywords').insert(keywordRows);
-
-    // Ignore duplicate key errors (ON CONFLICT DO NOTHING equivalent)
-    if (keywordsError && keywordsError.code !== '23505') {
-      throw new Error(`Failed to add keywords: ${keywordsError.message}`);
-    }
-
-    return campaign as ICampaign;
+    return campaignLifecycleService.create(userId, input);
   }
 
   /**
@@ -395,125 +97,7 @@ export class CampaignService {
     userId: string,
     input: IUpdateCampaignInput
   ): Promise<ICampaign> {
-    // Validate input
-    const validated = updateCampaignSchema.parse(input);
-
-    // Server-side validation: check if model is available
-    if (
-      validated.model &&
-      !isAvailableWriterPreset(validated.model, serverEnv.AVAILABLE_WRITER_PRESETS)
-    ) {
-      throw new AppError('MODEL_NOT_AVAILABLE', 'Selected writer model is not available', 400);
-    }
-
-    // Server-side validation: check if image preset is available
-    if (
-      validated.imagePreset &&
-      !isAvailableImagePreset(validated.imagePreset, serverEnv.AVAILABLE_IMAGE_PRESETS)
-    ) {
-      throw new AppError('MODEL_NOT_AVAILABLE', 'Selected image preset is not available', 400);
-    }
-
-    // In test mode with mock users, update in-memory store
-    if (serverEnv.ENV === 'test' && userId.includes('mock_user_')) {
-      const campaign = testModeCampaigns.get(campaignId);
-      if (!campaign || campaign.user_id !== userId) {
-        throw new CampaignNotFoundError(campaignId);
-      }
-
-      // Update fields
-      if (validated.name !== undefined) campaign.name = validated.name;
-      if (validated.model !== undefined) campaign.ai_model = validated.model;
-      if (validated.tone !== undefined) campaign.tone = validated.tone;
-      if (validated.targetWordCount !== undefined)
-        campaign.target_word_count = validated.targetWordCount;
-      if (validated.imagePreset !== undefined) campaign.image_preset = validated.imagePreset;
-      // Status for pause/resume (non-scheduled campaigns)
-      if (validated.status !== undefined) campaign.status = validated.status;
-      // Schedule fields
-      if (validated.scheduleFrequency !== undefined)
-        campaign.schedule_frequency = validated.scheduleFrequency;
-      if (validated.scheduleBatchSize !== undefined)
-        campaign.schedule_batch_size = validated.scheduleBatchSize;
-      if (validated.scheduleTimezone !== undefined)
-        campaign.schedule_timezone = validated.scheduleTimezone;
-      if (validated.scheduleHour !== undefined) campaign.schedule_hour = validated.scheduleHour;
-
-      campaign.updated_at = new Date().toISOString();
-      testModeCampaigns.set(campaignId, campaign);
-      return campaign;
-    }
-
-    // Build update object with only provided fields
-    const updates: Record<string, unknown> = {};
-
-    if (validated.name !== undefined) updates.name = validated.name;
-    if (validated.model !== undefined) updates.ai_model = validated.model;
-    if (validated.tone !== undefined) updates.tone = validated.tone;
-    if (validated.targetWordCount !== undefined)
-      updates.target_word_count = validated.targetWordCount;
-    if (validated.imagePreset !== undefined) updates.image_preset = validated.imagePreset;
-    // Status for pause/resume (non-scheduled campaigns)
-    if (validated.status !== undefined) updates.status = validated.status;
-    // Schedule fields
-    if (validated.scheduleFrequency !== undefined)
-      updates.schedule_frequency = validated.scheduleFrequency;
-    if (validated.scheduleBatchSize !== undefined)
-      updates.schedule_batch_size = validated.scheduleBatchSize;
-    if (validated.scheduleTimezone !== undefined)
-      updates.schedule_timezone = validated.scheduleTimezone;
-    if (validated.scheduleHour !== undefined) updates.schedule_hour = validated.scheduleHour;
-
-    // If schedule config changed on a scheduled campaign, recalculate next_run_at
-    const scheduleFieldsChanged =
-      validated.scheduleFrequency !== undefined ||
-      validated.scheduleTimezone !== undefined ||
-      validated.scheduleHour !== undefined;
-
-    if (scheduleFieldsChanged) {
-      // Get current campaign to check if it's scheduled
-      const { data: currentCampaign } = await supabaseAdmin
-        .from('campaigns')
-        .select('status, schedule_frequency, schedule_timezone, schedule_hour')
-        .eq('id', campaignId)
-        .eq('user_id', userId)
-        .single();
-
-      if (currentCampaign && currentCampaign.status === 'scheduled') {
-        // Recalculate next_run_at using the updated values (or current values if not updated)
-        const frequency = (validated.scheduleFrequency ??
-          currentCampaign.schedule_frequency) as ScheduleFrequency;
-        const timezone = validated.scheduleTimezone ?? currentCampaign.schedule_timezone;
-        const hour = validated.scheduleHour ?? currentCampaign.schedule_hour;
-
-        if (frequency) {
-          const newNextRunAt = calculateNextRunAt(
-            frequency,
-            timezone || DEFAULT_SCHEDULE_TIMEZONE,
-            hour ?? DEFAULT_SCHEDULE_HOUR
-          );
-          updates.next_run_at = newNextRunAt;
-        }
-      }
-    }
-
-    // Update campaign with ownership check
-    const { data, error } = await supabaseAdmin
-      .from('campaigns')
-      .update(updates)
-      .eq('id', campaignId)
-      .eq('user_id', userId)
-      .select()
-      .single();
-
-    if (error) {
-      if (error.code === 'PGRST116') {
-        throw new CampaignNotFoundError(campaignId);
-      }
-      throw new Error(`Failed to update campaign: ${error.message}`);
-    }
-
-    return data as ICampaign;
+    return campaignLifecycleService.update(campaignId, userId, input);
   }
 
   /**
@@ -521,16 +105,12 @@ export class CampaignService {
    * Keywords and articles cascade delete via FK
    */
   async delete(campaignId: string, userId: string): Promise<void> {
-    const { error } = await supabaseAdmin
-      .from('campaigns')
-      .delete()
-      .eq('id', campaignId)
-      .eq('user_id', userId);
-
-    if (error) {
-      throw new Error(`Failed to delete campaign: ${error.message}`);
-    }
+    return campaignLifecycleService.delete(campaignId, userId);
   }
+
+  // ===========================================================================
+  // Keyword Methods - Delegate to CampaignKeywordService
+  // ===========================================================================
 
   /**
    * Add keywords to an existing campaign
@@ -543,109 +123,26 @@ export class CampaignService {
     added: number;
     duplicates: number;
   }> {
-    // Validate
-    addKeywordsWithCampaignSchema.parse({ campaignId, keywords });
-
-    // Verify campaign ownership
-    const campaign = await this.getById(campaignId, userId);
-    if (!campaign) {
-      throw new CampaignNotFoundError(campaignId);
-    }
-
-    // Get existing normalized keywords to count duplicates
-    const { data: existingKeywords } = await supabaseAdmin
-      .from('keywords')
-      .select('keyword_normalized')
-      .eq('campaign_id', campaignId);
-
-    const existingSet = new Set(existingKeywords?.map(k => k.keyword_normalized) ?? []);
-    const newKeywords = keywords.map(k => k.trim()).filter(k => k.length > 0);
-
-    // Normalize using the same logic as the DB constraint
-    const normalizeKeyword = (kw: string) => kw.trim().toLowerCase().replace(/\s+/g, ' ');
-
-    const uniqueNew: string[] = [];
-    const duplicates: string[] = [];
-
-    for (const kw of newKeywords) {
-      const normalized = normalizeKeyword(kw);
-      if (existingSet.has(normalized)) {
-        duplicates.push(kw);
-      } else {
-        uniqueNew.push(kw);
-        existingSet.add(normalized); // Track within batch to avoid duplicates in same request
-      }
-    }
-
-    // Batch insert unique keywords
-    const keywordRows = this.buildKeywordRows(campaignId, uniqueNew);
-
-    if (keywordRows.length > 0) {
-      const { error } = await supabaseAdmin.from('keywords').insert(keywordRows);
-
-      if (error && error.code !== '23505') {
-        throw new Error(`Failed to add keywords: ${error.message}`);
-      }
-    }
-
-    return {
-      added: uniqueNew.length,
-      duplicates: duplicates.length,
-    };
+    return campaignKeywordService.addKeywords(campaignId, userId, keywords);
   }
 
   /**
    * Remove a single keyword with ownership check through campaign
    */
   async removeKeyword(keywordId: string, userId: string): Promise<void> {
-    // First verify ownership by getting the keyword's campaign
-    const { data: keyword } = await supabaseAdmin
-      .from('keywords')
-      .select('campaign_id')
-      .eq('id', keywordId)
-      .single();
-
-    if (!keyword) {
-      throw new Error('Keyword not found');
-    }
-
-    // Verify campaign ownership
-    const campaign = await this.getById(keyword.campaign_id, userId);
-    if (!campaign) {
-      throw new CampaignNotFoundError(keyword.campaign_id);
-    }
-
-    // Delete keyword
-    const { error } = await supabaseAdmin.from('keywords').delete().eq('id', keywordId);
-
-    if (error) {
-      throw new Error(`Failed to remove keyword: ${error.message}`);
-    }
+    return campaignKeywordService.removeKeyword(keywordId, userId);
   }
 
   /**
    * List keywords for a campaign
    */
   async getKeywords(campaignId: string, userId: string): Promise<IKeyword[]> {
-    // Verify campaign ownership
-    const campaign = await this.getById(campaignId, userId);
-    if (!campaign) {
-      throw new CampaignNotFoundError(campaignId);
-    }
-
-    const { data, error } = await supabaseAdmin
-      .from('keywords')
-      .select('*')
-      .eq('campaign_id', campaignId)
-      .order('priority', { ascending: false })
-      .order('created_at', { ascending: true });
-
-    if (error) {
-      throw new Error(`Failed to get keywords: ${error.message}`);
-    }
-
-    return data as IKeyword[];
+    return campaignKeywordService.getKeywords(campaignId, userId);
   }
+
+  // ===========================================================================
+  // Generation Methods - Keep in facade for now (complex orchestration)
+  // ===========================================================================
 
   /**
    * Start bulk article generation for a campaign with idempotency support
@@ -878,8 +375,6 @@ export class CampaignService {
         throw new Error('Failed to create article records - no data returned from RPC');
       }
 
-      const _result = batchResult[0];
-
       // Update keywords to queued status (after successful article creation and credit deduction)
       const keywordIds = pendingKeywords.map(k => k.id);
       await supabaseAdmin.from('keywords').update({ status: 'queued' }).in('id', keywordIds);
@@ -929,7 +424,7 @@ export class CampaignService {
   }
 
   // ===========================================================================
-  // Schedule Management Methods
+  // Schedule Management Methods - Delegate to CampaignSchedulingService
   // ===========================================================================
 
   /**
@@ -946,67 +441,14 @@ export class CampaignService {
     campaignId: string,
     userId: string
   ): Promise<{ nextRunAt: string; pendingKeywords: number }> {
-    // Get campaign with ownership check
     const campaign = await this.getById(campaignId, userId);
-    if (!campaign) {
-      throw new CampaignNotFoundError(campaignId);
-    }
-
-    // Validate campaign has schedule configuration
-    if (!campaign.schedule_frequency) {
-      throw new ScheduleValidationError(
-        'Cannot start schedule: campaign has no schedule configuration. Please set a schedule frequency first.'
-      );
-    }
-
-    // Validate campaign is in a state that can start scheduling (draft or paused)
-    if (campaign.status !== 'draft' && campaign.status !== 'paused') {
-      throw new ScheduleValidationError(
-        `Cannot start schedule: campaign status is '${campaign.status}'. Only draft or paused campaigns can be scheduled.`
-      );
-    }
-
-    // Get pending keywords count
-    const pendingKeywords = await this.getPendingKeywordCount(campaignId);
-
-    // Validate campaign has pending keywords
-    if (pendingKeywords === 0) {
-      throw new NoPendingKeywordsError();
-    }
-
-    // Calculate next run time using schedule config
-    const nextRunAt = calculateNextRunAt(
-      campaign.schedule_frequency as ScheduleFrequency,
-      campaign.schedule_timezone || DEFAULT_SCHEDULE_TIMEZONE,
-      campaign.schedule_hour ?? DEFAULT_SCHEDULE_HOUR
+    const pendingKeywordCount = await campaignKeywordService.getPendingKeywordCount(campaignId);
+    return campaignSchedulingService.startSchedule(
+      campaignId,
+      userId,
+      campaign,
+      pendingKeywordCount
     );
-
-    // In test mode with mock users, update in-memory store
-    if (serverEnv.ENV === 'test' && userId.includes('mock_user_')) {
-      const campaignData = testModeCampaigns.get(campaignId);
-      if (campaignData) {
-        campaignData.status = 'scheduled';
-        campaignData.next_run_at = nextRunAt;
-        testModeCampaigns.set(campaignId, campaignData);
-      }
-      return { nextRunAt, pendingKeywords };
-    }
-
-    // Update campaign status and next_run_at
-    const { error } = await supabaseAdmin
-      .from('campaigns')
-      .update({
-        status: 'scheduled',
-        next_run_at: nextRunAt,
-      })
-      .eq('id', campaignId)
-      .eq('user_id', userId);
-
-    if (error) {
-      throw new Error(`Failed to start schedule: ${error.message}`);
-    }
-
-    return { nextRunAt, pendingKeywords };
   }
 
   /**
@@ -1020,45 +462,8 @@ export class CampaignService {
    * @throws Error if campaign is not in a pausable state
    */
   async pauseSchedule(campaignId: string, userId: string): Promise<{ paused: true }> {
-    // Get campaign with ownership check
     const campaign = await this.getById(campaignId, userId);
-    if (!campaign) {
-      throw new CampaignNotFoundError(campaignId);
-    }
-
-    // Validate campaign is in a state that can be paused (scheduled or active)
-    if (campaign.status !== 'scheduled' && campaign.status !== 'active') {
-      throw new ScheduleValidationError(
-        `Cannot pause schedule: campaign status is '${campaign.status}'. Only scheduled or active campaigns can be paused.`
-      );
-    }
-
-    // In test mode with mock users, update in-memory store
-    if (serverEnv.ENV === 'test' && userId.includes('mock_user_')) {
-      const campaignData = testModeCampaigns.get(campaignId);
-      if (campaignData) {
-        campaignData.status = 'paused';
-        campaignData.next_run_at = null;
-        testModeCampaigns.set(campaignId, campaignData);
-      }
-      return { paused: true };
-    }
-
-    // Update campaign status and clear next_run_at
-    const { error } = await supabaseAdmin
-      .from('campaigns')
-      .update({
-        status: 'paused',
-        next_run_at: null,
-      })
-      .eq('id', campaignId)
-      .eq('user_id', userId);
-
-    if (error) {
-      throw new Error(`Failed to pause schedule: ${error.message}`);
-    }
-
-    return { paused: true };
+    return campaignSchedulingService.pauseSchedule(campaignId, userId, campaign);
   }
 
   /**
@@ -1072,59 +477,8 @@ export class CampaignService {
    * @throws Error if campaign is not paused or lacks schedule config
    */
   async resumeSchedule(campaignId: string, userId: string): Promise<{ nextRunAt: string }> {
-    // Get campaign with ownership check
     const campaign = await this.getById(campaignId, userId);
-    if (!campaign) {
-      throw new CampaignNotFoundError(campaignId);
-    }
-
-    // Validate campaign is paused
-    if (campaign.status !== 'paused') {
-      throw new ScheduleValidationError(
-        `Cannot resume schedule: campaign status is '${campaign.status}'. Only paused campaigns can be resumed.`
-      );
-    }
-
-    // Validate campaign has schedule configuration
-    if (!campaign.schedule_frequency) {
-      throw new ScheduleValidationError(
-        'Cannot resume schedule: campaign has no schedule configuration. Please set a schedule frequency first.'
-      );
-    }
-
-    // Calculate next run time using schedule config
-    const nextRunAt = calculateNextRunAt(
-      campaign.schedule_frequency as ScheduleFrequency,
-      campaign.schedule_timezone || DEFAULT_SCHEDULE_TIMEZONE,
-      campaign.schedule_hour ?? DEFAULT_SCHEDULE_HOUR
-    );
-
-    // In test mode with mock users, update in-memory store
-    if (serverEnv.ENV === 'test' && userId.includes('mock_user_')) {
-      const campaignData = testModeCampaigns.get(campaignId);
-      if (campaignData) {
-        campaignData.status = 'scheduled';
-        campaignData.next_run_at = nextRunAt;
-        testModeCampaigns.set(campaignId, campaignData);
-      }
-      return { nextRunAt };
-    }
-
-    // Update campaign status and next_run_at
-    const { error } = await supabaseAdmin
-      .from('campaigns')
-      .update({
-        status: 'scheduled',
-        next_run_at: nextRunAt,
-      })
-      .eq('id', campaignId)
-      .eq('user_id', userId);
-
-    if (error) {
-      throw new Error(`Failed to resume schedule: ${error.message}`);
-    }
-
-    return { nextRunAt };
+    return campaignSchedulingService.resumeSchedule(campaignId, userId, campaign);
   }
 
   /**
@@ -1135,19 +489,7 @@ export class CampaignService {
    * @returns Array of campaigns due for processing
    */
   async getScheduledCampaignsDue(limit: number): Promise<ICampaign[]> {
-    const { data, error } = await supabaseAdmin
-      .from('campaigns')
-      .select('*')
-      .eq('status', 'scheduled')
-      .lte('next_run_at', new Date().toISOString())
-      .order('next_run_at', { ascending: true })
-      .limit(limit);
-
-    if (error) {
-      throw new Error(`Failed to get scheduled campaigns: ${error.message}`);
-    }
-
-    return data || [];
+    return campaignSchedulingService.getScheduledCampaignsDue(limit);
   }
 
   /**
@@ -1168,215 +510,12 @@ export class CampaignService {
     articlesQueued?: number;
     nextRunAt?: string;
   }> {
-    // Atomically claim the campaign (prevents race conditions with concurrent cron runs).
-    // Only transitions from 'scheduled' to 'active' — if another run already claimed it,
-    // the WHERE clause won't match and we'll get no rows back.
-    const { data: claimed, error: claimError } = await supabaseAdmin
-      .from('campaigns')
-      .update({ status: 'active' })
-      .eq('id', campaignId)
-      .eq('status', 'scheduled')
-      .select('*')
-      .single();
-
-    if (claimError || !claimed) {
-      console.log(
-        `[ScheduledBatch] Campaign ${campaignId} already claimed or status changed, skipping`
-      );
-      return {};
-    }
-
-    const campaign = claimed;
-
-    // Get pending keywords (limit by batch_size)
-    const batchSize = campaign.schedule_batch_size || 1;
-    const { data: keywords, error: keywordsError } = await supabaseAdmin
-      .from('keywords')
-      .select('*')
-      .eq('campaign_id', campaignId)
-      .eq('status', 'pending')
-      .order('priority', { ascending: false })
-      .limit(batchSize);
-
-    if (keywordsError) {
-      // On error, set back to scheduled
-      await supabaseAdmin.from('campaigns').update({ status: 'scheduled' }).eq('id', campaignId);
-      throw new Error(`Failed to get pending keywords: ${keywordsError.message}`);
-    }
-
-    // If no pending keywords, mark campaign as completed
-    if (!keywords || keywords.length === 0) {
-      await supabaseAdmin
-        .from('campaigns')
-        .update({ status: 'completed', next_run_at: null })
-        .eq('id', campaignId);
-
-      return { completed: true };
-    }
-
-    // Try to deduct credits and queue articles
-    try {
-      // Calculate credits per article using centralized pricing model
-      const creditsPerArticle = calculateArticleCreditCost(
-        campaign.ai_model,
-        campaign.image_preset
-      );
-      const keywordTexts = keywords.map(k => k.keyword);
-
-      // Call create_articles_with_credits RPC with correct parameters
-      const { error: rpcError } = await supabaseAdmin.rpc('create_articles_with_credits', {
-        p_user_id: campaign.user_id,
-        p_campaign_id: campaignId,
-        p_project_id: campaign.project_id,
-        p_keywords: keywordTexts,
-        p_credits_per_article: creditsPerArticle,
-        p_status: 'queued',
-        p_image_preset: campaign.image_preset,
-      });
-
-      if (rpcError) {
-        // Check if error is due to insufficient credits
-        if (rpcError.message?.includes('Insufficient credits')) {
-          // Pause campaign with reason
-          const settings = {
-            ...(campaign.settings as object),
-            pause_reason: 'insufficient_credits',
-            paused_at: new Date().toISOString(),
-          };
-
-          await supabaseAdmin
-            .from('campaigns')
-            .update({
-              status: 'paused',
-              next_run_at: null,
-              settings,
-            })
-            .eq('id', campaignId);
-
-          return {
-            paused: true,
-            pauseReason: 'insufficient_credits',
-          };
-        }
-
-        throw rpcError;
-      }
-
-      // Update keywords to 'queued' status (after successful article creation and credit deduction)
-      const keywordIds = keywords.map(k => k.id);
-      await supabaseAdmin.from('keywords').update({ status: 'queued' }).in('id', keywordIds);
-
-      // Process articles sequentially (awaited — NOT fire-and-forget).
-      // Each article generation is mostly network I/O (AI API calls) so CPU time stays low.
-      // If any article fails, it stays in 'queued' and recover-stale-articles cron will retry.
-      for (const keyword of keywords) {
-        try {
-          // Update keyword status to 'generating'
-          await supabaseAdmin
-            .from('keywords')
-            .update({ status: 'generating' })
-            .eq('id', keyword.id);
-
-          // Find the article for this keyword
-          const { data: article } = await supabaseAdmin
-            .from('articles')
-            .select('id')
-            .eq('campaign_id', campaignId)
-            .eq('primary_keyword', keyword.keyword)
-            .eq('status', 'queued')
-            .single();
-
-          if (!article) {
-            throw new Error(`Article not found for keyword: ${keyword.keyword}`);
-          }
-
-          // Generate article
-          await articleGenerationService.generateArticle(article.id, campaign.user_id, {
-            keyword: keyword.keyword,
-            projectId: campaign.project_id ?? '',
-            campaignId,
-            model: campaign.ai_model,
-            tone: campaign.tone,
-            targetWordCount: campaign.target_word_count,
-            imagePreset: campaign.image_preset ?? undefined,
-          });
-
-          // Update keyword status to 'generated' on success
-          await supabaseAdmin.from('keywords').update({ status: 'generated' }).eq('id', keyword.id);
-
-          console.log(`[ScheduledBatch] Generated article for keyword: ${keyword.keyword}`);
-        } catch (error) {
-          console.error(
-            `[ScheduledBatch] Failed to generate article for keyword ${keyword.id}:`,
-            error
-          );
-          // Update keyword status to 'failed' on error
-          await supabaseAdmin.from('keywords').update({ status: 'failed' }).eq('id', keyword.id);
-        }
-      }
-
-      // Calculate next run time
-      const nextRunAt = calculateNextRunAt(
-        campaign.schedule_frequency as ScheduleFrequency,
-        campaign.schedule_timezone || DEFAULT_SCHEDULE_TIMEZONE,
-        campaign.schedule_hour ?? DEFAULT_SCHEDULE_HOUR
-      );
-
-      // Check if campaign was paused during batch processing (user pause request)
-      // Only set back to scheduled if still active (no user pause intervened)
-      const { data: currentCampaign } = await supabaseAdmin
-        .from('campaigns')
-        .select('status')
-        .eq('id', campaignId)
-        .single();
-
-      if (currentCampaign?.status === 'paused') {
-        console.log(
-          `[ScheduledBatch] Campaign ${campaignId} was paused during processing, not resetting to scheduled`
-        );
-        // Update last_run_at but respect the paused status
-        await supabaseAdmin
-          .from('campaigns')
-          .update({ last_run_at: new Date().toISOString() })
-          .eq('id', campaignId);
-
-        return {
-          articlesQueued: keywords.length,
-          paused: true,
-          pauseReason: 'user_requested',
-        };
-      }
-
-      // Update campaign back to scheduled with new next_run_at
-      await supabaseAdmin
-        .from('campaigns')
-        .update({
-          status: 'scheduled',
-          next_run_at: nextRunAt,
-          last_run_at: new Date().toISOString(),
-        })
-        .eq('id', campaignId);
-
-      return {
-        articlesQueued: keywords.length,
-        nextRunAt,
-      };
-    } catch (error: unknown) {
-      // On error, check if campaign was paused before resetting to scheduled
-      const { data: currentCampaign } = await supabaseAdmin
-        .from('campaigns')
-        .select('status')
-        .eq('id', campaignId)
-        .single();
-
-      // Only reset to scheduled if not paused (user pause takes priority)
-      if (currentCampaign?.status !== 'paused') {
-        await supabaseAdmin.from('campaigns').update({ status: 'scheduled' }).eq('id', campaignId);
-      }
-
-      throw error;
-    }
+    return campaignSchedulingService.processScheduledBatch(campaignId);
   }
+
+  // ===========================================================================
+  // Private Helpers - Kept for internal use
+  // ===========================================================================
 
   /**
    * Get the count of pending keywords for a campaign.
@@ -1385,56 +524,7 @@ export class CampaignService {
    * @returns Number of pending keywords
    */
   private async getPendingKeywordCount(campaignId: string): Promise<number> {
-    const { count, error } = await supabaseAdmin
-      .from('keywords')
-      .select('*', { count: 'exact', head: true })
-      .eq('campaign_id', campaignId)
-      .eq('status', 'pending');
-
-    if (error) {
-      throw new Error(`Failed to get pending keywords count: ${error.message}`);
-    }
-
-    return count ?? 0;
-  }
-
-  // ===========================================================================
-  // Private Helpers
-  // ===========================================================================
-
-  /**
-   * Build keyword row objects for batch insertion
-   */
-  private buildKeywordRows(campaignId: string, keywords: string[]) {
-    return keywords.map(keyword => ({
-      campaign_id: campaignId,
-      keyword,
-      status: 'pending' as const,
-      difficulty: 'unknown' as const,
-      priority: 0,
-    }));
-  }
-
-  /**
-   * Verify the user owns the given project
-   * @throws Error if project not found or user doesn't own it
-   */
-  private async verifyProjectOwnership(projectId: string, userId: string): Promise<void> {
-    // In test mode, skip database verification for mock users/projects
-    if (serverEnv.ENV === 'test' && userId.includes('mock_user_')) {
-      return;
-    }
-
-    const { data, error } = await supabaseAdmin
-      .from('projects')
-      .select('id')
-      .eq('id', projectId)
-      .eq('user_id', userId)
-      .single();
-
-    if (error || !data) {
-      throw new Error('Project not found or access denied');
-    }
+    return campaignKeywordService.getPendingKeywordCount(campaignId);
   }
 }
 

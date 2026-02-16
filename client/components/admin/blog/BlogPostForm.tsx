@@ -2,7 +2,7 @@
 
 import { adminFetch } from '@client/utils/admin-api-client';
 import type { IDbBlogPost, IBlogCategory, IBlogMedia } from '@shared/types/blog.types';
-import { generateSlug } from '@server/services/blog.service';
+import { generateSlug } from '@shared/utils/string';
 import { Image as ImageIcon, X, Loader2, Upload } from 'lucide-react';
 import { dashboardNavigate } from '@client/utils/dashboardNavigation';
 import { useCallback, useEffect, useState, type ChangeEvent } from 'react';
@@ -124,7 +124,9 @@ export function BlogPostForm({ post, onSuccess }: IBlogPostFormProps): JSX.Eleme
 
       // Use direct fetch for FormData upload (adminFetch doesn't support multipart)
       const supabase = (await import('@shared/utils/supabase/client')).createClient();
-      const { data: { session } } = await supabase.auth.getSession();
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
 
       const response = await fetch('/api/admin/blog/media', {
         method: 'POST',
@@ -136,7 +138,7 @@ export function BlogPostForm({ post, onSuccess }: IBlogPostFormProps): JSX.Eleme
         throw new Error('Failed to upload image');
       }
 
-      const uploadedMedia = await response.json() as IBlogMedia;
+      const uploadedMedia = (await response.json()) as IBlogMedia;
       setValue('cover_image_id', uploadedMedia.id);
       setShowMediaPicker(false);
     } catch (err) {
@@ -154,7 +156,10 @@ export function BlogPostForm({ post, onSuccess }: IBlogPostFormProps): JSX.Eleme
   };
 
   const handleRemoveTag = (tagToRemove: string) => {
-    setValue('tags', (tags || []).filter(t => t !== tagToRemove));
+    setValue(
+      'tags',
+      (tags || []).filter(t => t !== tagToRemove)
+    );
   };
 
   const onSubmit = async (data: PostFormData) => {
@@ -246,7 +251,7 @@ export function BlogPostForm({ post, onSuccess }: IBlogPostFormProps): JSX.Eleme
             <label className="block text-sm font-medium text-primary mb-1">Content</label>
             <MDEditor
               value={watch('content') || ''}
-              onChange={(val) => setValue('content', val || '')}
+              onChange={val => setValue('content', val || '')}
               height={400}
               preview="live"
             />
@@ -340,7 +345,11 @@ export function BlogPostForm({ post, onSuccess }: IBlogPostFormProps): JSX.Eleme
                   className="inline-flex items-center gap-1 px-2 py-1 bg-accent/10 text-accent text-xs rounded-full"
                 >
                   #{tag}
-                  <button type="button" onClick={() => handleRemoveTag(tag)} className="hover:text-error">
+                  <button
+                    type="button"
+                    onClick={() => handleRemoveTag(tag)}
+                    className="hover:text-error"
+                  >
                     <X className="h-3 w-3" />
                   </button>
                 </span>

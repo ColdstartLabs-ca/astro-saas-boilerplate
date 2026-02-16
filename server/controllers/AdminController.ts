@@ -1,9 +1,9 @@
 import { BaseController } from './BaseController';
 import { requireAdmin, type IAdminCheckResult } from '../middleware/requireAdmin';
-import { supabaseAdmin } from '../supabase/supabaseAdmin';
-import { stripe } from '../stripe';
-import { getPlanForPriceId } from '@shared/config/stripe';
-import dayjs from 'dayjs';
+import { adminStatsService } from '../services/admin-stats.service';
+import { adminUsersService, type IUpdateProfileRequest } from '../services/admin-users.service';
+import { adminSubscriptionService } from '../services/admin-subscription.service';
+import type { TimeWindow, GroupBy } from '../services/admin-stats.service';
 
 /**
  * Schema for credit adjustment request
@@ -23,15 +23,6 @@ interface IUpdateSubscriptionRequest {
 }
 
 /**
- * Schema for update profile request
- */
-interface IUpdateProfileRequest {
-  role?: 'user' | 'admin';
-  subscription_tier?: 'starter' | 'growth' | 'agency';
-  subscription_status?: 'active' | 'canceled' | 'trialing' | 'past_due' | 'incomplete';
-}
-
-/**
  * Admin Controller
  *
  * Handles admin-only API endpoints:
@@ -43,6 +34,12 @@ interface IUpdateProfileRequest {
  * - DELETE /api/admin/users/[userId] - Delete user
  * - GET /api/admin/subscription - Get subscription details
  * - POST /api/admin/subscription - Update subscription
+ * - GET /api/admin/failure-metrics - Get failure metrics
+ *
+ * Business logic is delegated to specialized services:
+ * - AdminStatsService: stats, failure-metrics
+ * - AdminUsersService: users CRUD, credits adjustment
+ * - AdminSubscriptionService: subscription management
  */
 export class AdminController extends BaseController {
   /**
@@ -51,14 +48,6 @@ export class AdminController extends BaseController {
    */
   protected async checkAdminAccess(req: Request): Promise<IAdminCheckResult> {
     return requireAdmin(req);
-  }
-
-  /**
-   * Get Supabase admin client
-   * Exposed for use by endpoints that need direct DB access
-   */
-  getSupabase(): typeof supabaseAdmin {
-    return supabaseAdmin;
   }
 
   /**
@@ -107,31 +96,13 @@ export class AdminController extends BaseController {
     const { isAdmin, error } = await this.checkAdminAccess(req);
     if (!isAdmin) return error || this.error('UNAUTHORIZED', 'Unauthorized', 401);
 
-    const [usersResult, subscriptionsResult, creditsResult] = await Promise.all([
-      supabaseAdmin.from('profiles').select('id', { count: 'exact', head: true }),
-      supabaseAdmin
-        .from('subscriptions')
-        .select('id', { count: 'exact', head: true })
-        .eq('status', 'active'),
-      supabaseAdmin.from('credit_transactions').select('amount, type'),
-    ]);
-
-    const totalCreditsIssued = (creditsResult.data || [])
-      .filter(t => t.amount > 0)
-      .reduce((sum, t) => sum + t.amount, 0);
-
-    const totalCreditsUsed = Math.abs(
-      (creditsResult.data || [])
-        .filter(t => t.type === 'usage')
-        .reduce((sum, t) => sum + t.amount, 0)
-    );
-
-    return this.json({
-      totalUsers: usersResult.count || 0,
-      activeSubscriptions: subscriptionsResult.count || 0,
-      totalCreditsIssued,
-      totalCreditsUsed,
-    });
+    try {
+      const stats = await adminStatsService.getStats();
+      return this.json(stats);
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Unknown error';
+      return this.error('INTERNAL_ERROR', errorMessage, 500);
+    }
   }
 
   /**
@@ -139,9 +110,10 @@ export class AdminController extends BaseController {
    * Adjust user credits to a new balance
    */
   private async adjustCredits(req: Request): Promise<Response> {
-    const { isAdmin, userId: adminId, error } = await this.checkAdminAccess(req);
-    if (!isAdmin) return error || this.error('UNAUTHORIZED', 'Unauthorized', 401);
+    const { isAdmin, userId, error } = await this.checkAdminAccess(req);
+    if (!isAdmin || !userId) return error || this.error('UNAUTHORIZED', 'Unauthorized', 401);
 
+    const adminId = userId;
     const body = await this.getBody<ISetCreditsRequest>(req);
 
     // Basic validation
@@ -152,38 +124,22 @@ export class AdminController extends BaseController {
       return this.error('VALIDATION_ERROR', 'newBalance must be a non-negative number', 400);
     }
 
-    const { userId, newBalance } = body;
-
-    // Get current balance to calculate adjustment
-    const { data: profile, error: profileError } = await supabaseAdmin
-      .from('profiles')
-      .select('subscription_credits_balance, purchased_credits_balance')
-      .eq('id', userId)
-      .single();
-
-    if (profileError || !profile) {
-      return this.error('NOT_FOUND', 'User not found', 404);
-    }
-
-    const currentTotal =
-      (profile.subscription_credits_balance ?? 0) + (profile.purchased_credits_balance ?? 0);
-    const adjustmentAmount = newBalance - currentTotal;
-
-    // Use RPC function for atomic operation with logging
-    const { data, error: rpcError } = await supabaseAdmin.rpc('admin_adjust_credits', {
-      target_user_id: userId,
-      adjustment_amount: adjustmentAmount,
-      adjustment_reason: `[Admin: ${adminId}] Set balance to ${newBalance}`,
-    });
-
-    if (rpcError) {
-      console.error('Credit adjustment error:', rpcError);
-      return this.error('ADJUSTMENT_FAILED', 'Failed to set credits', 500, {
-        details: rpcError.message,
+    try {
+      const newBalance = await adminUsersService.adjustCredits({
+        userId: body.userId,
+        newBalance: body.newBalance,
+        adminId,
       });
-    }
+      return this.json({ newBalance });
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Unknown error';
 
-    return this.json({ newBalance: data });
+      if (errorMessage === 'User not found') {
+        return this.error('NOT_FOUND', errorMessage, 404);
+      }
+
+      return this.error('ADJUSTMENT_FAILED', errorMessage, 500);
+    }
   }
 
   /**
@@ -194,75 +150,20 @@ export class AdminController extends BaseController {
     const { isAdmin, error } = await this.checkAdminAccess(req);
     if (!isAdmin) return error || this.error('UNAUTHORIZED', 'Unauthorized', 401);
 
-    const MAX_LIMIT = 100;
-    const DEFAULT_LIMIT = 20;
-
     const pageParam = this.getQueryParam(req, 'page') || '1';
-    const limitParam = this.getQueryParam(req, 'limit') || String(DEFAULT_LIMIT);
+    const limitParam = this.getQueryParam(req, 'limit') || '20';
     const search = this.getQueryParam(req, 'search') || '';
 
     const page = Math.max(1, parseInt(pageParam, 10));
-    const requestedLimit = parseInt(limitParam, 10);
-    const limit = Math.min(Math.max(1, requestedLimit), MAX_LIMIT);
-    const offset = (page - 1) * limit;
+    const limit = Math.max(1, parseInt(limitParam, 10));
 
-    // Build query
-    const {
-      data: profiles,
-      count,
-      error: profilesError,
-    } = await supabaseAdmin
-      .from('profiles')
-      .select('*, email:id', { count: 'exact' })
-      .range(offset, offset + limit - 1)
-      .order('created_at', { ascending: false });
-
-    if (profilesError) {
-      console.error('Error fetching profiles:', profilesError);
-      return this.error('FETCH_ERROR', 'Failed to fetch users', 500, {
-        details: profilesError.message,
-      });
+    try {
+      const result = await adminUsersService.listUsers({ page, limit, search });
+      return this.json(result);
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Unknown error';
+      return this.error('FETCH_ERROR', errorMessage, 500);
     }
-
-    // Fetch auth users to get emails
-    const profileIds = (profiles || []).map(p => p.id);
-    const emailMap = new Map<string, string>();
-
-    if (profileIds.length > 0) {
-      const { data: authUsers, error: authError } = await supabaseAdmin.auth.admin.listUsers({
-        perPage: 1000,
-        page: 1,
-      });
-
-      if (!authError && authUsers?.users) {
-        for (const user of authUsers.users) {
-          if (profileIds.includes(user.id)) {
-            emailMap.set(user.id, user.email || 'unknown@example.com');
-          }
-        }
-      }
-    }
-
-    // Combine profile data with emails
-    const usersWithEmails = (profiles || []).map(profile => ({
-      ...profile,
-      email: emailMap.get(profile.id) || 'unknown@example.com',
-    }));
-
-    // Apply search filter if provided
-    let filteredUsers = usersWithEmails;
-    if (search) {
-      const searchLower = search.toLowerCase();
-      filteredUsers = usersWithEmails.filter(u => u.email.toLowerCase().includes(searchLower));
-    }
-
-    return this.json({
-      users: filteredUsers,
-      total: count || 0,
-      page,
-      limit,
-      maxLimit: MAX_LIMIT,
-    });
   }
 
   /**
@@ -274,42 +175,23 @@ export class AdminController extends BaseController {
     if (!isAdmin) return error || this.error('UNAUTHORIZED', 'Unauthorized', 401);
 
     // Extract userId from path
-    const path = this.getPath(req);
-    const pathParts = path.split('/');
-    const userId = pathParts[pathParts.length - 1];
+    const userId = this.extractUserIdFromPath(req);
 
-    // Validate UUID format
-    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-    if (!uuidRegex.test(userId)) {
-      return this.error('VALIDATION_ERROR', 'Invalid user ID format', 400);
+    try {
+      const result = await adminUsersService.getUserById(userId);
+      return this.json(result);
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Unknown error';
+
+      if (errorMessage === 'Invalid user ID format') {
+        return this.error('VALIDATION_ERROR', errorMessage, 400);
+      }
+      if (errorMessage === 'User not found') {
+        return this.error('NOT_FOUND', errorMessage, 404);
+      }
+
+      return this.error('INTERNAL_ERROR', errorMessage, 500);
     }
-
-    const [profileResult, subscriptionResult, transactionsResult, authUser] = await Promise.all([
-      supabaseAdmin.from('profiles').select('*').eq('id', userId).single(),
-      supabaseAdmin.from('subscriptions').select('*').eq('user_id', userId).single(),
-      supabaseAdmin
-        .from('credit_transactions')
-        .select('*')
-        .eq('user_id', userId)
-        .order('created_at', { ascending: false })
-        .limit(20),
-      supabaseAdmin.auth.admin.getUserById(userId),
-    ]);
-
-    if (profileResult.error) {
-      return this.error('NOT_FOUND', 'User not found', 404);
-    }
-
-    const profileWithEmail = {
-      ...profileResult.data,
-      email: authUser.data.user?.email || 'unknown@example.com',
-    };
-
-    return this.json({
-      profile: profileWithEmail,
-      subscription: subscriptionResult.data,
-      recentTransactions: transactionsResult.data || [],
-    });
   }
 
   /**
@@ -321,64 +203,26 @@ export class AdminController extends BaseController {
     if (!isAdmin) return error || this.error('UNAUTHORIZED', 'Unauthorized', 401);
 
     // Extract userId from path
-    const path = this.getPath(req);
-    const pathParts = path.split('/');
-    const userId = pathParts[pathParts.length - 1];
-
-    // Validate UUID format
-    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-    if (!uuidRegex.test(userId)) {
-      return this.error('VALIDATION_ERROR', 'Invalid user ID format', 400);
-    }
+    const userId = this.extractUserIdFromPath(req);
 
     const body = await this.getBody<IUpdateProfileRequest>(req);
 
-    // Validate role
-    if (body.role !== undefined && !['user', 'admin'].includes(body.role)) {
-      return this.error('VALIDATION_ERROR', 'Invalid role value', 400);
+    try {
+      const result = await adminUsersService.updateUser(userId, body);
+      return this.json(result);
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Unknown error';
+
+      if (
+        errorMessage === 'Invalid user ID format' ||
+        errorMessage.includes('Invalid') ||
+        errorMessage === 'No valid fields to update'
+      ) {
+        return this.error('VALIDATION_ERROR', errorMessage, 400);
+      }
+
+      return this.error('UPDATE_FAILED', errorMessage, 500);
     }
-
-    // Validate subscription_tier
-    if (
-      body.subscription_tier !== undefined &&
-      !['starter', 'growth', 'agency'].includes(body.subscription_tier)
-    ) {
-      return this.error('VALIDATION_ERROR', 'Invalid subscription_tier value', 400);
-    }
-
-    // Validate subscription_status
-    if (
-      body.subscription_status !== undefined &&
-      !['active', 'canceled', 'trialing', 'past_due', 'incomplete'].includes(
-        body.subscription_status
-      )
-    ) {
-      return this.error('VALIDATION_ERROR', 'Invalid subscription_status value', 400);
-    }
-
-    const updates: Record<string, unknown> = { ...body };
-
-    if (Object.keys(updates).length === 0) {
-      return this.error('VALIDATION_ERROR', 'No valid fields to update', 400);
-    }
-
-    updates.updated_at = new Date().toISOString();
-
-    const { data, error: dbError } = await supabaseAdmin
-      .from('profiles')
-      .update(updates)
-      .eq('id', userId)
-      .select()
-      .single();
-
-    if (dbError) {
-      console.error('Error updating user:', dbError);
-      return this.error('UPDATE_FAILED', 'Failed to update user', 500, {
-        details: dbError.message,
-      });
-    }
-
-    return this.json(data);
   }
 
   /**
@@ -390,51 +234,20 @@ export class AdminController extends BaseController {
     if (!isAdmin) return error || this.error('UNAUTHORIZED', 'Unauthorized', 401);
 
     // Extract userId from path
-    const path = this.getPath(req);
-    const pathParts = path.split('/');
-    const userId = pathParts[pathParts.length - 1];
+    const userId = this.extractUserIdFromPath(req);
 
-    // Validate UUID format
-    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-    if (!uuidRegex.test(userId)) {
-      return this.error('VALIDATION_ERROR', 'Invalid user ID format', 400);
+    try {
+      await adminUsersService.deleteUser(userId);
+      return this.json({ message: 'User deleted successfully' });
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Unknown error';
+
+      if (errorMessage === 'Invalid user ID format') {
+        return this.error('VALIDATION_ERROR', errorMessage, 400);
+      }
+
+      return this.error('DELETE_FAILED', errorMessage, 500);
     }
-
-    // Delete in order: credit_transactions, subscriptions, profiles, then auth user
-    const [transactionsResult, subscriptionsResult] = await Promise.allSettled([
-      supabaseAdmin.from('credit_transactions').delete().eq('user_id', userId),
-      supabaseAdmin.from('subscriptions').delete().eq('user_id', userId),
-    ]);
-
-    // Log any errors but continue
-    if (transactionsResult.status === 'rejected') {
-      console.warn('Error deleting transactions:', transactionsResult.reason);
-    }
-    if (subscriptionsResult.status === 'rejected') {
-      console.warn('Error deleting subscriptions:', subscriptionsResult.reason);
-    }
-
-    // Delete profile
-    const { error: profileError } = await supabaseAdmin.from('profiles').delete().eq('id', userId);
-
-    if (profileError) {
-      console.error('Error deleting profile:', profileError);
-      return this.error('DELETE_FAILED', 'Failed to delete user profile', 500, {
-        details: profileError.message,
-      });
-    }
-
-    // Finally delete the auth user
-    const { error: authError } = await supabaseAdmin.auth.admin.deleteUser(userId);
-
-    if (authError) {
-      console.error('Error deleting auth user:', authError);
-      return this.error('DELETE_FAILED', 'Failed to delete auth user', 500, {
-        details: authError.message,
-      });
-    }
-
-    return this.json({ message: 'User deleted successfully' });
   }
 
   /**
@@ -447,44 +260,13 @@ export class AdminController extends BaseController {
 
     const userId = this.getRequiredQueryParam(req, 'userId');
 
-    // Get subscription from DB
-    const { data: subscription } = await supabaseAdmin
-      .from('subscriptions')
-      .select('*')
-      .eq('user_id', userId)
-      .order('created_at', { ascending: false })
-      .limit(1)
-      .single();
-
-    if (!subscription) {
-      return this.json({
-        subscription: null,
-        stripeSubscription: null,
-      });
-    }
-
-    // Fetch from Stripe for live data
-    let stripeSubscription = null;
     try {
-      stripeSubscription = await stripe.subscriptions.retrieve(subscription.id);
-    } catch {
-      // Subscription may not exist in Stripe anymore
+      const result = await adminSubscriptionService.getSubscription(userId);
+      return this.json(result);
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Unknown error';
+      return this.error('INTERNAL_ERROR', errorMessage, 500);
     }
-
-    const stripeSubData = stripeSubscription as unknown as { current_period_end?: number } | null;
-
-    return this.json({
-      subscription,
-      stripeSubscription: stripeSubscription
-        ? {
-            id: stripeSubscription.id,
-            status: stripeSubscription.status,
-            cancel_at_period_end: stripeSubscription.cancel_at_period_end,
-            current_period_end: stripeSubData?.current_period_end || null,
-            canceled_at: stripeSubscription.canceled_at,
-          }
-        : null,
-    });
   }
 
   /**
@@ -512,149 +294,22 @@ export class AdminController extends BaseController {
       return this.error('VALIDATION_ERROR', 'targetPriceId is required for plan changes', 400);
     }
 
-    const { userId, action, targetPriceId } = body;
-
-    // Get user's subscription from DB
-    const { data: subscription } = await supabaseAdmin
-      .from('subscriptions')
-      .select('id, status, price_id')
-      .eq('user_id', userId)
-      .order('created_at', { ascending: false })
-      .limit(1)
-      .single();
-
-    if (action === 'cancel') {
-      if (!subscription) {
-        // No subscription - just clear profile
-        await supabaseAdmin
-          .from('profiles')
-          .update({
-            subscription_status: null,
-            subscription_tier: null,
-            updated_at: dayjs().toISOString(),
-          })
-          .eq('id', userId);
-
-        return this.json({
-          action: 'canceled',
-          message: 'Profile updated to free tier',
-        });
-      }
-
-      // Cancel in Stripe
-      try {
-        await stripe.subscriptions.cancel(subscription.id);
-      } catch (stripeErr) {
-        console.error('Stripe cancel error (may already be canceled):', stripeErr);
-      }
-
-      // Update our database
-      await supabaseAdmin
-        .from('subscriptions')
-        .update({
-          status: 'canceled',
-          canceled_at: dayjs().toISOString(),
-          updated_at: dayjs().toISOString(),
-        })
-        .eq('id', subscription.id);
-
-      // Update profile
-      await supabaseAdmin
-        .from('profiles')
-        .update({
-          subscription_status: null,
-          subscription_tier: null,
-          updated_at: dayjs().toISOString(),
-        })
-        .eq('id', userId);
-
-      return this.json({
-        action: 'canceled',
-        subscriptionId: subscription.id,
+    try {
+      const result = await adminSubscriptionService.updateSubscription({
+        userId: body.userId,
+        action: body.action,
+        targetPriceId: body.targetPriceId,
       });
+      return this.json(result);
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Unknown error';
+
+      if (errorMessage.includes('required') || errorMessage.includes('Invalid')) {
+        return this.error('VALIDATION_ERROR', errorMessage, 400);
+      }
+
+      return this.error('INTERNAL_ERROR', errorMessage, 500);
     }
-
-    if (action === 'change') {
-      if (!targetPriceId) {
-        return this.error('VALIDATION_ERROR', 'targetPriceId is required for plan changes', 400);
-      }
-
-      const targetPlan = getPlanForPriceId(targetPriceId);
-      if (!targetPlan) {
-        return this.error('VALIDATION_ERROR', 'Invalid price ID', 400);
-      }
-
-      // Check if user has an active subscription in Stripe we can modify
-      const activeSubscription =
-        subscription && subscription.status !== 'canceled' && subscription.status !== 'incomplete';
-
-      if (activeSubscription) {
-        // Update existing subscription in Stripe
-        try {
-          const stripeSub = await stripe.subscriptions.retrieve(subscription.id);
-          const updatedSub = await stripe.subscriptions.update(subscription.id, {
-            items: [{ id: stripeSub.items.data[0]?.id, price: targetPriceId }],
-            proration_behavior: 'always_invoice',
-          });
-
-          const updatedSubData = updatedSub as unknown as { current_period_end?: number };
-          const periodEnd = updatedSubData.current_period_end
-            ? dayjs.unix(updatedSubData.current_period_end).toISOString()
-            : null;
-
-          // Update database
-          await supabaseAdmin
-            .from('subscriptions')
-            .update({
-              price_id: targetPriceId,
-              status: updatedSub.status,
-              updated_at: dayjs().toISOString(),
-            })
-            .eq('id', subscription.id);
-
-          // IMPORTANT: Use plan.key (e.g., 'pro') not plan.name (e.g., 'Professional')
-          await supabaseAdmin
-            .from('profiles')
-            .update({
-              subscription_status: updatedSub.status,
-              subscription_tier: targetPlan.key,
-              updated_at: dayjs().toISOString(),
-            })
-            .eq('id', userId);
-
-          return this.json({
-            action: 'changed',
-            subscriptionId: subscription.id,
-            status: updatedSub.status,
-            plan: targetPlan.name,
-            periodEnd,
-          });
-        } catch (stripeErr) {
-          console.error('Stripe update failed, falling back to profile-only update:', stripeErr);
-          // Fall through to profile-only update
-        }
-      }
-
-      // No active Stripe subscription or Stripe update failed
-      // Just update the profile directly (admin override)
-      // IMPORTANT: Use plan.key (e.g., 'pro') not plan.name (e.g., 'Professional')
-      await supabaseAdmin
-        .from('profiles')
-        .update({
-          subscription_status: 'active',
-          subscription_tier: targetPlan.key,
-          updated_at: dayjs().toISOString(),
-        })
-        .eq('id', userId);
-
-      return this.json({
-        action: 'profile_updated',
-        plan: targetPlan.name,
-        note: 'Profile updated directly. No Stripe subscription was modified.',
-      });
-    }
-
-    return this.error('VALIDATION_ERROR', 'Invalid action', 400);
   }
 
   /**
@@ -667,161 +322,40 @@ export class AdminController extends BaseController {
    * - projectId: Optional project ID filter
    */
   private async getFailureMetrics(req: Request): Promise<Response> {
+    const { isAdmin, error } = await this.checkAdminAccess(req);
+    if (!isAdmin) return error || this.error('UNAUTHORIZED', 'Unauthorized', 401);
+
     // Parse query parameters
     const url = new URL(req.url);
-    const timeWindow =
-      (url.searchParams.get('timeWindow') as 'last_hour' | 'last_24h' | 'last_7d' | 'last_30d') ||
-      'last_24h';
-    const groupBy =
-      (url.searchParams.get('groupBy') as
-        | 'stage'
-        | 'provider'
-        | 'model'
-        | 'summary'
-        | 'rate_over_time') || 'summary';
+    const timeWindow = (url.searchParams.get('timeWindow') as TimeWindow) || 'last_24h';
+    const groupBy = (url.searchParams.get('groupBy') as GroupBy) || 'summary';
     const userId = url.searchParams.get('userId') || undefined;
     const projectId = url.searchParams.get('projectId') || undefined;
 
-    // Convert time window to hours
-    const hoursAgo: Record<string, number> = {
-      last_hour: 1,
-      last_24h: 24,
-      last_7d: 24 * 7,
-      last_30d: 24 * 30,
-    };
-
-    const hours = hoursAgo[timeWindow] || 24;
-
     try {
-      // Route to appropriate query based on groupBy
-      switch (groupBy) {
-        case 'stage':
-          return await this.getFailuresByStage(hours, userId, projectId);
-
-        case 'provider':
-          return await this.getFailuresByProvider(hours, userId, projectId);
-
-        case 'model':
-          return await this.getFailuresByModel(hours, userId, projectId);
-
-        case 'rate_over_time':
-          return await this.getFailureRateOverTime(hours, userId, projectId);
-
-        case 'summary':
-        default:
-          return await this.getFailureSummary(hours, userId, projectId);
-      }
+      const result = await adminStatsService.getFailureMetrics({
+        timeWindow,
+        groupBy,
+        userId,
+        projectId,
+      });
+      return this.json(result);
     } catch (err) {
       console.error('[FailureMetrics] Error fetching metrics:', err);
       return this.error('INTERNAL_ERROR', 'Failed to fetch failure metrics', 500);
     }
   }
 
-  private async getFailuresByStage(
-    hoursAgo: number,
-    userId?: string,
-    projectId?: string
-  ): Promise<Response> {
-    const { data, error } = await supabaseAdmin.rpc('get_failure_metrics_by_stage', {
-      p_hours_ago: hoursAgo,
-      p_user_id: userId || null,
-      p_project_id: projectId || null,
-    });
+  // ===========================================================================
+  // Private Helper Methods
+  // ===========================================================================
 
-    if (error) throw error;
-
-    return this.json({
-      timeWindow: this.hoursToTimeWindow(hoursAgo),
-      groupBy: 'stage',
-      data: data || [],
-    });
-  }
-
-  private async getFailuresByProvider(
-    hoursAgo: number,
-    userId?: string,
-    projectId?: string
-  ): Promise<Response> {
-    const { data, error } = await supabaseAdmin.rpc('get_failure_metrics_by_provider', {
-      p_hours_ago: hoursAgo,
-      p_user_id: userId || null,
-      p_project_id: projectId || null,
-    });
-
-    if (error) throw error;
-
-    return this.json({
-      timeWindow: this.hoursToTimeWindow(hoursAgo),
-      groupBy: 'provider',
-      data: data || [],
-    });
-  }
-
-  private async getFailuresByModel(
-    hoursAgo: number,
-    userId?: string,
-    projectId?: string
-  ): Promise<Response> {
-    const { data, error } = await supabaseAdmin.rpc('get_failure_metrics_by_model', {
-      p_hours_ago: hoursAgo,
-      p_user_id: userId || null,
-      p_project_id: projectId || null,
-    });
-
-    if (error) throw error;
-
-    return this.json({
-      timeWindow: this.hoursToTimeWindow(hoursAgo),
-      groupBy: 'model',
-      data: data || [],
-    });
-  }
-
-  private async getFailureRateOverTime(
-    hoursAgo: number,
-    userId?: string,
-    projectId?: string
-  ): Promise<Response> {
-    const { data, error } = await supabaseAdmin.rpc('get_failure_rate_over_time', {
-      p_hours_ago: hoursAgo,
-      p_user_id: userId || null,
-      p_project_id: projectId || null,
-    });
-
-    if (error) throw error;
-
-    return this.json({
-      timeWindow: this.hoursToTimeWindow(hoursAgo),
-      groupBy: 'rate_over_time',
-      data: data || [],
-    });
-  }
-
-  private async getFailureSummary(
-    hoursAgo: number,
-    userId?: string,
-    projectId?: string
-  ): Promise<Response> {
-    const { data, error } = await supabaseAdmin.rpc('get_failure_summary', {
-      p_hours_ago: hoursAgo,
-      p_user_id: userId || null,
-      p_project_id: projectId || null,
-    });
-
-    if (error) throw error;
-
-    return this.json({
-      timeWindow: this.hoursToTimeWindow(hoursAgo),
-      groupBy: 'summary',
-      data: data?.[0] || null,
-    });
-  }
-
-  private hoursToTimeWindow(hours: number): string {
-    if (hours === 1) return 'last_hour';
-    if (hours === 24) return 'last_24h';
-    if (hours === 24 * 7) return 'last_7d';
-    if (hours === 24 * 30) return 'last_30d';
-    return 'custom';
+  /**
+   * Extract userId from path
+   */
+  private extractUserIdFromPath(req: Request): string {
+    const path = this.getPath(req);
+    const pathParts = path.split('/');
+    return pathParts[pathParts.length - 1];
   }
 }

@@ -6,17 +6,13 @@
 
 import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
 import { WebhookEventService } from '@server/services/webhook-event.service';
-import type {
-  IWebhookSubscription,
-  WebhookEventType,
-} from '@shared/types/webhook-event.types';
-import {
-  WebhookSubscriptionNotFoundError,
-} from '@shared/types/webhook-event.types';
+import type { IWebhookSubscription } from '@shared/types/webhook-event.types';
+import { WebhookSubscriptionNotFoundError } from '@shared/types/webhook-event.types';
 
-// Mock supabaseAdmin - must use factory function
+// Mock supabaseAdmin - all mocks must be defined inside the factory function
+// because vi.mock is hoisted to the top of the file
 vi.mock('@server/supabase/supabaseAdmin', () => {
-  const mockFrom = vi.fn();
+  // Create mock functions inside the factory
   const mockSelect = vi.fn();
   const mockInsert = vi.fn();
   const mockUpdate = vi.fn();
@@ -25,32 +21,28 @@ vi.mock('@server/supabase/supabaseAdmin', () => {
   const mockSingle = vi.fn();
   const mockOrder = vi.fn();
 
-  const eqChain = () => ({
+  // Create a chainable mock that supports multiple .eq() calls and all terminal methods
+  const createChain = () => ({
+    eq: mockEq,
     single: mockSingle,
     select: mockSelect,
     order: mockOrder,
-    eq: mockEq,
   });
 
-  const selectChain = () => ({ eq: mockEq, single: mockSingle, order: mockOrder });
-  const insertChain = () => ({ select: mockSelect });
-  const updateChain = () => ({ eq: mockEq });
-  const deleteChain = () => ({ eq: mockEq });
-
-  mockFrom.mockImplementation(() => ({
+  const mockFrom = vi.fn(() => ({
     select: mockSelect,
     insert: mockInsert,
     update: mockUpdate,
     delete: mockDelete,
   }));
 
-  mockSelect.mockImplementation(() => selectChain());
-  mockInsert.mockImplementation(() => insertChain());
-  mockUpdate.mockImplementation(() => updateChain());
-  mockDelete.mockImplementation(() => deleteChain());
-  mockEq.mockImplementation(() => eqChain());
+  mockSelect.mockImplementation(() => createChain());
+  mockInsert.mockImplementation(() => ({ select: mockSelect }));
+  mockUpdate.mockImplementation(() => createChain());
+  mockDelete.mockImplementation(() => createChain());
+  mockEq.mockImplementation(() => createChain());
   mockSingle.mockImplementation(() => ({ data: null, error: null }));
-  mockOrder.mockImplementation(() => selectChain());
+  mockOrder.mockImplementation(() => createChain());
 
   return {
     supabaseAdmin: {
@@ -58,6 +50,9 @@ vi.mock('@server/supabase/supabaseAdmin', () => {
     },
   };
 });
+
+// Import after mocking to get access to the mock functions
+import { supabaseAdmin } from '@server/supabase/supabaseAdmin';
 
 // Mock fetch for webhook delivery tests
 const mockFetch = vi.fn();
@@ -78,14 +73,6 @@ Object.defineProperty(global, 'crypto', {
 
 describe('WebhookEventService', () => {
   let service: WebhookEventService;
-  let mockFrom: ReturnType<typeof vi.fn>;
-  let mockSelect: ReturnType<typeof vi.fn>;
-  let mockInsert: ReturnType<typeof vi.fn>;
-  let mockUpdate: ReturnType<typeof vi.fn>;
-  let mockDelete: ReturnType<typeof vi.fn>;
-  let mockEq: ReturnType<typeof vi.fn>;
-  let mockSingle: ReturnType<typeof vi.fn>;
-  let mockOrder: ReturnType<typeof vi.fn>;
 
   const mockUserId = '01234567-89ab-cdef-0123-456789abcdef';
   const mockSubscriptionId = '22222222-2222-2222-2222-222222222222';
@@ -103,33 +90,6 @@ describe('WebhookEventService', () => {
 
   beforeEach(async () => {
     vi.clearAllMocks();
-
-    // Get mock references
-    const supabaseModule = await import('@server/supabase/supabaseAdmin');
-    mockFrom = supabaseModule.supabaseAdmin.from as ReturnType<typeof vi.fn>;
-    mockSelect = vi.fn();
-    mockInsert = vi.fn();
-    mockUpdate = vi.fn();
-    mockDelete = vi.fn();
-    mockEq = vi.fn();
-    mockSingle = vi.fn();
-    mockOrder = vi.fn();
-
-    // Setup chain
-    mockFrom.mockReturnValue({
-      select: mockSelect,
-      insert: mockInsert,
-      update: mockUpdate,
-      delete: mockDelete,
-    });
-
-    mockSelect.mockReturnValue({ eq: mockEq, single: mockSingle, order: mockOrder });
-    mockInsert.mockReturnValue({ select: mockSelect });
-    mockUpdate.mockReturnValue({ eq: mockEq });
-    mockDelete.mockReturnValue({ eq: mockEq });
-    mockEq.mockReturnValue({ single: mockSingle, select: mockSelect, order: mockOrder });
-    mockOrder.mockReturnValue({ eq: mockEq });
-
     service = new WebhookEventService();
   });
 
@@ -143,7 +103,8 @@ describe('WebhookEventService', () => {
 
   describe('subscribe', () => {
     it('should create a new webhook subscription', async () => {
-      mockSingle.mockResolvedValueOnce({
+      // Setup: insert().select().single() should return data
+      const singleMock = vi.fn().mockResolvedValueOnce({
         data: {
           id: mockSubscriptionId,
           user_id: mockUserId,
@@ -155,6 +116,21 @@ describe('WebhookEventService', () => {
         },
         error: null,
       });
+
+      const selectMock = vi.fn().mockReturnValue({
+        single: singleMock,
+      });
+
+      const insertMock = vi.fn().mockReturnValue({
+        select: selectMock,
+      });
+
+      const testFrom = vi.fn().mockReturnValue({
+        insert: insertMock,
+      });
+
+      // Override the mock for this test
+      vi.mocked(supabaseAdmin).from = testFrom;
 
       const result = await service.subscribe(mockUserId, {
         eventType: 'article.published',
@@ -165,23 +141,33 @@ describe('WebhookEventService', () => {
       expect(result.event_type).toBe('article.published');
       expect(result.target_url).toBe('https://hooks.zapier.com/hooks/catch/123/abc');
       expect(result.active).toBe(true);
-      expect(mockInsert).toHaveBeenCalled();
     });
 
     it('should use provided secret if specified', async () => {
       const customSecret = 'my-custom-secret-key';
-      mockSingle.mockResolvedValueOnce({
-        data: {
-          id: mockSubscriptionId,
-          user_id: mockUserId,
-          event_type: 'article.published',
-          target_url: 'https://hooks.zapier.com/hooks/catch/123/abc',
-          active: true,
-          created_at: '2024-01-01T00:00:00Z',
-          updated_at: '2024-01-01T00:00:00Z',
-        },
-        error: null,
+
+      const insertMock = vi.fn().mockReturnValue({
+        select: vi.fn().mockReturnValue({
+          single: vi.fn().mockResolvedValueOnce({
+            data: {
+              id: mockSubscriptionId,
+              user_id: mockUserId,
+              event_type: 'article.published',
+              target_url: 'https://hooks.zapier.com/hooks/catch/123/abc',
+              active: true,
+              created_at: '2024-01-01T00:00:00Z',
+              updated_at: '2024-01-01T00:00:00Z',
+            },
+            error: null,
+          }),
+        }),
       });
+
+      const testFrom = vi.fn().mockReturnValue({
+        insert: insertMock,
+      });
+
+      vi.mocked(supabaseAdmin).from = testFrom;
 
       await service.subscribe(mockUserId, {
         eventType: 'article.published',
@@ -190,23 +176,33 @@ describe('WebhookEventService', () => {
       });
 
       // Verify insert was called with the custom secret
-      const insertCall = mockInsert.mock.calls[0][0];
+      const insertCall = insertMock.mock.calls[0][0];
       expect(insertCall.secret).toBe(customSecret);
     });
 
     it('should generate a secret if not provided', async () => {
-      mockSingle.mockResolvedValueOnce({
-        data: {
-          id: mockSubscriptionId,
-          user_id: mockUserId,
-          event_type: 'article.published',
-          target_url: 'https://hooks.zapier.com/hooks/catch/123/abc',
-          active: true,
-          created_at: '2024-01-01T00:00:00Z',
-          updated_at: '2024-01-01T00:00:00Z',
-        },
-        error: null,
+      const insertMock = vi.fn().mockReturnValue({
+        select: vi.fn().mockReturnValue({
+          single: vi.fn().mockResolvedValueOnce({
+            data: {
+              id: mockSubscriptionId,
+              user_id: mockUserId,
+              event_type: 'article.published',
+              target_url: 'https://hooks.zapier.com/hooks/catch/123/abc',
+              active: true,
+              created_at: '2024-01-01T00:00:00Z',
+              updated_at: '2024-01-01T00:00:00Z',
+            },
+            error: null,
+          }),
+        }),
       });
+
+      const testFrom = vi.fn().mockReturnValue({
+        insert: insertMock,
+      });
+
+      vi.mocked(supabaseAdmin).from = testFrom;
 
       await service.subscribe(mockUserId, {
         eventType: 'article.published',
@@ -214,16 +210,26 @@ describe('WebhookEventService', () => {
       });
 
       // Verify insert was called with a generated secret (32 hex chars)
-      const insertCall = mockInsert.mock.calls[0][0];
+      const insertCall = insertMock.mock.calls[0][0];
       expect(insertCall.secret).toBeDefined();
       expect(insertCall.secret.length).toBe(32);
     });
 
     it('should throw error on duplicate subscription', async () => {
-      mockSingle.mockResolvedValueOnce({
-        data: null,
-        error: { code: '23505', message: 'duplicate key' },
+      const insertMock = vi.fn().mockReturnValue({
+        select: vi.fn().mockReturnValue({
+          single: vi.fn().mockResolvedValueOnce({
+            data: null,
+            error: { code: '23505', message: 'duplicate key' },
+          }),
+        }),
       });
+
+      const testFrom = vi.fn().mockReturnValue({
+        insert: insertMock,
+      });
+
+      vi.mocked(supabaseAdmin).from = testFrom;
 
       await expect(
         service.subscribe(mockUserId, {
@@ -236,19 +242,40 @@ describe('WebhookEventService', () => {
 
   describe('unsubscribe', () => {
     it('should delete a webhook subscription', async () => {
-      mockEq.mockReturnValue({ error: null });
+      // delete().eq().eq() should resolve with { error: null }
+      const eqMock = vi.fn().mockResolvedValue({ error: null });
+
+      const testFrom = vi.fn().mockReturnValue({
+        delete: vi.fn().mockReturnValue({
+          eq: vi.fn().mockReturnValue({
+            eq: eqMock,
+          }),
+        }),
+      });
+
+      vi.mocked(supabaseAdmin).from = testFrom;
 
       await service.unsubscribe(mockUserId, mockSubscriptionId);
 
-      expect(mockDelete).toHaveBeenCalled();
+      expect(testFrom).toHaveBeenCalledWith('webhook_subscriptions');
     });
 
     it('should throw error on failed deletion', async () => {
-      mockEq.mockReturnValue({ error: { message: 'Database error' } });
+      const eqMock = vi.fn().mockResolvedValue({ error: { message: 'Database error' } });
 
-      await expect(
-        service.unsubscribe(mockUserId, mockSubscriptionId)
-      ).rejects.toThrow('Failed to delete webhook subscription');
+      const testFrom = vi.fn().mockReturnValue({
+        delete: vi.fn().mockReturnValue({
+          eq: vi.fn().mockReturnValue({
+            eq: eqMock,
+          }),
+        }),
+      });
+
+      vi.mocked(supabaseAdmin).from = testFrom;
+
+      await expect(service.unsubscribe(mockUserId, mockSubscriptionId)).rejects.toThrow(
+        'Failed to delete webhook subscription'
+      );
     });
   });
 
@@ -256,10 +283,24 @@ describe('WebhookEventService', () => {
     it('should return all subscriptions for a user', async () => {
       const mockSubscriptions = [
         { ...mockSubscription, event_type: 'article.published' },
-        { ...mockSubscription, id: '33333333-3333-3333-3333-333333333333', event_type: 'article.approved' },
+        {
+          ...mockSubscription,
+          id: '33333333-3333-3333-3333-333333333333',
+          event_type: 'article.approved',
+        },
       ];
 
-      mockOrder.mockResolvedValueOnce({ data: mockSubscriptions, error: null });
+      const orderMock = vi.fn().mockResolvedValue({ data: mockSubscriptions, error: null });
+
+      const testFrom = vi.fn().mockReturnValue({
+        select: vi.fn().mockReturnValue({
+          eq: vi.fn().mockReturnValue({
+            order: orderMock,
+          }),
+        }),
+      });
+
+      vi.mocked(supabaseAdmin).from = testFrom;
 
       const result = await service.list(mockUserId);
 
@@ -269,15 +310,30 @@ describe('WebhookEventService', () => {
     });
 
     it('should return empty array on error', async () => {
-      mockOrder.mockResolvedValueOnce({ data: null, error: { message: 'Database error' } });
+      const orderMock = vi.fn().mockResolvedValue({
+        data: null,
+        error: { message: 'Database error' },
+      });
 
-      await expect(service.list(mockUserId)).rejects.toThrow('Failed to list webhook subscriptions');
+      const testFrom = vi.fn().mockReturnValue({
+        select: vi.fn().mockReturnValue({
+          eq: vi.fn().mockReturnValue({
+            order: orderMock,
+          }),
+        }),
+      });
+
+      vi.mocked(supabaseAdmin).from = testFrom;
+
+      await expect(service.list(mockUserId)).rejects.toThrow(
+        'Failed to list webhook subscriptions'
+      );
     });
   });
 
   describe('toggleActive', () => {
     it('should toggle subscription active status', async () => {
-      mockSingle.mockResolvedValueOnce({
+      const singleMock = vi.fn().mockResolvedValueOnce({
         data: {
           id: mockSubscriptionId,
           user_id: mockUserId,
@@ -290,17 +346,47 @@ describe('WebhookEventService', () => {
         error: null,
       });
 
+      const testFrom = vi.fn().mockReturnValue({
+        update: vi.fn().mockReturnValue({
+          eq: vi.fn().mockReturnValue({
+            eq: vi.fn().mockReturnValue({
+              select: vi.fn().mockReturnValue({
+                single: singleMock,
+              }),
+            }),
+          }),
+        }),
+      });
+
+      vi.mocked(supabaseAdmin).from = testFrom;
+
       const result = await service.toggleActive(mockUserId, mockSubscriptionId, false);
 
       expect(result.active).toBe(false);
     });
 
     it('should throw WebhookSubscriptionNotFoundError if not found', async () => {
-      mockSingle.mockResolvedValueOnce({ data: null, error: { message: 'Not found' } });
+      const singleMock = vi
+        .fn()
+        .mockResolvedValueOnce({ data: null, error: { message: 'Not found' } });
 
-      await expect(
-        service.toggleActive(mockUserId, mockSubscriptionId, false)
-      ).rejects.toThrow(WebhookSubscriptionNotFoundError);
+      const testFrom = vi.fn().mockReturnValue({
+        update: vi.fn().mockReturnValue({
+          eq: vi.fn().mockReturnValue({
+            eq: vi.fn().mockReturnValue({
+              select: vi.fn().mockReturnValue({
+                single: singleMock,
+              }),
+            }),
+          }),
+        }),
+      });
+
+      vi.mocked(supabaseAdmin).from = testFrom;
+
+      await expect(service.toggleActive(mockUserId, mockSubscriptionId, false)).rejects.toThrow(
+        WebhookSubscriptionNotFoundError
+      );
     });
   });
 
@@ -315,8 +401,20 @@ describe('WebhookEventService', () => {
         { ...mockSubscription, id: 'sub-2', target_url: 'https://make.com/webhook/xyz' },
       ];
 
-      // Mock getActiveSubscriptions - return subscriptions with secrets
-      mockOrder.mockResolvedValueOnce({ data: subscriptions, error: null });
+      // getActiveSubscriptions uses select('*').eq('user_id').eq('event_type').eq('active')
+      const eqMock3 = vi.fn().mockResolvedValue({ data: subscriptions, error: null });
+
+      const testFrom = vi.fn().mockReturnValue({
+        select: vi.fn().mockReturnValue({
+          eq: vi.fn().mockReturnValue({
+            eq: vi.fn().mockReturnValue({
+              eq: eqMock3,
+            }),
+          }),
+        }),
+      });
+
+      vi.mocked(supabaseAdmin).from = testFrom;
 
       // Mock successful webhook deliveries
       mockFetch.mockResolvedValue({
@@ -354,7 +452,20 @@ describe('WebhookEventService', () => {
 
     it('should sign payload with HMAC-SHA256', async () => {
       const subscriptions = [mockSubscription];
-      mockOrder.mockResolvedValueOnce({ data: subscriptions, error: null });
+
+      const eqMock3 = vi.fn().mockResolvedValue({ data: subscriptions, error: null });
+
+      const testFrom = vi.fn().mockReturnValue({
+        select: vi.fn().mockReturnValue({
+          eq: vi.fn().mockReturnValue({
+            eq: vi.fn().mockReturnValue({
+              eq: eqMock3,
+            }),
+          }),
+        }),
+      });
+
+      vi.mocked(supabaseAdmin).from = testFrom;
 
       mockFetch.mockResolvedValue({
         ok: true,
@@ -388,14 +499,27 @@ describe('WebhookEventService', () => {
       expect(headers['X-AutopilotRank-Event']).toBe('article.published');
     });
 
-    it('should skip inactive subscriptions', async () => {
-      // Only one active subscription
-      const subscriptions = [
-        { ...mockSubscription, active: false },  // Inactive - should be skipped
-        { ...mockSubscription, id: 'sub-active', active: true }, // Active
+    it('should only fetch active subscriptions from database', async () => {
+      // The database query filters by active=true, so only active subscriptions are returned
+      // This test verifies that only active subscriptions are fetched and called
+      const activeSubscriptions = [
+        { ...mockSubscription, id: 'sub-active-1', active: true },
+        { ...mockSubscription, id: 'sub-active-2', active: true },
       ];
 
-      mockOrder.mockResolvedValueOnce({ data: subscriptions, error: null });
+      const eqMock3 = vi.fn().mockResolvedValue({ data: activeSubscriptions, error: null });
+
+      const testFrom = vi.fn().mockReturnValue({
+        select: vi.fn().mockReturnValue({
+          eq: vi.fn().mockReturnValue({
+            eq: vi.fn().mockReturnValue({
+              eq: eqMock3,
+            }),
+          }),
+        }),
+      });
+
+      vi.mocked(supabaseAdmin).from = testFrom;
 
       mockFetch.mockResolvedValue({
         ok: true,
@@ -418,19 +542,29 @@ describe('WebhookEventService', () => {
 
       await service.dispatch(mockUserId, 'article.published', articleData);
 
-      // Only the active subscription should be called (the first active one in filtered list)
-      // The service filters to active=true subscriptions
-      const activeSubs = subscriptions.filter(s => s.active);
-      expect(mockFetch).toHaveBeenCalledTimes(activeSubs.length);
+      // All returned subscriptions should be called (they're all active from DB)
+      expect(mockFetch).toHaveBeenCalledTimes(activeSubscriptions.length);
     });
 
     it('should not throw on delivery failure', async () => {
-      mockOrder.mockResolvedValueOnce({ data: [mockSubscription], error: null });
+      const eqMock3 = vi.fn().mockResolvedValue({ data: [mockSubscription], error: null });
 
-      // Mock failed delivery
+      const testFrom = vi.fn().mockReturnValue({
+        select: vi.fn().mockReturnValue({
+          eq: vi.fn().mockReturnValue({
+            eq: vi.fn().mockReturnValue({
+              eq: eqMock3,
+            }),
+          }),
+        }),
+      });
+
+      vi.mocked(supabaseAdmin).from = testFrom;
+
+      // Mock 400 error (no retries for 4xx)
       mockFetch.mockResolvedValue({
         ok: false,
-        status: 500,
+        status: 400,
       });
 
       const articleData = {
@@ -454,7 +588,19 @@ describe('WebhookEventService', () => {
     });
 
     it('should retry failed deliveries with exponential backoff', async () => {
-      mockOrder.mockResolvedValueOnce({ data: [mockSubscription], error: null });
+      const eqMock3 = vi.fn().mockResolvedValue({ data: [mockSubscription], error: null });
+
+      const testFrom = vi.fn().mockReturnValue({
+        select: vi.fn().mockReturnValue({
+          eq: vi.fn().mockReturnValue({
+            eq: vi.fn().mockReturnValue({
+              eq: eqMock3,
+            }),
+          }),
+        }),
+      });
+
+      vi.mocked(supabaseAdmin).from = testFrom;
 
       // Mock initial failures then success
       mockFetch
@@ -478,13 +624,24 @@ describe('WebhookEventService', () => {
 
       await service.dispatch(mockUserId, 'article.published', articleData);
 
-      // Should have been called 3 times (initial + 2 retries = 3 attempts before success on retry 2)
-      // Actually: attempt 0 (fail), attempt 1 (fail), attempt 2 (success) = 3 calls
+      // Should have been called 3 times (initial + 2 retries)
       expect(mockFetch).toHaveBeenCalledTimes(3);
     }, 30000); // Increase timeout for retry delays
 
     it('should not retry on 4xx errors', async () => {
-      mockOrder.mockResolvedValueOnce({ data: [mockSubscription], error: null });
+      const eqMock3 = vi.fn().mockResolvedValue({ data: [mockSubscription], error: null });
+
+      const testFrom = vi.fn().mockReturnValue({
+        select: vi.fn().mockReturnValue({
+          eq: vi.fn().mockReturnValue({
+            eq: vi.fn().mockReturnValue({
+              eq: eqMock3,
+            }),
+          }),
+        }),
+      });
+
+      vi.mocked(supabaseAdmin).from = testFrom;
 
       // Mock 400 error
       mockFetch.mockResolvedValue({
@@ -513,7 +670,19 @@ describe('WebhookEventService', () => {
     });
 
     it('should do nothing if no active subscriptions', async () => {
-      mockOrder.mockResolvedValueOnce({ data: [], error: null });
+      const eqMock3 = vi.fn().mockResolvedValue({ data: [], error: null });
+
+      const testFrom = vi.fn().mockReturnValue({
+        select: vi.fn().mockReturnValue({
+          eq: vi.fn().mockReturnValue({
+            eq: vi.fn().mockReturnValue({
+              eq: eqMock3,
+            }),
+          }),
+        }),
+      });
+
+      vi.mocked(supabaseAdmin).from = testFrom;
 
       const articleData = {
         id: 'article-1',

@@ -178,6 +178,19 @@ export default [
         },
         // Note: Dynamic import() is allowed in client code for code splitting
       ],
+      // Prevent client code from importing server-only modules
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            {
+              group: ['@server/*'],
+              message:
+                'Client code cannot import from @server. Use @shared/* for shared code or make API calls to server endpoints.',
+            },
+          ],
+        },
+      ],
     },
   },
   // Data loader files - allow dynamic imports for data file loading

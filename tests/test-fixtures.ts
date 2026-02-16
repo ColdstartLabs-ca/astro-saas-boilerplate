@@ -170,7 +170,9 @@ export const test = base.extend({
           contentType: 'application/json',
           body: JSON.stringify({
             success: true,
-            data: { integration: { id: 'mock-id', name: 'Mock', type: 'wordpress', status: 'active' } },
+            data: {
+              integration: { id: 'mock-id', name: 'Mock', type: 'wordpress', status: 'active' },
+            },
           }),
         });
       }
@@ -184,15 +186,17 @@ export const test = base.extend({
           contentType: 'application/json',
           body: JSON.stringify({
             data: {
-              projects: [{
-                id: 'mock-project-1',
-                name: 'Test Project',
-                url: 'https://test.com',
-                user_id: 'test-user-id',
-                status: 'active',
-                created_at: '2024-01-01T00:00:00Z',
-                updated_at: '2024-01-01T00:00:00Z',
-              }],
+              projects: [
+                {
+                  id: 'mock-project-1',
+                  name: 'Test Project',
+                  url: 'https://test.com',
+                  user_id: 'test-user-id',
+                  status: 'active',
+                  created_at: '2024-01-01T00:00:00Z',
+                  updated_at: '2024-01-01T00:00:00Z',
+                },
+              ],
             },
           }),
         });
@@ -243,21 +247,31 @@ export const test = base.extend({
       }
     });
 
-    // Mock user data RPC endpoint (Supabase get_user_data)
-    await page.route('**/rest/v1/rpc/get_user_data', async route => {
+    // Mock user data endpoints (profiles and subscriptions tables)
+    // This provides a default mock for tests that don't override it.
+    // Tests can override this by registering their own routes in beforeEach.
+    // Note: Must be registered LAST so test-specific routes take precedence (LIFO).
+    await page.route(/https:\/\/.*\.supabase\.co\/rest\/v1\/profiles.*/, async route => {
       await route.fulfill({
         status: 200,
         contentType: 'application/json',
-        body: JSON.stringify({
-          profile: {
+        body: JSON.stringify([
+          {
             id: 'test-user-id',
             email: 'test@example.com',
             role: 'user',
             subscription_credits_balance: 1000,
             purchased_credits_balance: 0,
           },
-          subscription: null,
-        }),
+        ]),
+      });
+    });
+
+    await page.route(/https:\/\/.*\.supabase\.co\/rest\/v1\/subscriptions.*/, async route => {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify([]),
       });
     });
 

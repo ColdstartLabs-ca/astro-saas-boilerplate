@@ -4,7 +4,6 @@ import React, { useEffect, useState } from 'react';
 import {
   PlayCircle,
   CheckCircle2,
-  ArrowRight,
   Loader2,
   FileText,
   BarChart2,

@@ -8,6 +8,7 @@
 import { supabaseAdmin } from '../supabase/supabaseAdmin';
 // Import MDX blog data directly to avoid circular dependency with blog.ts
 import blogDataRaw from '@/content/blog-data.json';
+import { generateSlug, calculateReadingTime } from '@shared/utils/string';
 import type {
   IBlogCategory,
   IBlogCategoryCreate,
@@ -52,29 +53,6 @@ function getMdxSlugs(): string[] {
 }
 
 /**
- * Generate a URL-friendly slug from title
- */
-export function generateSlug(title: string): string {
-  return title
-    .toLowerCase()
-    .trim()
-    .replace(/[^\w\s-]/g, '') // Remove non-word chars except spaces and hyphens
-    .replace(/[\s_-]+/g, '-') // Replace spaces and underscores with hyphens
-    .replace(/^-+|-+$/g, ''); // Remove leading/trailing hyphens
-}
-
-/**
- * Calculate reading time from content
- * Average reading speed: 200 words per minute
- */
-export function calculateReadingTime(content: string): string {
-  if (!content) return '1 min read';
-  const wordCount = content.trim().split(/\s+/).length;
-  const minutes = Math.max(1, Math.ceil(wordCount / 200));
-  return `${minutes} min read`;
-}
-
-/**
  * Render markdown to HTML using markdown-it
  */
 export function renderMarkdownToHtml(content: string): string {
@@ -102,7 +80,10 @@ export function renderMarkdownToHtml(content: string): string {
   html = html.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2">$1</a>');
 
   // Code blocks
-  html = html.replace(/```(\w+)?\n([\s\S]*?)```/g, '<pre><code class="language-$1">$2</code></pre>');
+  html = html.replace(
+    /```(\w+)?\n([\s\S]*?)```/g,
+    '<pre><code class="language-$1">$2</code></pre>'
+  );
 
   // Inline code
   html = html.replace(/`([^`]+)`/g, '<code>$1</code>');

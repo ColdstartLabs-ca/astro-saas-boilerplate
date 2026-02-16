@@ -443,7 +443,9 @@
         "approveFailed": "Failed to approve article",
         "rejectFailed": "Failed to reject article",
         "bulkApproveFailed": "Failed to approve some articles",
-        "bulkRejectFailed": "Failed to reject some articles"
+        "bulkRejectFailed": "Failed to reject some articles",
+        "bulkApprovePartial": "Bulk approve: {success} succeeded, {failed} failed",
+        "bulkRejectPartial": "Bulk reject: {success} succeeded, {failed} failed"
       }
     },
     "seo": {
