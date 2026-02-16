@@ -81,3 +81,5 @@ cloud/keys/
 
 UI_TEMPLATE
 logs/
+
+night-watch.config.json
