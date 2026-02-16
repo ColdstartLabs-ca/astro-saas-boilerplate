@@ -11,7 +11,7 @@
 
 'use client';
 
-import { SkipForward } from 'lucide-react';
+import { SkipForward, Check } from 'lucide-react';
 import { StepperProgress, type IStepConfig } from '@client/components/stepper/StepperProgress';
 import { cn } from '@client/utils/cn';
 import { OnboardingStep } from '@shared/types/onboarding.types';
@@ -89,20 +89,19 @@ export function OnboardingStepperProgress({
   completedSteps,
   skippedSteps,
 }: IOnboardingStepperProgressProps): JSX.Element {
-  // Convert 1-based currentStep to 0-based index for generic stepper
-  const currentStepIndex = currentStep - 1;
+  // Validate and clamp currentStep to valid range
+  const clampedStep = Math.max(1, Math.min(currentStep, ONBOARDING_STEPS.length));
 
-  // Convert 1-based completed steps to 0-based indices
+  // Convert 1-based currentStep to 0-based index for generic stepper
+  const currentStepIndex = clampedStep - 1;
+
+  // Convert 1-based completed steps to 0-based indices in a single loop
   const completedIndices = new Set<number>();
+  const skippedIndices = new Set<number>();
   ONBOARDING_STEPS.forEach((step, index) => {
     if (completedSteps.has(step.number)) {
       completedIndices.add(index);
     }
-  });
-
-  // Find all skipped step indices
-  const skippedIndices = new Set<number>();
-  ONBOARDING_STEPS.forEach((step, index) => {
     if (skippedSteps.has(step.number)) {
       skippedIndices.add(index);
     }
@@ -191,9 +190,7 @@ export function OnboardingStepperProgress({
                   )}
                 >
                   {isCompleted ? (
-                    <span className="text-white" data-icon="Check">
-                      ✓
-                    </span>
+                    <Check className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
                   ) : (
                     <span className={cn('text-sm font-bold', colors.text)}>{step.number}</span>
                   )}
@@ -269,9 +266,7 @@ export function OnboardingStepperProgress({
                   )}
                 >
                   {isCompleted ? (
-                    <span className="text-white" data-icon="Check">
-                      ✓
-                    </span>
+                    <Check className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
                   ) : (
                     <span className={cn('text-sm font-bold', colors.text)}>{step.number}</span>
                   )}

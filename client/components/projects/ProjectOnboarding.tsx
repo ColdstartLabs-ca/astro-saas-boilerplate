@@ -54,7 +54,7 @@ export function ProjectOnboarding({
       clearError();
     }
     wasOpenRef.current = isOpen;
-  }, [isOpen]);
+  }, [isOpen, stepper, form, clearError]);
 
   // Handle modal close
   const handleClose = () => {
