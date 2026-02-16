@@ -1,15 +1,21 @@
 'use client';
 
-import { useState, useEffect } from 'react';
 import { X, Zap, Calendar, Clock } from 'lucide-react';
 import { DashboardButton } from '@client/components/dashboard/ui/DashboardButton';
 import { ModelSelect } from '@client/components/ui/ModelSelect';
 import { writerPresetToOption, imagePresetToOption } from '@client/utils/modelAdapters';
 import { useTranslations } from '@client/hooks/useTranslations';
-import type { CampaignTone, ScheduleFrequency, CampaignStatus } from '@shared/types/campaign.types';
+import {
+  useCampaignSettingsForm,
+  type ICampaignSettings,
+} from '@client/hooks/useCampaignSettingsForm';
+import type { CampaignTone, CampaignStatus } from '@shared/types/campaign.types';
 import type { IAvailableWriterPreset, IAvailableImagePreset } from '@shared/types/models.types';
 import { getImagePresetCreditCost } from '@shared/config/image-models.config';
 import { SCHEDULE_FREQUENCY_UI_GROUPS } from '@shared/config/scheduling.config';
+
+// Re-export ICampaignSettings for consumers
+export type { ICampaignSettings } from '@client/hooks/useCampaignSettingsForm';
 
 interface ICampaignSettingsModalProps {
   isOpen: boolean;
@@ -20,19 +26,6 @@ interface ICampaignSettingsModalProps {
   imagePresets: IAvailableImagePreset[];
   isSaving?: boolean;
   campaignStatus?: CampaignStatus;
-}
-
-export interface ICampaignSettings {
-  name: string;
-  tone: CampaignTone | '';
-  targetWordCount: number;
-  model: string;
-  imagePreset: string;
-  // Schedule fields
-  scheduleFrequency?: ScheduleFrequency | null;
-  scheduleBatchSize?: number;
-  scheduleHour?: number;
-  scheduleTimezone?: string;
 }
 
 const TONE_OPTIONS: readonly CampaignTone[] = [
@@ -77,33 +70,6 @@ function generateHourOptions(): { value: number; label: string }[] {
 const HOUR_OPTIONS = generateHourOptions();
 
 /**
- * Check if schedule settings are editable based on campaign status.
- * Only draft, scheduled, and paused campaigns can have their schedule modified.
- */
-function isScheduleEditable(status?: CampaignStatus): boolean {
-  return status === 'draft' || status === 'scheduled' || status === 'paused';
-}
-
-/**
- * Get total credit cost for an article (writer + image).
- */
-function getTotalCreditCost(writerPresetKey: string, imagePresetKey: string): number {
-  const writerCost = WRITER_PRESET_COSTS[writerPresetKey as keyof typeof WRITER_PRESET_COSTS] ?? 1;
-  const imageCost = getImagePresetCreditCost(imagePresetKey);
-  return writerCost + imageCost;
-}
-
-/**
- * Credit costs for writer presets (from shared constants).
- */
-const WRITER_PRESET_COSTS = {
-  budget: 1,
-  balanced: 1,
-  pro: 2,
-  ultra: 3,
-} as const;
-
-/**
  * Modal for editing campaign settings.
  */
 export function CampaignSettingsModal({
@@ -117,66 +83,23 @@ export function CampaignSettingsModal({
   campaignStatus,
 }: ICampaignSettingsModalProps): JSX.Element | null {
   const t = useTranslations('dashboard');
-  const [settings, setSettings] = useState<ICampaignSettings>(initialSettings);
-  const [showScheduleSettings, setShowScheduleSettings] = useState(
-    !!initialSettings.scheduleFrequency
-  );
 
-  // Update settings when initial settings change
-  useEffect(() => {
-    setSettings(initialSettings);
-    setShowScheduleSettings(!!initialSettings.scheduleFrequency);
-  }, [initialSettings]);
-
-  // Default schedule values for new schedules
-  const DEFAULT_SCHEDULE = {
-    frequency: 'weekly' as ScheduleFrequency,
-    batchSize: 3,
-    hour: 9,
-    timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC',
-  };
-
-  // Handle schedule toggle with defaults
-  const handleScheduleToggle = (enabled: boolean) => {
-    setShowScheduleSettings(enabled);
-    if (enabled && !settings.scheduleFrequency) {
-      // Set defaults when enabling schedule for the first time
-      setSettings(prev => ({
-        ...prev,
-        scheduleFrequency: DEFAULT_SCHEDULE.frequency,
-        scheduleBatchSize: DEFAULT_SCHEDULE.batchSize,
-        scheduleHour: DEFAULT_SCHEDULE.hour,
-        scheduleTimezone: DEFAULT_SCHEDULE.timezone,
-      }));
-    }
-  };
-
-  const scheduleEditable = isScheduleEditable(campaignStatus);
-
-  const handleSave = async () => {
-    if (!settings.tone) return;
-    try {
-      // If schedule is not shown or disabled, clear schedule settings
-      const settingsToSave: ICampaignSettings = {
-        ...settings,
-        scheduleFrequency: showScheduleSettings ? settings.scheduleFrequency : null,
-        scheduleBatchSize: showScheduleSettings ? settings.scheduleBatchSize : undefined,
-        scheduleHour: showScheduleSettings ? settings.scheduleHour : undefined,
-        scheduleTimezone: showScheduleSettings ? settings.scheduleTimezone : undefined,
-      };
-      await onSave(settingsToSave);
-      onClose();
-    } catch {
-      // Error handled by parent
-    }
-  };
-
-  const updateSetting = <K extends keyof ICampaignSettings>(
-    key: K,
-    value: ICampaignSettings[K]
-  ) => {
-    setSettings(prev => ({ ...prev, [key]: value }));
-  };
+  // Use the settings form hook
+  const {
+    settings,
+    showScheduleSettings,
+    scheduleEditable,
+    totalCreditCost,
+    canSave,
+    updateSetting,
+    handleScheduleToggle,
+    handleSave,
+  } = useCampaignSettingsForm({
+    initialSettings,
+    campaignStatus,
+    onSave,
+    onClose,
+  });
 
   if (!isOpen) return null;
 
@@ -285,7 +208,7 @@ export function CampaignSettingsModal({
           {/* Cost Summary */}
           <div
             className={`p-3 rounded-lg border ${
-              getTotalCreditCost(settings.model, settings.imagePreset) > 3
+              totalCreditCost > 3
                 ? 'bg-amber-900/10 border-amber-500/20'
                 : 'bg-blue-900/10 border-blue-500/20'
             }`}
@@ -293,22 +216,16 @@ export function CampaignSettingsModal({
             <div className="flex items-start gap-2">
               <Zap
                 className={`w-4 h-4 mt-0.5 ${
-                  getTotalCreditCost(settings.model, settings.imagePreset) > 3
-                    ? 'text-amber-400'
-                    : 'text-blue-400'
+                  totalCreditCost > 3 ? 'text-amber-400' : 'text-blue-400'
                 }`}
               />
               <div className="flex-1">
                 <p
                   className={`text-xs font-medium ${
-                    getTotalCreditCost(settings.model, settings.imagePreset) > 3
-                      ? 'text-amber-200'
-                      : 'text-blue-200'
+                    totalCreditCost > 3 ? 'text-amber-200' : 'text-blue-200'
                   }`}
                 >
-                  Cost: {getTotalCreditCost(settings.model, settings.imagePreset)} credit
-                  {getTotalCreditCost(settings.model, settings.imagePreset) !== 1 ? 's' : ''} per
-                  article
+                  Cost: {totalCreditCost} credit{totalCreditCost !== 1 ? 's' : ''} per article
                   {settings.imagePreset && (
                     <span>
                       {' '}
@@ -317,7 +234,7 @@ export function CampaignSettingsModal({
                     </span>
                   )}
                 </p>
-                {getTotalCreditCost(settings.model, settings.imagePreset) > 3 && (
+                {totalCreditCost > 3 && (
                   <p className="text-xs text-amber-300/80 mt-1">
                     Premium model combination - uses more credits per article
                   </p>
@@ -485,7 +402,7 @@ export function CampaignSettingsModal({
           <DashboardButton variant="ghost" onClick={onClose} disabled={isSaving}>
             {t('campaigns.keywords.cancel')}
           </DashboardButton>
-          <DashboardButton onClick={handleSave} disabled={isSaving || !settings.tone}>
+          <DashboardButton onClick={handleSave} disabled={isSaving || !canSave}>
             {isSaving ? 'Saving...' : 'Save Changes'}
           </DashboardButton>
         </div>
