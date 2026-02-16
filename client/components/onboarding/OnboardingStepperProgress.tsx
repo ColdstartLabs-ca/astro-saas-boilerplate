@@ -1,11 +1,19 @@
 /**
  * OnboardingStepperProgress Component
- * Horizontal progress bar showing onboarding steps with mobile-responsive layout
+ * Thin wrapper around generic StepperProgress with onboarding-specific concerns
+ *
+ * Features:
+ * - 5 hardcoded onboarding steps
+ * - Skipped-step styling (amber color)
+ * - Optional step labels
+ * - Delegates visual rendering to generic StepperProgress
  */
 
 'use client';
 
-import { Check, SkipForward } from 'lucide-react';
+import { SkipForward } from 'lucide-react';
+import { StepperProgress, type IStepConfig } from '@client/components/stepper/StepperProgress';
+import { cn } from '@client/utils/cn';
 import { OnboardingStep } from '@shared/types/onboarding.types';
 
 // =============================================================================
@@ -25,108 +33,49 @@ interface IOnboardingStepperProgressProps {
 // Constants
 // =============================================================================
 
-interface IStepConfig {
+interface IOnboardingStepConfig extends IStepConfig {
   number: number;
-  name: string;
-  isOptional: boolean;
 }
 
-const STEPS: IStepConfig[] = [
-  { number: OnboardingStep.PROJECT_CREATION, name: 'Project', isOptional: false },
-  { number: OnboardingStep.GSC_CONNECTION, name: 'GSC', isOptional: true },
-  { number: OnboardingStep.KEYWORDS_UPLOAD, name: 'Keywords', isOptional: false },
-  { number: OnboardingStep.INTEGRATIONS, name: 'Integration', isOptional: true },
-  { number: OnboardingStep.COMPLETION, name: 'Complete', isOptional: false },
+const ONBOARDING_STEPS: IOnboardingStepConfig[] = [
+  { number: OnboardingStep.PROJECT_CREATION, label: 'Project', isOptional: false },
+  { number: OnboardingStep.GSC_CONNECTION, label: 'GSC', isOptional: true },
+  { number: OnboardingStep.KEYWORDS_UPLOAD, label: 'Keywords', isOptional: false },
+  { number: OnboardingStep.INTEGRATIONS, label: 'Integration', isOptional: true },
+  { number: OnboardingStep.COMPLETION, label: 'Complete', isOptional: false },
 ];
 
 // =============================================================================
-// Sub-Components
+// Skipped Step Indicator (internal component)
 // =============================================================================
 
-interface IStepIndicatorProps {
-  step: IStepConfig;
-  isActive: boolean;
-  isCompleted: boolean;
-  isSkipped: boolean;
+interface ISkippedStepIndicatorProps {
+  step: IOnboardingStepConfig;
   isLast: boolean;
 }
 
-function StepIndicator({
-  step,
-  isActive,
-  isCompleted,
-  isSkipped,
-  isLast,
-}: IStepIndicatorProps): JSX.Element {
-  // Determine the status colors
-  const getStepColors = () => {
-    if (isCompleted) {
-      return {
-        circle: 'bg-emerald-500 border-emerald-500',
-        text: 'text-white',
-        label: 'text-emerald-400',
-        connector: 'bg-emerald-500',
-      };
-    }
-    if (isSkipped) {
-      return {
-        circle: 'bg-amber-500/20 border-amber-500',
-        text: 'text-amber-400',
-        label: 'text-amber-400',
-        connector: 'bg-amber-500/50',
-      };
-    }
-    if (isActive) {
-      return {
-        circle: 'bg-accent border-accent',
-        text: 'text-white',
-        label: 'text-accent',
-        connector: 'bg-border',
-      };
-    }
-    return {
-      circle: 'bg-surface-light border-border',
-      text: 'text-muted',
-      label: 'text-muted',
-      connector: 'bg-border',
-    };
-  };
-
-  const colors = getStepColors();
-
+function SkippedStepIndicator({ step, isLast }: ISkippedStepIndicatorProps): JSX.Element {
   return (
     <div data-testid="stepper-step" className="flex items-center flex-1 last:flex-none">
       {/* Step Circle */}
       <div className="flex flex-col items-center">
         <div
-          className={`w-8 h-8 sm:w-10 sm:h-10 rounded-full border-2 flex items-center justify-center transition-all duration-300 ${colors.circle}`}
-        >
-          {isCompleted ? (
-            <Check className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
-          ) : isSkipped ? (
-            <SkipForward className="w-4 h-4 sm:w-5 sm:h-5 text-amber-400" />
-          ) : (
-            <span className={`text-sm font-bold ${colors.text}`}>{step.number}</span>
+          className={cn(
+            'w-8 h-8 sm:w-10 sm:h-10 rounded-full border-2 flex items-center justify-center transition-all duration-300',
+            'bg-amber-500/20 border-amber-500'
           )}
+        >
+          <SkipForward className="w-4 h-4 sm:w-5 sm:h-5 text-amber-400" />
         </div>
 
         {/* Step Label - Hidden on very small screens */}
-        <span
-          className={`hidden sm:block mt-2 text-xs font-medium transition-colors ${colors.label}`}
-        >
-          {step.name}
-          {step.isOptional && !isCompleted && !isSkipped && (
-            <span className="text-muted ml-1">(opt)</span>
-          )}
+        <span className="hidden sm:block mt-2 text-xs font-medium text-amber-400">
+          {step.label}
         </span>
       </div>
 
       {/* Connector Line - Not shown for last step */}
-      {!isLast && (
-        <div
-          className={`flex-1 h-0.5 mx-2 sm:mx-4 transition-colors duration-300 ${colors.connector}`}
-        />
-      )}
+      {!isLast && <div className="flex-1 h-0.5 mx-2 sm:mx-4 bg-amber-500/50" />}
     </div>
   );
 }
@@ -140,41 +89,205 @@ export function OnboardingStepperProgress({
   completedSteps,
   skippedSteps,
 }: IOnboardingStepperProgressProps): JSX.Element {
+  // Convert 1-based currentStep to 0-based index for generic stepper
+  const currentStepIndex = currentStep - 1;
+
+  // Convert 1-based completed steps to 0-based indices
+  const completedIndices = new Set<number>();
+  ONBOARDING_STEPS.forEach((step, index) => {
+    if (completedSteps.has(step.number)) {
+      completedIndices.add(index);
+    }
+  });
+
+  // Find all skipped step indices
+  const skippedIndices = new Set<number>();
+  ONBOARDING_STEPS.forEach((step, index) => {
+    if (skippedSteps.has(step.number)) {
+      skippedIndices.add(index);
+    }
+  });
+
+  // Build steps for generic stepper, filtering out skipped steps for visual consistency
+  // But we need to show skipped steps with amber styling, so we render manually
+  const hasSkippedSteps = skippedSteps.size > 0;
+
+  // If there are no skipped steps, use the generic stepper directly
+  if (!hasSkippedSteps) {
+    return (
+      <StepperProgress
+        currentStep={currentStepIndex}
+        steps={ONBOARDING_STEPS}
+        completedSteps={completedIndices}
+        data-testid="onboarding-stepper"
+      />
+    );
+  }
+
+  // When there are skipped steps, render manually to apply amber styling
   return (
     <div data-testid="onboarding-stepper" className="w-full py-3 sm:py-4">
       {/* Desktop/Tablet: Horizontal layout */}
       <div data-testid="stepper-desktop" className="hidden sm:flex items-center justify-center">
-        {STEPS.map((step, index) => (
-          <StepIndicator
-            key={step.number}
-            step={step}
-            isActive={currentStep === step.number}
-            isCompleted={completedSteps.has(step.number)}
-            isSkipped={skippedSteps.has(step.number)}
-            isLast={index === STEPS.length - 1}
-          />
-        ))}
+        {ONBOARDING_STEPS.map((step, index) => {
+          const isSkipped = skippedIndices.has(index);
+
+          if (isSkipped) {
+            return (
+              <SkippedStepIndicator
+                key={step.number}
+                step={step}
+                isLast={index === ONBOARDING_STEPS.length - 1}
+              />
+            );
+          }
+
+          // For non-skipped steps, we need to render with the generic styling
+          // but integrate with the skipped steps visually
+          const isCompleted = completedIndices.has(index);
+          const isActive = currentStepIndex === index;
+          const isLast = index === ONBOARDING_STEPS.length - 1;
+
+          // Determine colors
+          const getColors = () => {
+            if (isCompleted) {
+              return {
+                circle: 'bg-emerald-500 border-emerald-500',
+                text: 'text-white',
+                label: 'text-emerald-400',
+                connector: 'bg-emerald-500',
+              };
+            }
+            if (isActive) {
+              return {
+                circle: 'bg-accent border-accent',
+                text: 'text-white',
+                label: 'text-accent',
+                connector: 'bg-border',
+              };
+            }
+            return {
+              circle: 'bg-surface-light border-border',
+              text: 'text-muted',
+              label: 'text-muted',
+              connector: 'bg-border',
+            };
+          };
+
+          const colors = getColors();
+
+          return (
+            <div
+              key={step.number}
+              data-testid="stepper-step"
+              className="flex items-center flex-1 last:flex-none"
+            >
+              {/* Step Circle */}
+              <div className="flex flex-col items-center">
+                <div
+                  className={cn(
+                    'w-8 h-8 sm:w-10 sm:h-10 rounded-full border-2 flex items-center justify-center transition-all duration-300',
+                    colors.circle
+                  )}
+                >
+                  {isCompleted ? (
+                    <span className="text-white" data-icon="Check">
+                      ✓
+                    </span>
+                  ) : (
+                    <span className={cn('text-sm font-bold', colors.text)}>{step.number}</span>
+                  )}
+                </div>
+
+                {/* Step Label */}
+                <span className={cn('hidden sm:block mt-2 text-xs font-medium', colors.label)}>
+                  {step.label}
+                  {step.isOptional && !isCompleted && (
+                    <span className="text-muted ml-1">(opt)</span>
+                  )}
+                </span>
+              </div>
+
+              {/* Connector Line */}
+              {!isLast && <div className={cn('flex-1 h-0.5 mx-2 sm:mx-4', colors.connector)} />}
+            </div>
+          );
+        })}
       </div>
 
       {/* Mobile: Compact horizontal layout */}
       <div className="sm:hidden flex items-center justify-center">
-        {STEPS.map((step, index) => (
-          <StepIndicator
-            key={step.number}
-            step={step}
-            isActive={currentStep === step.number}
-            isCompleted={completedSteps.has(step.number)}
-            isSkipped={skippedSteps.has(step.number)}
-            isLast={index === STEPS.length - 1}
-          />
-        ))}
+        {ONBOARDING_STEPS.map((step, index) => {
+          const isSkipped = skippedIndices.has(index);
+
+          if (isSkipped) {
+            return (
+              <SkippedStepIndicator
+                key={step.number}
+                step={step}
+                isLast={index === ONBOARDING_STEPS.length - 1}
+              />
+            );
+          }
+
+          const isCompleted = completedIndices.has(index);
+          const isActive = currentStepIndex === index;
+          const isLast = index === ONBOARDING_STEPS.length - 1;
+
+          const getColors = () => {
+            if (isCompleted) {
+              return {
+                circle: 'bg-emerald-500 border-emerald-500',
+                text: 'text-white',
+              };
+            }
+            if (isActive) {
+              return {
+                circle: 'bg-accent border-accent',
+                text: 'text-white',
+              };
+            }
+            return {
+              circle: 'bg-surface-light border-border',
+              text: 'text-muted',
+            };
+          };
+
+          const colors = getColors();
+
+          return (
+            <div
+              key={step.number}
+              data-testid="stepper-step"
+              className="flex items-center flex-1 last:flex-none"
+            >
+              <div className="flex flex-col items-center">
+                <div
+                  className={cn(
+                    'w-8 h-8 rounded-full border-2 flex items-center justify-center transition-all duration-300',
+                    colors.circle
+                  )}
+                >
+                  {isCompleted ? (
+                    <span className="text-white" data-icon="Check">
+                      ✓
+                    </span>
+                  ) : (
+                    <span className={cn('text-sm font-bold', colors.text)}>{step.number}</span>
+                  )}
+                </div>
+              </div>
+              {!isLast && <div className="flex-1 h-0.5 mx-2 bg-border" />}
+            </div>
+          );
+        })}
       </div>
 
       {/* Mobile: Current step label below */}
       <div className="sm:hidden text-center mt-2">
         <span className="text-sm font-medium text-accent">
-          {STEPS[currentStep - 1]?.name || 'Unknown'}
-          {STEPS[currentStep - 1]?.isOptional && (
+          {ONBOARDING_STEPS[currentStepIndex]?.label || 'Unknown'}
+          {ONBOARDING_STEPS[currentStepIndex]?.isOptional && (
             <span className="text-muted ml-1">(optional)</span>
           )}
         </span>

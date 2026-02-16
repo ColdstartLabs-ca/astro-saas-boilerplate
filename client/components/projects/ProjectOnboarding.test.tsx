@@ -65,7 +65,11 @@ const mockStepper = {
   currentStep: 0,
   isFirstStep: true,
   isLastStep: false,
-  steps: ['step1', 'step2', 'step3'],
+  steps: [
+    { id: 'basic', label: 'Basic Info' },
+    { id: 'platform', label: 'Platform' },
+    { id: 'preferences', label: 'Preferences' },
+  ],
   reset: vi.fn(),
   next: vi.fn(),
   prev: vi.fn(),
@@ -144,8 +148,18 @@ describe('ProjectOnboarding', () => {
       render(<ProjectOnboarding isOpen={true} onClose={() => {}} />, { wrapper });
 
       expect(screen.getByText('Create New Project')).toBeInTheDocument();
-      // There are two "Step 1 of 3" elements (header and progress bar), use getAllByText
-      expect(screen.getAllByText(/Step 1 of 3/i)).toHaveLength(2);
+      // Now uses circle stepper - verify step circles are rendered
+      // Use getAllByText since we render both desktop and mobile versions
+      expect(screen.getAllByText('1').length).toBeGreaterThan(0);
+      expect(screen.getAllByText('2').length).toBeGreaterThan(0);
+      expect(screen.getAllByText('3').length).toBeGreaterThan(0);
+    });
+
+    it('should render step labels in the stepper', () => {
+      render(<ProjectOnboarding isOpen={true} onClose={() => {}} />, { wrapper });
+
+      // Mobile label shows current step (also appears in desktop version)
+      expect(screen.getAllByText('Basic Info').length).toBeGreaterThan(0);
     });
 
     it('should not render when isOpen is false', () => {
