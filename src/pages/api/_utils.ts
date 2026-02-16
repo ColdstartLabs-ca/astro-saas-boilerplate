@@ -11,6 +11,10 @@ import type { ILocals } from '../../types/api';
 /**
  * Get authenticated user from Authorization header
  * Supports both real auth and test mode
+ *
+ * @deprecated SEC-09: This function is redundant with lib/middleware/auth.ts
+ * Use `withAuth` or `withAuthAndBody` wrappers instead, which read from middleware-set locals.
+ * This function will be removed in a future version.
  */
 export async function authenticateUserFromHeader(
   request: Request
@@ -43,7 +47,8 @@ export async function authenticateUserFromHeader(
         // userId may contain underscores (e.g. mock_user_<uuid>), so trim optional _sub_ suffix only.
         const tokenWithoutPrefix = token.replace('test_token_mock_user_', '');
         const subIndex = tokenWithoutPrefix.indexOf('_sub_');
-        mockUserId = subIndex !== -1 ? tokenWithoutPrefix.substring(0, subIndex) : tokenWithoutPrefix;
+        mockUserId =
+          subIndex !== -1 ? tokenWithoutPrefix.substring(0, subIndex) : tokenWithoutPrefix;
       } else {
         mockUserId = token.replace('test_token_', '');
       }
@@ -275,8 +280,19 @@ export function handleApiError(error: unknown, context?: string): Response {
     }
   }
 
-  const message = error instanceof Error ? error.message : 'Internal server error';
+  // SEC-08 FIX: Never expose internal error messages to clients in production
+  // Log the detailed error server-side for debugging
   console.error(`[API] ${context ?? 'unknown'}:`, error);
+
+  // In test/development, include error details for easier debugging
+  // In production, use a generic message to avoid information disclosure
+  const isProd = serverEnv.ENV === 'production';
+  const message = isProd
+    ? 'An unexpected error occurred'
+    : error instanceof Error
+      ? error.message
+      : 'Internal server error';
+
   return errorResponse('INTERNAL_ERROR', message, 500);
 }
 

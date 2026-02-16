@@ -1,20 +1,33 @@
- 
 import { getSecurityHeaders, buildCspHeader } from '@shared/config/security';
 import { clientEnv, serverEnv } from '@shared/config/env';
 
 /**
  * Allowed origins for CORS
  * In test mode, includes the test server port (random port like 3100-4000)
+ *
+ * SEC-10 FIX: ALLOWED_ORIGIN is now used when set to a valid URL
  */
 function getAllowedOrigins(): string[] {
-  const origins = ['http://localhost:4321', 'https://localhost:4321', clientEnv.BASE_URL];
+  const origins: string[] = ['http://localhost:4321', 'https://localhost:4321', clientEnv.BASE_URL];
+
+  // SEC-10 FIX: Use ALLOWED_ORIGIN env var if set (supports comma-separated list)
+  const allowedOrigin = serverEnv.ALLOWED_ORIGIN;
+  if (allowedOrigin && allowedOrigin !== '*') {
+    // Support comma-separated list of origins
+    const customOrigins = allowedOrigin
+      .split(',')
+      .map(o => o.trim())
+      .filter(Boolean);
+    origins.push(...customOrigins);
+  }
 
   // In test environment, add the test server port
   if (serverEnv.ENV === 'test' && globalThis.process?.env?.TEST_PORT) {
     origins.push(`http://localhost:${globalThis.process.env.TEST_PORT}`);
   }
 
-  return origins.filter(Boolean) as string[];
+  // Remove duplicates and filter falsy values
+  return [...new Set(origins.filter(Boolean) as string[])];
 }
 
 let ALLOWED_ORIGINS: string[] = [];

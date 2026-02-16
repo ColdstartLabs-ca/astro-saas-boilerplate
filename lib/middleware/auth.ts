@@ -117,17 +117,7 @@ export async function verifyApiAuth(
 
   // Handle test authentication tokens ONLY in verified test environment
   if (isTestEnvironment) {
-    // Accept hardcoded test token
-    if (token === 'test_auth_token_for_testing_only') {
-      return {
-        user: {
-          id: 'test-user-id-12345',
-          email: 'test@example.com',
-        },
-      };
-    }
-
-    // Accept environment-specific test token
+    // SEC-12 FIX: Only accept environment-specific test token (removed hardcoded fallback)
     if (serverEnv.TEST_AUTH_TOKEN && token === serverEnv.TEST_AUTH_TOKEN) {
       return {
         user: {
@@ -218,9 +208,10 @@ export async function verifyApiAuth(
 /**
  * Add user context to Astro locals for downstream route handlers
  */
-export function addUserContextLocals(
-  user: { id: string; email?: string }
-): { userId: string; userEmail: string } {
+export function addUserContextLocals(user: { id: string; email?: string }): {
+  userId: string;
+  userEmail: string;
+} {
   return {
     userId: user.id,
     userEmail: user.email ?? '',
