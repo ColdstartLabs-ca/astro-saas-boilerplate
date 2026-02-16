@@ -126,6 +126,7 @@ describe('EmailService', () => {
         'subscription-update',
         'low-credits',
         'password-reset',
+        'article-complete',
       ] as const;
 
       for (const template of templates) {

@@ -9,138 +9,111 @@
   },
   "quickLinks": {
     "gettingStarted": "Getting Started",
-    "gettingStartedDesc": "Learn how to use the service",
+    "gettingStartedDesc": "Learn how to create your first campaign",
     "creditsBilling": "Credits & Billing",
     "creditsBillingDesc": "Understand pricing and payments",
     "technicalSupport": "Technical Support",
-    "technicalSupportDesc": "Troubleshoot issues"
+    "technicalSupportDesc": "Troubleshoot issues and integrations"
   },
   "gettingStarted": {
     "title": "Getting Started",
-    "faqs": {
-      "howToStart": {
-        "question": "How do I start using {appName}?",
-        "answerIntro": "To get started:",
-        "answerStep1": "Create an account",
-        "answerStep2": "using email or Google",
-        "answerStep3": "You'll receive 10 free credits to try the service",
-        "answerStep4": "Navigate to the",
-        "answerStep5": "Dashboard",
-        "answerStep6": "Use your credits to try the API",
-        "answerStep7": "Choose a plan that fits your needs",
-        "answerStep8": "Subscribe or purchase credit packs",
-        "answerStep9": "Start integrating with your application"
+    "subtitle": "Follow these steps to generate your first AI-powered SEO articles",
+    "steps": {
+      "createProject": {
+        "title": "Create a Project",
+        "description": "Connect your website to AutopilotRank. Choose from WordPress (native REST API integration), Webhook (for Shopify, Webflow, Ghost, custom platforms), or Manual mode.",
+        "tip": "Tip: WordPress users can install our plugin for one-click setup"
       },
-      "supportedFormats": {
-        "question": "What data formats are supported?",
-        "answerIntro": "Our API supports JSON for requests and responses:",
-        "format1": "JSON - Standard API format",
-        "format2": "RESTful endpoints",
-        "format3": "Webhook support for async operations",
-        "maxFileSize": "Maximum request size for free tier:",
-        "maxFileSizeValue": "5MB"
+      "addKeywords": {
+        "title": "Add Keywords",
+        "description": "Enter target keywords manually one-by-one, or upload a CSV file for bulk import. Connect Google Search Console to discover keyword opportunities from your existing traffic.",
+        "tip": "Tip: Long-tail keywords often have less competition and higher conversion rates"
       },
-      "apiUsage": {
-        "question": "How do I use the API?",
-        "answerIntro": "API usage is straightforward:",
-        "answerDetail1": "Authenticate using your API key",
-        "answerDetail2": "Make requests to our endpoints",
-        "answerDetail3": "Credits are deducted for each request",
-        "example": "Example: Check the documentation for specific endpoint details and request/response formats."
+      "generateArticles": {
+        "title": "Generate Articles",
+        "description": "Choose your AI model preset (Budget, Balanced, Pro, or Ultra) and content settings. Each article costs 1-5 credits depending on the model. Hit Generate to start.",
+        "tip": "Tip: Budget preset is great for informational content; Ultra for money pages"
       },
-      "processingTime": {
-        "question": "How long does processing take?",
-        "answer": "Processing typically takes a few seconds depending on the operation and current server load. You'll receive a response with your results."
+      "reviewPublish": {
+        "title": "Review & Publish",
+        "description": "Edit generated articles in our Markdown editor. Approve content for publishing, or let our full autopilot mode publish automatically after QA checks pass.",
+        "tip": "Tip: Review mode lets you approve each article before it goes live"
       }
     }
   },
   "creditsBilling": {
     "title": "Credits & Billing",
+    "subtitle": "Understand how credits work and choose the right plan",
     "faqs": {
-      "whatAreCredits": {
-        "question": "What are credits?",
-        "answerPart1": "Credits are the currency used for API requests. Each API call consumes credits based on the operation.",
-        "answerPart2": "New users receive",
-        "answerPart3": "10 free credits",
-        "answerPart4": "to try the service."
+      "howCreditsWork": {
+        "question": "How do credits work?",
+        "answer": "Credits are used to generate articles. Each article costs 1-5 credits depending on your AI model preset: Budget (1 credit), Balanced (1 credit), Pro (2 credits), or Ultra (3 credits). Image generation add-ons cost 0-2 additional credits depending on the image preset."
       },
-      "purchaseCredits": {
-        "question": "How do I purchase more credits?",
-        "answerIntro": "Visit our",
-        "pricingPage": "Pricing page",
-        "answerMid": "to choose from our subscription plans:",
-        "plan1": "Hobby: 200 credits/month for $19/month",
-        "plan2": "Professional: 1000 credits/month for $49/month",
-        "plan3": "Business: 5000 credits/month for $149/month"
+      "subscriptionPlans": {
+        "question": "What subscription plans are available?",
+        "answer": "We offer three plans: Starter ($49/mo, 30 articles), Growth ($99/mo, 100 articles), and Agency ($249/mo, 500 articles). All plans include multi-model AI (GPT-4, Claude, Gemini), our Humanizer engine, and SEO scoring."
       },
-      "creditsExpire": {
-        "question": "Do credits expire?",
-        "answer": "Subscription credits roll over month-to-month up to 6× your monthly credit allowance, as long as your subscription remains active. For example, the Hobby plan can accumulate up to 1,200 credits (6 × 200)."
+      "creditPacks": {
+        "question": "Can I buy extra credits?",
+        "answer": "Yes! Credit packs are available for one-time purchase: 10 articles for $9.99, 25 articles for $19.99 (best value), or 50 articles for $34.99. Credits from packs never expire."
       },
-      "cancelSubscription": {
-        "question": "Can I cancel my subscription?",
-        "answerIntro": "Yes! You can cancel anytime through:",
-        "option1": "Your",
-        "option2": "Billing Dashboard",
-        "option3": "The Stripe customer portal",
-        "answerOutro": "You'll continue to have access until the end of your billing period, and any remaining credits will stay in your account."
+      "rollover": {
+        "question": "Do unused credits roll over?",
+        "answer": "Yes! On Starter and Growth plans, unused subscription credits roll over month-to-month up to 3x your monthly limit. For example, Growth (100/mo) can accumulate up to 300 credits. Agency plan uses a use-it-or-lose-it model."
+      },
+      "trialCredits": {
+        "question": "Do you offer a free trial?",
+        "answer": "Yes! New users get 3 free trial articles to test the platform. No credit card required. Use these credits to generate articles and see the quality for yourself."
       },
       "paymentMethods": {
         "question": "What payment methods do you accept?",
-        "answer": "We accept all major credit cards (Visa, Mastercard, American Express) and various other payment methods through Stripe, our secure payment processor."
+        "answer": "We accept all major credit cards (Visa, Mastercard, American Express) through Stripe, our secure payment processor. All transactions are encrypted and PCI-compliant."
+      },
+      "cancelSubscription": {
+        "question": "Can I cancel my subscription?",
+        "answer": "Yes! You can cancel anytime through your Billing Dashboard or the Stripe customer portal. You'll continue to have access until the end of your billing period, and any remaining credits will stay in your account."
       },
       "refunds": {
-        "question": "Can I get a refund?",
-        "answerIntro": "Due to the nature of digital services, refunds are generally not provided for used credits. However, we may issue refunds at our discretion for:",
-        "reason1": "Technical failures that result in lost credits",
-        "reason2": "Duplicate charges",
-        "reason3": "Service unavailability",
-        "contactSupport": "for assistance."
+        "question": "What is your refund policy?",
+        "answer": "We offer a 14-day money-back guarantee, no questions asked. If you're not satisfied with the service, contact support for a full refund within 14 days of your purchase."
       }
     }
   },
   "technicalSupport": {
     "title": "Technical Support",
+    "subtitle": "Integration guides and troubleshooting",
     "faqs": {
-      "failedProcessing": {
-        "question": "My API request failed. What should I do?",
-        "answerIntro": "If a request fails:",
-        "step1": "Your credit should be automatically refunded if the error was on our end",
-        "step2": "Check that your request meets our API requirements (format, size)",
-        "step3": "Review the error message for details",
-        "step4": "Try the request again",
-        "step5": "If the problem persists, contact"
+      "supportedCms": {
+        "question": "What CMS platforms do you support?",
+        "answer": "Native integration: WordPress (via REST API with Application Passwords). Webhook integrations: Shopify, Webflow, Ghost, Notion, Wix, and custom platforms. Our webhook system allows you to connect virtually any CMS or custom application."
+      },
+      "aiModels": {
+        "question": "What AI models do you use?",
+        "answer": "We use top-tier AI models via OpenRouter: GPT-4o (OpenAI), Claude Sonnet (Anthropic), and Gemini Flash (Google). Each model preset balances cost vs. quality for different use cases."
+      },
+      "gscIntegration": {
+        "question": "How does Google Search Console integration work?",
+        "answer": "Connect your Google Search Console to discover keyword opportunities from your existing search traffic. We analyze impressions, clicks, and positions to suggest high-potential keywords you're already ranking for but could improve."
+      },
+      "scheduling": {
+        "question": "What scheduling options are available?",
+        "answer": "Choose from 8 frequency options: 3x daily, 2x daily, daily, every other day, 3x weekly, 2x weekly, weekly, or every 2 weeks. Articles are generated and published on your schedule automatically."
+      },
+      "approvalWorkflow": {
+        "question": "Can I review content before publishing?",
+        "answer": "Yes! Choose between three modes: (1) Full autopilot - content publishes automatically after QA passes, (2) Review mode - content queued for your approval in the dashboard, (3) Draft mode - content saved as drafts in your CMS for manual review."
       },
       "qualityIssues": {
-        "question": "The result isn't what I expected.",
-        "answerIntro": "API results depend on the operation and input data:",
-        "result1": "Review the API documentation for expected behavior",
-        "result2": "Check that your input data is properly formatted",
-        "result3": "Verify you're using the correct endpoint and parameters",
-        "answerOutro": "The quality of your input data greatly affects the final result. Starting with clean, well-formatted data will produce better results."
+        "question": "What if I'm not happy with the content quality?",
+        "answer": "Our Humanizer engine ensures natural, readable content. If an article doesn't meet your standards, you can regenerate it (uses additional credits) or edit it directly in our Markdown editor. Contact support if you see systematic issues."
+      },
+      "failedProcessing": {
+        "question": "What happens if article generation fails?",
+        "answer": "If generation fails due to a system error, your credits are automatically refunded. Check the campaign status page for error details. Common issues include API rate limits or temporary AI model unavailability. Most issues resolve automatically on retry."
       },
       "dataPrivacy": {
         "question": "Is my data secure and private?",
-        "answerIntro": "Yes! We take privacy seriously:",
-        "point1": "Data is processed securely and not stored longer than necessary",
-        "point2": "We do not use your data to train models",
-        "point3": "All data transmission is encrypted with HTTPS",
-        "point4": "We comply with data protection regulations",
-        "answerOutro": "Read our full",
-        "privacyPolicy": "Privacy Policy",
-        "answerEnd": "for details."
-      },
-      "commercialUse": {
-        "question": "Can I use the API results commercially?",
-        "answer": "Yes! You retain all rights to your data. We do not claim any ownership of the data you process through our API. However, you must have the legal right to use the input data you provide. We are not responsible for copyright violations related to your source data."
-      },
-      "browserSupport": {
-        "question": "What browsers are supported?",
-        "answerIntro": "Our dashboard works best on modern browsers:",
-        "browser1": "Chrome/Edge (latest 2 versions)",
-        "browser2": "Firefox (latest 2 versions)",
-        "browser3": "Safari (latest 2 versions)",
-        "jsNote": "JavaScript must be enabled for the dashboard to function."
+        "answer": "Yes! We take privacy seriously: data is processed securely via HTTPS, we don't use your content to train models, and we comply with data protection regulations including GDPR. Read our Privacy Policy for full details."
       }
     }
   },

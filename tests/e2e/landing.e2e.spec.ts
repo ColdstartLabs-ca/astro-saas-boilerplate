@@ -59,4 +59,35 @@ test.describe('Landing Page', () => {
     const screenshot = await page.screenshot({ fullPage: false });
     expect(screenshot.byteLength).toBeGreaterThan(0);
   });
+
+  test('should display updated FAQ content', async ({ page }) => {
+    await page.goto('/');
+
+    // Wait for page to be fully loaded
+    await page.waitForLoadState('networkidle');
+
+    // Find FAQ section by id
+    const faqSection = page.locator('#faq');
+    await expect(faqSection).toBeVisible();
+
+    // Verify FAQ items exist
+    const faqItems = page.locator('#faq button');
+    const faqCount = await faqItems.count();
+    expect(faqCount).toBeGreaterThanOrEqual(6);
+
+    // Verify key FAQ content is present
+    const pageContent = await page.locator('body').textContent();
+
+    // Check Google penalties FAQ
+    expect(pageContent).toContain('Will Google penalize AI-generated content?');
+
+    // Check CMS platforms FAQ
+    expect(pageContent).toContain('What CMS platforms do you support?');
+
+    // Check content review FAQ
+    expect(pageContent).toContain('Can I review content before it publishes?');
+
+    // Check refund policy FAQ
+    expect(pageContent).toContain("What's your refund policy?");
+  });
 });
