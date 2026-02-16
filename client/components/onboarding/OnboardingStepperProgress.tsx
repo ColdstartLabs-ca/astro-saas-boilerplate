@@ -11,6 +11,7 @@
 
 'use client';
 
+import { useMemo } from 'react';
 import { SkipForward, Check } from 'lucide-react';
 import { StepperProgress, type IStepConfig } from '@client/components/stepper/StepperProgress';
 import { cn } from '@client/utils/cn';
@@ -81,6 +82,45 @@ function SkippedStepIndicator({ step, isLast }: ISkippedStepIndicatorProps): JSX
 }
 
 // =============================================================================
+// Helper Functions
+// =============================================================================
+
+interface IStepColors {
+  circle: string;
+  text: string;
+  label: string;
+  connector: string;
+}
+
+/**
+ * Get color classes for a step based on its state
+ */
+function getStepColors(isCompleted: boolean, isActive: boolean): IStepColors {
+  if (isCompleted) {
+    return {
+      circle: 'bg-emerald-500 border-emerald-500',
+      text: 'text-white',
+      label: 'text-emerald-400',
+      connector: 'bg-emerald-500',
+    };
+  }
+  if (isActive) {
+    return {
+      circle: 'bg-accent border-accent',
+      text: 'text-white',
+      label: 'text-accent',
+      connector: 'bg-border',
+    };
+  }
+  return {
+    circle: 'bg-surface-light border-border',
+    text: 'text-muted',
+    label: 'text-muted',
+    connector: 'bg-border',
+  };
+}
+
+// =============================================================================
 // Main Component
 // =============================================================================
 
@@ -95,21 +135,24 @@ export function OnboardingStepperProgress({
   // Convert 1-based currentStep to 0-based index for generic stepper
   const currentStepIndex = clampedStep - 1;
 
-  // Convert 1-based completed steps to 0-based indices in a single loop
-  const completedIndices = new Set<number>();
-  const skippedIndices = new Set<number>();
-  ONBOARDING_STEPS.forEach((step, index) => {
-    if (completedSteps.has(step.number)) {
-      completedIndices.add(index);
-    }
-    if (skippedSteps.has(step.number)) {
-      skippedIndices.add(index);
-    }
-  });
-
-  // Build steps for generic stepper, filtering out skipped steps for visual consistency
-  // But we need to show skipped steps with amber styling, so we render manually
-  const hasSkippedSteps = skippedSteps.size > 0;
+  // Memoize the conversion of 1-based step numbers to 0-based indices
+  const { completedIndices, skippedIndices, hasSkippedSteps } = useMemo(() => {
+    const completed = new Set<number>();
+    const skipped = new Set<number>();
+    ONBOARDING_STEPS.forEach((step, index) => {
+      if (completedSteps.has(step.number)) {
+        completed.add(index);
+      }
+      if (skippedSteps.has(step.number)) {
+        skipped.add(index);
+      }
+    });
+    return {
+      completedIndices: completed,
+      skippedIndices: skipped,
+      hasSkippedSteps: skipped.size > 0,
+    };
+  }, [completedSteps, skippedSteps]);
 
   // If there are no skipped steps, use the generic stepper directly
   if (!hasSkippedSteps) {
@@ -147,33 +190,7 @@ export function OnboardingStepperProgress({
           const isActive = currentStepIndex === index;
           const isLast = index === ONBOARDING_STEPS.length - 1;
 
-          // Determine colors
-          const getColors = () => {
-            if (isCompleted) {
-              return {
-                circle: 'bg-emerald-500 border-emerald-500',
-                text: 'text-white',
-                label: 'text-emerald-400',
-                connector: 'bg-emerald-500',
-              };
-            }
-            if (isActive) {
-              return {
-                circle: 'bg-accent border-accent',
-                text: 'text-white',
-                label: 'text-accent',
-                connector: 'bg-border',
-              };
-            }
-            return {
-              circle: 'bg-surface-light border-border',
-              text: 'text-muted',
-              label: 'text-muted',
-              connector: 'bg-border',
-            };
-          };
-
-          const colors = getColors();
+          const colors = getStepColors(isCompleted, isActive);
 
           return (
             <div
@@ -231,26 +248,7 @@ export function OnboardingStepperProgress({
           const isActive = currentStepIndex === index;
           const isLast = index === ONBOARDING_STEPS.length - 1;
 
-          const getColors = () => {
-            if (isCompleted) {
-              return {
-                circle: 'bg-emerald-500 border-emerald-500',
-                text: 'text-white',
-              };
-            }
-            if (isActive) {
-              return {
-                circle: 'bg-accent border-accent',
-                text: 'text-white',
-              };
-            }
-            return {
-              circle: 'bg-surface-light border-border',
-              text: 'text-muted',
-            };
-          };
-
-          const colors = getColors();
+          const colors = getStepColors(isCompleted, isActive);
 
           return (
             <div
