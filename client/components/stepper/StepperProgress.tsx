@@ -1,115 +1,175 @@
 /**
  * StepperProgress Component
- * Visual progress indicator for multi-step forms
+ * Generic, reusable horizontal stepper with circle-connector-label design
  *
  * Features:
- * - Horizontal step indicators
- * - Current step highlighting
- * - Completed step indicators
- * - Optional step labels
+ * - Circle indicators with numbered or checkmark states
+ * - Connector lines between steps
+ * - Active step highlighting with accent color
+ * - Completed steps with green checkmark
+ * - Mobile-responsive layout
  */
 
 'use client';
 
 import React from 'react';
+import { Check } from 'lucide-react';
 import { cn } from '@client/utils/cn';
 
 // =============================================================================
 // Types
 // =============================================================================
 
+export interface IStepConfig {
+  /** Display label for this step */
+  label: string;
+  /** Whether this step should be shown as optional */
+  isOptional?: boolean;
+}
+
 export interface IStepperProgressProps {
   /** Current step index (0-based) */
   currentStep: number;
-  /** Total number of steps */
-  totalSteps: number;
-  /** Optional step labels */
-  stepLabels?: string[];
-  /** Whether to show step numbers */
-  showNumbers?: boolean;
+  /** Array of step configurations with labels */
+  steps: IStepConfig[];
+  /** Set of completed step indices (0-based) */
+  completedSteps?: Set<number>;
   /** Additional className for the container */
   className?: string;
 }
 
 // =============================================================================
-// Component
+// Sub-Components
+// =============================================================================
+
+interface IStepIndicatorProps {
+  step: IStepConfig;
+  stepIndex: number;
+  isActive: boolean;
+  isCompleted: boolean;
+  isLast: boolean;
+}
+
+function StepIndicator({
+  step,
+  stepIndex,
+  isActive,
+  isCompleted,
+  isLast,
+}: IStepIndicatorProps): JSX.Element {
+  // Determine the status colors
+  const getStepColors = () => {
+    if (isCompleted) {
+      return {
+        circle: 'bg-emerald-500 border-emerald-500',
+        text: 'text-white',
+        label: 'text-emerald-400',
+        connector: 'bg-emerald-500',
+      };
+    }
+    if (isActive) {
+      return {
+        circle: 'bg-accent border-accent',
+        text: 'text-white',
+        label: 'text-accent',
+        connector: 'bg-border',
+      };
+    }
+    return {
+      circle: 'bg-surface-light border-border',
+      text: 'text-muted',
+      label: 'text-muted',
+      connector: 'bg-border',
+    };
+  };
+
+  const colors = getStepColors();
+
+  return (
+    <div data-testid="stepper-step" className="flex items-center flex-1 last:flex-none">
+      {/* Step Circle */}
+      <div className="flex flex-col items-center">
+        <div
+          className={cn(
+            'w-8 h-8 sm:w-10 sm:h-10 rounded-full border-2 flex items-center justify-center transition-all duration-300',
+            colors.circle
+          )}
+        >
+          {isCompleted ? (
+            <Check className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
+          ) : (
+            <span className={cn('text-sm font-bold', colors.text)}>{stepIndex + 1}</span>
+          )}
+        </div>
+
+        {/* Step Label - Hidden on very small screens */}
+        <span
+          className={cn('hidden sm:block mt-2 text-xs font-medium transition-colors', colors.label)}
+        >
+          {step.label}
+          {step.isOptional && !isCompleted && <span className="text-muted ml-1">(opt)</span>}
+        </span>
+      </div>
+
+      {/* Connector Line - Not shown for last step */}
+      {!isLast && (
+        <div
+          className={cn(
+            'flex-1 h-0.5 mx-2 sm:mx-4 transition-colors duration-300',
+            colors.connector
+          )}
+        />
+      )}
+    </div>
+  );
+}
+
+// =============================================================================
+// Main Component
 // =============================================================================
 
 export function StepperProgress({
   currentStep,
-  totalSteps,
-  stepLabels,
-  showNumbers = true,
+  steps,
+  completedSteps = new Set(),
   className,
 }: IStepperProgressProps): JSX.Element {
-  const steps = Array.from({ length: totalSteps }, (_, i) => i);
-
   return (
-    <div className={cn('w-full', className)}>
-      {/* Progress Bar */}
-      <div className="relative">
-        {/* Background Line */}
-        <div className="absolute top-1/2 left-0 right-0 h-0.5 bg-border -translate-y-1/2" />
+    <div data-testid="stepper-progress" className={cn('w-full py-3 sm:py-4', className)}>
+      {/* Desktop/Tablet: Horizontal layout */}
+      <div data-testid="stepper-desktop" className="hidden sm:flex items-center justify-center">
+        {steps.map((step, index) => (
+          <StepIndicator
+            key={index}
+            step={step}
+            stepIndex={index}
+            isActive={currentStep === index}
+            isCompleted={completedSteps.has(index)}
+            isLast={index === steps.length - 1}
+          />
+        ))}
+      </div>
 
-        {/* Active Progress Line */}
-        <div
-          className="absolute top-1/2 left-0 h-0.5 bg-accent -translate-y-1/2 transition-all duration-300 ease-out"
-          style={{
-            width: `${(currentStep / (totalSteps - 1)) * 100}%`,
-          }}
-        />
+      {/* Mobile: Compact horizontal layout */}
+      <div className="sm:hidden flex items-center justify-center">
+        {steps.map((step, index) => (
+          <StepIndicator
+            key={index}
+            step={step}
+            stepIndex={index}
+            isActive={currentStep === index}
+            isCompleted={completedSteps.has(index)}
+            isLast={index === steps.length - 1}
+          />
+        ))}
+      </div>
 
-        {/* Step Indicators */}
-        <div className="relative flex justify-between">
-          {steps.map(step => {
-            const isCompleted = step < currentStep;
-            const isCurrent = step === currentStep;
-            const isUpcoming = step > currentStep;
-
-            return (
-              <div key={step} className="flex flex-col items-center gap-2">
-                {/* Step Circle */}
-                <div
-                  className={cn(
-                    'relative z-10 flex items-center justify-center w-8 h-8 rounded-full border-2 transition-all duration-300',
-                    isCompleted && 'bg-accent border-accent text-white',
-                    isCurrent && 'bg-accent/20 border-accent text-accent ring-4 ring-accent/10',
-                    isUpcoming && 'bg-surface border-border text-muted'
-                  )}
-                >
-                  {isCompleted ? (
-                    // Checkmark for completed steps
-                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={3}
-                        d="M5 13l4 4L19 7"
-                      />
-                    </svg>
-                  ) : showNumbers ? (
-                    // Step number
-                    <span className="text-sm font-medium">{step + 1}</span>
-                  ) : null}
-                </div>
-
-                {/* Step Label */}
-                {stepLabels && stepLabels[step] && (
-                  <span
-                    className={cn(
-                      'text-xs font-medium transition-colors',
-                      isCurrent && 'text-accent',
-                      isCompleted && 'text-accent',
-                      isUpcoming && 'text-muted'
-                    )}
-                  >
-                    {stepLabels[step]}
-                  </span>
-                )}
-              </div>
-            );
-          })}
-        </div>
+      {/* Mobile: Current step label below */}
+      <div className="sm:hidden text-center mt-2">
+        <span className="text-sm font-medium text-accent">
+          {steps[currentStep]?.label || 'Unknown'}
+          {steps[currentStep]?.isOptional && <span className="text-muted ml-1">(optional)</span>}
+        </span>
       </div>
     </div>
   );

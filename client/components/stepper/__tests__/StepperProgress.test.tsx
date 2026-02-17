@@ -13,78 +13,83 @@ describe('StepperProgress', () => {
   describe('StepperProgress Component', () => {
     const defaultProps: IStepperProgressProps = {
       currentStep: 0,
-      totalSteps: 3,
+      steps: [{ label: 'Basic Info' }, { label: 'Platform' }, { label: 'Preferences' }],
     };
 
-    test('should render step indicators', () => {
+    test('should render all step circles with labels', () => {
       render(<StepperProgress {...defaultProps} />);
 
-      const step1 = screen.getByText('1');
-      const step2 = screen.getByText('2');
-      const step3 = screen.getByText('3');
-
-      expect(step1).toBeInTheDocument();
-      expect(step2).toBeInTheDocument();
-      expect(step3).toBeInTheDocument();
+      // Use getAllByText since we render both desktop and mobile versions
+      expect(screen.getAllByText('1').length).toBeGreaterThan(0);
+      expect(screen.getAllByText('2').length).toBeGreaterThan(0);
+      expect(screen.getAllByText('3').length).toBeGreaterThan(0);
     });
 
     test('should render correct number of steps', () => {
-      render(<StepperProgress currentStep={0} totalSteps={5} />);
+      render(
+        <StepperProgress
+          currentStep={0}
+          steps={[
+            { label: 'Step 1' },
+            { label: 'Step 2' },
+            { label: 'Step 3' },
+            { label: 'Step 4' },
+            { label: 'Step 5' },
+          ]}
+        />
+      );
 
-      expect(screen.getByText('1')).toBeInTheDocument();
-      expect(screen.getByText('2')).toBeInTheDocument();
-      expect(screen.getByText('3')).toBeInTheDocument();
-      expect(screen.getByText('4')).toBeInTheDocument();
-      expect(screen.getByText('5')).toBeInTheDocument();
+      // Use getAllByText since we render both desktop and mobile versions
+      expect(screen.getAllByText('1').length).toBeGreaterThan(0);
+      expect(screen.getAllByText('2').length).toBeGreaterThan(0);
+      expect(screen.getAllByText('3').length).toBeGreaterThan(0);
+      expect(screen.getAllByText('4').length).toBeGreaterThan(0);
+      expect(screen.getAllByText('5').length).toBeGreaterThan(0);
     });
 
-    test('should show current step as active', () => {
-      render(<StepperProgress currentStep={1} totalSteps={3} />);
+    test('should highlight current step', () => {
+      const { container } = render(
+        <StepperProgress
+          currentStep={1}
+          steps={[{ label: 'Step 1' }, { label: 'Step 2' }, { label: 'Step 3' }]}
+        />
+      );
 
-      const step2 = screen.getByText('2');
-      expect(step2).toBeInTheDocument();
+      // Current step should have accent color
+      const accentElements = container.querySelectorAll('[class*="accent"]');
+      expect(accentElements.length).toBeGreaterThan(0);
     });
 
     test('should show checkmark for completed steps', () => {
-      const { container } = render(<StepperProgress currentStep={2} totalSteps={4} />);
+      const completedSteps = new Set([0]);
+      const { container } = render(
+        <StepperProgress
+          currentStep={1}
+          steps={[{ label: 'Step 1' }, { label: 'Step 2' }, { label: 'Step 3' }]}
+          completedSteps={completedSteps}
+        />
+      );
 
-      const checkmarks = container.querySelectorAll('svg');
-      expect(checkmarks.length).toBeGreaterThan(0);
+      // Should have emerald color for completed step
+      const emeraldElements = container.querySelectorAll('[class*="emerald"]');
+      expect(emeraldElements.length).toBeGreaterThan(0);
     });
 
-    test('should render step labels when provided', () => {
-      const props: IStepperProgressProps = {
-        ...defaultProps,
-        stepLabels: ['Personal Info', 'Address', 'Review'],
-      };
+    test('should render connector lines between steps', () => {
+      const { container } = render(<StepperProgress {...defaultProps} />);
 
-      render(<StepperProgress {...props} />);
-
-      expect(screen.getByText('Personal Info')).toBeInTheDocument();
-      expect(screen.getByText('Address')).toBeInTheDocument();
-      expect(screen.getByText('Review')).toBeInTheDocument();
+      // Should have connector lines (h-0.5)
+      const connectors = container.querySelectorAll('.h-0\\.5');
+      // N-1 connectors for N steps * 2 (desktop + mobile)
+      expect(connectors.length).toBe(4);
     });
 
-    test('should not render step labels when not provided', () => {
-      render(<StepperProgress {...defaultProps} />);
+    test('should render step labels on desktop', () => {
+      const { container } = render(<StepperProgress {...defaultProps} />);
 
-      expect(screen.queryByText('Personal Info')).not.toBeInTheDocument();
-    });
-
-    test('should hide numbers when showNumbers is false', () => {
-      render(<StepperProgress {...defaultProps} showNumbers={false} />);
-
-      expect(screen.queryByText('1')).not.toBeInTheDocument();
-      expect(screen.queryByText('2')).not.toBeInTheDocument();
-      expect(screen.queryByText('3')).not.toBeInTheDocument();
-    });
-
-    test('should show numbers by default', () => {
-      render(<StepperProgress {...defaultProps} />);
-
-      expect(screen.getByText('1')).toBeInTheDocument();
-      expect(screen.getByText('2')).toBeInTheDocument();
-      expect(screen.getByText('3')).toBeInTheDocument();
+      // Desktop labels are hidden on small screens but present
+      const hiddenLabels = container.querySelectorAll('.hidden.sm\\:block');
+      expect(hiddenLabels.length).toBeGreaterThan(0);
     });
 
     test('should apply custom className', () => {
@@ -95,58 +100,68 @@ describe('StepperProgress', () => {
     });
 
     test('should handle single step', () => {
-      render(<StepperProgress currentStep={0} totalSteps={1} />);
+      render(<StepperProgress currentStep={0} steps={[{ label: 'Only Step' }]} />);
 
-      expect(screen.getByText('1')).toBeInTheDocument();
+      // Use getAllByText since we render both desktop and mobile versions
+      expect(screen.getAllByText('1').length).toBeGreaterThan(0);
     });
 
     test('should handle last step as current', () => {
-      const { container } = render(<StepperProgress currentStep={2} totalSteps={3} />);
+      const completedSteps = new Set([0, 1]);
+      const { container } = render(
+        <StepperProgress
+          currentStep={2}
+          steps={[{ label: 'Step 1' }, { label: 'Step 2' }, { label: 'Step 3' }]}
+          completedSteps={completedSteps}
+        />
+      );
 
-      const checkmarks = container.querySelectorAll('svg');
-      expect(checkmarks.length).toBe(2);
+      // Step 3 should be current
+      expect(screen.getAllByText('3').length).toBeGreaterThan(0);
+      // Should have emerald for completed steps
+      const emeraldElements = container.querySelectorAll('[class*="emerald"]');
+      expect(emeraldElements.length).toBeGreaterThan(0);
     });
 
-    test('should handle all steps completed (current equals total-1)', () => {
-      const { container } = render(<StepperProgress currentStep={2} totalSteps={3} />);
+    test('should handle all steps completed (current equals last)', () => {
+      const completedSteps = new Set([0, 1]);
+      const { container } = render(
+        <StepperProgress
+          currentStep={2}
+          steps={[{ label: 'Step 1' }, { label: 'Step 2' }, { label: 'Step 3' }]}
+          completedSteps={completedSteps}
+        />
+      );
 
-      // Step 3 should be current (not completed), steps 1 and 2 should have checkmarks
-      expect(screen.getByText('3')).toBeInTheDocument();
-      const checkmarks = container.querySelectorAll('svg');
-      expect(checkmarks.length).toBe(2);
+      // Step 3 should be current (not completed)
+      expect(screen.getAllByText('3').length).toBeGreaterThan(0);
+      // Steps 1 and 2 should be completed (emerald)
+      const emeraldElements = container.querySelectorAll('[class*="emerald"]');
+      expect(emeraldElements.length).toBeGreaterThan(0);
     });
 
-    test('should render progress bar background line', () => {
-      const { container } = render(<StepperProgress {...defaultProps} />);
+    test('should render with optional steps', () => {
+      render(
+        <StepperProgress
+          currentStep={0}
+          steps={[
+            { label: 'Required', isOptional: false },
+            { label: 'Optional', isOptional: true },
+          ]}
+        />
+      );
 
-      const progressBars = container.querySelectorAll('.bg-border');
-      expect(progressBars.length).toBeGreaterThan(0);
+      // Use getAllByText since we render both desktop and mobile versions
+      expect(screen.getAllByText('1').length).toBeGreaterThan(0);
+      expect(screen.getAllByText('2').length).toBeGreaterThan(0);
     });
 
-    test('should render active progress line with correct width', () => {
-      const { container } = render(<StepperProgress currentStep={1} totalSteps={3} />);
+    test('should show mobile current step label', () => {
+      render(<StepperProgress {...defaultProps} />);
 
-      const activeProgressBars = container.querySelectorAll('.bg-accent');
-      expect(activeProgressBars.length).toBeGreaterThan(0);
-    });
-
-    test('should handle step 0 as current', () => {
-      render(<StepperProgress currentStep={0} totalSteps={4} />);
-
-      expect(screen.getByText('1')).toBeInTheDocument();
-    });
-
-    test('should render partial labels (some empty)', () => {
-      const props: IStepperProgressProps = {
-        currentStep: 0,
-        totalSteps: 4,
-        stepLabels: ['Step 1', '', 'Step 3', ''],
-      };
-
-      render(<StepperProgress {...props} />);
-
-      expect(screen.getByText('Step 1')).toBeInTheDocument();
-      expect(screen.getByText('Step 3')).toBeInTheDocument();
+      // Mobile label should be visible (appears in both desktop hidden and mobile visible)
+      const labels = screen.getAllByText('Basic Info');
+      expect(labels.length).toBeGreaterThan(0);
     });
   });
 
@@ -265,6 +280,11 @@ describe('StepperProgress', () => {
   });
 
   describe('exports', () => {
+    test('should export StepperProgress component', () => {
+      expect(StepperProgress).toBeDefined();
+      expect(typeof StepperProgress).toBe('function');
+    });
+
     test('should export StepperProgressCompact component', () => {
       expect(StepperProgressCompact).toBeDefined();
       expect(typeof StepperProgressCompact).toBe('function');
@@ -273,7 +293,7 @@ describe('StepperProgress', () => {
     test('should export IStepperProgressProps type', () => {
       const props: IStepperProgressProps = {
         currentStep: 0,
-        totalSteps: 3,
+        steps: [{ label: 'Test' }],
       };
       expect(props).toBeDefined();
     });
