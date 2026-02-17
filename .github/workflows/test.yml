@@ -67,8 +67,8 @@ jobs:
       - name: Install dependencies
         run: yarn install --frozen-lockfile
 
-      - name: Install Playwright browsers
-        run: npx playwright install --with-deps chromium
+      - name: Run api tests
+        run: yarn test:api
 
       - name: Create test env file
         run: |
@@ -82,6 +82,9 @@ jobs:
           echo "STRIPE_SECRET_KEY=sk_test_dummy" >> .env.test
           echo "STRIPE_WEBHOOK_SECRET=whsec_test_dummy" >> .env.test
           echo "NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=pk_test_dummy" >> .env.test
+
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps chromium
 
       - name: Run E2E core flow tests
         run: yarn playwright test tests/e2e/core-app-flow.ci.e2e.spec.ts --project=chromium --reporter=list
