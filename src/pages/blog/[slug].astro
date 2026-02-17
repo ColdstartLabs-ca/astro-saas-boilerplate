@@ -1,6 +1,8 @@
 ---
 import Layout from '../../layouts/Layout.astro';
+import { clientEnv } from '@shared/config/env';
 import { getPostBySlug, getAllPosts } from '@server/blog';
+import { ReadingProgress } from '@client/components/blog/ReadingProgress';
 
 export const prerender = true;
 
@@ -23,20 +25,115 @@ const description = post.description;
 ---
 
 <Layout title={title}>
-  <article class="min-h-screen bg-main p-8">
-    <a href="/blog" class="text-accent hover:underline">← Back to Blog</a>
+  <Fragment slot="head">
+    <meta name="description" content={description} />
+    <meta property="og:title" content={`${title} | ${clientEnv.APP_NAME}`} />
+    <meta property="og:description" content={description} />
+    <meta property="og:type" content="article" />
+    {post.image && <meta property="og:image" content={post.image} />}
+    <link rel="canonical" href={`${clientEnv.BASE_URL}/blog/${slug}`} />
+  </Fragment>
 
-    <h1 class="text-3xl font-bold text-white mt-4">{post.title}</h1>
-    <p class="text-xl text-muted-foreground mt-2">{post.description}</p>
+  <ReadingProgress client:load />
 
-    <p class="text-sm text-muted-foreground mt-4">
-      By {post.author} • {post.date}
-    </p>
+  <div class="min-h-screen bg-main">
+    <!-- Navigation -->
+    <div class="container mx-auto px-4 max-w-4xl pt-8">
+      <a href="/blog" class="inline-flex items-center gap-2 text-sm text-text-secondary hover:text-accent transition-colors group">
+        <svg class="w-4 h-4 group-hover:-translate-x-0.5 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+        </svg>
+        Back to Blog
+      </a>
+    </div>
 
-    {post.image && (
-      <img src={post.image} alt={post.title} class="mt-8 rounded-lg" />
-    )}
+    <article class="container mx-auto px-4 max-w-4xl py-8 pb-24">
+      <!-- Header -->
+      <header class="mb-10">
+        <div class="flex items-center gap-3 mb-4">
+          {post.category && (
+            <span class="px-3 py-1 rounded-full text-xs font-medium bg-accent/10 text-accent border border-accent/20">
+              {post.category}
+            </span>
+          )}
+          {post.readingTime && (
+            <span class="text-sm text-muted-foreground flex items-center gap-1.5">
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              {post.readingTime}
+            </span>
+          )}
+        </div>
 
-    <div class="prose prose-invert mt-8" set:html={post.content} />
-  </article>
+        <h1 class="font-display text-3xl md:text-5xl font-bold text-white mb-4 leading-tight tracking-tight">
+          {post.title}
+        </h1>
+
+        <p class="text-lg md:text-xl text-text-secondary leading-relaxed mb-6">
+          {post.description}
+        </p>
+
+        <div class="flex items-center gap-4 text-sm text-text-secondary border-b border-border/50 pb-6">
+          <span>By {post.author}</span>
+          <span class="w-1 h-1 rounded-full bg-border" />
+          <time>
+            {new Date(post.date).toLocaleDateString('en-US', {
+              year: 'numeric',
+              month: 'long',
+              day: 'numeric',
+            })}
+          </time>
+        </div>
+      </header>
+
+      <!-- Cover Image -->
+      {post.image && (
+        <div class="aspect-[21/9] rounded-2xl overflow-hidden mb-12">
+          <img
+            src={post.image}
+            alt={post.title}
+            class="w-full h-full object-cover"
+          />
+        </div>
+      )}
+
+      <!-- Content -->
+      <div class="prose prose-invert prose-lg max-w-none
+        prose-headings:font-display prose-headings:tracking-tight
+        prose-h1:text-3xl prose-h1:mt-12 prose-h1:mb-6
+        prose-h2:text-2xl prose-h2:mt-10 prose-h2:mb-4
+        prose-h3:text-xl prose-h3:mt-8 prose-h3:mb-3
+        prose-p:text-text-secondary prose-p:leading-relaxed
+        prose-a:text-accent prose-a:no-underline hover:prose-a:underline
+        prose-strong:text-white
+        prose-li:text-text-secondary prose-li:marker:text-accent/50
+        prose-blockquote:border-accent/50 prose-blockquote:text-text-secondary
+        prose-code:text-accent prose-code:bg-surface-light prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded prose-code:before:content-none prose-code:after:content-none
+        prose-table:border-border prose-th:text-white prose-td:text-text-secondary prose-th:border-border prose-td:border-border
+        prose-img:rounded-xl
+        prose-hr:border-border/50
+        [&_table]:overflow-x-auto [&_table]:block [&_table]:w-full
+      " set:html={post.content} />
+
+      <!-- Back to Blog CTA -->
+      <div class="mt-16 pt-8 border-t border-border/50 flex items-center justify-between">
+        <a href="/blog" class="inline-flex items-center gap-2 text-sm text-text-secondary hover:text-accent transition-colors group">
+          <svg class="w-4 h-4 group-hover:-translate-x-0.5 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+          </svg>
+          Back to Blog
+        </a>
+        <a
+          href="/?signup=1"
+          class="inline-flex items-center gap-2 px-5 py-2.5 bg-accent text-white text-sm font-semibold rounded-lg hover:bg-accent-hover transition-colors"
+        >
+          Try AutopilotRank Free
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3" />
+          </svg>
+        </a>
+      </div>
+    </article>
+  </div>
 </Layout>
