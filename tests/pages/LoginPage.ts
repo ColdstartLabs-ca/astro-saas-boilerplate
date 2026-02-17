@@ -83,20 +83,19 @@ export class LoginPage extends BasePage {
    * Opens mobile menu and clicks sign in button (mobile-specific flow)
    */
   private async openMobileMenuAndSignIn(): Promise<void> {
-    // Check if we're on mobile by looking for mobile menu toggle
-    const mobileMenuToggle = this.page.locator(
-      'button[aria-label="Toggle menu"], .md\\:hidden button'
-    );
+    // Check if we're on mobile by looking for mobile menu toggle (lg:hidden in tailwind)
+    const mobileMenuToggle = this.page
+      .locator('button.lg\\:hidden, button[aria-label="Toggle menu"], button[aria-label="Menu"]')
+      .first();
+
     if (await mobileMenuToggle.isVisible({ timeout: 3000 })) {
       // Open mobile menu
       await mobileMenuToggle.click();
       await this.wait(500); // Wait for menu to animate open
 
-      // Click sign in button inside mobile menu
+      // Click sign in button inside mobile menu (the text is "Log in" per nav.json)
       const mobileSignInButton = this.page
-        .locator(
-          '[role="navigation"] button:has-text("Log in"):visible, [role="navigation"] button:has-text("Sign In"):visible, nav button:has-text("Log in"):visible, nav button:has-text("Sign In"):visible'
-        )
+        .locator('button:has-text("Log in"), button:has-text("Sign In")')
         .first();
       await expect(mobileSignInButton).toBeVisible({ timeout: 5000 });
       await mobileSignInButton.click();

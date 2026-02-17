@@ -79,12 +79,14 @@ export class BasePage {
   }
 
   /**
-   * Gets the sign in button from header
+   * Gets the sign in button from header (desktop or mobile menu)
+   * Note: On smaller screens, may need to open mobile menu first
    */
   get signInButton(): Locator {
+    // Try to find any visible sign in button first
     return this.page
-      .locator('button:visible, [role="navigation"] button:visible, nav button:visible')
-      .filter({ hasText: /log in|sign in/i })
+      .locator('button')
+      .filter({ hasText: /^log in$|^sign in$/i })
       .first();
   }
 

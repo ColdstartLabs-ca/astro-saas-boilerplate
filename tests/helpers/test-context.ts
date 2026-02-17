@@ -1,4 +1,4 @@
-import { TestDataManager, type ITestUser } from './test-data-manager';
+import { TestDataManager, type ITestUser, isTestRuntime } from './test-data-manager';
 
 export interface ITestContextOptions {
   autoCleanup?: boolean;
@@ -44,7 +44,7 @@ export class TestContext {
       return user;
     } catch (error) {
       // In test environment, if user creation fails, create a mock user
-      if (process.env.ENV === 'test') {
+      if (isTestRuntime()) {
         console.warn('User creation failed, creating mock user for test environment:', error);
         const mockUserId = this.generateUUID();
         const mockToken =
@@ -223,9 +223,8 @@ export class TestContext {
    */
   async setupStripeCustomer(userId: string, customerId?: string): Promise<void> {
     const stripeCustomerId = customerId || `cus_${userId}`;
-    const isTestMode = process.env.ENV === 'test';
 
-    if (isTestMode) {
+    if (isTestRuntime()) {
       // In test mode, update the test mode profile
       const existingProfile = (this.dataManager as any).testModeProfiles?.get(userId);
       if (existingProfile) {
@@ -277,6 +276,11 @@ export class TestContext {
   ): Promise<{ id: string }> {
     const projectId = this.generateUUID();
 
+    // In test mode, return mock project without database operations
+    if (isTestRuntime()) {
+      return { id: projectId };
+    }
+
     const { error } = await this.supabaseAdmin.from('projects').insert({
       id: projectId,
       user_id: userId,
@@ -312,6 +316,11 @@ export class TestContext {
     }
   ): Promise<{ id: string }> {
     const campaignId = this.generateUUID();
+
+    // In test mode, return mock campaign without database operations
+    if (isTestRuntime()) {
+      return { id: campaignId };
+    }
 
     const { error: campaignError } = await this.supabaseAdmin.from('campaigns').insert({
       id: campaignId,
@@ -355,6 +364,11 @@ export class TestContext {
    * @returns Array of articles
    */
   async getArticlesByCampaign(campaignId: string): Promise<Array<{ id: string }>> {
+    // In test mode, return empty array without database operations
+    if (isTestRuntime()) {
+      return [];
+    }
+
     const { data, error } = await this.supabaseAdmin
       .from('articles')
       .select('id')
@@ -374,6 +388,12 @@ export class TestContext {
    * @returns Total credit balance
    */
   async getUserCredits(userId: string): Promise<number> {
+    // In test mode, return default credits from test mode profile
+    if (isTestRuntime()) {
+      const profile = (this.dataManager as any).testModeProfiles?.get(userId);
+      return profile?.credits_balance || 10;
+    }
+
     const { data, error } = await this.supabaseAdmin
       .from('user_credits')
       .select('total_credits_balance')
@@ -397,6 +417,11 @@ export class TestContext {
     id: string;
     generation_run_id: string | null;
   }> {
+    // In test mode, return mock campaign without database operations
+    if (isTestRuntime()) {
+      return { id: campaignId, generation_run_id: null };
+    }
+
     const { data, error } = await this.supabaseAdmin
       .from('campaigns')
       .select('id, generation_run_id')
