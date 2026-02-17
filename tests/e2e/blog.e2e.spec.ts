@@ -62,8 +62,8 @@ test.describe('Blog', () => {
       // Wait for content to load
       await page.waitForLoadState('networkidle');
 
-      // Verify the page title is present
-      const title = page.locator('h1');
+      // Verify the page title is present - use first() to handle header h1 + article h1
+      const title = page.locator('h1').first();
       await expect(title).toBeVisible();
       await expect(title).toContainText('Introducing AutopilotRank');
 
@@ -90,10 +90,11 @@ test.describe('Blog', () => {
       await page.goto('/blog/introducing-autopilotrank');
       await page.waitForLoadState('networkidle');
 
-      // Check for back to blog link - it's an arrow character followed by text
-      const backLink = page.locator('article > a[href="/blog"]').first();
+      // Check for back to blog link - use a more flexible selector
+      // The link appears both in navigation (before article) and at bottom of article
+      const backLink = page.locator('a[href="/blog"]').filter({ hasText: 'Back to Blog' }).first();
       await expect(backLink).toBeVisible();
-      // The link contains "← Back to Blog"
+      // The link contains "Back to Blog"
       const linkText = await backLink.textContent();
       expect(linkText).toContain('Back');
     });
@@ -115,8 +116,8 @@ test.describe('Blog', () => {
       await page.goto('/blog/autopilotrank-vs-outrank');
       await page.waitForLoadState('networkidle');
 
-      // Verify title
-      const title = page.locator('h1');
+      // Verify title - use first() to handle header h1 + article h1
+      const title = page.locator('h1').first();
       await expect(title).toContainText('AutopilotRank vs Outrank');
 
       // Verify the page loaded and has content

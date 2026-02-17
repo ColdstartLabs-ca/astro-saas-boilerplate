@@ -52,26 +52,26 @@ export class ArticlesPage extends BasePage {
   }
 
   /**
-   * Gets status filter dropdown
+   * Gets status filter dropdown (second select in filter panel)
    */
   get statusFilterSelect(): Locator {
-    return this.page.locator('[data-testid="status-filter"], select').first();
+    // The filter panel has: Campaign (1st), Status (2nd), Date Range (3rd)
+    return this.filterPanel.locator('select').nth(1);
   }
 
   /**
-   * Gets campaign filter dropdown (if available)
+   * Gets campaign filter dropdown (first select in filter panel)
    */
   get campaignFilterSelect(): Locator {
-    return this.page.locator('[data-testid="campaign-filter"], select').nth(1);
+    return this.filterPanel.locator('select').first();
   }
 
   /**
    * Gets search input field
+   * Note: Articles page doesn't have search input currently
    */
   get searchInput(): Locator {
-    return this.page
-      .getByPlaceholder(/search articles/i)
-      .or(this.page.locator('input[type="search"], input[placeholder*="search"]'));
+    return this.page.locator('input[type="search"], input[placeholder*="search"]').first();
   }
 
   /**
@@ -117,10 +117,14 @@ export class ArticlesPage extends BasePage {
   }
 
   /**
-   * Gets article title
+   * Gets article title (from inside article card)
    */
   get articleTitle(): Locator {
-    return this.page.locator('[data-testid="article-title"], h2, h3').first();
+    // First try data-testid, then fallback to h3 inside article card
+    return this.articleCards
+      .first()
+      .locator('[data-testid="article-title"]')
+      .or(this.articleCards.first().locator('h3'));
   }
 
   /**
@@ -138,10 +142,14 @@ export class ArticlesPage extends BasePage {
   }
 
   /**
-   * Gets primary keyword tag
+   * Gets primary keyword tag (from inside article card)
+   * Note: The keyword is shown in a <p> with text-muted class below the title
    */
   get primaryKeyword(): Locator {
-    return this.page.locator('[data-testid="primary-keyword"], [data-testid="article-keyword"]');
+    // The keyword paragraph is inside the title button, as a sibling to the h3 title
+    return this.articleCards
+      .first()
+      .locator('button h3 + p.text-muted, [data-testid="article-keyword"]');
   }
 
   /**
@@ -260,11 +268,37 @@ export class ArticlesPage extends BasePage {
   // ============================================================================
 
   /**
+   * Gets the filter toggle button
+   */
+  get filterButton(): Locator {
+    return this.page.getByRole('button', { name: /filters/i });
+  }
+
+  /**
+   * Gets the filter panel (visible when expanded)
+   */
+  get filterPanel(): Locator {
+    return this.page.locator('.grid.grid-cols-3.gap-3');
+  }
+
+  /**
+   * Opens the filter panel if not already open
+   */
+  async openFilterPanel(): Promise<void> {
+    const panel = this.filterPanel;
+    if (!(await panel.isVisible().catch(() => false))) {
+      await this.filterButton.click();
+      await expect(panel).toBeVisible({ timeout: 5000 });
+    }
+  }
+
+  /**
    * Filters articles by status
    *
    * @param status - Status to filter by
    */
   async filterByStatus(status: string): Promise<void> {
+    await this.openFilterPanel();
     await this.statusFilterSelect.selectOption(status);
     await this.waitForLoadingComplete();
   }
@@ -275,6 +309,7 @@ export class ArticlesPage extends BasePage {
    * @param campaignId - Campaign ID or name to filter by
    */
   async filterByCampaign(campaignId: string): Promise<void> {
+    await this.openFilterPanel();
     await this.campaignFilterSelect.selectOption(campaignId);
     await this.waitForLoadingComplete();
   }
@@ -305,6 +340,7 @@ export class ArticlesPage extends BasePage {
    * @returns Selected status value
    */
   async getSelectedStatusFilter(): Promise<string> {
+    await this.openFilterPanel();
     return this.statusFilterSelect.inputValue();
   }
 
@@ -313,13 +349,16 @@ export class ArticlesPage extends BasePage {
   // ============================================================================
 
   /**
-   * Opens an article detail by clicking on a card
+   * Opens an article detail by clicking on a card's title
    *
    * @param index - Index of article card to click (default: 0)
    */
   async openArticleDetail(index = 0): Promise<void> {
     const card = this.articleCards.nth(index);
-    await card.click();
+    // Click on the article title button which has the onClick handler
+    // The button has aria-label like "View article: 10 SEO Tips for 2024"
+    const titleButton = card.locator('button[aria-label^="View article:"]');
+    await titleButton.first().click();
     await this.waitForLoadingComplete();
     await this.assertDetailPanelVisible();
   }

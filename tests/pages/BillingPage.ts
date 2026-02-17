@@ -67,14 +67,10 @@ export class BillingPage extends BasePage {
     this.changePlanButton = page.getByRole('button', { name: 'Change Plan' });
 
     // Subscription details
-    this.subscriptionDetails = page.locator(
-      '[data-testid="subscription-details"], div:has-text("Current Period Ends")'
-    );
-    this.currentPeriodEndLabel = page.getByText('Current Period Ends');
-    this.currentPeriodEndValue = page
-      .locator('div')
-      .filter({ hasText: /Current Period Ends/ })
-      .locator('span.font-medium');
+    this.subscriptionDetails = page.locator('[data-testid="subscription-details"]');
+    this.currentPeriodEndLabel = page.getByText(/Current Period Ends|Trial Ends/);
+    // The current period end is in a flex container with text-muted-foreground and text-white font-medium
+    this.currentPeriodEndValue = this.subscriptionDetails.locator('div').filter({ hasText: /Current Period Ends|Trial Ends/ }).locator('span.text-white.font-medium');
     this.cancelationNotice = page.locator('div').filter({ hasText: /will be canceled at the end/ });
 
     // Payment Methods section
@@ -188,7 +184,10 @@ export class BillingPage extends BasePage {
    */
   async refresh(): Promise<void> {
     await this.refreshButton.click();
-    await this.waitForNetworkIdle();
+    // Wait for DOM to be ready and network to settle a bit
+    // Using a shorter wait than full networkidle to avoid timeout issues
+    await this.page.waitForLoadState('domcontentloaded').catch(() => {});
+    await this.wait(1000);
   }
 
   /**
@@ -264,8 +263,8 @@ export class BillingPage extends BasePage {
    * Wait for billing page to be updated after operations
    */
   async waitForBillingUpdate(): Promise<void> {
-    // Wait for network requests to complete
-    await this.waitForNetworkIdle();
+    // Wait for DOM to be ready and some network activity to settle
+    await this.page.waitForLoadState('domcontentloaded').catch(() => {});
 
     // Wait a bit for UI updates
     await this.wait(500);
