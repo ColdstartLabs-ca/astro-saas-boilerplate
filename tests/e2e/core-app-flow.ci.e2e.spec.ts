@@ -41,10 +41,8 @@ test.describe('Core App Flow - CI', () => {
       loginPage = new LoginPage(page);
       await loginPage.goto('/');
 
-      // Wait for auth state to settle
-      await page.waitForTimeout(1000);
-
       // Sign in button should be visible (using base page selector)
+      // Wait for the page to be fully hydrated instead of using arbitrary timeout
       await expect(loginPage.signInButton).toBeVisible({ timeout: 15000 });
     });
   });
