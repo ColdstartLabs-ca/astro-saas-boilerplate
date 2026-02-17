@@ -48,7 +48,8 @@ interface ISupabaseCampaignIntegrationJoin {
   created_at: string;
   // Supabase generated types may return array for FK joins;
   // at runtime it's a single object for many-to-one, but we accept both
-  integrations: ISupabaseIntegrationRow | ISupabaseIntegrationRow[] | null;
+  integration?: ISupabaseIntegrationRow | ISupabaseIntegrationRow[] | null;
+  integrations?: ISupabaseIntegrationRow | ISupabaseIntegrationRow[] | null;
 }
 
 /**
@@ -89,7 +90,7 @@ export const GET = withAuth(async (userId, { params }) => {
       integration_id,
       enabled,
       created_at,
-      integrations (
+      integration:integrations (
         id,
         user_id,
         type,
@@ -115,7 +116,7 @@ export const GET = withAuth(async (userId, { params }) => {
   // Supabase returns a single object (not array) for many-to-one FK joins
   const integrations: ICampaignIntegrationWithDetails[] = (campaignIntegrations || [])
     .map((ci: ISupabaseCampaignIntegrationJoin) => {
-      const raw = ci.integrations;
+      const raw = ci.integration ?? ci.integrations;
       const integration = Array.isArray(raw) ? raw[0] : raw;
       if (!integration) return null;
       return {
@@ -237,7 +238,7 @@ export const PUT = withAuthAndBody(
       integration_id,
       enabled,
       created_at,
-      integrations (
+      integration:integrations (
         id,
         user_id,
         type,
@@ -256,7 +257,8 @@ export const PUT = withAuthAndBody(
     // Supabase returns a single object (not array) for many-to-one FK joins
     const integrations: ICampaignIntegrationWithDetails[] = (updatedIntegrations || [])
       .map((ci: ISupabaseCampaignIntegrationJoin) => {
-        const integration = ci.integrations;
+        const raw = ci.integration ?? ci.integrations;
+        const integration = Array.isArray(raw) ? raw[0] : raw;
         if (!integration) return null;
         return {
           id: ci.id,

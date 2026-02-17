@@ -28,6 +28,7 @@ import { DashboardButton } from '@client/components/dashboard/ui/DashboardButton
 import { useOnboardingStore } from '@client/store/onboardingStore';
 import { useIntegrations } from '@client/hooks/useIntegrations';
 import { useOnboardingProgress } from '@client/hooks/useOnboardingProgress';
+import { apiFetch } from '@client/utils/api-client';
 import { OnboardingStep } from '@shared/types/onboarding.types';
 import type { IntegrationType } from '@shared/types/integration.types';
 
@@ -289,8 +290,14 @@ export function OnboardingStepIntegrations({
   const [showWebhookHelp, setShowWebhookHelp] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const { completedSteps, skippedSteps, setHasIntegration, markStepComplete, markStepSkipped } =
-    useOnboardingStore();
+  const {
+    completedSteps,
+    skippedSteps,
+    campaignId,
+    setHasIntegration,
+    markStepComplete,
+    markStepSkipped,
+  } = useOnboardingStore();
   const { createIntegration } = useIntegrations();
   const { updateProgress, isUpdating } = useOnboardingProgress();
 
@@ -347,7 +354,20 @@ export function OnboardingStepIntegrations({
         };
       }
 
-      await createIntegration(input);
+      // Server-side glue for onboarding: create + assign integration to campaign
+      // in one operation, with rollback if assignment fails.
+      if (campaignId) {
+        await apiFetch('/api/integrations', {
+          method: 'POST',
+          body: JSON.stringify({
+            ...input,
+            campaignId,
+            autoPublish: true,
+          }),
+        });
+      } else {
+        await createIntegration(input);
+      }
 
       // Update store
       setHasIntegration(true);
@@ -376,6 +396,7 @@ export function OnboardingStepIntegrations({
     selectedType,
     canSubmit,
     formData,
+    campaignId,
     completedSteps,
     skippedSteps,
     createIntegration,

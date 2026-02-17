@@ -23,6 +23,13 @@ const updateIntegrationSchema = z.object({
   name: z.string().min(1).max(100).optional(),
   appPassword: z.string().min(1).optional(),
   secret: z.string().optional(),
+  apiToken: z.string().min(1).optional(),
+  apiKey: z.string().min(1).optional(),
+  accountId: z.string().min(1).optional(),
+  integrationToken: z.string().min(1).optional(),
+  accessToken: z.string().min(1).optional(),
+  adminApiKey: z.string().min(1).optional(),
+  webhookUrl: z.string().url().optional(),
 });
 
 /**

@@ -106,7 +106,7 @@ const mockIntegration = {
   type: 'wordpress',
   name: 'My WP Site',
   config: { site_url: 'https://example.com', username: 'admin' },
-  status: 'connected',
+  status: 'active',
   user_id: 'user-1',
   encrypted_credentials: 'encrypted-data',
 };
@@ -126,7 +126,10 @@ const mockDeliveryRecord = {
 };
 
 // Build supabase mock that returns different data per table
-function buildSupabaseMock(campaignData = mockCampaignWithProjectObject) {
+function buildSupabaseMock(
+  campaignData = mockCampaignWithProjectObject,
+  integrationData = mockIntegration
+) {
   return {
     from: vi.fn((table: string) => {
       if (table === 'articles') {
@@ -146,7 +149,20 @@ function buildSupabaseMock(campaignData = mockCampaignWithProjectObject) {
       }
       if (table === 'integrations') {
         const chain = createChain(null);
-        chain.in = vi.fn(() => Promise.resolve({ data: [mockIntegration], error: null }));
+        let statusFilter: string | null = null;
+        chain.eq = vi.fn((column: string, value: unknown) => {
+          if (column === 'status' && typeof value === 'string') {
+            statusFilter = value;
+          }
+          return chain;
+        });
+        chain.in = vi.fn(() =>
+          Promise.resolve({
+            data:
+              statusFilter && integrationData.status !== statusFilter ? [] : [integrationData],
+            error: null,
+          })
+        );
         return chain;
       }
       if (table === 'integration_deliveries') {
@@ -259,6 +275,24 @@ describe('DeliveryService', () => {
       expect(mockPublish).toHaveBeenCalled();
       const context = mockPublish.mock.calls[0][0];
       expect(context.project).toBeNull();
+    });
+
+    it('should skip non-active integrations', async () => {
+      const disabledIntegration = {
+        ...mockIntegration,
+        status: 'disabled',
+      };
+      (supabaseAdmin as any).from = buildSupabaseMock(
+        mockCampaignWithProjectObject,
+        disabledIntegration
+      ).from;
+
+      const result = await service.deliverArticle('article-1');
+
+      expect(result.total).toBe(0);
+      expect(result.successful).toBe(0);
+      expect(result.failed).toBe(0);
+      expect(mockPublish).not.toHaveBeenCalled();
     });
   });
 

@@ -68,7 +68,7 @@ export class DeliveryService {
     const { data: article, error: articleError } = await supabaseAdmin
       .from('articles')
       .select(
-        'id, title, content, slug, meta_description, primary_keyword, word_count, seo_score, featured_image_url, campaign_id, user_id, article_images(position, image_url, status)'
+        'id, title, content, slug, meta_description, primary_keyword, word_count, seo_score, featured_image_url, campaign_id, user_id, project_id, article_images(position, image_url, status)'
       )
       .eq('id', articleId)
       .single();
@@ -123,7 +123,9 @@ export class DeliveryService {
       integrationIds = campaignIntegrations?.map(ci => ci.integration_id) || [];
     }
 
-    if (integrationIds.length === 0) {
+    const uniqueIntegrationIds = [...new Set(integrationIds)];
+
+    if (uniqueIntegrationIds.length === 0) {
       serviceLogger.info('[DeliveryService] No integrations to deliver to', { articleId });
       return {
         total: 0,
@@ -137,10 +139,13 @@ export class DeliveryService {
     const { data: integrations } = await supabaseAdmin
       .from('integrations')
       .select('*')
-      .in('id', integrationIds);
+      .eq('status', 'active')
+      .in('id', uniqueIntegrationIds);
 
     if (!integrations || integrations.length === 0) {
-      serviceLogger.warn('[DeliveryService] No valid integrations found', { integrationIds });
+      serviceLogger.warn('[DeliveryService] No valid integrations found', {
+        integrationIds: uniqueIntegrationIds,
+      });
       return {
         total: 0,
         successful: 0,
@@ -158,40 +163,31 @@ export class DeliveryService {
     };
 
     for (const integration of integrations as IIntegration[]) {
+      let deliveryId: string | null = null;
+
       try {
-        // Create or update delivery record
-        let deliveryId: string;
+        let nextAttemptCount = 1;
 
         if (retryFailed) {
-          // Update existing failed delivery
-          const { data: existing } = await supabaseAdmin
+          // Retry only the most recent failed delivery record for this integration.
+          const { data: existingFailed } = await supabaseAdmin
             .from('integration_deliveries')
-            .select('id')
+            .select('id, attempt_count')
             .eq('article_id', articleId)
             .eq('integration_id', integration.id)
-            .single();
+            .eq('status', 'failed')
+            .order('created_at', { ascending: false })
+            .limit(1)
+            .maybeSingle();
 
-          if (existing) {
-            deliveryId = existing.id;
-          } else {
-            // Create new if not exists
-            const { data: newDelivery } = await supabaseAdmin
-              .from('integration_deliveries')
-              .insert({
-                article_id: articleId,
-                integration_id: integration.id,
-                campaign_id: article.campaign_id,
-                status: 'pending',
-                attempt_count: 0,
-              })
-              .select('id')
-              .single();
-
-            deliveryId = newDelivery!.id;
+          if (existingFailed) {
+            deliveryId = existingFailed.id;
+            nextAttemptCount = (existingFailed.attempt_count || 0) + 1;
           }
-        } else {
-          // Create new delivery record
-          const { data: newDelivery } = await supabaseAdmin
+        }
+
+        if (!deliveryId) {
+          const { data: newDelivery, error: insertError } = await supabaseAdmin
             .from('integration_deliveries')
             .insert({
               article_id: articleId,
@@ -203,23 +199,23 @@ export class DeliveryService {
             .select('id')
             .single();
 
-          deliveryId = newDelivery!.id;
+          if (insertError || !newDelivery) {
+            throw new Error(
+              `Failed to create delivery record: ${insertError?.message ?? 'Unknown error'}`
+            );
+          }
+
+          deliveryId = newDelivery.id;
+          nextAttemptCount = 1;
         }
 
-        // Mark as delivering
+        // Mark as delivering and increment attempt count deterministically.
         await supabaseAdmin
           .from('integration_deliveries')
           .update({
             status: 'delivering',
-            attempt_count: retryFailed
-              ? (
-                  await supabaseAdmin
-                    .from('integration_deliveries')
-                    .select('attempt_count')
-                    .eq('id', deliveryId)
-                    .single()
-                ).data?.attempt_count || 0 + 1
-              : 1,
+            attempt_count: nextAttemptCount,
+            error: null,
           })
           .eq('id', deliveryId);
 
@@ -260,28 +256,21 @@ export class DeliveryService {
             .update(updateData)
             .eq('id', deliveryId);
 
-          // Update article published_url/updated_at if WordPress delivered
+          // Update article published URL if WordPress returned an external URL.
           if (publishResult.externalUrl && fullIntegration.type === 'wordpress') {
+            const publishedAt = new Date().toISOString();
             await supabaseAdmin
               .from('articles')
               .update({
                 published_url: publishResult.externalUrl,
-                published_at: new Date().toISOString(),
+                published_at: publishedAt,
               })
               .eq('id', articleId);
 
-            // Update local article reference for webhook payload
+            // Update local article reference for downstream webhook payload.
             (article as Record<string, unknown>).published_url = publishResult.externalUrl;
+            (article as Record<string, unknown>).published_at = publishedAt;
           }
-
-          // Fire article.published webhook event (fire-and-forget)
-          this.fireArticlePublishedEvent(
-            article as unknown as IArticle & { published_url?: string },
-            campaign as unknown as ICampaign | null,
-            project as unknown as IProject | null
-          ).catch(err => {
-            serviceLogger.error('[DeliveryService] Failed to fire webhook event', err);
-          });
 
           results.successful++;
         } else {
@@ -307,13 +296,46 @@ export class DeliveryService {
           results.deliveries.push(updatedDelivery as IIntegrationDelivery);
         }
       } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : String(error);
         serviceLogger.error('[DeliveryService] Delivery error', {
           articleId,
           integrationId: integration.id,
-          error: error instanceof Error ? error.message : String(error),
+          error: errorMessage,
         });
+
+        if (deliveryId) {
+          await supabaseAdmin
+            .from('integration_deliveries')
+            .update({
+              status: 'failed',
+              error: errorMessage,
+            })
+            .eq('id', deliveryId);
+
+          const { data: failedDelivery } = await supabaseAdmin
+            .from('integration_deliveries')
+            .select('*')
+            .eq('id', deliveryId)
+            .single();
+
+          if (failedDelivery) {
+            results.deliveries.push(failedDelivery as IIntegrationDelivery);
+          }
+        }
+
         results.failed++;
       }
+    }
+
+    // Fire article.published webhook once per delivery operation (not per integration).
+    if (results.successful > 0) {
+      this.fireArticlePublishedEvent(
+        article as unknown as IArticle & { published_url?: string },
+        campaign as unknown as ICampaign | null,
+        project as unknown as IProject | null
+      ).catch(err => {
+        serviceLogger.error('[DeliveryService] Failed to fire webhook event', err);
+      });
     }
 
     serviceLogger.info('[DeliveryService] Delivery completed', {
@@ -333,6 +355,18 @@ export class DeliveryService {
     articleId: string,
     userId: string
   ): Promise<IIntegrationDeliveryWithDetails[]> {
+    // Verify article ownership first.
+    const { data: article } = await supabaseAdmin
+      .from('articles')
+      .select('id')
+      .eq('id', articleId)
+      .eq('user_id', userId)
+      .maybeSingle();
+
+    if (!article) {
+      throw new Error('Article not found or access denied');
+    }
+
     const { data, error } = await supabaseAdmin
       .from('integration_deliveries')
       .select(
@@ -348,7 +382,7 @@ export class DeliveryService {
         attempt_count,
         delivered_at,
         created_at,
-        integrations (
+        integration:integrations (
           id,
           name,
           type,
@@ -364,20 +398,7 @@ export class DeliveryService {
       throw new Error('Failed to get delivery records');
     }
 
-    // Verify article ownership
-    if (data && data.length > 0) {
-      const { data: article } = await supabaseAdmin
-        .from('articles')
-        .select('user_id')
-        .eq('id', articleId)
-        .single();
-
-      if (article?.user_id !== userId) {
-        throw new Error('Article not found or access denied');
-      }
-    }
-
-    return data as unknown as IIntegrationDeliveryWithDetails[];
+    return (data || []) as unknown as IIntegrationDeliveryWithDetails[];
   }
 
   /**

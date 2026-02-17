@@ -50,6 +50,7 @@ vi.mock('@server/services/integration.service', () => ({
     list: vi.fn(),
     getById: vi.fn(),
     create: vi.fn(),
+    assignIntegrationToCampaign: vi.fn(),
     update: vi.fn(),
     delete: vi.fn(),
     testConnection: vi.fn(),
@@ -248,6 +249,117 @@ describe('Integrations API', () => {
 
       const data = await response.json();
       expect(data.data.integration.type).toBe('webhook');
+    });
+
+    it('should assign integration to campaign when campaignId is provided', async () => {
+      const { integrationService } = await import('@server/services/integration.service');
+
+      const input = {
+        type: 'wordpress' as const,
+        name: 'My Blog',
+        siteUrl: 'https://example.com',
+        username: 'admin',
+        appPassword: 'abcd-1234-efgh-5678',
+        campaignId: mockCampaignId,
+        autoPublish: true,
+      };
+
+      const mockResult = {
+        integration: {
+          id: mockIntegrationId,
+          user_id: mockUserId,
+          type: 'wordpress' as const,
+          name: 'My Blog',
+          config: { site_url: 'https://example.com', username: 'admin' },
+          status: 'active' as const,
+          last_tested_at: new Date().toISOString(),
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        },
+        testResult: {
+          success: true,
+          timestamp: new Date().toISOString(),
+        },
+      };
+
+      vi.mocked(integrationService.create).mockResolvedValue(mockResult);
+      vi.mocked(integrationService.assignIntegrationToCampaign).mockResolvedValue(undefined);
+
+      const context = {
+        request: new Request('http://localhost', {
+          method: 'POST',
+          body: JSON.stringify(input),
+        }),
+        params: {},
+        locals: { userId: mockUserId },
+        url: new URL('http://localhost'),
+      };
+
+      const response = await createIntegration(mockUserId, input, context);
+
+      expect(response.status).toBe(201);
+      expect(integrationService.create).toHaveBeenCalledWith(mockUserId, {
+        type: 'wordpress',
+        name: 'My Blog',
+        siteUrl: 'https://example.com',
+        username: 'admin',
+        appPassword: 'abcd-1234-efgh-5678',
+      });
+      expect(integrationService.assignIntegrationToCampaign).toHaveBeenCalledWith(
+        mockCampaignId,
+        mockUserId,
+        mockIntegrationId,
+        true
+      );
+    });
+
+    it('should rollback created integration when campaign assignment fails', async () => {
+      const { integrationService } = await import('@server/services/integration.service');
+
+      const input = {
+        type: 'webhook' as const,
+        name: 'My Webhook',
+        url: 'https://hook.example.com/article',
+        campaignId: mockCampaignId,
+        autoPublish: true,
+      };
+
+      const mockResult = {
+        integration: {
+          id: mockIntegrationId,
+          user_id: mockUserId,
+          type: 'webhook' as const,
+          name: 'My Webhook',
+          config: { url: 'https://hook.example.com/article' },
+          status: 'active' as const,
+          last_tested_at: new Date().toISOString(),
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        },
+        testResult: {
+          success: true,
+          timestamp: new Date().toISOString(),
+        },
+      };
+
+      vi.mocked(integrationService.create).mockResolvedValue(mockResult);
+      vi.mocked(integrationService.assignIntegrationToCampaign).mockRejectedValue(
+        new Error('Assignment failed')
+      );
+      vi.mocked(integrationService.delete).mockResolvedValue(undefined);
+
+      const context = {
+        request: new Request('http://localhost', {
+          method: 'POST',
+          body: JSON.stringify(input),
+        }),
+        params: {},
+        locals: { userId: mockUserId },
+        url: new URL('http://localhost'),
+      };
+
+      await expect(createIntegration(mockUserId, input, context)).rejects.toThrow('Assignment failed');
+      expect(integrationService.delete).toHaveBeenCalledWith(mockIntegrationId, mockUserId);
     });
   });
 

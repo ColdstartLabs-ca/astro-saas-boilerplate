@@ -8,6 +8,8 @@ import { render, fireEvent, waitFor } from '@testing-library/react';
 import { OnboardingStepIntegrations } from '@client/components/onboarding/steps/OnboardingStepIntegrations';
 import { OnboardingStep } from '@shared/types/onboarding.types';
 
+const mockApiFetch = vi.fn();
+
 // Mock lucide-react icons
 vi.mock('lucide-react', () => {
   const icon = ({ className }: { className?: string }) => <span className={className} />;
@@ -38,10 +40,15 @@ let mockStoreState = {
     OnboardingStep.KEYWORDS_UPLOAD,
   ]),
   skippedSteps: new Set<number>(),
+  campaignId: null as string | null,
   setHasIntegration: vi.fn(),
   markStepComplete: vi.fn(),
   markStepSkipped: vi.fn(),
 };
+
+vi.mock('@client/utils/api-client', () => ({
+  apiFetch: (...args: Parameters<typeof mockApiFetch>) => mockApiFetch(...args),
+}));
 
 // Mock Zustand store
 vi.mock('@client/store/onboardingStore', () => ({
@@ -105,6 +112,7 @@ describe('OnboardingStepIntegrations', () => {
         OnboardingStep.KEYWORDS_UPLOAD,
       ]),
       skippedSteps: new Set<number>(),
+      campaignId: null,
       setHasIntegration: vi.fn(),
       markStepComplete: vi.fn(),
       markStepSkipped: vi.fn(),
@@ -116,6 +124,8 @@ describe('OnboardingStepIntegrations', () => {
     mockIntegrationState = {
       createIntegration: vi.fn().mockResolvedValue({ id: 'integration-123' }),
     };
+    mockApiFetch.mockReset();
+    mockApiFetch.mockResolvedValue({ data: { integrations: [] } });
   });
 
   it('should render the integrations step header', () => {
@@ -274,6 +284,49 @@ describe('OnboardingStepIntegrations', () => {
 
     await waitFor(() => {
       expect(getByText('Connection failed')).toBeDefined();
+    });
+  });
+
+  it('should assign created integration to onboarding campaign with auto-publish enabled', async () => {
+    mockStoreState.campaignId = 'campaign-123';
+    mockApiFetch.mockResolvedValueOnce({
+      data: {
+        integration: { id: 'integration-123' },
+      },
+    });
+
+    const { getByText, container } = render(
+      <OnboardingStepIntegrations onComplete={mockOnComplete} onSkip={mockOnSkip} />
+    );
+
+    fireEvent.click(getByText('WordPress'));
+
+    const inputs = container.querySelectorAll('input');
+    fireEvent.change(inputs[0], { target: { value: 'My WP Site' } });
+    fireEvent.change(inputs[1], { target: { value: 'https://mysite.com' } });
+    fireEvent.change(inputs[2], { target: { value: 'admin' } });
+    fireEvent.change(inputs[3], { target: { value: 'app-password-123' } });
+
+    const submitButton = container.querySelector('[data-testid="dashboard-button"]')!;
+    fireEvent.click(submitButton);
+
+    await waitFor(() => {
+      expect(mockApiFetch).toHaveBeenCalledWith(
+        '/api/integrations',
+        {
+          method: 'POST',
+          body: JSON.stringify({
+            type: 'wordpress',
+            name: 'My WP Site',
+            siteUrl: 'https://mysite.com',
+            username: 'admin',
+            appPassword: 'app-password-123',
+            campaignId: 'campaign-123',
+            autoPublish: true,
+          }),
+        }
+      );
+      expect(mockIntegrationState.createIntegration).not.toHaveBeenCalled();
     });
   });
 

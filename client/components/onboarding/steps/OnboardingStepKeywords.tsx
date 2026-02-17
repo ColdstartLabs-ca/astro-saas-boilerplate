@@ -60,6 +60,7 @@ export function OnboardingStepKeywords({ onComplete }: IOnboardingStepKeywordsPr
     projectId: onboardingProjectId,
     completedSteps,
     skippedSteps,
+    setCampaignId,
     setKeywordCount,
     markStepComplete,
   } = useOnboardingStore();
@@ -80,13 +81,14 @@ export function OnboardingStepKeywords({ onComplete }: IOnboardingStepKeywordsPr
 
     try {
       // Create campaign with the uploaded keywords
-      await createCampaign({
+      const campaign = await createCampaign({
         name: 'Onboarding Campaign',
         projectId,
         keywords: parsedKeywords,
       });
 
       // Update store
+      setCampaignId(campaign.id);
       setKeywordCount(keywordCount);
       markStepComplete(OnboardingStep.KEYWORDS_UPLOAD);
 
@@ -115,6 +117,7 @@ export function OnboardingStepKeywords({ onComplete }: IOnboardingStepKeywordsPr
     completedSteps,
     skippedSteps,
     createCampaign,
+    setCampaignId,
     setKeywordCount,
     markStepComplete,
     updateProgress,

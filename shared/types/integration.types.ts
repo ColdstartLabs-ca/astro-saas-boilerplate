@@ -349,8 +349,10 @@ export interface IUpdateIntegrationInput {
   appPassword?: string;
   /** For webhook: new secret if changed */
   secret?: string;
-  /** For Webflow/Wix/Shopify: new API token if changed */
+  /** For Webflow: new API token if changed */
   apiToken?: string;
+  /** For Wix: new API key if changed */
+  apiKey?: string;
   /** For Notion: new integration token if changed */
   integrationToken?: string;
   /** For Wix: new account ID if changed */

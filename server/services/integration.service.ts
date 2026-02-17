@@ -2,13 +2,12 @@
  * Integration Service
  *
  * Handles CRUD operations for CMS integrations.
- * Manages WordPress and webhook integrations with encrypted credentials.
+ * Manages all supported integrations with encrypted credentials.
  */
 
 import { supabaseAdmin } from '@server/supabase/supabaseAdmin';
 import { encryptJSON, decryptJSON } from '@server/utils/encryption';
-import { wordpressAdapter } from '@server/integrations/wordpress.adapter';
-import { webhookAdapter } from '@server/integrations/webhook.adapter';
+import { getAdapter } from '@server/integrations';
 import { IntegrationNotFoundError, ConnectionTestError } from '@shared/types/integration.types';
 import type {
   IIntegration,
@@ -23,6 +22,18 @@ import type {
   IWordPressCredentials,
   IWebhookConfig,
   IWebhookCredentials,
+  IWebflowConfig,
+  IWebflowCredentials,
+  IWixConfig,
+  IWixCredentials,
+  INotionConfig,
+  INotionCredentials,
+  IShopifyConfig,
+  IShopifyCredentials,
+  IGhostConfig,
+  IGhostCredentials,
+  ISlackConfig,
+  ISlackCredentials,
 } from '@shared/types/integration.types';
 
 /**
@@ -115,6 +126,189 @@ export class IntegrationService {
   }
 
   /**
+   * Build integration config and credentials based on integration type.
+   */
+  private buildCreatePayload(input: ICreateIntegrationInput): {
+    config: IIntegrationConfig;
+    credentials: IIntegrationCredentials;
+  } {
+    switch (input.type) {
+      case 'wordpress':
+        return {
+          config: {
+            site_url: input.siteUrl,
+            username: input.username,
+          } as IWordPressConfig,
+          credentials: {
+            appPassword: input.appPassword,
+          } as IWordPressCredentials,
+        };
+
+      case 'webhook':
+        return {
+          config: {
+            url: input.url,
+          } as IWebhookConfig,
+          credentials: {
+            secret: input.secret,
+          } as IWebhookCredentials,
+        };
+
+      case 'webflow':
+        return {
+          config: {
+            site_id: input.siteId,
+            collection_id: input.collectionId,
+            field_map: input.fieldMap,
+          } as IWebflowConfig,
+          credentials: {
+            apiToken: input.apiToken,
+          } as IWebflowCredentials,
+        };
+
+      case 'wix':
+        return {
+          config: {
+            site_id: input.siteId,
+          } as IWixConfig,
+          credentials: {
+            apiKey: input.apiKey,
+            accountId: input.accountId,
+          } as IWixCredentials,
+        };
+
+      case 'notion':
+        return {
+          config: {
+            database_id: input.databaseId,
+          } as INotionConfig,
+          credentials: {
+            integrationToken: input.integrationToken,
+          } as INotionCredentials,
+        };
+
+      case 'shopify':
+        return {
+          config: {
+            store_url: input.storeUrl,
+            blog_id: input.blogId,
+          } as IShopifyConfig,
+          credentials: {
+            accessToken: input.accessToken,
+          } as IShopifyCredentials,
+        };
+
+      case 'ghost':
+        return {
+          config: {
+            site_url: input.siteUrl,
+          } as IGhostConfig,
+          credentials: {
+            adminApiKey: input.adminApiKey,
+          } as IGhostCredentials,
+        };
+
+      case 'slack':
+        return {
+          config: {
+            channel_name: input.channelName,
+          } as ISlackConfig,
+          credentials: {
+            webhookUrl: input.webhookUrl,
+          } as ISlackCredentials,
+        };
+    }
+
+    // Keep TypeScript and runtime safe if new types are added without wiring.
+    throw new Error(`Unsupported integration type: ${(input as { type: string }).type}`);
+  }
+
+  /**
+   * Check whether a credential field was provided in update input.
+   */
+  private hasCredentialUpdates(input: IUpdateIntegrationInput): boolean {
+    return (
+      input.appPassword !== undefined ||
+      input.secret !== undefined ||
+      input.apiToken !== undefined ||
+      input.apiKey !== undefined ||
+      input.accountId !== undefined ||
+      input.integrationToken !== undefined ||
+      input.accessToken !== undefined ||
+      input.adminApiKey !== undefined ||
+      input.webhookUrl !== undefined
+    );
+  }
+
+  /**
+   * Merge integration-type specific credential updates.
+   */
+  private mergeCredentialUpdates(
+    integrationType: IIntegration['type'],
+    existingCredentials: IIntegrationCredentials,
+    input: IUpdateIntegrationInput
+  ): IIntegrationCredentials {
+    const merged = {
+      ...(existingCredentials as Record<string, unknown>),
+    } as Record<string, unknown>;
+
+    switch (integrationType) {
+      case 'wordpress':
+        if (input.appPassword !== undefined) {
+          merged.appPassword = input.appPassword;
+        }
+        break;
+
+      case 'webhook':
+        if (input.secret !== undefined) {
+          merged.secret = input.secret;
+        }
+        break;
+
+      case 'webflow':
+        if (input.apiToken !== undefined) {
+          merged.apiToken = input.apiToken;
+        }
+        break;
+
+      case 'wix':
+        if (input.apiKey !== undefined) {
+          merged.apiKey = input.apiKey;
+        }
+        if (input.accountId !== undefined) {
+          merged.accountId = input.accountId;
+        }
+        break;
+
+      case 'notion':
+        if (input.integrationToken !== undefined) {
+          merged.integrationToken = input.integrationToken;
+        }
+        break;
+
+      case 'shopify':
+        if (input.accessToken !== undefined) {
+          merged.accessToken = input.accessToken;
+        }
+        break;
+
+      case 'ghost':
+        if (input.adminApiKey !== undefined) {
+          merged.adminApiKey = input.adminApiKey;
+        }
+        break;
+
+      case 'slack':
+        if (input.webhookUrl !== undefined) {
+          merged.webhookUrl = input.webhookUrl;
+        }
+        break;
+    }
+
+    return merged as IIntegrationCredentials;
+  }
+
+  /**
    * Create a new integration
    *
    * @param userId - The user ID
@@ -125,30 +319,9 @@ export class IntegrationService {
     userId: string,
     input: ICreateIntegrationInput
   ): Promise<{ integration: IIntegrationResponse; testResult: ITestConnectionResult }> {
-    // Encrypt credentials based on type
-    let encryptedCredentials: string;
-    let config: IIntegrationConfig;
-
-    if (input.type === 'wordpress') {
-      const wpInput = input as ICreateIntegrationInput & { type: 'wordpress' };
-      const credentials: IWordPressCredentials = {
-        appPassword: wpInput.appPassword,
-      };
-      config = {
-        site_url: wpInput.siteUrl,
-        username: wpInput.username,
-      } as IWordPressConfig;
-      encryptedCredentials = await encryptJSON(credentials);
-    } else {
-      const webhookInput = input as ICreateIntegrationInput & { type: 'webhook' };
-      const credentials: IWebhookCredentials = {
-        secret: webhookInput.secret,
-      };
-      config = {
-        url: webhookInput.url,
-      } as IWebhookConfig;
-      encryptedCredentials = await encryptJSON(credentials);
-    }
+    // Build config/credentials for the selected type and encrypt credentials
+    const { config, credentials } = this.buildCreatePayload(input);
+    const encryptedCredentials = await encryptJSON(credentials);
 
     // Create integration record
     const { data: integration, error: integrationError } = await supabaseAdmin
@@ -216,22 +389,12 @@ export class IntegrationService {
     }
 
     // Update credentials if provided
-    if (input.appPassword !== undefined || input.secret !== undefined) {
-      let credentials: IIntegrationCredentials;
-
-      if (existing.type === 'wordpress' && input.appPassword !== undefined) {
-        credentials = {
-          appPassword: input.appPassword,
-        } as IWordPressCredentials;
-      } else if (existing.type === 'webhook' && input.secret !== undefined) {
-        credentials = {
-          secret: input.secret,
-        } as IWebhookCredentials;
-      } else {
-        credentials = {} as IIntegrationCredentials;
-      }
-
-      updates.encrypted_credentials = await encryptJSON(credentials);
+    if (this.hasCredentialUpdates(input)) {
+      const existingCredentials = await decryptJSON<IIntegrationCredentials>(
+        existing.encrypted_credentials
+      );
+      const mergedCredentials = this.mergeCredentialUpdates(existing.type, existingCredentials, input);
+      updates.encrypted_credentials = await encryptJSON(mergedCredentials);
     }
 
     // Update integration
@@ -309,7 +472,7 @@ export class IntegrationService {
       );
 
       // Get adapter and test connection
-      const adapter = integration.type === 'wordpress' ? wordpressAdapter : webhookAdapter;
+      const adapter = getAdapter(integration.type);
       const testResult = await adapter.testConnection(integration.config, credentials);
 
       // Update integration status and last_tested_at
@@ -355,7 +518,7 @@ export class IntegrationService {
     userId: string
   ): Promise<{
     integration: IIntegration;
-    credentials: IWordPressCredentials | IWebhookCredentials;
+    credentials: IIntegrationCredentials;
   }> {
     const integration = await this.getRawIntegration(integrationId, userId);
     if (!integration) {
@@ -363,7 +526,7 @@ export class IntegrationService {
     }
 
     try {
-      const credentials = await decryptJSON<IWordPressCredentials | IWebhookCredentials>(
+      const credentials = await decryptJSON<IIntegrationCredentials>(
         integration.encrypted_credentials
       );
       return { integration, credentials };
@@ -524,6 +687,105 @@ export class IntegrationService {
     settings.auto_publish = autoPublish;
 
     await supabaseAdmin.from('campaigns').update({ settings }).eq('id', campaignId);
+  }
+
+  /**
+   * Assign a single integration to a campaign and optionally enable auto-publish.
+   *
+   * This is designed for onboarding glue so integration creation and assignment
+   * can be performed server-side with compensation on failure.
+   */
+  async assignIntegrationToCampaign(
+    campaignId: string,
+    userId: string,
+    integrationId: string,
+    autoPublish = true
+  ): Promise<void> {
+    // Verify campaign ownership
+    const { data: campaign } = await supabaseAdmin
+      .from('campaigns')
+      .select('id, settings')
+      .eq('id', campaignId)
+      .eq('user_id', userId)
+      .single();
+
+    if (!campaign) {
+      throw new Error('Campaign not found or access denied');
+    }
+
+    // Verify integration ownership
+    const { data: integration } = await supabaseAdmin
+      .from('integrations')
+      .select('id')
+      .eq('id', integrationId)
+      .eq('user_id', userId)
+      .single();
+
+    if (!integration) {
+      throw new Error('Integration not found or access denied');
+    }
+
+    // Ensure assignment exists and stays enabled (idempotent across retries)
+    const { data: existingAssignment, error: existingAssignmentError } = await supabaseAdmin
+      .from('campaign_integrations')
+      .select('id, enabled')
+      .eq('campaign_id', campaignId)
+      .eq('integration_id', integrationId)
+      .maybeSingle();
+
+    if (existingAssignmentError && existingAssignmentError.code !== 'PGRST116') {
+      throw new Error(`Failed to verify campaign assignment: ${existingAssignmentError.message}`);
+    }
+
+    if (existingAssignment) {
+      if (!existingAssignment.enabled) {
+        const { error: enableError } = await supabaseAdmin
+          .from('campaign_integrations')
+          .update({ enabled: true })
+          .eq('id', existingAssignment.id);
+
+        if (enableError) {
+          throw new Error(`Failed to enable campaign assignment: ${enableError.message}`);
+        }
+      }
+    } else {
+      const { error: insertAssignmentError } = await supabaseAdmin
+        .from('campaign_integrations')
+        .insert({
+          campaign_id: campaignId,
+          integration_id: integrationId,
+          enabled: true,
+        });
+
+      if (insertAssignmentError) {
+        throw new Error(`Failed to assign integration to campaign: ${insertAssignmentError.message}`);
+      }
+    }
+
+    if (!autoPublish) {
+      return;
+    }
+
+    const settings = (campaign.settings as Record<string, unknown>) || {};
+    if (settings.auto_publish === true) {
+      return;
+    }
+
+    const { error: settingsError } = await supabaseAdmin
+      .from('campaigns')
+      .update({
+        settings: {
+          ...settings,
+          auto_publish: true,
+        },
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', campaignId)
+      .eq('user_id', userId);
+
+    if (settingsError) {
+      throw new Error(`Failed to enable auto-publish: ${settingsError.message}`);
+    }
   }
 }
 

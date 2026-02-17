@@ -146,24 +146,26 @@ describe('DeliveryService', () => {
         user_id: testUserId,
       };
 
-      // First call: get deliveries
+      // First call: verify article ownership
       mockFrom.mockReturnValueOnce({
         select: vi.fn().mockReturnValue({
           eq: vi.fn().mockReturnValue({
-            order: vi.fn().mockResolvedValue({
-              data: mockDeliveries,
-              error: null,
+            eq: vi.fn().mockReturnValue({
+              maybeSingle: vi.fn().mockResolvedValue({
+                data: { id: 'article-123' },
+                error: null,
+              }),
             }),
           }),
         }),
       } as never);
 
-      // Second call: verify article ownership
+      // Second call: get deliveries
       mockFrom.mockReturnValueOnce({
         select: vi.fn().mockReturnValue({
           eq: vi.fn().mockReturnValue({
-            single: vi.fn().mockResolvedValue({
-              data: mockArticle,
+            order: vi.fn().mockResolvedValue({
+              data: mockDeliveries,
               error: null,
             }),
           }),
@@ -183,6 +185,19 @@ describe('DeliveryService', () => {
       mockFrom.mockReturnValueOnce({
         select: vi.fn().mockReturnValue({
           eq: vi.fn().mockReturnValue({
+            eq: vi.fn().mockReturnValue({
+              maybeSingle: vi.fn().mockResolvedValue({
+                data: { id: 'article-123' },
+                error: null,
+              }),
+            }),
+          }),
+        }),
+      } as never);
+
+      mockFrom.mockReturnValueOnce({
+        select: vi.fn().mockReturnValue({
+          eq: vi.fn().mockReturnValue({
             order: vi.fn().mockResolvedValue({
               data: [],
               error: null,
@@ -198,6 +213,19 @@ describe('DeliveryService', () => {
 
     it('should throw error when database query fails', async () => {
       const mockFrom = vi.mocked(supabaseAdmin.from);
+
+      mockFrom.mockReturnValueOnce({
+        select: vi.fn().mockReturnValue({
+          eq: vi.fn().mockReturnValue({
+            eq: vi.fn().mockReturnValue({
+              maybeSingle: vi.fn().mockResolvedValue({
+                data: { id: 'article-123' },
+                error: null,
+              }),
+            }),
+          }),
+        }),
+      } as never);
 
       mockFrom.mockReturnValueOnce({
         select: vi.fn().mockReturnValue({

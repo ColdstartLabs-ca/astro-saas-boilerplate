@@ -26,6 +26,7 @@ let mockStoreState = {
   projectId: 'project-123' as string | null,
   completedSteps: new Set([OnboardingStep.PROJECT_CREATION, OnboardingStep.GSC_CONNECTION]),
   skippedSteps: new Set<number>(),
+  setCampaignId: vi.fn(),
   setKeywordCount: vi.fn(),
   markStepComplete: vi.fn(),
 };
@@ -88,6 +89,7 @@ describe('OnboardingStepKeywords', () => {
       projectId: 'project-123',
       completedSteps: new Set([OnboardingStep.PROJECT_CREATION, OnboardingStep.GSC_CONNECTION]),
       skippedSteps: new Set<number>(),
+      setCampaignId: vi.fn(),
       setKeywordCount: vi.fn(),
       markStepComplete: vi.fn(),
     };

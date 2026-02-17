@@ -28,6 +28,8 @@ export interface IOnboardingState {
   // Contextual data
   /** ID of the project created during onboarding */
   projectId: string | null;
+  /** ID of the campaign created during onboarding keyword step */
+  campaignId: string | null;
   /** Number of keywords uploaded */
   keywordCount: number;
   /** Whether GSC is connected */
@@ -48,6 +50,8 @@ export interface IOnboardingState {
   // Contextual data actions
   /** Set the project ID */
   setProjectId: (id: string | null) => void;
+  /** Set the campaign ID */
+  setCampaignId: (id: string | null) => void;
   /** Set the keyword count */
   setKeywordCount: (count: number) => void;
   /** Set whether GSC is connected */
@@ -104,6 +108,7 @@ const initialState = {
   completedSteps: new Set<number>(),
   skippedSteps: new Set<number>(),
   projectId: null,
+  campaignId: null,
   keywordCount: 0,
   hasGscConnection: false,
   hasIntegration: false,
@@ -166,6 +171,8 @@ export const useOnboardingStore = create<IOnboardingState>((set, get) => ({
 
   // Contextual data actions
   setProjectId: id => set({ projectId: id }),
+
+  setCampaignId: id => set({ campaignId: id }),
 
   setKeywordCount: count => set({ keywordCount: Math.max(0, count) }),
 
