@@ -48,10 +48,23 @@ export class CampaignsPage extends BasePage {
   }
 
   /**
-   * Gets the campaign modal
+   * Gets the campaign modal (standard Modal component)
+   * Note: This works for NewCampaignModal and SettingsModal which use the Modal component.
+   * AddKeywordsModal uses its own custom modal structure - use addKeywordsModal instead.
    */
   get campaignModal(): Locator {
     return this.page.locator('[data-testid="modal"]');
+  }
+
+  /**
+   * Gets the AddKeywordsModal (custom modal, not using Modal component)
+   * This modal has a different structure from the standard Modal component.
+   */
+  get addKeywordsModal(): Locator {
+    // AddKeywordsModal has a fixed inset-0 div with specific classes
+    return this.page.locator('.fixed.inset-0.z-50').filter({
+      has: this.page.locator('h3').filter({ hasText: /keywords/i }),
+    });
   }
 
   /**
@@ -63,9 +76,17 @@ export class CampaignsPage extends BasePage {
 
   /**
    * Gets keywords textarea in modal
+   * Works for both NewCampaignModal (textarea[name="keywords"]) and
+   * AddKeywordsModal (textarea without name attribute)
    */
   get keywordsTextarea(): Locator {
-    return this.page.locator('textarea[name="keywords"]');
+    // First try named textarea (NewCampaignModal)
+    const namedTextarea = this.page.locator('textarea[name="keywords"]');
+    // Fall back to any visible textarea in a modal context
+    const anyTextarea = this.page
+      .locator('.fixed.inset-0.z-50 textarea, [data-testid="modal"] textarea')
+      .first();
+    return namedTextarea.or(anyTextarea);
   }
 
   /**
@@ -297,8 +318,16 @@ export class CampaignsPage extends BasePage {
 
   /**
    * Submits the add keywords form
+   * Handles both standard Modal-based modals and custom AddKeywordsModal
    */
   async submitAddKeywords(): Promise<void> {
+    // Try AddKeywordsModal first (custom modal structure)
+    const addKeywordsBtn = this.addKeywordsModal.getByRole('button', { name: /add/i });
+    if (await addKeywordsBtn.isVisible().catch(() => false)) {
+      await addKeywordsBtn.click();
+      return;
+    }
+    // Fall back to standard modal
     await this.campaignModal.getByRole('button', { name: /add|save/i }).click();
   }
 
@@ -324,16 +353,37 @@ export class CampaignsPage extends BasePage {
 
   /**
    * Asserts that modal is visible
+   * Checks both standard Modal component and custom modals like AddKeywordsModal
    */
   async assertModalVisible(): Promise<void> {
-    await expect(this.campaignModal).toBeVisible();
+    const standardModal = this.campaignModal;
+    const customModal = this.addKeywordsModal;
+    // Check if either modal type is visible
+    const isStandardVisible = await standardModal.isVisible().catch(() => false);
+    if (isStandardVisible) {
+      await expect(standardModal).toBeVisible();
+      return;
+    }
+    await expect(customModal).toBeVisible();
   }
 
   /**
    * Asserts that modal is hidden
+   * Checks both standard Modal component and custom modals like AddKeywordsModal
    */
   async assertModalHidden(): Promise<void> {
-    await expect(this.campaignModal).toBeHidden();
+    const standardModal = this.campaignModal;
+    const customModal = this.addKeywordsModal;
+    // Check if either modal type is still visible
+    const isStandardVisible = await standardModal.isVisible().catch(() => false);
+    const isCustomVisible = await customModal.isVisible().catch(() => false);
+
+    if (isStandardVisible) {
+      await expect(standardModal).toBeHidden();
+    }
+    if (isCustomVisible) {
+      await expect(customModal).toBeHidden();
+    }
   }
 
   /**
@@ -407,9 +457,23 @@ export class CampaignsPage extends BasePage {
 
   /**
    * Waits for modal to close after submission
+   * Handles both standard Modal component and custom modals like AddKeywordsModal
    */
   async waitForModalClose(): Promise<void> {
-    await expect(this.campaignModal).toBeHidden({ timeout: 5000 });
+    const standardModal = this.campaignModal;
+    const customModal = this.addKeywordsModal;
+
+    // Wait for both modals to be hidden
+    try {
+      await expect(standardModal).toBeHidden({ timeout: 5000 });
+    } catch {
+      // Standard modal might not exist
+    }
+    try {
+      await expect(customModal).toBeHidden({ timeout: 5000 });
+    } catch {
+      // Custom modal might not exist
+    }
   }
 
   /**

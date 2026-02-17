@@ -43,12 +43,31 @@ export class ArticlesPage extends BasePage {
   }
 
   /**
-   * Gets close button on detail panel
+   * Gets close button on detail panel (the X button in the header)
    */
   get detailPanelCloseButton(): Locator {
-    return this.detailPanel
-      .getByRole('button', { name: /close|cancel/i })
-      .or(this.detailPanel.locator('button').filter({ hasText: /^(✕|×|Close)$/ }));
+    // The close button is in the modal header - it's a button containing an X icon (lucide-react)
+    // The button is the only one in the header section (flex justify-between) with text-muted class
+    return this.detailPanel.locator('div.flex.justify-between button.text-muted');
+  }
+
+  /**
+   * Gets inline error message in detail panel (error shown after failed action)
+   */
+  get inlineError(): Locator {
+    // The error message is in a div with red background in the content area
+    return this.detailPanel.locator('.mb-4.p-3.bg-red-500\\/10').filter({
+      hasText: /failed|error/i,
+    });
+  }
+
+  /**
+   * Gets the article title button (used for keyboard navigation)
+   * Note: There are two buttons with the same aria-label - returns the title text button
+   */
+  get articleTitleButton(): Locator {
+    // The title button has class "flex-1 min-w-0 cursor-pointer text-left"
+    return this.articleCards.first().locator('button.flex-1.min-w-0[aria-label^="View article:"]');
   }
 
   /**
@@ -78,7 +97,8 @@ export class ArticlesPage extends BasePage {
    * Gets regenerate button in detail panel
    */
   get regenerateButton(): Locator {
-    return this.detailPanel.getByRole('button', { name: /regenerate/i });
+    // Prefer data-testid for reliable selection
+    return this.detailPanel.locator('[data-testid="regenerate-button"]');
   }
 
   /**
@@ -153,19 +173,26 @@ export class ArticlesPage extends BasePage {
   }
 
   /**
-   * Gets loading spinner
+   * Gets loading spinner or loading state indicators (generic spinners)
    */
   get loadingSpinner(): Locator {
     return this.page.locator('[data-loading], .animate-spin, [aria-busy="true"]');
   }
 
   /**
-   * Gets article content preview
+   * Gets the regenerating button (button shows "Regenerating..." text)
+   * The regenerate button changes text to "Regenerating..." during the operation
+   */
+  get regeneratingButton(): Locator {
+    return this.detailPanel.locator('[data-testid="regenerate-button"]:has-text("Regenerating")');
+  }
+
+  /**
+   * Gets article content preview - the prose element in the detail panel
    */
   get contentPreview(): Locator {
-    return this.page.locator(
-      '[data-testid="article-content-preview"], .article-content, [data-testid="article-body"]'
-    );
+    // The content is rendered in a div with class "prose prose-invert max-w-none"
+    return this.detailPanel.locator('.prose.prose-invert');
   }
 
   /**
@@ -386,11 +413,46 @@ export class ArticlesPage extends BasePage {
   }
 
   /**
+   * Asserts that an inline error is visible in the detail panel
+   */
+  async assertInlineErrorVisible(): Promise<void> {
+    await expect(this.inlineError).toBeVisible({ timeout: 5000 });
+  }
+
+  /**
+   * Focuses the first article title button for keyboard navigation testing
+   */
+  async focusFirstArticleTitle(): Promise<void> {
+    await this.articleTitleButton.focus();
+  }
+
+  /**
+   * Presses Enter on the currently focused element to open article detail
+   */
+  async pressEnterToOpenDetail(): Promise<void> {
+    await this.page.keyboard.press('Enter');
+    await this.waitForLoadingComplete();
+  }
+
+  /**
    * Clicks the regenerate button
+   * Note: Does NOT wait for loading to complete - allows tests to check intermediate states
    */
   async clickRegenerate(): Promise<void> {
+    // Set up dialog handler BEFORE clicking (confirm appears synchronously)
+    this.page.once('dialog', dialog => dialog.accept());
     await this.regenerateButton.click();
-    await this.waitForLoadingComplete();
+  }
+
+  /**
+   * Clicks regenerate and waits for completion (modal closes on success)
+   */
+  async clickRegenerateAndWait(): Promise<void> {
+    // Set up dialog handler BEFORE clicking
+    this.page.once('dialog', dialog => dialog.accept());
+    await this.regenerateButton.click();
+    // Wait for modal to close on success
+    await this.waitForDetailPanelToClose();
   }
 
   /**
@@ -438,12 +500,23 @@ export class ArticlesPage extends BasePage {
   // ============================================================================
 
   /**
-   * Gets the article title text
+   * Gets the article title text from the article card (list view)
    *
    * @returns Article title text
    */
   async getArticleTitle(): Promise<string> {
     const titleElement = this.articleTitle.first();
+    await expect(titleElement).toBeVisible();
+    return titleElement.textContent() ?? '';
+  }
+
+  /**
+   * Gets the article title text from the detail panel
+   *
+   * @returns Article title text from detail panel
+   */
+  async getDetailPanelTitle(): Promise<string> {
+    const titleElement = this.detailPanel.locator('h2').first();
     await expect(titleElement).toBeVisible();
     return titleElement.textContent() ?? '';
   }
@@ -462,7 +535,7 @@ export class ArticlesPage extends BasePage {
   }
 
   /**
-   * Gets the SEO score value
+   * Gets the SEO score value from the article card (list view)
    *
    * @returns SEO score text
    */
@@ -475,7 +548,24 @@ export class ArticlesPage extends BasePage {
   }
 
   /**
-   * Gets the word count value
+   * Gets the SEO score value from the detail panel
+   *
+   * @returns SEO score text from detail panel
+   */
+  async getDetailPanelSeoScore(): Promise<string> {
+    // The SEOScoreDisplay shows the overall score in a text-2xl font-bold span
+    const scoreElement = this.detailPanel
+      .locator('.text-2xl.font-bold')
+      .filter({ hasText: /\d+/ })
+      .first();
+    if (await scoreElement.isVisible().catch(() => false)) {
+      return scoreElement.textContent() ?? '';
+    }
+    return '';
+  }
+
+  /**
+   * Gets the word count value from the article card (list view)
    *
    * @returns Word count text
    */
@@ -483,6 +573,28 @@ export class ArticlesPage extends BasePage {
     const countElement = this.wordCount.first();
     if (await countElement.isVisible().catch(() => false)) {
       return countElement.textContent() ?? '';
+    }
+    return '';
+  }
+
+  /**
+   * Gets the word count value from the detail panel
+   *
+   * @returns Word count number (e.g., "1250") - removes any locale formatting
+   */
+  async getDetailPanelWordCount(): Promise<string> {
+    // The word count is shown in the header as "{count} words" in a text-muted span
+    // The count may be locale-formatted with commas (e.g., "1,250 words")
+    const countElement = this.detailPanel
+      .locator('.text-muted')
+      .filter({ hasText: /words/i })
+      .first();
+    if (await countElement.isVisible().catch(() => false)) {
+      const text = await countElement.textContent();
+      // Extract the number (with optional commas) from text like "1,250 words"
+      const match = text?.match(/([\d,]+)\s*words?/);
+      // Remove commas and return just the number
+      return match?.[1]?.replace(/,/g, '') ?? text ?? '';
     }
     return '';
   }
@@ -583,6 +695,23 @@ export class ArticlesPage extends BasePage {
    */
   async isRegenerateButtonEnabled(): Promise<boolean> {
     return this.regenerateButton.isEnabled().catch(() => false);
+  }
+
+  /**
+   * Checks if regenerate button shows loading/regenerating state
+   *
+   * @returns True if button text contains "Regenerating"
+   */
+  async isRegenerateButtonLoading(): Promise<boolean> {
+    const text = await this.regenerateButton.textContent().catch(() => '');
+    return text?.toLowerCase().includes('regenerating') ?? false;
+  }
+
+  /**
+   * Waits for the detail panel to close (e.g., after regenerate completes)
+   */
+  async waitForDetailPanelToClose(): Promise<void> {
+    await expect(this.detailPanel).not.toBeVisible({ timeout: 10000 });
   }
 
   /**

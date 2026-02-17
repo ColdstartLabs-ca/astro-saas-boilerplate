@@ -510,4 +510,14 @@ export class BasePage {
   async wait(ms: number): Promise<void> {
     await this.page.waitForTimeout(ms);
   }
+
+  /**
+   * Waits for a specified amount of time (alias for wait())
+   * Note: While wait() should be preferred, this is provided for backward compatibility
+   *
+   * @param ms - Milliseconds to wait
+   */
+  async waitForTimeout(ms: number): Promise<void> {
+    await this.page.waitForTimeout(ms);
+  }
 }

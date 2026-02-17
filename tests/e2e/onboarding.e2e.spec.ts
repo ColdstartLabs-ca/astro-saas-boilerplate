@@ -318,6 +318,9 @@ test.describe('Onboarding Wizard E2E Tests', () => {
     test('should display 5-step stepper', async () => {
       await onboardingPage.goto();
 
+      // Wait for step 1 to be visible (ensures wizard has loaded)
+      await onboardingPage.assertStep1Visible();
+
       await onboardingPage.assertStepperSteps(5);
     });
   });

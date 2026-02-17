@@ -70,7 +70,10 @@ export class BillingPage extends BasePage {
     this.subscriptionDetails = page.locator('[data-testid="subscription-details"]');
     this.currentPeriodEndLabel = page.getByText(/Current Period Ends|Trial Ends/);
     // The current period end is in a flex container with text-muted-foreground and text-white font-medium
-    this.currentPeriodEndValue = this.subscriptionDetails.locator('div').filter({ hasText: /Current Period Ends|Trial Ends/ }).locator('span.text-white.font-medium');
+    this.currentPeriodEndValue = this.subscriptionDetails
+      .locator('div')
+      .filter({ hasText: /Current Period Ends|Trial Ends/ })
+      .locator('span.text-white.font-medium');
     this.cancelationNotice = page.locator('div').filter({ hasText: /will be canceled at the end/ });
 
     // Payment Methods section
@@ -184,10 +187,12 @@ export class BillingPage extends BasePage {
    */
   async refresh(): Promise<void> {
     await this.refreshButton.click();
-    // Wait for DOM to be ready and network to settle a bit
-    // Using a shorter wait than full networkidle to avoid timeout issues
+    // Wait for the page to stabilize after refresh
     await this.page.waitForLoadState('domcontentloaded').catch(() => {});
-    await this.wait(1000);
+    // Wait for the current plan section to be visible (indicates data loaded)
+    await expect(this.currentPlanSection)
+      .toBeVisible({ timeout: 5000 })
+      .catch(() => {});
   }
 
   /**
@@ -244,9 +249,6 @@ export class BillingPage extends BasePage {
       const toast = await this.waitForToast();
       await expect(toast).toBeVisible();
     }
-
-    // Allow time for any animations
-    await this.wait(1000);
   }
 
   /**
@@ -263,13 +265,11 @@ export class BillingPage extends BasePage {
    * Wait for billing page to be updated after operations
    */
   async waitForBillingUpdate(): Promise<void> {
-    // Wait for DOM to be ready and some network activity to settle
+    // Wait for DOM to be ready
     await this.page.waitForLoadState('domcontentloaded').catch(() => {});
 
-    // Wait a bit for UI updates
-    await this.wait(500);
-
-    // Verify page is still in valid state
-    await expect(this.pageTitle).toBeVisible();
+    // Verify page is still in valid state by checking key elements
+    await expect(this.pageTitle).toBeVisible({ timeout: 5000 });
+    await expect(this.currentPlanSection).toBeVisible({ timeout: 5000 });
   }
 }
