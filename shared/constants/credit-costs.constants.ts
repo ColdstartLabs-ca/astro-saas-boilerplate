@@ -124,3 +124,10 @@ export const LOW_CREDIT_WARNING_THRESHOLD = 2;
 
 /** Warn user when credits used percentage exceeds this */
 export const CREDIT_WARNING_PERCENTAGE = 0.2;
+
+/**
+ * Low credit email threshold as a percentage of plan allocation.
+ * Send low-credit alert email when remaining credits fall below this percentage.
+ * Example: 0.20 means send alert when credits < 20% of plan allocation.
+ */
+export const LOW_CREDIT_EMAIL_THRESHOLD_PERCENT = 0.2;

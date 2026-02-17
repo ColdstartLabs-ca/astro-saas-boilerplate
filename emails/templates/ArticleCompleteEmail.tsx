@@ -11,27 +11,28 @@ import {
   Link,
 } from '@react-email/components';
 
-interface ILowCreditsEmailProps {
+interface IArticleCompleteEmailProps {
   userName?: string;
-  creditsRemaining?: number;
-  planCredits?: number;
-  upgradeUrl?: string;
+  articleTitle?: string;
+  keyword?: string;
+  campaignName?: string;
+  dashboardUrl?: string;
   baseUrl: string;
   supportEmail: string;
   appName?: string;
 }
 
-export function LowCreditsEmail({
+export function ArticleCompleteEmail({
   userName = 'there',
-  creditsRemaining,
-  planCredits,
-  upgradeUrl,
+  articleTitle = 'New Article',
+  keyword,
+  campaignName,
+  dashboardUrl,
   baseUrl,
   supportEmail,
   appName = 'AutopilotRank',
-}: ILowCreditsEmailProps): React.JSX.Element {
-  const pricingUrl = `${baseUrl}/pricing`;
-  const billingUrl = `${baseUrl}/dashboard?view=billing`;
+}: IArticleCompleteEmailProps): React.JSX.Element {
+  const articleUrl = dashboardUrl || `${baseUrl}/dashboard`;
 
   return (
     <Html>
@@ -43,31 +44,25 @@ export function LowCreditsEmail({
           </Section>
 
           <Section style={content}>
-            <Text style={heading}>Running Low on Credits</Text>
+            <Text style={heading}>Your Article is Ready!</Text>
             <Text style={paragraph}>Hi {userName},</Text>
             <Text style={paragraph}>
-              {planCredits !== undefined && creditsRemaining !== undefined
-                ? `You have ${creditsRemaining} of your ${planCredits} monthly credits remaining.`
-                : creditsRemaining !== undefined
-                  ? `You have ${creditsRemaining} credits remaining.`
-                  : 'Your credit balance is getting low.'}
+              Your article <strong>&ldquo;{articleTitle}&rdquo;</strong> has been generated and is
+              ready for review.
             </Text>
+            {keyword && (
+              <Text style={paragraph}>
+                Target keyword: <strong>{keyword}</strong>
+              </Text>
+            )}
+            {campaignName && <Text style={metadataText}>Campaign: {campaignName}</Text>}
             <Text style={paragraph}>
-              Don&apos;t let your work stop! Top up your credits to continue generating
-              SEO-optimized articles.
-            </Text>
-            <Text style={paragraph}>
-              Upgrade to get more articles per month, or buy a credit pack for instant access.
+              Log in to your dashboard to review, edit, and publish your article.
             </Text>
 
-            <Section style={buttonContainer}>
-              <Button href={upgradeUrl || pricingUrl} style={button}>
-                Upgrade Plan
-              </Button>
-              <Button href={billingUrl} style={secondaryButton}>
-                Buy Credits
-              </Button>
-            </Section>
+            <Button href={articleUrl} style={button}>
+              Review Article
+            </Button>
           </Section>
 
           <Hr style={hr} />
@@ -131,6 +126,14 @@ const paragraph = {
   marginBottom: '16px',
 };
 
+const metadataText = {
+  fontSize: '14px',
+  lineHeight: '20px',
+  color: '#64748b',
+  marginBottom: '12px',
+  fontStyle: 'italic' as const,
+};
+
 const button = {
   backgroundColor: '#3b82f6',
   borderRadius: '8px',
@@ -140,23 +143,6 @@ const button = {
   textDecoration: 'none',
   padding: '12px 24px',
   display: 'inline-block',
-  marginRight: '12px',
-};
-
-const secondaryButton = {
-  backgroundColor: '#f1f5f9',
-  borderRadius: '8px',
-  color: '#3b82f6',
-  fontSize: '16px',
-  fontWeight: 'bold',
-  textDecoration: 'none',
-  padding: '12px 24px',
-  display: 'inline-block',
-  border: '1px solid #e2e8f0',
-};
-
-const buttonContainer = {
-  marginBottom: '16px',
 };
 
 const hr = {

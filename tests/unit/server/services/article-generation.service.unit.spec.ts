@@ -66,7 +66,12 @@ vi.mock('@shared/config/ai-models.config', () => ({
   WRITER_PRESETS: {
     budget: { key: 'budget', defaultModel: 'openai/gpt-4o-mini', tier: 'budget', creditCost: 1 },
     balanced: { key: 'balanced', defaultModel: 'openai/gpt-4o', tier: 'balanced', creditCost: 1 },
-    pro: { key: 'pro', defaultModel: 'anthropic/claude-sonnet-4-5', tier: 'balanced', creditCost: 2 },
+    pro: {
+      key: 'pro',
+      defaultModel: 'anthropic/claude-sonnet-4-5',
+      tier: 'balanced',
+      creditCost: 2,
+    },
     ultra: {
       key: 'ultra',
       defaultModel: 'anthropic/claude-opus-4-6',
@@ -167,6 +172,87 @@ describe('ArticleGenerationService', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     service = new ArticleGenerationService();
+  });
+
+  describe('logFailureMetrics', () => {
+    it('should log structured error metadata on generation failure', async () => {
+      const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+      const mockParsedError = {
+        message: 'OpenRouter API timeout',
+        stage: 'article_generation',
+        provider: 'openrouter',
+        httpStatus: 504,
+        isRetryable: true,
+        category: 'timeout' as const,
+      };
+
+      // Call private method via type assertion
+      await (service as any).logFailureMetrics(mockArticleId, mockParsedError);
+
+      // Verify console.error was called
+      expect(consoleErrorSpy).toHaveBeenCalledTimes(1);
+
+      // Get the logged message
+      const loggedMessage = consoleErrorSpy.mock.calls[0][1];
+
+      // Parse and verify structured fields
+      const parsed = JSON.parse(loggedMessage);
+
+      expect(parsed).toMatchObject({
+        message: 'Article generation failed',
+        level: 'error',
+        articleId: mockArticleId,
+        stage: 'article_generation',
+        provider: 'openrouter',
+        httpStatus: 504,
+        isRetryable: true,
+        category: 'timeout',
+        errorMessage: 'OpenRouter API timeout',
+      });
+
+      // Verify timestamp is ISO 8601 format
+      expect(parsed.timestamp).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/);
+
+      consoleErrorSpy.mockRestore();
+    });
+
+    it('should include all required fields for Baselime alert queries', async () => {
+      const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+      const mockParsedError = {
+        message: 'Replicate 503 error',
+        stage: 'image_generation',
+        provider: 'replicate',
+        httpStatus: 503,
+        isRetryable: true,
+        category: 'transient' as const,
+      };
+
+      await (service as any).logFailureMetrics(mockArticleId, mockParsedError);
+
+      const loggedMessage = consoleErrorSpy.mock.calls[0][1];
+      const parsed = JSON.parse(loggedMessage);
+
+      // Verify all fields required for alert queries are present
+      const requiredFields = [
+        'message',
+        'level',
+        'articleId',
+        'timestamp',
+        'stage',
+        'provider',
+        'category',
+        'isRetryable',
+        'httpStatus',
+        'errorMessage',
+      ];
+      requiredFields.forEach(field => {
+        expect(parsed).toHaveProperty(field);
+      });
+
+      consoleErrorSpy.mockRestore();
+    });
   });
 
   describe('parseImageMarkers', () => {

@@ -1,6 +1,11 @@
 import { getEmailProviderManager } from './email-providers/email-provider-manager';
 import type { ISendEmailParams, ISendEmailResult } from '@shared/types/provider-adapter.types';
-import type { IEmailService } from '../interfaces/IEmailService';
+import type {
+  IEmailService,
+  IArticleCompleteEmailParams,
+  ILowCreditAlertParams,
+} from '../interfaces/IEmailService';
+import { supabaseAdmin } from '@server/supabase/supabaseAdmin';
 
 export type EmailType = 'transactional' | 'marketing';
 
@@ -50,6 +55,110 @@ export class EmailService implements IEmailService {
       const message = error instanceof Error ? error.message : 'Unknown error';
       console.error('Email send failed', { template: params.template, error: message });
       throw new EmailError(`Failed to send email: ${message}`, 'SEND_FAILED');
+    }
+  }
+
+  /**
+   * Send article complete notification email.
+   * Transactional email - always sent regardless of preferences.
+   * Email failure is caught and logged, never thrown.
+   */
+  async sendArticleCompleteNotification(params: IArticleCompleteEmailParams): Promise<void> {
+    try {
+      await this.send({
+        to: params.email,
+        template: 'article-complete',
+        type: 'transactional',
+        userId: params.userId,
+        data: {
+          userName: params.userName,
+          articleTitle: params.articleTitle,
+          keyword: params.keyword,
+          campaignName: params.campaignName,
+          articleId: params.articleId,
+        },
+      });
+    } catch (error) {
+      // Log error but don't throw - email failure must never block generation
+      const message = error instanceof Error ? error.message : 'Unknown error';
+      console.error('[EmailService] Failed to send article complete notification:', {
+        userId: params.userId,
+        articleId: params.articleId,
+        error: message,
+      });
+    }
+  }
+
+  /**
+   * Send low credit alert email.
+   * Marketing email - respects email_preferences.low_credit_alerts.
+   * Rate-limited to once per 24 hours per user to prevent spam.
+   */
+  async sendLowCreditAlert(params: ILowCreditAlertParams): Promise<void> {
+    try {
+      // Check if user has opted out of low credit alerts
+      const { data: preferences, error: prefsError } = await supabaseAdmin
+        .from('email_preferences')
+        .select('low_credit_alerts')
+        .eq('user_id', params.userId)
+        .single();
+
+      if (prefsError && prefsError.code !== 'PGRST116') {
+        console.error('[EmailService] Error checking low_credit_alerts preference:', prefsError);
+        // Continue to allow email on error (fail-open)
+      }
+
+      // If user opted out, skip
+      if (preferences?.low_credit_alerts === false) {
+        console.log('[EmailService] Skipping low credit alert - user opted out:', params.userId);
+        return;
+      }
+
+      // Check if we already sent a low-credit email in the last 24 hours
+      const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+      const { data: recentLogs, error: logsError } = await supabaseAdmin
+        .from('email_logs')
+        .select('id')
+        .eq('user_id', params.userId)
+        .eq('template_name', 'low-credits')
+        .eq('status', 'sent')
+        .gte('sent_at', twentyFourHoursAgo)
+        .limit(1);
+
+      if (logsError) {
+        console.error('[EmailService] Error checking recent low-credit emails:', logsError);
+        // Continue to allow email on error
+      }
+
+      // If we already sent one recently, skip to avoid spam
+      if (recentLogs && recentLogs.length > 0) {
+        console.log(
+          '[EmailService] Skipping low credit alert - already sent within 24h:',
+          params.userId
+        );
+        return;
+      }
+
+      // Send the low credit alert
+      await this.send({
+        to: params.email,
+        template: 'low-credits',
+        type: 'marketing',
+        userId: params.userId,
+        data: {
+          userName: params.userName,
+          creditsRemaining: params.creditsRemaining,
+          planCredits: params.planCredits,
+          planName: params.planName,
+        },
+      });
+    } catch (error) {
+      // Log error but don't throw - email failure must never block credit operations
+      const message = error instanceof Error ? error.message : 'Unknown error';
+      console.error('[EmailService] Failed to send low credit alert:', {
+        userId: params.userId,
+        error: message,
+      });
     }
   }
 }
