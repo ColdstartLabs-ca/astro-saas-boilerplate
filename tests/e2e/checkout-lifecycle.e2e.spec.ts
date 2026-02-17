@@ -13,48 +13,13 @@ import { BasePage } from '../pages/BasePage';
  * Strategy:
  * - Test page rendering and basic functionality
  * - Test navigation and CTAs
- * - Test error states
- * - Test accessibility (skipped for client-only pages that lack proper HTML structure)
- *
- * Note: The SubscriptionConfirmedClient component has a known race condition where
- * it redirects to pricing before parsing URL parameters. This is a component bug that
- * should be fixed, but the tests handle it gracefully for now.
+ * - Use proper waits instead of arbitrary timeouts
+ * - Remove tests that can never fail due to component bugs
  */
-
-/**
- * Interface for checkout page test data
- */
-interface ICheckoutPageData {
-  title: string;
-  expectedElements: {
-    heading: string | RegExp;
-    description: string | RegExp;
-  };
-}
-
-/**
- * Interface for success page test data
- */
-interface ISuccessPageData {
-  sessionId?: string;
-  purchaseType?: 'subscription' | 'credits';
-  purchasedCredits?: string;
-}
-
-/**
- * Interface for subscription confirmed page test data
- */
-interface ISubscriptionConfirmedPageData {
-  type?: 'upgrade' | 'downgrade';
-  newPriceId?: string;
-  oldPriceId?: string;
-  effectiveDate?: string;
-  prorationAmount?: string;
-}
 
 test.describe('Checkout Lifecycle E2E Tests', () => {
   test.describe('Checkout Page', () => {
-    test('should render checkout page with required elements', async ({ page }) => {
+    test('should render checkout page with error state when no plan selected', async ({ page }) => {
       const basePage = new BasePage(page);
 
       // Navigate to checkout without priceId to see error state
@@ -64,7 +29,6 @@ test.describe('Checkout Lifecycle E2E Tests', () => {
       await basePage.waitForPageLoad();
 
       // Should show error message for missing priceId
-      // The actual text comes from translations: "No plan selected" / "Please select a plan"
       const errorMessage = page.getByText(/no plan selected|please select plan/i);
       await expect(errorMessage.first()).toBeVisible();
 
@@ -72,27 +36,26 @@ test.describe('Checkout Lifecycle E2E Tests', () => {
       const viewPlansButton = page.getByRole('button', { name: /view plans/i });
       await expect(viewPlansButton.first()).toBeVisible();
 
-      // Note: Skipping accessibility check for client-only React pages
-      // which don't have proper title/nav structure
       // Screenshot for visual verification
       await basePage.screenshot('checkout-no-plan-selected');
     });
 
-    test('should show authentication required for unauthenticated users', async ({ page }) => {
+    test('should render checkout page with priceId and show loading state', async ({ page }) => {
       const basePage = new BasePage(page);
 
-      // Navigate to checkout with priceId
-      // Note: With test fixtures, we're always authenticated via the fake session
-      // This test verifies the checkout page loads without error
+      // Navigate to checkout with a priceId
       await basePage.goto('/checkout?priceId=price_test_123&plan=Growth');
 
       // Wait for page to load
       await basePage.waitForPageLoad();
 
-      // Page should render - may show loading or Stripe checkout form
-      // The specific auth message depends on the user store state
-      const contentArea = page.locator('.min-h-screen, main');
-      await expect(contentArea.first()).toBeVisible();
+      // Page should render - check for the checkout header with back button
+      const backButton = page.getByText(/back to pricing/i);
+      await expect(backButton.first()).toBeVisible();
+
+      // Should show plan info in header
+      const planInfo = page.getByText(/subscribing to.*growth/i);
+      await expect(planInfo.first()).toBeVisible();
 
       // Screenshot for visual verification
       await basePage.screenshot('checkout-with-priceId');
@@ -107,9 +70,9 @@ test.describe('Checkout Lifecycle E2E Tests', () => {
       // Wait for page to load
       await basePage.waitForPageLoad();
 
-      // Check for back button (visible when no plan selected)
-      const backButton = page.getByRole('button', { name: /view plans/i });
-      await expect(backButton.first()).toBeVisible();
+      // Check for view plans button (shown when no plan selected)
+      const viewPlansButton = page.getByRole('button', { name: /view plans/i });
+      await expect(viewPlansButton.first()).toBeVisible();
 
       // Screenshot for visual verification
       await basePage.screenshot('checkout-header');
@@ -151,15 +114,12 @@ test.describe('Checkout Lifecycle E2E Tests', () => {
       // Navigate to success page with credit purchase parameters
       await basePage.goto('/success?type=credits&credits=100');
 
-      // Wait for page to load
+      // Wait for page to load and content to appear
       await basePage.waitForPageLoad();
 
-      // Wait for loading to complete - credit polling happens on this page
-      await page.waitForSelector('text=/credits purchased|processing your purchase/i', { timeout: 15000 });
-
-      // Should show success heading
+      // Wait for the success heading to appear (replaces arbitrary timeout)
       const successHeading = page.getByRole('heading', { name: /credits purchased/i });
-      await expect(successHeading.first()).toBeVisible({ timeout: 10000 });
+      await expect(successHeading.first()).toBeVisible({ timeout: 20000 });
 
       // Check for "Go to Dashboard" link
       const dashboardLink = page.locator('a[href="/dashboard"]');
@@ -182,12 +142,9 @@ test.describe('Checkout Lifecycle E2E Tests', () => {
       // Wait for page to load
       await basePage.waitForPageLoad();
 
-      // Wait for loading to complete
-      await page.waitForSelector('text=/subscription activated/i', { timeout: 15000 });
-
-      // Should show success message for subscription
+      // Wait for the subscription heading to appear
       const subscriptionHeading = page.getByRole('heading', { name: /subscription activated/i });
-      await expect(subscriptionHeading.first()).toBeVisible({ timeout: 10000 });
+      await expect(subscriptionHeading.first()).toBeVisible({ timeout: 20000 });
 
       // Should have dashboard link
       const dashboardLink = page.locator('a[href="/dashboard"]');
@@ -206,15 +163,13 @@ test.describe('Checkout Lifecycle E2E Tests', () => {
       // Wait for page to load
       await basePage.waitForPageLoad();
 
-      // Wait a bit for credit polling to complete
-      await page.waitForTimeout(5000);
+      // Wait for success content to appear
+      const successHeading = page.getByRole('heading', { name: /credits purchased/i });
+      await expect(successHeading.first()).toBeVisible({ timeout: 20000 });
 
-      // Check for credits balance display
-      const creditsDisplay = page.locator('text=/credits/i').or(page.locator('.text-3xl'));
-      const creditsCount = await creditsDisplay.count();
-
-      // At least one credits-related element should be visible
-      expect(creditsCount).toBeGreaterThan(0);
+      // Check for credits balance display - look for the credits counter
+      const creditsDisplay = page.getByText(/credits/i);
+      await expect(creditsDisplay.first()).toBeVisible();
 
       // Screenshot for visual verification
       await basePage.screenshot('success-credits-balance');
@@ -230,18 +185,18 @@ test.describe('Checkout Lifecycle E2E Tests', () => {
       // Wait for page to load
       await basePage.waitForPageLoad();
 
-      // Wait for loading to complete
-      await page.waitForTimeout(3000);
+      // Wait for success content to appear
+      const successHeading = page.getByRole('heading', { name: /credits purchased/i });
+      await expect(successHeading.first()).toBeVisible({ timeout: 20000 });
 
       // Check for session ID reference (shown in a code element)
       const sessionRef = page.locator('code');
-      const sessionCount = await sessionRef.count();
+      await expect(sessionRef.first()).toBeVisible();
 
-      if (sessionCount > 0) {
-        // Verify session ID is displayed (at least partially)
-        const sessionText = await sessionRef.first().textContent();
-        expect(sessionText).toBeTruthy();
-      }
+      // Verify session ID is displayed (at least partially)
+      const sessionText = await sessionRef.first().textContent();
+      expect(sessionText).toBeTruthy();
+      expect(sessionText).toContain('cs_test_');
 
       // Screenshot for visual verification
       await basePage.screenshot('success-session-reference');
@@ -253,11 +208,12 @@ test.describe('Checkout Lifecycle E2E Tests', () => {
       await basePage.goto('/success?type=credits&credits=100');
       await basePage.waitForPageLoad();
 
-      // Wait for content to load
-      await page.waitForTimeout(3000);
+      // Wait for success content to appear
+      const successHeading = page.getByRole('heading', { name: /credits purchased/i });
+      await expect(successHeading.first()).toBeVisible({ timeout: 20000 });
 
       // Check for main content
-      const main = page.locator('main, .flex-1');
+      const main = page.locator('main');
       await expect(main.first()).toBeVisible();
 
       // Check for proper heading structure
@@ -396,223 +352,24 @@ test.describe('Checkout Lifecycle E2E Tests', () => {
   });
 
   test.describe('Subscription Confirmed Page', () => {
-    // Note: The SubscriptionConfirmedClient component has a known race condition.
-    // It redirects to pricing immediately because URL params aren't parsed before
-    // the redirect check runs. Tests are written to handle this gracefully.
-    test.describe('With proper URL params (if component bug is fixed)', () => {
-      test('should render upgrade confirmation page', async ({ page }) => {
-        const basePage = new BasePage(page);
+    // Note: The SubscriptionConfirmedClient component has a race condition where
+    // it redirects to pricing if URL params aren't parsed before the redirect check runs.
+    // We only test the redirect behavior since the happy path tests would always bail out.
 
-        // Use actual Stripe price IDs from subscription.config.ts
-        await basePage.goto(
-          '/subscription/confirmed?type=upgrade&new_price_id=price_1SxZp9K2K0pPNfoSeOwSLmcp&old_price_id=price_1SxZp7K2K0pPNfoSMt94q8kP'
-        );
-
-        // Wait for page to load
-        await basePage.waitForPageLoad();
-
-        // Wait for client-side hydration and URL param parsing
-        await page.waitForTimeout(500);
-
-        // Check if page redirected (component bug)
-        const currentUrl = page.url();
-        if (currentUrl.includes('/pricing')) {
-          // Component has race condition - skip detailed assertions
-          console.log('Subscription confirmed page redirected due to component race condition');
-          await basePage.screenshot('subscription-confirmed-redirected-to-pricing');
-          return;
-        }
-
-        // If we got here, the component works correctly
-        const upgradeHeading = page.getByRole('heading', { name: /upgrade complete/i });
-        await expect(upgradeHeading.first()).toBeVisible({ timeout: 5000 });
-
-        const planSummary = page.getByText(/previous plan|new plan/i);
-        await expect(planSummary.first()).toBeVisible();
-
-        const dashboardLink = page.locator('a[href="/dashboard"]');
-        await expect(dashboardLink.first()).toBeVisible();
-
-        await basePage.checkBasicAccessibility();
-        await basePage.screenshot('subscription-confirmed-upgrade');
-      });
-
-      test('should render downgrade confirmation page', async ({ page }) => {
-        const basePage = new BasePage(page);
-
-        // Use actual Stripe price IDs from subscription.config.ts
-        await basePage.goto(
-          '/subscription/confirmed?type=downgrade&new_price_id=price_1SxZp7K2K0pPNfoSMt94q8kP&old_price_id=price_1SxZp9K2K0pPNfoSeOwSLmcp&effective_date=2025-03-01'
-        );
-
-        await basePage.waitForPageLoad();
-        await page.waitForTimeout(500);
-
-        const currentUrl = page.url();
-        if (currentUrl.includes('/pricing')) {
-          console.log('Subscription confirmed page redirected due to component race condition');
-          await basePage.screenshot('subscription-confirmed-downgrade-redirected');
-          return;
-        }
-
-        const downgradeHeading = page.getByRole('heading', { name: /downgrade scheduled/i });
-        await expect(downgradeHeading.first()).toBeVisible({ timeout: 5000 });
-
-        const effectiveDateInfo = page.getByText(/keep using|until|end of billing/i);
-        await expect(effectiveDateInfo.first()).toBeVisible();
-
-        const dashboardLink = page.locator('a[href="/dashboard"]');
-        await expect(dashboardLink.first()).toBeVisible();
-
-        await basePage.checkBasicAccessibility();
-        await basePage.screenshot('subscription-confirmed-downgrade');
-      });
-
-      test('should display plan change details correctly', async ({ page }) => {
-        const basePage = new BasePage(page);
-
-        await basePage.goto(
-          '/subscription/confirmed?type=upgrade&new_price_id=price_1SxZp9K2K0pPNfoSeOwSLmcp&old_price_id=price_1SxZp7K2K0pPNfoSMt94q8kP'
-        );
-
-        await basePage.waitForPageLoad();
-        await page.waitForTimeout(500);
-
-        const currentUrl = page.url();
-        if (currentUrl.includes('/pricing')) {
-          console.log('Subscription confirmed page redirected due to component race condition');
-          return;
-        }
-
-        const planNames = page.getByText(/starter|growth|agency/i);
-        await expect(planNames.first()).toBeVisible();
-
-        const creditsInfo = page.getByText(/\d+ credits/i);
-        await expect(creditsInfo.first()).toBeVisible();
-
-        await basePage.screenshot('subscription-confirmed-plan-details');
-      });
-
-      test('should show proration information for upgrades', async ({ page }) => {
-        const basePage = new BasePage(page);
-
-        await basePage.goto(
-          '/subscription/confirmed?type=upgrade&new_price_id=price_1SxZp9K2K0pPNfoSeOwSLmcp&old_price_id=price_1SxZp7K2K0pPNfoSMt94q8kP&proration_amount=500'
-        );
-
-        await basePage.waitForPageLoad();
-        await page.waitForTimeout(500);
-
-        const currentUrl = page.url();
-        if (currentUrl.includes('/pricing')) {
-          console.log('Subscription confirmed page redirected due to component race condition');
-          return;
-        }
-
-        const prorationInfo = page.getByText(/prorated|charged|credit/i);
-        const prorationCount = await prorationInfo.count();
-
-        if (prorationCount > 0) {
-          const prorationText = await prorationInfo.first().textContent();
-          expect(prorationText).toBeTruthy();
-        }
-
-        await basePage.screenshot('subscription-confirmed-proration');
-      });
-
-      test('should have working navigation links on subscription confirmed page', async ({ page }) => {
-        const basePage = new BasePage(page);
-
-        await basePage.goto(
-          '/subscription/confirmed?type=upgrade&new_price_id=price_1SxZp9K2K0pPNfoSeOwSLmcp&old_price_id=price_1SxZp7K2K0pPNfoSMt94q8kP'
-        );
-        await basePage.waitForPageLoad();
-        await page.waitForTimeout(500);
-
-        const currentUrl = page.url();
-        if (currentUrl.includes('/pricing')) {
-          console.log('Subscription confirmed page redirected due to component race condition');
-          return;
-        }
-
-        const dashboardLink = page.locator('a[href="/dashboard"]');
-        await expect(dashboardLink.first()).toBeVisible();
-
-        const pricingLink = page.locator('a[href="/pricing"]');
-        await expect(pricingLink.first()).toBeVisible();
-
-        await basePage.screenshot('subscription-confirmed-navigation');
-      });
-
-      test('should have proper accessibility on subscription confirmed page', async ({ page }) => {
-        const basePage = new BasePage(page);
-
-        await basePage.goto(
-          '/subscription/confirmed?type=upgrade&new_price_id=price_1SxZp9K2K0pPNfoSeOwSLmcp&old_price_id=price_1SxZp7K2K0pPNfoSMt94q8kP'
-        );
-        await basePage.waitForPageLoad();
-        await page.waitForTimeout(500);
-
-        const currentUrl = page.url();
-        if (currentUrl.includes('/pricing')) {
-          console.log('Subscription confirmed page redirected due to component race condition');
-          return;
-        }
-
-        const title = await page.title();
-        expect(title.length).toBeGreaterThan(0);
-
-        const main = page.locator('main, .min-h-screen');
-        await expect(main.first()).toBeVisible();
-
-        const h1 = page.locator('h1');
-        await expect(h1.first()).toBeVisible();
-
-        await basePage.screenshot('subscription-confirmed-accessibility');
-      });
-
-      test('should navigate from subscription confirmed to dashboard', async ({ page }) => {
-        const basePage = new BasePage(page);
-
-        await basePage.goto(
-          '/subscription/confirmed?type=upgrade&new_price_id=price_1SxZp9K2K0pPNfoSeOwSLmcp&old_price_id=price_1SxZp7K2K0pPNfoSMt94q8kP'
-        );
-        await basePage.waitForPageLoad();
-        await page.waitForTimeout(500);
-
-        const currentUrl = page.url();
-        if (currentUrl.includes('/pricing')) {
-          console.log('Subscription confirmed page redirected due to component race condition - skipping navigation test');
-          return;
-        }
-
-        const dashboardLink = page.locator('a[href="/dashboard"]');
-        await expect(dashboardLink.first()).toBeVisible();
-
-        await Promise.all([
-          page.waitForURL(/\/dashboard/, { timeout: 10000 }),
-          dashboardLink.first().click(),
-        ]);
-
-        expect(page.url()).toContain('/dashboard');
-        await basePage.screenshot('subscription-confirmed-to-dashboard-navigation');
-      });
-    });
-
-    test('should redirect to pricing if missing required parameters', async ({ page }) => {
+    test('should redirect to pricing when missing required parameters', async ({ page }) => {
       const basePage = new BasePage(page);
 
       // Navigate without required parameters
       await basePage.goto('/subscription/confirmed');
 
-      // Wait for page to potentially load and redirect
-      await page.waitForTimeout(2000);
+      // Wait for redirect to happen - use proper URL wait instead of timeout
+      await page.waitForURL(/\/pricing/, { timeout: 10000 });
 
-      // Should redirect to pricing page (redirect happens via useEffect)
+      // Verify we're on pricing page
       const currentUrl = page.url();
       expect(currentUrl).toContain('/pricing');
 
-      // Verify we're on pricing page
+      // Verify we're on pricing page by checking for pricing content
       const pricingHeading = page.getByRole('heading', { name: /pricing|plans/i });
       await expect(pricingHeading.first()).toBeVisible();
 
@@ -650,10 +407,11 @@ test.describe('Checkout Lifecycle E2E Tests', () => {
       await basePage.goto('/success?type=credits&credits=100');
       await basePage.waitForPageLoad();
 
-      // Wait for page content to load
-      await page.waitForTimeout(3000);
+      // Wait for success content to appear first
+      const successHeading = page.getByRole('heading', { name: /credits purchased/i });
+      await expect(successHeading.first()).toBeVisible({ timeout: 20000 });
 
-      // Get the dashboard link before clicking
+      // Get the dashboard link and click it
       const dashboardLink = page.locator('a[href="/dashboard"]');
       await expect(dashboardLink.first()).toBeVisible();
 
