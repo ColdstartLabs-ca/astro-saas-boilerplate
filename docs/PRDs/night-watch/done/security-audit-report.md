@@ -15,6 +15,7 @@ This report covers a comprehensive security audit of the AutopilotRank SaaS appl
 However, several findings require attention, primarily around **secrets exposure in local configuration**, **unencrypted OAuth tokens stored in the database**, **CSP policy weaknesses**, and **potential IDOR vectors through blog admin endpoints that bypass middleware-level auth**. There are also patterns that, while safe today, carry risk if deployment configurations change.
 
 **Summary by Severity:**
+
 - CRITICAL: 1
 - HIGH: 3
 - MEDIUM: 6
@@ -40,6 +41,7 @@ If the developer's machine is compromised, or if this file is accidentally share
 
 **Evidence:**
 File: `/home/joao/projects/autopilotrank.com/.env.api`
+
 ```
 SUPABASE_SERVICE_ROLE_KEY=eyJhbG...[REDACTED]
 STRIPE_SECRET_KEY=sk_test_51Sx...[REDACTED]
@@ -50,6 +52,7 @@ CMS_ENCRYPTION_KEY=...[REDACTED]
 ```
 
 **Recommendation:**
+
 1. **Immediately rotate ALL exposed keys**, especially the Supabase service role key and Stripe secret key. Even though they are not committed to git, they have been read by automated tooling during this audit.
 2. Consider using a secrets manager (e.g., 1Password CLI, `doppler`, or Cloudflare Workers Secrets) instead of plaintext `.env` files.
 3. Add a pre-commit hook that scans for secret patterns (e.g., `detect-secrets`, `gitleaks`) to prevent accidental commits.
@@ -70,12 +73,14 @@ If the database is compromised (SQL injection, leaked service role key, Supabase
 
 **Evidence:**
 File: `/home/joao/projects/autopilotrank.com/supabase/migrations/20260211000300_create_gsc_connections.sql`
+
 ```sql
 access_token TEXT NOT NULL,
 refresh_token TEXT NOT NULL,
 ```
 
 File: `/home/joao/projects/autopilotrank.com/src/pages/api/gsc/callback.ts` (lines 78-92)
+
 ```typescript
 const { error: insertError } = await supabaseAdmin.from('gsc_connections').upsert({
   ...
@@ -86,6 +91,7 @@ const { error: insertError } = await supabaseAdmin.from('gsc_connections').upser
 ```
 
 **Recommendation:**
+
 1. Encrypt both `access_token` and `refresh_token` using the existing `encryptJSON`/`decryptJSON` utilities from `server/utils/encryption.ts` before storing, and decrypt on read.
 2. Create a migration to encrypt existing plaintext tokens in place.
 3. Consider storing tokens as a single encrypted blob (like the `integrations` table does with `encrypted_credentials`).
@@ -105,6 +111,7 @@ CSP is effectively neutered as an XSS mitigation. While this may be necessary fo
 
 **Evidence:**
 File: `/home/joao/projects/autopilotrank.com/shared/config/security.ts` (lines 14-19)
+
 ```typescript
 'script-src': [
   "'self'",
@@ -117,6 +124,7 @@ File: `/home/joao/projects/autopilotrank.com/shared/config/security.ts` (lines 1
 ```
 
 **Recommendation:**
+
 1. Replace `'unsafe-inline'` with nonce-based CSP. Generate a random nonce per-request in middleware and pass it to script tags.
 2. Replace `'unsafe-eval'` with `'wasm-unsafe-eval'` only (if WASM is needed). Many frameworks no longer require `unsafe-eval`.
 3. Move third-party script hashes into the CSP or use `strict-dynamic` with nonces.
@@ -131,6 +139,7 @@ File: `/home/joao/projects/autopilotrank.com/shared/config/security.ts` (lines 1
 
 **Description:**
 Blog admin API routes (`/api/admin/blog/*`) are NOT listed in `PUBLIC_API_ROUTES`, so they go through the middleware JWT verification. However, the `BlogController` does NOT use the `userId` from middleware `locals`. Instead, it performs its own independent admin verification via `requireAdmin(req)`. This means:
+
 1. The middleware verifies a JWT and sets `userId` in locals.
 2. The BlogController ignores the middleware-provided identity and re-verifies independently.
 3. While this is functionally secure (double-checking), the controller's `requireAdmin` call re-parses the Authorization header independently.
@@ -142,6 +151,7 @@ If the middleware auth verification and the controller's auth verification ever 
 
 **Evidence:**
 File: `/home/joao/projects/autopilotrank.com/src/pages/api/admin/blog/posts/index.ts`
+
 ```typescript
 export const POST: APIRoute = async ({ request }) => {
   return controller.execute(request); // locals not forwarded
@@ -149,6 +159,7 @@ export const POST: APIRoute = async ({ request }) => {
 ```
 
 File: `/home/joao/projects/autopilotrank.com/server/controllers/BlogController.ts` (line 74)
+
 ```typescript
 private async checkAdminAccess(req: Request): Promise<IAdminCheckResult> {
   return requireAdmin(req); // Independent auth check, ignores middleware context
@@ -156,6 +167,7 @@ private async checkAdminAccess(req: Request): Promise<IAdminCheckResult> {
 ```
 
 **Recommendation:**
+
 1. Forward `locals` from the Astro context to the controller: `controller.execute(request, { locals })`.
 2. Use the `withAuth` wrapper pattern from `_utils.ts` for consistency with other API routes.
 3. Remove internal error details from 500 error responses in the controller (lines 151-153, 187-189, etc. expose `err.message`).
@@ -175,6 +187,7 @@ Rate limiting is effective only for single-origin attacks hitting the same edge 
 
 **Evidence:**
 File: `/home/joao/projects/autopilotrank.com/server/rateLimit.ts` (lines 27-46)
+
 ```typescript
 const rateLimitStore = new Map<string, IRateLimitEntry>();
 // Cleanup old entries every 5 minutes to prevent memory leaks
@@ -184,6 +197,7 @@ setInterval(() => { ... }, 5 * 60 * 1000);
 The code itself acknowledges this: _"Note: This works for single-instance deployments. For multi-instance deployments (e.g., Cloudflare with multiple edge locations), consider using Cloudflare KV or Durable Objects."_
 
 **Recommendation:**
+
 1. Use Cloudflare Rate Limiting rules (native WAF feature) for primary protection.
 2. For application-level rate limiting, use Cloudflare KV or Durable Objects for shared state.
 3. Keep the in-memory rate limiter as a secondary defense layer.
@@ -203,6 +217,7 @@ Without a salt, all users of the same `CMS_ENCRYPTION_KEY` produce the same deri
 
 **Evidence:**
 File: `/home/joao/projects/autopilotrank.com/server/utils/encryption.ts` (lines 72-79)
+
 ```typescript
 const derivedKey = await crypto.subtle.deriveKey({
   name: 'HKDF',
@@ -213,6 +228,7 @@ const derivedKey = await crypto.subtle.deriveKey({
 ```
 
 **Recommendation:**
+
 1. Use a random salt stored alongside the application configuration.
 2. If deterministic derivation is required, use a fixed but non-empty salt value (e.g., derived from the application name or domain).
 
@@ -231,11 +247,13 @@ If the database is compromised, an attacker could read webhook secrets and forge
 
 **Evidence:**
 File: `/home/joao/projects/autopilotrank.com/supabase/migrations/20260213100200_create_webhook_subscriptions.sql`
+
 ```sql
 secret TEXT NOT NULL,
 ```
 
 **Recommendation:**
+
 1. Encrypt the `secret` column using the same encryption utilities used for `integrations.encrypted_credentials`.
 2. Create a migration to encrypt existing plaintext secrets.
 
@@ -254,6 +272,7 @@ An attacker can trigger errors to enumerate the technology stack, discover SQL t
 
 **Evidence:**
 File: `/home/joao/projects/autopilotrank.com/src/pages/api/_utils.ts` (lines 278-280)
+
 ```typescript
 const message = error instanceof Error ? error.message : 'Internal server error';
 console.error(`[API] ${context ?? 'unknown'}:`, error);
@@ -261,6 +280,7 @@ return errorResponse('INTERNAL_ERROR', message, 500);
 ```
 
 File: `/home/joao/projects/autopilotrank.com/server/controllers/BlogController.ts` (multiple locations)
+
 ```typescript
 return this.error('FETCH_ERROR', 'Failed to fetch posts', 500, {
   details: err instanceof Error ? err.message : 'Unknown error',
@@ -268,6 +288,7 @@ return this.error('FETCH_ERROR', 'Failed to fetch posts', 500, {
 ```
 
 **Recommendation:**
+
 1. Never forward raw `error.message` to clients in production. Use a generic message like "An unexpected error occurred."
 2. Log the detailed error server-side for debugging.
 3. Create an error sanitization function that strips sensitive details before responding.
@@ -287,6 +308,7 @@ Dual auth implementations increase the risk of inconsistencies. If one path is p
 
 **Evidence:**
 File: `/home/joao/projects/autopilotrank.com/src/pages/api/_utils.ts` (lines 15-89)
+
 ```typescript
 export async function authenticateUserFromHeader(request: Request) {
   // This is a separate auth implementation from lib/middleware/auth.ts
@@ -295,6 +317,7 @@ export async function authenticateUserFromHeader(request: Request) {
 ```
 
 **Recommendation:**
+
 1. Remove or deprecate `authenticateUserFromHeader` since routes use `withAuth`/`withAuthAndBody` which rely on middleware-set `locals`.
 2. If the function is needed for edge cases, refactor to delegate to the canonical auth implementation.
 
@@ -313,11 +336,13 @@ If a developer relies on the `ALLOWED_ORIGIN` env var assuming it controls CORS,
 
 **Evidence:**
 File: `/home/joao/projects/autopilotrank.com/shared/config/env.ts` (line 186)
+
 ```typescript
 ALLOWED_ORIGIN: z.string().default('*'),
 ```
 
 File: `/home/joao/projects/autopilotrank.com/lib/middleware/securityHeaders.ts` (lines 9-18)
+
 ```typescript
 function getAllowedOrigins(): string[] {
   const origins = ['http://localhost:4321', 'https://localhost:4321', clientEnv.BASE_URL];
@@ -327,6 +352,7 @@ function getAllowedOrigins(): string[] {
 ```
 
 **Recommendation:**
+
 1. Either use `ALLOWED_ORIGIN` in the `getAllowedOrigins()` function, or remove it from the env config to avoid confusion.
 2. For production, ensure the allowed origins list includes only the production domain.
 
@@ -342,6 +368,7 @@ The `articles` table has RLS policies for SELECT, INSERT, and UPDATE for authent
 
 **Evidence:**
 File: `/home/joao/projects/autopilotrank.com/supabase/migrations/20260205100200_create_articles_table.sql`
+
 ```sql
 -- Has: SELECT, INSERT, UPDATE for auth.uid() = user_id
 -- Missing: DELETE for auth.uid() = user_id
@@ -349,6 +376,7 @@ File: `/home/joao/projects/autopilotrank.com/supabase/migrations/20260205100200_
 ```
 
 **Recommendation:**
+
 1. If users should be able to delete articles: add a DELETE policy with `USING (auth.uid() = user_id)`.
 2. If deletion is intentionally service-role-only: document this design decision.
 
@@ -367,6 +395,7 @@ Currently mitigated by multi-layer environment checks. The risk is latent - it b
 
 **Evidence:**
 File: `/home/joao/projects/autopilotrank.com/lib/middleware/auth.ts` (line 121)
+
 ```typescript
 if (token === 'test_auth_token_for_testing_only') {
   return { user: { id: 'test-user-id-12345', email: 'test@example.com' } };
@@ -374,6 +403,7 @@ if (token === 'test_auth_token_for_testing_only') {
 ```
 
 **Recommendation:**
+
 1. Move the hardcoded test token to an environment variable (`TEST_AUTH_TOKEN` already exists for this purpose).
 2. Remove the hardcoded fallback so only `serverEnv.TEST_AUTH_TOKEN` is accepted.
 
@@ -392,6 +422,7 @@ The filename is stored in the database and could be displayed to admin users. If
 
 **Evidence:**
 File: `/home/joao/projects/autopilotrank.com/server/controllers/BlogController.ts` (lines 416-423)
+
 ```typescript
 const metadata: IBlogMediaCreate = {
   filename: file.name, // Unsanitized user-provided filename
@@ -400,6 +431,7 @@ const metadata: IBlogMediaCreate = {
 ```
 
 **Recommendation:**
+
 1. Sanitize the filename by stripping path separators, null bytes, and HTML special characters.
 2. Consider generating a safe filename server-side and storing the original name separately (if needed for display).
 
@@ -415,11 +447,13 @@ In the blog media upload handler, the `tags` field from `formData` is parsed wit
 
 **Evidence:**
 File: `/home/joao/projects/autopilotrank.com/server/controllers/BlogController.ts` (line 421)
+
 ```typescript
 tags: formData.get('tags') ? JSON.parse(formData.get('tags') as string) : [],
 ```
 
 **Recommendation:**
+
 1. Wrap `JSON.parse` in a try-catch and validate the result is an array of strings.
 2. Use a Zod schema: `z.array(z.string()).safeParse(JSON.parse(...))`.
 
@@ -435,6 +469,7 @@ The rate limiter uses `setInterval` for cleanup, which is not guaranteed to work
 
 **Evidence:**
 File: `/home/joao/projects/autopilotrank.com/server/rateLimit.ts` (lines 30-46)
+
 ```typescript
 setInterval(() => { ... }, 5 * 60 * 1000);
 ```
@@ -454,11 +489,13 @@ The GSC OAuth callback falls back to `CRON_SECRET` if `OAUTH_STATE_SECRET` is no
 
 **Evidence:**
 File: `/home/joao/projects/autopilotrank.com/src/pages/api/gsc/callback.ts` (line 35)
+
 ```typescript
 const stateSecret = serverEnv.OAUTH_STATE_SECRET || serverEnv.CRON_SECRET;
 ```
 
 **Recommendation:**
+
 1. Make `OAUTH_STATE_SECRET` required (throw an error if not set) rather than falling back to `CRON_SECRET`.
 2. This prevents secret reuse across different security domains.
 
@@ -473,6 +510,7 @@ const stateSecret = serverEnv.OAUTH_STATE_SECRET || serverEnv.CRON_SECRET;
 All tables in the database have RLS enabled with appropriate policies. The previously-reported missing RLS on `dispute_events` and `provider_usage` has been fixed in migration `20260205000000_enable_missing_rls.sql`. Every table follows the pattern of user-scoped policies with service role full access.
 
 Tables verified with RLS enabled:
+
 - `profiles`, `subscriptions`, `products`, `prices`
 - `credit_transactions`, `credit_expiration_events`
 - `processing_jobs`, `webhook_events`, `sync_runs`
@@ -495,6 +533,7 @@ Tables verified with RLS enabled:
 
 **Description:**
 The Stripe webhook handler properly verifies webhook signatures using `stripe.webhooks.constructEventAsync()` with the `STRIPE_WEBHOOK_SECRET`. The code also includes:
+
 - Production safety check for misconfigured test webhook secrets.
 - Idempotency service to prevent duplicate event processing.
 - Proper error classification (client errors return 400, server errors return 500 for Stripe retry).
@@ -504,26 +543,26 @@ The Stripe webhook handler properly verifies webhook signatures using `stripe.we
 
 ## Summary Table
 
-| ID | Severity | Category | Finding |
-|--------|----------|----------|---------|
-| SEC-01 | CRITICAL | Secrets | Live API keys in `.env.api` on disk |
-| SEC-02 | HIGH | Crypto | Google OAuth tokens stored unencrypted |
-| SEC-03 | HIGH | CSP | `unsafe-eval` and `unsafe-inline` in CSP |
-| SEC-04 | HIGH | Access Control | Blog admin routes bypass middleware auth context |
-| SEC-05 | MEDIUM | Rate Limiting | In-memory rate limits per-edge, not global |
-| SEC-06 | MEDIUM | Crypto | Empty HKDF salt in encryption |
-| SEC-07 | MEDIUM | Crypto | Webhook subscription secrets unencrypted |
-| SEC-08 | MEDIUM | Info Disclosure | Raw error messages forwarded to clients |
-| SEC-09 | MEDIUM | Architecture | Redundant auth implementation in `_utils.ts` |
-| SEC-10 | MEDIUM | CORS | Unused `ALLOWED_ORIGIN` env var creates confusion |
-| SEC-11 | LOW | Access Control | Articles table missing user DELETE RLS policy |
-| SEC-12 | LOW | Auth | Hardcoded test auth token in production code |
-| SEC-13 | LOW | Input Validation | Blog media filename not sanitized |
-| SEC-14 | LOW | Input Validation | `JSON.parse` on tags without Zod validation |
-| SEC-15 | INFO | Infrastructure | `setInterval` unreliable in Workers |
-| SEC-16 | INFO | Auth | OAuth state falls back to cron secret |
-| SEC-17 | INFO | RLS | All tables have RLS enabled (positive) |
-| SEC-18 | INFO | Payments | Stripe webhook verification correct (positive) |
+| ID     | Severity | Category         | Finding                                           |
+| ------ | -------- | ---------------- | ------------------------------------------------- |
+| SEC-01 | CRITICAL | Secrets          | Live API keys in `.env.api` on disk               |
+| SEC-02 | HIGH     | Crypto           | Google OAuth tokens stored unencrypted            |
+| SEC-03 | HIGH     | CSP              | `unsafe-eval` and `unsafe-inline` in CSP          |
+| SEC-04 | HIGH     | Access Control   | Blog admin routes bypass middleware auth context  |
+| SEC-05 | MEDIUM   | Rate Limiting    | In-memory rate limits per-edge, not global        |
+| SEC-06 | MEDIUM   | Crypto           | Empty HKDF salt in encryption                     |
+| SEC-07 | MEDIUM   | Crypto           | Webhook subscription secrets unencrypted          |
+| SEC-08 | MEDIUM   | Info Disclosure  | Raw error messages forwarded to clients           |
+| SEC-09 | MEDIUM   | Architecture     | Redundant auth implementation in `_utils.ts`      |
+| SEC-10 | MEDIUM   | CORS             | Unused `ALLOWED_ORIGIN` env var creates confusion |
+| SEC-11 | LOW      | Access Control   | Articles table missing user DELETE RLS policy     |
+| SEC-12 | LOW      | Auth             | Hardcoded test auth token in production code      |
+| SEC-13 | LOW      | Input Validation | Blog media filename not sanitized                 |
+| SEC-14 | LOW      | Input Validation | `JSON.parse` on tags without Zod validation       |
+| SEC-15 | INFO     | Infrastructure   | `setInterval` unreliable in Workers               |
+| SEC-16 | INFO     | Auth             | OAuth state falls back to cron secret             |
+| SEC-17 | INFO     | RLS              | All tables have RLS enabled (positive)            |
+| SEC-18 | INFO     | Payments         | Stripe webhook verification correct (positive)    |
 
 ---
 
