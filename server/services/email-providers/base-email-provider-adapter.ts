@@ -222,6 +222,7 @@ export abstract class BaseEmailProviderAdapter implements IEmailProviderAdapter 
       'low-credits': 'LowCreditsEmail',
       'password-reset': 'PasswordResetEmail',
       'support-request': 'SupportRequestEmail',
+      'article-complete': 'ArticleCompleteEmail',
     };
 
     const exportName = templateExportNames[templateName];
@@ -238,6 +239,7 @@ export abstract class BaseEmailProviderAdapter implements IEmailProviderAdapter 
       'low-credits': () => import('@/emails/templates/LowCreditsEmail'),
       'password-reset': () => import('@/emails/templates/PasswordResetEmail'),
       'support-request': () => import('@/emails/templates/SupportRequestEmail'),
+      'article-complete': () => import('@/emails/templates/ArticleCompleteEmail'),
     };
     /* eslint-enable no-restricted-syntax */
 
@@ -266,6 +268,7 @@ export abstract class BaseEmailProviderAdapter implements IEmailProviderAdapter 
       'password-reset': 'Reset your password',
       'support-request': d =>
         `[Support] [${String(d.category || 'GENERAL').toUpperCase()}] ${d.subject || 'Support Request'}`,
+      'article-complete': d => `Your article is ready: ${d.articleTitle || 'New Article'}`,
     };
 
     const subject = subjects[template];

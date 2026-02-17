@@ -16,32 +16,35 @@ export class CampaignsPage extends BasePage {
    * Gets the campaign cards container
    */
   get campaignCards(): Locator {
-    return this.page.locator(
-      '[data-testid="campaign-card"], .bg-surface.border.border-border.rounded-xl'
-    );
+    return this.page.locator('[data-testid="campaign-card"]');
   }
 
   /**
    * Gets the empty state container
    */
   get emptyState(): Locator {
-    return this.page
-      .locator('.flex.flex-col.items-center.justify-center')
-      .filter({ hasText: /no.*campaign/i });
+    return this.page.locator('[data-testid="campaigns-empty-state"]');
   }
 
   /**
-   * Gets the new campaign button
+   * Gets the new campaign button (from the header)
    */
   get newCampaignButton(): Locator {
     return this.page.getByRole('button', { name: /new campaign/i });
   }
 
   /**
-   * Gets the create first campaign button
+   * Gets the create first campaign button (from empty state)
    */
   get createFirstButton(): Locator {
-    return this.page.getByRole('button', { name: /create first campaign/i });
+    return this.page.getByRole('button', { name: /create first|create first campaign/i });
+  }
+
+  /**
+   * Gets the new campaign button card (from the list)
+   */
+  get newCampaignCardButton(): Locator {
+    return this.page.locator('[data-testid="new-campaign-button"]');
   }
 
   /**
@@ -55,38 +58,44 @@ export class CampaignsPage extends BasePage {
    * Gets campaign name input in modal
    */
   get campaignNameInput(): Locator {
-    return this.campaignModal.locator('input[name="name"]');
+    return this.page.locator('input[name="name"]');
   }
 
   /**
    * Gets keywords textarea in modal
    */
   get keywordsTextarea(): Locator {
-    return this.campaignModal.locator('textarea[name="keywords"]');
+    return this.page.locator('textarea[name="keywords"]');
   }
 
   /**
-   * Gets form submit button (scoped to modal)
+   * Gets form submit button (scoped to modal) - handles multi-step form
    */
   get submitButton(): Locator {
-    return this.campaignModal.getByRole('button', { name: /create campaign|create|save/i });
+    return this.campaignModal.getByRole('button', {
+      name: /create|launch|start schedule|add|save/i,
+    });
+  }
+
+  /**
+   * Gets next button for multi-step form
+   */
+  get nextButton(): Locator {
+    return this.campaignModal.getByRole('button', { name: /next/i });
   }
 
   /**
    * Gets cancel button (scoped to modal)
    */
   get cancelButton(): Locator {
-    return this.campaignModal.getByRole('button', { name: /cancel/i });
+    return this.campaignModal.getByRole('button', { name: /cancel|back/i });
   }
 
   /**
    * Gets back to campaigns list button
    */
   get backButton(): Locator {
-    return this.page
-      .locator('button')
-      .filter({ hasText: /campaigns/i })
-      .or(this.page.locator('[data-testid="back-to-campaigns"]'));
+    return this.page.getByRole('button', { name: /campaigns/i });
   }
 
   /**
@@ -107,7 +116,7 @@ export class CampaignsPage extends BasePage {
    * Gets add keywords button
    */
   get addKeywordsButton(): Locator {
-    return this.page.getByRole('button', { name: /add.*keywords/i });
+    return this.page.getByRole('button', { name: /add keywords/i });
   }
 
   /**
@@ -354,10 +363,19 @@ export class CampaignsPage extends BasePage {
    * @param status - Expected campaign status
    */
   async assertCampaignStatus(status: string): Promise<void> {
+    // Try multiple selectors for campaign status
     const statusBadge = this.page
-      .locator(`[data-testid="campaign-status"], .text-xs.px-2.py-1`)
+      .locator(`[data-testid="campaign-name"]`)
+      .locator('span.text-xs')
       .filter({ hasText: new RegExp(status, 'i') });
-    await expect(statusBadge.first()).toBeVisible();
+
+    // Also check for h2 with status span (simplified detail view in CampaignsView)
+    const altStatusBadge = this.page
+      .locator('h2.text-2xl')
+      .locator('span.text-xs')
+      .filter({ hasText: new RegExp(status, 'i') });
+
+    await expect(statusBadge.first().or(altStatusBadge.first())).toBeVisible();
   }
 
   /**
@@ -368,6 +386,23 @@ export class CampaignsPage extends BasePage {
   async assertKeywordCount(count: number): Promise<void> {
     const keywordText = this.page.locator(`text=/\\d+\\/\\d+\\s*keywords?/i`);
     await expect(keywordText).toBeVisible();
+  }
+
+  /**
+   * Asserts that campaign name is visible in detail view
+   *
+   * @param campaignName - Name of the campaign to check
+   */
+  async assertCampaignNameVisible(campaignName: string): Promise<void> {
+    // Try data-testid first (full detail view)
+    const dataTestIdSelector = this.page
+      .locator('[data-testid="campaign-name"]')
+      .filter({ hasText: campaignName });
+
+    // Also check for h2 (simplified detail view in CampaignsView)
+    const h2Selector = this.page.locator('h2').filter({ hasText: campaignName });
+
+    await expect(dataTestIdSelector.or(h2Selector)).toBeVisible();
   }
 
   /**

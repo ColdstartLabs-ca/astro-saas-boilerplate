@@ -16,10 +16,33 @@ const VALID_ROUTES = new Set([
   '/contact',
   '/account',
   '/dashboard',
+  '/features',
+  '/help',
 ]);
 
 function getAppRoutes(): Set<string> {
   const routes = new Set(VALID_ROUTES);
+
+  // Scan Astro pages directory (src/pages)
+  const astroPagesDir = path.join(process.cwd(), 'src/pages');
+  if (fs.existsSync(astroPagesDir)) {
+    const entries = fs.readdirSync(astroPagesDir, { withFileTypes: true });
+    for (const entry of entries) {
+      if (entry.name.startsWith('_') || entry.name.startsWith('.')) continue;
+
+      if (entry.isFile() && (entry.name.endsWith('.astro') || entry.name.endsWith('.tsx'))) {
+        // Convert filename to route: index.astro -> /, features.astro -> /features
+        const routeName = entry.name.replace(/\.(astro|tsx)$/, '');
+        const route = routeName === 'index' ? '/' : `/${routeName}`;
+        routes.add(route);
+      } else if (entry.isDirectory()) {
+        // Add directory as route: /alternative, /compare, etc.
+        routes.add(`/${entry.name}`);
+      }
+    }
+  }
+
+  // Also scan legacy app directory (for Next.js-style routes)
   const appDir = path.join(process.cwd(), 'app');
 
   function scanDir(dir: string, prefix: string = '') {

@@ -19,7 +19,7 @@ import { usePendingActions } from '@client/hooks/usePendingActions';
 import type { ICampaignWithStats } from '@shared/types/campaign.types';
 import type { IProject } from '@shared/types/project.types';
 import { useTranslations } from '@client/hooks/useTranslations';
-import { getCampaignStatusStyles } from '@client/utils/statusStyles';
+import { getCampaignStatusStyles, getCampaignProgressStyles } from '@client/utils/statusStyles';
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
 import { dashboardNavigate } from '@client/utils/dashboardNavigation';
@@ -281,13 +281,7 @@ export function CampaignsView({
               </div>
               <div className="w-full bg-main rounded-full h-2 overflow-hidden border border-border">
                 <div
-                  className={`h-full rounded-full ${
-                    campaign.status === 'active'
-                      ? 'bg-accent'
-                      : campaign.status === 'completed'
-                        ? 'bg-green-500'
-                        : 'bg-muted'
-                  }`}
+                  className={`h-full rounded-full ${getCampaignProgressStyles(campaign.status)}`}
                   style={{
                     width: `${campaign.keyword_count > 0 ? (campaign.completed_count / campaign.keyword_count) * 100 : 0}%`,
                   }}

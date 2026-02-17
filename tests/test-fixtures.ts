@@ -247,6 +247,81 @@ export const test = base.extend({
       }
     });
 
+    // Mock campaigns API to return a test campaign by default.
+    // Individual tests can override this with page.route() after goto().
+    // Note: Articles page requires at least one campaign to show the article list.
+    // Note: API responses are wrapped in { success: true, data: {...} } by jsonResponse()
+    await page.route('**/api/campaigns**', async route => {
+      if (route.request().method() === 'GET') {
+        await route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify({
+            success: true,
+            data: {
+              campaigns: [
+                {
+                  id: 'mock-campaign-1',
+                  project_id: 'mock-project-1',
+                  name: 'Test Campaign',
+                  status: 'active',
+                  ai_model: 'gpt-4o-mini',
+                  image_preset: 'none',
+                  keyword_count: 0,
+                  completed_count: 0,
+                  created_at: '2024-01-01T00:00:00Z',
+                  updated_at: '2024-01-01T00:00:00Z',
+                },
+              ],
+            },
+          }),
+        });
+      } else {
+        // For POST/PUT/DELETE, return mock success
+        await route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify({
+            success: true,
+            data: {
+              campaign: { id: 'mock-campaign-id', name: 'Mock Campaign', status: 'active' },
+            },
+          }),
+        });
+      }
+    });
+
+    // Mock articles API to return empty array by default.
+    // Individual tests can override this with page.route() after goto().
+    // Note: API responses are wrapped in { success: true, data: {...} } by jsonResponse()
+    await page.route('**/api/articles**', async route => {
+      if (route.request().method() === 'GET') {
+        await route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify({
+            success: true,
+            data: {
+              articles: [],
+              total: 0,
+            },
+          }),
+        });
+      } else {
+        // For POST/PUT/DELETE, return mock success
+        await route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify({
+            success: true,
+            data: {
+              article: { id: 'mock-article-id', title: 'Mock Article', status: 'draft' },
+            },
+          }),
+        });
+      }
+    });
+
     // Mock user data endpoints (profiles and subscriptions tables)
     // This provides a default mock for tests that don't override it.
     // Tests can override this by registering their own routes in beforeEach.

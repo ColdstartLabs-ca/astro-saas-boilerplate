@@ -514,3 +514,249 @@ interface IPaymentSLI {
 2. **Review recent generation logs** - specific error patterns?
 3. **Check credit balances** - are users running out?
 4. **Monitor token usage** - hitting rate limits?
+
+---
+
+## Baselime Alert Configuration
+
+This section documents the alert rules that must be configured in the Baselime console for production monitoring. Alerts are based on structured error logs from the application.
+
+### Alert Setup Instructions
+
+1. Log in to [Baselime Console](https://app.baselime.io)
+2. Navigate to the workspace for AutopilotRank
+3. Go to **Alerts** > **Create Alert**
+4. Configure each alert using the specifications below
+5. Set notification channels (email, Slack, etc.)
+
+### Required Alert Rules
+
+#### Alert 1: Generation Failure Spike
+
+**Description:** Triggers when article generation failures spike, indicating potential service degradation.
+
+| Property        | Value                                                          |
+| --------------- | -------------------------------------------------------------- |
+| **Name**        | Generation Failure Spike                                       |
+| **Description** | More than 5 article generation failures in 10 minutes          |
+| **Severity**    | Warning                                                        |
+| **Query**       | `level=error AND message CONTAINS 'Article generation failed'` |
+| **Threshold**   | Count > 5                                                      |
+| **Time Window** | 10 minutes                                                     |
+| **Channel**     | Email to admin                                                 |
+
+**Baselime CLI Configuration:**
+
+```yaml
+alerts:
+  - name: generation-failure-spike
+    description: More than 5 article generation failures in 10 minutes
+    enabled: true
+    query:
+      calc: count()
+      filters:
+        - key: level
+          value: error
+        - key: message
+          value: Article generation failed
+          operator: contains
+      having:
+        op: gt
+        value: 5
+    interval: 10m
+    notifications:
+      - type: email
+        target: admin@autopilotrank.com
+```
+
+---
+
+#### Alert 2: AI Provider Unavailable
+
+**Description:** Triggers when AI providers return 503 errors, indicating provider outages.
+
+| Property        | Value                                                      |
+| --------------- | ---------------------------------------------------------- |
+| **Name**        | AI Provider Unavailable                                    |
+| **Description** | Any AI provider returns 503 more than 3 times in 5 minutes |
+| **Severity**    | Critical                                                   |
+| **Query**       | `provider IN (openrouter, replicate) AND httpStatus=503`   |
+| **Threshold**   | Count > 3                                                  |
+| **Time Window** | 5 minutes                                                  |
+| **Channel**     | Email to admin                                             |
+
+**Baselime CLI Configuration:**
+
+```yaml
+alerts:
+  - name: ai-provider-unavailable
+    description: AI provider returns 503 more than 3 times in 5 minutes
+    enabled: true
+    query:
+      calc: count()
+      filters:
+        - key: provider
+          value: openrouter,replicate
+          operator: in
+        - key: httpStatus
+          value: 503
+      having:
+        op: gt
+        value: 3
+    interval: 5m
+    notifications:
+      - type: email
+        target: admin@autopilotrank.com
+```
+
+---
+
+#### Alert 3: Credit System Error
+
+**Description:** Triggers on any credit system error (deduction or refund failures).
+
+| Property        | Value                                       |
+| --------------- | ------------------------------------------- |
+| **Name**        | Credit System Error                         |
+| **Description** | Any credit deduction or refund failure      |
+| **Severity**    | Critical                                    |
+| **Query**       | `message CONTAINS 'credit' AND level=error` |
+| **Threshold**   | Count >= 1                                  |
+| **Time Window** | 5 minutes                                   |
+| **Channel**     | Email to admin                              |
+
+**Baselime CLI Configuration:**
+
+```yaml
+alerts:
+  - name: credit-system-error
+    description: Any credit deduction or refund failure
+    enabled: true
+    query:
+      calc: count()
+      filters:
+        - key: level
+          value: error
+        - key: message
+          value: credit
+          operator: contains
+      having:
+        op: gte
+        value: 1
+    interval: 5m
+    notifications:
+      - type: email
+        target: admin@autopilotrank.com
+```
+
+---
+
+#### Alert 4: Email Delivery Failure
+
+**Description:** Triggers when email send failures exceed threshold.
+
+| Property        | Value                                                                    |
+| --------------- | ------------------------------------------------------------------------ |
+| **Name**        | Email Delivery Failure                                                   |
+| **Description** | Email send failures exceed 3 in 1 hour                                   |
+| **Severity**    | Warning                                                                  |
+| **Query**       | `message CONTAINS 'email' AND level=error AND message CONTAINS 'failed'` |
+| **Threshold**   | Count > 3                                                                |
+| **Time Window** | 1 hour                                                                   |
+| **Channel**     | Email to admin                                                           |
+
+**Baselime CLI Configuration:**
+
+```yaml
+alerts:
+  - name: email-delivery-failure
+    description: Email send failures exceed 3 in 1 hour
+    enabled: true
+    query:
+      calc: count()
+      filters:
+        - key: level
+          value: error
+        - key: message
+          value: email
+          operator: contains
+        - key: message
+          value: failed
+          operator: contains
+      having:
+        op: gt
+        value: 3
+    interval: 1h
+    notifications:
+      - type: email
+        target: admin@autopilotrank.com
+```
+
+### Structured Error Logging Format
+
+Article generation failures are logged with the following structured format for Baselime queries:
+
+```typescript
+{
+  message: 'Article generation failed',
+  level: 'error',
+  articleId: string,
+  timestamp: ISO8601,
+  stage: 'credit_check' | 'outline_generation' | 'article_generation' | 'quality_gate' | 'image_generation' | 'image_upload' | 'metadata_extraction' | 'storage' | 'unknown',
+  provider: 'openrouter' | 'replicate' | 'supabase' | 'stripe' | 'internal' | 'unknown',
+  category: 'transient' | 'rate_limit' | 'quota_exceeded' | 'invalid_input' | 'auth' | 'timeout' | 'content_quality' | 'unknown',
+  isRetryable: boolean,
+  httpStatus: number | null,
+  errorMessage: string
+}
+```
+
+### Useful Baselime Queries
+
+```bash
+# All article generation failures in last hour
+level=error AND message CONTAINS 'Article generation failed'
+
+# Failures from specific provider
+provider=openrouter AND level=error
+
+# Retryable errors (good candidates for automatic retry)
+isRetryable=true
+
+# HTTP 5xx errors
+httpStatus>=500
+
+# Rate limit issues
+category=rate_limit
+
+# Provider timeouts
+provider=openrouter AND category=timeout
+```
+
+### Alert Response Playbook
+
+When an alert fires:
+
+1. **Generation Failure Spike**:
+   - Check OpenRouter/Replicate status pages
+   - Review recent error messages in Baselime
+   - Check if errors are retryable (`isRetryable=true`)
+   - If widespread, consider temporarily pausing new generations
+
+2. **AI Provider Unavailable**:
+   - Verify provider status page (OpenRouter, Replicate)
+   - Check if issue is provider-wide or account-specific
+   - If provider is down, wait for recovery
+   - If account issue, verify API keys and quotas
+
+3. **Credit System Error**:
+   - IMMEDIATE investigation required (billing impact)
+   - Check Supabase database connectivity
+   - Review credit transaction logs
+   - Manually reconcile affected user credits if needed
+
+4. **Email Delivery Failure**:
+   - Check Brevo/Resend status pages
+   - Verify email provider API keys
+   - Review bounce/complaint logs in email provider
+   - Check if sender domain reputation is affected

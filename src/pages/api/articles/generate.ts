@@ -19,11 +19,17 @@ import { withAuthAndBody, jsonResponse, errorResponse, fireAndForget } from '../
 import { supabaseAdmin } from '@server/supabase/supabaseAdmin';
 import { articleGenerationService } from '@server/services/article-generation.service';
 import { openaiEmbeddingsService } from '@server/services/openai-embeddings.service';
+import { getEmailService } from '@server/services/email.service';
 import { z } from 'zod';
 import type { IGenerateArticleResponse } from '@shared/types/article.types';
 import { calculateArticleCreditCost } from '@shared/config/credits.config';
 import { isValidImagePreset } from '@shared/config/image-models.config';
 import { normalizeKeyword } from '@shared/utils/keyword';
+import {
+  SUBSCRIPTION_CREDITS,
+  LOW_CREDIT_EMAIL_THRESHOLD_PERCENT,
+  type SubscriptionTier,
+} from '@shared/constants/credit-costs.constants';
 
 // Validation schema
 const generateSchema = z.object({
@@ -201,14 +207,66 @@ export const POST = withAuthAndBody(generateSchema, async (userId, input, { loca
   }
 
   const result = articleResult[0];
-  const { article_id: articleId } = result;
+  const { article_id: articleId, new_total_balance: newBalance } = result;
 
   // Fire & forget generation using waitUntil()
   // Pass resolved model to ensure billing matches actual generation
-  fireAndForget(locals, articleGenerationService.generateArticle(articleId, userId, {
-    ...input,
-    model: resolvedModel,
-  }));
+  fireAndForget(
+    locals,
+    articleGenerationService.generateArticle(articleId, userId, {
+      ...input,
+      model: resolvedModel,
+    })
+  );
+
+  // Check for low credits and send alert email if needed
+  // Use fireAndForget to not block the response
+  if (newBalance !== null && newBalance > 0) {
+    fireAndForget(
+      locals,
+      (async () => {
+        try {
+          // Get user's subscription tier to determine plan credits
+          const { data: profile } = await supabaseAdmin
+            .from('profiles')
+            .select('subscription_tier, email, display_name')
+            .eq('id', userId)
+            .single();
+
+          if (!profile?.subscription_tier) {
+            // Free tier or no subscription - use free tier credits
+            return;
+          }
+
+          const tier = profile.subscription_tier as SubscriptionTier;
+          const planCredits = SUBSCRIPTION_CREDITS[tier];
+
+          if (!planCredits) {
+            // Unknown tier, skip
+            return;
+          }
+
+          const threshold = Math.floor(planCredits * LOW_CREDIT_EMAIL_THRESHOLD_PERCENT);
+
+          // Send low-credit alert if balance is at or below threshold
+          if (newBalance <= threshold && profile.email) {
+            const emailService = getEmailService();
+            await emailService.sendLowCreditAlert({
+              userId,
+              email: profile.email,
+              userName: profile.display_name || 'there',
+              creditsRemaining: newBalance,
+              planCredits,
+              planName: tier.charAt(0).toUpperCase() + tier.slice(1), // Capitalize
+            });
+          }
+        } catch (error) {
+          // Log error but don't throw - email failure must never block generation
+          console.error('[Generate] Failed to check/send low-credit alert:', error);
+        }
+      })()
+    );
+  }
 
   const response: IGenerateArticleResponse = {
     articleId,

@@ -3,6 +3,7 @@ import {
   getCampaignStatusStyles,
   getArticleStatusStyles,
   getProjectStatusStyles,
+  getCampaignProgressStyles,
 } from '../statusStyles';
 
 describe('statusStyles', () => {
@@ -74,6 +75,28 @@ describe('statusStyles', () => {
     it('should return fallback for unknown status', () => {
       const result = getProjectStatusStyles('unknown');
       expect(result).toBe('bg-secondary/10 text-secondary border-secondary/20');
+    });
+  });
+
+  describe('getCampaignProgressStyles', () => {
+    it('should return accent styles for active campaign', () => {
+      const result = getCampaignProgressStyles('active');
+      expect(result).toBe('bg-accent');
+    });
+
+    it('should return green styles for completed campaign', () => {
+      const result = getCampaignProgressStyles('completed');
+      expect(result).toBe('bg-green-500');
+    });
+
+    it('should return muted styles for paused campaign', () => {
+      const result = getCampaignProgressStyles('paused');
+      expect(result).toBe('bg-muted');
+    });
+
+    it('should return fallback for unknown status', () => {
+      const result = getCampaignProgressStyles('unknown');
+      expect(result).toBe('bg-muted');
     });
   });
 });

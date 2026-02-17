@@ -1,20 +1,12 @@
 'use client';
 
 import { ContactSupportCTA } from '@client/components/cta/ContactSupportCTA';
-import { GettingStartedFAQ, CreditsBillingFAQ, TechnicalSupportFAQ } from '@client/components/faq/FAQAccordion';
 import React from 'react';
 
 /**
- * Help page client component - renders the FAQ sections and contact support CTA
- * Used as an Astro island in the help page
+ * Help page client component - renders the contact support CTA as an Astro island.
+ * FAQ content is rendered server-side in the Astro template.
  */
 export default function HelpPageClient(): React.JSX.Element {
-  return (
-    <>
-      <GettingStartedFAQ />
-      <CreditsBillingFAQ />
-      <TechnicalSupportFAQ />
-      <ContactSupportCTA showPricingLink={true} theme="dark" />
-    </>
-  );
+  return <ContactSupportCTA showPricingLink={true} theme="dark" />;
 }

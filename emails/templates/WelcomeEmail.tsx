@@ -24,7 +24,7 @@ export function WelcomeEmail({
   verifyUrl,
   baseUrl,
   supportEmail,
-  appName = 'MyImageUpscaler',
+  appName = 'AutopilotRank',
 }: IWelcomeEmailProps): React.JSX.Element {
   const dashboardUrl = `${baseUrl}/dashboard`;
 
@@ -41,12 +41,13 @@ export function WelcomeEmail({
             <Text style={heading}>Welcome to {appName}!</Text>
             <Text style={paragraph}>Hi {userName},</Text>
             <Text style={paragraph}>
-              Thanks for signing up! We&apos;re excited to have you on board. You can now start
-              upscaling your images with our powerful AI tools.
+              Thanks for signing up! You&apos;re 3 steps away from your first SEO article:
             </Text>
+            <Text style={listItem}>1. Create a project and connect your site</Text>
+            <Text style={listItem}>2. Add your target keywords</Text>
+            <Text style={listItem}>3. Hit Generate and watch the magic happen</Text>
             <Text style={paragraph}>
-              Your account comes with free credits to get started. Upgrade anytime for more features
-              and higher quality outputs.
+              Start with 3 free articles to try it out — no credit card needed.
             </Text>
 
             {verifyUrl ? (
@@ -55,7 +56,7 @@ export function WelcomeEmail({
               </Button>
             ) : (
               <Button href={dashboardUrl} style={button}>
-                Go to Dashboard
+                Create Your First Article
               </Button>
             )}
           </Section>
@@ -119,6 +120,14 @@ const paragraph = {
   lineHeight: '24px',
   color: '#334155',
   marginBottom: '16px',
+};
+
+const listItem = {
+  fontSize: '16px',
+  lineHeight: '24px',
+  color: '#334155',
+  marginBottom: '8px',
+  marginLeft: '16px',
 };
 
 const button = {
