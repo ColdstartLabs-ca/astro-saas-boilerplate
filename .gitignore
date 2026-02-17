@@ -84,3 +84,6 @@ logs/
 night-watch.config.json
 
 .npmrc
+
+# Night Watch
+*.claim

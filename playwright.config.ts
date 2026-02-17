@@ -37,7 +37,7 @@ export default defineConfig({
   retries: isCI ? 2 : 0,
   workers: process.env.CI ? 2 : 4, // Use more workers locally, fewer in CI to prevent rate limiting
   // Use dot reporter by default for cleaner output - set PLAYWRIGHT_VERBOSE=1 for list reporter
-  reporter: isVerbose ? [['html'], ['list']] : [['html'], ['dot']],
+  reporter: [['html'], ['list']],
   use: {
     baseURL: `http://localhost:${TEST_PORT}`,
     trace: 'retain-on-failure', // Only keep traces on failure to save memory
@@ -121,7 +121,7 @@ export default defineConfig({
     url: `http://localhost:${TEST_PORT}`,
     reuseExistingServer: false, // Always start a dedicated server for this Playwright run
     timeout: 120000, // 2 minutes to start server
-    stdout: 'pipe',
-    stderr: 'pipe',
+    stdout: 'ignore',
+    stderr: 'pipe', // Keep stderr to catch server startup errors
   },
 });

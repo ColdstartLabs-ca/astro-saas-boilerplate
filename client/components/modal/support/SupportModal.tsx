@@ -140,7 +140,7 @@ export function SupportModal({ isOpen, onClose }: ISupportModalProps): React.JSX
             </div>
           </div>
 
-          <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
+          <form onSubmit={handleSubmit(onSubmit)} noValidate className="space-y-5">
             {/* Name & Email Row */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>

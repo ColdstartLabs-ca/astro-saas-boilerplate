@@ -34,9 +34,10 @@ export class OnboardingPage extends BasePage {
 
   /**
    * Gets the stepper progress indicator
+   * Note: Uses "onboarding-stepper" when skipped steps exist, "stepper-progress" otherwise
    */
   get stepper(): Locator {
-    return this.page.locator('[data-testid="onboarding-stepper"]');
+    return this.page.locator('[data-testid="onboarding-stepper"], [data-testid="stepper-progress"]');
   }
 
   /**
