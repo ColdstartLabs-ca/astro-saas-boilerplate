@@ -48,7 +48,7 @@ const description = `Learn about AI-powered SEO content creation, keyword strate
 
     <!-- Featured Post -->
     {featuredPost && (
-      <section class="pb-16">
+      <section class="py-16">
         <div class="container mx-auto px-4 max-w-6xl">
           <a href={`/blog/${featuredPost.slug}`} class="group block">
             <article class="relative bg-gradient-to-br from-surface via-surface to-surface-light rounded-3xl border border-border overflow-hidden hover:border-accent/50 transition-all duration-500 hover:shadow-card-hover">
@@ -121,7 +121,7 @@ const description = `Learn about AI-powered SEO content creation, keyword strate
     )}
 
     <!-- Blog Posts Grid with Search, Filters & Pagination -->
-    <section class="pb-24">
+    <section class="py-24">
       <div class="container mx-auto px-4 max-w-6xl">
         {otherPosts.length > 0 ? (
           <BlogGrid client:load posts={otherPosts} />

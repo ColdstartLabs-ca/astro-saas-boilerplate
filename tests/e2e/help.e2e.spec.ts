@@ -10,7 +10,7 @@ test.describe('Help Page', () => {
     // Check page title
     await expect(page).toHaveTitle(/Help/);
 
-    // Verify page structure
+    // Verify page structure - hero, nav, 3 content sections, CTA
     const sections = await page.locator('section').count();
     expect(sections).toBeGreaterThanOrEqual(4);
 
@@ -20,18 +20,15 @@ test.describe('Help Page', () => {
     await expect(heroTitle).toContainText('Help');
   });
 
-  test('should display quick links section', async ({ page }) => {
+  test('should display quick links navigation', async ({ page }) => {
     await page.goto('/help');
     await page.waitForLoadState('networkidle');
 
-    // Check quick links are present
-    const quickLinksSection = page
-      .locator('section')
-      .filter({ hasText: 'Getting Started' })
-      .first();
-    await expect(quickLinksSection).toBeVisible();
+    // Check sticky nav with quick links
+    const nav = page.locator('nav');
+    await expect(nav).toBeVisible();
 
-    // Verify all three quick link cards exist
+    // Verify all three quick link anchors exist
     const quickLinks = page.locator(
       'a[href="#getting-started"], a[href="#credits-billing"], a[href="#technical"]'
     );
@@ -81,7 +78,7 @@ test.describe('Help Page', () => {
     const sectionTitle = creditsSection.locator('h2');
     await expect(sectionTitle).toContainText('Credits');
 
-    // Verify FAQ accordion items exist
+    // Verify FAQ accordion items exist (8 items in 2-column grid)
     const detailsElements = creditsSection.locator('details');
     const detailsCount = await detailsElements.count();
     expect(detailsCount).toBeGreaterThanOrEqual(6);
@@ -99,7 +96,7 @@ test.describe('Help Page', () => {
     const sectionTitle = techSection.locator('h2');
     await expect(sectionTitle).toContainText('Technical Support');
 
-    // Verify FAQ accordion items exist
+    // Verify FAQ accordion items exist (8 items in 2-column grid)
     const detailsElements = techSection.locator('details');
     const detailsCount = await detailsElements.count();
     expect(detailsCount).toBeGreaterThanOrEqual(6);
