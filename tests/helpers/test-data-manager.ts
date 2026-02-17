@@ -1,7 +1,7 @@
 import { createClient } from '@supabase/supabase-js';
 import { supabaseAdmin } from '@server/supabase/supabaseAdmin';
 
-function isTestRuntime(): boolean {
+export function isTestRuntime(): boolean {
   const playwrightTest = process.env.PLAYWRIGHT_TEST;
   return (
     process.env.ENV === 'test' ||
@@ -28,8 +28,7 @@ export class TestDataManager {
   constructor() {
     this.isTestMode = isTestRuntime();
 
-    const supabaseUrl =
-      process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.PUBLIC_SUPABASE_URL;
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.PUBLIC_SUPABASE_URL;
     const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
     if (this.isTestMode) {
@@ -620,6 +619,12 @@ export class TestDataManager {
    * Cleans up a test user and all their data
    */
   async cleanupUser(userId: string): Promise<void> {
+    // Skip cleanup for mock users (they don't exist in the database)
+    if (userId.startsWith('mock_user_')) {
+      this.createdUsers = this.createdUsers.filter(id => id !== userId);
+      return;
+    }
+
     if (!this.supabase) {
       console.warn('Supabase client not available for cleanup');
       this.createdUsers = this.createdUsers.filter(id => id !== userId);
