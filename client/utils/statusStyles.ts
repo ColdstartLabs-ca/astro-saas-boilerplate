@@ -63,3 +63,18 @@ export function getIntegrationStatusStyles(status: string): string {
 
   return styles[status] ?? 'bg-surface text-muted border-border';
 }
+
+/**
+ * Get CSS classes for campaign progress bar styling
+ * @param status - The campaign status
+ * @returns CSS class string for the progress bar fill
+ */
+export function getCampaignProgressStyles(status: string): string {
+  const styles: Record<string, string> = {
+    active: 'bg-accent',
+    completed: 'bg-green-500',
+    paused: 'bg-muted',
+  };
+
+  return styles[status] ?? 'bg-muted';
+}

@@ -236,4 +236,243 @@ test.describe('API: Campaign Integrations', () => {
       await response.expectErrorCode('FORBIDDEN');
     });
   });
+
+  // =============================================================================
+  // POST /api/articles/:articleId/deliver
+  // =============================================================================
+
+  test.describe('POST /api/articles/:articleId/deliver', () => {
+    let articleId: string;
+
+    test.beforeEach(async () => {
+      // Skip DB setup in test mode
+      if (isTestMode()) {
+        articleId = crypto.randomUUID();
+        return;
+      }
+
+      // Create an article for testing
+      const { supabaseAdmin } = ctx;
+      const project = await ctx.createProject(user.id, {
+        name: 'Test Project',
+      });
+
+      const { data: campaign } = await supabaseAdmin
+        .from('campaigns')
+        .insert({
+          user_id: user.id,
+          project_id: project.id,
+          name: 'Test Campaign',
+          status: 'draft',
+          settings: {},
+        })
+        .select()
+        .single();
+
+      campaignId = campaign!.id;
+
+      const { data: article } = await supabaseAdmin
+        .from('articles')
+        .insert({
+          user_id: user.id,
+          campaign_id: campaignId,
+          title: 'Test Article',
+          slug: 'test-article',
+          content: 'Test content',
+          status: 'draft',
+        })
+        .select()
+        .single();
+
+      articleId = article!.id;
+
+      // Create and assign an integration
+      const { data: integration } = await supabaseAdmin
+        .from('integrations')
+        .insert({
+          user_id: user.id,
+          type: 'webhook',
+          name: 'Test Webhook',
+          config: {
+            url: 'https://example.com/webhook',
+          },
+          encrypted_credentials: 'encrypted',
+          status: 'active',
+        })
+        .select()
+        .single();
+
+      integrationId = integration!.id;
+
+      await supabaseAdmin.from('campaign_integrations').insert({
+        campaign_id: campaignId,
+        integration_id: integrationId,
+        enabled: true,
+      });
+    });
+
+    test('should reject unauthenticated requests', async ({ request }) => {
+      const api = new ApiClient(request);
+
+      const response = await api.post(`/api/articles/${articleId}/deliver`, {
+        retry: false,
+      });
+
+      response.expectStatus(401);
+      await response.expectErrorCode('UNAUTHORIZED');
+    });
+
+    test('should trigger delivery', async ({ request }) => {
+      test.skip(isTestMode(), 'Cannot seed articles in test mode with mock users');
+
+      const api = new ApiClient(request).withAuth(user.token);
+
+      const response = await api.post(`/api/articles/${articleId}/deliver`, {
+        retry: false,
+      });
+
+      response.expectStatus(200).expectSuccess();
+      const data = await response.getData();
+
+      expect(data).toMatchObject({
+        total: expect.any(Number),
+        successful: expect.any(Number),
+        failed: expect.any(Number),
+        deliveries: expect.any(Array),
+      });
+    });
+
+    test('should support retry flag', async ({ request }) => {
+      test.skip(isTestMode(), 'Cannot seed articles in test mode with mock users');
+
+      const api = new ApiClient(request).withAuth(user.token);
+
+      const response = await api.post(`/api/articles/${articleId}/deliver`, {
+        retry: true,
+      });
+
+      response.expectStatus(200).expectSuccess();
+      const data = await response.getData();
+
+      expect(data).toMatchObject({
+        total: expect.any(Number),
+        successful: expect.any(Number),
+        failed: expect.any(Number),
+        deliveries: expect.any(Array),
+      });
+    });
+
+    test('should return 404 for non-existent article', async ({ request }) => {
+      const api = new ApiClient(request).withAuth(user.token);
+
+      const response = await api.post('/api/articles/non-existent-id/deliver', {
+        retry: false,
+      });
+
+      response.expectStatus(404);
+      await response.expectErrorCode('NOT_FOUND');
+    });
+
+    test('should return 404 for other user article', async ({ request }) => {
+      test.skip(isTestMode(), 'Cannot seed articles in test mode with mock users');
+
+      const otherUser = await ctx.createUser({ subscription: 'active' });
+
+      const api = new ApiClient(request).withAuth(otherUser.token);
+
+      const response = await api.post(`/api/articles/${articleId}/deliver`, {
+        retry: false,
+      });
+
+      response.expectStatus(404);
+      await response.expectErrorCode('NOT_FOUND');
+    });
+  });
+
+  // =============================================================================
+  // GET /api/articles/:articleId/deliveries
+  // =============================================================================
+
+  test.describe('GET /api/articles/:articleId/deliveries', () => {
+    let articleId: string;
+
+    test.beforeEach(async () => {
+      // Skip DB setup in test mode
+      if (isTestMode()) {
+        articleId = crypto.randomUUID();
+        return;
+      }
+
+      // Create an article for testing
+      const { supabaseAdmin } = ctx;
+      const project = await ctx.createProject(user.id, {
+        name: 'Test Project',
+      });
+
+      const { data: campaign } = await supabaseAdmin
+        .from('campaigns')
+        .insert({
+          user_id: user.id,
+          project_id: project.id,
+          name: 'Test Campaign',
+          status: 'draft',
+          settings: {},
+        })
+        .select()
+        .single();
+
+      campaignId = campaign!.id;
+
+      const { data: article } = await supabaseAdmin
+        .from('articles')
+        .insert({
+          user_id: user.id,
+          campaign_id: campaignId,
+          title: 'Test Article for Deliveries',
+          slug: 'test-article-deliveries',
+          content: 'Test content',
+          status: 'draft',
+        })
+        .select()
+        .single();
+
+      articleId = article!.id;
+    });
+
+    test('should reject unauthenticated requests', async ({ request }) => {
+      const api = new ApiClient(request);
+
+      const response = await api.get(`/api/articles/${articleId}/deliveries`);
+
+      response.expectStatus(401);
+      await response.expectErrorCode('UNAUTHORIZED');
+    });
+
+    test('should return delivery records', async ({ request }) => {
+      test.skip(isTestMode(), 'Cannot seed articles in test mode with mock users');
+
+      const api = new ApiClient(request).withAuth(user.token);
+
+      const response = await api.get(`/api/articles/${articleId}/deliveries`);
+
+      response.expectStatus(200).expectSuccess();
+      const data = await response.getData();
+
+      expect(data.deliveries).toBeDefined();
+      expect(Array.isArray(data.deliveries)).toBe(true);
+    });
+
+    test('should return empty array for article with no deliveries', async ({ request }) => {
+      test.skip(isTestMode(), 'Cannot seed articles in test mode with mock users');
+
+      const api = new ApiClient(request).withAuth(user.token);
+
+      const response = await api.get(`/api/articles/${articleId}/deliveries`);
+
+      response.expectStatus(200).expectSuccess();
+      const data = await response.getData();
+
+      expect(data.deliveries).toEqual([]);
+    });
+  });
 });

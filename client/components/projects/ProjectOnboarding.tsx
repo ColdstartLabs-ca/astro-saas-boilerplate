@@ -15,7 +15,7 @@ import React, { useEffect, useRef } from 'react';
 import { Check, X, ArrowRight, Loader2 } from 'lucide-react';
 import { FormProvider } from 'react-hook-form';
 import { Button } from '@client/components/ui/Button';
-import { StepperProgressCompact } from '@client/components/stepper';
+import { StepperProgress } from '@client/components/stepper';
 import {
   BasicInfoStep,
   PlatformSelectionStep,
@@ -45,7 +45,7 @@ export function ProjectOnboarding({
 
   // Reset form and stepper when modal closes
   const wasOpenRef = useRef(false);
-   
+
   useEffect(() => {
     // Only reset when transitioning from open -> closed
     if (wasOpenRef.current && !isOpen) {
@@ -54,7 +54,7 @@ export function ProjectOnboarding({
       clearError();
     }
     wasOpenRef.current = isOpen;
-  }, [isOpen]);
+  }, [isOpen, stepper, form, clearError]);
 
   // Handle modal close
   const handleClose = () => {
@@ -95,14 +95,10 @@ export function ProjectOnboarding({
       <div className="bg-surface border border-border rounded-2xl w-full max-w-2xl shadow-2xl flex flex-col max-h-[90vh]">
         {/* Header */}
         <div className="p-6 border-b border-border flex justify-between items-center bg-elevated/30 rounded-t-2xl">
-          <div>
-            {/* eslint-disable-next-line i18next/no-literal-string */}
-            <h2 id="project-onboarding-title" className="text-xl font-bold text-white">Create New Project</h2>
-            {/* eslint-disable-next-line i18next/no-literal-string */}
-            <p className="text-secondary text-sm mt-1">
-              Step {stepper.currentStep + 1} of {stepper.steps.length}
-            </p>
-          </div>
+          {/* eslint-disable-next-line i18next/no-literal-string */}
+          <h2 id="project-onboarding-title" className="text-xl font-bold text-white">
+            Create New Project
+          </h2>
           <button
             onClick={handleClose}
             className="text-muted hover:text-white p-2 hover:bg-surface-light rounded-full transition-colors"
@@ -113,11 +109,16 @@ export function ProjectOnboarding({
           </button>
         </div>
 
-        {/* Progress Bar */}
-        <div className="px-6 pt-6">
-          <StepperProgressCompact
+        {/* Stepper */}
+        <div className="px-6 pt-4">
+          <StepperProgress
             currentStep={stepper.currentStep}
-            totalSteps={stepper.steps.length}
+            steps={stepper.steps.map(s => ({ label: s.label }))}
+            completedSteps={
+              new Set(
+                stepper.steps.map((_, index) => index).filter(index => index < stepper.currentStep)
+              )
+            }
           />
         </div>
 
@@ -155,7 +156,7 @@ export function ProjectOnboarding({
             onClick={stepper.isFirstStep ? handleClose : prevStep}
             disabled={isSubmitting}
           >
-            { }
+            {}
             {stepper.isFirstStep ? 'Cancel' : 'Back'}
           </Button>
 
@@ -166,17 +167,17 @@ export function ProjectOnboarding({
           >
             {isSubmitting ? (
               <>
-                { }
+                {}
                 <Loader2 className="w-4 h-4 mr-2 animate-spin" /> Creating...
               </>
             ) : stepper.isLastStep ? (
               <>
-                { }
+                {}
                 Complete Setup <Check className="w-4 h-4 ml-2" />
               </>
             ) : (
               <>
-                { }
+                {}
                 Next Step <ArrowRight className="w-4 h-4 ml-2" />
               </>
             )}

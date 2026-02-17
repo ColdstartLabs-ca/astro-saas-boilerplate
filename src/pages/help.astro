@@ -9,81 +9,423 @@ const t = getTranslations('help');
 // SEO metadata
 const title = t('page.title');
 const description = t('page.subtitle', { appName: clientEnv.APP_NAME });
+
+// Helper function for typed translations
+const getStep = (step: string) => t(`gettingStarted.steps.${step}`);
+const getCreditsFaq = (faq: string) => t(`creditsBilling.faqs.${faq}`);
+const getTechFaq = (faq: string) => t(`technicalSupport.faqs.${faq}`);
 ---
 
 <Layout title={title}>
   <Fragment slot="head">
-    <!-- SEO Meta Tags -->
     <meta name="description" content={description} />
     <meta property="og:title" content={title} />
     <meta property="og:description" content={description} />
     <meta property="og:type" content="website" />
     <meta property="og:url" content={`${clientEnv.BASE_URL}/help`} />
     <link rel="canonical" href={`${clientEnv.BASE_URL}/help`} />
+    <style>
+      /* Sticky nav offset for anchor links */
+      #getting-started,
+      #credits-billing,
+      #technical {
+        scroll-margin-top: 5rem;
+      }
+
+      /* Smooth open/close for details */
+      details[open] summary ~ div {
+        animation: accordion-open 0.25s ease-out;
+      }
+
+      @keyframes accordion-open {
+        from { opacity: 0; transform: translateY(-4px); }
+        to { opacity: 1; transform: translateY(0); }
+      }
+
+      /* Active nav indicator */
+      .help-nav-link {
+        position: relative;
+      }
+      .help-nav-link::after {
+        content: '';
+        position: absolute;
+        bottom: -2px;
+        left: 50%;
+        width: 0;
+        height: 2px;
+        background: rgb(var(--color-accent));
+        transition: all 0.3s ease;
+        transform: translateX(-50%);
+      }
+      .help-nav-link:hover::after {
+        width: 60%;
+      }
+    </style>
   </Fragment>
 
   <main class="min-h-screen bg-main">
-    <!-- Hero Section -->
-    <section class="relative py-20 md:py-32 overflow-hidden">
-      <!-- Background gradient -->
+    <!-- Compact Hero -->
+    <section class="relative py-10 md:py-14 overflow-hidden">
       <div class="absolute inset-0 bg-gradient-to-br from-accent/5 via-transparent to-secondary/5 pointer-events-none" />
-
       <div class="container mx-auto px-4 max-w-5xl text-center relative z-10">
-        <h1 class="font-display text-4xl md:text-6xl font-bold text-white mb-6 tracking-tight">
+        <h1 class="font-display text-3xl md:text-5xl font-bold text-white mb-3 tracking-tight">
           {title}
         </h1>
-        <p class="text-lg md:text-xl text-text-secondary max-w-2xl mx-auto leading-relaxed">
+        <p class="text-base md:text-lg text-text-secondary max-w-xl mx-auto leading-relaxed mb-6">
           {description}
         </p>
-      </div>
-    </section>
 
-    <!-- Quick Links -->
-    <section class="py-12">
-      <div class="container mx-auto px-4 max-w-6xl">
-        <div class="grid md:grid-cols-3 gap-6">
-          <a href="#getting-started" class="group block bg-surface rounded-2xl p-6 border border-border hover:border-accent/50 transition-all duration-300 hover:-translate-y-1">
-            <div class="w-12 h-12 bg-accent/10 rounded-xl flex items-center justify-center mb-4 group-hover:bg-accent/20 transition-colors">
-              <svg class="w-6 h-6 text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
-              </svg>
-            </div>
-            <h3 class="font-semibold text-primary mb-2">{t('quickLinks.gettingStarted')}</h3>
-            <p class="text-sm text-muted-foreground">{t('quickLinks.gettingStartedDesc')}</p>
-          </a>
-          <a href="#credits-billing" class="group block bg-surface rounded-2xl p-6 border border-border hover:border-accent/50 transition-all duration-300 hover:-translate-y-1">
-            <div class="w-12 h-12 bg-accent/10 rounded-xl flex items-center justify-center mb-4 group-hover:bg-accent/20 transition-colors">
-              <svg class="w-6 h-6 text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
-              </svg>
-            </div>
-            <h3 class="font-semibold text-primary mb-2">{t('quickLinks.creditsBilling')}</h3>
-            <p class="text-sm text-muted-foreground">{t('quickLinks.creditsBillingDesc')}</p>
-          </a>
-          <a href="#technical" class="group block bg-surface rounded-2xl p-6 border border-border hover:border-accent/50 transition-all duration-300 hover:-translate-y-1">
-            <div class="w-12 h-12 bg-accent/10 rounded-xl flex items-center justify-center mb-4 group-hover:bg-accent/20 transition-colors">
-              <svg class="w-6 h-6 text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-              </svg>
-            </div>
-            <h3 class="font-semibold text-primary mb-2">{t('quickLinks.technicalSupport')}</h3>
-            <p class="text-sm text-muted-foreground">{t('quickLinks.technicalSupportDesc')}</p>
-          </a>
+        <!-- Search Bar -->
+        <div class="relative max-w-md mx-auto">
+          <svg class="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+          </svg>
+          <input
+            id="help-search"
+            type="text"
+            placeholder={t('page.searchPlaceholder')}
+            autocomplete="off"
+            class="w-full pl-10 pr-9 py-2.5 bg-surface border border-border rounded-xl text-sm text-white placeholder:text-muted-foreground focus:outline-none focus:border-accent/50 focus:ring-1 focus:ring-accent/25 transition-all"
+          />
+          <button
+            id="help-search-clear"
+            type="button"
+            class="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-white transition-colors hidden"
+            aria-label={t('page.clearSearch')}
+          >
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+
+        <!-- No results message (hidden by default) -->
+        <div id="help-no-results" class="hidden mt-6 text-center">
+          <p class="text-text-secondary text-sm" id="help-no-results-text"></p>
+          <p class="text-muted-foreground text-xs mt-1">{t('page.noResultsDescription')}</p>
         </div>
       </div>
     </section>
 
-    <!-- Getting Started Section -->
-    <section id="getting-started" class="py-12">
-      <div class="container mx-auto px-4 max-w-4xl">
-        <h2 class="font-display text-3xl font-bold text-white mb-8">
-          {t('gettingStarted.title')}
-        </h2>
+    <!-- Sticky Category Nav -->
+    <nav class="sticky top-0 z-30 bg-base/80 backdrop-blur-xl border-b border-border/50">
+      <div class="container mx-auto px-4 max-w-5xl">
+        <div class="flex items-center justify-center gap-2 py-3">
+          <a
+            href="#getting-started"
+            class="help-nav-link flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium text-text-secondary hover:text-accent hover:bg-accent/5 transition-all duration-200"
+          >
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+            </svg>
+            {t('quickLinks.gettingStarted')}
+          </a>
+          <a
+            href="#credits-billing"
+            class="help-nav-link flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium text-text-secondary hover:text-accent hover:bg-accent/5 transition-all duration-200"
+          >
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+            </svg>
+            {t('quickLinks.creditsBilling')}
+          </a>
+          <a
+            href="#technical"
+            class="help-nav-link flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium text-text-secondary hover:text-accent hover:bg-accent/5 transition-all duration-200"
+          >
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+            </svg>
+            {t('quickLinks.technicalSupport')}
+          </a>
+        </div>
+      </div>
+    </nav>
 
-        <!-- FAQ items would go here - for now showing placeholder -->
-        <div class="bg-surface rounded-2xl p-8 border border-border text-center">
-          <p class="text-text-secondary">Help content coming soon. For support, please contact us.</p>
+    <!-- Getting Started Section -->
+    <section id="getting-started" class="py-10">
+      <div class="container mx-auto px-4 max-w-5xl">
+        <div class="mb-6">
+          <h2 class="font-display text-2xl font-bold text-white mb-1">
+            {t('gettingStarted.title')}
+          </h2>
+          <p class="text-sm text-text-secondary">
+            {t('gettingStarted.subtitle')}
+          </p>
+        </div>
+
+        <!-- Steps as 2x2 compact grid -->
+        <div class="grid sm:grid-cols-2 gap-4">
+          <div class="bg-surface rounded-xl p-5 border border-border hover:border-accent/30 transition-colors group">
+            <div class="flex items-start gap-3">
+              <span class="flex-shrink-0 w-7 h-7 bg-accent/15 rounded-full flex items-center justify-center text-accent text-sm font-bold group-hover:bg-accent/25 transition-colors">1</span>
+              <div class="min-w-0">
+                <h3 class="text-sm font-semibold text-white mb-1">{getStep('createProject.title')}</h3>
+                <p class="text-xs text-text-secondary leading-relaxed mb-2">{getStep('createProject.description')}</p>
+                <p class="text-xs text-accent/70 italic">{getStep('createProject.tip')}</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="bg-surface rounded-xl p-5 border border-border hover:border-accent/30 transition-colors group">
+            <div class="flex items-start gap-3">
+              <span class="flex-shrink-0 w-7 h-7 bg-accent/15 rounded-full flex items-center justify-center text-accent text-sm font-bold group-hover:bg-accent/25 transition-colors">2</span>
+              <div class="min-w-0">
+                <h3 class="text-sm font-semibold text-white mb-1">{getStep('addKeywords.title')}</h3>
+                <p class="text-xs text-text-secondary leading-relaxed mb-2">{getStep('addKeywords.description')}</p>
+                <p class="text-xs text-accent/70 italic">{getStep('addKeywords.tip')}</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="bg-surface rounded-xl p-5 border border-border hover:border-accent/30 transition-colors group">
+            <div class="flex items-start gap-3">
+              <span class="flex-shrink-0 w-7 h-7 bg-accent/15 rounded-full flex items-center justify-center text-accent text-sm font-bold group-hover:bg-accent/25 transition-colors">3</span>
+              <div class="min-w-0">
+                <h3 class="text-sm font-semibold text-white mb-1">{getStep('generateArticles.title')}</h3>
+                <p class="text-xs text-text-secondary leading-relaxed mb-2">{getStep('generateArticles.description')}</p>
+                <p class="text-xs text-accent/70 italic">{getStep('generateArticles.tip')}</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="bg-surface rounded-xl p-5 border border-border hover:border-accent/30 transition-colors group">
+            <div class="flex items-start gap-3">
+              <span class="flex-shrink-0 w-7 h-7 bg-accent/15 rounded-full flex items-center justify-center text-accent text-sm font-bold group-hover:bg-accent/25 transition-colors">4</span>
+              <div class="min-w-0">
+                <h3 class="text-sm font-semibold text-white mb-1">{getStep('reviewPublish.title')}</h3>
+                <p class="text-xs text-text-secondary leading-relaxed mb-2">{getStep('reviewPublish.description')}</p>
+                <p class="text-xs text-accent/70 italic">{getStep('reviewPublish.tip')}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Credits & Billing Section -->
+    <section id="credits-billing" class="py-10 bg-surface/30">
+      <div class="container mx-auto px-4 max-w-5xl">
+        <div class="mb-6">
+          <h2 class="font-display text-2xl font-bold text-white mb-1">
+            {t('creditsBilling.title')}
+          </h2>
+          <p class="text-sm text-text-secondary">
+            {t('creditsBilling.subtitle')}
+          </p>
+        </div>
+
+        <!-- Two-column FAQ grid on desktop -->
+        <div class="grid md:grid-cols-2 gap-3">
+          <details class="group bg-surface rounded-lg border border-border hover:border-accent/20 transition-colors">
+            <summary class="flex items-center justify-between px-4 py-3 cursor-pointer select-none">
+              <h3 class="text-sm font-medium text-white pr-3">{getCreditsFaq('howCreditsWork.question')}</h3>
+              <svg class="w-4 h-4 text-muted-foreground group-open:rotate-180 transition-transform flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+              </svg>
+            </summary>
+            <div class="px-4 pb-3 text-xs text-text-secondary leading-relaxed">
+              {getCreditsFaq('howCreditsWork.answer')}
+            </div>
+          </details>
+
+          <details class="group bg-surface rounded-lg border border-border hover:border-accent/20 transition-colors">
+            <summary class="flex items-center justify-between px-4 py-3 cursor-pointer select-none">
+              <h3 class="text-sm font-medium text-white pr-3">{getCreditsFaq('subscriptionPlans.question')}</h3>
+              <svg class="w-4 h-4 text-muted-foreground group-open:rotate-180 transition-transform flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+              </svg>
+            </summary>
+            <div class="px-4 pb-3 text-xs text-text-secondary leading-relaxed">
+              {getCreditsFaq('subscriptionPlans.answer')}
+            </div>
+          </details>
+
+          <details class="group bg-surface rounded-lg border border-border hover:border-accent/20 transition-colors">
+            <summary class="flex items-center justify-between px-4 py-3 cursor-pointer select-none">
+              <h3 class="text-sm font-medium text-white pr-3">{getCreditsFaq('creditPacks.question')}</h3>
+              <svg class="w-4 h-4 text-muted-foreground group-open:rotate-180 transition-transform flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+              </svg>
+            </summary>
+            <div class="px-4 pb-3 text-xs text-text-secondary leading-relaxed">
+              {getCreditsFaq('creditPacks.answer')}
+            </div>
+          </details>
+
+          <details class="group bg-surface rounded-lg border border-border hover:border-accent/20 transition-colors">
+            <summary class="flex items-center justify-between px-4 py-3 cursor-pointer select-none">
+              <h3 class="text-sm font-medium text-white pr-3">{getCreditsFaq('rollover.question')}</h3>
+              <svg class="w-4 h-4 text-muted-foreground group-open:rotate-180 transition-transform flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+              </svg>
+            </summary>
+            <div class="px-4 pb-3 text-xs text-text-secondary leading-relaxed">
+              {getCreditsFaq('rollover.answer')}
+            </div>
+          </details>
+
+          <details class="group bg-surface rounded-lg border border-border hover:border-accent/20 transition-colors">
+            <summary class="flex items-center justify-between px-4 py-3 cursor-pointer select-none">
+              <h3 class="text-sm font-medium text-white pr-3">{getCreditsFaq('trialCredits.question')}</h3>
+              <svg class="w-4 h-4 text-muted-foreground group-open:rotate-180 transition-transform flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+              </svg>
+            </summary>
+            <div class="px-4 pb-3 text-xs text-text-secondary leading-relaxed">
+              {getCreditsFaq('trialCredits.answer')}
+            </div>
+          </details>
+
+          <details class="group bg-surface rounded-lg border border-border hover:border-accent/20 transition-colors">
+            <summary class="flex items-center justify-between px-4 py-3 cursor-pointer select-none">
+              <h3 class="text-sm font-medium text-white pr-3">{getCreditsFaq('paymentMethods.question')}</h3>
+              <svg class="w-4 h-4 text-muted-foreground group-open:rotate-180 transition-transform flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+              </svg>
+            </summary>
+            <div class="px-4 pb-3 text-xs text-text-secondary leading-relaxed">
+              {getCreditsFaq('paymentMethods.answer')}
+            </div>
+          </details>
+
+          <details class="group bg-surface rounded-lg border border-border hover:border-accent/20 transition-colors">
+            <summary class="flex items-center justify-between px-4 py-3 cursor-pointer select-none">
+              <h3 class="text-sm font-medium text-white pr-3">{getCreditsFaq('cancelSubscription.question')}</h3>
+              <svg class="w-4 h-4 text-muted-foreground group-open:rotate-180 transition-transform flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+              </svg>
+            </summary>
+            <div class="px-4 pb-3 text-xs text-text-secondary leading-relaxed">
+              {getCreditsFaq('cancelSubscription.answer')}
+            </div>
+          </details>
+
+          <details class="group bg-surface rounded-lg border border-border hover:border-accent/20 transition-colors">
+            <summary class="flex items-center justify-between px-4 py-3 cursor-pointer select-none">
+              <h3 class="text-sm font-medium text-white pr-3">{getCreditsFaq('refunds.question')}</h3>
+              <svg class="w-4 h-4 text-muted-foreground group-open:rotate-180 transition-transform flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+              </svg>
+            </summary>
+            <div class="px-4 pb-3 text-xs text-text-secondary leading-relaxed">
+              {getCreditsFaq('refunds.answer')}
+            </div>
+          </details>
+        </div>
+      </div>
+    </section>
+
+    <!-- Technical Support Section -->
+    <section id="technical" class="py-10">
+      <div class="container mx-auto px-4 max-w-5xl">
+        <div class="mb-6">
+          <h2 class="font-display text-2xl font-bold text-white mb-1">
+            {t('technicalSupport.title')}
+          </h2>
+          <p class="text-sm text-text-secondary">
+            {t('technicalSupport.subtitle')}
+          </p>
+        </div>
+
+        <!-- Two-column FAQ grid on desktop -->
+        <div class="grid md:grid-cols-2 gap-3">
+          <details class="group bg-surface rounded-lg border border-border hover:border-accent/20 transition-colors">
+            <summary class="flex items-center justify-between px-4 py-3 cursor-pointer select-none">
+              <h3 class="text-sm font-medium text-white pr-3">{getTechFaq('supportedCms.question')}</h3>
+              <svg class="w-4 h-4 text-muted-foreground group-open:rotate-180 transition-transform flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+              </svg>
+            </summary>
+            <div class="px-4 pb-3 text-xs text-text-secondary leading-relaxed">
+              {getTechFaq('supportedCms.answer')}
+            </div>
+          </details>
+
+          <details class="group bg-surface rounded-lg border border-border hover:border-accent/20 transition-colors">
+            <summary class="flex items-center justify-between px-4 py-3 cursor-pointer select-none">
+              <h3 class="text-sm font-medium text-white pr-3">{getTechFaq('aiModels.question')}</h3>
+              <svg class="w-4 h-4 text-muted-foreground group-open:rotate-180 transition-transform flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+              </svg>
+            </summary>
+            <div class="px-4 pb-3 text-xs text-text-secondary leading-relaxed">
+              {getTechFaq('aiModels.answer')}
+            </div>
+          </details>
+
+          <details class="group bg-surface rounded-lg border border-border hover:border-accent/20 transition-colors">
+            <summary class="flex items-center justify-between px-4 py-3 cursor-pointer select-none">
+              <h3 class="text-sm font-medium text-white pr-3">{getTechFaq('gscIntegration.question')}</h3>
+              <svg class="w-4 h-4 text-muted-foreground group-open:rotate-180 transition-transform flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+              </svg>
+            </summary>
+            <div class="px-4 pb-3 text-xs text-text-secondary leading-relaxed">
+              {getTechFaq('gscIntegration.answer')}
+            </div>
+          </details>
+
+          <details class="group bg-surface rounded-lg border border-border hover:border-accent/20 transition-colors">
+            <summary class="flex items-center justify-between px-4 py-3 cursor-pointer select-none">
+              <h3 class="text-sm font-medium text-white pr-3">{getTechFaq('scheduling.question')}</h3>
+              <svg class="w-4 h-4 text-muted-foreground group-open:rotate-180 transition-transform flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+              </svg>
+            </summary>
+            <div class="px-4 pb-3 text-xs text-text-secondary leading-relaxed">
+              {getTechFaq('scheduling.answer')}
+            </div>
+          </details>
+
+          <details class="group bg-surface rounded-lg border border-border hover:border-accent/20 transition-colors">
+            <summary class="flex items-center justify-between px-4 py-3 cursor-pointer select-none">
+              <h3 class="text-sm font-medium text-white pr-3">{getTechFaq('approvalWorkflow.question')}</h3>
+              <svg class="w-4 h-4 text-muted-foreground group-open:rotate-180 transition-transform flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+              </svg>
+            </summary>
+            <div class="px-4 pb-3 text-xs text-text-secondary leading-relaxed">
+              {getTechFaq('approvalWorkflow.answer')}
+            </div>
+          </details>
+
+          <details class="group bg-surface rounded-lg border border-border hover:border-accent/20 transition-colors">
+            <summary class="flex items-center justify-between px-4 py-3 cursor-pointer select-none">
+              <h3 class="text-sm font-medium text-white pr-3">{getTechFaq('qualityIssues.question')}</h3>
+              <svg class="w-4 h-4 text-muted-foreground group-open:rotate-180 transition-transform flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+              </svg>
+            </summary>
+            <div class="px-4 pb-3 text-xs text-text-secondary leading-relaxed">
+              {getTechFaq('qualityIssues.answer')}
+            </div>
+          </details>
+
+          <details class="group bg-surface rounded-lg border border-border hover:border-accent/20 transition-colors">
+            <summary class="flex items-center justify-between px-4 py-3 cursor-pointer select-none">
+              <h3 class="text-sm font-medium text-white pr-3">{getTechFaq('failedProcessing.question')}</h3>
+              <svg class="w-4 h-4 text-muted-foreground group-open:rotate-180 transition-transform flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+              </svg>
+            </summary>
+            <div class="px-4 pb-3 text-xs text-text-secondary leading-relaxed">
+              {getTechFaq('failedProcessing.answer')}
+            </div>
+          </details>
+
+          <details class="group bg-surface rounded-lg border border-border hover:border-accent/20 transition-colors">
+            <summary class="flex items-center justify-between px-4 py-3 cursor-pointer select-none">
+              <h3 class="text-sm font-medium text-white pr-3">{getTechFaq('dataPrivacy.question')}</h3>
+              <svg class="w-4 h-4 text-muted-foreground group-open:rotate-180 transition-transform flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+              </svg>
+            </summary>
+            <div class="px-4 pb-3 text-xs text-text-secondary leading-relaxed">
+              {getTechFaq('dataPrivacy.answer')}
+            </div>
+          </details>
         </div>
       </div>
     </section>
@@ -91,4 +433,89 @@ const description = t('page.subtitle', { appName: clientEnv.APP_NAME });
     <!-- Contact CTA (React Island) -->
     <HelpPageClient client:visible />
   </main>
+
+  <script define:vars={{ noResultsTemplate: t('page.noResults') }}>
+    document.addEventListener('DOMContentLoaded', () => {
+      const input = document.getElementById('help-search');
+      const clearBtn = document.getElementById('help-search-clear');
+      const noResults = document.getElementById('help-no-results');
+      const noResultsText = document.getElementById('help-no-results-text');
+      if (!input || !clearBtn || !noResults || !noResultsText) return;
+
+      // All searchable items: details (FAQs) and step cards
+      const sections = document.querySelectorAll('#getting-started, #credits-billing, #technical');
+
+      let debounceTimer;
+
+      input.addEventListener('input', () => {
+        clearTimeout(debounceTimer);
+        debounceTimer = setTimeout(() => filterContent(input.value), 150);
+        clearBtn.classList.toggle('hidden', !input.value);
+      });
+
+      clearBtn.addEventListener('click', () => {
+        input.value = '';
+        clearBtn.classList.add('hidden');
+        filterContent('');
+        input.focus();
+      });
+
+      function filterContent(query) {
+        const q = query.toLowerCase().trim();
+
+        if (!q) {
+          // Reset: show everything
+          sections.forEach(section => {
+            section.style.display = '';
+            section.querySelectorAll('details, .bg-surface').forEach(el => {
+              el.style.display = '';
+            });
+          });
+          noResults.classList.add('hidden');
+          return;
+        }
+
+        let totalMatches = 0;
+
+        sections.forEach(section => {
+          let sectionMatches = 0;
+
+          // Filter details (FAQ items)
+          section.querySelectorAll('details').forEach(detail => {
+            const text = detail.textContent.toLowerCase();
+            const matches = text.includes(q);
+            detail.style.display = matches ? '' : 'none';
+            if (matches) {
+              sectionMatches++;
+              // Auto-open matching FAQ
+              detail.setAttribute('open', '');
+            }
+          });
+
+          // Filter step cards (in Getting Started grid)
+          const stepGrid = section.querySelector('.grid');
+          if (stepGrid && !section.querySelector('details')) {
+            stepGrid.querySelectorAll(':scope > div').forEach(card => {
+              const text = card.textContent.toLowerCase();
+              const matches = text.includes(q);
+              card.style.display = matches ? '' : 'none';
+              if (matches) sectionMatches++;
+            });
+          }
+
+          // Hide entire section if no matches
+          section.style.display = sectionMatches > 0 ? '' : 'none';
+          totalMatches += sectionMatches;
+        });
+
+        // Show/hide no results message
+        if (totalMatches === 0) {
+          noResultsText.textContent = noResultsTemplate.replace('{query}', query);
+          noResults.classList.remove('hidden');
+        } else {
+          noResults.classList.add('hidden');
+        }
+      }
+    });
+  </script>
 </Layout>

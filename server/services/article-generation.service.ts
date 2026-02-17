@@ -48,6 +48,7 @@ import {
   formatErrorMessage,
 } from '@server/utils/error-classifier';
 import type { FailureStage } from '@shared/types/failure.types';
+import { getEmailService } from './email.service';
 
 export class ArticleGenerationService {
   private openRouter = new OpenRouterService();
@@ -297,17 +298,71 @@ export class ArticleGenerationService {
         try {
           await this.triggerAutoDeliveryIfNeeded(articleId, input.campaignId);
         } catch (deliveryError) {
-          console.error(`[ArticleGeneration] Auto-delivery failed for article ${articleId}:`, deliveryError);
+          console.error(
+            `[ArticleGeneration] Auto-delivery failed for article ${articleId}:`,
+            deliveryError
+          );
         }
       } else {
         console.log(
           `[ArticleGeneration] Skipping auto-delivery for article ${articleId} (status=${finalStatus})`
         );
       }
+
+      // Step 6.6: Send article complete notification email
+      // Only send for successful articles (qa_passed or draft)
+      if (finalStatus === 'qa_passed' || finalStatus === 'draft') {
+        try {
+          // Fetch user profile for email and display name
+          const { data: userProfile, error: profileError } = await this.supabase
+            .from('profiles')
+            .select('email, display_name')
+            .eq('id', userId)
+            .single();
+
+          if (profileError || !userProfile?.email) {
+            console.error(
+              `[ArticleGeneration] Could not fetch user profile for article complete email:`,
+              profileError
+            );
+          } else {
+            // Get campaign name for the email
+            const { data: campaign } = await this.supabase
+              .from('campaigns')
+              .select('name')
+              .eq('id', input.campaignId)
+              .single();
+
+            const emailService = getEmailService();
+            await emailService.sendArticleCompleteNotification({
+              userId,
+              email: userProfile.email,
+              userName: userProfile.display_name || 'there',
+              articleTitle: outline.data.title,
+              keyword: input.keyword,
+              campaignName: campaign?.name,
+              articleId,
+            });
+          }
+        } catch (emailError) {
+          // Log error but don't throw - email failure must never block generation
+          console.error(
+            `[ArticleGeneration] Failed to send article complete email for article ${articleId}:`,
+            emailError
+          );
+        }
+      }
     } catch (error) {
       console.error(`[ArticleGeneration] Error generating article ${articleId}:`, error);
       // Pass 'unknown' as default stage - error classifier will detect from message
-      await this.handleGenerationFailure(articleId, userId, error, imageCreditCost, 'unknown', input.model);
+      await this.handleGenerationFailure(
+        articleId,
+        userId,
+        error,
+        imageCreditCost,
+        'unknown',
+        input.model
+      );
       throw error; // Re-throw for logging
     }
   }
@@ -678,10 +733,7 @@ export class ArticleGenerationService {
    * @param articleId - The article ID to deliver
    * @param campaignId - The campaign ID to check for auto_publish setting
    */
-  private async triggerAutoDeliveryIfNeeded(
-    articleId: string,
-    campaignId: string
-  ): Promise<void> {
+  private async triggerAutoDeliveryIfNeeded(articleId: string, campaignId: string): Promise<void> {
     try {
       // Dynamic import to avoid circular dependencies
       // eslint-disable-next-line no-restricted-syntax
@@ -739,15 +791,22 @@ export class ArticleGenerationService {
 
   /**
    * Log structured failure metrics for monitoring and analytics.
-   * This can be extended to send to external monitoring services.
+   * Uses console.error for Baselime alert compatibility.
+   *
+   * Structured fields enable Baselime alert queries like:
+   * - stage=article_generation AND httpStatus>=500
+   * - provider=openrouter AND httpStatus=503
+   * - isRetryable=true
    */
   private async logFailureMetrics(
     articleId: string,
     parsedError: ReturnType<typeof classifyError>
   ): Promise<void> {
-    // Log structured metrics to console for now
-    // In production, this would send to monitoring service (Baselime, etc.)
-    const metrics = {
+    // Structured error log for Baselime alert queries
+    // All fields are logged as a single JSON object for queryability
+    const structuredError = {
+      message: 'Article generation failed',
+      level: 'error',
       articleId,
       timestamp: new Date().toISOString(),
       stage: parsedError.stage,
@@ -755,12 +814,14 @@ export class ArticleGenerationService {
       category: parsedError.category,
       isRetryable: parsedError.isRetryable,
       httpStatus: parsedError.httpStatus,
+      errorMessage: parsedError.message,
     };
 
-    console.log('[ArticleGeneration] Failure metrics:', JSON.stringify(metrics, null, 2));
-
-    // TODO: Send to monitoring service
-    // Example: await monitoringService.trackFailure(metrics);
+    // Use console.error for Baselime error-level alerting
+    console.error(
+      '[ArticleGeneration] Article generation failed:',
+      JSON.stringify(structuredError)
+    );
   }
 }
 

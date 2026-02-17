@@ -10,8 +10,15 @@
  */
 
 import blogDataRaw from '@/content/blog-data.json';
+import { marked } from 'marked';
 import { blogService } from './services/blog.service';
 import type { IBlogPostMeta as ISharedBlogPostMeta } from '@shared/types/blog.types';
+
+// Configure marked for safe rendering
+marked.setOptions({
+  gfm: true,
+  breaks: false,
+});
 
 const blogData = blogDataRaw as { posts: IMdxBlogPost[] };
 
@@ -149,6 +156,7 @@ export function getPostBySlug(slug: string): IBlogPost | null {
   return {
     ...post,
     readingTime: post.readingTime || '5 min read',
+    content: marked.parse(post.content, { async: false }) as string,
     source: 'mdx' as const,
   };
 }

@@ -8,6 +8,7 @@ export const sendEmailSchema = z.object({
     'subscription-update',
     'low-credits',
     'password-reset',
+    'article-complete',
   ]),
   data: z.record(z.unknown()).default({}),
   type: z.enum(['transactional', 'marketing']).default('transactional'),
