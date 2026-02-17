@@ -375,7 +375,7 @@ describe('CampaignService', () => {
       (supabaseAdmin.from as unknown as ReturnType<typeof vi.fn>).mockImplementation(() => {
         callCount++;
         if (callCount === 1) {
-          // First call: get campaign
+          // First call: get campaign (from CampaignService.getDetail -> getById -> campaignLifecycleService.getById)
           return {
             select: vi.fn().mockReturnValue({
               eq: vi.fn().mockReturnValue({
@@ -386,7 +386,18 @@ describe('CampaignService', () => {
             }),
           } as unknown;
         } else if (callCount === 2) {
-          // Second call: get keywords
+          // Second call: verify campaign ownership (from CampaignService.getDetail -> getKeywords -> campaignKeywordService.getKeywords)
+          return {
+            select: vi.fn().mockReturnValue({
+              eq: vi.fn().mockReturnValue({
+                eq: vi.fn().mockReturnValue({
+                  single: vi.fn().mockResolvedValue({ data: { id: mockCampaignId }, error: null }),
+                }),
+              }),
+            }),
+          } as unknown;
+        } else if (callCount === 3) {
+          // Third call: get keywords (from CampaignService.getDetail -> getKeywords -> campaignKeywordService.getKeywords)
           return {
             select: vi.fn().mockReturnValue({
               eq: vi.fn().mockReturnValue({
@@ -396,8 +407,19 @@ describe('CampaignService', () => {
               }),
             }),
           } as unknown;
+        } else if (callCount === 4) {
+          // Fourth call: get campaign again (from CampaignLifecycleService.getDetail -> getById)
+          return {
+            select: vi.fn().mockReturnValue({
+              eq: vi.fn().mockReturnValue({
+                eq: vi.fn().mockReturnValue({
+                  single: vi.fn().mockResolvedValue({ data: mockCampaign, error: null }),
+                }),
+              }),
+            }),
+          } as unknown;
         } else {
-          // Third call: get articles with credits_used
+          // Fifth call: get articles with credits_used
           return {
             select: vi.fn().mockReturnValue({
               eq: vi.fn().mockResolvedValue({
@@ -465,7 +487,7 @@ describe('CampaignService', () => {
       (supabaseAdmin.from as unknown as ReturnType<typeof vi.fn>).mockImplementation(() => {
         callCount++;
         if (callCount === 1) {
-          // First call: get campaign
+          // First call: get campaign (from CampaignService.getDetail -> getById -> campaignLifecycleService.getById)
           return {
             select: vi.fn().mockReturnValue({
               eq: vi.fn().mockReturnValue({
@@ -476,7 +498,18 @@ describe('CampaignService', () => {
             }),
           } as unknown;
         } else if (callCount === 2) {
-          // Second call: get keywords
+          // Second call: verify campaign ownership (from CampaignService.getDetail -> getKeywords -> campaignKeywordService.getKeywords)
+          return {
+            select: vi.fn().mockReturnValue({
+              eq: vi.fn().mockReturnValue({
+                eq: vi.fn().mockReturnValue({
+                  single: vi.fn().mockResolvedValue({ data: { id: mockCampaignId }, error: null }),
+                }),
+              }),
+            }),
+          } as unknown;
+        } else if (callCount === 3) {
+          // Third call: get keywords (from CampaignService.getDetail -> getKeywords -> campaignKeywordService.getKeywords)
           return {
             select: vi.fn().mockReturnValue({
               eq: vi.fn().mockReturnValue({
@@ -486,8 +519,19 @@ describe('CampaignService', () => {
               }),
             }),
           } as unknown;
+        } else if (callCount === 4) {
+          // Fourth call: get campaign again (from CampaignLifecycleService.getDetail -> getById)
+          return {
+            select: vi.fn().mockReturnValue({
+              eq: vi.fn().mockReturnValue({
+                eq: vi.fn().mockReturnValue({
+                  single: vi.fn().mockResolvedValue({ data: mockCampaign, error: null }),
+                }),
+              }),
+            }),
+          } as unknown;
         } else {
-          // Third call: get articles with all possible statuses
+          // Fifth call: get articles with all possible statuses
           return {
             select: vi.fn().mockReturnValue({
               eq: vi.fn().mockResolvedValue({

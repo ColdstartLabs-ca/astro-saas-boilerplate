@@ -9,40 +9,50 @@ import { CampaignNotFoundError, NoPendingKeywordsError } from '@shared/types/cam
 import type { ICampaign } from '@shared/types/campaign.types';
 
 // Mock Supabase admin client
-vi.mock('@server/supabase/supabaseAdmin', () => ({
-  supabaseAdmin: {
-    from: vi.fn(() => ({
-      select: vi.fn(() => ({
-        eq: vi.fn(() => ({
-          order: vi.fn(() => ({
+// The mock chain must support .eq().eq() for queries like:
+// .select().eq('id', campaignId).eq('user_id', userId).single()
+vi.mock('@server/supabase/supabaseAdmin', () => {
+  // Create a recursive chain builder that allows .eq().eq() chaining
+  const createEqChain = () => {
+    const chain: Record<string, ReturnType<typeof vi.fn>> = {};
+    const eqFn = vi.fn(() => chain);
+    const orderFn = vi.fn(() => chain);
+    const singleFn = vi.fn();
+    const selectFn = vi.fn(() => chain);
+
+    chain.eq = eqFn;
+    chain.order = orderFn;
+    chain.single = singleFn;
+    chain.select = selectFn;
+
+    return { eq: eqFn, order: orderFn, single: singleFn, select: selectFn };
+  };
+
+  return {
+    supabaseAdmin: {
+      from: vi.fn(() => ({
+        select: vi.fn(() => createEqChain()),
+        insert: vi.fn(() => ({
+          select: vi.fn(() => ({
             single: vi.fn(),
           })),
-          single: vi.fn(),
         })),
-        order: vi.fn(() => ({
-          single: vi.fn(),
-        })),
-      })),
-      insert: vi.fn(() => ({
-        select: vi.fn(() => ({
-          single: vi.fn(),
-        })),
-      })),
-      update: vi.fn(() => ({
-        eq: vi.fn(() => ({
+        update: vi.fn(() => ({
           eq: vi.fn(() => ({
-            select: vi.fn(() => ({
-              single: vi.fn(),
+            eq: vi.fn(() => ({
+              select: vi.fn(() => ({
+                single: vi.fn(),
+              })),
             })),
           })),
         })),
+        delete: vi.fn(() => ({
+          eq: vi.fn(),
+        })),
       })),
-      delete: vi.fn(() => ({
-        eq: vi.fn(),
-      })),
-    })),
-  },
-}));
+    },
+  };
+});
 
 // Mock the scheduling config
 vi.mock('@shared/config/scheduling.config', async importOriginal => {
