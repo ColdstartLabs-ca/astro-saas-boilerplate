@@ -9,7 +9,7 @@ step_secrets() {
     # Get existing secrets (only needed when skipping)
     local existing_secrets=""
     if [[ "$skip_secrets" == "true" ]]; then
-        existing_secrets=$(npx wrangler pages secret list --project-name "$project" 2>/dev/null | grep -oP '"name":\s*"\K[^"]+' || echo "")
+        existing_secrets=$(npx wrangler pages secret list --project-name "$project" 2>/dev/null | grep -oP '^\s+-\s+\K[^:]+' || echo "")
     fi
 
     secret_exists() {
@@ -53,18 +53,32 @@ step_secrets() {
 
     # Secrets from .env.api
     local secrets=(
+        # Core infrastructure
         SUPABASE_SERVICE_ROLE_KEY
+        # Payments
         STRIPE_SECRET_KEY
         STRIPE_WEBHOOK_SECRET
+        # Email providers
         BREVO_API_KEY
         RESEND_API_KEY
+        EMAIL_FROM_ADDRESS
+        # AI providers
         OPENROUTER_API_KEY
+        OPENROUTER_VL_MODEL
+        OPENROUTER_TEXT_MODEL
         REPLICATE_API_KEY
         OPENAI_API_KEY
+        AVAILABLE_WRITER_PRESETS
+        AVAILABLE_IMAGE_PRESETS
+        # CMS
         CMS_ENCRYPTION_KEY
+        # Google OAuth (GSC + API integrations)
         GOOGLE_OAUTH_CLIENT_SECRET
+        OAUTH_STATE_SECRET
+        # Monitoring
         BASELIME_API_KEY
         AMPLITUDE_API_KEY
+        # Cron
         CRON_SECRET
     )
 
@@ -72,7 +86,14 @@ step_secrets() {
         upload_secret "$secret"
     done
 
-    # Public vars needed server-side
+    # Warn about critical secrets that have empty values (will silently skip)
+    for critical in GOOGLE_OAUTH_CLIENT_SECRET OAUTH_STATE_SECRET EMAIL_FROM_ADDRESS; do
+        if [[ -z "${!critical:-}" ]]; then
+            log_warn "$critical is empty — add it to the GCloud secret 'autopilotrank-api-prod' and redeploy"
+        fi
+    done
+
+    # Public vars needed server-side (baked at build time but also uploaded as secrets for SSR access)
     upload_secret_alias "PUBLIC_SUPABASE_URL" "PUBLIC_SUPABASE_URL" ""
     upload_secret_alias "PUBLIC_SUPABASE_ANON_KEY" "PUBLIC_SUPABASE_ANON_KEY" ""
     upload_secret_alias "PUBLIC_BASE_URL" "PUBLIC_BASE_URL" ""

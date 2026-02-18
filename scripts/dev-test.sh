@@ -5,12 +5,21 @@
 
 set -euo pipefail
 
-# Export all variables loaded from .env.test
+# Load .env.test variables WITHOUT overriding vars already set in the environment.
+# This ensures that when yarn deploy fetches prod secrets (e.g. SUPABASE_SERVICE_ROLE_KEY),
+# those are used for tests rather than the placeholder values in .env.test.
 if [[ -f .env.test ]]; then
-  set -a
-  # shellcheck disable=SC1091
-  source ./.env.test
-  set +a
+  while IFS= read -r line || [[ -n "$line" ]]; do
+    [[ $line =~ ^[[:space:]]*# ]] && continue
+    [[ $line =~ ^[[:space:]]*$ ]] && continue
+    if [[ $line =~ ^([A-Za-z_][A-Za-z0-9_]*)= ]]; then
+      varname="${BASH_REMATCH[1]}"
+      # Only export if not already set in the environment
+      if [[ -z "${!varname:-}" ]]; then
+        export "$line"
+      fi
+    fi
+  done < .env.test
 fi
 
 # Force explicit test mode for Playwright runs
