@@ -35,14 +35,17 @@ AutopilotRank currently serves all traffic in English only. Competitor geo-traff
 ### Integration Points Checklist
 
 **How will this feature be reached?**
+
 - [x] Entry point: URL path prefix (`/pt-BR/pricing`), locale cookie, CF-IPCountry header
 - [x] Caller file: `src/middleware.ts` (detects and redirects), Astro layouts (read locale)
 - [x] Registration: `astro.config.mjs` locale list, `i18n/config.ts` SUPPORTED_LOCALES
 
 **Is this user-facing?**
+
 - [x] YES → LocaleSwitcher dropdown, localized page content, localized pricing
 
 **Full user flow:**
+
 1. Brazilian user visits `autopilotrank.com`
 2. Cloudflare header `CF-IPCountry: BR` → middleware detects → redirects to `/pt-BR/`
 3. Page renders with Portuguese translations from `locales/pt-BR/*.json`
@@ -127,12 +130,13 @@ sequenceDiagram
 - `i18n/config.ts` — Add Tier 1 locales (`'pt-BR'`); add Tier 2 (`'de'`, `'fr'`) as commented stubs
 - `astro.config.mjs` — Sync `SUPPORTED_LOCALES` array with config
 - `shared/i18n/translations.ts` — Add `locale` param to `getTranslations`; build `translationsByLocale` registry
-- `client/store/localeStore.ts` *(new)* — Zustand store with `locale` + `setLocale`
+- `client/store/localeStore.ts` _(new)_ — Zustand store with `locale` + `setLocale`
 - `client/hooks/useTranslations.ts` — Read locale from store; pass to `getTranslations`
 
 **Implementation:**
 
 - [ ] `i18n/config.ts`:
+
   ```typescript
   export const SUPPORTED_LOCALES = ['en', 'pt-BR'] as const;
   export const locales = {
@@ -142,12 +146,14 @@ sequenceDiagram
   ```
 
 - [ ] `astro.config.mjs` — Replace hardcoded `['en']` with import from config:
+
   ```javascript
   import { SUPPORTED_LOCALES, DEFAULT_LOCALE } from './i18n/config';
   // i18n: { defaultLocale: DEFAULT_LOCALE, locales: [...SUPPORTED_LOCALES] }
   ```
 
 - [ ] `shared/i18n/translations.ts` — Add locale registry:
+
   ```typescript
   // Import pt-BR files (stubs initially, replaced in Phase 2)
   // Build: const translationsByLocale: Record<Locale, Registry> = { en: {...}, 'pt-BR': {...} }
@@ -155,6 +161,7 @@ sequenceDiagram
   ```
 
 - [ ] `client/store/localeStore.ts`:
+
   ```typescript
   import { create } from 'zustand';
   import { DEFAULT_LOCALE, type Locale } from '../../i18n/config';
@@ -166,6 +173,7 @@ sequenceDiagram
   ```
 
 - [ ] `client/hooks/useTranslations.ts`:
+
   ```typescript
   export function useTranslations(namespace: string): TFunction {
     const locale = useLocaleStore(s => s.locale);
@@ -174,13 +182,16 @@ sequenceDiagram
   ```
 
 - [ ] Create `client/components/i18n/LocaleInit.tsx`:
+
   ```typescript
   'use client';
   // Receives locale prop from Astro layout, stores in Zustand
   // Also reads cookie as fallback for CSR navigation
   export function LocaleInit({ locale }: { locale: Locale }): null {
     const setLocale = useLocaleStore(s => s.setLocale);
-    useEffect(() => { setLocale(locale); }, [locale]);
+    useEffect(() => {
+      setLocale(locale);
+    }, [locale]);
     return null;
   }
   ```
@@ -188,9 +199,17 @@ sequenceDiagram
 - [ ] Update main Astro layout (`src/layouts/Layout.astro` or similar) to inject `<LocaleInit locale={locale} client:load />` where `locale` comes from `Astro.currentLocale` or middleware
 
 - [ ] Update `src/middleware.ts` `getLocaleFromCountry`:
+
   ```typescript
   const countryMap: Record<string, Locale> = {
-    US: 'en', GB: 'en', CA: 'en', AU: 'en', NZ: 'en', IE: 'en', ZA: 'en', IN: 'en',
+    US: 'en',
+    GB: 'en',
+    CA: 'en',
+    AU: 'en',
+    NZ: 'en',
+    IE: 'en',
+    ZA: 'en',
+    IN: 'en',
     BR: 'pt-BR',
     // Phase 4: DE: 'de', FR: 'fr', AT: 'de', CH: 'de',
   };
@@ -200,15 +219,15 @@ sequenceDiagram
 
 **Tests Required:**
 
-| Test File | Test Name | Assertion |
-|-----------|-----------|-----------|
-| `tests/unit/i18n/translations.spec.ts` | `should return pt-BR string when locale is pt-BR` | Translated key returned |
-| `tests/unit/i18n/translations.spec.ts` | `should fall back to en when pt-BR key missing` | English string returned |
-| `tests/unit/i18n/translations.spec.ts` | `should work without locale arg (backward compat)` | English string returned |
-| `tests/unit/store/localeStore.spec.ts` | `should initialize with DEFAULT_LOCALE` | `store.locale === 'en'` |
-| `tests/unit/store/localeStore.spec.ts` | `should update locale on setLocale call` | `store.locale === 'pt-BR'` |
-| `tests/e2e/i18n/locale-routing.spec.ts` | `should redirect BR visitor to /pt-BR/` | URL contains `/pt-BR/` |
-| `tests/e2e/i18n/locale-routing.spec.ts` | `should serve en without prefix` | URL has no locale prefix |
+| Test File                               | Test Name                                          | Assertion                  |
+| --------------------------------------- | -------------------------------------------------- | -------------------------- |
+| `tests/unit/i18n/translations.spec.ts`  | `should return pt-BR string when locale is pt-BR`  | Translated key returned    |
+| `tests/unit/i18n/translations.spec.ts`  | `should fall back to en when pt-BR key missing`    | English string returned    |
+| `tests/unit/i18n/translations.spec.ts`  | `should work without locale arg (backward compat)` | English string returned    |
+| `tests/unit/store/localeStore.spec.ts`  | `should initialize with DEFAULT_LOCALE`            | `store.locale === 'en'`    |
+| `tests/unit/store/localeStore.spec.ts`  | `should update locale on setLocale call`           | `store.locale === 'pt-BR'` |
+| `tests/e2e/i18n/locale-routing.spec.ts` | `should redirect BR visitor to /pt-BR/`            | URL contains `/pt-BR/`     |
+| `tests/e2e/i18n/locale-routing.spec.ts` | `should serve en without prefix`                   | URL has no locale prefix   |
 
 **Verification Plan:**
 
@@ -246,12 +265,16 @@ sequenceDiagram
   - Technical/admin files (`admin.json`, `settings.json`) can use mechanical translation
 
 - [ ] `i18n.json` for pt-BR must include locale names in Portuguese:
+
   ```json
-  { "switcher": { "ariaLabel": "Selecionar idioma" },
-    "locales": { "en": "Inglês", "pt-BR": "Português (Brasil)" } }
+  {
+    "switcher": { "ariaLabel": "Selecionar idioma" },
+    "locales": { "en": "Inglês", "pt-BR": "Português (Brasil)" }
+  }
   ```
 
 - [ ] `shared/i18n/translations.ts`:
+
   ```typescript
   import ptBRCommon from '@locales/pt-BR/common.json';
   // ... all 19 pt-BR imports
@@ -265,16 +288,17 @@ sequenceDiagram
 
 **Tests Required:**
 
-| Test File | Test Name | Assertion |
-|-----------|-----------|-----------|
-| `tests/unit/i18n/pt-br.spec.ts` | `should have all en namespaces in pt-BR` | All 19 namespaces present |
-| `tests/unit/i18n/pt-br.spec.ts` | `should have all keys from en in pt-BR` | No missing keys |
-| `tests/e2e/i18n/pt-br.spec.ts` | `should display Portuguese nav on /pt-BR/` | Nav text is Portuguese |
-| `tests/e2e/i18n/pt-br.spec.ts` | `should display Portuguese pricing page` | Key strings in Portuguese |
-| `tests/e2e/i18n/locale-switcher.spec.ts` | `should show BR flag in switcher` | 🇧🇷 flag visible |
-| `tests/e2e/i18n/locale-switcher.spec.ts` | `should switch from en to pt-BR` | Page reloads with `/pt-BR/` |
+| Test File                                | Test Name                                  | Assertion                   |
+| ---------------------------------------- | ------------------------------------------ | --------------------------- |
+| `tests/unit/i18n/pt-br.spec.ts`          | `should have all en namespaces in pt-BR`   | All 19 namespaces present   |
+| `tests/unit/i18n/pt-br.spec.ts`          | `should have all keys from en in pt-BR`    | No missing keys             |
+| `tests/e2e/i18n/pt-br.spec.ts`           | `should display Portuguese nav on /pt-BR/` | Nav text is Portuguese      |
+| `tests/e2e/i18n/pt-br.spec.ts`           | `should display Portuguese pricing page`   | Key strings in Portuguese   |
+| `tests/e2e/i18n/locale-switcher.spec.ts` | `should show BR flag in switcher`          | 🇧🇷 flag visible             |
+| `tests/e2e/i18n/locale-switcher.spec.ts` | `should switch from en to pt-BR`           | Page reloads with `/pt-BR/` |
 
 **Key translations reference (homepage.json):**
+
 ```
 SEO tool for AI → Ferramenta SEO com IA
 Generate SEO content automatically → Criar conteúdo SEO automaticamente
@@ -282,6 +306,7 @@ Best AI blog tool → Melhor ferramenta de blog IA
 ```
 
 **Verification:**
+
 - Visit `/pt-BR/` — all visible text must be in Portuguese
 - Visit `/pt-BR/pricing` — pricing page in Portuguese
 - LocaleSwitcher dropdown: shows EN + PT flags
@@ -295,14 +320,15 @@ Best AI blog tool → Melhor ferramenta de blog IA
 
 **Files (4):**
 
-- `shared/utils/currency.ts` *(new)* — `formatCurrency(amountUSD, displayCurrency, exchangeRate)` + `getCurrencyForCountry(countryCode)`
-- `shared/config/regional-pricing.ts` *(new)* — Country → `{ currency, symbol, approximateRate }` map with static exchange rates (updated manually quarterly)
+- `shared/utils/currency.ts` _(new)_ — `formatCurrency(amountUSD, displayCurrency, exchangeRate)` + `getCurrencyForCountry(countryCode)`
+- `shared/config/regional-pricing.ts` _(new)_ — Country → `{ currency, symbol, approximateRate }` map with static exchange rates (updated manually quarterly)
 - `src/middleware.ts` — Set `context.locals.currency` from CF-IPCountry
 - Pricing Astro page (`src/pages/pricing.astro` or equivalent) — Read `locals.currency`, pass to pricing components
 
 **Implementation:**
 
 - [ ] `shared/config/regional-pricing.ts`:
+
   ```typescript
   export type RegionalCurrency = {
     code: string; // 'BRL', 'INR', 'GBP', 'EUR', 'AUD'
@@ -324,22 +350,27 @@ Best AI blog tool → Melhor ferramenta de blog IA
   ```
 
 - [ ] `shared/utils/currency.ts`:
+
   ```typescript
   export function convertAndFormat(usdCents: number, currency: RegionalCurrency): string {
     const localAmount = (usdCents / 100) * currency.approximateRate;
     return new Intl.NumberFormat('default', {
-      style: 'currency', currency: currency.code, maximumFractionDigits: 0
+      style: 'currency',
+      currency: currency.code,
+      maximumFractionDigits: 0,
     }).format(localAmount);
   }
   ```
 
 - [ ] `src/middleware.ts` — Add to `context.locals`:
+
   ```typescript
   const country = request.headers.get('CF-IPCountry') || '';
   context.locals.currency = COUNTRY_CURRENCY_MAP[country] || null;
   ```
 
 - [ ] Pricing page — Show dual pricing when `locals.currency` is set:
+
   ```
   $49/mo
   ≈ R$ 282/mês (approx. — charged in USD)
@@ -349,14 +380,15 @@ Best AI blog tool → Melhor ferramenta de blog IA
 
 **Tests Required:**
 
-| Test File | Test Name | Assertion |
-|-----------|-----------|-----------|
-| `tests/unit/utils/currency.spec.ts` | `should convert USD to BRL correctly` | `$49 → R$ 281` |
-| `tests/unit/utils/currency.spec.ts` | `should return null for unmapped country` | `null` returned |
-| `tests/e2e/i18n/currency.spec.ts` | `should show INR pricing for India visitor` | `₹` symbol visible on pricing page |
-| `tests/e2e/i18n/currency.spec.ts` | `should show USD only for US visitor` | No secondary currency |
+| Test File                           | Test Name                                   | Assertion                          |
+| ----------------------------------- | ------------------------------------------- | ---------------------------------- |
+| `tests/unit/utils/currency.spec.ts` | `should convert USD to BRL correctly`       | `$49 → R$ 281`                     |
+| `tests/unit/utils/currency.spec.ts` | `should return null for unmapped country`   | `null` returned                    |
+| `tests/e2e/i18n/currency.spec.ts`   | `should show INR pricing for India visitor` | `₹` symbol visible on pricing page |
+| `tests/e2e/i18n/currency.spec.ts`   | `should show USD only for US visitor`       | No secondary currency              |
 
 **Verification:**
+
 ```bash
 curl -H "CF-IPCountry: IN" http://localhost:3000/pricing
 # Expected: page contains "₹" symbol with disclaimer
@@ -381,6 +413,7 @@ curl -H "CF-IPCountry: US" http://localhost:3000/pricing
 **Implementation:**
 
 - [ ] Config update:
+
   ```typescript
   export const SUPPORTED_LOCALES = ['en', 'pt-BR', 'de', 'fr'] as const;
   export const locales = {
@@ -405,13 +438,13 @@ curl -H "CF-IPCountry: US" http://localhost:3000/pricing
 
 Same pattern as Phase 2, but for de and fr locales.
 
-| Test File | Test Name | Assertion |
-|-----------|-----------|-----------|
-| `tests/unit/i18n/de.spec.ts` | `should have all keys from en in de` | No missing keys |
-| `tests/unit/i18n/fr.spec.ts` | `should have all keys from en in fr` | No missing keys |
-| `tests/e2e/i18n/de.spec.ts` | `should display German nav on /de/` | Nav text in German |
-| `tests/e2e/i18n/fr.spec.ts` | `should display French pricing on /fr/pricing` | Pricing in French |
-| `tests/e2e/i18n/locale-switcher.spec.ts` | `should show DE and FR flags in switcher` | All 4 flags visible |
+| Test File                                | Test Name                                      | Assertion           |
+| ---------------------------------------- | ---------------------------------------------- | ------------------- |
+| `tests/unit/i18n/de.spec.ts`             | `should have all keys from en in de`           | No missing keys     |
+| `tests/unit/i18n/fr.spec.ts`             | `should have all keys from en in fr`           | No missing keys     |
+| `tests/e2e/i18n/de.spec.ts`              | `should display German nav on /de/`            | Nav text in German  |
+| `tests/e2e/i18n/fr.spec.ts`              | `should display French pricing on /fr/pricing` | Pricing in French   |
+| `tests/e2e/i18n/locale-switcher.spec.ts` | `should show DE and FR flags in switcher`      | All 4 flags visible |
 
 ---
 
@@ -428,6 +461,7 @@ Same pattern as Phase 2, but for de and fr locales.
 **Implementation:**
 
 - [ ] In base layout `<head>`:
+
   ```astro
   {SUPPORTED_LOCALES.map(loc => {
     const prefix = loc === DEFAULT_LOCALE ? '' : `/${loc}`;
@@ -449,11 +483,11 @@ Same pattern as Phase 2, but for de and fr locales.
 
 **Tests Required:**
 
-| Test File | Test Name | Assertion |
-|-----------|-----------|-----------|
-| `tests/e2e/seo/hreflang.spec.ts` | `should have hreflang tags for all locales on homepage` | 5 alternate links present |
-| `tests/e2e/seo/hreflang.spec.ts` | `should have x-default hreflang` | `hreflang="x-default"` present |
-| `tests/unit/seo/sitemap.spec.ts` | `should include pt-BR URLs in sitemap` | `/pt-BR/` entries exist |
+| Test File                        | Test Name                                               | Assertion                      |
+| -------------------------------- | ------------------------------------------------------- | ------------------------------ |
+| `tests/e2e/seo/hreflang.spec.ts` | `should have hreflang tags for all locales on homepage` | 5 alternate links present      |
+| `tests/e2e/seo/hreflang.spec.ts` | `should have x-default hreflang`                        | `hreflang="x-default"` present |
+| `tests/unit/seo/sitemap.spec.ts` | `should include pt-BR URLs in sitemap`                  | `/pt-BR/` entries exist        |
 
 ---
 
@@ -485,6 +519,7 @@ Task({
 ```
 
 **Manual checkpoint required for Phases 2, 4, 6** (visual language verification):
+
 - Navigate to locale URL, visually confirm page text is in the correct language
 - Confirm LocaleSwitcher shows correct flags
 - Confirm no English text leaks in translated pages
@@ -507,14 +542,14 @@ Task({
 
 ## 7. Prioritized Delivery Roadmap
 
-| Timeline | Phase | Locales | Type |
-|----------|-------|---------|------|
-| Day 1 | 1 | Infrastructure | Core |
-| Day 1–3 | 2 | pt-BR | Full translation |
-| Day 3–5 | 3 | Regional pricing (IN, GB, AU, PH, PK) | Display only |
-| Month 1 | 4 | de, fr | Full translation |
-| Month 1 | 5 | SEO hreflang | Technical SEO |
-| Month 2–3 | 6 | id | Full translation |
+| Timeline  | Phase | Locales                               | Type             |
+| --------- | ----- | ------------------------------------- | ---------------- |
+| Day 1     | 1     | Infrastructure                        | Core             |
+| Day 1–3   | 2     | pt-BR                                 | Full translation |
+| Day 3–5   | 3     | Regional pricing (IN, GB, AU, PH, PK) | Display only     |
+| Month 1   | 4     | de, fr                                | Full translation |
+| Month 1   | 5     | SEO hreflang                          | Technical SEO    |
+| Month 2–3 | 6     | id                                    | Full translation |
 
 ---
 

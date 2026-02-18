@@ -11,17 +11,21 @@
 > Full deployment guide: [`docs/guides/cloudflare-deployment.md`](../guides/cloudflare-deployment.md)
 
 ### Transfer DNS from Namecheap to Cloudflare
-- [ ] Create Cloudflare account at [dash.cloudflare.com](https://dash.cloudflare.com/)
-- [ ] In Cloudflare: **Add a Site** > enter `autopilotrank.com` > select Free plan
-- [ ] Cloudflare will scan existing DNS records - review and confirm they're correct
-- [ ] Note the two Cloudflare nameservers assigned (e.g., `ada.ns.cloudflare.com`, `lee.ns.cloudflare.com`)
-- [ ] In Namecheap: go to **Domain List > autopilotrank.com > Nameservers**
-- [ ] Change from "Namecheap BasicDNS" to **"Custom DNS"**
-- [ ] Enter both Cloudflare nameservers and save
-- [ ] Wait for propagation (can take up to 48 hours, usually 1-2 hours)
-- [ ] Cloudflare Dashboard will show "Active" once nameservers are verified
+
+- [x] Create Cloudflare account at [dash.cloudflare.com](https://dash.cloudflare.com/)
+- [x] In Cloudflare: **Add a Site** > enter `autopilotrank.com` > select Free plan
+- [x] Cloudflare will scan existing DNS records - review and confirm they're correct
+- [x] Note the two Cloudflare nameservers assigned (e.g., `ada.ns.cloudflare.com`, `lee.ns.cloudflare.com`)
+- [x] In Namecheap: go to **Domain List > autopilotrank.com > Nameservers**
+- [x] Change from "Namecheap BasicDNS" to **"Custom DNS"**
+- [x] Enter both Cloudflare nameservers and save
+- [x] Wait for propagation (can take up to 48 hours, usually 1-2 hours)
+- [x] Cloudflare Dashboard will show "Active" once nameservers are verified
 
 ### Cloudflare SSL & Security Settings
+
+> ⚠️ API token needs `Zone:Settings:Edit` permission for these — do manually in dashboard or re-create token with that scope.
+
 - [ ] **SSL/TLS** > set encryption mode to **Full (strict)**
 - [ ] Enable **Always Use HTTPS**
 - [ ] Enable **Automatic HTTPS Rewrites**
@@ -29,6 +33,7 @@
 - [ ] Verify SSL certificate is issued and active (green padlock on site)
 
 ### Cloudflare Email Routing
+
 - [ ] In Cloudflare Dashboard > **Email > Email Routing** > enable for `autopilotrank.com`
 - [ ] Add MX records (Cloudflare will prompt to add them automatically)
 - [ ] Create routing rule: `support@autopilotrank.com` -> `admin@coldstartlabs.ca`
@@ -40,15 +45,18 @@
 - [ ] Test: send email to `support@autopilotrank.com` and confirm delivery to `admin@coldstartlabs.ca`
 
 ### Cloudflare DNS Records
+
 - [ ] `A` or `CNAME` record for `@` pointing to Pages project (auto-configured when adding custom domain)
-- [ ] `CNAME` record for `www` -> `autopilotrank.com` (or use Page Rule to redirect)
-- [ ] SPF record: `TXT @ "v=spf1 include:sendinblue.com ~all"` (for Brevo email)
-- [ ] DKIM record: add TXT record from Brevo's domain authentication page
-- [ ] DMARC record: `TXT _dmarc "v=DMARC1; p=quarantine; rua=mailto:admin@autopilotrank.com"`
+- [x] `CNAME` record for `www` -> `autopilotrank.com` ✓ set via API
+- [x] SPF record: `TXT @ "v=spf1 include:_spf.mx.cloudflare.net include:sendinblue.com ~all"` ✓ set via API
+- [ ] DKIM record: add TXT record from Brevo's domain authentication page (needs Brevo account)
+- [x] DMARC record: `TXT _dmarc "v=DMARC1; p=quarantine; rua=mailto:admin@autopilotrank.com"` ✓ set via API
+- [x] Old Namecheap MX records removed; Cloudflare Email Routing MX records added (route1/2/3.mx.cloudflare.net) ✓
 - [ ] Verify DNS propagation: `dig autopilotrank.com NS` shows Cloudflare nameservers
-- [ ] Verify email DNS: check SPF + DKIM + DMARC with [MXToolbox](https://mxtoolbox.com/)
+- [ ] Verify email DNS: check SPF + DKIM + DMARC with [MXToolbox](https://mxtoolbox.com/) (after DKIM added)
 
 ### Pages Project (Deploy via Wrangler)
+
 - [x] Cloudflare Pages project created
 - [ ] Login to Wrangler CLI: `npx wrangler login`
 - [ ] Add custom domain: Cloudflare Dashboard > **Pages > autopilotrank > Custom domains** > add `autopilotrank.com`
@@ -103,6 +111,7 @@
 > Full setup guide: [`docs/guides/google-oauth-setup.md`](../guides/google-oauth-setup.md)
 
 ### Google OAuth Consent Screen
+
 - [ ] In GCP project > **APIs & Services > OAuth consent screen**
 - [ ] Select **External** user type
 - [ ] Fill in app info: name=`AutopilotRank`, support email, authorized domains=`autopilotrank.com`, `supabase.co`
@@ -111,6 +120,7 @@
 - [ ] **Before launch:** Click **"Publish App"** to move from Testing to Production mode
 
 ### Google OAuth Credentials
+
 - [ ] Create OAuth client ID (**APIs & Services > Credentials > Create > OAuth client ID**)
 - [ ] Application type: `Web application`
 - [ ] Add **Authorized JavaScript Origins**:
@@ -123,6 +133,7 @@
 - [ ] Copy **Client ID** and **Client Secret**
 
 ### Supabase Google Provider
+
 - [ ] In Supabase Dashboard > **Authentication > Providers > Google**: toggle ON
 - [ ] Paste Client ID and Client Secret
 - [ ] Add Client ID to the **"Client IDs"** field (required for `signInWithIdToken`)
@@ -130,14 +141,17 @@
 - [ ] Add redirect URLs: `http://localhost:4321/**`, `https://autopilotrank.com/**`
 
 ### Supabase Email Templates
+
 - [x] Native Supabase email/password auth configured
 - [ ] Customize Supabase email templates (confirmation, password reset) with AutopilotRank branding
 - [ ] Set email sender in Supabase Dashboard (SMTP or built-in)
 
 ### Azure OAuth (optional - disabled by default)
+
 - [x] `PUBLIC_ENABLE_AZURE_OAUTH=false` (current default)
 
 ### Verify Auth
+
 - [ ] Test GIS popup flow on localhost
 - [ ] Test GIS popup flow on production domain
 - [ ] Test fallback redirect flow works if GIS blocked
@@ -150,16 +164,19 @@
 > Depends on: domain DNS (for SPF/DKIM records in Cloudflare), Cloudflare email routing already set up.
 
 ### Brevo (Primary)
+
 - [ ] Create Brevo account and get API key
 - [ ] Register and verify sender domain (`autopilotrank.com`) in Brevo
 - [ ] Copy SPF and DKIM values from Brevo into Cloudflare DNS (see Section 1)
 - [ ] Test email delivery to Gmail, Outlook, Yahoo
 
 ### Resend (Fallback)
+
 - [ ] Create Resend account and get API key
 - [ ] Verify domain in Resend
 
 ### Store Secrets
+
 - [ ] Add `BREVO_API_KEY` to Google Secret Manager
 - [ ] Add `RESEND_API_KEY` to Google Secret Manager
 - [ ] Set `EMAIL_FROM_ADDRESS=noreply@autopilotrank.com`
@@ -173,6 +190,7 @@
 > Independent accounts. Core product doesn't work without these.
 
 ### OpenRouter (Text Generation)
+
 - [ ] Create OpenRouter account and get API key
 - [ ] Add billing/credits to OpenRouter account (sufficient for launch traffic)
 - [ ] Verify model access: `openai/gpt-4o`, `google/gemini-2.0-flash-exp:free`
@@ -180,12 +198,14 @@
 - [ ] Add `OPENROUTER_API_KEY` to Google Secret Manager
 
 ### Replicate (Image Generation)
+
 - [ ] Create Replicate account and get API key
 - [ ] Add billing to Replicate account
 - [ ] Confirm `AVAILABLE_IMAGE_PRESETS` env is set (budget/balanced/pro/ultra models)
 - [ ] Add `REPLICATE_API_KEY` to Google Secret Manager
 
 ### OpenAI (Embeddings)
+
 - [ ] Get OpenAI API key
 - [ ] Verify embeddings endpoint works
 - [ ] Add `OPENAI_API_KEY` to Google Secret Manager
@@ -219,6 +239,7 @@
 > Set up before launch so you can observe from day one.
 
 ### Baselime (Error Tracking)
+
 - [ ] Create Baselime account/project
 - [ ] Set `PUBLIC_BASELIME_KEY` (client-side)
 - [ ] Add `BASELIME_API_KEY` to Google Secret Manager
@@ -226,18 +247,21 @@
 - [ ] Set up alert rules for critical errors (5xx spikes, auth failures)
 
 ### Amplitude (Event Analytics)
+
 - [ ] Create Amplitude project
 - [ ] Set `PUBLIC_AMPLITUDE_API_KEY` (client-side)
 - [ ] Add `AMPLITUDE_API_KEY` to Google Secret Manager
 - [ ] Verify events flowing (signup, generation, purchase)
 
 ### Google Analytics 4
+
 - [ ] Create GA4 property for autopilotrank.com
 - [ ] Set `PUBLIC_GA_MEASUREMENT_ID` (e.g., `G-XXXXXXXXXX`)
 - [ ] Set up conversion goals: signup, subscription purchase, article generation
 - [ ] Verify pageview tracking works
 
 ### Uptime Monitoring
+
 - [ ] Set up external uptime monitor (e.g., UptimeRobot, Better Uptime)
 - [ ] Monitor `GET https://autopilotrank.com/api/health`
 - [ ] Configure alerts (email/Slack) for downtime
@@ -275,21 +299,25 @@
 ## 12. SEO & Content
 
 ### Sitemaps
+
 - [x] Sitemap generation configured (static, blog, pSEO)
 - [ ] Verify all sitemaps generate correctly on production domain
 - [ ] Submit sitemaps to Google Search Console
 
 ### Robots.txt
+
 - [x] Configured: blocks /api/, /dashboard/, AI scrapers (GPTBot, ChatGPT-User)
 - [ ] Verify robots.txt accessible at `https://autopilotrank.com/robots.txt`
 
 ### Meta Tags & Open Graph
+
 - [ ] Verify homepage meta title, description, og:image
 - [ ] Verify pricing page meta tags
 - [ ] Test Open Graph preview (Facebook Sharing Debugger, Twitter Card Validator)
 - [ ] Verify canonical URLs on all pages
 
 ### Legal Pages
+
 - [ ] Update Privacy Policy with actual data retention details
 - [ ] Update Terms of Service with product-specific terms
 - [ ] Update `PUBLIC_LAST_UPDATED_DATE` on legal pages
@@ -303,6 +331,7 @@
 > Every public var should be in Cloudflare Pages env vars.
 
 ### `.env.client` (Public - Cloudflare Pages env vars)
+
 - [ ] `PUBLIC_SUPABASE_URL` - production Supabase URL
 - [ ] `PUBLIC_SUPABASE_ANON_KEY` - production anon key
 - [ ] `PUBLIC_APP_NAME=AutopilotRank`
@@ -320,6 +349,7 @@
 - [ ] `ALLOWED_ORIGIN=https://autopilotrank.com`
 
 ### `.env.api` (Secrets - Google Secret Manager)
+
 - [ ] `ENV=production`
 - [ ] `SUPABASE_SERVICE_ROLE_KEY`
 - [ ] `STRIPE_SECRET_KEY` - **live** key
@@ -337,6 +367,7 @@
 - [ ] `AMPLITUDE_API_KEY`
 
 ### GitHub Actions Secrets
+
 - [ ] `CLOUDFLARE_API_TOKEN` - create in Cloudflare Dashboard > **My Profile > API Tokens**
 - [ ] `CLOUDFLARE_ACCOUNT_ID` - from Cloudflare Dashboard overview page
 - [ ] GCP service account key JSON (for pulling secrets from Google Secret Manager during CI/CD)
@@ -347,14 +378,17 @@
 ## 14. Milestone 7 - Remaining Dev Work
 
 ### Emails
+
 - [ ] Welcome email template (quick start guide)
 - [ ] Article generation complete notification
 - [ ] Low credits alert (80% threshold)
 
 ### Onboarding
+
 - [ ] In-app onboarding flow: connect CMS -> enter keywords -> generate first article
 
 ### Landing Page & Content
+
 - [ ] Final landing page polish (competitor comparison, testimonials)
 - [ ] Features page with product screenshots/GIFs
 - [ ] Write 2-3 launch blog posts
@@ -367,6 +401,7 @@
 > After all services configured and dev work complete.
 
 ### Automated Tests
+
 - [x] 616+ unit tests passing
 - [x] 82 scheduling unit tests passing
 - [ ] Run `yarn verify` - passes clean (tsc + lint + i18n)
@@ -374,6 +409,7 @@
 - [ ] Run `yarn test:e2e` - all pass against production-like env
 
 ### Critical User Flows (Manual Testing)
+
 - [ ] Signup with email/password -> verify email -> access dashboard
 - [ ] Signup with Google OAuth -> access dashboard
 - [ ] Free tier: generate 3 trial articles -> upgrade prompt shown
@@ -385,6 +421,7 @@
 - [ ] Settings: connect WordPress integration -> test connection -> succeeds
 
 ### Edge Cases
+
 - [ ] Generation failure -> credits refunded automatically
 - [ ] Insufficient credits -> generation blocked, auto-pause schedule
 - [ ] Invalid CMS credentials -> graceful error shown
@@ -396,6 +433,7 @@
 ## 16. CI/CD Pipeline & Cron Worker
 
 ### GitHub Actions
+
 - [x] Deploy pipeline configured (`.github/workflows/deploy.yml`)
 - [x] Pipeline: tsc -> eslint -> unit tests -> build -> deploy -> health check
 - [ ] Verify pipeline runs successfully against `main` branch
@@ -404,6 +442,7 @@
 - [ ] Confirm rollback procedure: Cloudflare Pages deployment history allows instant rollback
 
 ### Cron Worker (Separate from Pages)
+
 - [ ] Create separate Cloudflare Worker for cron jobs
 - [ ] Configure cron trigger: `*/5 * * * *` (every 5 minutes)
 - [ ] Worker calls `POST /api/cron/generate-scheduled-articles` with `X-Cron-Secret` header
@@ -444,11 +483,11 @@
 
 ## 19. Known Issues & Workarounds
 
-| Issue | Status | Notes |
-|-------|--------|-------|
-| Stripe schedule race condition on upgrade | Fixed (Feb 9) | Release schedule before upgrade |
-| Double credit granting on renewal | Fixed (Feb 9) | Removed direct reset from schedule handler |
-| Multi-instance rate limiting | In-memory only | Upgrade to Cloudflare KV if scaling past 1 instance |
-| Cron via Cloudflare Pages | Not supported | Must deploy separate Worker (see Section 16) |
-| Azure OAuth | Not tested | Disabled by default, defer to post-launch |
-| Webflow adapter | Framework only | Implementation deferred |
+| Issue                                     | Status         | Notes                                               |
+| ----------------------------------------- | -------------- | --------------------------------------------------- |
+| Stripe schedule race condition on upgrade | Fixed (Feb 9)  | Release schedule before upgrade                     |
+| Double credit granting on renewal         | Fixed (Feb 9)  | Removed direct reset from schedule handler          |
+| Multi-instance rate limiting              | In-memory only | Upgrade to Cloudflare KV if scaling past 1 instance |
+| Cron via Cloudflare Pages                 | Not supported  | Must deploy separate Worker (see Section 16)        |
+| Azure OAuth                               | Not tested     | Disabled by default, defer to post-launch           |
+| Webflow adapter                           | Framework only | Implementation deferred                             |
