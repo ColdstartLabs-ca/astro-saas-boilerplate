@@ -72,6 +72,7 @@ jobs:
           cp .env.test.example .env.test || true
           # Set minimal env vars for CI testing (use Astro PUBLIC_ prefix, not Next.js NEXT_PUBLIC_)
           echo "ENV=test" >> .env.test
+          echo "NODE_ENV=test" >> .env.test
           echo "PLAYWRIGHT_TEST=1" >> .env.test
           echo "PUBLIC_SUPABASE_URL=http://localhost:54321" >> .env.test
           echo "PUBLIC_SUPABASE_ANON_KEY=test-anon-key" >> .env.test
@@ -79,14 +80,17 @@ jobs:
           echo "STRIPE_SECRET_KEY=sk_test_dummy" >> .env.test
           echo "STRIPE_WEBHOOK_SECRET=whsec_test_dummy" >> .env.test
           echo "PUBLIC_STRIPE_PUBLISHABLE_KEY=pk_test_dummy" >> .env.test
+          echo "TEST_AUTH_TOKEN=test_auth_token_for_testing_only" >> .env.test
 
       - name: Run api tests
         run: yarn test:api
         env:
           ENV: test
+          NODE_ENV: test
           PLAYWRIGHT_TEST: 1
           CI: true
           SUPABASE_SERVICE_ROLE_KEY: test-service-role-key
+          TEST_AUTH_TOKEN: test_auth_token_for_testing_only
 
       - name: Install Playwright browsers
         run: npx playwright install --with-deps chromium
@@ -95,8 +99,10 @@ jobs:
         run: yarn playwright test tests/e2e/core-app-flow.ci.e2e.spec.ts --project=chromium --reporter=list
         env:
           ENV: test
+          NODE_ENV: test
           PLAYWRIGHT_TEST: 1
           CI: true
+          TEST_AUTH_TOKEN: test_auth_token_for_testing_only
 
       - name: Upload Playwright report
         uses: actions/upload-artifact@v4
