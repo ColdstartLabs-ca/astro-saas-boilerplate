@@ -1,0 +1,14 @@
+{
+  "englishOnly": {
+    "title": "Versão em Inglês",
+    "message": "Esta página está disponível apenas em inglês. Gostaria de ver a versão em inglês?",
+    "switchButton": "Mudar para Inglês"
+  },
+  "switcher": {
+    "ariaLabel": "Selecionar idioma"
+  },
+  "locales": {
+    "en": "Inglês",
+    "pt-BR": "Português (Brasil)"
+  }
+}

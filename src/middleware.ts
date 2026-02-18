@@ -13,10 +13,12 @@ import {
 } from '@lib/middleware';
 import { updateSession, requireAdmin } from '@shared/utils/supabase/middleware';
 import { DEFAULT_LOCALE, isValidLocale, LOCALE_COOKIE, type Locale } from '@/i18n/config';
+import { COUNTRY_CURRENCY_MAP, type RegionalCurrency } from '@shared/config/regional-pricing';
 
-// Stub for deleted country-locale-map
+// Country to locale mapping for geo-based language detection
 function getLocaleFromCountry(country: string): Locale | null {
   const countryMap: Record<string, Locale> = {
+    // English-speaking countries
     US: 'en',
     GB: 'en',
     CA: 'en',
@@ -25,8 +27,30 @@ function getLocaleFromCountry(country: string): Locale | null {
     IE: 'en',
     ZA: 'en',
     IN: 'en',
+    // Portuguese (Brazil)
+    BR: 'pt-BR',
   };
   return countryMap[country.toUpperCase()] || null;
+}
+
+/**
+ * Get regional currency configuration from country code.
+ * Currency is independent of locale (India uses INR but sees English UI).
+ */
+function getCurrencyFromCountry(country: string): RegionalCurrency | null {
+  return COUNTRY_CURRENCY_MAP[country.toUpperCase()] || null;
+}
+
+/**
+ * Extract country code from request headers.
+ * Uses CF-IPCountry header set by Cloudflare.
+ */
+function getCountryFromRequest(request: Request): string | null {
+  return (
+    request.headers.get('CF-IPCountry') ||
+    request.headers.get('cf-ipcountry') ||
+    (serverEnv.ENV === 'test' ? request.headers.get('x-test-country') : null)
+  );
 }
 
 /**
@@ -76,7 +100,12 @@ function isAdminDashboardPath(pathname: string): boolean {
   }
 
   // /{locale}/dashboard/admin or /{locale}/dashboard/admin/*
-  if (segments.length >= 3 && isValidLocale(segments[0]) && segments[1] === 'dashboard' && segments[2] === 'admin') {
+  if (
+    segments.length >= 3 &&
+    isValidLocale(segments[0]) &&
+    segments[1] === 'dashboard' &&
+    segments[2] === 'admin'
+  ) {
     return true;
   }
 
@@ -281,6 +310,12 @@ export const onRequest = defineMiddleware(async (context, next) => {
   const trackingParamsCleanup = handleTrackingParams(url);
   if (trackingParamsCleanup) {
     return trackingParamsCleanup;
+  }
+
+  // Detect country and set regional currency for display
+  const country = getCountryFromRequest(request);
+  if (country) {
+    context.locals.currency = getCurrencyFromCountry(country);
   }
 
   // Handle API routes

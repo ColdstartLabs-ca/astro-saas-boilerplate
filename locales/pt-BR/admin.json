@@ -1,0 +1,135 @@
+{
+  "aria": {
+    "userActions": "Ações do usuário"
+  },
+  "users": {
+    "title": "Usuários",
+    "searchPlaceholder": "Buscar por email...",
+    "table": {
+      "email": "Email",
+      "role": "Função",
+      "credits": "Créditos",
+      "subscription": "Assinatura",
+      "joined": "Entrou",
+      "actions": "Ações",
+      "free": "Grátis"
+    },
+    "loading": "Carregando...",
+    "noUsersFound": "Nenhum usuário encontrado",
+    "error": "Falha ao carregar usuários",
+    "viewDetails": "Ver Detalhes",
+    "removeAdmin": "Remover Admin",
+    "makeAdmin": "Tornar Admin",
+    "adjustCredits": "Ajustar Créditos",
+    "changeSubscription": "Alterar Assinatura",
+    "deleteUser": "Excluir Usuário",
+    "grantAdminTitle": "Conceder Acesso de Admin",
+    "removeAdminTitle": "Remover Acesso de Admin",
+    "grantAdminButton": "Conceder Admin",
+    "removeAdminButton": "Remover Admin",
+    "deleteUserTitle": "Excluir Usuário",
+    "deleteUserButton": "Excluir Usuário",
+    "pagination": {
+      "showing": "Mostrando {from} a {to} de {total}",
+      "pageOf": "Página {current} de {total}"
+    }
+  },
+  "admin": {
+    "setCredits": "Definir Créditos",
+    "current": "Atual:",
+    "creditsBalance": "Saldo de Créditos",
+    "free": "Grátis",
+    "save": "Salvar",
+    "saving": "Salvando...",
+    "processing": "Processando...",
+    "cancel": "Cancelar",
+    "failedToLoad": "Falha ao carregar dados da assinatura",
+    "failedToUpdate": "Falha ao atualizar assinatura",
+    "failedToDelete": "Falha ao excluir usuário",
+    "failedToSetCredits": "Falha ao definir créditos",
+    "failedToUpdateRole": "Falha ao atualizar função",
+    "immediatelyCancel": "Isso cancelará a assinatura do Stripe imediatamente. O usuário perderá o acesso.",
+    "removeAccess": "Isso removerá o acesso à assinatura do perfil do usuário.",
+    "changeToPlan": "Isso mudará a assinatura do Stripe para {planName}. A cobrança será rateada.",
+    "grantAccessWithoutStripe": "Isso concederá acesso ao {planName} SEM criar uma assinatura no Stripe. Use apenas para cortesias ou testes.",
+    "warning": "Aviso:",
+    "irreversible": "Esta ação é irreversível. Todos os dados do usuário, incluindo créditos, assinaturas e histórico de transações serão permanentemente excluídos.",
+    "typeEmailToConfirm": "Digite <span class=\"font-mono text-error\">{email}</span> para confirmar",
+    "profileTier": "Nível do Perfil:",
+    "stripeStatus": "Status no Stripe:",
+    "noSubscription": "Sem assinatura",
+    "renews": "Renova:",
+    "changeTo": "Mudar Para",
+    "manageSubscription": "Gerenciar Assinatura"
+  },
+  "userDetail": {
+    "title": "Detalhes do Usuário",
+    "backToUsers": "Voltar para usuários",
+    "loading": "Carregando detalhes do usuário...",
+    "error": "Falha ao carregar usuário",
+    "userNotFound": "Usuário não encontrado",
+    "profile": "Perfil",
+    "credits": "Créditos",
+    "subscription": {
+      "status": "Status",
+      "tier": "Nível",
+      "periodEnd": "Fim do Período",
+      "subscriptionId": "ID da Assinatura",
+      "unknown": "Desconhecido",
+      "noActiveSubscription": "Nenhuma assinatura ativa"
+    },
+    "fields": {
+      "email": "Email",
+      "userId": "ID do Usuário",
+      "stripeCustomerId": "ID do Cliente no Stripe",
+      "notConnected": "Não conectado",
+      "role": "Função",
+      "user": "Usuário",
+      "admin": "Admin",
+      "joined": "Entrou"
+    },
+    "adjustCredits": {
+      "title": "Ajustar Créditos",
+      "amount": "Quantidade (positivo para adicionar, negativo para remover)",
+      "amountPlaceholder": "ex: 50 ou -20",
+      "reason": "Motivo",
+      "reasonPlaceholder": "ex: Compensação de suporte ao cliente",
+      "currentBalance": "Atual: {current}",
+      "newBalance": "Novo: {new}",
+      "previewBalance": "Atual: {current} → Novo: {new}",
+      "cancel": "Cancelar",
+      "saving": "Salvando...",
+      "adjustCredits": "Ajustar Créditos",
+      "error": "Falha ao ajustar créditos"
+    },
+    "recentTransactions": {
+      "title": "Transações Recentes",
+      "noTransactions": "Nenhuma transação"
+    },
+    "errors": {
+      "failedToLoadUser": "Falha ao carregar usuário",
+      "failedToUpdateRole": "Falha ao atualizar função",
+      "anErrorOccurred": "Ocorreu um erro"
+    }
+  },
+  "dashboard": {
+    "title": "Painel Administrativo",
+    "stats": {
+      "totalUsers": "Total de Usuários",
+      "activeSubscriptions": "Assinaturas Ativas",
+      "creditsIssued": "Créditos Emitidos",
+      "creditsUsed": "Créditos Usados"
+    },
+    "quickActions": "Ações Rápidas",
+    "manageUsers": "Gerenciar Usuários",
+    "manageUsersDescription": "Ver e editar contas de usuário",
+    "manageSubscriptions": "Gerenciar Assinaturas",
+    "manageSubscriptionsDescription": "Ver e modificar assinaturas (Em breve)",
+    "creditOperations": "Operações de Créditos",
+    "creditOperationsDescription": "Ajustar créditos de usuários (Disponível nos detalhes do usuário)",
+    "recentActivity": "Atividade Recente",
+    "activityFeedComingSoon": "Feed de atividades será implementado em uma iteração futura.",
+    "loadingStats": "Carregando estatísticas...",
+    "errorLoadingStats": "Erro ao carregar estatísticas"
+  }
+}
