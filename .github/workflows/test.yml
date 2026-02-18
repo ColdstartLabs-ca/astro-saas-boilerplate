@@ -67,12 +67,9 @@ jobs:
       - name: Install dependencies
         run: yarn install --frozen-lockfile
 
-      - name: Run api tests
-        run: yarn test:api
-
       - name: Create test env file
         run: |
-          cp .env.test.example .env.test
+          cp .env.test.example .env.test || true
           # Set minimal env vars for CI testing
           echo "ENV=test" >> .env.test
           echo "PLAYWRIGHT_TEST=1" >> .env.test
@@ -82,6 +79,14 @@ jobs:
           echo "STRIPE_SECRET_KEY=sk_test_dummy" >> .env.test
           echo "STRIPE_WEBHOOK_SECRET=whsec_test_dummy" >> .env.test
           echo "NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=pk_test_dummy" >> .env.test
+
+      - name: Run api tests
+        run: yarn test:api
+        env:
+          ENV: test
+          PLAYWRIGHT_TEST: 1
+          CI: true
+          SUPABASE_SERVICE_ROLE_KEY: test-service-role-key
 
       - name: Install Playwright browsers
         run: npx playwright install --with-deps chromium
