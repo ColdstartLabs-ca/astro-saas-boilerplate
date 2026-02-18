@@ -8,11 +8,13 @@ PROJECT_ROOT="$(dirname "$(dirname "$SCRIPT_DIR")")"
 export SKIP_SECRETS="false"
 export SKIP_TESTS="false"
 export SKIP_I18N="false"
+export SKIP_SEO="false"
 for arg in "$@"; do
     case $arg in
         --skip-secrets) SKIP_SECRETS="true" ;;
         --skip-tests) SKIP_TESTS="true" ;;
         --skip-i18n) SKIP_I18N="true" ;;
+        --skip-seo) SKIP_SEO="true" ;;
     esac
 done
 
@@ -79,15 +81,20 @@ else
 fi
 
 # Validate SEO data integrity (static validation - no server required)
-echo -e "${CYAN}▸ Validating SEO data...${NC}"
-cd "$PROJECT_ROOT"
-if ! yarn validate:seo:all; then
-    echo -e "${RED}✗ SEO validation failed. Deployment blocked.${NC}"
-    echo -e "${YELLOW}  Run 'yarn validate:seo:all' to see details${NC}"
-    exit 1
+if [ "$SKIP_SEO" = "false" ]; then
+    echo -e "${CYAN}▸ Validating SEO data...${NC}"
+    cd "$PROJECT_ROOT"
+    if ! yarn validate:seo:all; then
+        echo -e "${RED}✗ SEO validation failed. Deployment blocked.${NC}"
+        echo -e "${YELLOW}  Run 'yarn validate:seo:all' to see details${NC}"
+        exit 1
+    fi
+    echo -e "${GREEN}✓ SEO data valid${NC}"
+    echo ""
+else
+    echo -e "${YELLOW}▸ Skipping SEO validation (--skip-seo flag)${NC}"
+    echo ""
 fi
-echo -e "${GREEN}✓ SEO data valid${NC}"
-echo ""
 
 source "$SCRIPT_DIR/steps/01-preflight.sh" && step_preflight
 source "$SCRIPT_DIR/steps/02-build.sh" && step_build

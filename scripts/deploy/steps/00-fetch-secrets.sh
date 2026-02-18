@@ -1,8 +1,8 @@
 #!/bin/bash
 
 # Configuration
-GCLOUD_PROJECT="${GCLOUD_PROJECT:-autopilotrank-auth}"
-GCLOUD_ACCOUNT="${GCLOUD_ACCOUNT:-autopilotrank@autopilotrank-auth.iam.gserviceaccount.com}"
+GCLOUD_PROJECT="${GCLOUD_PROJECT:-autopilotrank}"
+GCLOUD_ACCOUNT="${GCLOUD_ACCOUNT:-jfurtado141@gmail.com}"
 GCLOUD_SECRET_API="${GCLOUD_SECRET_API:-autopilotrank-api-prod}"
 GCLOUD_SECRET_CLIENT="${GCLOUD_SECRET_CLIENT:-autopilotrank-client-prod}"
 ENV_API_PROD="$PROJECT_ROOT/.env.api.prod"
@@ -18,7 +18,7 @@ step_fetch_secrets() {
     log_success "gcloud CLI found"
 
     # Check authentication
-    if ! gcloud auth print-identity-token &> /dev/null; then
+    if ! gcloud auth print-access-token &> /dev/null; then
         log_error "Not authenticated. Run: gcloud auth login"
     fi
     log_success "gcloud authenticated"
