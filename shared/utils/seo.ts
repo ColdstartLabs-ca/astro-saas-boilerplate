@@ -528,3 +528,76 @@ export function getSEOScoreBorderColor(score: number): string {
   if (score >= 60) return 'border-yellow-500/30';
   return 'border-red-500/30';
 }
+
+/**
+ * Meta description validation result
+ */
+export interface IMetaValidation {
+  isValid: boolean;
+  charCount: number;
+  issues: string[];
+}
+
+/**
+ * Title tag validation result
+ */
+export interface ITitleValidation {
+  isValid: boolean;
+  charCount: number;
+  pixelEstimate: number;
+  issues: string[];
+}
+
+/**
+ * Validate a meta description for SEO best practices
+ * @param text - Meta description text
+ * @returns Validation result with isValid, charCount, and issues
+ */
+export function validateMetaDescription(text: string): IMetaValidation {
+  const charCount = text.trim().length;
+  const issues: string[] = [];
+
+  if (charCount === 0) {
+    issues.push('Meta description is empty');
+  } else if (charCount < 120) {
+    issues.push('Too short (aim for 120-160 characters)');
+  } else if (charCount > 160) {
+    issues.push('Too long (aim for 120-160 characters)');
+  }
+
+  return {
+    isValid: charCount >= 120 && charCount <= 160,
+    charCount,
+    issues,
+  };
+}
+
+/**
+ * Validate a title tag for SEO best practices
+ * @param title - Title tag text
+ * @returns Validation result with isValid, charCount, pixelEstimate, and issues
+ */
+export function validateTitleTag(title: string): ITitleValidation {
+  const charCount = title.trim().length;
+  const pixelEstimate = charCount * 9.5; // Approximate pixel width
+  const issues: string[] = [];
+
+  if (charCount === 0) {
+    issues.push('Title tag is empty');
+  } else if (charCount < 50) {
+    issues.push('Too short (aim for 50-60 characters)');
+  } else if (charCount > 60) {
+    issues.push('Too long (aim for 50-60 characters)');
+  }
+
+  if (pixelEstimate > 580) {
+    issues.push('May be truncated in search results (pixel width > 580px)');
+  }
+
+  return {
+    isValid: charCount >= 50 && charCount <= 60,
+    charCount,
+    pixelEstimate,
+    issues,
+  };
+}
