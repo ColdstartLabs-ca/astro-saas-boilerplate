@@ -3,4 +3,4 @@ Allow: /
 Disallow: /api/
 Disallow: /dashboard/
 
-Sitemap: https://myimageupscaler.com/sitemap.xml
+Sitemap: https://autopilotrank.com/sitemap.xml

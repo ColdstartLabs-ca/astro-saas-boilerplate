@@ -59,12 +59,12 @@ Or go directly to: [github.com/settings/developers](https://github.com/settings/
 
 2. Fill in the application details:
 
-| Field                          | Value                                                     |
-| ------------------------------ | --------------------------------------------------------- |
-| **Application name**           | Your app name (e.g., `myimageupscaler.com`)               |
-| **Homepage URL**               | Your app's homepage (e.g., `https://myimageupscaler.com`) |
-| **Application description**    | (Optional) Brief description                              |
-| **Authorization callback URL** | Your Supabase callback URL                                |
+| Field                          | Value                                                   |
+| ------------------------------ | ------------------------------------------------------- |
+| **Application name**           | Your app name (e.g., `autopilotrank.com`)               |
+| **Homepage URL**               | Your app's homepage (e.g., `https://autopilotrank.com`) |
+| **Application description**    | (Optional) Brief description                            |
+| **Authorization callback URL** | Your Supabase callback URL                              |
 
 ### Step 3: Get Your Callback URL
 

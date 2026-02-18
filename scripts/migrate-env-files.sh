@@ -13,7 +13,7 @@ PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
 
 cd "$PROJECT_ROOT"
 
-echo "myimageupscaler.com Environment Files Migration"
+echo "autopilotrank.com Environment Files Migration"
 echo "========================================="
 echo ""
 
