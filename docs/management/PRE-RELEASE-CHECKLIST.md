@@ -11,17 +11,18 @@
 > Full deployment guide: [`docs/guides/cloudflare-deployment.md`](../guides/cloudflare-deployment.md)
 
 ### Transfer DNS from Namecheap to Cloudflare
-- [ ] Create Cloudflare account at [dash.cloudflare.com](https://dash.cloudflare.com/)
-- [ ] In Cloudflare: **Add a Site** > enter `autopilotrank.com` > select Free plan
-- [ ] Cloudflare will scan existing DNS records - review and confirm they're correct
-- [ ] Note the two Cloudflare nameservers assigned (e.g., `ada.ns.cloudflare.com`, `lee.ns.cloudflare.com`)
-- [ ] In Namecheap: go to **Domain List > autopilotrank.com > Nameservers**
-- [ ] Change from "Namecheap BasicDNS" to **"Custom DNS"**
-- [ ] Enter both Cloudflare nameservers and save
-- [ ] Wait for propagation (can take up to 48 hours, usually 1-2 hours)
-- [ ] Cloudflare Dashboard will show "Active" once nameservers are verified
+- [x] Create Cloudflare account at [dash.cloudflare.com](https://dash.cloudflare.com/)
+- [x] In Cloudflare: **Add a Site** > enter `autopilotrank.com` > select Free plan
+- [x] Cloudflare will scan existing DNS records - review and confirm they're correct
+- [x] Note the two Cloudflare nameservers assigned (e.g., `ada.ns.cloudflare.com`, `lee.ns.cloudflare.com`)
+- [x] In Namecheap: go to **Domain List > autopilotrank.com > Nameservers**
+- [x] Change from "Namecheap BasicDNS" to **"Custom DNS"**
+- [x] Enter both Cloudflare nameservers and save
+- [x] Wait for propagation (can take up to 48 hours, usually 1-2 hours)
+- [x] Cloudflare Dashboard will show "Active" once nameservers are verified
 
 ### Cloudflare SSL & Security Settings
+> ⚠️ API token needs `Zone:Settings:Edit` permission for these — do manually in dashboard or re-create token with that scope.
 - [ ] **SSL/TLS** > set encryption mode to **Full (strict)**
 - [ ] Enable **Always Use HTTPS**
 - [ ] Enable **Automatic HTTPS Rewrites**
@@ -41,12 +42,13 @@
 
 ### Cloudflare DNS Records
 - [ ] `A` or `CNAME` record for `@` pointing to Pages project (auto-configured when adding custom domain)
-- [ ] `CNAME` record for `www` -> `autopilotrank.com` (or use Page Rule to redirect)
-- [ ] SPF record: `TXT @ "v=spf1 include:sendinblue.com ~all"` (for Brevo email)
-- [ ] DKIM record: add TXT record from Brevo's domain authentication page
-- [ ] DMARC record: `TXT _dmarc "v=DMARC1; p=quarantine; rua=mailto:admin@autopilotrank.com"`
+- [x] `CNAME` record for `www` -> `autopilotrank.com` ✓ set via API
+- [x] SPF record: `TXT @ "v=spf1 include:_spf.mx.cloudflare.net include:sendinblue.com ~all"` ✓ set via API
+- [ ] DKIM record: add TXT record from Brevo's domain authentication page (needs Brevo account)
+- [x] DMARC record: `TXT _dmarc "v=DMARC1; p=quarantine; rua=mailto:admin@autopilotrank.com"` ✓ set via API
+- [x] Old Namecheap MX records removed; Cloudflare Email Routing MX records added (route1/2/3.mx.cloudflare.net) ✓
 - [ ] Verify DNS propagation: `dig autopilotrank.com NS` shows Cloudflare nameservers
-- [ ] Verify email DNS: check SPF + DKIM + DMARC with [MXToolbox](https://mxtoolbox.com/)
+- [ ] Verify email DNS: check SPF + DKIM + DMARC with [MXToolbox](https://mxtoolbox.com/) (after DKIM added)
 
 ### Pages Project (Deploy via Wrangler)
 - [x] Cloudflare Pages project created
