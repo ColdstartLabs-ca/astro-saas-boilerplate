@@ -25,6 +25,9 @@ test.afterAll(async () => {
 // Check if we're in test mode with mock users
 const isTestMode = () => process.env.ENV === 'test' || process.env.PLAYWRIGHT_TEST === '1';
 
+// Check if encryption key is available (required for creating integrations)
+const hasEncryptionKey = () => !!process.env.CMS_ENCRYPTION_KEY;
+
 test.describe('API: Integrations', () => {
   let user: Awaited<ReturnType<typeof ctx.createUser>>;
 
@@ -192,6 +195,9 @@ test.describe('API: Integrations', () => {
     });
 
     test('should create WordPress integration', async ({ request }) => {
+      // Skip in test mode without encryption key (required for credential encryption)
+      test.skip(isTestMode() && !hasEncryptionKey(), 'CMS_ENCRYPTION_KEY not set in test mode');
+
       // Skip DB verification in test mode since we can't query with mock user IDs
       const api = new ApiClient(request).withAuth(user.token);
 
@@ -232,6 +238,9 @@ test.describe('API: Integrations', () => {
     });
 
     test('should create webhook integration', async ({ request }) => {
+      // Skip in test mode without encryption key (required for credential encryption)
+      test.skip(isTestMode() && !hasEncryptionKey(), 'CMS_ENCRYPTION_KEY not set in test mode');
+
       const api = new ApiClient(request).withAuth(user.token);
 
       const response = await api.post('/api/integrations', {
@@ -550,6 +559,9 @@ test.describe('API: Integrations', () => {
     });
 
     test('should test connection for API-created integration', async ({ request }) => {
+      // Skip in test mode without encryption key (required for credential encryption)
+      test.skip(isTestMode() && !hasEncryptionKey(), 'CMS_ENCRYPTION_KEY not set in test mode');
+
       const api = new ApiClient(request).withAuth(user.token);
 
       // Create integration through the API (so credentials are properly encrypted)
