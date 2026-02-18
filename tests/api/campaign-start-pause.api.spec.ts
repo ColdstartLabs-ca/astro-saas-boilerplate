@@ -26,7 +26,7 @@ test.describe('API: Campaign Start/Pause/Resume', () => {
   let projectId: string;
   let campaignId: string;
 
-  test.beforeEach(async () => {
+  test.beforeEach(async ({ request }) => {
     user = await ctx.createUser({ subscription: 'active', tier: 'pro', credits: 100 });
     // Create a project via API for testing
     // Note: In test mode with mock users, we create a mock project ID
@@ -34,7 +34,7 @@ test.describe('API: Campaign Start/Pause/Resume', () => {
       // Generate a valid UUID v4 format for the mock project ID
       projectId = crypto.randomUUID();
     } else {
-      const api = new ApiClient(ctx.supabaseAdmin.rest).withAuth(user.token);
+      const api = new ApiClient(request).withAuth(user.token);
       const projectResponse = await api.post('/api/projects', {
         name: 'Test Project',
         domain: 'test.example.com',
@@ -173,9 +173,7 @@ test.describe('API: Campaign Start/Pause/Resume', () => {
     expect(detailData.campaign.status).toBe('active');
   });
 
-  test('should reject campaign creation with no keywords', async ({
-    request,
-  }) => {
+  test('should reject campaign creation with no keywords', async ({ request }) => {
     const api = new ApiClient(request).withAuth(user.token);
 
     // Create campaign with no keywords
