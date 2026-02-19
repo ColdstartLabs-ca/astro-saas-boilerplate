@@ -1,0 +1,330 @@
+---
+/**
+ * GEO Page Dynamic Route
+ *
+ * Generative Engine Optimization (GEO) educational guides.
+ * Prerendered at build time for zero runtime cost on Cloudflare Workers.
+ */
+
+import Layout from '../../layouts/Layout.astro';
+import SEO from '../../components/SEO.astro';
+import {
+  getGeoPageBySlug,
+  getAllGeoSlugs,
+  getGeoPagesBySlugs,
+} from '@server/pseo/geo';
+import { clientEnv } from '@shared/config/env';
+
+export const prerender = true;
+
+export function getStaticPaths() {
+  const slugs = getAllGeoSlugs();
+  return slugs.map(slug => ({
+    params: { slug },
+  }));
+}
+
+const { slug } = Astro.params;
+const page = getGeoPageBySlug(slug);
+
+if (!page) {
+  return Astro.redirect('/404');
+}
+
+// Get related GEO pages for linking
+const relatedGeoPages = getGeoPagesBySlugs(page.relatedGeoPages);
+
+// Difficulty badge colors
+const difficultyColors: Record<string, string> = {
+  easy: 'bg-green-500/20 text-green-400 border-green-500/30',
+  medium: 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30',
+  hard: 'bg-red-500/20 text-red-400 border-red-500/30',
+};
+
+// Build JSON-LD structured data
+const faqJsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'FAQPage',
+  mainEntity: page.faqs.map(faq => ({
+    '@type': 'Question',
+    name: faq.question,
+    acceptedAnswer: {
+      '@type': 'Answer',
+      text: faq.answer,
+    },
+  })),
+};
+
+const articleJsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'Article',
+  headline: page.h1,
+  description: page.metaDescription,
+  datePublished: page.lastUpdated,
+  dateModified: page.lastUpdated,
+  author: {
+    '@type': 'Organization',
+    name: clientEnv.APP_NAME,
+  },
+  publisher: {
+    '@type': 'Organization',
+    name: clientEnv.APP_NAME,
+    url: clientEnv.BASE_URL,
+  },
+  mainEntityOfPage: {
+    '@type': 'WebPage',
+    '@id': `${clientEnv.BASE_URL}/geo/${page.slug}`,
+  },
+};
+
+const howToJsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'HowTo',
+  name: page.h1,
+  description: page.metaDescription,
+  step: page.howAiCites.map((step, index) => ({
+    '@type': 'HowToStep',
+    position: index + 1,
+    name: step.title,
+    text: step.description,
+  })),
+};
+
+const breadcrumbJsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'BreadcrumbList',
+  itemListElement: [
+    {
+      '@type': 'ListItem',
+      position: 1,
+      name: 'Home',
+      item: clientEnv.BASE_URL,
+    },
+    {
+      '@type': 'ListItem',
+      position: 2,
+      name: 'GEO Guides',
+      item: `${clientEnv.BASE_URL}/geo`,
+    },
+    {
+      '@type': 'ListItem',
+      position: 3,
+      name: page.topic,
+      item: `${clientEnv.BASE_URL}/geo/${page.slug}`,
+    },
+  ],
+};
+
+const pageUrl = `/geo/${page.slug}`;
+---
+
+<Layout title={page.metaTitle}>
+  <Fragment slot="head">
+    <SEO
+      title={page.metaTitle}
+      description={page.metaDescription}
+      path={pageUrl}
+      additionalMeta={[
+        { name: 'keywords', content: [page.primaryKeyword, ...page.secondaryKeywords].join(', ') },
+      ]}
+    />
+    <!-- JSON-LD structured data -->
+    <script type="application/ld+json" set:html={JSON.stringify(faqJsonLd)} />
+    <script type="application/ld+json" set:html={JSON.stringify(articleJsonLd)} />
+    <script type="application/ld+json" set:html={JSON.stringify(howToJsonLd)} />
+    <script type="application/ld+json" set:html={JSON.stringify(breadcrumbJsonLd)} />
+  </Fragment>
+
+  <div class="min-h-screen bg-main">
+    <!-- Breadcrumb Navigation -->
+    <nav class="max-w-5xl mx-auto px-4 py-4">
+      <ol class="flex items-center space-x-2 text-sm text-muted-foreground">
+        <li><a href="/" class="hover:text-accent transition-colors">Home</a></li>
+        <li><span class="mx-2">/</span></li>
+        <li><a href="/geo" class="hover:text-accent transition-colors">GEO Guides</a></li>
+        <li><span class="mx-2">/</span></li>
+        <li class="text-white">{page.topic}</li>
+      </ol>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="max-w-5xl mx-auto px-4 py-12 text-center">
+      <h1 class="text-4xl md:text-5xl font-bold text-white mb-4">{page.h1}</h1>
+      <p class="text-xl text-muted-foreground mb-8 max-w-3xl mx-auto">{page.problemStatement}</p>
+      <a
+        href="/pricing"
+        class="inline-block bg-accent text-white px-8 py-3 rounded-lg font-semibold hover:bg-accent/90 transition-colors"
+      >
+        Start Free Trial
+      </a>
+    </section>
+
+    <!-- Why AI Citations Matter Section -->
+    <section class="max-w-5xl mx-auto px-4 py-12">
+      <h2 class="text-3xl font-bold text-white mb-8 text-center">
+        Why AI Citations Matter
+      </h2>
+      <div class="max-w-3xl mx-auto prose prose-invert">
+        <p class="text-muted-foreground text-lg leading-relaxed">
+          AI-powered search is transforming how people discover information. ChatGPT, Google AI Overviews, Perplexity, and other generative engines are becoming primary research tools for millions of users. Being cited in these AI responses can:
+        </p>
+        <ul class="grid md:grid-cols-2 gap-4 mt-6 list-none pl-0">
+          <li class="flex items-start space-x-3 bg-surface/30 p-4 rounded-lg">
+            <span class="text-accent text-xl">&#10003;</span>
+            <span class="text-white">Drive targeted brand awareness to engaged users</span>
+          </li>
+          <li class="flex items-start space-x-3 bg-surface/30 p-4 rounded-lg">
+            <span class="text-accent text-xl">&#10003;</span>
+            <span class="text-white">Establish authority in your niche or industry</span>
+          </li>
+          <li class="flex items-start space-x-3 bg-surface/30 p-4 rounded-lg">
+            <span class="text-accent text-xl">&#10003;</span>
+            <span class="text-white">Generate referral traffic from AI platforms</span>
+          </li>
+          <li class="flex items-start space-x-3 bg-surface/30 p-4 rounded-lg">
+            <span class="text-accent text-xl">&#10003;</span>
+            <span class="text-white">Position your brand for the future of search</span>
+          </li>
+        </ul>
+      </div>
+    </section>
+
+    <!-- How AI Engines Choose What to Cite Section -->
+    <section class="max-w-5xl mx-auto px-4 py-12">
+      <h2 class="text-3xl font-bold text-white mb-8 text-center">
+        How AI Engines Choose What to Cite
+      </h2>
+      <div class="max-w-3xl mx-auto space-y-6">
+        {page.howAiCites.map(item => (
+          <div class="flex items-start space-x-4 bg-surface/30 p-6 rounded-lg border border-border">
+            <div class="flex-shrink-0 w-10 h-10 bg-accent/20 rounded-full flex items-center justify-center">
+              <span class="text-accent font-bold">{item.step}</span>
+            </div>
+            <div>
+              <h3 class="text-lg font-semibold text-white mb-2">{item.title}</h3>
+              <p class="text-muted-foreground">{item.description}</p>
+            </div>
+          </div>
+        ))}
+      </div>
+    </section>
+
+    <!-- Tactics to Get Cited Section -->
+    <section class="max-w-5xl mx-auto px-4 py-12">
+      <h2 class="text-3xl font-bold text-white mb-8 text-center">
+        Tactics to Get Cited by AI
+      </h2>
+      <div class="max-w-3xl mx-auto space-y-4">
+        {page.tacticsWithExamples.map(item => (
+          <div class="bg-surface/50 p-6 rounded-lg border border-border">
+            <div class="flex items-start justify-between mb-3">
+              <h3 class="text-lg font-semibold text-white">{item.tactic}</h3>
+              <span class={`text-xs px-2 py-1 rounded border ${difficultyColors[item.difficulty]}`}>
+                {item.difficulty}
+              </span>
+            </div>
+            <p class="text-muted-foreground text-sm">{item.example}</p>
+          </div>
+        ))}
+      </div>
+    </section>
+
+    <!-- The Content Foundation Section (Honest CTA) -->
+    <section class="max-w-5xl mx-auto px-4 py-12">
+      <div class="bg-gradient-to-r from-accent/20 to-accent/5 rounded-xl p-12 border border-accent/20">
+        <h2 class="text-3xl font-bold text-white mb-4 text-center">
+          The Content Foundation for AI Citations
+        </h2>
+        <p class="text-xl text-muted-foreground mb-8 max-w-3xl mx-auto text-center">
+          {page.autopilotRankAngle}
+        </p>
+        <div class="flex flex-col sm:flex-row gap-4 justify-center">
+          <a
+            href="/pricing"
+            class="inline-block bg-accent text-white px-8 py-3 rounded-lg font-semibold hover:bg-accent/90 transition-colors text-center"
+          >
+            Start Free Trial
+          </a>
+          <a
+            href="/geo"
+            class="inline-block bg-transparent border border-white/20 text-white px-8 py-3 rounded-lg font-semibold hover:bg-white/5 transition-colors text-center"
+          >
+            Explore More GEO Guides
+          </a>
+        </div>
+      </div>
+    </section>
+
+    <!-- FAQ Section -->
+    <section class="max-w-5xl mx-auto px-4 py-12">
+      <h2 class="text-3xl font-bold text-white mb-8 text-center">
+        Frequently Asked Questions
+      </h2>
+      <div class="space-y-4 max-w-3xl mx-auto">
+        {page.faqs.map(faq => (
+          <div class="bg-surface/30 rounded-lg p-6">
+            <h3 class="text-lg font-semibold text-white mb-2">{faq.question}</h3>
+            <p class="text-muted-foreground">{faq.answer}</p>
+          </div>
+        ))}
+      </div>
+    </section>
+
+    <!-- Related GEO Pages Section -->
+    {relatedGeoPages.length > 0 && (
+      <section class="max-w-5xl mx-auto px-4 py-12">
+        <h2 class="text-2xl font-bold text-white mb-6 text-center">
+          Related GEO Guides
+        </h2>
+        <div class="grid md:grid-cols-2 gap-4 max-w-2xl mx-auto">
+          {relatedGeoPages.map(geo => (
+            <a
+              href={`/geo/${geo.slug}`}
+              class="block bg-surface/30 hover:bg-surface/50 p-6 rounded-lg transition-colors group"
+            >
+              <h3 class="text-lg font-semibold text-white group-hover:text-accent transition-colors">
+                {geo.topic}
+              </h3>
+              <p class="text-muted-foreground text-sm mt-2">{geo.metaDescription.slice(0, 100)}...</p>
+            </a>
+          ))}
+        </div>
+      </section>
+    )}
+
+    <!-- Bottom CTA Section -->
+    <section class="max-w-5xl mx-auto px-4 py-16 text-center">
+      <div class="bg-surface/50 rounded-xl p-12 border border-border">
+        <h2 class="text-3xl font-bold text-white mb-4">
+          Ready to Build Your AI Citation Strategy?
+        </h2>
+        <p class="text-xl text-muted-foreground mb-8 max-w-2xl mx-auto">
+          Start publishing authoritative, AI-friendly content consistently with AutopilotRank.
+        </p>
+        <div class="flex flex-col sm:flex-row gap-4 justify-center">
+          <a
+            href="/pricing"
+            class="inline-block bg-accent text-white px-8 py-3 rounded-lg font-semibold hover:bg-accent/90 transition-colors"
+          >
+            Start Free Trial
+          </a>
+          <a
+            href="/"
+            class="inline-block bg-transparent border border-white/20 text-white px-8 py-3 rounded-lg font-semibold hover:bg-white/5 transition-colors"
+          >
+            Learn More
+          </a>
+        </div>
+      </div>
+    </section>
+
+    <!-- Last Updated -->
+    <div class="max-w-5xl mx-auto px-4 py-6 text-center text-sm text-muted-foreground">
+      Last updated: {new Date(page.lastUpdated).toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+      })}
+    </div>
+  </div>
+</Layout>

@@ -1,0 +1,119 @@
+---
+/**
+ * GEO Index Page
+ *
+ * Lists all Generative Engine Optimization (GEO) educational guides.
+ * Prerendered at build time.
+ */
+
+import Layout from '../../layouts/Layout.astro';
+import SEO from '../../components/SEO.astro';
+import { getAllGeoPages } from '@server/pseo/geo';
+
+export const prerender = true;
+
+const geoPages = getAllGeoPages();
+---
+
+<Layout title="GEO Guides - Generative Engine Optimization | AutopilotRank">
+  <Fragment slot="head">
+    <SEO
+      title="GEO Guides - Generative Engine Optimization | AutopilotRank"
+      description="Learn how to optimize for AI-powered search. Our GEO guides cover ChatGPT citations, Google AI Overviews, Perplexity optimization, and more."
+      path="/geo"
+    />
+  </Fragment>
+
+  <div class="min-h-screen bg-main">
+    <!-- Hero Section -->
+    <section class="max-w-5xl mx-auto px-4 py-12 text-center">
+      <h1 class="text-4xl md:text-5xl font-bold text-white mb-4">
+        Generative Engine Optimization (GEO) Guides
+      </h1>
+      <p class="text-xl text-muted-foreground mb-8 max-w-3xl mx-auto">
+        Learn how to get your brand mentioned by AI-powered search engines like ChatGPT, Google AI Overviews, and Perplexity. Our educational guides explain how AI citation engines work and provide actionable strategies.
+      </p>
+    </section>
+
+    <!-- What is GEO Section -->
+    <section class="max-w-5xl mx-auto px-4 py-12">
+      <div class="max-w-3xl mx-auto bg-surface/30 rounded-lg p-8 border border-border">
+        <h2 class="text-2xl font-bold text-white mb-4 text-center">What is GEO?</h2>
+        <p class="text-muted-foreground leading-relaxed">
+          Generative Engine Optimization (GEO) is the practice of optimizing your content and online presence to be cited and mentioned by AI-powered search engines and answer engines. Unlike traditional SEO, which focuses on ranking in search results, GEO focuses on being recognized as an authoritative source that AI systems reference in their generated responses.
+        </p>
+      </div>
+    </section>
+
+    <!-- GEO Guides Grid -->
+    <section class="max-w-5xl mx-auto px-4 py-12">
+      <h2 class="text-3xl font-bold text-white mb-8 text-center">
+        Explore Our GEO Guides
+      </h2>
+      <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {geoPages.map(page => (
+          <a
+            href={`/geo/${page.slug}`}
+            class="block bg-surface/30 hover:bg-surface/50 p-6 rounded-lg transition-colors group border border-border hover:border-accent/50"
+          >
+            <div class="text-xs text-accent font-medium mb-2 uppercase tracking-wide">
+              {page.topic}
+            </div>
+            <h2 class="text-xl font-semibold text-white group-hover:text-accent transition-colors mb-2">
+              {page.h1}
+            </h2>
+            <p class="text-muted-foreground text-sm">
+              {page.metaDescription.slice(0, 120)}...
+            </p>
+            <span class="inline-block mt-4 text-accent text-sm font-medium">
+              Read Guide &rarr;
+            </span>
+          </a>
+        ))}
+      </div>
+    </section>
+
+    <!-- AI Platforms We Cover Section -->
+    <section class="max-w-5xl mx-auto px-4 py-12">
+      <h2 class="text-3xl font-bold text-white mb-8 text-center">
+        AI Platforms We Cover
+      </h2>
+      <div class="grid md:grid-cols-4 gap-4 max-w-3xl mx-auto">
+        <div class="bg-surface/30 p-4 rounded-lg text-center border border-border">
+          <div class="text-2xl mb-2">ChatGPT</div>
+          <p class="text-xs text-muted-foreground">OpenAI's AI assistant</p>
+        </div>
+        <div class="bg-surface/30 p-4 rounded-lg text-center border border-border">
+          <div class="text-2xl mb-2">Google AI</div>
+          <p class="text-xs text-muted-foreground">AI Overviews & SGE</p>
+        </div>
+        <div class="bg-surface/30 p-4 rounded-lg text-center border border-border">
+          <div class="text-2xl mb-2">Perplexity</div>
+          <p class="text-xs text-muted-foreground">AI answer engine</p>
+        </div>
+        <div class="bg-surface/30 p-4 rounded-lg text-center border border-border">
+          <div class="text-2xl mb-2">Claude</div>
+          <p class="text-xs text-muted-foreground">Anthropic's AI</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- CTA Section -->
+    <section class="max-w-5xl mx-auto px-4 py-16 text-center">
+      <div class="bg-gradient-to-r from-accent/20 to-accent/5 rounded-xl p-12 border border-accent/20">
+        <h2 class="text-3xl font-bold text-white mb-4">
+          Build Your AI Citation Foundation
+        </h2>
+        <p class="text-xl text-muted-foreground mb-8 max-w-2xl mx-auto">
+          Getting mentioned by AI starts with content that earns authority — comprehensive, well-structured, and published consistently. AutopilotRank helps you publish SEO-optimized content every week without a writing team.
+        </p>
+        <a
+          href="/pricing"
+          class="inline-block bg-accent text-white px-8 py-3 rounded-lg font-semibold hover:bg-accent/90 transition-colors"
+        >
+          Start Free Trial
+        </a>
+      </div>
+    </section>
+  </div>
+</Layout>

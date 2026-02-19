@@ -1,6 +1,6 @@
-# autopilotrank.com Cron Worker
+# AutopilotRank Cron Worker
 
-Cloudflare Worker that triggers scheduled cron jobs for the Stripe-Database sync system.
+Cloudflare Worker that triggers scheduled cron jobs for the AutopilotRank platform.
 
 ## Overview
 
@@ -10,7 +10,7 @@ This worker runs on Cloudflare's edge and executes scheduled tasks:
 - **Expiration Check** - Every hour at :05
 - **Full Reconciliation** - Daily at 3:05 AM UTC
 
-The worker calls the Next.js API endpoints with the proper authentication header.
+The worker calls the Astro API endpoints with the proper authentication header.
 
 ## Architecture
 
@@ -21,7 +21,7 @@ Cloudflare Cron Trigger
          ↓
    POST /api/cron/{endpoint}
          ↓
-   Next.js API (Cloudflare Pages)
+   Astro API (Cloudflare Pages)
          ↓
    Supabase Database
 ```
@@ -72,11 +72,10 @@ This starts the worker at `http://localhost:8787` with hot reload.
 In another terminal:
 
 ```bash
-cd /home/joao/projects/pixelperfect
 yarn dev
 ```
 
-Your Next.js app should be running at `http://localhost:3000`.
+Your Astro app should be running at `http://localhost:4321`.
 
 ### Test Manually
 
