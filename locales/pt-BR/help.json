@@ -89,7 +89,11 @@
       },
       "aiModels": {
         "question": "Quais modelos de IA vocês usam?",
-        "answer": "Usamos modelos de IA de primeira linha via OpenRouter: GPT-4o (OpenAI), Claude Sonnet (Anthropic), e Gemini Flash (Google). Cada preset de modelo balanceia custo vs. qualidade para diferentes casos de uso."
+        "answer": "O AutopilotRank oferece quatro camadas de modelos: Econômico (Gemini Flash — rápido e eficiente em custo), Balanceado (GPT-4o mini — boa qualidade para uso diário), Pro (GPT-4o — saída de alta qualidade para páginas competitivas), e Ultra (Claude Opus — o melhor para páginas de conversão e conteúdo pilar). Você escolhe a camada por campanha ou por artigo."
+      },
+      "humanizer": {
+        "question": "Como funciona o humanizador de IA?",
+        "answer": "Todo artigo gerado passa pelo nosso humanizador integrado como etapa de pós-processamento antes da entrega. O humanizador detecta e reescreve padrões de frases típicos de IA — estruturas repetitivas, transições robóticas, frases excessivamente formais — transformando-os em prosa natural e com sonoridade humana. Isso ajuda seu conteúdo a passar por detectores de IA como GPTZero, Originality.ai e Copyleaks, mantendo precisão factual e otimização SEO."
       },
       "gscIntegration": {
         "question": "Como funciona a integração com Google Search Console?",
