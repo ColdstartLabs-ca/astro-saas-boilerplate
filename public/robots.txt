@@ -1,6 +1,0 @@
-User-agent: *
-Allow: /
-Disallow: /api/
-Disallow: /dashboard/
-
-Sitemap: https://autopilotrank.com/sitemap.xml

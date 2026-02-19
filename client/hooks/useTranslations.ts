@@ -9,6 +9,7 @@
 
 import { useMemo } from 'react';
 import { getTranslations, type TFunction } from '@shared/i18n';
+import { useLocaleStore } from '@client/store/localeStore';
 
 /**
  * React hook for translations
@@ -23,8 +24,9 @@ import { getTranslations, type TFunction } from '@shared/i18n';
  * t('overview.welcomeBack', { name: 'John' }); // Returns with params replaced
  */
 export function useTranslations(namespace: string): TFunction {
+  const locale = useLocaleStore(s => s.locale);
   // useMemo ensures the translation function is stable across re-renders
-  return useMemo(() => getTranslations(namespace), [namespace]);
+  return useMemo(() => getTranslations(namespace, locale), [namespace, locale]);
 }
 
 /**

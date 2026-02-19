@@ -1,0 +1,72 @@
+{
+  "apiKeys": {
+    "title": "Chaves de API",
+    "subtitle": "Gerencie chaves de API para acesso programático",
+    "description": "Use chaves de API para criar campanhas e buscar conteúdo programaticamente.",
+    "createButton": "Criar Chave de API",
+    "empty": "Nenhuma chave de API ainda",
+    "emptyDescription": "Crie uma chave de API para acessar a API do AutopilotRank programaticamente.",
+    "listHeader": {
+      "name": "Nome",
+      "key": "Prefixo da Chave",
+      "scopes": "Escopos",
+      "lastUsed": "Último Uso",
+      "created": "Criada",
+      "actions": "Ações"
+    },
+    "scopes": {
+      "articles:read": "Artigos: Leitura",
+      "articles:write": "Artigos: Escrita",
+      "campaigns:read": "Campanhas: Leitura",
+      "campaigns:write": "Campanhas: Escrita",
+      "integrations:read": "Integrações: Leitura"
+    },
+    "neverUsed": "Nunca usada",
+    "revoke": "Revogar",
+    "revoking": "Revogando...",
+    "revokeConfirm": "Tem certeza que deseja revogar esta chave de API? Esta ação não pode ser desfeita.",
+    "revokeSuccess": "Chave de API revogada com sucesso",
+    "revokeError": "Falha ao revogar chave de API",
+    "createSuccess": "Chave de API criada com sucesso",
+    "createError": "Falha ao criar chave de API",
+    "loadError": "Falha ao carregar chaves de API",
+    "form": {
+      "title": "Criar Chave de API",
+      "name": "Nome da Chave",
+      "namePlaceholder": "ex: Servidor de Produção, Integração Zapier",
+      "nameHelp": "Um nome descritivo para identificar esta chave",
+      "nameRequired": "O nome da chave é obrigatório",
+      "scopes": "Permissões",
+      "scopesHelp": "Selecione as permissões que esta chave terá",
+      "scopesRequired": "Selecione pelo menos uma permissão",
+      "selectAll": "Selecionar Todas",
+      "deselectAll": "Desmarcar Todas",
+      "cancel": "Cancelar",
+      "create": "Criar Chave",
+      "creating": "Criando..."
+    },
+    "createdDialog": {
+      "title": "Chave de API Criada",
+      "subtitle": "Salve esta chave agora - ela não será mostrada novamente",
+      "warning": "Esta é a única vez que você verá esta chave de API. Armazene-a com segurança - ela não pode ser recuperada posteriormente.",
+      "copied": "Copiado para a área de transferência!",
+      "copyButton": "Copiar Chave de API",
+      "done": "Concluído"
+    }
+  },
+  "rssFeed": {
+    "title": "Feed RSS",
+    "subtitle": "Inscreva-se nos seus artigos publicados via RSS",
+    "description": "Use esta URL de feed RSS para se inscrever nos seus artigos publicados em qualquer leitor de RSS.",
+    "feedUrl": "URL do Feed",
+    "copied": "URL do feed copiada para a área de transferência!",
+    "copyButton": "Copiar URL",
+    "regenerate": "Regenerar Token",
+    "regenerating": "Regenerando...",
+    "regenerateConfirm": "Tem certeza que deseja regenerar seu token de feed? Suas assinaturas RSS existentes pararão de funcionar até você atualizá-las com a nova URL.",
+    "regenerateSuccess": "Token do feed regenerado com sucesso",
+    "regenerateError": "Falha ao regenerar token do feed",
+    "loadError": "Falha ao carregar token do feed",
+    "warning": "Mantenha esta URL privada - qualquer pessoa com acesso pode ver seus artigos publicados."
+  }
+}

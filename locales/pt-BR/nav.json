@@ -1,0 +1,20 @@
+{
+  "dashboard": "Painel",
+  "features": "Recursos",
+  "comparison": "Comparação",
+  "pricing": "Preços",
+  "faq": "Perguntas Frequentes",
+  "blog": "Blog",
+  "support": "Suporte",
+  "freeCredits": "10 Créditos Grátis",
+  "signIn": "Entrar",
+  "getStartedFree": "Começar Gratuitamente",
+  "getStarted": "Começar",
+  "billing": "Cobrança",
+  "settings": "Configurações",
+  "history": "Histórico",
+  "viewPlans": "Ver Planos",
+  "changePassword": "Alterar Senha",
+  "signOut": "Sair",
+  "toggleMenu": "Alternar menu"
+}

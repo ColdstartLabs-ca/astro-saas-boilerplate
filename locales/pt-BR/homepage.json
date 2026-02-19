@@ -1,0 +1,308 @@
+{
+  "badge": "NOVO: AutopilotRank",
+  "badgeVersion": "v2.0",
+  "heroTitle": "Transforme Palavras-chave Em",
+  "heroTitleHighlight": "Rankings",
+  "heroSubtitle": "Crie conteúdo SEO pronto para publicação, com qualidade humana no piloto automático. A única plataforma de IA com automação completa, publicação nativa em CMS e QA pré-publicação.",
+  "heroDescription": "Comece grátis.",
+  "heroDescriptionHighlight": "Sem cartão de crédito.",
+  "heroDescriptionMiddle": "Crie conteúdo SEO pronto para publicação, com qualidade humana com",
+  "heroDescriptionTextSharp": "automação completa",
+  "ctaStartFreeTrial": "Iniciar Teste Grátis",
+  "ctaWatchDemo": "Ver Demo",
+  "ctaGetStarted": "Começar",
+  "ctaSignIn": "Entrar",
+  "ctaSubtext": "Sem cartão de crédito • 3 artigos grátis • Cancele quando quiser",
+  "ctaStartNow": "Comece Seu Teste Grátis",
+  "ctaComparePlans": "Comparar Planos",
+  "finalCtaSubtext": "Sem cartão de crédito • 3 artigos grátis • Configuração em 15 minutos",
+  "socialProofBar": {
+    "heading": "Confiado por equipes de conteúdo em todo o mundo"
+  },
+  "painPoints": {
+    "title": "Soa Familiar?",
+    "subtitle": "Desafios comuns que travam o crescimento de conteúdo",
+    "card1": {
+      "title": "Conteúdo de IA Que Parece IA",
+      "description": "Você já tentou escritores de IA. O resultado é genérico, repetitivo e precisa de horas de edição. O Google sabe. Seus leitores sabem."
+    },
+    "card2": {
+      "title": "Ferramentas Instáveis, Suporte Lento",
+      "description": "Algumas plataformas têm problemas de estabilidade e tempos de resposta lentos. Você está pagando preços premium por uma experiência inconsistente."
+    },
+    "card3": {
+      "title": "Várias Ferramentas, Um Trabalho",
+      "description": "Um otimizador aqui, um escritor ali, ferramenta de palavras-chave em outro lugar. Várias assinaturas e você ainda faz a maior parte do trabalho."
+    },
+    "transition": "Existe um jeito melhor →"
+  },
+  "solution": {
+    "title": "Uma Plataforma. Automação Completa. Conteúdo com Qualidade Humana.",
+    "subtitle": "De palavras-chave a conteúdo publicado—inteiramente no piloto automático",
+    "workflow": {
+      "keywords": "Palavras-chave",
+      "content": "Conteúdo",
+      "optimize": "Otimizar",
+      "publish": "Publicar",
+      "track": "Rastrear",
+      "auto": "Auto"
+    },
+    "features": {
+      "setAndForget": {
+        "title": "Configure e Esqueça",
+        "description": "Configure uma vez, receba conteúdo novo diariamente"
+      },
+      "publishReady": {
+        "title": "Qualidade Pronta para Publicação",
+        "description": "Motor Humanizer produz conteúdo de nível humano"
+      },
+      "allInOne": {
+        "title": "Tudo-em-Um",
+        "description": "Palavras-chave, escrita, otimização, publicação, rastreamento"
+      },
+      "worksWithYourStack": {
+        "title": "Funciona Com Sua Stack",
+        "description": "WordPress, Webflow, Shopify, Ghost + webhooks"
+      }
+    }
+  },
+  "features": {
+    "label": "Mergulho Profundo nos Recursos",
+    "title": "Construído para Qualidade em Escala",
+    "subtitle": "Não apenas envolvemos o ChatGPT em uma UI. Construímos um motor de publicação completo.",
+    "feature1": {
+      "title": "Motor de IA Multi-Modelo",
+      "highlight": "Não Apenas GPT-4. O Melhor Modelo para Cada Tarefa.",
+      "description": "Enquanto concorrentes te prendem a um modelo de IA, o AutopilotRank usa GPT-4, Claude, Gemini e Llama estrategicamente. Modelos diferentes para tipos diferentes de conteúdo significa mais variedade, menos repetição, melhor qualidade.",
+      "proof": "Diferente de ferramentas de modelo único que podem produzir conteúdo repetitivo"
+    },
+    "feature2": {
+      "title": "Motor Humanizer",
+      "highlight": "Conteúdo de IA Que Realmente Parece Humano",
+      "description": "Nosso motor Humanizer proprietário reescreve padrões de IA em prosa natural. Projetado para reduzir significativamente o tempo de edição e produzir conteúdo que flui naturalmente.",
+      "proof": "Projetado para reduzir significativamente o tempo de edição"
+    },
+    "feature3": {
+      "title": "QA Pré-Publicação",
+      "highlight": "Verificações de Qualidade em Múltiplas Camadas",
+      "description": "Verificação de plágio. Pontuação de detecção de IA. Pontuação de otimização SEO. Análise de legibilidade. Verificação de fatos. Tudo automático. Nada escapa.",
+      "proof": "Verificações de qualidade acontecem antes da publicação, não depois"
+    }
+  },
+  "comparison": {
+    "title": "Como Nos Comparamos",
+    "subtitle": "Veja o que diferencia o AutopilotRank de outras ferramentas",
+    "disclaimer": "Comparação de recursos baseada em informações disponíveis publicamente em fevereiro de 2026. Verifique os detalhes atuais no site de cada provedor.",
+    "rows": {
+      "fullAutomation": "Automação Completa",
+      "humanQuality": "Conteúdo com Qualidade Humana",
+      "nativeCMS": "Publicação Nativa em CMS",
+      "gscIntegration": "Integração com GSC",
+      "humanizer": "Humanizer/Detecção de IA",
+      "prePublicationQA": "QA Pré-Publicação",
+      "startingPrice": "Preço Inicial"
+    },
+    "columns": {
+      "autopilotrank": "AutopilotRank",
+      "toolA": "Outrank",
+      "toolB": "Surfer",
+      "toolC": "Byword"
+    }
+  },
+  "useCases": {
+    "title": "Construído Para Equipes Como a Sua",
+    "subtitle": "Veja como o AutopilotRank se encaixa no seu fluxo de trabalho",
+    "tab1": {
+      "label": "Donos de PMEs",
+      "title": "Escale Sem Contratar uma Equipe de Conteúdo",
+      "points": [
+        "Gere mais de 100 artigos SEO/mês automaticamente",
+        "90% de economia vs. agências (US$0,50/artigo vs. US$50-200)",
+        "Sem conhecimento técnico necessário",
+        "SEO programático pronto para você"
+      ],
+      "testimonial": "[Depoimento de usuário beta]"
+    },
+    "tab2": {
+      "label": "Sites de Conteúdo",
+      "title": "Conteúdo Ilimitado a Custo Fixo",
+      "points": [
+        "Conteúdo novo diariamente no piloto automático",
+        "Captura de palavras-chave de cauda longa em escala",
+        "Crescimento de receita de anúncios/afiliados",
+        "Construção de autoridade de nicho"
+      ],
+      "testimonial": "[Depoimento de usuário beta]"
+    },
+    "tab3": {
+      "label": "Agências",
+      "title": "Conteúdo SEO White-Label em Escala",
+      "points": [
+        "Revenda sob sua marca",
+        "10x sua capacidade de conteúdo da noite para o dia",
+        "Descontos para múltiplos sites",
+        "Expanda margens em contratos de SEO"
+      ],
+      "testimonial": "[Depoimento de usuário beta]"
+    }
+  },
+  "socialProof": {
+    "metrics": {
+      "aiModels": "3 Modelos de IA",
+      "integrations": "5+ Integrações",
+      "qa": "QA em Múltiplas Camadas",
+      "quality": "Output com Qualidade Humana"
+    },
+    "testimonialsNote": "Depoimentos de usuários beta em breve"
+  },
+  "pricing": {
+    "title": "Preços Simples e Transparentes",
+    "subtitle": "Sem cobrança por palavra. Sem limite de assentos. Sem taxas surpresa.",
+    "allPlansInclude": "Todos os planos incluem:",
+    "humanizer": "Motor Humanizer",
+    "qa": "QA pré-publicação",
+    "wordpress": "Publicação no WordPress",
+    "trust": "Sem cartão de crédito - Cancele quando quiser - 3 artigos grátis para experimentar",
+    "starter": {
+      "name": "Starter",
+      "price": "US$49",
+      "period": "por mês",
+      "description": "Para soloempreendedores",
+      "articles": "30 artigos/mês",
+      "sites": "1 site",
+      "integrations": "WordPress",
+      "cta": "Iniciar Teste Grátis"
+    },
+    "growth": {
+      "name": "Growth",
+      "price": "US$99",
+      "period": "por mês",
+      "description": "Para PMEs e sites de conteúdo",
+      "badge": "Mais Popular",
+      "articles": "100 artigos/mês",
+      "sites": "3 sites",
+      "integrations": "Todas as integrações",
+      "cta": "Iniciar Teste Grátis"
+    },
+    "agency": {
+      "name": "Agency",
+      "price": "US$249",
+      "period": "por mês",
+      "description": "Para agências",
+      "articles": "500 artigos/mês",
+      "sites": "Sites ilimitados",
+      "integrations": "White-label",
+      "cta": "Falar com Vendas"
+    },
+    "compareLink": "Ver comparação completa de planos"
+  },
+  "faq": {
+    "title": "Perguntas Frequentes",
+    "subtitle": "Tudo que você precisa saber sobre o AutopilotRank",
+    "items": [
+      {
+        "question": "O Google vai penalizar conteúdo gerado por IA?",
+        "answer": "Não. A política do Google visa conteúdo de baixa qualidade, não conteúdo de IA especificamente. Nosso motor Humanizer produz conteúdo projetado para ler naturalmente, e executamos verificações de qualidade antes da publicação."
+      },
+      {
+        "question": "Como o AutopilotRank se compara a outras ferramentas?",
+        "answer": "O AutopilotRank combina automação completa, conteúdo com qualidade humana através do nosso motor Humanizer, publicação nativa em CMS e integração com GSC em uma plataforma. Muitas ferramentas focam em apenas um aspecto, exigindo que você junte várias soluções."
+      },
+      {
+        "question": "Preciso de habilidades técnicas para configurar?",
+        "answer": "Não. Se você consegue instalar um plugin do WordPress, você consegue usar o AutopilotRank. Nosso onboarding guiado te acompanha em tudo em menos de 15 minutos."
+      },
+      {
+        "question": "Quais plataformas CMS vocês suportam?",
+        "answer": "Integrações nativas: WordPress, Webflow, Shopify, Ghost, Notion. Além de webhooks e API para plataformas personalizadas."
+      },
+      {
+        "question": "Posso revisar o conteúdo antes de publicar?",
+        "answer": "Sim. Escolha entre: (1) Piloto automático completo - conteúdo publica automaticamente após passar no QA, (2) Modo de revisão - conteúdo enfileirado para sua aprovação, (3) Modo rascunho - conteúdo salvo como rascunhos no seu CMS."
+      },
+      {
+        "question": "Qual é a política de reembolso?",
+        "answer": "Oferecemos garantia de devolução do dinheiro. Se você não estiver satisfeito, entre em contato com nossa equipe de suporte dentro do período de teste."
+      }
+    ]
+  },
+  "finalCta": {
+    "title": "Pronto Para Escalar Seu Tráfego Orgânico?",
+    "subtitle": "Junte-se a empresas publicando conteúdo de qualidade no piloto automático"
+  },
+  "toastLoginRequired": "Por favor, faça login para acessar o painel",
+  "ctaSeePricing": "Ver Preços",
+  "pricingCtaTitle": "Preços Simples e Transparentes",
+  "pricingCtaDescription": "Escolha o plano que atende às suas necessidades. Escale conforme cresce.",
+  "ctaTryFree": "Experimente 3 Artigos Grátis",
+  "ctaGetFree": "Ganhe 3 Artigos Grátis",
+  "pricingCtaSubtext": "3 artigos grátis • Sem cartão de crédito • Créditos não utilizados acumulam",
+  "finalCtaTitleHighlight": "Comece o teste grátis hoje.",
+  "finalCtaDescription": "Junte-se a empresas publicando conteúdo de qualidade no piloto automático.",
+  "featuresTitle": "Tudo Que Você Precisa",
+  "featuresSubtitle": "Recursos poderosos para ajudá-lo a construir e escalar",
+  "feature1Title": "API Simples",
+  "feature1Description": "Integre em minutos com nossa API RESTful. Documentação abrangente e SDKs incluídos.",
+  "feature2Title": "Infraestrutura Escalável",
+  "feature2Description": "Construído para lidar com milhões de requisições. Auto-scaling e load balancing prontos para uso.",
+  "feature3Title": "Preços Transparentes",
+  "feature3Description": "Pague apenas pelo que usar. Créditos acumulam mensalmente. Sem taxas escondidas.",
+  "footer": {
+    "description": "Plataforma de automação de conteúdo SEO com IA. Crie conteúdo SEO pronto para publicação, com qualidade humana no piloto automático.",
+    "copyright": "Feito para criadores de conteúdo.",
+    "allRightsReserved": "Todos os direitos reservados.",
+    "product": "Produto",
+    "pricingPlans": "Planos e Preços",
+    "latestUpdates": "Últimas Atualizações",
+    "support": "Suporte",
+    "helpCenter": "Central de Ajuda",
+    "contactSupport": "Contatar Suporte",
+    "legal": "Legal",
+    "privacyPolicy": "Política de Privacidade",
+    "termsOfService": "Termos de Serviço",
+    "privacy": "Privacidade",
+    "terms": "Termos",
+    "help": "Ajuda"
+  },
+  "nav": {
+    "dashboard": "Painel",
+    "features": "Recursos",
+    "pricing": "Preços",
+    "resources": "Recursos",
+    "support": "Suporte",
+    "signIn": "Entrar",
+    "getStarted": "Começar",
+    "getStartedFree": "Começar Gratuitamente",
+    "freeCredits": "3 Artigos Grátis",
+    "billing": "Cobrança",
+    "settings": "Configurações",
+    "history": "Histórico",
+    "viewPlans": "Ver Planos",
+    "changePassword": "Alterar Senha",
+    "signOut": "Sair",
+    "toggleMenu": "Alternar menu",
+    "tools": "Ferramentas"
+  },
+  "locale": {
+    "en": "Inglês",
+    "switchLanguage": "Trocar Idioma"
+  },
+  "common": {
+    "loading": "Carregando...",
+    "error": "Erro",
+    "success": "Sucesso",
+    "submit": "Enviar",
+    "cancel": "Cancelar",
+    "save": "Salvar",
+    "delete": "Excluir",
+    "edit": "Editar",
+    "close": "Fechar",
+    "back": "Voltar",
+    "next": "Próximo",
+    "previous": "Anterior",
+    "search": "Buscar",
+    "filter": "Filtrar",
+    "sort": "Ordenar",
+    "dismiss": "Dispensar"
+  }
+}

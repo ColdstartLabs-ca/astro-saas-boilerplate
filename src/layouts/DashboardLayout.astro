@@ -1,9 +1,14 @@
 ---
 import DashboardLayout from '@client/components/dashboard/DashboardLayout';
 import GlobalUI from '@client/components/GlobalUI';
+import { LocaleInit } from '@client/components/i18n/LocaleInit';
 import '@client/styles/index.css';
+import { type Locale } from '../../i18n/config';
 
 // Auth is handled by middleware (src/middleware.ts) for all /dashboard/* routes
+
+// Get current locale from Astro's i18n system
+const currentLocale = Astro.currentLocale || 'en';
 
 interface IProps {
   title?: string;
@@ -13,7 +18,7 @@ const { title = 'Dashboard' } = Astro.props;
 ---
 
 <!DOCTYPE html>
-<html lang="en">
+<html lang={currentLocale}>
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -26,6 +31,8 @@ const { title = 'Dashboard' } = Astro.props;
     />
   </head>
   <body class="font-sans antialiased">
+    <!-- Initialize client-side locale store -->
+    <LocaleInit locale={currentLocale as Locale} client:load />
     <DashboardLayout client:only="react" />
     <GlobalUI client:only="react" />
   </body>

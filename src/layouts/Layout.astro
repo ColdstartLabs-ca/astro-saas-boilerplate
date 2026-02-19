@@ -5,17 +5,34 @@ interface IProps {
 
 const { title = 'AutopilotRank' } = Astro.props;
 
+// Get current locale from Astro's i18n system
+const currentLocale = Astro.currentLocale || 'en';
+
 // Import global styles
 import '@client/styles/index.css';
 // Import Astro-compatible components
 import GlobalUI from '@client/components/GlobalUI';
 import { FooterAstro } from '@client/components/layout/FooterAstro';
 import { NavBarAstro } from '@client/components/navigation/NavBarAstro';
+// Import locale initialization component
+import { LocaleInit } from '@client/components/i18n/LocaleInit';
 // Import analytics components
 import AhrefsAnalytics from '../components/analytics/AhrefsAnalytics.astro';
 import GoogleAnalytics from '../components/analytics/GoogleAnalytics.astro';
 // Import env for structured data
 import { clientEnv } from '@shared/config/env';
+import { SUPPORTED_LOCALES, DEFAULT_LOCALE, type Locale } from '../../i18n/config';
+
+// Get the current path without locale prefix for hreflang
+const pathname = Astro.url.pathname;
+const segments = pathname.split('/').filter(Boolean);
+const pathWithoutLocale =
+  segments.length > 0 && SUPPORTED_LOCALES.includes(segments[0] as Locale)
+    ? '/' + segments.slice(1).join('/')
+    : pathname;
+
+// Base URL for hreflang links
+const baseUrl = clientEnv.BASE_URL;
 
 // JSON-LD structured data
 const websiteJsonLd = {
@@ -23,7 +40,7 @@ const websiteJsonLd = {
   '@type': 'WebSite',
   name: clientEnv.APP_NAME,
   url: clientEnv.BASE_URL,
-  inLanguage: 'en',
+  inLanguage: currentLocale,
   description: 'AI SEO content automation platform. Generate publish-ready, human-quality SEO content on autopilot.',
 };
 
@@ -35,10 +52,20 @@ const organizationJsonLd = {
   logo: `${clientEnv.BASE_URL}/logo/horizontal-logo-full.png`,
   description: 'AutopilotRank - AI-powered SEO content automation for businesses and agencies.',
 };
+
+// Helper to get locale URL path
+function getLocaleUrl(locale: Locale): string {
+  if (locale === DEFAULT_LOCALE) {
+    return pathWithoutLocale === '/' ? baseUrl : `${baseUrl}${pathWithoutLocale}`;
+  }
+  return pathWithoutLocale === '/'
+    ? `${baseUrl}/${locale}`
+    : `${baseUrl}/${locale}${pathWithoutLocale}`;
+}
 ---
 
 <!DOCTYPE html>
-<html lang="en" class="bg-base">
+<html lang={currentLocale} class="bg-base">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -51,6 +78,19 @@ const organizationJsonLd = {
     <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
     <link rel="manifest" href="/manifest.json" />
     <meta name="theme-color" content="#16a34a" />
+
+    <!-- Hreflang alternate links for SEO -->
+    {SUPPORTED_LOCALES.map(locale => (
+      <link
+        rel="alternate"
+        hreflang={locale === 'pt-BR' ? 'pt-BR' : locale}
+        href={getLocaleUrl(locale)}
+      />
+    ))}
+    <link rel="alternate" hreflang="x-default" href={getLocaleUrl(DEFAULT_LOCALE)} />
+
+    <!-- Canonical URL for current locale -->
+    <link rel="canonical" href={getLocaleUrl(currentLocale as Locale)} />
 
     <!-- Preconnect for performance -->
     <link rel="preconnect" href="https://www.googletagmanager.com" />
@@ -65,7 +105,7 @@ const organizationJsonLd = {
       rel="stylesheet"
       href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700;800&family=Inter:wght@300;400;500;600;700;800&display=swap"
     />
- 
+
     <!-- JSON-LD structured data -->
     <script type="application/ld+json" set:html={JSON.stringify(websiteJsonLd)} />
     <script type="application/ld+json" set:html={JSON.stringify(organizationJsonLd)} />
@@ -78,6 +118,8 @@ const organizationJsonLd = {
     <slot name="head" />
   </head>
   <body class="font-sans antialiased">
+    <!-- Initialize client-side locale store -->
+    <LocaleInit locale={currentLocale as Locale} client:load />
     <div class="min-h-screen bg-main flex flex-col overflow-x-hidden">
       <NavBarAstro client:load />
       <main class="flex-1 w-full">
