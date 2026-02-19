@@ -600,7 +600,7 @@
           "answer": "No, Writesonic doesn't include content quality scoring. AutopilotRank provides quality scores before publishing to ensure content meets SEO standards."
         }
       ],
-      "relatedComparisons": ["autopilotrank-vs-copy-ai", "autopilotrank-vs-jasper"]
+      "relatedComparisons": ["autopilotrank-vs-copy-ai", "autopilotrank-vs-koala"]
     },
     {
       "slug": "autopilotrank-vs-koala",
@@ -980,7 +980,7 @@
           "answer": "AutopilotRank starts at $9/mo for 50 articles while Copy.ai's paid plan starts at $49/mo. For blog content, AutopilotRank offers better value."
         }
       ],
-      "relatedComparisons": ["autopilotrank-vs-jasper", "autopilotrank-vs-rytr"]
+      "relatedComparisons": ["autopilotrank-vs-writesonic", "autopilotrank-vs-rytr"]
     },
     {
       "slug": "autopilotrank-vs-wordlift",
@@ -1599,7 +1599,7 @@
           "answer": "Yes, both AutopilotRank and ContentBot offer WordPress integration for direct publishing."
         }
       ],
-      "relatedComparisons": ["autopilotrank-vs-jasper", "autopilotrank-vs-writesonic"]
+      "relatedComparisons": ["autopilotrank-vs-copy-ai", "autopilotrank-vs-writesonic"]
     }
   ]
 }
