@@ -18,6 +18,6 @@ step_build() {
     # Clean up .env.local after build
     rm -f .env.local
 
-    [[ ! -f "dist/server/entry.mjs" ]] && log_error "Build failed"
+    [[ ! -f "dist/_worker.js/index.js" ]] && log_error "Build failed"
     log_success "Build complete"
 }

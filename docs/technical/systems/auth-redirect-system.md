@@ -204,7 +204,7 @@ The system maintains backward compatibility:
 - `client/utils/authRedirectManager.ts` - New unified redirect manager
 - `client/store/auth/postAuthRedirect.ts` - Updated to use unified handler
 - `client/hooks/useGoogleSignIn.ts` - Accepts returnTo parameter
-- `client/components/myimageupscaler.com/Pricing.tsx` - Uses prepareAuthRedirect
+- `client/components/features/pricing/Pricing.tsx` - Uses prepareAuthRedirect
 - `client/components/stripe/PricingCard.tsx` - Uses prepareAuthRedirect
 - `src/pages/auth/confirm.astro` - Uses unified redirect handler
 - `src/pages/auth/callback.astro` - New OAuth callback handler

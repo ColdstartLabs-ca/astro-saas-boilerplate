@@ -1,7 +1,11 @@
-name = "autopilotrank.com"
+name = "autopilotrank"
 compatibility_date = "2024-11-20"
 compatibility_flags = ["nodejs_compat"]
 pages_build_output_dir = "dist"
+
+[[kv_namespaces]]
+binding = "SESSION"
+id = "18b4883b13f1482f84104bd156e86e5e"
 
 # ============================================================================
 # Cron Triggers Configuration

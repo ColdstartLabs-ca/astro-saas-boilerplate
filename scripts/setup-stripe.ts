@@ -165,7 +165,7 @@ class StripeSetup {
   async run(): Promise<void> {
     try {
       this.log('\n' + '='.repeat(70), 'cyan');
-      this.log('  Stripe Setup for MyImageUpscaler', 'bright');
+      this.log('  Stripe Setup for AutopilotRank', 'bright');
       this.log('='.repeat(70) + '\n', 'cyan');
 
       // Display current configuration

@@ -5,7 +5,7 @@ description: Implement Stripe payment flows, webhooks, and billing logic. Use wh
 
 # Stripe Integration Skill
 
-Comprehensive patterns for Stripe payment integration in this Next.js SaaS project.
+Comprehensive patterns for Stripe payment integration in this Astro SaaS project.
 
 ## Architecture Overview
 
@@ -22,15 +22,14 @@ shared/config/
 client/services/
 └── stripeService.ts    # Frontend API wrapper
 
-app/api/
-├── checkout/route.ts   # Create checkout sessions
-├── portal/route.ts     # Customer portal sessions
+src/pages/api/
+├── checkout.ts         # Create checkout sessions
+├── portal.ts           # Customer portal sessions
 ├── subscription/       # Subscription management
-│   ├── change/route.ts
-│   ├── preview-change/route.ts
-│   └── cancel-scheduled/route.ts
-└── webhooks/stripe/    # Webhook handlers
-    ├── route.ts
+│   ├── change.ts
+│   ├── preview-change.ts
+│   └── cancel-scheduled.ts
+└── webhooks/stripe.ts  # Webhook handler
     └── handlers/
         └── subscription.handler.ts
 ```
@@ -149,13 +148,13 @@ Plans are defined in `shared/config/subscription.config.ts`:
   rolloverMultiplier: 6,
   features: [...],
   recommended: true,
-  batchLimit: 50,               // Max images in batch
+  batchLimit: 50,               // Max operations in batch
 }
 ```
 
 ## Webhook Handling
 
-Webhooks are processed in `app/api/webhooks/stripe/route.ts`:
+Webhooks are processed in `src/pages/api/webhooks/stripe.ts`:
 
 ```typescript
 // Key events handled:
@@ -262,7 +261,7 @@ const { data: newBalance } = await supabase.rpc('deduct_credits', {
   target_user_id: userId,
   amount: 5,
   ref_id: jobId,
-  description: 'Image upscale',
+  description: 'SEO analysis',
 });
 
 // Add subscription credits (RPC)
@@ -290,12 +289,14 @@ const preview = await stripe.invoices.retrieveUpcoming({
 
 ```bash
 # .env.client (public)
-NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=pk_live_xxx
+PUBLIC_STRIPE_PUBLISHABLE_KEY=pk_live_xxx
 
 # .env.api (secrets)
 STRIPE_SECRET_KEY=sk_live_xxx
 STRIPE_WEBHOOK_SECRET=whsec_xxx
 ```
+
+Access via `clientEnv` / `serverEnv` from `@shared/config/env` — never use `process.env` directly.
 
 ## Cloudflare Workers Compatibility
 

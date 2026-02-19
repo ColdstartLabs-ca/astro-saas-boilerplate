@@ -1,5 +1,6 @@
 import React from 'react';
 import { Html, Head, Body, Container, Section, Text, Hr, Link } from '@react-email/components';
+import { serverEnv } from '@shared/config/env';
 
 interface ISupportRequestEmailProps {
   name: string;
@@ -17,7 +18,7 @@ export function SupportRequestEmail({
   category,
   subject,
   message,
-  appName = 'MyImageUpscaler',
+  appName = serverEnv.APP_NAME,
 }: ISupportRequestEmailProps): React.JSX.Element {
   return (
     <Html>

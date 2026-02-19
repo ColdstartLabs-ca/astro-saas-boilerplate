@@ -10,6 +10,7 @@ import {
   Hr,
   Link,
 } from '@react-email/components';
+import { serverEnv } from '@shared/config/env';
 
 interface IPasswordResetEmailProps {
   userName?: string;
@@ -24,7 +25,7 @@ export function PasswordResetEmail({
   resetUrl,
   baseUrl,
   supportEmail,
-  appName = 'MyImageUpscaler',
+  appName = serverEnv.APP_NAME,
 }: IPasswordResetEmailProps): React.JSX.Element {
   return (
     <Html>

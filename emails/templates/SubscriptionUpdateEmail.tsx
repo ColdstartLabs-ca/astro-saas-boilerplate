@@ -10,6 +10,7 @@ import {
   Hr,
   Link,
 } from '@react-email/components';
+import { serverEnv } from '@shared/config/env';
 
 interface ISubscriptionUpdateEmailProps {
   userName?: string;
@@ -30,7 +31,7 @@ export function SubscriptionUpdateEmail({
   manageUrl,
   baseUrl,
   supportEmail,
-  appName = 'MyImageUpscaler',
+  appName = serverEnv.APP_NAME,
 }: ISubscriptionUpdateEmailProps): React.JSX.Element {
   const settingsUrl = `${baseUrl}/dashboard/settings`;
 

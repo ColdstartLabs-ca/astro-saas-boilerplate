@@ -332,7 +332,7 @@ function saveResults(results, filename = 'domain-check-results.json') {
 }
 
 async function main() {
-  console.log('🚀 MyImageUpscaler Domain Availability Checker (DNS + WHOIS)');
+  console.log('🚀 AutopilotRank Domain Availability Checker (DNS + WHOIS)');
   console.log('=======================================================\n');
 
   console.log('📝 Generating domain suggestions from top keywords...');
@@ -356,7 +356,7 @@ async function main() {
   console.log('\n🏁 Domain checking complete!');
   console.log('\n💡 Tips:');
   console.log('   • .com domains are most valuable');
-  console.log('   • .ai is perfect for AI tools like MyImageUpscaler');
+  console.log('   • .ai is perfect for AI tools like AutopilotRank');
   console.log('   • .io works well for tech products');
   console.log('   • .app is good for web applications');
   console.log('   • Shorter names are easier to remember');

@@ -246,7 +246,7 @@ async function buildBlogData() {
       title: data.title || '',
       description: data.description || '',
       date: data.date || '',
-      author: data.author || 'MyImageUpscaler Team',
+      author: data.author || 'AutopilotRank Team',
       category: data.category || 'General',
       tags: data.tags || [],
       image: data.image,

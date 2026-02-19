@@ -120,7 +120,7 @@ async function analyzeKeyword(keyword: string): Promise<IKeywordAnalysis | null>
   if (currentRank && currentRank <= 5) {
     topResults.splice(currentRank - 1, 0, {
       position: currentRank,
-      title: `MyImageUpscaler: ${keyword} | AI Image Enhancement`,
+      title: `AutopilotRank: ${keyword} | AI Content Enhancement`,
       domain: TARGET_DOMAIN,
       url: `https://${TARGET_DOMAIN}/`,
     });

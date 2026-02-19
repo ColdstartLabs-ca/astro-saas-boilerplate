@@ -20,6 +20,7 @@ export const CSP_POLICY = {
     'https://*.googletagmanager.com',
     'https://js.stripe.com',
     'https://accounts.google.com',
+    'https://static.cloudflareinsights.com',
   ],
   'style-src': [
     "'self'",

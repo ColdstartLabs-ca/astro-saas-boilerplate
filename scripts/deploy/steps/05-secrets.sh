@@ -3,13 +3,13 @@
 step_secrets() {
     log_step 5 "Uploading secrets"
 
-    local worker="${WORKER_NAME:-autopilotrank.com}"
+    local project="${WORKER_NAME:-autopilotrank}"
     local skip_secrets="${SKIP_SECRETS:-false}"
 
     # Get existing secrets (only needed when skipping)
     local existing_secrets=""
     if [[ "$skip_secrets" == "true" ]]; then
-        existing_secrets=$(npx wrangler secret list --name "$worker" 2>/dev/null | grep -oP '"name":\s*"\K[^"]+' || echo "")
+        existing_secrets=$(npx wrangler pages secret list --project-name "$project" 2>/dev/null | grep -oP '^\s+-\s+\K[^:]+' || echo "")
     fi
 
     secret_exists() {
@@ -27,7 +27,7 @@ step_secrets() {
         if [[ "$skip_secrets" == "true" ]] && secret_exists "$name"; then
             log_info "$name (skipped)"
         else
-            echo "$value" | npx wrangler secret put "$name" --name "$worker" 2>/dev/null
+            echo "$value" | npx wrangler pages secret put "$name" --project-name "$project" 2>/dev/null
             log_success "$name"
         fi
     }
@@ -46,18 +46,39 @@ step_secrets() {
         if [[ "$skip_secrets" == "true" ]] && secret_exists "$target_name"; then
             log_info "$target_name (skipped)"
         else
-            echo "$value" | npx wrangler secret put "$target_name" --name "$worker" 2>/dev/null
+            echo "$value" | npx wrangler pages secret put "$target_name" --project-name "$project" 2>/dev/null
             log_success "$target_name"
         fi
     }
 
     # Secrets from .env.api
     local secrets=(
+        # Core infrastructure
         SUPABASE_SERVICE_ROLE_KEY
+        # Payments
         STRIPE_SECRET_KEY
         STRIPE_WEBHOOK_SECRET
-        GEMINI_API_KEY
-        REPLICATE_API_TOKEN
+        # Email providers
+        BREVO_API_KEY
+        RESEND_API_KEY
+        EMAIL_FROM_ADDRESS
+        # AI providers
+        OPENROUTER_API_KEY
+        OPENROUTER_VL_MODEL
+        OPENROUTER_TEXT_MODEL
+        REPLICATE_API_KEY
+        OPENAI_API_KEY
+        AVAILABLE_WRITER_PRESETS
+        AVAILABLE_IMAGE_PRESETS
+        # CMS
+        CMS_ENCRYPTION_KEY
+        # Google OAuth (GSC + API integrations)
+        GOOGLE_OAUTH_CLIENT_SECRET
+        OAUTH_STATE_SECRET
+        # Monitoring
+        BASELIME_API_KEY
+        AMPLITUDE_API_KEY
+        # Cron
         CRON_SECRET
     )
 
@@ -65,8 +86,15 @@ step_secrets() {
         upload_secret "$secret"
     done
 
-    # Public vars needed server-side (PUBLIC_* canonical, NEXT_PUBLIC_* fallback)
-    upload_secret_alias "PUBLIC_SUPABASE_URL" "PUBLIC_SUPABASE_URL" "NEXT_PUBLIC_SUPABASE_URL"
-    upload_secret_alias "PUBLIC_SUPABASE_ANON_KEY" "PUBLIC_SUPABASE_ANON_KEY" "NEXT_PUBLIC_SUPABASE_ANON_KEY"
-    upload_secret_alias "PUBLIC_BASE_URL" "PUBLIC_BASE_URL" "NEXT_PUBLIC_BASE_URL"
+    # Warn about critical secrets that have empty values (will silently skip)
+    for critical in GOOGLE_OAUTH_CLIENT_SECRET OAUTH_STATE_SECRET EMAIL_FROM_ADDRESS; do
+        if [[ -z "${!critical:-}" ]]; then
+            log_warn "$critical is empty — add it to the GCloud secret 'autopilotrank-api-prod' and redeploy"
+        fi
+    done
+
+    # Public vars needed server-side (baked at build time but also uploaded as secrets for SSR access)
+    upload_secret_alias "PUBLIC_SUPABASE_URL" "PUBLIC_SUPABASE_URL" ""
+    upload_secret_alias "PUBLIC_SUPABASE_ANON_KEY" "PUBLIC_SUPABASE_ANON_KEY" ""
+    upload_secret_alias "PUBLIC_BASE_URL" "PUBLIC_BASE_URL" ""
 }

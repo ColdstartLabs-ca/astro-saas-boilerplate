@@ -33,27 +33,16 @@ const RATE_LIMIT_WINDOW_MS = 60 * 1000;
 const rateLimitStore = new Map<string, { timestamps: number[] }>();
 
 /**
- * Cleanup rate limit entries every 5 minutes
- */
-setInterval(() => {
-  const now = Date.now();
-  const fiveMinutesAgo = now - 5 * 60 * 1000;
-
-  for (const [keyId, entry] of rateLimitStore.entries()) {
-    entry.timestamps = entry.timestamps.filter(t => t > fiveMinutesAgo);
-    if (entry.timestamps.length === 0) {
-      rateLimitStore.delete(keyId);
-    }
-  }
-}, 5 * 60 * 1000);
-
-/**
  * Extract API key from Authorization header
  *
  * @param request - The incoming request
  * @returns Object with success status and key (if found)
  */
-export function extractApiKey(request: Request): { success: boolean; key?: string; error?: string } {
+export function extractApiKey(request: Request): {
+  success: boolean;
+  key?: string;
+  error?: string;
+} {
   const authHeader = request.headers.get('authorization');
 
   if (!authHeader) {
@@ -128,6 +117,13 @@ export function checkRateLimit(
 
   // Remove old timestamps
   entry.timestamps = entry.timestamps.filter(t => t > windowStart);
+
+  // Inline cleanup to prevent memory growth (setInterval is forbidden in CF Workers global scope)
+  if (rateLimitStore.size > 5000) {
+    for (const [key, e] of rateLimitStore.entries()) {
+      if (e.timestamps.length === 0) rateLimitStore.delete(key);
+    }
+  }
 
   // Check limit
   if (entry.timestamps.length >= limit) {

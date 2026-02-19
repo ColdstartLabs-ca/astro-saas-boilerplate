@@ -9,10 +9,10 @@ description: Manage environment variables with split .env.client and .env.api st
 
 This project uses split env files (see `docs/PRDs/env-system-refactor.md`):
 
-| File          | Purpose             | Prefix          |
-| ------------- | ------------------- | --------------- |
-| `.env.client` | Public browser vars | `NEXT_PUBLIC_*` |
-| `.env.api`    | Server secrets      | No prefix       |
+| File          | Purpose             | Prefix     |
+| ------------- | ------------------- | ---------- |
+| `.env.client` | Public browser vars | `PUBLIC_*` |
+| `.env.api`    | Server secrets      | No prefix  |
 
 ## Adding New Variables
 
@@ -20,11 +20,12 @@ This project uses split env files (see `docs/PRDs/env-system-refactor.md`):
 
 1. Add to `.env.client`:
    ```
-   NEXT_PUBLIC_API_URL=https://api.example.com
+   PUBLIC_API_URL=https://api.example.com
    ```
-2. Access in code:
+2. Access in code via `clientEnv`:
    ```typescript
-   const url = process.env.NEXT_PUBLIC_API_URL;
+   import { clientEnv } from '@shared/config/env';
+   const url = clientEnv.PUBLIC_API_URL;
    ```
 
 ### Server-side (Secret)
@@ -33,16 +34,18 @@ This project uses split env files (see `docs/PRDs/env-system-refactor.md`):
    ```
    STRIPE_SECRET_KEY=sk_live_xxx
    ```
-2. Access only in server code:
+2. Access only in server code via `serverEnv`:
    ```typescript
-   // Only in app/api/*, server/*, or Server Components
-   const key = process.env.STRIPE_SECRET_KEY;
+   // Only in src/pages/api/*, server/*, or server-side Astro pages
+   import { serverEnv } from '@shared/config/env';
+   const key = serverEnv.STRIPE_SECRET_KEY;
    ```
 
 ## Security Rules
 
 - Never put secrets in `.env.client`
-- Never prefix secrets with `NEXT_PUBLIC_`
+- Never prefix secrets with `PUBLIC_`
+- Never use `process.env` directly — always use `clientEnv` or `serverEnv` from `@shared/config/env`
 - Supabase anon key is public (safe for client)
 - Supabase service role key is secret (API only)
 
@@ -57,4 +60,11 @@ cp .env.api.example .env.api
 
 ## Cloudflare Deployment
 
-Set vars in Cloudflare Pages dashboard under Settings > Environment Variables.
+Secrets are managed via **GCloud Secret Manager** and deployed using **wrangler pages secret**:
+
+```bash
+# Set a secret for Cloudflare Pages (pulls from GCloud Secret Manager or set directly)
+wrangler pages secret put SECRET_NAME
+```
+
+Public vars (`PUBLIC_*`) are configured in the Cloudflare Pages build environment settings or via wrangler config. Secrets (`.env.api` values) must never be committed and are injected at deploy time via the CI/CD pipeline using wrangler.

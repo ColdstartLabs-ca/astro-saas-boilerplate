@@ -24,26 +24,9 @@ interface IRateLimitEntry {
 }
 
 // In-memory storage for rate limit tracking
+// Note: No setInterval cleanup — Cloudflare Workers forbid async ops in global scope.
+// Stale entries are cleaned up inline during each rate limit check.
 const rateLimitStore = new Map<string, IRateLimitEntry>();
-
-// Cleanup old entries every 5 minutes to prevent memory leaks
-setInterval(
-  () => {
-    const now = Date.now();
-    const fiveMinutesAgo = now - 5 * 60 * 1000;
-
-    for (const [key, entry] of rateLimitStore.entries()) {
-      // Remove timestamps older than 5 minutes
-      entry.timestamps = entry.timestamps.filter(t => t > fiveMinutesAgo);
-
-      // Remove entry if no recent timestamps
-      if (entry.timestamps.length === 0) {
-        rateLimitStore.delete(key);
-      }
-    }
-  },
-  5 * 60 * 1000
-); // Every 5 minutes
 
 interface IRateLimitResult {
   success: boolean;
@@ -59,7 +42,7 @@ interface IRateLimitResult {
  * @param windowMs - Time window in milliseconds
  * @returns Rate limit result with success status, remaining count, and reset time
  */
-function createRateLimiter(limit: number, windowMs: number) {
+export function createRateLimiter(limit: number, windowMs: number) {
   return async (identifier: string): Promise<IRateLimitResult> => {
     const now = Date.now();
     const windowStart = now - windowMs;
@@ -73,6 +56,14 @@ function createRateLimiter(limit: number, windowMs: number) {
 
     // Remove timestamps outside the current window
     entry.timestamps = entry.timestamps.filter(t => t > windowStart);
+
+    // Inline cleanup: remove entries with no recent activity to prevent memory growth
+    // (Replaces the global setInterval which is forbidden in Cloudflare Workers global scope)
+    if (rateLimitStore.size > 10000) {
+      for (const [key, e] of rateLimitStore.entries()) {
+        if (e.timestamps.length === 0) rateLimitStore.delete(key);
+      }
+    }
 
     // Check if limit exceeded
     if (entry.timestamps.length >= limit) {
