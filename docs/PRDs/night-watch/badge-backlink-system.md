@@ -9,6 +9,7 @@
 **Problem:** We need a mechanism to incentivize website owners to place "Powered by AutopilotRank" backlinks on their sites, driving brand awareness and SEO value. In exchange, users earn +5 bonus credits/month per project with a verified badge.
 
 **Files Analyzed:**
+
 - `shared/config/credits.config.ts`, `shared/config/subscription.config.ts` - Credit system
 - `shared/config/env.ts` - Environment variables pattern
 - `shared/config/security.ts` - Public API routes
@@ -19,6 +20,7 @@
 - `src/pages/api/cron/` - Cron job patterns
 
 **Current Behavior:**
+
 - Users get credits via subscriptions (30/100/500/mo) or credit packs (10/25/50)
 - Free tier gets 3 trial articles, no monthly refresh
 - Credit transactions use types: `purchase`, `subscription`, `usage`, `refund`, `bonus`, `plan_upgrade`, `plan_downgrade`, `trial`, `expiration`, `clawback`
@@ -30,6 +32,7 @@
 ## 2. Solution
 
 **Approach:**
+
 - Each project gets a unique badge that users embed on their website as an `<a>` + `<img>` HTML snippet
 - Badge image is served dynamically via a public API endpoint (`/api/badge/:projectId`) supporting 3 themes (light, neutral, dark)
 - Users manage badges from a dedicated `/dashboard/badges` page showing all projects and their badge status
@@ -59,6 +62,7 @@ flowchart LR
 ```
 
 **Key Decisions:**
+
 - Dynamic badge image via SVG (generated server-side) - lightweight, theme-able, no external assets needed
 - Badge verification by fetching the project's domain URL and checking for the badge `<img>` or `<a>` tag pointing to our domain
 - `badge_reward` as a new credit transaction type (requires DB migration to update CHECK constraint)
@@ -69,6 +73,7 @@ flowchart LR
 **Data Changes:**
 
 New table: `project_badges`
+
 ```sql
 CREATE TABLE public.project_badges (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -95,6 +100,7 @@ Migration to update credit transaction type CHECK constraint to include `'badge_
 ## 3. Sequence Flow
 
 ### Badge Verification Flow
+
 ```mermaid
 sequenceDiagram
     participant U as User (Dashboard)
@@ -121,6 +127,7 @@ sequenceDiagram
 ```
 
 ### Monthly Credit Reward Flow
+
 ```mermaid
 sequenceDiagram
     participant Cron as Daily Cron
@@ -142,12 +149,14 @@ sequenceDiagram
 ### Phase 1: Database & Types - Schema foundation
 
 **Files (4):**
+
 - `supabase/migrations/YYYYMMDD000100_create_project_badges.sql` - New table
 - `supabase/migrations/YYYYMMDD000200_add_badge_reward_transaction_type.sql` - Update CHECK constraint
 - `shared/types/badge.types.ts` - TypeScript interfaces
 - `shared/constants/badge.constants.ts` - Badge config constants
 
 **Implementation:**
+
 - [ ] Create `project_badges` table with RLS policies (user can only see/manage own badges)
 - [ ] Add `badge_reward` to the credit transaction type CHECK constraint
 - [ ] Create RPC function `grant_badge_reward(p_user_id UUID, p_project_id UUID, p_amount INT)` that atomically inserts credit_transaction + updates credits_balance
@@ -155,6 +164,7 @@ sequenceDiagram
 - [ ] Define badge constants: `BADGE_REWARD_CREDITS = 5`, `BADGE_CHECK_INTERVAL_DAYS = 1`, `BADGE_REWARD_INTERVAL_DAYS = 30`, badge themes array
 
 **Verification Plan:**
+
 1. **Unit Tests:**
    - File: `tests/unit/shared/constants/badge.constants.unit.spec.ts`
    - Tests: `should export correct reward amount`, `should have valid themes`
@@ -167,11 +177,13 @@ sequenceDiagram
 ### Phase 2: Badge Image API - Dynamic SVG serving
 
 **Files (3):**
+
 - `src/pages/api/badge/[projectId].ts` - Public API endpoint serving badge SVG
 - `server/services/badge.service.ts` - Badge generation + verification logic
 - `shared/config/security.ts` - Add to PUBLIC_API_ROUTES
 
 **Implementation:**
+
 - [ ] Create `GET /api/badge/:projectId` endpoint (public, no auth)
 - [ ] Accept `?theme=light|neutral|dark` query param (default: light)
 - [ ] Generate SVG badge image with "Powered by AutopilotRank" text
@@ -182,10 +194,12 @@ sequenceDiagram
 - [ ] SVG design: ~212x55px, includes AutopilotRank logo text, "Powered by" subtitle, themed background
 
 **Verification Plan:**
+
 1. **Unit Tests:**
    - File: `tests/unit/server/services/badge.service.unit.spec.ts`
    - Tests: `should generate valid SVG for light theme`, `should generate valid SVG for dark theme`, `should generate valid SVG for neutral theme`, `should default to light when invalid theme`
 2. **API Proof:**
+
    ```bash
    curl -s http://localhost:4321/api/badge/test-project-id?theme=light -o badge.svg
    # Expected: Valid SVG file with correct dimensions
@@ -202,12 +216,14 @@ sequenceDiagram
 ### Phase 3: Badge Verification Service - Crawl & verify
 
 **Files (4):**
+
 - `server/services/badge.service.ts` - Add verification methods
 - `src/pages/api/badges/verify.ts` - Authenticated endpoint for on-demand verify
 - `src/pages/api/badges/index.ts` - CRUD for user's badges (GET list, POST create)
 - `src/pages/api/badges/[badgeId].ts` - GET/PATCH/DELETE individual badge
 
 **Implementation:**
+
 - [ ] `BadgeService.verifyBadge(projectDomain: string, projectId: string)`: Fetches the domain URL, parses HTML body for `<img>` or `<a>` tags containing our badge URL pattern (`/api/badge/${projectId}` or `autopilotrank.com`)
 - [ ] Handle edge cases: redirects (follow up to 3), timeouts (5s max), non-HTML responses, HTTPS vs HTTP
 - [ ] `POST /api/badges/verify` - Triggers on-demand verification for a specific project badge. Updates `project_badges.status`, `verified_at`, `last_checked_at`
@@ -218,10 +234,12 @@ sequenceDiagram
 - [ ] `DELETE /api/badges/:badgeId` - Remove badge (stops rewards)
 
 **Verification Plan:**
+
 1. **Unit Tests:**
    - File: `tests/unit/server/services/badge-verification.unit.spec.ts`
    - Tests: `should detect badge in HTML with img tag`, `should detect badge in HTML with anchor tag`, `should return false when badge not found`, `should handle timeout gracefully`, `should handle non-200 responses`, `should follow redirects`
 2. **API Proof:**
+
    ```bash
    # Create badge
    curl -X POST http://localhost:4321/api/badges \
@@ -248,11 +266,13 @@ sequenceDiagram
 ### Phase 4: Daily Verification Cron - Automated re-checks
 
 **Files (3):**
+
 - `server/services/badge.service.ts` - Add bulk verification + reward granting
 - `src/pages/api/cron/badge-check/index.ts` - Cron endpoint
 - `server/controllers/BadgeCronController.ts` - Controller handling cron auth + orchestration
 
 **Implementation:**
+
 - [ ] `BadgeService.runDailyVerification()`: Fetches all `status='verified'` badges, re-checks each, updates status to `'inactive'` if badge no longer found (immediate stop)
 - [ ] `BadgeService.grantMonthlyRewards()`: Finds all verified badges where `last_reward_at` is null or > 30 days ago, grants +5 credits each via the RPC function
 - [ ] Cron endpoint at `POST /api/cron/badge-check` protected by `x-cron-secret` header (matches existing cron pattern)
@@ -261,6 +281,7 @@ sequenceDiagram
 - [ ] Log results: verified count, failed count, rewards granted count
 
 **Verification Plan:**
+
 1. **Unit Tests:**
    - File: `tests/unit/server/services/badge-cron.unit.spec.ts`
    - Tests: `should mark badge inactive when verification fails`, `should keep badge verified when check passes`, `should grant rewards for eligible badges`, `should not grant rewards before 30 days`, `should respect batch limit`
@@ -277,6 +298,7 @@ sequenceDiagram
 ### Phase 5: Dashboard UI - Badge management page
 
 **Files (5):**
+
 - `client/components/pages/BadgesPageClient.tsx` - Page wrapper
 - `client/components/dashboard/views/BadgesView.tsx` - Main badges view
 - `client/hooks/useBadges.ts` - Data fetching hook
@@ -284,6 +306,7 @@ sequenceDiagram
 - `locales/en/dashboard.json` - Add i18n strings
 
 **Implementation:**
+
 - [ ] `useBadges()` hook: Fetches `GET /api/badges`, provides `createBadge()`, `verifyBadge()`, `deleteBadge()`, `updateTheme()` mutations
 - [ ] `BadgesView` component showing:
   - Header: "Earn Credits with Badges" + explanation text ("Add a Powered by AutopilotRank badge to your website and earn +5 credits/month per project")
@@ -304,11 +327,17 @@ sequenceDiagram
 - [ ] Badge code snippet template:
   ```html
   <a href="https://autopilotrank.com?ref=badge-{projectSlug}" target="_blank" rel="noopener">
-    <img src="https://autopilotrank.com/api/badge/{projectId}?theme={theme}" alt="Powered by AutopilotRank" width="212" height="55" />
+    <img
+      src="https://autopilotrank.com/api/badge/{projectId}?theme={theme}"
+      alt="Powered by AutopilotRank"
+      width="212"
+      height="55"
+    />
   </a>
   ```
 
 **Verification Plan:**
+
 1. **Component Tests:**
    - File: `tests/unit/components/BadgesView.unit.spec.tsx`
    - Tests: `should render empty state when no badges`, `should render badge card for each project`, `should copy badge code to clipboard`, `should show verification loading state`, `should display correct status indicators`
