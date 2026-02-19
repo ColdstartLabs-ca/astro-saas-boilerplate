@@ -151,3 +151,34 @@ export interface IToolPageMeta {
   toolName: string;
   lastUpdated: string;
 }
+
+/** GEO (Generative Engine Optimization) page data */
+export interface IGeoPage extends IPseoBase {
+  topic: string;
+  problemStatement: string;
+  howAiCites: {
+    step: number;
+    title: string;
+    description: string;
+  }[];
+  tacticsWithExamples: {
+    tactic: string;
+    example: string;
+    difficulty: 'easy' | 'medium' | 'hard';
+  }[];
+  autopilotRankAngle: string;
+  faqs: IFaqItem[];
+  relatedGeoPages: string[];
+  relatedBlogPosts: string[];
+}
+
+/** GEO page metadata (for listing) */
+export interface IGeoPageMeta {
+  slug: string;
+  title: string;
+  metaTitle: string;
+  metaDescription: string;
+  h1: string;
+  topic: string;
+  lastUpdated: string;
+}
