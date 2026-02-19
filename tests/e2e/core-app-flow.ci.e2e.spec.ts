@@ -29,7 +29,7 @@ test.describe('Core App Flow - CI', () => {
       expect(title.length).toBeGreaterThan(0);
       // Title should contain either the configured app name or "SaaS Boilerplate" (default)
       // Accept multiple possible app names used across different environments
-      expect(title).toMatch(/SaaS Boilerplate|AutopilotRank|MyImageUpscaler/i);
+      expect(title).toMatch(/SaaS Boilerplate|AutopilotRank/i);
 
       // Check meta description exists
       const metaDescription = await page

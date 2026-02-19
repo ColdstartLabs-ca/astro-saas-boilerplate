@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # ============================================================================
-# MyImageUpscaler Setup Orchestrator
+# AutopilotRank Setup Orchestrator
 # ============================================================================
 # This script orchestrates the complete development setup by running
 # modular setup scripts in sequence.

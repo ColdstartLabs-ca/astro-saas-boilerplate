@@ -1,6 +1,6 @@
 # Mobile Responsive Testing Guide
 
-This guide provides a comprehensive checklist for testing MyImageUpscaler on mobile devices to ensure a great user experience across all screen sizes.
+This guide provides a comprehensive checklist for testing AutopilotRank on mobile devices to ensure a great user experience across all screen sizes.
 
 ---
 
@@ -425,7 +425,7 @@ For each test session, document:
 | iPad Air          | 820px  | 1180px | Medium tablet  |
 | iPad Pro          | 1024px | 1366px | Large tablet   |
 
-### Breakpoints Used in myimageupscaler.com
+### Breakpoints Used in autopilotrank.com
 
 ```css
 /* Tailwind default breakpoints */

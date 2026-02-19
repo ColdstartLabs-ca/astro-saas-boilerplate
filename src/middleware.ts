@@ -1,7 +1,7 @@
 import { defineMiddleware } from 'astro:middleware';
 import type { AstroCookies } from 'astro';
 import { PUBLIC_API_ROUTES } from '@shared/config/security';
-import { serverEnv } from '@shared/config/env';
+import { serverEnv, resetServerEnv } from '@shared/config/env';
 import {
   applySecurityHeaders,
   applyCorsHeaders,
@@ -291,6 +291,22 @@ function isPublicApiRoute(pathname: string): boolean {
 
 // Astro middleware implementation
 export const onRequest = defineMiddleware(async (context, next) => {
+  // Inject Cloudflare Workers runtime env into process.env so that serverEnv can read secrets.
+  // In CF Pages production, secrets are only available via context.locals.runtime.env (not process.env).
+  // Must happen before any serverEnv access to ensure correct cache initialization.
+  const runtimeEnv = (context.locals as { runtime?: { env?: Record<string, string> } }).runtime
+    ?.env;
+  if (runtimeEnv && typeof process !== 'undefined' && process.env) {
+    for (const [key, value] of Object.entries(runtimeEnv)) {
+      if (typeof value === 'string' && !key.startsWith('__')) {
+        process.env[key] = value;
+      }
+    }
+    // Reset serverEnv cache so the next access re-reads from process.env,
+    // picking up the secrets just injected from CF runtime bindings.
+    resetServerEnv();
+  }
+
   const { request, cookies, url } = context;
   const pathname = url.pathname;
 

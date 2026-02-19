@@ -7,77 +7,104 @@ description: Manage Google Cloud Secret Manager for storing and fetching environ
 
 ## Project Configuration
 
-- **Project ID**: `myimageupscaler-auth`
-- **Account**: `jfurtado141@gmail.com`
+- **Project ID**: `autopilotrank`
+- **Personal account**: `jfurtado141@gmail.com`
+- **Service account**: `deploy@autopilotrank.iam.gserviceaccount.com`
+- **Service account key**: `cloud/keys/autopilotrank-866faa7dedda.json` (gitignored)
 - **Secrets**:
-  - `myimageupscaler-api-prod` → `.env.api.prod`
-  - `myimageupscaler-client-prod` → `.env.client.prod`
+  - `autopilotrank-api-prod` → `.env.api.prod` (server secrets)
+  - `autopilotrank-client-prod` → `.env.client.prod` (public vars)
 
-## Setup Commands
+## IAM Roles
+
+| Principal                 | Role                           | Can do                      |
+| ------------------------- | ------------------------------ | --------------------------- |
+| `deploy@` service account | `secretmanager.secretAccessor` | Read secrets (deploy fetch) |
+| `jfurtado141@gmail.com`   | Owner                          | Read + write new versions   |
+
+**Rule**: use service account for reading (deploy), personal account for writing new versions.
+
+## Fetching Secrets (read)
+
+The deploy script handles this automatically via `scripts/deploy/steps/00-fetch-secrets.sh`.
+It activates the service account key first, then falls back to personal account.
+
+Manual fetch:
 
 ```bash
-# Set correct account and project
-gcloud config set account jfurtado141@gmail.com
-gcloud config set project myimageupscaler-auth
-
-# Verify access
-gcloud secrets list
+gcloud auth activate-service-account --key-file=cloud/keys/autopilotrank-866faa7dedda.json --quiet
+gcloud secrets versions access latest --secret="autopilotrank-api-prod" --project="autopilotrank" > .env.api.prod
+gcloud secrets versions access latest --secret="autopilotrank-client-prod" --project="autopilotrank" > .env.client.prod
 ```
+
+## Updating Secrets (write)
+
+Must use personal account — service account lacks `secretVersionAdder` role.
+
+```bash
+# Switch to personal account
+gcloud config set account jfurtado141@gmail.com
+
+# Fetch current version into temp file
+gcloud secrets versions access latest --secret="autopilotrank-api-prod" --project="autopilotrank" > /tmp/api-prod.env
+
+# Edit /tmp/api-prod.env (add/update vars), then push new version
+gcloud secrets versions add autopilotrank-api-prod --data-file=/tmp/api-prod.env --project=autopilotrank
+
+# Same for client secret
+gcloud secrets versions access latest --secret="autopilotrank-client-prod" --project="autopilotrank" > /tmp/client-prod.env
+# ... edit ...
+gcloud secrets versions add autopilotrank-client-prod --data-file=/tmp/client-prod.env --project=autopilotrank
+
+# Cleanup temp files
+rm -f /tmp/api-prod.env /tmp/client-prod.env
+```
+
+## Destroying Old Versions
+
+After adding a new version, destroy the old one to avoid secret sprawl:
+
+```bash
+# List versions
+gcloud secrets versions list autopilotrank-api-prod --project=autopilotrank
+
+# Destroy old version (replace N)
+gcloud secrets versions destroy N --secret=autopilotrank-api-prod --project=autopilotrank --quiet
+gcloud secrets versions destroy N --secret=autopilotrank-client-prod --project=autopilotrank --quiet
+```
+
+## Uploading to Cloudflare Pages (live, no redeploy)
+
+For urgent single-secret updates without a full redeploy:
+
+```bash
+echo "secret-value" | npx wrangler pages secret put SECRET_NAME --project-name=autopilotrank
+```
+
+A full deploy (`yarn deploy`) handles all secrets via `scripts/deploy/steps/05-secrets.sh`.
 
 ## Common Issues
 
-### "Failed to fetch secret" Error
+### "PERMISSION_DENIED: secretmanager.versions.add"
 
-1. Check current project: `gcloud config get-value project`
-2. Check current account: `gcloud config get-value account`
-3. Switch to correct account/project (see above)
+Service account is read-only. Switch to personal account: `gcloud config set account jfurtado141@gmail.com`
 
-### Wrong Project
+### "Failed to fetch secret"
 
-The CLI might default to `definya-447700`. Always ensure you're on `myimageupscaler-auth`.
+1. Check active account: `gcloud config get-value account`
+2. Ensure service account key exists at `cloud/keys/autopilotrank-866faa7dedda.json`
+3. Activate manually: `gcloud auth activate-service-account --key-file=cloud/keys/autopilotrank-866faa7dedda.json`
 
-### Service Account vs Personal Account
+### Wrong GCloud project
 
-- Service account `cloudstartlabs-service-acc@coldstartlabs-auth.iam.gserviceaccount.com` does NOT have access to myimageupscaler-auth
-- Use personal account `jfurtado141@gmail.com` for secret access
-- **Or** use the service account key at `./cloud/keys/myimageupscaler-auth-6348371fe8c6.json`:
-  ```bash
-  gcloud auth activate-service-account --key-file=./cloud/keys/myimageupscaler-auth-6348371fe8c6.json
-  ```
+The script always sets `--project=autopilotrank` explicitly and also runs `gcloud config set project autopilotrank`.
+The ADC quota project warning ("does not match quota project") is harmless — it's about a different auth mechanism.
 
-## Deploy Flow
+## What Goes Where
 
-The deploy script (`scripts/deploy/deploy.sh`) fetches secrets in step 0:
+| Variable                   | File          | Secret                      |
+| -------------------------- | ------------- | --------------------------- |
+| Server secrets (no prefix) | `.env.api`    | `autopilotrank-api-prod`    |
+| Public vars (`PUBLIC_*`)   | `.env.client` | `autopilotrank-client-prod` |
 
-1. Fetches `myimageupscaler-api-prod` → `.env.api.prod`
-2. Fetches `myimageupscaler-client-prod` → `.env.client.prod`
-3. Cleans up these files after deploy (success or failure)
-
-## Updating Secrets
-
-```bash
-# Update API secrets
-gcloud secrets versions add myimageupscaler-api-prod --data-file=.env.api
-
-# Update client secrets
-gcloud secrets versions add myimageupscaler-client-prod --data-file=.env.client
-```
-
-**Important**: Always destroy older versions after adding a new one to avoid secret sprawl and reduce security risk:
-
-```bash
-# List versions to find the old one
-gcloud secrets versions list myimageupscaler-api-prod
-
-# Destroy the previous version (replace N with version number)
-gcloud secrets versions destroy N --secret=myimageupscaler-api-prod --quiet
-```
-
-## Service Account Key Location
-
-Local keys available at:
-
-- `./cloud/keys/coldstart-labs-service-account-key.json` (Note: Does not have access to myimageupscaler-auth project)
-- `./cloud/keys/myimageupscaler-auth-6348371fe8c6.json` (myimageupscaler-auth project)
-
-**Important**: The `cloud/keys/` directory is gitignored. Never commit service account keys.
+**Important**: `PUBLIC_*` vars are baked into the Astro build at deploy time AND uploaded as Pages secrets for SSR runtime access.

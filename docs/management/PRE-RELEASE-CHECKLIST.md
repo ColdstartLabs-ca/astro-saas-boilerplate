@@ -26,23 +26,23 @@
 
 > ⚠️ API token needs `Zone:Settings:Edit` permission for these — do manually in dashboard or re-create token with that scope.
 
-- [ ] **SSL/TLS** > set encryption mode to **Full (strict)**
-- [ ] Enable **Always Use HTTPS**
-- [ ] Enable **Automatic HTTPS Rewrites**
-- [ ] Set **Minimum TLS Version** to 1.2
-- [ ] Verify SSL certificate is issued and active (green padlock on site)
+- [x] **SSL/TLS** > set encryption mode to **Full (strict)**
+- [x] Enable **Always Use HTTPS**
+- [x] Enable **Automatic HTTPS Rewrites**
+- [x] Set **Minimum TLS Version** to 1.2
+- [x] Verify SSL certificate is issued and active (green padlock on site)
 
 ### Cloudflare Email Routing
 
-- [ ] In Cloudflare Dashboard > **Email > Email Routing** > enable for `autopilotrank.com`
-- [ ] Add MX records (Cloudflare will prompt to add them automatically)
-- [ ] Create routing rule: `support@autopilotrank.com` -> `admin@coldstartlabs.ca`
-- [ ] Create routing rule: `admin@autopilotrank.com` -> `admin@coldstartlabs.ca`
-- [ ] Create routing rule: `privacy@autopilotrank.com` -> `admin@coldstartlabs.ca`
-- [ ] Create routing rule: `legal@autopilotrank.com` -> `admin@coldstartlabs.ca`
-- [ ] Create routing rule: `noreply@autopilotrank.com` -> `admin@coldstartlabs.ca` (or catch-all)
-- [ ] Verify destination email `admin@coldstartlabs.ca` (Cloudflare sends verification email)
-- [ ] Test: send email to `support@autopilotrank.com` and confirm delivery to `admin@coldstartlabs.ca`
+- [x] In Cloudflare Dashboard > **Email > Email Routing** > enable for `autopilotrank.com`
+- [x] Add MX records (Cloudflare will prompt to add them automatically)
+- [x] Create routing rule: `support@autopilotrank.com` -> `admin@coldstartlabs.ca`
+- [x] Create routing rule: `admin@autopilotrank.com` -> `admin@coldstartlabs.ca`
+- [x] Create routing rule: `privacy@autopilotrank.com` -> `admin@coldstartlabs.ca`
+- [x] Create routing rule: `legal@autopilotrank.com` -> `admin@coldstartlabs.ca`
+- [x] Create routing rule: `noreply@autopilotrank.com` -> `admin@coldstartlabs.ca` (or catch-all)
+- [x] Verify destination email `admin@coldstartlabs.ca` (Cloudflare sends verification email)
+- [x] Test: send email to `support@autopilotrank.com` and confirm delivery to `admin@coldstartlabs.ca`
 
 ### Cloudflare DNS Records
 
@@ -69,7 +69,7 @@
 
 > Single GCP project serves OAuth, Search Console API, and Secret Manager.
 
-- [ ] Create Google Cloud project (e.g., `autopilotrank`) at [console.cloud.google.com](https://console.cloud.google.com/)
+- [x] Create Google Cloud project (e.g., `autopilotrank`) at [console.cloud.google.com](https://console.cloud.google.com/)
 - [ ] Enable **Google Identity Services** API (for OAuth)
 - [ ] Enable **Search Console API** (for GSC integration)
 - [ ] Enable **Secret Manager API** (for production secrets)

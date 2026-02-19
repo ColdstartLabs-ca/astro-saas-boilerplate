@@ -4,6 +4,13 @@ import React from 'react';
 import { vi } from 'vitest';
 import { cleanup } from '@testing-library/react';
 
+// Wire up in-memory Supabase for all unit tests.
+// Must be done here (before any test imports supabaseAdmin) so that the
+// node:fs-dependent inMemorySupabaseAdmin is never bundled into the CF Workers build.
+import { _overrideSupabaseAdminForTests } from '@server/supabase/supabaseAdmin';
+import { inMemorySupabaseAdmin } from '@server/supabase/inMemorySupabaseAdmin';
+_overrideSupabaseAdminForTests(inMemorySupabaseAdmin);
+
 // Mock dayjs and its plugins
 const createMockDayjs = (utcMode = false, inputDate?: Date | string) => {
   let baseDate: Date;
@@ -280,8 +287,8 @@ const mockResponse = (init: {
     json: init.json ?? (() => Promise.resolve({})),
     headers: {
       get: headersGet,
-    has: vi.fn(() => false),
-    forEach: vi.fn(),
+      has: vi.fn(() => false),
+      forEach: vi.fn(),
       entries: vi.fn(() => []),
       keys: vi.fn(() => []),
       values: vi.fn(() => []),

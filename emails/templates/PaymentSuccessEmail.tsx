@@ -10,6 +10,7 @@ import {
   Hr,
   Link,
 } from '@react-email/components';
+import { serverEnv } from '@shared/config/env';
 
 interface IPaymentSuccessEmailProps {
   userName?: string;
@@ -30,7 +31,7 @@ export function PaymentSuccessEmail({
   receiptUrl,
   baseUrl,
   supportEmail,
-  appName = 'MyImageUpscaler',
+  appName = serverEnv.APP_NAME,
 }: IPaymentSuccessEmailProps): React.JSX.Element {
   const dashboardUrl = `${baseUrl}/dashboard`;
 

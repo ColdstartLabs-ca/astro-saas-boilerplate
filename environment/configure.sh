@@ -14,7 +14,7 @@ PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
 
 cd "$PROJECT_ROOT"
 
-echo "MyImageUpscaler Environment Configuration"
+echo "AutopilotRank Environment Configuration"
 echo "======================================"
 echo ""
 

@@ -17,7 +17,7 @@ import { z } from 'zod';
 // =============================================================================
 
 const clientEnvSchema = z.object({
-  APP_NAME: z.string().default('SaaS Boilerplate'),
+  APP_NAME: z.string().default('AutopilotRank'),
   ENV: z.string().default('development'),
   BASE_URL: z.string().url().default('http://localhost:4321'),
   SUPABASE_URL: z.string().url().default('https://example.supabase.co'),
@@ -34,27 +34,27 @@ const clientEnvSchema = z.object({
   ENABLE_GOOGLE_OAUTH: z.string().default('true'),
   ENABLE_AZURE_OAUTH: z.string().default('false'),
   // Contact
-  ADMIN_EMAIL: z.string().email().default('admin@example.com'),
-  SUPPORT_EMAIL: z.string().email().default('support@example.com'),
-  LEGAL_EMAIL: z.string().email().default('legal@example.com'),
-  PRIVACY_EMAIL: z.string().email().default('privacy@example.com'),
-  SALES_EMAIL: z.string().email().default('sales@example.com'),
-  TWITTER_HANDLE: z.string().default('example'),
+  ADMIN_EMAIL: z.string().email().default('admin@autopilotrank.com'),
+  SUPPORT_EMAIL: z.string().email().default('support@autopilotrank.com'),
+  LEGAL_EMAIL: z.string().email().default('legal@autopilotrank.com'),
+  PRIVACY_EMAIL: z.string().email().default('privacy@autopilotrank.com'),
+  SALES_EMAIL: z.string().email().default('sales@autopilotrank.com'),
+  TWITTER_HANDLE: z.string().default('autopilotrank'),
   // App Configuration
-  APP_SLUG: z.string().default('saas-boilerplate'),
-  DOWNLOAD_PREFIX: z.string().default('saas-boilerplate'),
-  BATCH_FOLDER_NAME: z.string().default('saas-boilerplate_batch'),
-  CACHE_USER_KEY_PREFIX: z.string().default('saas-boilerplate'),
-  WEB_SERVICE_NAME: z.string().default('saas-boilerplate-web'),
-  CRON_SERVICE_NAME: z.string().default('saas-boilerplate-cron'),
+  APP_SLUG: z.string().default('autopilotrank'),
+  DOWNLOAD_PREFIX: z.string().default('autopilotrank'),
+  BATCH_FOLDER_NAME: z.string().default('autopilotrank_batch'),
+  CACHE_USER_KEY_PREFIX: z.string().default('autopilotrank'),
+  WEB_SERVICE_NAME: z.string().default('autopilotrank-web'),
+  CRON_SERVICE_NAME: z.string().default('autopilotrank-cron'),
   // GitHub
   GITHUB_USER: z.string().default('your-github-user'),
-  GITHUB_REPO: z.string().default('saas-boilerplate'),
+  GITHUB_REPO: z.string().default('autopilotrank'),
   // Legal
-  LAST_UPDATED_DATE: z.string().default('November 26, 2025'),
+  LAST_UPDATED_DATE: z.string().default('February 4, 2026'),
   // Domains and URLs
-  PRIMARY_DOMAIN: z.string().default('example.com'),
-  APP_DOMAIN: z.string().default('example.com'),
+  PRIMARY_DOMAIN: z.string().default('autopilotrank.com'),
+  APP_DOMAIN: z.string().default('autopilotrank.com'),
   // Stripe
   STRIPE_PUBLISHABLE_KEY: z.string().default(''),
   // Stripe Credit Pack Price IDs (renamed from NEXT_PUBLIC_* to STRIPE_*)
@@ -74,7 +74,7 @@ function loadClientEnv(): IClientEnv {
       : ({} as Record<string, string | undefined>);
 
   const env = {
-    APP_NAME: metaEnv.PUBLIC_APP_NAME || 'SaaS Boilerplate',
+    APP_NAME: metaEnv.PUBLIC_APP_NAME || 'AutopilotRank',
     ENV: metaEnv.PUBLIC_ENV || 'development',
     BASE_URL: metaEnv.PUBLIC_BASE_URL || 'http://localhost:4321',
     PUBLIC_BASE_URL: metaEnv.PUBLIC_BASE_URL || 'https://autopilotrank.com',
@@ -92,27 +92,27 @@ function loadClientEnv(): IClientEnv {
     ENABLE_GOOGLE_OAUTH: metaEnv.PUBLIC_ENABLE_GOOGLE_OAUTH || 'true',
     ENABLE_AZURE_OAUTH: metaEnv.PUBLIC_ENABLE_AZURE_OAUTH || 'false',
     // Contact
-    ADMIN_EMAIL: metaEnv.PUBLIC_ADMIN_EMAIL || 'admin@example.com',
-    SUPPORT_EMAIL: metaEnv.PUBLIC_SUPPORT_EMAIL || 'support@example.com',
-    LEGAL_EMAIL: metaEnv.PUBLIC_LEGAL_EMAIL || 'legal@example.com',
-    PRIVACY_EMAIL: metaEnv.PUBLIC_PRIVACY_EMAIL || 'privacy@example.com',
-    SALES_EMAIL: metaEnv.PUBLIC_SALES_EMAIL || 'sales@example.com',
-    TWITTER_HANDLE: metaEnv.PUBLIC_TWITTER_HANDLE || 'example',
+    ADMIN_EMAIL: metaEnv.PUBLIC_ADMIN_EMAIL || 'admin@autopilotrank.com',
+    SUPPORT_EMAIL: metaEnv.PUBLIC_SUPPORT_EMAIL || 'support@autopilotrank.com',
+    LEGAL_EMAIL: metaEnv.PUBLIC_LEGAL_EMAIL || 'legal@autopilotrank.com',
+    PRIVACY_EMAIL: metaEnv.PUBLIC_PRIVACY_EMAIL || 'privacy@autopilotrank.com',
+    SALES_EMAIL: metaEnv.PUBLIC_SALES_EMAIL || 'sales@autopilotrank.com',
+    TWITTER_HANDLE: metaEnv.PUBLIC_TWITTER_HANDLE || 'autopilotrank',
     // App Configuration
-    APP_SLUG: metaEnv.PUBLIC_APP_SLUG || 'saas-boilerplate',
-    DOWNLOAD_PREFIX: metaEnv.PUBLIC_DOWNLOAD_PREFIX || 'saas-boilerplate',
-    BATCH_FOLDER_NAME: metaEnv.PUBLIC_BATCH_FOLDER_NAME || 'saas-boilerplate_batch',
-    CACHE_USER_KEY_PREFIX: metaEnv.PUBLIC_CACHE_USER_KEY_PREFIX || 'saas-boilerplate',
-    WEB_SERVICE_NAME: metaEnv.PUBLIC_WEB_SERVICE_NAME || 'saas-boilerplate-web',
-    CRON_SERVICE_NAME: metaEnv.PUBLIC_CRON_SERVICE_NAME || 'saas-boilerplate-cron',
+    APP_SLUG: metaEnv.PUBLIC_APP_SLUG || 'autopilotrank',
+    DOWNLOAD_PREFIX: metaEnv.PUBLIC_DOWNLOAD_PREFIX || 'autopilotrank',
+    BATCH_FOLDER_NAME: metaEnv.PUBLIC_BATCH_FOLDER_NAME || 'autopilotrank_batch',
+    CACHE_USER_KEY_PREFIX: metaEnv.PUBLIC_CACHE_USER_KEY_PREFIX || 'autopilotrank',
+    WEB_SERVICE_NAME: metaEnv.PUBLIC_WEB_SERVICE_NAME || 'autopilotrank-web',
+    CRON_SERVICE_NAME: metaEnv.PUBLIC_CRON_SERVICE_NAME || 'autopilotrank-cron',
     // GitHub
     GITHUB_USER: metaEnv.PUBLIC_GITHUB_USER || 'your-github-user',
-    GITHUB_REPO: metaEnv.PUBLIC_GITHUB_REPO || 'saas-boilerplate',
+    GITHUB_REPO: metaEnv.PUBLIC_GITHUB_REPO || 'autopilotrank',
     // Legal
-    LAST_UPDATED_DATE: metaEnv.PUBLIC_LAST_UPDATED_DATE || 'November 26, 2025',
+    LAST_UPDATED_DATE: metaEnv.PUBLIC_LAST_UPDATED_DATE || 'February 4, 2026',
     // Domains and URLs
-    PRIMARY_DOMAIN: metaEnv.PUBLIC_PRIMARY_DOMAIN || 'example.com',
-    APP_DOMAIN: metaEnv.PUBLIC_APP_DOMAIN || 'example.com',
+    PRIMARY_DOMAIN: metaEnv.PUBLIC_PRIMARY_DOMAIN || 'autopilotrank.com',
+    APP_DOMAIN: metaEnv.PUBLIC_APP_DOMAIN || 'autopilotrank.com',
     // Stripe
     STRIPE_PUBLISHABLE_KEY: metaEnv.PUBLIC_STRIPE_PUBLISHABLE_KEY || '',
     // Stripe Credit Pack Price IDs
@@ -158,7 +158,7 @@ export const clientEnv = loadClientEnv();
 const serverEnvSchema = z.object({
   ENV: z.enum(['development', 'production', 'test']).default('development'),
   // App Name
-  APP_NAME: z.string().default('SaaS Boilerplate'),
+  APP_NAME: z.string().default('AutopilotRank'),
   // Node environment
   NODE_ENV: z.string().optional(),
   // Test flags - Playwright sets this to "1" as a string, which Vite may coerce to number
@@ -189,8 +189,8 @@ const serverEnvSchema = z.object({
   CLOUDFLARE_API_TOKEN: z.string().default(''),
   CLOUDFLARE_ACCOUNT_ID: z.string().default(''),
   CLOUDFLARE_ZONE_ID: z.string().default(''),
-  DOMAIN_NAME: z.string().default('example.com'),
-  WORKER_NAME: z.string().default('saas-boilerplate'),
+  DOMAIN_NAME: z.string().default('autopilotrank.com'),
+  WORKER_NAME: z.string().default('autopilotrank'),
   // Cron Job Authentication
   CRON_SECRET: z.string().default(''),
   // Test Authentication
@@ -204,8 +204,8 @@ const serverEnvSchema = z.object({
   // Resend (Fallback) - 3,000 free emails/month
   RESEND_API_KEY: z.string().default(''),
   // Common email settings
-  EMAIL_FROM_ADDRESS: z.string().email().default('noreply@example.com'),
-  SUPPORT_EMAIL: z.string().email().default('support@example.com'),
+  EMAIL_FROM_ADDRESS: z.string().email().default('noreply@autopilotrank.com'),
+  SUPPORT_EMAIL: z.string().email().default('support@autopilotrank.com'),
   // Allow sending transactional emails in development (for testing)
   ALLOW_TRANSACTIONAL_EMAILS_IN_DEV: z.coerce.boolean().default(false),
 
@@ -260,7 +260,7 @@ function loadServerEnv(): IServerEnv {
   const env = {
     ENV: metaEnv.ENV || processEnv.ENV || processEnv.NODE_ENV || 'development',
     // App Name
-    APP_NAME: metaEnv.APP_NAME || metaEnv.PUBLIC_APP_NAME || 'SaaS Boilerplate',
+    APP_NAME: metaEnv.APP_NAME || metaEnv.PUBLIC_APP_NAME || 'AutopilotRank',
     // Node environment
     NODE_ENV: metaEnv.NODE_ENV,
     // Test flags - Playwright sets this to "1", accept string or number
@@ -271,57 +271,79 @@ function loadServerEnv(): IServerEnv {
     SUPABASE_URL: metaEnv.PUBLIC_SUPABASE_URL,
     BASE_URL: metaEnv.PUBLIC_BASE_URL,
     // Supabase
-    SUPABASE_SERVICE_ROLE_KEY: metaEnv.SUPABASE_SERVICE_ROLE_KEY || '',
+    // NOTE: Secrets fall back to processEnv because in CF Workers, runtime secrets are injected
+    // into process.env by middleware (from context.locals.runtime.env). import.meta.env only
+    // contains build-time PUBLIC_* vars.
+    SUPABASE_SERVICE_ROLE_KEY:
+      metaEnv.SUPABASE_SERVICE_ROLE_KEY || processEnv.SUPABASE_SERVICE_ROLE_KEY || '',
     // Stripe
-    STRIPE_SECRET_KEY: metaEnv.STRIPE_SECRET_KEY || '',
-    STRIPE_WEBHOOK_SECRET: metaEnv.STRIPE_WEBHOOK_SECRET || '',
+    STRIPE_SECRET_KEY: metaEnv.STRIPE_SECRET_KEY || processEnv.STRIPE_SECRET_KEY || '',
+    STRIPE_WEBHOOK_SECRET: metaEnv.STRIPE_WEBHOOK_SECRET || processEnv.STRIPE_WEBHOOK_SECRET || '',
     // Stripe Price IDs (legacy env vars — actual source of truth is subscription.config.ts)
-    STRIPE_STARTER_MONTHLY_PRICE_ID: metaEnv.STRIPE_STARTER_MONTHLY_PRICE_ID || '',
-    STRIPE_GROWTH_MONTHLY_PRICE_ID: metaEnv.STRIPE_GROWTH_MONTHLY_PRICE_ID || '',
-    STRIPE_AGENCY_MONTHLY_PRICE_ID: metaEnv.STRIPE_AGENCY_MONTHLY_PRICE_ID || '',
+    STRIPE_STARTER_MONTHLY_PRICE_ID:
+      metaEnv.STRIPE_STARTER_MONTHLY_PRICE_ID || processEnv.STRIPE_STARTER_MONTHLY_PRICE_ID || '',
+    STRIPE_GROWTH_MONTHLY_PRICE_ID:
+      metaEnv.STRIPE_GROWTH_MONTHLY_PRICE_ID || processEnv.STRIPE_GROWTH_MONTHLY_PRICE_ID || '',
+    STRIPE_AGENCY_MONTHLY_PRICE_ID:
+      metaEnv.STRIPE_AGENCY_MONTHLY_PRICE_ID || processEnv.STRIPE_AGENCY_MONTHLY_PRICE_ID || '',
     // Baselime monitoring
-    BASELIME_API_KEY: metaEnv.BASELIME_API_KEY || '',
+    BASELIME_API_KEY: metaEnv.BASELIME_API_KEY || processEnv.BASELIME_API_KEY || '',
     // Analytics (server-side HTTP API)
-    AMPLITUDE_API_KEY: metaEnv.AMPLITUDE_API_KEY || '',
+    AMPLITUDE_API_KEY: metaEnv.AMPLITUDE_API_KEY || processEnv.AMPLITUDE_API_KEY || '',
     // CORS
-    ALLOWED_ORIGIN: metaEnv.ALLOWED_ORIGIN || '*',
+    ALLOWED_ORIGIN: metaEnv.ALLOWED_ORIGIN || processEnv.ALLOWED_ORIGIN || '*',
     // Cloudflare
     CF_PAGES_URL: metaEnv.CF_PAGES_URL,
-    CLOUDFLARE_API_TOKEN: metaEnv.CLOUDFLARE_API_TOKEN || '',
-    CLOUDFLARE_ACCOUNT_ID: metaEnv.CLOUDFLARE_ACCOUNT_ID || '',
-    CLOUDFLARE_ZONE_ID: metaEnv.CLOUDFLARE_ZONE_ID || '',
-    DOMAIN_NAME: metaEnv.DOMAIN_NAME || 'example.com',
-    WORKER_NAME: metaEnv.WORKER_NAME || 'saas-boilerplate',
+    CLOUDFLARE_API_TOKEN: metaEnv.CLOUDFLARE_API_TOKEN || processEnv.CLOUDFLARE_API_TOKEN || '',
+    CLOUDFLARE_ACCOUNT_ID: metaEnv.CLOUDFLARE_ACCOUNT_ID || processEnv.CLOUDFLARE_ACCOUNT_ID || '',
+    CLOUDFLARE_ZONE_ID: metaEnv.CLOUDFLARE_ZONE_ID || processEnv.CLOUDFLARE_ZONE_ID || '',
+    DOMAIN_NAME: metaEnv.DOMAIN_NAME || processEnv.DOMAIN_NAME || 'autopilotrank.com',
+    WORKER_NAME: metaEnv.WORKER_NAME || processEnv.WORKER_NAME || 'autopilotrank',
     // Cron Job Authentication
-    CRON_SECRET: metaEnv.CRON_SECRET || '',
+    CRON_SECRET: metaEnv.CRON_SECRET || processEnv.CRON_SECRET || '',
     // Test Authentication
     TEST_AUTH_TOKEN: metaEnv.TEST_AUTH_TOKEN,
 
     // Email Providers
-    BREVO_API_KEY: metaEnv.BREVO_API_KEY || '',
-    RESEND_API_KEY: metaEnv.RESEND_API_KEY || '',
-    EMAIL_FROM_ADDRESS: metaEnv.EMAIL_FROM_ADDRESS || 'noreply@example.com',
-    SUPPORT_EMAIL: metaEnv.SUPPORT_EMAIL || metaEnv.PUBLIC_SUPPORT_EMAIL || 'support@example.com',
-    ALLOW_TRANSACTIONAL_EMAILS_IN_DEV: metaEnv.ALLOW_TRANSACTIONAL_EMAILS_IN_DEV ?? 'false',
+    BREVO_API_KEY: metaEnv.BREVO_API_KEY || processEnv.BREVO_API_KEY || '',
+    RESEND_API_KEY: metaEnv.RESEND_API_KEY || processEnv.RESEND_API_KEY || '',
+    EMAIL_FROM_ADDRESS:
+      metaEnv.EMAIL_FROM_ADDRESS || processEnv.EMAIL_FROM_ADDRESS || 'noreply@autopilotrank.com',
+    SUPPORT_EMAIL:
+      metaEnv.SUPPORT_EMAIL ||
+      metaEnv.PUBLIC_SUPPORT_EMAIL ||
+      processEnv.SUPPORT_EMAIL ||
+      'support@autopilotrank.com',
+    ALLOW_TRANSACTIONAL_EMAILS_IN_DEV:
+      metaEnv.ALLOW_TRANSACTIONAL_EMAILS_IN_DEV ??
+      processEnv.ALLOW_TRANSACTIONAL_EMAILS_IN_DEV ??
+      'false',
 
     // AI Providers
-    OPENROUTER_API_KEY: metaEnv.OPENROUTER_API_KEY || '',
-    OPENROUTER_VL_MODEL: metaEnv.OPENROUTER_VL_MODEL || 'google/gemini-2.0-flash-exp:free',
-    OPENROUTER_TEXT_MODEL: metaEnv.OPENROUTER_TEXT_MODEL || 'openai/gpt-4o',
+    OPENROUTER_API_KEY: metaEnv.OPENROUTER_API_KEY || processEnv.OPENROUTER_API_KEY || '',
+    OPENROUTER_VL_MODEL:
+      metaEnv.OPENROUTER_VL_MODEL ||
+      processEnv.OPENROUTER_VL_MODEL ||
+      'google/gemini-2.0-flash-exp:free',
+    OPENROUTER_TEXT_MODEL:
+      metaEnv.OPENROUTER_TEXT_MODEL || processEnv.OPENROUTER_TEXT_MODEL || 'openai/gpt-4o',
     // Replicate for image generation
-    REPLICATE_API_KEY: metaEnv.REPLICATE_API_KEY || '',
+    REPLICATE_API_KEY: metaEnv.REPLICATE_API_KEY || processEnv.REPLICATE_API_KEY || '',
     // Available writer presets (key(model) format, empty = all)
-    AVAILABLE_WRITER_PRESETS: metaEnv.AVAILABLE_WRITER_PRESETS || '',
+    AVAILABLE_WRITER_PRESETS:
+      metaEnv.AVAILABLE_WRITER_PRESETS || processEnv.AVAILABLE_WRITER_PRESETS || '',
     // Available image presets (key(model) format, empty = all)
-    AVAILABLE_IMAGE_PRESETS: metaEnv.AVAILABLE_IMAGE_PRESETS || '',
+    AVAILABLE_IMAGE_PRESETS:
+      metaEnv.AVAILABLE_IMAGE_PRESETS || processEnv.AVAILABLE_IMAGE_PRESETS || '',
     // OpenAI for semantic similarity and embeddings
-    OPENAI_API_KEY: metaEnv.OPENAI_API_KEY || '',
+    OPENAI_API_KEY: metaEnv.OPENAI_API_KEY || processEnv.OPENAI_API_KEY || '',
     // CMS encryption key
-    CMS_ENCRYPTION_KEY: metaEnv.CMS_ENCRYPTION_KEY || '',
+    CMS_ENCRYPTION_KEY: metaEnv.CMS_ENCRYPTION_KEY || processEnv.CMS_ENCRYPTION_KEY || '',
     // Google OAuth
-    GOOGLE_OAUTH_CLIENT_SECRET: metaEnv.GOOGLE_OAUTH_CLIENT_SECRET || '',
+    GOOGLE_OAUTH_CLIENT_SECRET:
+      metaEnv.GOOGLE_OAUTH_CLIENT_SECRET || processEnv.GOOGLE_OAUTH_CLIENT_SECRET || '',
     // OAuth state signing (separate from CRON_SECRET for security)
-    OAUTH_STATE_SECRET: metaEnv.OAUTH_STATE_SECRET || '',
+    OAUTH_STATE_SECRET: metaEnv.OAUTH_STATE_SECRET || processEnv.OAUTH_STATE_SECRET || '',
   };
 
   return serverEnvSchema.parse(env);
@@ -345,6 +367,15 @@ export const serverEnv: IServerEnv = new Proxy({} as IServerEnv, {
     return _serverEnv[prop as keyof IServerEnv];
   },
 });
+
+/**
+ * Reset the serverEnv cache so it re-reads from process.env on next access.
+ * Called from middleware after injecting CF runtime secrets into process.env,
+ * ensuring secrets are available before any serverEnv property is read.
+ */
+export function resetServerEnv(): void {
+  _serverEnv = null;
+}
 
 // =============================================================================
 // Helper functions
