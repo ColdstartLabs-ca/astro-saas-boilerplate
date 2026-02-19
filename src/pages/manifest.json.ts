@@ -10,19 +10,20 @@ const APP_NAME = clientEnv.APP_NAME;
 
 export const GET: APIRoute = () => {
   const manifest = {
-    name: `${APP_NAME} - Image Upscaling & Enhancement`,
+    name: `${APP_NAME} - AI SEO Content on Autopilot`,
     short_name: APP_NAME,
     description:
-      'Transform your images with cutting-edge AI. Upscale, enhance, and restore details with professional quality.',
+      'Scale your organic traffic on autopilot. Multi-model AI content that ranks and reads human.',
     start_url: '/',
     display: 'standalone' as const,
-    background_color: '#ffffff',
-    theme_color: '#3b82f6',
+    background_color: '#0d1117',
+    theme_color: '#16a34a',
     icons: [
       {
-        src: '/favicon.ico',
+        src: '/favicon.svg',
         sizes: 'any',
-        type: 'image/x-icon',
+        type: 'image/svg+xml',
+        purpose: 'any maskable',
       },
       {
         src: '/favicon-16x16.png',

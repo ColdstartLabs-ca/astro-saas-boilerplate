@@ -62,7 +62,8 @@
     "validate:seo:pseo:verbose": "tsx scripts/validate-pseo-data.ts --verbose",
     "validate:seo:pseo:http": "tsx scripts/validate-pseo-data.ts --curl",
     "validate:seo:pseo:http:verbose": "tsx scripts/validate-pseo-data.ts --curl --verbose",
-    "validate:seo:all": "yarn validate:seo:pseo && yarn validate:seo:internal-links"
+    "validate:seo:all": "yarn validate:seo:pseo && yarn validate:seo:internal-links",
+    "generate:assets": "tsx scripts/generate-brand-assets.ts"
   },
   "dependencies": {
     "@amplitude/analytics-browser": "^2.31.3",

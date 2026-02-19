@@ -12,27 +12,58 @@ export function Logo({ className = '', variant = 'full' }: IProps): JSX.Element 
 
   return (
     <div className={`flex items-center gap-2 ${className}`}>
-      {/* Green square icon with white lightning bolt/arrow */}
-      <div className="bg-brand-600 p-1.5 rounded-lg">
-        <svg
-          width="20"
-          height="20"
-          viewBox="0 0 40 40"
-          fill="none"
-          xmlns="http://www.w3.org/2000/svg"
-          className="flex-shrink-0"
+      {/* Icon: AR monogram badge (compact) or lightning bolt (full) */}
+      {isCompact ? (
+        <div
+          className="rounded-xl flex items-center justify-center flex-shrink-0"
+          style={{
+            width: 36,
+            height: 36,
+            background: 'linear-gradient(135deg, #22c55e 0%, #15803d 100%)',
+          }}
         >
-          {/* White lightning bolt/arrow symbol */}
-          <path
-            d="M18 8L10 22H18L16 32L28 16H20L22 8H18Z"
-            fill="white"
-            stroke="white"
-            strokeWidth="1"
-            strokeLinejoin="round"
-          />
-        </svg>
-      </div>
-      {/* AutopilotRank text */}
+          <span
+            style={{
+              color: 'white',
+              fontWeight: 900,
+              fontSize: 15,
+              letterSpacing: '-0.5px',
+              lineHeight: 1,
+              fontFamily: "-apple-system, 'Helvetica Neue', Arial, sans-serif",
+              userSelect: 'none',
+            }}
+          >
+            AR
+          </span>
+        </div>
+      ) : (
+        <div
+          className="rounded-xl flex items-center justify-center flex-shrink-0"
+          style={{
+            width: 36,
+            height: 36,
+            background: 'linear-gradient(135deg, #22c55e 0%, #15803d 100%)',
+          }}
+        >
+          <svg
+            width="20"
+            height="20"
+            viewBox="0 0 40 40"
+            fill="none"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            {/* Lightning bolt — autopilot speed */}
+            <path
+              d="M18 8L10 22H18L16 32L28 16H20L22 8H18Z"
+              fill="white"
+              stroke="white"
+              strokeWidth="1"
+              strokeLinejoin="round"
+            />
+          </svg>
+        </div>
+      )}
+      {/* AutopilotRank wordmark */}
       {!isCompact && (
         <span className="text-white font-bold text-xl tracking-tight">
           Autopilot<span className="text-accent">Rank</span>
