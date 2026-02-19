@@ -32,7 +32,7 @@ export const GET: APIRoute = async ({ request, url }) => {
 
     // Verify signed state token
     // Use dedicated OAuth state secret (not CRON_SECRET) for security isolation
-    const stateSecret = serverEnv.OAUTH_STATE_SECRET || serverEnv.CRON_SECRET;
+    const stateSecret = serverEnv.GSC_STATE_SECRET || serverEnv.CRON_SECRET;
     const stateResult = await verifyOAuthState(params.state, stateSecret);
 
     if (!stateResult.valid || !stateResult.data) {

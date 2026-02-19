@@ -14,7 +14,7 @@ vi.mock('@shared/config/env', () => ({
   },
   serverEnv: {
     GOOGLE_OAUTH_CLIENT_SECRET: 'test-client-secret',
-    OAUTH_STATE_SECRET: 'test-oauth-state-secret',
+    GSC_STATE_SECRET: 'test-oauth-state-secret',
     CRON_SECRET: 'test-cron-secret',
   },
 }));

@@ -237,9 +237,10 @@ const serverEnvSchema = z.object({
   // GOOGLE OAUTH (GSC + future Google APIs)
   // ==========================================
   GOOGLE_OAUTH_CLIENT_SECRET: z.string().default(''),
-  // OAuth state signing secret (separate from CRON_SECRET for security)
+  // GSC OAuth state signing secret - used to HMAC-sign the state param in the
+  // Google Search Console OAuth flow (CSRF protection). Falls back to CRON_SECRET.
   // Generate with: openssl rand -hex 32
-  OAUTH_STATE_SECRET: z.string().default(''),
+  GSC_STATE_SECRET: z.string().default(''),
 });
 
 export type IServerEnv = z.infer<typeof serverEnvSchema>;
@@ -342,8 +343,8 @@ function loadServerEnv(): IServerEnv {
     // Google OAuth
     GOOGLE_OAUTH_CLIENT_SECRET:
       metaEnv.GOOGLE_OAUTH_CLIENT_SECRET || processEnv.GOOGLE_OAUTH_CLIENT_SECRET || '',
-    // OAuth state signing (separate from CRON_SECRET for security)
-    OAUTH_STATE_SECRET: metaEnv.OAUTH_STATE_SECRET || processEnv.OAUTH_STATE_SECRET || '',
+    // GSC OAuth state signing (separate from CRON_SECRET for security)
+    GSC_STATE_SECRET: metaEnv.GSC_STATE_SECRET || processEnv.GSC_STATE_SECRET || '',
   };
 
   return serverEnvSchema.parse(env);

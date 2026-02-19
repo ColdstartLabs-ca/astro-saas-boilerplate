@@ -74,7 +74,7 @@ step_secrets() {
         CMS_ENCRYPTION_KEY
         # Google OAuth (GSC + API integrations)
         GOOGLE_OAUTH_CLIENT_SECRET
-        OAUTH_STATE_SECRET
+        GSC_STATE_SECRET
         # Monitoring
         BASELIME_API_KEY
         AMPLITUDE_API_KEY
@@ -87,7 +87,7 @@ step_secrets() {
     done
 
     # Warn about critical secrets that have empty values (will silently skip)
-    for critical in GOOGLE_OAUTH_CLIENT_SECRET OAUTH_STATE_SECRET EMAIL_FROM_ADDRESS; do
+    for critical in GOOGLE_OAUTH_CLIENT_SECRET GSC_STATE_SECRET EMAIL_FROM_ADDRESS; do
         if [[ -z "${!critical:-}" ]]; then
             log_warn "$critical is empty — add it to the GCloud secret 'autopilotrank-api-prod' and redeploy"
         fi
