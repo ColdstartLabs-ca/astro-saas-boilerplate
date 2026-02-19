@@ -111,7 +111,7 @@ describe('Logger Module', () => {
       const request = new Request('https://example.com/test');
       const logger = createLogger(request, 'test-namespace');
 
-      expect(logger.options.service).toBe('saas-boilerplate-api');
+      expect(logger.options.service).toBe('autopilotrank-api');
     });
 
     it('should include context in logger options', () => {
