@@ -22,6 +22,27 @@ if (!post) {
 
 const title = post.title;
 const description = post.description;
+const ogImage = post.image || `${clientEnv.BASE_URL}/og-image.png`;
+const canonicalUrl = `${clientEnv.BASE_URL}/blog/${slug}`;
+
+const articleJsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'Article',
+  headline: post.title,
+  description: post.description,
+  image: ogImage,
+  author: {
+    '@type': 'Person',
+    name: post.author,
+  },
+  publisher: {
+    '@type': 'Organization',
+    name: clientEnv.APP_NAME,
+    url: clientEnv.BASE_URL,
+  },
+  datePublished: post.date,
+  url: canonicalUrl,
+};
 ---
 
 <Layout title={title}>
@@ -30,8 +51,19 @@ const description = post.description;
     <meta property="og:title" content={`${title} | ${clientEnv.APP_NAME}`} />
     <meta property="og:description" content={description} />
     <meta property="og:type" content="article" />
-    {post.image && <meta property="og:image" content={post.image} />}
-    <link rel="canonical" href={`${clientEnv.BASE_URL}/blog/${slug}`} />
+    <meta property="og:url" content={canonicalUrl} />
+    <meta property="og:site_name" content={clientEnv.APP_NAME} />
+    <meta property="og:image" content={ogImage} />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content={`${title} | ${clientEnv.APP_NAME}`} />
+    <meta name="twitter:description" content={description} />
+    <meta name="twitter:image" content={ogImage} />
+    <link rel="canonical" href={canonicalUrl} />
+
+    <!-- Schema.org JSON-LD -->
+    <script type="application/ld+json" set:html={JSON.stringify(articleJsonLd)} />
   </Fragment>
 
   <ReadingProgress client:load />

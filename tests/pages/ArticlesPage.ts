@@ -56,7 +56,8 @@ export class ArticlesPage extends BasePage {
    */
   get inlineError(): Locator {
     // The error message is in a div with red background in the content area
-    return this.detailPanel.locator('.mb-4.p-3.bg-red-500\\/10').filter({
+    // ArticleDetailModal uses: bg-red-500/10 border border-red-500/30 rounded-lg text-red-400
+    return this.detailPanel.locator('.bg-red-500\\/10').filter({
       hasText: /failed|error/i,
     });
   }
@@ -296,25 +297,35 @@ export class ArticlesPage extends BasePage {
 
   /**
    * Gets the filter toggle button
+   * The button has text "Filters" and is inside the articles list header
    */
   get filterButton(): Locator {
-    return this.page.getByRole('button', { name: /filters/i });
+    // The filter button has text "Filters" with optional ChevronDown icon
+    return this.page.locator('[data-testid="articles-list"] button').filter({
+      hasText: /^Filters$/i,
+    });
   }
 
   /**
    * Gets the filter panel (visible when expanded)
+   * The filter panel is inside the article list container, shown when isFilterOpen is true
    */
   get filterPanel(): Locator {
-    return this.page.locator('.grid.grid-cols-3.gap-3');
+    // The filter panel has grid-cols-3 class and is inside the bg-surface container
+    return this.page.locator('[data-testid="articles-list"] .grid.grid-cols-3.gap-3');
   }
 
   /**
    * Opens the filter panel if not already open
    */
   async openFilterPanel(): Promise<void> {
+    // First ensure articles list is visible (we're not on empty/error state)
+    await this.assertArticlesListVisible();
+
     const panel = this.filterPanel;
     if (!(await panel.isVisible().catch(() => false))) {
       await this.filterButton.click();
+      // Wait for the filter panel animation
       await expect(panel).toBeVisible({ timeout: 5000 });
     }
   }

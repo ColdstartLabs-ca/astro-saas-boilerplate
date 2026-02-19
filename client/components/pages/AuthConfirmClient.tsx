@@ -4,6 +4,7 @@ import { useEffect, useState, Suspense, useMemo } from 'react';
 import { createClient } from '@shared/utils/supabase/client';
 import { handleAuthRedirect, setAuthIntent } from '@client/utils/authRedirectManager';
 import { getTranslations } from '@src/i18n/utils';
+import { apiFetch } from '@client/utils/api-client';
 
 function AuthConfirmContent() {
   const [status, setStatus] = useState<'loading' | 'success' | 'verified_please_login'>('loading');
@@ -37,6 +38,8 @@ function AuthConfirmContent() {
       if (event === 'SIGNED_IN' && session) {
         setStatus('success');
         setMessage(t('emailConfirmed'));
+        // Fire-and-forget welcome email (idempotent - only sends once per user)
+        apiFetch('/api/auth/welcome', { method: 'POST' }).catch(() => {});
         // Use the unified redirect handler
         setTimeout(async () => {
           await handleAuthRedirect();
@@ -91,6 +94,8 @@ function AuthConfirmContent() {
             console.log('[Auth Confirm] Code exchange succeeded!');
             setStatus('success');
             setMessage(t('emailConfirmed'));
+            // Fire-and-forget welcome email (idempotent - only sends once per user)
+            apiFetch('/api/auth/welcome', { method: 'POST' }).catch(() => {});
             setTimeout(async () => {
               await handleAuthRedirect();
             }, 1500);

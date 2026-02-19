@@ -12,6 +12,10 @@ import { ArticlesPage } from '../pages/ArticlesPage';
  *
  * Mock data and API routes are set up per test group to provide the right
  * state for each scenario.
+ *
+ * Note: Route handlers are LIFO (last registered = first checked).
+ * The test-fixtures.ts sets up default mocks, and tests override them
+ * by registering routes AFTER goto() or in beforeEach (which runs after fixtures).
  */
 
 // =============================================================================
@@ -103,14 +107,14 @@ const mockArticles = {
 
 // =============================================================================
 // Helper: Mock campaigns API
-// Note: API responses are wrapped in { success: true, data: {...} } by jsonResponse()
+// Note: Use ** pattern to match test-fixtures.ts patterns (LIFO override)
 // =============================================================================
 
 async function mockCampaigns(
   page: import('@playwright/test').Page,
   campaigns: (typeof mockCampaign)[] = [mockCampaign]
 ) {
-  await page.route('**/api/campaigns*', async route => {
+  await page.route('**/api/campaigns**', async route => {
     if (route.request().method() === 'GET') {
       await route.fulfill({
         status: 200,
@@ -128,14 +132,14 @@ async function mockCampaigns(
 
 // =============================================================================
 // Helper: Mock articles API with existing data
-// Note: API responses are wrapped in { success: true, data: {...} } by jsonResponse()
+// Note: Use ** pattern to match test-fixtures.ts patterns (LIFO override)
 // =============================================================================
 
 async function mockArticlesWithData(
   page: import('@playwright/test').Page,
   articles: (typeof mockArticles)[keyof typeof mockArticles][]
 ) {
-  await page.route('**/api/articles*', async route => {
+  await page.route('**/api/articles**', async route => {
     if (route.request().method() === 'GET') {
       const url = route.request().url();
       const urlObj = new URL(url, 'http://localhost');
@@ -236,12 +240,14 @@ test.describe('Articles E2E Tests', () => {
 
   test.beforeEach(async ({ page }) => {
     articlesPage = new ArticlesPage(page);
-    // Always mock campaigns to ensure articles page displays correctly
+    // Mock campaigns BEFORE navigating - ensures the page has campaigns
+    // and won't show the "Create a Campaign First" state
     await mockCampaigns(page, [mockCampaign]);
   });
 
   test.describe('Article List Loading', () => {
     test('should display articles list with items', async ({ page }) => {
+      // Set up mocks BEFORE navigating
       await mockArticlesWithData(page, [
         mockArticles.draft,
         mockArticles.approved,
@@ -250,6 +256,8 @@ test.describe('Articles E2E Tests', () => {
 
       await articlesPage.goto();
 
+      // Wait for loading to complete and articles list to be visible
+      await articlesPage.waitForLoadingComplete();
       await articlesPage.assertArticlesListVisible();
       await articlesPage.assertArticleCardsCount(3);
     });
@@ -258,6 +266,7 @@ test.describe('Articles E2E Tests', () => {
       await mockArticlesWithData(page, []);
 
       await articlesPage.goto();
+      await articlesPage.waitForLoadingComplete();
 
       await articlesPage.assertEmptyStateVisible();
       await articlesPage.assertArticleCardsCount(0);
@@ -267,6 +276,7 @@ test.describe('Articles E2E Tests', () => {
       await mockArticlesWithData(page, [mockArticles.draft]);
 
       await articlesPage.goto();
+      await articlesPage.waitForLoadingComplete();
 
       const title = await articlesPage.getArticleTitle();
       expect(title).toContain('10 SEO Tips for 2024');
@@ -282,6 +292,7 @@ test.describe('Articles E2E Tests', () => {
       await mockArticlesWithData(page, [mockArticles.approved]);
 
       await articlesPage.goto();
+      await articlesPage.waitForLoadingComplete();
 
       const seoScore = await articlesPage.getSeoScore();
       expect(seoScore).toBeTruthy();
@@ -292,6 +303,7 @@ test.describe('Articles E2E Tests', () => {
       await mockArticlesWithData(page, [mockArticles.approved]);
 
       await articlesPage.goto();
+      await articlesPage.waitForLoadingComplete();
 
       const wordCount = await articlesPage.getWordCount();
       // Word count is formatted with toLocaleString(), so "2,100" instead of "2100"
@@ -302,6 +314,7 @@ test.describe('Articles E2E Tests', () => {
       await mockArticlesWithData(page, [mockArticles.draft]);
 
       await articlesPage.goto();
+      await articlesPage.waitForLoadingComplete();
 
       const campaignName = await articlesPage.getCampaignName(0);
       expect(campaignName).toContain('SEO Campaign');
@@ -311,6 +324,7 @@ test.describe('Articles E2E Tests', () => {
       await mockArticlesWithData(page, [mockArticles.failed]);
 
       await articlesPage.goto();
+      await articlesPage.waitForLoadingComplete();
 
       await articlesPage.assertArticlesListVisible();
       await articlesPage.assertArticleCardsCount(1);
@@ -324,7 +338,7 @@ test.describe('Articles E2E Tests', () => {
       // Note: The loading spinner appears briefly while fetching articles.
       // Due to the async nature of React Query and fast responses, this test
       // checks that the component renders correctly after loading.
-      await page.route('**/api/articles*', async route => {
+      await page.route('**/api/articles**', async route => {
         if (route.request().method() === 'GET') {
           await new Promise(resolve => setTimeout(resolve, 500));
           await route.fulfill({
@@ -344,6 +358,7 @@ test.describe('Articles E2E Tests', () => {
       await articlesPage.goto();
 
       // After loading completes, articles list should be visible
+      await articlesPage.waitForLoadingComplete();
       await articlesPage.assertArticlesListVisible();
     });
   });
@@ -360,6 +375,7 @@ test.describe('Articles E2E Tests', () => {
 
     test('should filter articles by status - draft', async ({ page }) => {
       await articlesPage.goto();
+      await articlesPage.waitForLoadingComplete();
 
       await articlesPage.filterByStatus('draft');
 
@@ -369,6 +385,7 @@ test.describe('Articles E2E Tests', () => {
 
     test('should filter articles by status - approved', async ({ page }) => {
       await articlesPage.goto();
+      await articlesPage.waitForLoadingComplete();
 
       await articlesPage.filterByStatus('approved');
 
@@ -378,6 +395,7 @@ test.describe('Articles E2E Tests', () => {
 
     test('should filter articles by status - published', async ({ page }) => {
       await articlesPage.goto();
+      await articlesPage.waitForLoadingComplete();
 
       await articlesPage.filterByStatus('published');
 
@@ -387,14 +405,17 @@ test.describe('Articles E2E Tests', () => {
 
     test('should show no results for status with no articles', async ({ page }) => {
       await articlesPage.goto();
+      await articlesPage.waitForLoadingComplete();
 
       await articlesPage.filterByStatus('queued');
 
-      await articlesPage.assertArticleCardsCount(0);
+      // After filtering with no matches, should show empty state
+      await articlesPage.assertEmptyStateVisible();
     });
 
     test('should clear filter and show all articles', async ({ page }) => {
       await articlesPage.goto();
+      await articlesPage.waitForLoadingComplete();
 
       // Apply a filter
       await articlesPage.filterByStatus('draft');
@@ -411,6 +432,7 @@ test.describe('Articles E2E Tests', () => {
 
     test('should update URL query params when filtering', async ({ page }) => {
       await articlesPage.goto();
+      await articlesPage.waitForLoadingComplete();
 
       await articlesPage.filterByStatus('draft');
 
@@ -420,10 +442,12 @@ test.describe('Articles E2E Tests', () => {
 
     test('should persist filter across page reload', async ({ page }) => {
       await articlesPage.goto();
+      await articlesPage.waitForLoadingComplete();
 
       await articlesPage.filterByStatus('approved');
 
       await articlesPage.reload();
+      await articlesPage.waitForLoadingComplete();
 
       await articlesPage.assertArticleCardsCount(1);
       await articlesPage.assertArticleWithStatusVisible('approved');
@@ -438,6 +462,7 @@ test.describe('Articles E2E Tests', () => {
 
     test('should open article detail when clicking card', async ({ page }) => {
       await articlesPage.goto();
+      await articlesPage.waitForLoadingComplete();
 
       await articlesPage.openArticleDetail(0);
 
@@ -446,6 +471,7 @@ test.describe('Articles E2E Tests', () => {
 
     test('should display article content in detail panel', async ({ page }) => {
       await articlesPage.goto();
+      await articlesPage.waitForLoadingComplete();
 
       await articlesPage.openArticleDetail(0);
 
@@ -457,6 +483,7 @@ test.describe('Articles E2E Tests', () => {
 
     test('should show article metadata in detail panel', async ({ page }) => {
       await articlesPage.goto();
+      await articlesPage.waitForLoadingComplete();
 
       await articlesPage.openArticleDetail(0);
 
@@ -473,6 +500,7 @@ test.describe('Articles E2E Tests', () => {
 
     test('should close detail panel with close button', async ({ page }) => {
       await articlesPage.goto();
+      await articlesPage.waitForLoadingComplete();
 
       await articlesPage.openArticleDetail(0);
       await articlesPage.assertDetailPanelVisible();
@@ -487,6 +515,7 @@ test.describe('Articles E2E Tests', () => {
       await mockArticleDetail(page, mockArticles.failed);
 
       await articlesPage.goto();
+      await articlesPage.waitForLoadingComplete();
 
       await articlesPage.openArticleDetail(0);
 
@@ -502,6 +531,7 @@ test.describe('Articles E2E Tests', () => {
       await mockArticleRegenerate(page);
 
       await articlesPage.goto();
+      await articlesPage.waitForLoadingComplete();
       await articlesPage.openArticleDetail(0);
 
       await articlesPage.assertRegenerateButtonVisible();
@@ -513,6 +543,7 @@ test.describe('Articles E2E Tests', () => {
       await mockArticleRegenerate(page);
 
       await articlesPage.goto();
+      await articlesPage.waitForLoadingComplete();
       await articlesPage.openArticleDetail(0);
 
       // Set up request listener BEFORE clicking
@@ -551,6 +582,7 @@ test.describe('Articles E2E Tests', () => {
       });
 
       await articlesPage.goto();
+      await articlesPage.waitForLoadingComplete();
       await articlesPage.openArticleDetail(0);
 
       // Set up dialog handler before clicking
@@ -589,6 +621,7 @@ test.describe('Articles E2E Tests', () => {
       });
 
       await articlesPage.goto();
+      await articlesPage.waitForLoadingComplete();
       await articlesPage.openArticleDetail(0);
 
       // Set up dialog handler before clicking
@@ -610,6 +643,7 @@ test.describe('Articles E2E Tests', () => {
       await mockArticleRegenerate(page);
 
       await articlesPage.goto();
+      await articlesPage.waitForLoadingComplete();
       await articlesPage.openArticleDetail(0);
 
       // Click regenerate and wait for modal to close
@@ -626,6 +660,7 @@ test.describe('Articles E2E Tests', () => {
       await mockArticleDetail(page, mockArticles.draft);
 
       await articlesPage.goto();
+      await articlesPage.waitForLoadingComplete();
       await articlesPage.openArticleDetail(0);
 
       await articlesPage.assertApproveButtonVisible();
@@ -636,6 +671,7 @@ test.describe('Articles E2E Tests', () => {
       await mockArticleDetail(page, mockArticles.failed);
 
       await articlesPage.goto();
+      await articlesPage.waitForLoadingComplete();
       await articlesPage.openArticleDetail(0);
 
       await articlesPage.assertRegenerateButtonVisible();
@@ -647,6 +683,7 @@ test.describe('Articles E2E Tests', () => {
       await mockArticlesWithData(page, [mockArticles.draft]);
 
       await articlesPage.goto();
+      await articlesPage.waitForLoadingComplete();
 
       await articlesPage.assertOnArticlesPage();
     });
@@ -658,6 +695,7 @@ test.describe('Articles E2E Tests', () => {
       await mockArticleDetail(page, mockArticles.draft);
 
       await articlesPage.goto();
+      await articlesPage.waitForLoadingComplete();
       await articlesPage.assertOnArticlesPage();
 
       await articlesPage.openArticleDetail(0);
@@ -677,6 +715,7 @@ test.describe('Articles E2E Tests', () => {
       await mockArticleDetail(page, mockArticles.draft);
 
       await articlesPage.goto();
+      await articlesPage.waitForLoadingComplete();
 
       // Open, close, then reopen the detail panel
       await articlesPage.openArticleDetail(0);
@@ -696,7 +735,7 @@ test.describe('Articles E2E Tests', () => {
 
   test.describe('Error Handling', () => {
     test('should handle API error gracefully when loading articles', async ({ page }) => {
-      await page.route('**/api/articles*', async route => {
+      await page.route('**/api/articles**', async route => {
         if (route.request().method() === 'GET') {
           await route.fulfill({
             status: 500,
@@ -709,9 +748,11 @@ test.describe('Articles E2E Tests', () => {
       });
 
       await articlesPage.goto();
+      await articlesPage.waitForLoadingComplete();
 
       // Should show error state or empty state, not crash
-      await articlesPage.assertArticleCardsCount(0);
+      // The error state shows "Failed to load articles" in ArticleList.tsx
+      await expect(page.locator('text=/failed to load/i')).toBeVisible({ timeout: 10000 });
     });
 
     test('should handle API error when regenerating article', async ({ page }) => {
@@ -731,6 +772,7 @@ test.describe('Articles E2E Tests', () => {
       });
 
       await articlesPage.goto();
+      await articlesPage.waitForLoadingComplete();
       await articlesPage.openArticleDetail(0);
 
       await articlesPage.clickRegenerate();
@@ -748,6 +790,7 @@ test.describe('Articles E2E Tests', () => {
       await mockArticlesWithData(page, [mockArticles.draft]);
 
       await articlesPage.goto();
+      await articlesPage.waitForLoadingComplete();
 
       await articlesPage.checkBasicAccessibility();
     });
@@ -757,6 +800,7 @@ test.describe('Articles E2E Tests', () => {
       await mockArticleDetail(page, mockArticles.draft);
 
       await articlesPage.goto();
+      await articlesPage.waitForLoadingComplete();
 
       // Focus the first article title button directly
       await articlesPage.focusFirstArticleTitle();
@@ -772,6 +816,7 @@ test.describe('Articles E2E Tests', () => {
       await mockArticleDetail(page, mockArticles.draft);
 
       await articlesPage.goto();
+      await articlesPage.waitForLoadingComplete();
       await articlesPage.openArticleDetail(0);
 
       // Close via close button (Escape key is not implemented in ArticleDetailModal)

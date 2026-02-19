@@ -9,7 +9,7 @@
  * Related migration: 20260120_fix_signup_trigger.sql
  */
 
-import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
+import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { createClient } from '@shared/utils/supabase/server';
 
 describe('Signup Trigger Fix', () => {

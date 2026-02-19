@@ -23,6 +23,14 @@ const getTechFaq = (faq: string) => t(`technicalSupport.faqs.${faq}`);
     <meta property="og:description" content={description} />
     <meta property="og:type" content="website" />
     <meta property="og:url" content={`${clientEnv.BASE_URL}/help`} />
+    <meta property="og:site_name" content={clientEnv.APP_NAME} />
+    <meta property="og:image" content={`${clientEnv.BASE_URL}/og-image.png`} />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content={title} />
+    <meta name="twitter:description" content={description} />
+    <meta name="twitter:image" content={`${clientEnv.BASE_URL}/og-image.png`} />
     <link rel="canonical" href={`${clientEnv.BASE_URL}/help`} />
     <style>
       /* Sticky nav offset for anchor links */
@@ -352,6 +360,18 @@ const getTechFaq = (faq: string) => t(`technicalSupport.faqs.${faq}`);
             </summary>
             <div class="px-4 pb-3 text-xs text-text-secondary leading-relaxed">
               {getTechFaq('aiModels.answer')}
+            </div>
+          </details>
+
+          <details class="group bg-surface rounded-lg border border-border hover:border-accent/20 transition-colors">
+            <summary class="flex items-center justify-between px-4 py-3 cursor-pointer select-none">
+              <h3 class="text-sm font-medium text-white pr-3">{getTechFaq('humanizer.question')}</h3>
+              <svg class="w-4 h-4 text-muted-foreground group-open:rotate-180 transition-transform flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+              </svg>
+            </summary>
+            <div class="px-4 pb-3 text-xs text-text-secondary leading-relaxed">
+              {getTechFaq('humanizer.answer')}
             </div>
           </details>
 

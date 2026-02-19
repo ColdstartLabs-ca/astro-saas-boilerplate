@@ -634,3 +634,60 @@ export class StripeWebhookMockFactory {
     return `t=${Date.now()},v1=${Buffer.from(`${secret}${payload}`).toString('base64').slice(0, 64)}`;
   }
 }
+
+/**
+ * Simplified webhook mocks namespace for easier test usage
+ * Provides convenience methods matching common test patterns
+ */
+export const stripeWebhookMocks = {
+  checkoutCompleted: (options: {
+    customerId: string;
+    userId: string;
+    tier?: string;
+    amount?: number;
+  }) =>
+    StripeWebhookMockFactory.createCheckoutSessionCompletedForSubscription({
+      userId: options.userId,
+      customerId: options.customerId,
+    }),
+
+  invoicePaymentSucceeded: (options: {
+    customerId: string;
+    userId: string;
+    tier?: string;
+    amount?: number;
+  }) =>
+    StripeWebhookMockFactory.createInvoicePaymentSucceeded({
+      userId: options.userId,
+      customerId: options.customerId,
+    }),
+
+  subscriptionUpdated: (options: {
+    customerId: string;
+    userId: string;
+    status?: string;
+    tier?: string;
+  }) =>
+    StripeWebhookMockFactory.createSubscriptionUpdated({
+      userId: options.userId,
+      customerId: options.customerId,
+      status: options.status,
+    }),
+
+  subscriptionDeleted: (options: { customerId: string; userId: string }) =>
+    StripeWebhookMockFactory.createSubscriptionDeleted({
+      userId: options.userId,
+      customerId: options.customerId,
+    }),
+
+  checkoutCompletedForCredits: (options: {
+    customerId: string;
+    userId: string;
+    creditsAmount?: number;
+  }) =>
+    StripeWebhookMockFactory.createCheckoutSessionCompletedForCredits({
+      userId: options.userId,
+      customerId: options.customerId,
+      creditsAmount: options.creditsAmount,
+    }),
+};

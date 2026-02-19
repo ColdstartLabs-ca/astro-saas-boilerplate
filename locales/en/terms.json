@@ -1,165 +1,169 @@
 {
   "meta": {
     "title": "Terms of Service",
-    "description": "Read the terms and conditions for using {APP_NAME} API services."
+    "description": "Read the terms and conditions for using {APP_NAME} AI-powered SEO content generation and publishing services."
   },
   "lastUpdated": "Last updated: {date}",
   "title": "Terms of Service",
   "viewPrivacy": "View Privacy Policy",
   "acceptance": {
     "title": "1. Acceptance of Terms",
-    "paragraph1": "By accessing or using {APP_NAME} (\"Service\"), you agree to be bound by these Terms of Service (\"Terms\"). If you do not agree to these Terms, you may not use the Service.",
-    "paragraph2": "We reserve the right to modify these Terms at any time. Continued use of the Service after changes constitutes acceptance of the modified Terms."
+    "paragraph1": "By accessing or using {APP_NAME} (\"Service\"), operated by ColdStart Labs Inc., you agree to be bound by these Terms of Service (\"Terms\"). If you do not agree to these Terms, you may not use the Service.",
+    "paragraph2": "We reserve the right to modify these Terms at any time. We will notify you of material changes by email or in-app notice. Continued use of the Service after changes constitutes acceptance of the modified Terms."
   },
   "description": {
     "title": "2. Description of Service",
-    "intro": "{APP_NAME} provides API services for various operations. The Service allows users to:",
+    "intro": "{APP_NAME} is an AI-powered SEO content generation and CMS publishing automation platform. The Service allows users to:",
     "features": [
-      "Make API requests to process data",
-      "Access various endpoints for different operations",
-      "Integrate with their applications",
-      "Receive results in standard formats"
+      "Generate SEO-optimized articles using AI models (including Gemini, GPT-4o, and Claude)",
+      "Automatically publish content to WordPress and other supported CMS platforms",
+      "Schedule recurring content campaigns for ongoing SEO automation",
+      "Manage content generation credits and subscription plans"
     ]
   },
   "registration": {
     "title": "3. Account Registration",
-    "intro": "To use certain features, you must:",
+    "intro": "To use the Service, you must:",
     "requirements": [
-      "Create an account with accurate information",
+      "Create an account with accurate and complete information",
       "Maintain the security of your account credentials",
-      "Notify us immediately of unauthorized access",
-      "Be at least 13 years old (or the minimum age in your jurisdiction)"
+      "Notify us immediately of any unauthorized access to your account",
+      "Be at least 18 years old, or the age of majority in your jurisdiction"
     ],
-    "responsibility": "You are responsible for all activities under your account."
+    "responsibility": "You are responsible for all activities that occur under your account, including any content published to your connected CMS platforms."
   },
   "credits": {
     "title": "4. Credits and Payments",
     "system": {
       "title": "4.1 Credit System",
-      "description": "The Service operates on a credit-based system. Each API request consumes credits based on the operation type and resources used."
+      "description": "The Service operates on a credit-based system. Each article generation consumes credits based on the selected AI model, article length, and features used. Credit costs are displayed before you confirm a generation."
     },
     "free": {
-      "title": "4.2 Free Credits",
-      "description": "New users receive 10 free credits upon registration. Free credits are subject to our standard Terms and may be modified or discontinued at any time."
+      "title": "4.2 Trial Credits",
+      "description": "New users may receive trial credits upon registration. Trial credits are subject to expiry and may be modified or discontinued at any time without notice."
     },
     "subscription": {
       "title": "4.3 Subscription Credits",
       "features": [
-        "Subscription credits renew monthly and roll over (up to 6× your monthly credit allowance)",
-        "Credits are only available while your subscription is active",
-        "All subscriptions are processed through Stripe",
-        "Prices are in USD unless otherwise stated"
+        "Subscription credits are allocated monthly and roll over (up to 6x your monthly credit allowance)",
+        "Credits are only available while your subscription is active — credits are forfeited if your subscription lapses",
+        "All subscriptions are billed and processed through Stripe",
+        "Prices are listed in USD unless otherwise stated"
       ]
     },
     "refunds": {
-      "title": "4.4 Refunds",
-      "intro": "Due to the nature of digital services, refunds are generally not provided for used credits. However, we may issue refunds at our discretion for:",
+      "title": "4.4 Refunds and Failed Generations",
+      "intro": "Credits are generally non-refundable once used. However:",
       "reasons": [
-        "Technical failures that result in lost credits",
-        "Duplicate charges",
-        "Service unavailability"
+        "Credits consumed by a failed article generation are automatically refunded to your account",
+        "Duplicate charges due to billing errors may be refunded upon request",
+        "Refund requests for other reasons are evaluated at our sole discretion"
       ],
-      "contact": "For refund requests, contact",
+      "contact": "For billing issues, contact",
       "email": "{SUPPORT_EMAIL}"
     }
   },
   "subscriptions": {
     "title": "5. Subscriptions",
+    "intro": "Regarding your subscription:",
     "terms": [
-      "Subscriptions automatically renew at the end of each billing period",
-      "You may cancel at any time through your account settings or Stripe portal",
-      "Cancellation takes effect at the end of the current billing period",
-      "No prorated refunds for partial billing periods",
-      "We may change subscription prices with 30 days notice; continued use constitutes acceptance"
+      "Subscriptions automatically renew at the end of each billing period unless cancelled",
+      "You may cancel at any time through your account settings or via the Stripe billing portal",
+      "Cancellation takes effect at the end of the current billing period — you retain access until then",
+      "No prorated refunds are provided for partial billing periods",
+      "We may change subscription prices with 30 days' advance notice; continued use after the effective date constitutes acceptance of the new price"
     ]
   },
   "acceptableUse": {
     "title": "6. Acceptable Use",
     "intro": "You agree NOT to use the Service to:",
     "prohibitions": [
-      "Process illegal, harmful, or offensive content",
-      "Process data you do not have rights to use",
-      "Generate or enhance content depicting minors in inappropriate ways",
-      "Create misleading content intended to deceive",
-      "Violate intellectual property rights of others",
-      "Attempt to reverse-engineer or exploit the Service",
-      "Use automated systems to abuse the Service",
-      "Circumvent usage limits or security measures",
-      "Resell or redistribute the Service without authorization"
+      "Generate spam, low-quality content intended to manipulate search engines in violation of their guidelines, or content designed to deceive readers",
+      "Publish content to websites you do not own or have authorization to manage",
+      "Generate content that is illegal, harmful, defamatory, or infringes on third-party intellectual property rights",
+      "Generate content depicting minors in inappropriate ways",
+      "Abuse or overload the service through automated scraping, excessive API calls, or circumvention of rate limits",
+      "Attempt to reverse-engineer, decompile, or exploit the Service or its underlying systems",
+      "Resell or redistribute access to the Service without our written authorization"
     ],
-    "consequence": "Violation of these terms may result in immediate account termination without refund."
+    "consequence": "Violation of these terms may result in immediate account suspension or termination without refund."
   },
   "intellectualProperty": {
-    "title": "7. Intellectual Property",
+    "title": "7. Intellectual Property and AI Content",
     "yourContent": {
-      "title": "7.1 Your Content",
-      "description": "You retain all rights to data you process. By using the Service, you grant us a limited license to process your data solely for providing the requested service."
+      "title": "7.1 Ownership of Generated Content",
+      "description": "You own the articles and content generated through your use of the Service. By using the Service, you grant us a limited license to process your prompts and campaign data solely to provide the requested content generation and publishing services."
+    },
+    "aiContent": {
+      "title": "7.2 AI Content and Responsibility",
+      "description": "Your article prompts are sent to third-party AI providers (such as OpenAI, Google, and Anthropic) to produce content. You are responsible for reviewing all AI-generated content before it is published and for ensuring it complies with applicable laws and does not infringe on third-party rights. We do not guarantee the accuracy, originality, or suitability of AI-generated content for any particular purpose."
     },
     "ourService": {
-      "title": "7.2 Our Service",
-      "description": "{APP_NAME}, including its technology, branding, and content, is protected by intellectual property laws. You may not copy, modify, distribute, or create derivative works without our written permission."
+      "title": "7.3 Our Service",
+      "description": "{APP_NAME}, including its technology, platform, branding, and non-generated content, is protected by intellectual property laws. You may not copy, modify, distribute, or create derivative works of our platform or materials without our written permission."
     }
   },
   "availability": {
-    "title": "8. Service Availability",
-    "intro": "We strive for high availability but:",
+    "title": "8. Service Availability and Uptime",
+    "intro": "We strive for high availability but make no SLA guarantees at this time:",
     "limitations": [
-      "The Service is provided \"as is\" without guarantees",
-      "We may perform maintenance with or without notice",
-      "Processing times may vary based on demand",
-      "We reserve the right to modify or discontinue features"
+      "The Service is provided on a best-effort basis without uptime guarantees",
+      "We may perform maintenance with or without advance notice",
+      "AI generation times may vary based on provider availability and demand",
+      "CMS publishing may fail due to issues with your connected platform — we will retry and notify you of persistent failures",
+      "We reserve the right to modify, suspend, or discontinue features at any time"
     ]
   },
   "limitation": {
     "title": "9. Limitation of Liability",
-    "intro": "TO THE MAXIMUM EXTENT PERMITTED BY LAW, {APP_NAME} SHALL NOT BE LIABLE FOR:",
+    "intro": "TO THE MAXIMUM EXTENT PERMITTED BY APPLICABLE LAW, {APP_NAME} AND COLDSTART LABS INC. SHALL NOT BE LIABLE FOR:",
     "exclusions": [
-      "Indirect, incidental, special, or consequential damages",
-      "Loss of profits, data, or business opportunities",
-      "Service interruptions or data loss",
-      "Actions of third parties"
+      "Indirect, incidental, special, punitive, or consequential damages",
+      "Loss of profits, revenue, data, or business opportunities",
+      "Damages resulting from AI-generated content published to your website",
+      "Service interruptions, failed publishing events, or data loss",
+      "Actions or policies of third-party AI providers or CMS platforms"
     ],
-    "cap": "Our total liability shall not exceed the amount you paid us in the 12 months preceding the claim."
+    "cap": "Our total cumulative liability for any claim shall not exceed the total amount you paid us in the 3 months preceding the claim."
   },
   "disclaimer": {
     "title": "10. Disclaimer of Warranties",
     "intro": "THE SERVICE IS PROVIDED \"AS IS\" AND \"AS AVAILABLE\" WITHOUT WARRANTIES OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO:",
     "exclusions": [
-      "Merchantability",
-      "Fitness for a particular purpose",
-      "Non-infringement",
-      "Accuracy or reliability of results"
+      "Merchantability or fitness for a particular purpose",
+      "Non-infringement of third-party rights",
+      "Accuracy, originality, or SEO effectiveness of AI-generated content",
+      "Uninterrupted or error-free operation of the Service"
     ],
-    "caveat": "API results may not always meet expectations. Results depend on input data quality and other factors."
+    "caveat": "SEO results and content quality depend on many factors outside our control, including AI model behavior, your target keywords, and search engine algorithms."
   },
   "indemnification": {
     "title": "11. Indemnification",
-    "description": "You agree to indemnify and hold harmless {APP_NAME} and its officers, directors, employees, and agents from any claims, damages, losses, or expenses arising from your use of the Service, violation of these Terms, or infringement of any third-party rights."
+    "description": "You agree to indemnify, defend, and hold harmless {APP_NAME}, ColdStart Labs Inc., and their officers, directors, employees, and agents from any claims, damages, losses, or expenses (including reasonable legal fees) arising from: (a) your use of the Service; (b) content you generate or publish using the Service; (c) your violation of these Terms; or (d) your infringement of any third-party rights."
   },
   "termination": {
     "title": "12. Termination",
     "intro": "We may suspend or terminate your account at any time for:",
     "reasons": [
-      "Violation of these Terms",
-      "Fraudulent or illegal activity",
-      "Non-payment",
-      "Extended inactivity",
-      "Any other reason at our sole discretion"
+      "Violation of these Terms or our Acceptable Use Policy",
+      "Fraudulent, abusive, or illegal activity",
+      "Non-payment or repeated payment failures",
+      "Any other reason at our sole discretion with reasonable notice where possible"
     ],
-    "consequence": "Upon termination, your right to use the Service ceases immediately. Unused credits are forfeited unless otherwise required by law."
+    "consequence": "Upon termination, your right to use the Service ceases immediately and your CMS credentials stored with us will be deleted. Unused subscription credits are forfeited. Any content already published to your CMS remains unaffected."
   },
   "governingLaw": {
     "title": "13. Governing Law",
-    "description": "These Terms shall be governed by the laws of the jurisdiction in which we operate, without regard to conflict of law provisions. Any disputes shall be resolved in the courts of that jurisdiction."
+    "description": "These Terms are governed by the laws of the Province of Ontario, Canada, without regard to its conflict of law provisions. Any disputes arising under these Terms shall be resolved in the courts of Ontario, Canada. You consent to the personal jurisdiction of such courts."
   },
   "severability": {
     "title": "14. Severability",
-    "description": "If any provision of these Terms is found unenforceable, the remaining provisions shall remain in full force and effect."
+    "description": "If any provision of these Terms is found to be unenforceable or invalid, that provision will be limited or eliminated to the minimum extent necessary, and the remaining provisions will continue in full force and effect."
   },
   "contact": {
     "title": "15. Contact",
-    "intro": "For questions about these Terms:",
-    "emailLabel": "Email:",
+    "intro": "For questions about these Terms, please contact us:",
+    "emailLabel": "Legal inquiries:",
     "email": "{LEGAL_EMAIL}"
   }
 }

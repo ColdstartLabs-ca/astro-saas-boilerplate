@@ -13,8 +13,15 @@ export const CSP_POLICY = {
   'default-src': ["'self'"],
   'script-src': [
     "'self'",
+    // Required: Astro 5 injects inline hydration scripts for island components.
+    // Removing this requires per-request nonce generation (significant refactor).
     "'unsafe-inline'",
+    // Required: Astro/Vite injects eval-based code in dev. Also used by some
+    // third-party SDKs (Stripe, Google Identity Services) at runtime.
+    // TODO: Test removing this in production — our codebase has no direct eval usage.
+    //       wasm-unsafe-eval below covers our WASM needs (background removal).
     "'unsafe-eval'",
+    // Required: @imgly/background-removal uses WebAssembly.compile()
     "'wasm-unsafe-eval'",
     'blob:',
     'https://*.googletagmanager.com',
@@ -24,6 +31,8 @@ export const CSP_POLICY = {
   ],
   'style-src': [
     "'self'",
+    // Required: React inline styles, Astro CSS injection, and third-party widgets
+    // (Google Identity Services, Stripe) inject inline styles at runtime.
     "'unsafe-inline'",
     'https://accounts.google.com',
     'https://fonts.googleapis.com',

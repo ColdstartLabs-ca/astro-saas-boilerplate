@@ -19,8 +19,7 @@ const TEST_WRANGLER_PORT =
   process.env.TEST_WRANGLER_PORT ||
   (8800 + Math.floor(Math.random() * 200)).toString();
 const PLAYWRIGHT_MOCK_DB_PATH =
-  process.env.PLAYWRIGHT_MOCK_DB_PATH ||
-  `/tmp/autopilotrank-playwright-mock-db-${TEST_PORT}.json`;
+  process.env.PLAYWRIGHT_MOCK_DB_PATH || `/tmp/autopilotrank-playwright-mock-db-${TEST_PORT}.json`;
 
 // Export for use in tests if needed
 process.env.PLAYWRIGHT_TEST_PORT = TEST_PORT;
@@ -100,6 +99,19 @@ export default defineConfig({
         baseURL: `http://localhost:${TEST_PORT}`,
       },
       testMatch: /.*\.integration\.spec\.ts/,
+      // Ignore Vitest-based tests that conflict with Playwright
+      testIgnore: [
+        /signup-trigger-fix/,
+        /article-generation-refund/,
+        /credit-management/,
+        /billing-rollover/,
+        /credit-clawback/,
+        /plan-changes/,
+        /checkout\.trial/,
+        /campaign-start-idempotency/,
+        /webhook\.trial/,
+        /rollover-edge-cases/,
+      ],
       workers: 1, // Keep single worker for integration tests to avoid Supabase rate limits
       timeout: 90000, // Increase timeout for complex integration workflows
     },

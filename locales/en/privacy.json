@@ -8,8 +8,8 @@
   "viewTerms": "View Terms of Service",
   "introduction": {
     "title": "1. Introduction",
-    "paragraph1": "Welcome to {APP_NAME} (\"we,\" \"our,\" or \"us\"). We are committed to protecting your privacy and ensuring the security of your personal information. This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you use our API service.",
-    "paragraph2": "By using {APP_NAME}, you agree to the collection and use of information in accordance with this policy."
+    "paragraph1": "Welcome to {APP_NAME} (\"we,\" \"our,\" or \"us\"), operated by ColdStart Labs Inc. We are committed to protecting your privacy and ensuring the security of your personal information. This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you use our AI-powered SEO content generation and publishing platform.",
+    "paragraph2": "By using {APP_NAME}, you agree to the collection and use of information in accordance with this policy. If you have any questions, contact us at privacy@autopilotrank.com."
   },
   "collection": {
     "title": "2. Information We Collect",
@@ -20,33 +20,31 @@
         "Email address",
         "Name (if provided)",
         "Password (stored securely using industry-standard hashing)",
-        "Authentication data from third-party providers (Google) if you choose to sign in with OAuth"
+        "Authentication data from third-party providers (Google, Microsoft) if you choose to sign in with OAuth"
       ]
     },
-    "apiData": {
-      "title": "2.2 API Data",
-      "intro": "When you use our service, you send data for processing. We:",
+    "images": {
+      "title": "2.2 Content You Generate",
+      "intro": "When you use our content generation features, we collect and store:",
       "items": [
-        "Process your data to provide the requested API service",
-        "Do not permanently store your data on our servers after processing is complete",
-        "Do not use your data to train models or for any purpose other than providing the requested service"
+        "Article prompts, topics, and keywords you provide",
+        "AI-generated articles and content produced by the service",
+        "Campaign settings and scheduling configurations"
       ]
     },
     "payment": {
       "title": "2.3 Payment Information",
-      "description": "We use Stripe to process payments. We do not store your full credit card details on our servers. Stripe handles all payment processing and stores payment information according to their",
+      "description": "We use Stripe to process payments. We never see or store your full credit card details — Stripe handles all payment processing securely. Stripe stores payment information according to their",
       "privacyPolicyLink": "Privacy Policy"
     },
     "usage": {
-      "title": "2.4 Usage Data",
-      "intro": "We automatically collect:",
+      "title": "2.4 CMS Credentials",
+      "intro": "To publish content to your websites, we collect and store:",
       "items": [
-        "IP address",
-        "Browser type and version",
-        "Pages visited and time spent",
-        "Device information",
-        "Referring website",
-        "API usage history (number of requests, credits used)"
+        "WordPress (or other CMS) site URLs and API credentials",
+        "These credentials are encrypted at rest using AES-256-GCM encryption",
+        "Credentials are used solely to publish content on your behalf",
+        "We never share your CMS credentials with third parties"
       ]
     }
   },
@@ -54,31 +52,51 @@
     "title": "3. How We Use Your Information",
     "intro": "We use the collected information to:",
     "items": [
-      "Provide, maintain, and improve our services",
-      "Process your API requests",
-      "Manage your account and credit balance",
+      "Provide, maintain, and improve our content generation and publishing services",
+      "Generate AI-powered articles based on your prompts and campaign settings",
+      "Publish content to your connected CMS platforms on your schedule",
+      "Manage your account, credit balance, and subscription",
       "Process payments and send transaction receipts",
-      "Send service-related communications (password resets, account notifications)",
+      "Send service-related communications (password resets, account notifications, publishing confirmations)",
       "Respond to customer support requests",
-      "Analyze usage patterns to improve our service",
-      "Detect and prevent fraud or abuse"
+      "Analyze usage patterns to improve our service and detect abuse"
     ]
   },
   "sharing": {
-    "title": "4. Data Sharing and Disclosure",
-    "intro": "We do not sell your personal information. We may share your information with:",
+    "title": "4. Data Sharing and Third-Party Services",
+    "intro": "We do not sell your personal information. We share data with the following third-party service providers as necessary to operate the service:",
     "providers": [
       {
-        "label": "Service Providers:",
-        "description": "Third-party services that help us operate our platform (e.g., Stripe for payments, Supabase for authentication, Google for AI processing)"
+        "label": "Supabase:",
+        "description": "Provides our database and authentication infrastructure. Your account data and generated content are stored in Supabase."
+      },
+      {
+        "label": "Stripe:",
+        "description": "Handles all payment processing. Your payment details are stored and managed by Stripe under their privacy policy."
+      },
+      {
+        "label": "Brevo / Resend:",
+        "description": "Used to send transactional emails (account notifications, receipts). Your email address is shared with these providers for this purpose."
+      },
+      {
+        "label": "OpenRouter / OpenAI / Replicate (AI Providers):",
+        "description": "Your article prompts and content generation requests are sent to these AI providers to produce articles. Please review their respective privacy policies, as your input content is processed by their systems."
+      },
+      {
+        "label": "Cloudflare:",
+        "description": "Provides hosting, CDN, and edge computing infrastructure. Web traffic passes through Cloudflare's network."
+      },
+      {
+        "label": "Amplitude / Google Analytics:",
+        "description": "Used for usage analytics and product improvement. These services may collect anonymized usage data and device information."
       },
       {
         "label": "Legal Requirements:",
-        "description": "When required by law, court order, or governmental authority"
+        "description": "We may disclose your information when required by law, court order, or governmental authority."
       },
       {
         "label": "Business Transfers:",
-        "description": "In connection with a merger, acquisition, or sale of assets"
+        "description": "In connection with a merger, acquisition, or sale of assets, your data may be transferred as part of the transaction."
       }
     ]
   },
@@ -87,21 +105,21 @@
     "intro": "We implement industry-standard security measures to protect your data:",
     "measures": [
       "HTTPS encryption for all data transmission",
-      "Secure password hashing",
-      "Regular security audits",
-      "Access controls and authentication",
-      "Row-level security for database access"
+      "AES-256-GCM encryption for stored CMS credentials",
+      "Secure password hashing (we never store passwords in plaintext)",
+      "Row-level security (RLS) for database access control",
+      "Access controls and authentication on all internal systems"
     ],
     "disclaimer": "While we strive to protect your information, no method of transmission over the Internet is 100% secure. We cannot guarantee absolute security."
   },
   "retention": {
     "title": "6. Data Retention",
-    "paragraph1": "We retain your account information for as long as your account is active. You may request deletion of your account and associated data at any time.",
-    "paragraph2": "API data is processed in real-time and is not permanently stored. Transaction records are retained for legal and accounting purposes."
+    "paragraph1": "We retain your data according to the following rules: account data (profile, settings, credentials) is retained while your subscription is active and for 90 days after cancellation, after which it is permanently deleted upon request. Generated articles are retained until you delete them from your account. Payment records and transaction history are retained for 7 years as required by applicable accounting and tax law.",
+    "paragraph2": "You may request deletion of your account and associated data at any time by contacting privacy@autopilotrank.com. Note that legal retention obligations (e.g., payment records) may prevent immediate deletion of all data."
   },
   "rights": {
     "title": "7. Your Rights",
-    "intro": "Depending on your location, you may have the following rights:",
+    "intro": "Depending on your location, you may have the following rights regarding your personal data:",
     "rightsList": [
       {
         "label": "Access:",
@@ -109,19 +127,19 @@
       },
       {
         "label": "Correction:",
-        "description": "Request correction of inaccurate data"
+        "description": "Request correction of inaccurate or incomplete data"
       },
       {
         "label": "Deletion:",
-        "description": "Request deletion of your personal data"
+        "description": "Request deletion of your personal data (subject to legal retention requirements)"
       },
       {
-        "label": "Portability:",
-        "description": "Request a copy of your data in a portable format"
+        "label": "Export:",
+        "description": "Request a copy of your generated content and account data in a portable format"
       },
       {
         "label": "Objection:",
-        "description": "Object to certain processing of your data"
+        "description": "Object to certain processing of your data, including direct marketing"
       }
     ],
     "contact": "To exercise these rights, please contact us at",
@@ -131,29 +149,29 @@
     "title": "8. Cookies and Tracking",
     "intro": "We use cookies and similar technologies to:",
     "uses": [
-      "Maintain your session and authentication",
-      "Remember your preferences",
-      "Analyze usage patterns (via Google Analytics and Amplitude)",
-      "Improve our service"
+      "Maintain your session and authentication state",
+      "Remember your preferences and settings",
+      "Analyze usage patterns via Google Analytics and Amplitude",
+      "Improve our service and user experience"
     ],
-    "control": "You can control cookies through your browser settings, but disabling them may affect service functionality."
+    "control": "You can control cookies through your browser settings, but disabling them may affect the functionality of the service (e.g., you may be logged out)."
   },
   "children": {
     "title": "9. Children's Privacy",
-    "description": "Our service is not intended for children under 13 years of age. We do not knowingly collect personal information from children under 13. If you believe we have collected information from a child under 13, please contact us immediately."
+    "description": "Our service is not intended for children under 13 years of age. We do not knowingly collect personal information from children under 13. If you believe we have collected information from a child under 13, please contact us immediately at privacy@autopilotrank.com."
   },
   "international": {
     "title": "10. International Data Transfers",
-    "description": "Your information may be transferred to and processed in countries other than your country of residence. These countries may have different data protection laws. By using our service, you consent to such transfers. We ensure appropriate safeguards are in place to protect your data."
+    "description": "Your information may be transferred to and processed in countries other than your country of residence, including Canada and the United States, where our service providers operate. These countries may have different data protection laws. By using our service, you consent to such transfers. We ensure appropriate safeguards are in place to protect your data."
   },
   "changes": {
     "title": "11. Changes to This Policy",
-    "description": "We may update this Privacy Policy from time to time. We will notify you of significant changes by posting the new policy on this page and updating the \"Last updated\" date. Your continued use of the service after changes constitutes acceptance of the updated policy."
+    "description": "We may update this Privacy Policy from time to time. We will notify you of significant changes by posting the new policy on this page and updating the \"Last updated\" date. For material changes, we may also notify you by email. Your continued use of the service after changes constitutes acceptance of the updated policy."
   },
   "contact": {
     "title": "12. Contact Us",
     "intro": "If you have questions about this Privacy Policy or our data practices, please contact us:",
-    "emailLabel": "Email:",
+    "emailLabel": "Privacy inquiries:",
     "email": "{PRIVACY_EMAIL}"
   }
 }

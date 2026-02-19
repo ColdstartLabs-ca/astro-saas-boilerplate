@@ -8,8 +8,8 @@
   "viewTerms": "Ver Termos de Serviço",
   "introduction": {
     "title": "1. Introdução",
-    "paragraph1": "Bem-vindo ao {APP_NAME} (\"nós\", \"nosso\" ou \"nos\"). Estamos comprometidos em proteger sua privacidade e garantir a segurança das suas informações pessoais. Esta Política de Privacidade explica como coletamos, usamos, divulgamos e protegemos suas informações quando você usa nosso serviço de API.",
-    "paragraph2": "Ao usar o {APP_NAME}, você concorda com a coleta e uso de informações de acordo com esta política."
+    "paragraph1": "Bem-vindo ao {APP_NAME} (\"nós\", \"nosso\" ou \"nos\"), operado pela ColdStart Labs Inc. Estamos comprometidos em proteger sua privacidade e garantir a segurança das suas informações pessoais. Esta Política de Privacidade explica como coletamos, usamos, divulgamos e protegemos suas informações quando você usa nossa plataforma de geração de conteúdo SEO com IA e publicação automatizada.",
+    "paragraph2": "Ao usar o {APP_NAME}, você concorda com a coleta e uso de informações de acordo com esta política. Se tiver dúvidas, entre em contato conosco em privacy@autopilotrank.com."
   },
   "collection": {
     "title": "2. Informações que Coletamos",
@@ -20,33 +20,31 @@
         "Endereço de email",
         "Nome (se fornecido)",
         "Senha (armazenada de forma segura usando hash padrão da indústria)",
-        "Dados de autenticação de provedores terceiros (Google) se você escolher entrar com OAuth"
+        "Dados de autenticação de provedores terceiros (Google, Microsoft) se você escolher entrar com OAuth"
       ]
     },
-    "apiData": {
-      "title": "2.2 Dados da API",
-      "intro": "Quando você usa nosso serviço, você envia dados para processamento. Nós:",
+    "images": {
+      "title": "2.2 Conteúdo que Você Gera",
+      "intro": "Quando você usa nossos recursos de geração de conteúdo, coletamos e armazenamos:",
       "items": [
-        "Processamos seus dados para fornecer o serviço de API solicitado",
-        "Não armazenamos permanentemente seus dados em nossos servidores após o processamento ser concluído",
-        "Não usamos seus dados para treinar modelos ou para qualquer propósito que não seja fornecer o serviço solicitado"
+        "Prompts de artigos, tópicos e palavras-chave que você fornece",
+        "Artigos e conteúdos gerados por IA produzidos pelo serviço",
+        "Configurações de campanha e agendamentos"
       ]
     },
     "payment": {
       "title": "2.3 Informações de Pagamento",
-      "description": "Usamos o Stripe para processar pagamentos. Não armazenamos os detalhes completos do seu cartão de crédito em nossos servidores. O Stripe lida com todo o processamento de pagamentos e armazena informações de pagamento de acordo com a",
+      "description": "Usamos o Stripe para processar pagamentos. Nunca vemos ou armazenamos os detalhes completos do seu cartão de crédito — o Stripe lida com todo o processamento de pagamentos de forma segura. O Stripe armazena informações de pagamento de acordo com a",
       "privacyPolicyLink": "Política de Privacidade deles"
     },
     "usage": {
-      "title": "2.4 Dados de Uso",
-      "intro": "Coletamos automaticamente:",
+      "title": "2.4 Credenciais de CMS",
+      "intro": "Para publicar conteúdo em seus sites, coletamos e armazenamos:",
       "items": [
-        "Endereço IP",
-        "Tipo e versão do navegador",
-        "Páginas visitadas e tempo gasto",
-        "Informações do dispositivo",
-        "Site de referência",
-        "Histórico de uso da API (número de requisições, créditos usados)"
+        "URLs de sites WordPress (ou outros CMS) e credenciais de API",
+        "Essas credenciais são criptografadas em repouso usando criptografia AES-256-GCM",
+        "As credenciais são usadas exclusivamente para publicar conteúdo em seu nome",
+        "Nunca compartilhamos suas credenciais de CMS com terceiros"
       ]
     }
   },
@@ -54,31 +52,51 @@
     "title": "3. Como Usamos Suas Informações",
     "intro": "Usamos as informações coletadas para:",
     "items": [
-      "Fornecer, manter e melhorar nossos serviços",
-      "Processar suas requisições de API",
-      "Gerenciar sua conta e saldo de créditos",
+      "Fornecer, manter e melhorar nossos serviços de geração e publicação de conteúdo",
+      "Gerar artigos com IA com base em seus prompts e configurações de campanha",
+      "Publicar conteúdo em suas plataformas CMS conectadas conforme seu agendamento",
+      "Gerenciar sua conta, saldo de créditos e assinatura",
       "Processar pagamentos e enviar recibos de transações",
-      "Enviar comunicações relacionadas ao serviço (redefinição de senha, notificações de conta)",
+      "Enviar comunicações relacionadas ao serviço (redefinição de senha, notificações de conta, confirmações de publicação)",
       "Responder a solicitações de suporte ao cliente",
-      "Analisar padrões de uso para melhorar nosso serviço",
-      "Detectar e prevenir fraude ou abuso"
+      "Analisar padrões de uso para melhorar nosso serviço e detectar abusos"
     ]
   },
   "sharing": {
-    "title": "4. Compartilhamento e Divulgação de Dados",
-    "intro": "Não vendemos suas informações pessoais. Podemos compartilhar suas informações com:",
+    "title": "4. Compartilhamento de Dados e Serviços Terceiros",
+    "intro": "Não vendemos suas informações pessoais. Compartilhamos dados com os seguintes provedores de serviços terceiros conforme necessário para operar o serviço:",
     "providers": [
       {
-        "label": "Provedores de Serviço:",
-        "description": "Serviços terceiros que nos ajudam a operar nossa plataforma (ex: Stripe para pagamentos, Supabase para autenticação, Google para processamento de IA)"
+        "label": "Supabase:",
+        "description": "Fornece nossa infraestrutura de banco de dados e autenticação. Seus dados de conta e conteúdo gerado são armazenados no Supabase."
+      },
+      {
+        "label": "Stripe:",
+        "description": "Lida com todo o processamento de pagamentos. Seus dados de pagamento são armazenados e gerenciados pelo Stripe conforme a política de privacidade deles."
+      },
+      {
+        "label": "Brevo / Resend:",
+        "description": "Usados para enviar emails transacionais (notificações de conta, recibos). Seu endereço de email é compartilhado com esses provedores para essa finalidade."
+      },
+      {
+        "label": "OpenRouter / OpenAI / Replicate (Provedores de IA):",
+        "description": "Seus prompts de artigos e solicitações de geração de conteúdo são enviados a esses provedores de IA para produzir artigos. Revise as respectivas políticas de privacidade deles, pois seu conteúdo de entrada é processado pelos sistemas deles."
+      },
+      {
+        "label": "Cloudflare:",
+        "description": "Fornece infraestrutura de hospedagem, CDN e computação de borda. O tráfego web passa pela rede da Cloudflare."
+      },
+      {
+        "label": "Amplitude / Google Analytics:",
+        "description": "Usados para análise de uso e melhoria do produto. Esses serviços podem coletar dados de uso anonimizados e informações de dispositivo."
       },
       {
         "label": "Requisitos Legais:",
-        "description": "Quando exigido por lei, ordem judicial ou autoridade governamental"
+        "description": "Podemos divulgar suas informações quando exigido por lei, ordem judicial ou autoridade governamental."
       },
       {
         "label": "Transferências de Negócio:",
-        "description": "Em conexão com fusão, aquisição ou venda de ativos"
+        "description": "Em conexão com fusão, aquisição ou venda de ativos, seus dados podem ser transferidos como parte da transação."
       }
     ]
   },
@@ -87,21 +105,21 @@
     "intro": "Implementamos medidas de segurança padrão da indústria para proteger seus dados:",
     "measures": [
       "Criptografia HTTPS para toda transmissão de dados",
-      "Hash seguro de senhas",
-      "Auditorias de segurança regulares",
-      "Controles de acesso e autenticação",
-      "Segurança em nível de linha para acesso ao banco de dados"
+      "Criptografia AES-256-GCM para credenciais de CMS armazenadas",
+      "Hash seguro de senhas (nunca armazenamos senhas em texto simples)",
+      "Segurança em nível de linha (RLS) para controle de acesso ao banco de dados",
+      "Controles de acesso e autenticação em todos os sistemas internos"
     ],
     "disclaimer": "Embora nos esforcemos para proteger suas informações, nenhum método de transmissão pela Internet é 100% seguro. Não podemos garantir segurança absoluta."
   },
   "retention": {
     "title": "6. Retenção de Dados",
-    "paragraph1": "Retemos as informações da sua conta enquanto sua conta estiver ativa. Você pode solicitar a exclusão da sua conta e dados associados a qualquer momento.",
-    "paragraph2": "Dados da API são processados em tempo real e não são armazenados permanentemente. Registros de transações são retidos para fins legais e contábeis."
+    "paragraph1": "Retemos seus dados de acordo com as seguintes regras: dados de conta (perfil, configurações, credenciais) são retidos enquanto sua assinatura estiver ativa e por 90 dias após o cancelamento, após o qual são excluídos permanentemente mediante solicitação. Artigos gerados são retidos até você excluí-los da sua conta. Registros de pagamento e histórico de transações são retidos por 7 anos conforme exigido pela legislação contábil e fiscal aplicável.",
+    "paragraph2": "Você pode solicitar a exclusão de sua conta e dados associados a qualquer momento entrando em contato com privacy@autopilotrank.com. Observe que obrigações legais de retenção (como registros de pagamento) podem impedir a exclusão imediata de todos os dados."
   },
   "rights": {
     "title": "7. Seus Direitos",
-    "intro": "Dependendo da sua localização, você pode ter os seguintes direitos:",
+    "intro": "Dependendo da sua localização, você pode ter os seguintes direitos sobre seus dados pessoais:",
     "rightsList": [
       {
         "label": "Acesso:",
@@ -109,19 +127,19 @@
       },
       {
         "label": "Correção:",
-        "description": "Solicitar correção de dados imprecisos"
+        "description": "Solicitar correção de dados imprecisos ou incompletos"
       },
       {
         "label": "Exclusão:",
-        "description": "Solicitar exclusão dos seus dados pessoais"
+        "description": "Solicitar exclusão dos seus dados pessoais (sujeito a requisitos legais de retenção)"
       },
       {
-        "label": "Portabilidade:",
-        "description": "Solicitar uma cópia dos seus dados em formato portátil"
+        "label": "Exportação:",
+        "description": "Solicitar uma cópia do seu conteúdo gerado e dados da conta em formato portátil"
       },
       {
         "label": "Oposição:",
-        "description": "Opor-se a certos processamentos dos seus dados"
+        "description": "Opor-se a certos processamentos dos seus dados, incluindo marketing direto"
       }
     ],
     "contact": "Para exercer esses direitos, entre em contato conosco em",
@@ -131,29 +149,29 @@
     "title": "8. Cookies e Rastreamento",
     "intro": "Usamos cookies e tecnologias semelhantes para:",
     "uses": [
-      "Manter sua sessão e autenticação",
-      "Lembrar suas preferências",
-      "Analisar padrões de uso (via Google Analytics e Amplitude)",
-      "Melhorar nosso serviço"
+      "Manter sua sessão e estado de autenticação",
+      "Lembrar suas preferências e configurações",
+      "Analisar padrões de uso via Google Analytics e Amplitude",
+      "Melhorar nosso serviço e experiência do usuário"
     ],
-    "control": "Você pode controlar cookies através das configurações do seu navegador, mas desabilitá-los pode afetar a funcionalidade do serviço."
+    "control": "Você pode controlar cookies através das configurações do seu navegador, mas desabilitá-los pode afetar a funcionalidade do serviço (por exemplo, você pode ser desconectado)."
   },
   "children": {
     "title": "9. Privacidade de Crianças",
-    "description": "Nosso serviço não é destinado a crianças menores de 13 anos. Não coletamos intencionalmente informações pessoais de crianças menores de 13 anos. Se você acredita que coletamos informações de uma criança menor de 13 anos, entre em contato conosco imediatamente."
+    "description": "Nosso serviço não é destinado a crianças menores de 13 anos. Não coletamos intencionalmente informações pessoais de crianças menores de 13 anos. Se você acredita que coletamos informações de uma criança menor de 13 anos, entre em contato conosco imediatamente em privacy@autopilotrank.com."
   },
   "international": {
     "title": "10. Transferências Internacionais de Dados",
-    "description": "Suas informações podem ser transferidas e processadas em países diferentes do seu país de residência. Esses países podem ter leis de proteção de dados diferentes. Ao usar nosso serviço, você concorda com tais transferências. Garantimos que salvaguardas apropriadas estão em vigor para proteger seus dados."
+    "description": "Suas informações podem ser transferidas e processadas em países diferentes do seu país de residência, incluindo Canadá e Estados Unidos, onde nossos provedores de serviços operam. Esses países podem ter leis de proteção de dados diferentes. Ao usar nosso serviço, você concorda com tais transferências. Garantimos que salvaguardas apropriadas estão em vigor para proteger seus dados."
   },
   "changes": {
     "title": "11. Alterações a Esta Política",
-    "description": "Podemos atualizar esta Política de Privacidade periodicamente. Notificaremos você sobre alterações significativas publicando a nova política nesta página e atualizando a data de \"Última atualização\". Seu uso continuado do serviço após as alterações constitui aceitação da política atualizada."
+    "description": "Podemos atualizar esta Política de Privacidade periodicamente. Notificaremos você sobre alterações significativas publicando a nova política nesta página e atualizando a data de \"Última atualização\". Para alterações materiais, também podemos notificá-lo por email. Seu uso continuado do serviço após as alterações constitui aceitação da política atualizada."
   },
   "contact": {
     "title": "12. Entre em Contato",
     "intro": "Se você tiver perguntas sobre esta Política de Privacidade ou nossas práticas de dados, entre em contato conosco:",
-    "emailLabel": "Email:",
+    "emailLabel": "Consultas de privacidade:",
     "email": "{PRIVACY_EMAIL}"
   }
 }

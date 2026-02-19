@@ -16,9 +16,9 @@ describe('Logo Component', () => {
     test('should render logo icon', () => {
       const { container } = render(<Logo />);
 
-      const iconContainer = container.querySelector('.bg-brand-600');
+      const iconContainer = container.querySelector('.rounded-xl');
       expect(iconContainer).toBeInTheDocument();
-      expect(iconContainer).toHaveClass('p-1.5', 'rounded-lg');
+      expect(iconContainer).toHaveClass('flex', 'items-center', 'justify-center');
     });
 
     test('should render SVG element', () => {
@@ -79,7 +79,7 @@ describe('Logo Component', () => {
       expect(screen.queryByText('Rank')).not.toBeInTheDocument();
 
       // Icon should still be present
-      const iconContainer = container.querySelector('.bg-brand-600');
+      const iconContainer = container.querySelector('.rounded-xl');
       expect(iconContainer).toBeInTheDocument();
     });
 
@@ -87,8 +87,8 @@ describe('Logo Component', () => {
       const { container: fullContainer } = render(<Logo variant="full" />);
       const { container: compactContainer } = render(<Logo variant="compact" />);
 
-      const fullIcon = fullContainer.querySelector('.bg-brand-600');
-      const compactIcon = compactContainer.querySelector('.bg-brand-600');
+      const fullIcon = fullContainer.querySelector('.rounded-xl');
+      const compactIcon = compactContainer.querySelector('.rounded-xl');
 
       expect(fullIcon).toBeInTheDocument();
       expect(compactIcon).toBeInTheDocument();
@@ -129,11 +129,11 @@ describe('Logo Component', () => {
       expect(svg).toHaveAttribute('xmlns', 'http://www.w3.org/2000/svg');
     });
 
-    test('should have flex-shrink-0 on SVG', () => {
+    test('should have flex-shrink-0 on SVG container', () => {
       const { container } = render(<Logo />);
 
-      const svg = container.querySelector('svg');
-      expect(svg).toHaveClass('flex-shrink-0');
+      const iconContainer = container.querySelector('.flex-shrink-0');
+      expect(iconContainer).toBeInTheDocument();
     });
   });
 
@@ -149,8 +149,8 @@ describe('Logo Component', () => {
     test('should have proper icon container styling', () => {
       const { container } = render(<Logo />);
 
-      const iconContainer = container.querySelector('.bg-brand-600');
-      expect(iconContainer).toHaveClass('p-1.5', 'rounded-lg');
+      const iconContainer = container.querySelector('.rounded-xl');
+      expect(iconContainer).toHaveClass('flex', 'items-center', 'justify-center', 'flex-shrink-0');
     });
 
     test('should have proper path stroke styling', () => {
@@ -182,7 +182,7 @@ describe('Logo Component', () => {
       const { container } = render(<Logo {...props} />);
 
       expect(screen.queryByText('Autopilot')).not.toBeInTheDocument();
-      expect(container.querySelector('.bg-brand-600')).toBeInTheDocument();
+      expect(container.querySelector('.rounded-xl')).toBeInTheDocument();
     });
 
     test('should accept IProps with both variant and className', () => {
@@ -190,14 +190,14 @@ describe('Logo Component', () => {
       const { container } = render(<Logo {...props} />);
 
       expect(container.querySelector('.test-class')).toBeInTheDocument();
-      expect(container.querySelector('.bg-brand-600')).toBeInTheDocument();
+      expect(container.querySelector('.rounded-xl')).toBeInTheDocument();
     });
 
     test('should handle empty props', () => {
       const props: IProps = {};
       const { container } = render(<Logo {...props} />);
 
-      expect(container.querySelector('.bg-brand-600')).toBeInTheDocument();
+      expect(container.querySelector('.rounded-xl')).toBeInTheDocument();
       expect(screen.getByText('Autopilot')).toBeInTheDocument();
     });
 
@@ -205,7 +205,7 @@ describe('Logo Component', () => {
       const props: IProps = { className: undefined };
       const { container } = render(<Logo {...props} />);
 
-      expect(container.querySelector('.bg-brand-600')).toBeInTheDocument();
+      expect(container.querySelector('.rounded-xl')).toBeInTheDocument();
     });
 
     test('should handle undefined variant', () => {
@@ -228,7 +228,7 @@ describe('Logo Component', () => {
     test('should have SVG inside colored div', () => {
       const { container } = render(<Logo />);
 
-      const coloredDiv = container.querySelector('.bg-brand-600');
+      const coloredDiv = container.querySelector('.rounded-xl');
       expect(coloredDiv).toBeInTheDocument();
       expect(coloredDiv?.querySelector('svg')).toBeInTheDocument();
     });

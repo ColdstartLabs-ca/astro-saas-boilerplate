@@ -53,6 +53,7 @@ export { TestDataManager, type ITestUser } from './test-data-manager';
 export { IntegrationTestHelpers, testFixtures, customMatchers } from './integration-test-helpers';
 export {
   StripeWebhookMockFactory,
+  stripeWebhookMocks,
   type IStripeEventMock,
   type IWebhookTestOptions,
 } from './stripe-webhook-mocks';

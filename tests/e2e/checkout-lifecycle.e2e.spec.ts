@@ -40,25 +40,31 @@ test.describe('Checkout Lifecycle E2E Tests', () => {
       await basePage.screenshot('checkout-no-plan-selected');
     });
 
-    test('should render checkout page with priceId and show loading state', async ({ page }) => {
+    test('should render checkout page with priceId and show authentication required state', async ({
+      page,
+    }) => {
       const basePage = new BasePage(page);
 
-      // Navigate to checkout with a priceId
+      // Navigate to checkout with a priceId (without authentication)
       await basePage.goto('/checkout?priceId=price_test_123&plan=Growth');
 
       // Wait for page to load
       await basePage.waitForPageLoad();
 
-      // Page should render - check for the checkout header with back button
-      const backButton = page.getByText(/back to pricing/i);
+      // Without authentication, should show authentication required message
+      const authRequired = page.getByText(/authentication required/i);
+      await expect(authRequired.first()).toBeVisible();
+
+      // Should prompt user to sign in
+      const signInPrompt = page.getByText(/please sign in to continue/i);
+      await expect(signInPrompt.first()).toBeVisible();
+
+      // Should have back to pricing button
+      const backButton = page.getByRole('button', { name: /back to pricing/i });
       await expect(backButton.first()).toBeVisible();
 
-      // Should show plan info in header
-      const planInfo = page.getByText(/subscribing to.*growth/i);
-      await expect(planInfo.first()).toBeVisible();
-
       // Screenshot for visual verification
-      await basePage.screenshot('checkout-with-priceId');
+      await basePage.screenshot('checkout-with-priceId-unauthenticated');
     });
 
     test('should render checkout header with back button', async ({ page }) => {

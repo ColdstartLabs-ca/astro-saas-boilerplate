@@ -10,7 +10,12 @@ import { BasePage } from './BasePage';
 export class AdminPage extends BasePage {
   // Admin main page selectors
   get pageTitle() {
-    return this.page.getByRole('heading', { level: 1 }).first();
+    // Look for h1 that contains "Admin" text, or fallback to any h1
+    return this.page
+      .getByRole('heading', { level: 1 })
+      .filter({ hasText: /admin/i })
+      .first()
+      .or(this.page.getByRole('heading', { level: 1 }).first());
   }
 
   get adminNavigation() {
@@ -299,7 +304,14 @@ export class AdminPage extends BasePage {
    * Assert that the current page is an admin page
    */
   async assertOnAdminPage(): Promise<void> {
-    await expect(this.pageTitle).toBeVisible();
+    // First check if we're seeing access denied
+    const isDenied = await this.isAccessDenied();
+    if (isDenied) {
+      throw new Error('Access denied - user does not have admin role');
+    }
+
+    // Wait for admin content to be visible (h1 with "Admin" text or any h1)
+    await expect(this.pageTitle).toBeVisible({ timeout: 10000 });
     const titleText = await this.pageTitle.textContent();
     expect(titleText?.toLowerCase()).toContain('admin');
   }

@@ -1,4 +1,4 @@
-import { test as base } from '@playwright/test';
+import { test as base, Cookie } from '@playwright/test';
 
 /**
  * Create a fake JWT that Supabase GoTrueClient can parse.
@@ -43,29 +43,58 @@ function buildFakeSession(): object {
 }
 
 /**
+ * Get the Supabase session cookie value in the format expected by @supabase/ssr.
+ * The cookie value is base64url encoded with a "base64-" prefix.
+ */
+function getSupabaseSessionCookieValue(): string {
+  const session = buildFakeSession();
+  const sessionStr = JSON.stringify(session);
+  const encoded = Buffer.from(sessionStr).toString('base64url');
+  return `base64-${encoded}`;
+}
+
+/**
  * Build the init script that injects auth state into the browser.
  *
- * Sets the Supabase session cookie via document.cookie (NOT addCookies)
- * so that the cookie is available to the client-side Supabase client
- * but is NOT sent with the initial server request (which would cause
- * the server-side middleware to try validating the fake JWT).
+ * Sets up localStorage to mimic @supabase/ssr storage behavior.
+ * Also sets up a cookie that @supabase/ssr can read.
  */
 function getSupabaseSessionScript(): string {
   const session = buildFakeSession();
   const sessionStr = JSON.stringify(session);
+  const cookieValue = getSupabaseSessionCookieValue();
 
-  // @supabase/ssr stores sessions with base64url encoding prefixed by "base64-"
-  // We replicate the encoding used by the storage layer in createBrowserClient
+  // We set up multiple storage mechanisms to maximize compatibility
   return `
     (function() {
-      // base64url encode the session
-      var sessionStr = ${JSON.stringify(sessionStr)};
-      var encoded = btoa(sessionStr).replace(/\\+/g, '-').replace(/\\//g, '_').replace(/=/g, '');
-      var cookieValue = 'base64-' + encoded;
+      var sessionObj = ${sessionStr};
+      var cookieValue = "${cookieValue}";
 
-      // Set the Supabase auth cookie
-      // Key format: sb-{project_ref}-auth-token.{chunk_index}
-      document.cookie = 'sb-xuuwrabuavfplyyolngf-auth-token.0=' + cookieValue + '; path=/; max-age=86400; SameSite=Lax';
+      // Method 1: Set cookie for @supabase/ssr using document.cookie
+      // This runs BEFORE the Supabase client initializes
+      try {
+        // Set the base cookie (non-chunked, for small sessions)
+        document.cookie = 'sb-xuuwrabuavfplyyolngf-auth-token=' + cookieValue + '; path=/; max-age=86400; SameSite=Lax';
+      } catch (e) {
+        console.warn('Failed to set cookie session:', e);
+      }
+
+      // Method 2: Store in localStorage with @supabase/ssr format as backup
+      try {
+        localStorage.setItem('sb-xuuwrabuavfplyyolngf-auth-token', JSON.stringify(sessionObj));
+      } catch (e) {
+        console.warn('Failed to set localStorage session:', e);
+      }
+
+      // Method 3: Store in sessionStorage (legacy @supabase/supabase-js format)
+      try {
+        sessionStorage.setItem('supabase.auth.token', JSON.stringify({
+          currentSession: sessionObj,
+          expiresAt: sessionObj.expires_at
+        }));
+      } catch (e) {
+        console.warn('Failed to set sessionStorage session:', e);
+      }
     })();
   `;
 }
@@ -133,18 +162,21 @@ export const test = base.extend({
     });
 
     // Mock onboarding status API to return complete (bypasses onboarding wizard)
-    // Note: apiFetch returns raw response.json(), and fetchOnboardingStatus does data.onboarding,
-    // so we return { onboarding: {...} } without the { success, data } wrapper.
+    // Note: The API uses jsonResponse() which wraps in { success: true, data: {...} }
+    // apiFetch returns raw response.json(), then fetchOnboardingStatus extracts data.data.onboarding
     await page.route('**/api/onboarding/status', async route => {
       await route.fulfill({
         status: 200,
         contentType: 'application/json',
         body: JSON.stringify({
-          onboarding: {
-            isComplete: true,
-            currentStep: 5,
-            completedSteps: [1, 2, 3, 4, 5],
-            skippedSteps: [],
+          success: true,
+          data: {
+            onboarding: {
+              isComplete: true,
+              currentStep: 5,
+              completedSteps: [1, 2, 3, 4, 5],
+              skippedSteps: [],
+            },
           },
         }),
       });

@@ -85,11 +85,15 @@
     "faqs": {
       "supportedCms": {
         "question": "What CMS platforms do you support?",
-        "answer": "Native integration: WordPress (via REST API with Application Passwords). Webhook integrations: Shopify, Webflow, Ghost, Notion, Wix, and custom platforms. Our webhook system allows you to connect virtually any CMS or custom application."
+        "answer": "WordPress is fully supported via the REST API with Application Passwords — install our plugin for one-click setup. Webflow integration is coming soon. You can also use our generic webhook to connect Shopify, Ghost, Notion, Wix, or any custom platform."
       },
       "aiModels": {
         "question": "What AI models do you use?",
-        "answer": "We use top-tier AI models via OpenRouter: GPT-4o (OpenAI), Claude Sonnet (Anthropic), and Gemini Flash (Google). Each model preset balances cost vs. quality for different use cases."
+        "answer": "AutopilotRank offers four model tiers: Budget (Gemini Flash — fast and cost-efficient), Balanced (GPT-4o mini — solid everyday quality), Pro (GPT-4o — high-quality output for competitive pages), and Ultra (Claude Opus — best-in-class for money pages and pillar content). You choose the tier per campaign or per article."
+      },
+      "humanizer": {
+        "question": "How does the AI humanizer work?",
+        "answer": "Every generated article passes through our built-in humanizer as a post-processing step before delivery. The humanizer detects and rewrites AI-typical sentence patterns — repetitive structures, robotic transitions, over-formal phrasing — transforming them into natural, human-sounding prose. This helps your content pass AI detectors like GPTZero, Originality.ai, and Copyleaks while remaining factually accurate and SEO-optimized."
       },
       "gscIntegration": {
         "question": "How does Google Search Console integration work?",

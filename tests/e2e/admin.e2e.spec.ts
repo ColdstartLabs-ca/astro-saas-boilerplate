@@ -28,8 +28,8 @@ import { AdminPage } from '../pages/AdminPage';
 
 const mockAdminUser = {
   profile: {
-    id: 'test-admin-id',
-    email: 'admin@example.com',
+    id: 'test-user-id', // Must match the test fixture's Supabase session user ID
+    email: 'test@example.com',
     role: 'admin',
     subscription_credits_balance: 10000,
     purchased_credits_balance: 0,
@@ -168,32 +168,77 @@ async function mockAdminStatsApi(page: import('@playwright/test').Page, stats = 
 }
 
 /**
- * Mock user cache to have admin role
+ * Mock user cache to have admin role.
+ *
+ * IMPORTANT: Uses the same user ID as the test fixture ('test-user-id') to ensure
+ * the Supabase session user ID matches the cached user ID. The userStore's initialize()
+ * function validates that session.user.id === cached.id and clears the cache if they differ.
+ *
+ * This script sets up localStorage and also mocks the Supabase getSession to return
+ * a consistent session with the same user ID.
  */
 function getAdminUserCacheScript(): string {
-  const cacheKey = 'saas-boilerplate_user_cache';
-  const cacheValue = JSON.stringify({
+  // Use the correct cache key prefix matching the app's clientEnv.CACHE_USER_KEY_PREFIX
+  const cacheKey = 'autopilotrank_user_cache';
+  const cacheObject = {
     version: 1,
     timestamp: Date.now(),
     user: {
-      id: 'test-admin-id',
-      email: 'admin@example.com',
+      id: 'test-user-id', // Must match the Supabase session user ID from test fixture
+      email: 'test@example.com',
       name: 'Admin User',
       provider: 'email',
       role: 'admin',
       profile: {
-        id: 'test-admin-id',
-        email: 'admin@example.com',
+        id: 'test-user-id',
+        email: 'test@example.com',
         role: 'admin',
         subscription_credits_balance: 10000,
         purchased_credits_balance: 0,
       },
       subscription: null,
     },
-  });
+  };
+  // Serialize the cache object to a JSON string
+  const cacheJson = JSON.stringify(cacheObject);
+  // Escape special characters for embedding in script
+  const escapedCacheJson = cacheJson
+    .replace(/\\/g, '\\\\')
+    .replace(/'/g, "\\'")
+    .replace(/"/g, '\\"');
 
   return `
-    localStorage.setItem('${cacheKey}', ${JSON.stringify(cacheValue)});
+    // Set the user cache with admin role
+    try {
+      localStorage.setItem('${cacheKey}', "${escapedCacheJson}");
+    } catch(e) {
+      console.error('Failed to set admin cache:', e);
+    }
+
+    // Override Supabase getSession to return a session matching our cache user ID
+    // This ensures the userStore's session check passes
+    if (window.supabase) {
+      const originalGetSession = window.supabase.auth.getSession;
+      window.supabase.auth.getSession = function() {
+        return Promise.resolve({
+          data: {
+            session: {
+              user: {
+                id: 'test-user-id',
+                email: 'test@example.com',
+                aud: 'authenticated',
+                app_metadata: { provider: 'email' },
+                user_metadata: { name: 'Admin User' },
+              },
+              access_token: 'fake-test-token',
+              token_type: 'bearer',
+              expires_in: 86400,
+            }
+          },
+          error: null
+        });
+      };
+    }
   `;
 }
 
@@ -242,15 +287,28 @@ test.describe('Admin E2E Tests', () => {
     });
 
     test('should allow admin users to access admin main page', async ({ page }) => {
-      // Set up admin user
+      // Set up admin user mocks BEFORE navigation
       await mockAdminUserData(page);
       await mockUsersListApi(page);
+      await mockAdminStatsApi(page);
       await page.addInitScript(getAdminUserCacheScript());
+
+      // Wait for the admin stats API call (which the admin page makes)
+      const statsPromise = page
+        .waitForResponse(resp => resp.url().includes('/api/admin/stats') && resp.status() === 200, {
+          timeout: 15000,
+        })
+        .catch(() => null);
 
       await adminPage.goto();
 
-      // Should successfully load admin page
-      await adminPage.waitForAdminLoad();
+      // Wait for the admin stats API to complete (indicates page has loaded with admin access)
+      await statsPromise;
+
+      // Give the page a moment to render after API response
+      await page.waitForTimeout(500);
+
+      // Now check if we're on the admin page
       await adminPage.assertOnAdminPage();
     });
 
@@ -301,8 +359,10 @@ test.describe('Admin E2E Tests', () => {
 
     test('should have navigation links to users and blog', async () => {
       await adminPage.goto();
+      await adminPage.waitForAdminLoad();
 
       // Check for links to users and blog pages (they may be in different forms)
+      // The admin dashboard has QuickActionsCard with a link to /dashboard/admin/users
       const usersLink = adminPage.page.locator('a[href*="admin/users"]');
       const blogLink = adminPage.page.locator('a[href*="admin/blog"]');
 
@@ -399,14 +459,26 @@ test.describe('Admin E2E Tests', () => {
     });
 
     test('should handle empty users list', async ({ page }) => {
-      // Mock empty users list
+      // Mock empty users list - must be set up before navigation
       await mockUsersListApi(page, []);
 
       await adminPage.gotoUsers();
       await adminPage.waitForAdminLoad();
 
-      // Should still render the page
-      await expect(adminPage.pageTitle).toBeVisible();
+      // Should still render the page - check for the users title or "no users" message
+      // The AdminDashboardLayout provides the h1, so check for either that or the empty state message
+      const hasPageContent = await page
+        .locator('h1, h2')
+        .filter({ hasText: /admin|users/i })
+        .first()
+        .isVisible()
+        .catch(() => false);
+      const hasEmptyMessage = await page
+        .locator('text=/no users found/i')
+        .isVisible()
+        .catch(() => false);
+
+      expect(hasPageContent || hasEmptyMessage).toBeTruthy();
     });
   });
 

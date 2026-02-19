@@ -19,6 +19,14 @@ const description = t('meta.description', { APP_NAME: clientEnv.APP_NAME });
     <meta property="og:description" content={description} />
     <meta property="og:type" content="website" />
     <meta property="og:url" content={`${clientEnv.BASE_URL}/privacy`} />
+    <meta property="og:site_name" content={clientEnv.APP_NAME} />
+    <meta property="og:image" content={`${clientEnv.BASE_URL}/og-image.png`} />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content={title} />
+    <meta name="twitter:description" content={description} />
+    <meta name="twitter:image" content={`${clientEnv.BASE_URL}/og-image.png`} />
     <link rel="canonical" href={`${clientEnv.BASE_URL}/privacy`} />
   </Fragment>
 
@@ -85,8 +93,6 @@ const description = t('meta.description', { APP_NAME: clientEnv.APP_NAME });
             <li>{t('collection.usage.items.1')}</li>
             <li>{t('collection.usage.items.2')}</li>
             <li>{t('collection.usage.items.3')}</li>
-            <li>{t('collection.usage.items.4')}</li>
-            <li>{t('collection.usage.items.5')}</li>
           </ul>
         </section>
 
@@ -120,6 +126,26 @@ const description = t('meta.description', { APP_NAME: clientEnv.APP_NAME });
             <li>
               <strong>{t('sharing.providers.2.label')}</strong>{' '}
               {t('sharing.providers.2.description')}
+            </li>
+            <li>
+              <strong>{t('sharing.providers.3.label')}</strong>{' '}
+              {t('sharing.providers.3.description')}
+            </li>
+            <li>
+              <strong>{t('sharing.providers.4.label')}</strong>{' '}
+              {t('sharing.providers.4.description')}
+            </li>
+            <li>
+              <strong>{t('sharing.providers.5.label')}</strong>{' '}
+              {t('sharing.providers.5.description')}
+            </li>
+            <li>
+              <strong>{t('sharing.providers.6.label')}</strong>{' '}
+              {t('sharing.providers.6.description')}
+            </li>
+            <li>
+              <strong>{t('sharing.providers.7.label')}</strong>{' '}
+              {t('sharing.providers.7.description')}
             </li>
           </ul>
         </section>

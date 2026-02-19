@@ -6,7 +6,7 @@
  */
 
 import dayjs from 'dayjs';
-import utc from 'dayjs/plugin/utc';
+import utc from 'dayjs/plugin/utc.js';
 import { supabaseAdmin } from '@server/supabase/supabaseAdmin';
 import type {
   IProviderFreeTier,

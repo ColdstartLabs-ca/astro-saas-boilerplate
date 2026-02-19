@@ -3,6 +3,7 @@
 import { useEffect, useState, Suspense, useRef } from 'react';
 import { createClient } from '@shared/utils/supabase/client';
 import { handleAuthRedirect, setAuthIntent } from '@client/utils/authRedirectManager';
+import { apiFetch } from '@client/utils/api-client';
 
 function AuthCallbackContent(): JSX.Element {
   const [status, setStatus] = useState<'loading' | 'success' | 'error'>('loading');
@@ -27,6 +28,9 @@ function AuthCallbackContent(): JSX.Element {
         if (hasRedirected.current) return;
         hasRedirected.current = true;
         setStatus('success');
+
+        // Fire-and-forget welcome email (idempotent - only sends once per user)
+        apiFetch('/api/auth/welcome', { method: 'POST' }).catch(() => {});
 
         // Skip getUser() call - we already have the session from onAuthStateChange
         // The extra call was causing timeouts during PKCE exchange

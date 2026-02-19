@@ -42,6 +42,15 @@ const createMockResponse = (init: {
 const mockFetch = vi.fn();
 global.fetch = mockFetch;
 
+// Mock Supabase client (required by apiFetch to get auth token)
+vi.mock('@shared/utils/supabase/client', () => ({
+  createClient: vi.fn(() => ({
+    auth: {
+      getSession: vi.fn().mockResolvedValue({ data: { session: { access_token: 'mock-token' } } }),
+    },
+  })),
+}));
+
 // Mock logger
 vi.mock('@client/utils/logger', () => ({
   useLogger: () => ({

@@ -63,7 +63,7 @@ const {
 const fullUrl = `${clientEnv.BASE_URL}${path}`;
 
 // Use provided ogImage or default to /og-image.png
-const finalOgImage = ogImage || `/og-image${path === '/' ? '' : `-${path.replace(/^\//, '')}`}.png`;
+const finalOgImage = ogImage || '/og-image.png';
 
 // Use provided canonicalUrl or generate from path
 const finalCanonicalUrl = canonicalUrl || fullUrl;

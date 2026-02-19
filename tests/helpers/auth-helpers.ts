@@ -26,8 +26,9 @@ export interface ITestUserData {
  * Matches the key used in client/store/userStore.ts
  */
 function getUserCacheKey(): string {
-  // Uses the same prefix as in the app
-  const prefix = process.env.NEXT_PUBLIC_CACHE_USER_KEY_PREFIX || 'saas-boilerplate';
+  // Uses the same prefix as in the app's clientEnv.CACHE_USER_KEY_PREFIX
+  // The app defaults to 'autopilotrank' if not set
+  const prefix = process.env.NEXT_PUBLIC_CACHE_USER_KEY_PREFIX || 'autopilotrank';
   return `${prefix}_user_cache`;
 }
 
@@ -62,11 +63,19 @@ export function getAuthInitScript(userData?: Partial<ITestUserData>): string {
   const user = createTestUser(userData);
 
   const cacheKey = getUserCacheKey();
-  const cacheValue = JSON.stringify({
+  const cacheObject = {
     version: 1,
     timestamp: Date.now(),
     user: user,
-  });
+  };
+  // Serialize the cache object to a JSON string
+  const cacheJson = JSON.stringify(cacheObject);
+
+  // Escape special characters for embedding in script
+  const escapedCacheJson = cacheJson
+    .replace(/\\/g, '\\\\')
+    .replace(/'/g, "\\'")
+    .replace(/"/g, '\\"');
 
   return `
     // Inject test environment markers
@@ -75,7 +84,11 @@ export function getAuthInitScript(userData?: Partial<ITestUserData>): string {
 
     // Inject authenticated user into localStorage
     // This will be picked up by userStore.initialize() via loadUserCache()
-    localStorage.setItem('${cacheKey}', ${JSON.stringify(cacheValue)});
+    try {
+      localStorage.setItem('${cacheKey}', "${escapedCacheJson}");
+    } catch(e) {
+      console.error('Failed to set user cache:', e);
+    }
 
     // Override Supabase auth session detection
     // The userStore checks for session existence, so we mock the session storage
