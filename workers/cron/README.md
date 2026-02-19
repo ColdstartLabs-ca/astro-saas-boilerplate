@@ -1,6 +1,6 @@
-# myimageupscaler.com Cron Worker
+# AutopilotRank Cron Worker
 
-Cloudflare Worker that triggers scheduled cron jobs for the Stripe-Database sync system.
+Cloudflare Worker that triggers scheduled cron jobs for the AutopilotRank platform.
 
 ## Overview
 
@@ -10,7 +10,7 @@ This worker runs on Cloudflare's edge and executes scheduled tasks:
 - **Expiration Check** - Every hour at :05
 - **Full Reconciliation** - Daily at 3:05 AM UTC
 
-The worker calls the Next.js API endpoints with the proper authentication header.
+The worker calls the Astro API endpoints with the proper authentication header.
 
 ## Architecture
 
@@ -21,7 +21,7 @@ Cloudflare Cron Trigger
          ↓
    POST /api/cron/{endpoint}
          ↓
-   Next.js API (Cloudflare Pages)
+   Astro API (Cloudflare Pages)
          ↓
    Supabase Database
 ```
@@ -54,7 +54,7 @@ Update `wrangler.toml` with your production API URL:
 
 ```toml
 [vars]
-API_BASE_URL = "https://myimageupscaler.com"  # Your actual domain
+API_BASE_URL = "https://autopilotrank.com"  # Your actual domain
 ```
 
 ## Local Development
@@ -72,11 +72,10 @@ This starts the worker at `http://localhost:8787` with hot reload.
 In another terminal:
 
 ```bash
-cd /home/joao/projects/pixelperfect
 yarn dev
 ```
 
-Your Next.js app should be running at `http://localhost:3000`.
+Your Astro app should be running at `http://localhost:4321`.
 
 ### Test Manually
 
@@ -122,13 +121,13 @@ npm run deploy
 
 ```bash
 # Check health
-curl https://myimageupscaler-cron.workers.dev/health
+curl https://autopilotrank-cron.workers.dev/health
 
 # View logs
 wrangler tail
 
 # Test manual trigger
-node scripts/test-trigger.js webhook-recovery https://myimageupscaler-cron.workers.dev
+node scripts/test-trigger.js webhook-recovery https://autopilotrank-cron.workers.dev
 ```
 
 ## Cron Schedules
@@ -169,7 +168,7 @@ node scripts/test-trigger.js webhook-recovery https://myimageupscaler-cron.worke
 ### Cron Not Running
 
 - Cloudflare requires at least one HTTP request to activate cron triggers
-- Send a health check: `curl https://myimageupscaler-cron.workers.dev/health`
+- Send a health check: `curl https://autopilotrank-cron.workers.dev/health`
 - Cron triggers may take a few minutes to activate after deployment
 
 ### Local Development Issues
@@ -213,7 +212,7 @@ curl -X POST "http://localhost:8787/trigger?pattern=5%203%20%2A%20%2A%20%2A"
 node scripts/test-trigger.js webhook-recovery
 
 # Production
-node scripts/test-trigger.js webhook-recovery https://myimageupscaler-cron.workers.dev
+node scripts/test-trigger.js webhook-recovery https://autopilotrank-cron.workers.dev
 ```
 
 ## Monitoring
@@ -241,7 +240,7 @@ ORDER BY started_at DESC;
 ### Cloudflare Dashboard
 
 1. Go to Cloudflare Dashboard → Workers
-2. Select `myimageupscaler-cron`
+2. Select `autopilotrank-cron`
 3. View Analytics, Logs, and Cron Triggers
 
 ## Environment Variables
