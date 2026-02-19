@@ -1,0 +1,18 @@
+{
+  "title": "Como Funciona",
+  "subtitle": "Três passos simples para imagens incríveis",
+  "steps": {
+    "upload": {
+      "title": "1. Upload",
+      "description": "Faça upload da sua imagem para nossa plataforma segura"
+    },
+    "process": {
+      "title": "2. Processar",
+      "description": "Nossa IA melhora e aumenta a resolução da sua imagem automaticamente"
+    },
+    "download": {
+      "title": "3. Baixar",
+      "description": "Baixe sua imagem em alta resolução em segundos"
+    }
+  }
+}

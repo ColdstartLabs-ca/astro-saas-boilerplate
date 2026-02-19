@@ -1,0 +1,60 @@
+{
+  "page": {
+    "title": "Preços Simples e Transparentes",
+    "subtitle": "Escolha o plano de assinatura que atende às suas necessidades. Obtenha créditos mensais com acúmulo automático."
+  },
+  "subscription": {
+    "title": "Escolha Seu Plano",
+    "subtitle": "Receba créditos todo mês com nossos planos de assinatura. Cancele quando quiser."
+  },
+  "currentBalance": {
+    "title": "Seu saldo atual",
+    "credits": "créditos",
+    "activeSubscription": "Assinatura ativa"
+  },
+  "scheduledChange": {
+    "title": "Mudança de Plano Programada",
+    "cancel": "Cancelar",
+    "on": "em"
+  },
+  "configurationWarning": "Os IDs de Preço do Stripe não estão configurados. Adicione-os ao seu arquivo .env para habilitar compras.",
+  "creditPacks": {
+    "title": "Precisa de Créditos Sem Assinatura?",
+    "subtitle": "Pacotes de créditos únicos que nunca expiram. Perfeitos para projetos ocasionais.",
+    "valueComparison": "Comparação de Valor:",
+    "valueComparisonText": "Assinaturas oferecem créditos 11-58% mais baratos para usuários regulares",
+    "comparePlans": "Comparar planos de assinatura"
+  },
+  "faq": {
+    "title": "Perguntas Frequentes",
+    "creditsUsedFor": {
+      "question": "Para que são usados os créditos?",
+      "answer": "Os créditos são usados para requisições à API. Cada requisição consome um certo número de créditos com base na operação e nos recursos utilizados."
+    },
+    "creditsExpire": {
+      "question": "Os créditos expiram?",
+      "answer": "Os créditos da assinatura acumulam mês a mês até o limite máximo do seu plano, enquanto sua assinatura estiver ativa."
+    },
+    "batchProcessing": {
+      "question": "Quais são os limites de taxa?",
+      "answer": "Usuários gratuitos têm limites de taxa básicos. Planos pagos suportam maiores volumes de requisições e requisições concorrentes, dependendo do seu nível de plano."
+    },
+    "cancelSubscription": {
+      "question": "Posso cancelar minha assinatura a qualquer momento?",
+      "answer": "Sim! Você pode cancelar sua assinatura a qualquer momento. Você continuará tendo acesso até o fim do seu período de cobrança, e quaisquer créditos restantes permanecerão na sua conta."
+    },
+    "paymentMethods": {
+      "question": "Quais métodos de pagamento vocês aceitam?",
+      "answer": "Aceitamos todos os principais cartões de crédito (Visa, Mastercard, American Express) e vários outros métodos de pagamento através do Stripe."
+    },
+    "freePlan": {
+      "question": "Existe um plano gratuito?",
+      "answer": "Sim! Usuários gratuitos recebem créditos iniciais para experimentar o serviço. No entanto, limites de taxa mais altos e recursos avançados requerem uma assinatura paga."
+    }
+  },
+  "customPlan": {
+    "title": "Precisa de um plano personalizado?",
+    "description": "Entre em contato para preços empresariais, descontos em volume ou requisitos de integração personalizados.",
+    "contactSales": "Falar com Vendas"
+  }
+}

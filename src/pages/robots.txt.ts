@@ -34,6 +34,7 @@ User-agent: Google-Extended
 Disallow: /
 
 # Sitemap
+Sitemap: ${BASE_URL}/sitemap.xml
 Sitemap: ${BASE_URL}/sitemap-static.xml
 Sitemap: ${BASE_URL}/sitemap-blog.xml
 Sitemap: ${BASE_URL}/sitemap-alternatives.xml

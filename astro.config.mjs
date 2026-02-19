@@ -3,10 +3,9 @@ import tailwind from '@astrojs/tailwind';
 import react from '@astrojs/react';
 import mdx from '@astrojs/mdx';
 import cloudflare from '@astrojs/cloudflare';
+import { SUPPORTED_LOCALES, DEFAULT_LOCALE } from './i18n/config';
 
 // i18n locale configuration (synced with i18n/config.ts)
-const SUPPORTED_LOCALES = ['en'];
-const DEFAULT_LOCALE = 'en';
 const isPlaywrightTest = process.env.PLAYWRIGHT_TEST === '1' || process.env.ENV === 'test';
 const baseOptimizeDeps = [
   '@stripe/react-stripe-js',
