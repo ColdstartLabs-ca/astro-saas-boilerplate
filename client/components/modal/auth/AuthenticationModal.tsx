@@ -11,6 +11,7 @@ import { loginSchema, registerSchema } from '@shared/validation/authValidationSc
 import React, { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { useTranslations } from '@client/hooks/useTranslations';
+import { apiFetch } from '@client/utils/api-client';
 import { Modal } from '@client/components/modal/Modal';
 import { ChangePasswordForm } from '@client/components/modal/auth/ChangePasswordForm';
 import { ForgotPasswordForm } from '@client/components/modal/auth/ForgotPasswordForm';
@@ -108,6 +109,8 @@ export const AuthenticationModal: React.FC = () => {
         close();
         window.location.href = '/verify-email';
       } else {
+        // Fire-and-forget welcome email (idempotent - only sends once per user)
+        apiFetch('/api/auth/welcome', { method: 'POST' }).catch(() => {});
         showToast({ message: t('messages.accountCreated'), type: 'success' });
         close();
         // onAuthStateChange handles redirect to dashboard
@@ -132,13 +135,14 @@ export const AuthenticationModal: React.FC = () => {
   };
 
   const handleForgotPassword = async (data: { email: string }) => {
-    await handleAuthAction(
-      () => resetPassword(data.email),
-      t('messages.resetLinkSent'),
-      showToast,
-      close,
-      t('messages.sendResetLinkFailed')
-    );
+    try {
+      await resetPassword(data.email);
+      showToast({ message: t('messages.resetLinkSent'), type: 'success' });
+      close();
+    } catch (error) {
+      console.error('Password reset error:', error);
+      showToast({ message: t('messages.sendResetLinkFailed'), type: 'error' });
+    }
   };
 
   const getModalTitle = (): string => {
@@ -158,7 +162,14 @@ export const AuthenticationModal: React.FC = () => {
         return <ChangePasswordForm onSubmit={handleChangePassword} />;
 
       case 'setNewPassword':
-        return <ForgotPasswordSetNewPasswordForm onClose={close} />;
+        return (
+          <ForgotPasswordSetNewPasswordForm
+            onClose={() => {
+              close();
+              window.location.href = '/dashboard';
+            }}
+          />
+        );
 
       case 'forgotPassword':
         return (

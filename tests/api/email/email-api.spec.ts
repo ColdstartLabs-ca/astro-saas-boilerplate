@@ -98,6 +98,7 @@ describe('Email API', () => {
         'subscription-update',
         'low-credits',
         'password-reset',
+        'article-complete',
       ] as const;
 
       for (const template of validTemplates) {

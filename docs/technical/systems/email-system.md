@@ -75,14 +75,17 @@ Abstract base class handling:
 
 Located in `emails/templates/` using `@react-email/components`:
 
-| Template              | Subject                            | Props                                                     |
-| --------------------- | ---------------------------------- | --------------------------------------------------------- |
-| `welcome`             | Welcome to {appName}!              | `userName`, `verifyUrl`                                   |
-| `payment-success`     | Payment confirmed - {amount}       | `userName`, `amount`, `planName`, `credits`, `receiptUrl` |
-| `subscription-update` | Your subscription has been updated | `userName`, `planName`, `status`, `action`, `manageUrl`   |
-| `low-credits`         | Running low on credits             | `userName`, `creditsRemaining`, `upgradeUrl`              |
-| `password-reset`      | Reset your password                | `userName`, `resetUrl`                                    |
-| `support-request`     | [Support] [{category}] {subject}   | `name`, `email`, `category`, `subject`, `message`         |
+| Template              | Subject                               | Props                                                                 | API accessible     |
+| --------------------- | ------------------------------------- | --------------------------------------------------------------------- | ------------------ |
+| `welcome`             | Welcome to {appName}!                 | `userName`, `verifyUrl` (optional — shows dashboard CTA when omitted) | ✅                 |
+| `payment-success`     | Payment confirmed - {amount}          | `userName`, `amount`, `planName`, `credits`, `receiptUrl`             | ✅                 |
+| `subscription-update` | Your subscription has been updated    | `userName`, `planName`, `status`, `action`, `manageUrl`               | ✅                 |
+| `low-credits`         | Running low on credits                | `userName`, `creditsRemaining`, `upgradeUrl`                          | ✅                 |
+| `password-reset`      | Reset your password                   | `userName`, `resetUrl`                                                | ✅                 |
+| `article-complete`    | Your article is ready: {articleTitle} | `userName`, `articleTitle`, `keyword`, `campaignName`, `articleId`    | ✅                 |
+| `support-request`     | [Support] [{category}] {subject}      | `name`, `email`, `category`, `subject`, `message`                     | ❌ (internal only) |
+
+> **Note:** `support-request` is not in the `sendEmailSchema` enum — it is only used internally via `EmailService.send()` directly (e.g., from the support contact form), not through the admin `/api/email/send` endpoint.
 
 ### Common Props (Auto-Injected)
 

@@ -71,29 +71,18 @@ export abstract class BaseEmailProviderAdapter implements IEmailProviderAdapter 
         }
       }
 
-      // Get template component and subject
-      const TemplateComponent = await this.getTemplate(template);
-      const subject = this.getSubject(template, data);
-
-      // Inject common environment values into template data
-      const templateData = {
-        baseUrl: this.baseUrl,
-        supportEmail: this.supportEmail,
-        appName: this.appName,
-        ...data,
-      };
-
-      // Skip actual email sending in development or test - log payload instead
+      // Skip actual email sending in development or test - log payload instead.
+      // Done before template loading so a broken template never silences the log.
       if (isTestMode) {
-        console.log(`[EMAIL_${isTest() ? 'TEST' : 'DEV'}_MODE] Email would be sent:`, {
+        const mode = isTest() ? 'TEST' : 'DEV';
+        console.log(`[EMAIL_${mode}_MODE] Email would be sent:`, {
           provider: this.config.provider,
           from: this.fromAddress,
           to,
-          subject,
           template,
           type,
           userId,
-          templateData,
+          data,
         });
 
         await this.logEmail({
@@ -114,6 +103,18 @@ export abstract class BaseEmailProviderAdapter implements IEmailProviderAdapter 
           provider: this.config.provider,
         };
       }
+
+      // Get template component and subject
+      const TemplateComponent = await this.getTemplate(template);
+      const subject = this.getSubject(template, data);
+
+      // Inject common environment values into template data
+      const templateData = {
+        baseUrl: this.baseUrl,
+        supportEmail: this.supportEmail,
+        appName: this.appName,
+        ...data,
+      };
 
       // Send email using provider-specific implementation
       const result = await this.sendEmail(to, subject, TemplateComponent(templateData));

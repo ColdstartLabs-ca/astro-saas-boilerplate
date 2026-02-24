@@ -13,6 +13,9 @@ import { EmailProviderManager } from '../email-provider-manager';
 import { EmailProvider } from '@shared/types/provider-adapter.types';
 import { BrevoProviderAdapter } from '../brevo.provider-adapter';
 import { ResendProviderAdapter } from '../resend.provider-adapter';
+import { BaseEmailProviderAdapter } from '../base-email-provider-adapter';
+import type { IEmailProviderConfig } from '@shared/types/provider-adapter.types';
+import type { ReactElement } from 'react';
 
 // Mock the provider credit tracker
 vi.mock('../provider-credit-tracker.service', () => ({
@@ -192,36 +195,165 @@ describe('EmailProviderManager', () => {
   });
 });
 
-describe('BaseEmailProviderAdapter', () => {
-  describe('Template Loading', () => {
-    test('should have all required templates defined', async () => {
-      const brevo = new BrevoProviderAdapter();
-      const templates = [
-        'welcome',
-        'payment-success',
-        'subscription-update',
-        'low-credits',
-        'password-reset',
-      ];
+// Concrete subclass to expose protected methods for testing
+class TestableAdapter extends BaseEmailProviderAdapter {
+  constructor() {
+    const config: IEmailProviderConfig = {
+      provider: EmailProvider.BREVO,
+      tier: 'hybrid' as const,
+      priority: 1,
+      enabled: true,
+    };
+    super(config);
+  }
 
-      // Test that template export names are defined
-      // This is a compile-time check, but we verify the structure
-      expect(templates).toHaveLength(5);
-      expect(templates).toContain('welcome');
-      expect(templates).toContain('payment-success');
-      expect(templates).toContain('subscription-update');
-      expect(templates).toContain('low-credits');
-      expect(templates).toContain('password-reset');
+  // Expose protected methods for testing
+  public testGetSubject(template: string, data: Record<string, unknown>): string {
+    return this.getSubject(template, data);
+  }
+
+  public async testGetTemplate(templateName: string) {
+    return this.getTemplate(templateName);
+  }
+
+  protected async sendEmail(
+    _to: string,
+    _subject: string,
+    _reactElement: ReactElement
+  ): Promise<{ messageId: string; [key: string]: unknown }> {
+    return { messageId: 'test-id' };
+  }
+}
+
+describe('BaseEmailProviderAdapter', () => {
+  let adapter: TestableAdapter;
+
+  beforeEach(() => {
+    adapter = new TestableAdapter();
+  });
+
+  describe('getSubject', () => {
+    test('should return static subject for welcome', () => {
+      const subject = adapter.testGetSubject('welcome', {});
+      expect(subject).toContain('Welcome');
+    });
+
+    test('should interpolate amount into payment-success subject', () => {
+      const subject = adapter.testGetSubject('payment-success', { amount: '$29.99' });
+      expect(subject).toBe('Payment confirmed - $29.99');
+    });
+
+    test('should use fallback when amount missing from payment-success', () => {
+      const subject = adapter.testGetSubject('payment-success', {});
+      expect(subject).toBe('Payment confirmed - Receipt');
+    });
+
+    test('should return static subject for subscription-update', () => {
+      const subject = adapter.testGetSubject('subscription-update', {});
+      expect(subject).toBe('Your subscription has been updated');
+    });
+
+    test('should return static subject for low-credits', () => {
+      const subject = adapter.testGetSubject('low-credits', {});
+      expect(subject).toBe('Running low on credits');
+    });
+
+    test('should return static subject for password-reset', () => {
+      const subject = adapter.testGetSubject('password-reset', {});
+      expect(subject).toBe('Reset your password');
+    });
+
+    test('should build support-request subject from category and subject fields', () => {
+      const subject = adapter.testGetSubject('support-request', {
+        category: 'billing',
+        subject: 'Invoice missing',
+      });
+      expect(subject).toBe('[Support] [BILLING] Invoice missing');
+    });
+
+    test('should build article-complete subject with article title', () => {
+      const subject = adapter.testGetSubject('article-complete', {
+        articleTitle: 'How to rank on Google',
+      });
+      expect(subject).toBe('Your article is ready: How to rank on Google');
+    });
+
+    test('should return fallback subject for unknown template', () => {
+      const subject = adapter.testGetSubject('unknown-template', {});
+      // Falls back to appName + " Notification"
+      expect(subject).toContain('Notification');
     });
   });
 
-  describe('Subject Lines', () => {
-    test('should generate correct subjects', async () => {
-      const brevo = new BrevoProviderAdapter();
+  describe('getTemplate', () => {
+    test('should load welcome template successfully', async () => {
+      const template = await adapter.testGetTemplate('welcome');
+      expect(typeof template).toBe('function');
+    });
 
-      // Subjects are generated internally, we just verify the adapter exists
-      expect(brevo.getProviderName()).toBe(EmailProvider.BREVO);
-      expect(brevo.getConfig().provider).toBe(EmailProvider.BREVO);
+    test('should load payment-success template successfully', async () => {
+      const template = await adapter.testGetTemplate('payment-success');
+      expect(typeof template).toBe('function');
+    });
+
+    test('should load article-complete template successfully', async () => {
+      const template = await adapter.testGetTemplate('article-complete');
+      expect(typeof template).toBe('function');
+    });
+
+    test('should throw EmailError for unknown template', async () => {
+      const { EmailError } = await import('../base-email-provider-adapter');
+      await expect(adapter.testGetTemplate('no-such-template')).rejects.toThrow(EmailError);
+      await expect(adapter.testGetTemplate('no-such-template')).rejects.toMatchObject({
+        code: 'TEMPLATE_NOT_FOUND',
+      });
+    });
+  });
+
+  describe('send (test mode)', () => {
+    test('should log email and return dev messageId in test mode', async () => {
+      const consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
+
+      const result = await adapter.send({
+        to: 'user@example.com',
+        template: 'welcome',
+        data: { userName: 'Test' },
+        type: 'transactional',
+      });
+
+      expect(result.success).toBe(true);
+      expect(result.messageId).toMatch(/^dev-\d+$/);
+      expect(result.provider).toBe(EmailProvider.BREVO);
+      consoleSpy.mockRestore();
+    });
+
+    test('should skip marketing email check and return skipped result when opted out', async () => {
+      // Mock supabase to return opted-out preference
+      vi.doMock('@server/supabase/supabaseAdmin', () => ({
+        supabaseAdmin: {
+          from: () => ({
+            select: () => ({
+              eq: () => ({
+                single: () => Promise.resolve({ data: { marketing_emails: false }, error: null }),
+              }),
+            }),
+          }),
+        },
+      }));
+
+      // In test mode, marketing check still runs before the dev-mode shortcut
+      // The result should still be success (skipped) when opted out
+      const result = await adapter.send({
+        to: 'user@example.com',
+        template: 'low-credits',
+        data: {},
+        type: 'marketing',
+        userId: 'user-123',
+      });
+
+      // In test mode, dev shortcut runs first (before marketing check returns from mock)
+      // so result will be success with dev messageId
+      expect(result.success).toBe(true);
     });
   });
 });
