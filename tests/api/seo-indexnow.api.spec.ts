@@ -31,8 +31,6 @@ test.describe('GET /api/seo/indexnow', () => {
 
   test('should return status with valid x-cron-secret', async ({ request }) => {
     test.skip(
-      isTestMode() && !process.env.CRON_SECRET,
-      'CRON_SECRET not configured in test environment'
     );
 
     const response = await request.get('/api/seo/indexnow', {
@@ -69,9 +67,6 @@ test.describe('POST /api/seo/indexnow', () => {
   });
 
   test('should reject invalid request body (400) with valid cron secret', async ({ request }) => {
-    test.skip(
-      isTestMode() && !process.env.CRON_SECRET,
-      'CRON_SECRET not configured in test environment'
     );
 
     const response = await request.post('/api/seo/indexnow', {
@@ -88,9 +83,6 @@ test.describe('POST /api/seo/indexnow', () => {
   });
 
   test('should accept a valid single URL with valid cron secret', async ({ request }) => {
-    test.skip(
-      isTestMode() && !process.env.CRON_SECRET,
-      'CRON_SECRET not configured in test environment'
     );
 
     const response = await request.post('/api/seo/indexnow', {
@@ -105,9 +97,6 @@ test.describe('POST /api/seo/indexnow', () => {
   });
 
   test('should reject empty urls array with valid cron secret', async ({ request }) => {
-    test.skip(
-      isTestMode() && !process.env.CRON_SECRET,
-      'CRON_SECRET not configured in test environment'
     );
 
     const response = await request.post('/api/seo/indexnow', {

@@ -65,13 +65,6 @@
 - [ ] Closing modal mid-wizard → re-opening wizard resumes at last step
 - [ ] Progress stepper shows correct active/completed/skipped states
 
-### 2.3 Returning Users
-
-- [ ] Users with `onboarding_completed_at` set do NOT see wizard on login
-- [ ] Manually triggering onboarding from Settings reopens wizard at step 1
-
----
-
 ## 3. Project & Campaign Management
 
 ### 3.1 Projects

@@ -53,7 +53,6 @@ for (const endpoint of CRON_ENDPOINTS) {
     });
 
     test('should accept requests with valid cron secret (200)', async ({ request }) => {
-      test.skip(isTestMode(), 'Skipped in mock test mode — DB unreachable');
 
       const response = await request.post(endpoint, {
         headers: {

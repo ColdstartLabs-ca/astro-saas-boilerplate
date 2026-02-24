@@ -96,7 +96,6 @@ test.describe('API: Campaign Integrations', () => {
     });
 
     test('should return assigned integrations with autoPublish flag', async ({ request }) => {
-      test.skip(isTestMode(), 'Cannot seed campaign_integrations in test mode with mock users');
 
       const api = new ApiClient(request).withAuth(user.token);
 
@@ -155,7 +154,6 @@ test.describe('API: Campaign Integrations', () => {
     });
 
     test('should assign integrations to campaign', async ({ request }) => {
-      test.skip(isTestMode(), 'Cannot verify DB updates in test mode with mock users');
 
       const api = new ApiClient(request).withAuth(user.token);
 
@@ -178,7 +176,6 @@ test.describe('API: Campaign Integrations', () => {
     });
 
     test('should update autoPublish flag to true', async ({ request }) => {
-      test.skip(isTestMode(), 'Cannot verify DB updates in test mode with mock users');
 
       const api = new ApiClient(request).withAuth(user.token);
 
@@ -201,7 +198,6 @@ test.describe('API: Campaign Integrations', () => {
     });
 
     test('should reject other user integrations', async ({ request }) => {
-      test.skip(isTestMode(), 'Cannot seed integrations in test mode with mock users');
 
       const otherUser = await ctx.createUser({ subscription: 'active' });
 
@@ -323,7 +319,6 @@ test.describe('API: Campaign Integrations', () => {
     });
 
     test('should trigger delivery', async ({ request }) => {
-      test.skip(isTestMode(), 'Cannot seed articles in test mode with mock users');
 
       const api = new ApiClient(request).withAuth(user.token);
 
@@ -343,7 +338,6 @@ test.describe('API: Campaign Integrations', () => {
     });
 
     test('should support retry flag', async ({ request }) => {
-      test.skip(isTestMode(), 'Cannot seed articles in test mode with mock users');
 
       const api = new ApiClient(request).withAuth(user.token);
 
@@ -374,7 +368,6 @@ test.describe('API: Campaign Integrations', () => {
     });
 
     test('should return 404 for other user article', async ({ request }) => {
-      test.skip(isTestMode(), 'Cannot seed articles in test mode with mock users');
 
       const otherUser = await ctx.createUser({ subscription: 'active' });
 
@@ -449,7 +442,6 @@ test.describe('API: Campaign Integrations', () => {
     });
 
     test('should return delivery records', async ({ request }) => {
-      test.skip(isTestMode(), 'Cannot seed articles in test mode with mock users');
 
       const api = new ApiClient(request).withAuth(user.token);
 
@@ -463,7 +455,6 @@ test.describe('API: Campaign Integrations', () => {
     });
 
     test('should return empty array for article with no deliveries', async ({ request }) => {
-      test.skip(isTestMode(), 'Cannot seed articles in test mode with mock users');
 
       const api = new ApiClient(request).withAuth(user.token);
 

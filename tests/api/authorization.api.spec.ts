@@ -23,7 +23,6 @@ const isTestMode = () => process.env.ENV === 'test' || process.env.PLAYWRIGHT_TE
 
 test.describe('Cross-User Authorization (§1.3)', () => {
   test('should not expose another user project via GET', async ({ request }) => {
-    test.skip(isTestMode(), 'Requires real DB users');
 
     const owner = await ctx.createUser({ subscription: 'active', tier: 'growth' });
     const attacker = await ctx.createUser({ subscription: 'active', tier: 'growth' });
@@ -39,7 +38,6 @@ test.describe('Cross-User Authorization (§1.3)', () => {
   });
 
   test('should not allow updating another user project', async ({ request }) => {
-    test.skip(isTestMode(), 'Requires real DB users');
 
     const owner = await ctx.createUser({ subscription: 'active', tier: 'growth' });
     const attacker = await ctx.createUser({ subscription: 'active', tier: 'growth' });
@@ -56,7 +54,6 @@ test.describe('Cross-User Authorization (§1.3)', () => {
   });
 
   test('should not allow deleting another user project', async ({ request }) => {
-    test.skip(isTestMode(), 'Requires real DB users');
 
     const owner = await ctx.createUser({ subscription: 'active', tier: 'growth' });
     const attacker = await ctx.createUser({ subscription: 'active', tier: 'growth' });
@@ -75,7 +72,6 @@ test.describe('Cross-User Authorization (§1.3)', () => {
   });
 
   test('should not allow accessing another user campaign', async ({ request }) => {
-    test.skip(isTestMode(), 'Requires real DB users');
 
     const owner = await ctx.createUser({ subscription: 'active', tier: 'growth' });
     const attacker = await ctx.createUser({ subscription: 'active', tier: 'growth' });
@@ -92,7 +88,6 @@ test.describe('Cross-User Authorization (§1.3)', () => {
   });
 
   test('should not allow accessing another user keywords', async ({ request }) => {
-    test.skip(isTestMode(), 'Requires real DB users');
 
     const owner = await ctx.createUser({ subscription: 'active', tier: 'growth' });
     const attacker = await ctx.createUser({ subscription: 'active', tier: 'growth' });
@@ -109,7 +104,6 @@ test.describe('Cross-User Authorization (§1.3)', () => {
   });
 
   test('should not allow accessing another user credit history', async ({ request }) => {
-    test.skip(isTestMode(), 'Requires real DB users');
 
     const owner = await ctx.createUser({ subscription: 'active', tier: 'growth', credits: 50 });
     const attacker = await ctx.createUser({ subscription: 'active', tier: 'growth' });
@@ -136,7 +130,6 @@ test.describe('Cross-User Authorization (§1.3)', () => {
   });
 
   test('non-admin should get 403 on admin endpoints', async ({ request }) => {
-    test.skip(isTestMode(), 'Requires real DB profiles — skipped in mock test mode');
     const regularUser = await ctx.createUser({ subscription: 'active', tier: 'growth' });
     const api = new ApiClient(request).withAuth(regularUser.token);
 

@@ -34,7 +34,6 @@ test.describe('GET /api/settings/api-keys', () => {
   });
 
   test('should return an empty list for a new user', async ({ request }) => {
-    test.skip(isTestMode(), 'Requires real Supabase DB — skipped in mock test mode');
 
     const user = await ctx.createUser();
     const api = new ApiClient(request).withAuth(user.token);
@@ -48,7 +47,6 @@ test.describe('GET /api/settings/api-keys', () => {
   });
 
   test('should never expose key_hash in the response', async ({ request }) => {
-    test.skip(isTestMode(), 'Requires real Supabase DB — skipped in mock test mode');
 
     const user = await ctx.createUser();
     const api = new ApiClient(request).withAuth(user.token);
@@ -66,7 +64,6 @@ test.describe('GET /api/settings/api-keys', () => {
   });
 
   test('should not return another user\'s API keys', async ({ request }) => {
-    test.skip(isTestMode(), 'Requires real Supabase DB — skipped in mock test mode');
 
     const user1 = await ctx.createUser();
     const user2 = await ctx.createUser();
@@ -94,7 +91,6 @@ test.describe('POST /api/settings/api-keys', () => {
   });
 
   test('should create a key and return it in full (only once)', async ({ request }) => {
-    test.skip(isTestMode(), 'Requires real Supabase DB — skipped in mock test mode');
 
     const user = await ctx.createUser();
     const api = new ApiClient(request).withAuth(user.token);
@@ -113,7 +109,6 @@ test.describe('POST /api/settings/api-keys', () => {
   });
 
   test('should create a key with scopes', async ({ request }) => {
-    test.skip(isTestMode(), 'Requires real Supabase DB — skipped in mock test mode');
 
     const user = await ctx.createUser();
     const api = new ApiClient(request).withAuth(user.token);
@@ -130,7 +125,6 @@ test.describe('POST /api/settings/api-keys', () => {
   });
 
   test('should reject missing name with 400/422', async ({ request }) => {
-    test.skip(isTestMode(), 'Requires real Supabase DB — skipped in mock test mode');
 
     const user = await ctx.createUser();
     const api = new ApiClient(request).withAuth(user.token);
@@ -142,7 +136,6 @@ test.describe('POST /api/settings/api-keys', () => {
   });
 
   test('should reject name over 100 chars with 400/422', async ({ request }) => {
-    test.skip(isTestMode(), 'Requires real Supabase DB — skipped in mock test mode');
 
     const user = await ctx.createUser();
     const api = new ApiClient(request).withAuth(user.token);
@@ -154,7 +147,6 @@ test.describe('POST /api/settings/api-keys', () => {
   });
 
   test('should reject invalid scope values with 400/422', async ({ request }) => {
-    test.skip(isTestMode(), 'Requires real Supabase DB — skipped in mock test mode');
 
     const user = await ctx.createUser();
     const api = new ApiClient(request).withAuth(user.token);
@@ -167,7 +159,6 @@ test.describe('POST /api/settings/api-keys', () => {
   });
 
   test('the created key must appear in the list', async ({ request }) => {
-    test.skip(isTestMode(), 'Requires real Supabase DB — skipped in mock test mode');
 
     const user = await ctx.createUser();
     const api = new ApiClient(request).withAuth(user.token);
@@ -194,7 +185,6 @@ test.describe('DELETE /api/settings/api-keys', () => {
   });
 
   test('should return 400 when keyId is missing', async ({ request }) => {
-    test.skip(isTestMode(), 'Requires real Supabase DB — skipped in mock test mode');
 
     const user = await ctx.createUser();
     const response = await request.delete('/api/settings/api-keys', {
@@ -204,7 +194,6 @@ test.describe('DELETE /api/settings/api-keys', () => {
   });
 
   test('should return 400 when keyId is not a valid UUID', async ({ request }) => {
-    test.skip(isTestMode(), 'Requires real Supabase DB — skipped in mock test mode');
 
     const user = await ctx.createUser();
     const response = await request.delete('/api/settings/api-keys?keyId=not-a-uuid', {
@@ -214,7 +203,6 @@ test.describe('DELETE /api/settings/api-keys', () => {
   });
 
   test('should delete an existing key (204 response)', async ({ request }) => {
-    test.skip(isTestMode(), 'Requires real Supabase DB — skipped in mock test mode');
 
     const user = await ctx.createUser();
     const api = new ApiClient(request).withAuth(user.token);
@@ -237,7 +225,6 @@ test.describe('DELETE /api/settings/api-keys', () => {
   });
 
   test('should not allow deleting another user\'s API key', async ({ request }) => {
-    test.skip(isTestMode(), 'Requires real Supabase DB — skipped in mock test mode');
 
     const user1 = await ctx.createUser();
     const user2 = await ctx.createUser();

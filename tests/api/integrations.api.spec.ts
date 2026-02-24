@@ -50,6 +50,8 @@ test.describe('API: Integrations', () => {
     });
 
     test('should return empty list for new user', async ({ request }) => {
+      test.skip(isTestMode(), 'Cannot query real DB with mock user in test mode');
+
       const api = new ApiClient(request).withAuth(user.token);
 
       const response = await api.get('/api/integrations');
@@ -61,7 +63,6 @@ test.describe('API: Integrations', () => {
     });
 
     test('should return user integrations', async ({ request }) => {
-      test.skip(isTestMode(), 'Cannot seed integrations in test mode with mock users');
 
       // Seed integration via direct DB insert
       const { supabaseAdmin } = ctx;
@@ -107,7 +108,6 @@ test.describe('API: Integrations', () => {
     });
 
     test('should not return encrypted_credentials field', async ({ request }) => {
-      test.skip(isTestMode(), 'Cannot seed integrations in test mode with mock users');
 
       const { supabaseAdmin } = ctx;
       await ctx.createProject(user.id, {
@@ -141,7 +141,6 @@ test.describe('API: Integrations', () => {
     });
 
     test('should return 404 for other user integration', async ({ request }) => {
-      test.skip(isTestMode(), 'Cannot seed integrations in test mode with mock users');
 
       const otherUser = await ctx.createUser({ subscription: 'active' });
 
@@ -195,8 +194,10 @@ test.describe('API: Integrations', () => {
     });
 
     test('should create WordPress integration', async ({ request }) => {
-      // Skip in test mode without encryption key (required for credential encryption)
-      test.skip(isTestMode() && !hasEncryptionKey(), 'CMS_ENCRYPTION_KEY not set in test mode');
+      // Skip in test mode - mock users can't authenticate with real API
+      test.skip(isTestMode(), 'Cannot create real integration with mock user in test mode');
+      // Also skip without encryption key (required for credential encryption)
+      test.skip(!hasEncryptionKey(), 'CMS_ENCRYPTION_KEY not set');
 
       // Skip DB verification in test mode since we can't query with mock user IDs
       const api = new ApiClient(request).withAuth(user.token);
@@ -238,8 +239,10 @@ test.describe('API: Integrations', () => {
     });
 
     test('should create webhook integration', async ({ request }) => {
-      // Skip in test mode without encryption key (required for credential encryption)
-      test.skip(isTestMode() && !hasEncryptionKey(), 'CMS_ENCRYPTION_KEY not set in test mode');
+      // Skip in test mode - mock users can't authenticate with real API
+      test.skip(isTestMode(), 'Cannot create real integration with mock user in test mode');
+      // Also skip without encryption key (required for credential encryption)
+      test.skip(!hasEncryptionKey(), 'CMS_ENCRYPTION_KEY not set');
 
       const api = new ApiClient(request).withAuth(user.token);
 
@@ -356,7 +359,6 @@ test.describe('API: Integrations', () => {
     });
 
     test('should return integration by ID', async ({ request }) => {
-      test.skip(isTestMode(), 'Cannot seed integrations in test mode with mock users');
 
       const { supabaseAdmin } = ctx;
       await ctx.createProject(user.id, {
@@ -399,7 +401,6 @@ test.describe('API: Integrations', () => {
     });
 
     test('should return 404 for other user integration', async ({ request }) => {
-      test.skip(isTestMode(), 'Cannot seed integrations in test mode with mock users');
 
       const otherUser = await ctx.createUser({ subscription: 'active' });
 
@@ -449,7 +450,6 @@ test.describe('API: Integrations', () => {
     });
 
     test('should update integration name', async ({ request }) => {
-      test.skip(isTestMode(), 'Cannot seed integrations in test mode with mock users');
 
       const { supabaseAdmin } = ctx;
       await ctx.createProject(user.id, {
@@ -505,7 +505,6 @@ test.describe('API: Integrations', () => {
     });
 
     test('should delete integration', async ({ request }) => {
-      test.skip(isTestMode(), 'Cannot seed integrations in test mode with mock users');
 
       const { supabaseAdmin } = ctx;
       await ctx.createProject(user.id, {
@@ -559,8 +558,10 @@ test.describe('API: Integrations', () => {
     });
 
     test('should test connection for API-created integration', async ({ request }) => {
-      // Skip in test mode without encryption key (required for credential encryption)
-      test.skip(isTestMode() && !hasEncryptionKey(), 'CMS_ENCRYPTION_KEY not set in test mode');
+      // Skip in test mode - mock users can't authenticate with real API
+      test.skip(isTestMode(), 'Cannot create real integration with mock user in test mode');
+      // Also skip without encryption key (required for credential encryption)
+      test.skip(!hasEncryptionKey(), 'CMS_ENCRYPTION_KEY not set');
 
       const api = new ApiClient(request).withAuth(user.token);
 

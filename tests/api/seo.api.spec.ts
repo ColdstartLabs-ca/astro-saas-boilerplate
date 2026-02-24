@@ -51,7 +51,6 @@ test.describe('API: SEO — IndexNow (§16)', () => {
 
   test.describe('GET /api/seo/indexnow — Status', () => {
     test('returns 200 with valid secret', async ({ request }) => {
-      test.skip(isTestMode(), 'Skipped in mock test mode');
       const response = await request.get('/api/seo/indexnow', {
         headers: { 'x-cron-secret': getCronSecret() },
       });
@@ -61,7 +60,6 @@ test.describe('API: SEO — IndexNow (§16)', () => {
 
   test.describe('POST /api/seo/indexnow — Submit', () => {
     test('should reject body without url or urls', async ({ request }) => {
-      test.skip(isTestMode(), 'Skipped in mock test mode');
       const response = await request.post('/api/seo/indexnow', {
         headers: {
           'x-cron-secret': getCronSecret(),
@@ -76,7 +74,6 @@ test.describe('API: SEO — IndexNow (§16)', () => {
     });
 
     test('should reject invalid url format', async ({ request }) => {
-      test.skip(isTestMode(), 'Skipped in mock test mode');
       const response = await request.post('/api/seo/indexnow', {
         headers: {
           'x-cron-secret': getCronSecret(),
@@ -88,7 +85,6 @@ test.describe('API: SEO — IndexNow (§16)', () => {
     });
 
     test('should reject empty urls array', async ({ request }) => {
-      test.skip(isTestMode(), 'Skipped in mock test mode');
       const response = await request.post('/api/seo/indexnow', {
         headers: {
           'x-cron-secret': getCronSecret(),
@@ -100,7 +96,6 @@ test.describe('API: SEO — IndexNow (§16)', () => {
     });
 
     test('should accept single URL submission', async ({ request }) => {
-      test.skip(isTestMode(), 'Skipped in mock test mode');
       const response = await request.post('/api/seo/indexnow', {
         headers: {
           'x-cron-secret': getCronSecret(),
@@ -115,7 +110,6 @@ test.describe('API: SEO — IndexNow (§16)', () => {
     });
 
     test('should accept batch URL submission', async ({ request }) => {
-      test.skip(isTestMode(), 'Skipped in mock test mode');
       const response = await request.post('/api/seo/indexnow', {
         headers: {
           'x-cron-secret': getCronSecret(),

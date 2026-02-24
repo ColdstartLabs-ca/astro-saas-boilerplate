@@ -56,7 +56,7 @@ test.describe('API: Cron - Check Opportunity Performance', () => {
 
     test('should accept requests with valid cron secret', async ({ request }) => {
       // Skip in test mode if CRON_SECRET is not set
-      test.skip(isTestMode() && !process.env.CRON_SECRET, 'CRON_SECRET not set in test mode');
+      test.skip(isTestMode(), 'Requires real DB and external API access in test mode');
 
       const cronSecret = getCronSecret();
 
@@ -84,7 +84,7 @@ test.describe('API: Cron - Check Opportunity Performance', () => {
 
   test.describe('Processing', () => {
     test('should return summary of processed opportunities', async ({ request }) => {
-      test.skip(isTestMode() && !process.env.CRON_SECRET, 'CRON_SECRET not set in test mode');
+      test.skip(isTestMode(), 'Requires real DB and external API access in test mode');
 
       const cronSecret = getCronSecret();
 
@@ -210,7 +210,7 @@ test.describe('API: Cron - Check Opportunity Performance', () => {
     });
 
     test('should handle errors gracefully and continue processing', async ({ request }) => {
-      test.skip(isTestMode() && !process.env.CRON_SECRET, 'CRON_SECRET not set in test mode');
+      test.skip(isTestMode(), 'Requires real DB and external API access in test mode');
 
       const cronSecret = getCronSecret();
 
@@ -248,7 +248,7 @@ test.describe('API: Cron - Check Opportunity Performance', () => {
 
   test.describe('Response Format', () => {
     test('should return correct response structure', async ({ request }) => {
-      test.skip(isTestMode() && !process.env.CRON_SECRET, 'CRON_SECRET not set in test mode');
+      test.skip(isTestMode(), 'Requires real DB and external API access in test mode');
 
       const cronSecret = getCronSecret();
 
@@ -275,7 +275,7 @@ test.describe('API: Cron - Check Opportunity Performance', () => {
     });
 
     test('should include result details for each processed opportunity', async ({ request }) => {
-      test.skip(isTestMode() && !process.env.CRON_SECRET, 'CRON_SECRET not set in test mode');
+      test.skip(isTestMode(), 'Requires real DB and external API access in test mode');
 
       const cronSecret = getCronSecret();
 

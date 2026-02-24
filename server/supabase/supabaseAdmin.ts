@@ -7,6 +7,16 @@ import { clientEnv, serverEnv } from '@shared/config/env';
 // any request runs, so secrets aren't available yet. Access inside getClient() instead.
 let _client: SupabaseClient | null = null;
 let _cachedServiceRoleKey = '';
+let _isTestRuntime: boolean | null = null;
+
+function isTestRuntime(): boolean {
+  if (_isTestRuntime !== null) return _isTestRuntime;
+  _isTestRuntime =
+    serverEnv.ENV === 'test' ||
+    serverEnv.PLAYWRIGHT_TEST === '1' ||
+    serverEnv.PLAYWRIGHT_TEST === 'true';
+  return _isTestRuntime;
+}
 
 function getClient(): SupabaseClient {
   // Read the current key — after middleware injects CF runtime env into process.env
@@ -19,15 +29,20 @@ function getClient(): SupabaseClient {
   }
 
   if (!_client) {
-    const isTestRuntime =
-      serverEnv.ENV === 'test' ||
-      serverEnv.PLAYWRIGHT_TEST === '1' ||
-      serverEnv.PLAYWRIGHT_TEST === 'true';
+    // Use in-memory Supabase for Playwright tests (no real DB connection)
+    if (isTestRuntime()) {
+      // Dynamic import to avoid bundling node:fs in production
+      // eslint-disable-next-line @typescript-eslint/no-var-requires
+      const { inMemorySupabaseAdmin } = require('./inMemorySupabaseAdmin');
+      _client = inMemorySupabaseAdmin as SupabaseClient;
+      _cachedServiceRoleKey = 'in-memory-test-mode';
+      return _client;
+    }
 
-    if (!isTestRuntime && !clientEnv.SUPABASE_URL) {
+    if (!clientEnv.SUPABASE_URL) {
       console.warn('Warning: SUPABASE_URL is not set.');
     }
-    if (!isTestRuntime && !serviceRoleKey) {
+    if (!serviceRoleKey) {
       console.warn('Warning: SUPABASE_SERVICE_ROLE_KEY is not set. Admin operations will fail.');
     }
 

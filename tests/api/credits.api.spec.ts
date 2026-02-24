@@ -35,7 +35,6 @@ test.describe('API: Credit History (§7.6)', () => {
   });
 
   test('should return paginated transaction list', async ({ request }) => {
-    test.skip(isTestMode(), 'Requires real DB user');
     const api = new ApiClient(request).withAuth(user.token);
     const response = await api.get('/api/credits/history');
     response.expectStatus(200).expectSuccess();
@@ -47,7 +46,6 @@ test.describe('API: Credit History (§7.6)', () => {
   });
 
   test('each transaction has required fields', async ({ request }) => {
-    test.skip(isTestMode(), 'Requires real DB user');
     const api = new ApiClient(request).withAuth(user.token);
     const response = await api.get('/api/credits/history');
     response.expectStatus(200);
@@ -65,7 +63,6 @@ test.describe('API: Credit History (§7.6)', () => {
   test('subscription credit transaction has positive amount and correct type', async ({
     request,
   }) => {
-    test.skip(isTestMode(), 'Requires real DB user');
     const api = new ApiClient(request).withAuth(user.token);
     const response = await api.get('/api/credits/history');
     const data = await response.getData();
@@ -78,7 +75,6 @@ test.describe('API: Credit History (§7.6)', () => {
   });
 
   test('usage transactions have negative amounts', async ({ request }) => {
-    test.skip(isTestMode(), 'Requires real DB user');
     const api = new ApiClient(request).withAuth(user.token);
     const response = await api.get('/api/credits/history');
     const data = await response.getData();
@@ -90,7 +86,6 @@ test.describe('API: Credit History (§7.6)', () => {
   });
 
   test('supports pagination via limit/offset', async ({ request }) => {
-    test.skip(isTestMode(), 'Requires real DB user');
     const api = new ApiClient(request).withAuth(user.token);
 
     const page1 = await api.get('/api/credits/history?limit=1&offset=0');
@@ -108,7 +103,6 @@ test.describe('API: Credit History (§7.6)', () => {
   });
 
   test('does not expose other users transactions', async ({ request }) => {
-    test.skip(isTestMode(), 'Requires real DB users');
     const other = await ctx.createUser({ subscription: 'active', tier: 'starter', credits: 20 });
     const api = new ApiClient(request).withAuth(other.token);
 

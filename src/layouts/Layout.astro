@@ -128,7 +128,7 @@ function getLocaleUrl(locale: Locale): string {
   </head>
   <body class="font-sans antialiased">
     <!-- Initialize client-side locale store -->
-    <LocaleInit locale={currentLocale as Locale} client:load />
+    <LocaleInit locale={currentLocale as Locale} client:only="react" />
     <div class="min-h-screen bg-main flex flex-col overflow-x-hidden">
       <NavBarAstro client:load />
       <main class="flex-1 w-full">

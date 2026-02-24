@@ -32,7 +32,7 @@ const { title = 'Dashboard' } = Astro.props;
   </head>
   <body class="font-sans antialiased">
     <!-- Initialize client-side locale store -->
-    <LocaleInit locale={currentLocale as Locale} client:load />
+    <LocaleInit locale={currentLocale as Locale} client:only="react" />
     <DashboardLayout client:only="react" />
     <GlobalUI client:only="react" />
   </body>

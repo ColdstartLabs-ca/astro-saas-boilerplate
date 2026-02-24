@@ -89,7 +89,6 @@ test.describe('API: Opportunities', () => {
 
     // Skip in test mode because we can't seed opportunities with mock user IDs
     test('should return paginated list', async ({ request }) => {
-      test.skip(isTestMode(), 'Cannot seed opportunities in test mode with mock users');
 
       const { supabaseAdmin } = ctx;
 
@@ -131,7 +130,6 @@ test.describe('API: Opportunities', () => {
     });
 
     test('should filter by category', async ({ request }) => {
-      test.skip(isTestMode(), 'Cannot seed opportunities in test mode with mock users');
 
       const { supabaseAdmin } = ctx;
 
@@ -174,7 +172,6 @@ test.describe('API: Opportunities', () => {
     });
 
     test('should filter by status', async ({ request }) => {
-      test.skip(isTestMode(), 'Cannot seed opportunities in test mode with mock users');
 
       const { supabaseAdmin } = ctx;
 
@@ -214,7 +211,6 @@ test.describe('API: Opportunities', () => {
     });
 
     test('should filter by type', async ({ request }) => {
-      test.skip(isTestMode(), 'Cannot seed opportunities in test mode with mock users');
 
       const { supabaseAdmin } = ctx;
 
@@ -254,7 +250,6 @@ test.describe('API: Opportunities', () => {
     });
 
     test('should search by text', async ({ request }) => {
-      test.skip(isTestMode(), 'Cannot seed opportunities in test mode with mock users');
 
       const { supabaseAdmin } = ctx;
 
@@ -296,7 +291,6 @@ test.describe('API: Opportunities', () => {
     });
 
     test('should sort by priority desc', async ({ request }) => {
-      test.skip(isTestMode(), 'Cannot seed opportunities in test mode with mock users');
 
       const { supabaseAdmin } = ctx;
 
@@ -355,7 +349,6 @@ test.describe('API: Opportunities', () => {
     });
 
     test('should return opportunity by ID', async ({ request }) => {
-      test.skip(isTestMode(), 'Cannot seed opportunities in test mode with mock users');
 
       const { supabaseAdmin } = ctx;
 
@@ -393,7 +386,6 @@ test.describe('API: Opportunities', () => {
     });
 
     test('should return 404 for other user opportunity', async ({ request }) => {
-      test.skip(isTestMode(), 'Cannot seed opportunities in test mode with mock users');
 
       const otherUser = await ctx.createUser({ subscription: 'active' });
       const otherProject = await ctx.createProject(otherUser.id, { name: 'Other Project' });
@@ -440,7 +432,6 @@ test.describe('API: Opportunities', () => {
     });
 
     test('should update opportunity status', async ({ request }) => {
-      test.skip(isTestMode(), 'Cannot seed opportunities in test mode with mock users');
 
       const { supabaseAdmin } = ctx;
 
@@ -478,7 +469,6 @@ test.describe('API: Opportunities', () => {
     });
 
     test('should reject invalid status', async ({ request }) => {
-      test.skip(isTestMode(), 'Cannot seed opportunities in test mode with mock users');
 
       const { supabaseAdmin } = ctx;
 
@@ -523,7 +513,6 @@ test.describe('API: Opportunities', () => {
     });
 
     test('should create campaign from content opportunity', async ({ request }) => {
-      test.skip(isTestMode(), 'Cannot seed opportunities in test mode with mock users');
 
       const { supabaseAdmin } = ctx;
 
@@ -557,7 +546,6 @@ test.describe('API: Opportunities', () => {
     });
 
     test('should reject non-content type opportunity', async ({ request }) => {
-      test.skip(isTestMode(), 'Cannot seed opportunities in test mode with mock users');
 
       const { supabaseAdmin } = ctx;
 
@@ -588,7 +576,6 @@ test.describe('API: Opportunities', () => {
     });
 
     test('should update opportunity status to in_progress', async ({ request }) => {
-      test.skip(isTestMode(), 'Cannot seed opportunities in test mode with mock users');
 
       const { supabaseAdmin } = ctx;
 

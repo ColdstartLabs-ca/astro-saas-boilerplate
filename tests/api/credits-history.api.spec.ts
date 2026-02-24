@@ -32,7 +32,6 @@ test.describe('GET /api/credits/history', () => {
   });
 
   test('should return credit transaction history for authenticated user', async ({ request }) => {
-    test.skip(isTestMode(), 'Requires real Supabase DB — skipped in mock test mode');
 
     const user = await ctx.createUser({ subscription: 'active', tier: 'starter', credits: 20 });
     const api = new ApiClient(request).withAuth(user.token);
@@ -46,7 +45,6 @@ test.describe('GET /api/credits/history', () => {
   });
 
   test('should return correct shape for each transaction entry', async ({ request }) => {
-    test.skip(isTestMode(), 'Requires real Supabase DB — skipped in mock test mode');
 
     const user = await ctx.createUser({ subscription: 'active', tier: 'starter', credits: 20 });
     const api = new ApiClient(request).withAuth(user.token);
@@ -67,7 +65,6 @@ test.describe('GET /api/credits/history', () => {
   });
 
   test('should return paginated results when page param is provided', async ({ request }) => {
-    test.skip(isTestMode(), 'Requires real Supabase DB — skipped in mock test mode');
 
     const user = await ctx.createUser({ subscription: 'active', tier: 'starter', credits: 20 });
     const api = new ApiClient(request).withAuth(user.token);
@@ -82,7 +79,6 @@ test.describe('GET /api/credits/history', () => {
   });
 
   test('should not expose another user\'s credit history', async ({ request }) => {
-    test.skip(isTestMode(), 'Requires real Supabase DB — skipped in mock test mode');
 
     const user1 = await ctx.createUser({ subscription: 'active', tier: 'starter', credits: 20 });
     const user2 = await ctx.createUser({ subscription: 'active', tier: 'starter', credits: 20 });

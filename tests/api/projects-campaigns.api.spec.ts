@@ -45,7 +45,6 @@ test.describe('API: Projects (§3.1)', () => {
     });
 
     test('should return empty array for new user', async ({ request }) => {
-      test.skip(isTestMode(), 'Requires real DB user');
       const api = new ApiClient(request).withAuth(user.token);
       const response = await api.get('/api/projects');
       response.expectStatus(200).expectSuccess();
@@ -70,7 +69,6 @@ test.describe('API: Projects (§3.1)', () => {
     });
 
     test('should create project', async ({ request }) => {
-      test.skip(isTestMode(), 'Requires real DB user');
       const api = new ApiClient(request).withAuth(user.token);
       const response = await api.post('/api/projects', { name: 'My Project' });
       response.expectStatus(201).expectSuccess();
@@ -80,7 +78,6 @@ test.describe('API: Projects (§3.1)', () => {
     });
 
     test('should appear in list after creation', async ({ request }) => {
-      test.skip(isTestMode(), 'Requires real DB user');
       const api = new ApiClient(request).withAuth(user.token);
       await api.post('/api/projects', { name: 'List Test Project' });
       const list = await api.get('/api/projects');
@@ -111,7 +108,6 @@ test.describe('API: Projects (§3.1)', () => {
     });
 
     test('should update project name', async ({ request }) => {
-      test.skip(isTestMode(), 'Requires real DB user');
       const api = new ApiClient(request).withAuth(user.token);
       const created = await api.post('/api/projects', { name: 'Before Update' });
       const project = await created.getData();
@@ -139,7 +135,6 @@ test.describe('API: Projects (§3.1)', () => {
     });
 
     test('should delete own project', async ({ request }) => {
-      test.skip(isTestMode(), 'Requires real DB user');
       const api = new ApiClient(request).withAuth(user.token);
       const created = await api.post('/api/projects', { name: 'To Delete' });
       const project = await created.getData();
@@ -153,7 +148,6 @@ test.describe('API: Projects (§3.1)', () => {
     });
 
     test('should not allow deleting another user project', async ({ request }) => {
-      test.skip(isTestMode(), 'Requires real DB user');
       const otherUser = await ctx.createUser({ subscription: 'active' });
       const ownerApi = new ApiClient(request).withAuth(otherUser.token);
       const created = await ownerApi.post('/api/projects', { name: 'Other Project' });
@@ -200,7 +194,6 @@ test.describe('API: Campaigns (§3.2)', () => {
     });
 
     test('should return campaigns list', async ({ request }) => {
-      test.skip(isTestMode(), 'Requires real DB user');
       const api = new ApiClient(request).withAuth(user.token);
       const response = await api.get(`/api/campaigns?projectId=${projectId}`);
       response.expectStatus(200).expectSuccess();
@@ -225,7 +218,6 @@ test.describe('API: Campaigns (§3.2)', () => {
     });
 
     test('should create campaign', async ({ request }) => {
-      test.skip(isTestMode(), 'Requires real DB user');
       const api = new ApiClient(request).withAuth(user.token);
       const response = await api.post('/api/campaigns', {
         name: 'My Campaign',
@@ -254,7 +246,6 @@ test.describe('API: Campaigns (§3.2)', () => {
     });
 
     test('full CRUD cycle', async ({ request }) => {
-      test.skip(isTestMode(), 'Requires real DB user');
       const api = new ApiClient(request).withAuth(user.token);
 
       // Create
@@ -328,7 +319,6 @@ test.describe('API: Keywords (§3.3)', () => {
   });
 
   test('should add and list keywords', async ({ request }) => {
-    test.skip(isTestMode(), 'Requires real DB user');
     const api = new ApiClient(request).withAuth(user.token);
 
     // Add keywords
@@ -355,7 +345,6 @@ test.describe('API: Keywords (§3.3)', () => {
   });
 
   test('should delete a keyword', async ({ request }) => {
-    test.skip(isTestMode(), 'Requires real DB user');
     const api = new ApiClient(request).withAuth(user.token);
 
     const added = await api.post(`/api/campaigns/${campaignId}/keywords`, {

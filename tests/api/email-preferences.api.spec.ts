@@ -33,7 +33,6 @@ test.describe('GET /api/email/preferences', () => {
   });
 
   test('should return email preferences for authenticated user', async ({ request }) => {
-    test.skip(isTestMode(), 'Requires real Supabase DB — skipped in mock test mode');
 
     const user = await ctx.createUser();
     const api = new ApiClient(request).withAuth(user.token);
@@ -53,7 +52,6 @@ test.describe('GET /api/email/preferences', () => {
   test('should return default values for a fresh user (no preferences row)', async ({
     request,
   }) => {
-    test.skip(isTestMode(), 'Requires real Supabase DB — skipped in mock test mode');
 
     const user = await ctx.createUser();
     const api = new ApiClient(request).withAuth(user.token);
@@ -82,7 +80,6 @@ test.describe('PATCH /api/email/preferences', () => {
   });
 
   test('should update a single preference', async ({ request }) => {
-    test.skip(isTestMode(), 'Requires real Supabase DB — skipped in mock test mode');
 
     const user = await ctx.createUser();
     const api = new ApiClient(request).withAuth(user.token);
@@ -97,7 +94,6 @@ test.describe('PATCH /api/email/preferences', () => {
   });
 
   test('should update multiple preferences at once', async ({ request }) => {
-    test.skip(isTestMode(), 'Requires real Supabase DB — skipped in mock test mode');
 
     const user = await ctx.createUser();
     const api = new ApiClient(request).withAuth(user.token);
@@ -116,7 +112,6 @@ test.describe('PATCH /api/email/preferences', () => {
   });
 
   test('should persist preference changes (GET after PATCH)', async ({ request }) => {
-    test.skip(isTestMode(), 'Requires real Supabase DB — skipped in mock test mode');
 
     const user = await ctx.createUser();
     const api = new ApiClient(request).withAuth(user.token);
@@ -130,7 +125,6 @@ test.describe('PATCH /api/email/preferences', () => {
   });
 
   test('should reject invalid preference values', async ({ request }) => {
-    test.skip(isTestMode(), 'Requires real Supabase DB — skipped in mock test mode');
 
     const user = await ctx.createUser();
     const api = new ApiClient(request).withAuth(user.token);
@@ -142,7 +136,6 @@ test.describe('PATCH /api/email/preferences', () => {
   });
 
   test('should not expose another user\'s preferences', async ({ request }) => {
-    test.skip(isTestMode(), 'Requires real Supabase DB — skipped in mock test mode');
 
     const user1 = await ctx.createUser();
     const user2 = await ctx.createUser();

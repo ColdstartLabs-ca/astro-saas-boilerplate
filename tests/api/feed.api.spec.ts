@@ -34,7 +34,6 @@ test.describe('GET /api/settings/feed/token', () => {
   });
 
   test('should return feedToken and feedUrl for authenticated user', async ({ request }) => {
-    test.skip(isTestMode(), 'Requires real Supabase DB — skipped in mock test mode');
 
     const user = await ctx.createUser();
     const api = new ApiClient(request).withAuth(user.token);
@@ -62,7 +61,6 @@ test.describe('POST /api/settings/feed/token (regenerate)', () => {
   });
 
   test('should generate a new token and return feedUrl', async ({ request }) => {
-    test.skip(isTestMode(), 'Requires real Supabase DB — skipped in mock test mode');
 
     const user = await ctx.createUser();
     const api = new ApiClient(request).withAuth(user.token);
@@ -80,7 +78,6 @@ test.describe('POST /api/settings/feed/token (regenerate)', () => {
   });
 
   test('should return a different token on second regenerate', async ({ request }) => {
-    test.skip(isTestMode(), 'Requires real Supabase DB — skipped in mock test mode');
 
     const user = await ctx.createUser();
     const api = new ApiClient(request).withAuth(user.token);
@@ -106,7 +103,6 @@ test.describe('GET /api/feeds/[userId]/articles.xml', () => {
   });
 
   test('should return 401 or 400 when no token is provided', async ({ request }) => {
-    test.skip(isTestMode(), 'Requires real Supabase DB — skipped in mock test mode');
 
     const user = await ctx.createUser();
     const api = new ApiClient(request);
@@ -115,7 +111,6 @@ test.describe('GET /api/feeds/[userId]/articles.xml', () => {
   });
 
   test('should return 400 or 401 when an invalid token is provided', async ({ request }) => {
-    test.skip(isTestMode(), 'Requires real Supabase DB — skipped in mock test mode');
 
     const user = await ctx.createUser();
     const api = new ApiClient(request);
@@ -124,7 +119,6 @@ test.describe('GET /api/feeds/[userId]/articles.xml', () => {
   });
 
   test('should return XML feed with a valid token', async ({ request }) => {
-    test.skip(isTestMode(), 'Requires real Supabase DB — skipped in mock test mode');
 
     const user = await ctx.createUser();
     const authApi = new ApiClient(request).withAuth(user.token);
@@ -150,7 +144,6 @@ test.describe('GET /api/feeds/[userId]/articles.xml', () => {
   });
 
   test('should return 401 or 404 with a revoked/wrong token', async ({ request }) => {
-    test.skip(isTestMode(), 'Requires real Supabase DB — skipped in mock test mode');
 
     const user = await ctx.createUser();
     const fakeToken = '00000000-0000-4000-8000-000000000099';

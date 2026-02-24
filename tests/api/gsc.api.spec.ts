@@ -69,7 +69,6 @@ test.describe('API: GSC Connections', () => {
     });
 
     test('should return auth URL', async ({ request }) => {
-      test.skip(isTestMode(), 'Cannot create project in test mode with mock users');
 
       const project = await ctx.createProject(user.id, {
         name: 'Test Project',
@@ -113,7 +112,6 @@ test.describe('API: GSC Connections', () => {
     });
 
     test('should return connections without access tokens', async ({ request }) => {
-      test.skip(isTestMode(), 'Cannot seed gsc_connections in test mode with mock users');
 
       const { supabaseAdmin } = ctx;
       const project = await ctx.createProject(user.id, {
@@ -152,7 +150,6 @@ test.describe('API: GSC Connections', () => {
     });
 
     test('should return empty array for project with no connections', async ({ request }) => {
-      test.skip(isTestMode(), 'Cannot create project in test mode with mock users');
 
       const project = await ctx.createProject(user.id, {
         name: 'Empty Project',
@@ -202,7 +199,6 @@ test.describe('API: GSC Connections', () => {
     });
 
     test('should delete own connection', async ({ request }) => {
-      test.skip(isTestMode(), 'Cannot seed gsc_connections in test mode with mock users');
 
       const { supabaseAdmin } = ctx;
       const project = await ctx.createProject(user.id, {
@@ -244,7 +240,6 @@ test.describe('API: GSC Connections', () => {
     });
 
     test('should prevent deleting other user connection', async ({ request }) => {
-      test.skip(isTestMode(), 'Cannot seed gsc_connections in test mode with mock users');
 
       const otherUser = await ctx.createUser({ subscription: 'active' });
 
@@ -304,7 +299,6 @@ test.describe('API: GSC Connections', () => {
     });
 
     test('should return 404 for other user connection', async ({ request }) => {
-      test.skip(isTestMode(), 'Cannot seed gsc_connections in test mode with mock users');
 
       const otherUser = await ctx.createUser({ subscription: 'active' });
 

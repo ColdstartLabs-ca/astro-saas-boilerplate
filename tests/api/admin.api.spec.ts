@@ -44,7 +44,6 @@ test.describe('GET /api/admin/stats', () => {
   });
 
   test('should reject non-admin users with 403', async ({ request }) => {
-    test.skip(isTestMode(), 'Requires real DB profiles — skipped in mock test mode');
     const user = await ctx.createUser();
     const api = new ApiClient(request).withAuth(user.token);
     const response = await api.get('/api/admin/stats');
@@ -52,7 +51,6 @@ test.describe('GET /api/admin/stats', () => {
   });
 
   test('should return stats for admin users', async ({ request }) => {
-    test.skip(isTestMode(), 'Requires real DB profiles — skipped in mock test mode');
     const user = await ctx.createUser();
     await makeAdmin(user.id);
     const api = new ApiClient(request).withAuth(user.token);
@@ -72,7 +70,6 @@ test.describe('GET /api/admin/users', () => {
   });
 
   test('should reject non-admin users with 403', async ({ request }) => {
-    test.skip(isTestMode(), 'Requires real DB profiles — skipped in mock test mode');
     const user = await ctx.createUser();
     const api = new ApiClient(request).withAuth(user.token);
     const response = await api.get('/api/admin/users');
@@ -80,7 +77,6 @@ test.describe('GET /api/admin/users', () => {
   });
 
   test('should return paginated user list for admin', async ({ request }) => {
-    test.skip(isTestMode(), 'Requires real DB profiles — skipped in mock test mode');
     const user = await ctx.createUser();
     await makeAdmin(user.id);
     const api = new ApiClient(request).withAuth(user.token);
@@ -101,7 +97,6 @@ test.describe('GET /api/admin/users/[id]', () => {
   });
 
   test('should reject non-admin users with 403', async ({ request }) => {
-    test.skip(isTestMode(), 'Requires real DB profiles — skipped in mock test mode');
     const user = await ctx.createUser();
     const api = new ApiClient(request).withAuth(user.token);
     const fakeId = '00000000-0000-4000-8000-000000000001';
@@ -110,7 +105,6 @@ test.describe('GET /api/admin/users/[id]', () => {
   });
 
   test('should return user detail for admin', async ({ request }) => {
-    test.skip(isTestMode(), 'Requires real DB profiles — skipped in mock test mode');
     const adminUser = await ctx.createUser();
     const targetUser = await ctx.createUser();
     await makeAdmin(adminUser.id);
@@ -136,7 +130,6 @@ test.describe('POST /api/admin/credits/adjust', () => {
   });
 
   test('should reject non-admin users with 403', async ({ request }) => {
-    test.skip(isTestMode(), 'Requires real DB profiles — skipped in mock test mode');
     const user = await ctx.createUser();
     const api = new ApiClient(request).withAuth(user.token);
     const response = await api.post('/api/admin/credits/adjust', {
@@ -148,7 +141,6 @@ test.describe('POST /api/admin/credits/adjust', () => {
   });
 
   test('should adjust credits for admin users', async ({ request }) => {
-    test.skip(isTestMode(), 'Requires real DB profiles — skipped in mock test mode');
     const adminUser = await ctx.createUser();
     const targetUser = await ctx.createUser();
     await makeAdmin(adminUser.id);
@@ -174,7 +166,6 @@ test.describe('GET /api/admin/failure-metrics', () => {
   });
 
   test('should reject non-admin users with 403', async ({ request }) => {
-    test.skip(isTestMode(), 'Requires real DB profiles — skipped in mock test mode');
     const user = await ctx.createUser();
     const api = new ApiClient(request).withAuth(user.token);
     const response = await api.get('/api/admin/failure-metrics');
@@ -182,7 +173,6 @@ test.describe('GET /api/admin/failure-metrics', () => {
   });
 
   test('should return failure metrics for admin', async ({ request }) => {
-    test.skip(isTestMode(), 'Requires real DB profiles — skipped in mock test mode');
     const user = await ctx.createUser();
     await makeAdmin(user.id);
     const api = new ApiClient(request).withAuth(user.token);

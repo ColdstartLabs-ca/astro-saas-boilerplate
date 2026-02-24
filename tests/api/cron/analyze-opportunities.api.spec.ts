@@ -50,8 +50,8 @@ test.describe('API: Cron Analyze Opportunities', () => {
   });
 
   test('should accept requests with valid cron secret', async ({ request }) => {
-    // Skip in test mode if CRON_SECRET is not set
-    test.skip(isTestMode() && !process.env.CRON_SECRET, 'CRON_SECRET not set in test mode');
+    // Skip in test mode - requires real DB and external API access
+    test.skip(isTestMode(), 'Requires real DB and external API access in test mode');
 
     const cronSecret = getCronSecret();
 
@@ -75,8 +75,8 @@ test.describe('API: Cron Analyze Opportunities', () => {
   });
 
   test('should return zero counts when no connections are due', async ({ request }) => {
-    // Skip in test mode if CRON_SECRET is not set
-    test.skip(isTestMode() && !process.env.CRON_SECRET, 'CRON_SECRET not set in test mode');
+    // Skip in test mode - requires real DB and external API access
+    test.skip(isTestMode(), 'Requires real DB and external API access in test mode');
 
     const cronSecret = getCronSecret();
 

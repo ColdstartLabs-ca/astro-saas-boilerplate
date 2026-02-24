@@ -59,7 +59,6 @@ test.describe('API: Scheduled Publishing (§5.1–5.2)', () => {
 
   test.describe('Business logic (real DB)', () => {
     test('start-schedule without frequency config returns 400', async ({ request }) => {
-      test.skip(isTestMode(), 'Requires real DB user');
 
       const project = await ctx.createProject(user.id, { name: 'Schedule Project' });
       const campaign = await ctx.createCampaign(user.id, project.id, {
@@ -75,7 +74,6 @@ test.describe('API: Scheduled Publishing (§5.1–5.2)', () => {
     });
 
     test('pause-schedule on draft campaign returns error', async ({ request }) => {
-      test.skip(isTestMode(), 'Requires real DB user');
 
       const project = await ctx.createProject(user.id, { name: 'Pause Project' });
       const campaign = await ctx.createCampaign(user.id, project.id, {
@@ -90,7 +88,6 @@ test.describe('API: Scheduled Publishing (§5.1–5.2)', () => {
     });
 
     test('cannot schedule another user campaign', async ({ request }) => {
-      test.skip(isTestMode(), 'Requires real DB users');
 
       const owner = await ctx.createUser({ subscription: 'active', tier: 'growth', credits: 100 });
       const project = await ctx.createProject(owner.id, { name: 'Owner Project' });
