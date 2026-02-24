@@ -5,6 +5,7 @@ import { dashboardNavigate, onDashboardNavigate } from '@client/utils/dashboardN
 import { useIsAdmin } from '@client/store/userStore';
 import { getRouteByPath, matchDynamicRoute } from '@client/config/dashboardRoutes';
 import { useOnboardingStatus } from '@client/hooks/useOnboardingStatus';
+import { useOnboardingStore } from '@client/store/onboardingStore';
 import { Home, ArrowLeft } from 'lucide-react';
 
 /**
@@ -125,9 +126,7 @@ function getRouteElement(pathname: string): JSX.Element {
   // Check for dynamic campaign routes: /dashboard/campaigns/:campaignId
   const campaignDetailParams = matchDynamicRoute(path, '/dashboard/campaigns/:campaignId');
   if (campaignDetailParams) {
-    const CampaignsPage = React.lazy(
-      () => import('@client/components/pages/CampaignsPageClient')
-    );
+    const CampaignsPage = React.lazy(() => import('@client/components/pages/CampaignsPageClient'));
     return <CampaignsPage campaignId={campaignDetailParams.campaignId} />;
   }
 
@@ -177,7 +176,12 @@ export function DashboardRouter(): JSX.Element {
     typeof window !== 'undefined' ? window.location.pathname : '/dashboard'
   );
   const [isPending, startTransition] = useTransition();
-  const { isComplete, isLoading: isOnboardingLoading, error: onboardingError } = useOnboardingStatus();
+  const {
+    isComplete,
+    isLoading: isOnboardingLoading,
+    error: onboardingError,
+  } = useOnboardingStatus();
+  const { isDismissed } = useOnboardingStore();
 
   // Wrap pathname updates in startTransition so React keeps showing
   // the current page while the next lazy component loads,
@@ -197,15 +201,14 @@ export function DashboardRouter(): JSX.Element {
     if (isOnboardingLoading) return;
     if (onboardingError) return;
     if (isComplete) return;
+    if (isDismissed) return;
 
-    const isEscapeRoute = ONBOARDING_ESCAPE_ROUTES.some(route =>
-      pathname.startsWith(route)
-    );
+    const isEscapeRoute = ONBOARDING_ESCAPE_ROUTES.some(route => pathname.startsWith(route));
     if (isEscapeRoute) return;
 
     // Redirect to onboarding
     dashboardNavigate('/dashboard/onboarding');
-  }, [pathname, isComplete, isOnboardingLoading, onboardingError]);
+  }, [pathname, isComplete, isOnboardingLoading, onboardingError, isDismissed]);
 
   return (
     <Suspense fallback={<LoadingSpinner />}>

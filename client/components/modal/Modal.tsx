@@ -16,6 +16,8 @@ interface IModalProps {
   onClose: () => void;
   isOpen: boolean;
   showCloseButton?: boolean;
+  /** Disable backdrop click and Escape key from closing the modal */
+  preventClose?: boolean;
   modalId?: string;
   size?: ModalSize;
   className?: string;
@@ -45,6 +47,7 @@ export const Modal = forwardRef<HTMLDivElement, IModalProps>(
       onClose,
       isOpen,
       showCloseButton = true,
+      preventClose = false,
       modalId,
       size = 'md',
       className = '',
@@ -74,7 +77,7 @@ export const Modal = forwardRef<HTMLDivElement, IModalProps>(
 
         // Add escape key handler
         const handleEscape = (e: KeyboardEvent) => {
-          if (e.key === 'Escape') {
+          if (e.key === 'Escape' && !preventClose) {
             onClose();
           }
         };
@@ -110,7 +113,7 @@ export const Modal = forwardRef<HTMLDivElement, IModalProps>(
           className={`fixed inset-0 bg-black/70 backdrop-blur-sm transition-opacity duration-300 ${
             isAnimating ? 'opacity-100' : 'opacity-0'
           }`}
-          onClick={onClose}
+          onClick={preventClose ? undefined : onClose}
         />
 
         {/* Modal Content */}

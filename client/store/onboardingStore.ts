@@ -59,6 +59,12 @@ export interface IOnboardingState {
   /** Set whether an integration is configured */
   setHasIntegration: (value: boolean) => void;
 
+  // Session-only dismiss flag (not persisted to DB)
+  /** Whether user has dismissed the onboarding wizard this session */
+  isDismissed: boolean;
+  /** Dismiss the onboarding wizard for this session */
+  dismiss: () => void;
+
   // Bulk actions
   /** Initialize store from server data */
   initializeFromServer: (data: {
@@ -88,16 +94,10 @@ export interface IOnboardingState {
 const TOTAL_STEPS = 5;
 
 /** Steps that are optional (can be skipped) */
-const OPTIONAL_STEPS = new Set([
-  OnboardingStep.GSC_CONNECTION,
-  OnboardingStep.INTEGRATIONS,
-]);
+const OPTIONAL_STEPS = new Set([OnboardingStep.GSC_CONNECTION, OnboardingStep.INTEGRATIONS]);
 
 /** Required steps that must be completed */
-const REQUIRED_STEPS = new Set([
-  OnboardingStep.PROJECT_CREATION,
-  OnboardingStep.KEYWORDS_UPLOAD,
-]);
+const REQUIRED_STEPS = new Set([OnboardingStep.PROJECT_CREATION, OnboardingStep.KEYWORDS_UPLOAD]);
 
 // =============================================================================
 // Store
@@ -112,6 +112,7 @@ const initialState = {
   keywordCount: 0,
   hasGscConnection: false,
   hasIntegration: false,
+  isDismissed: false,
 };
 
 export const useOnboardingStore = create<IOnboardingState>((set, get) => ({
@@ -179,6 +180,9 @@ export const useOnboardingStore = create<IOnboardingState>((set, get) => ({
   setHasGscConnection: value => set({ hasGscConnection: value }),
 
   setHasIntegration: value => set({ hasIntegration: value }),
+
+  // Session-only dismiss
+  dismiss: () => set({ isDismissed: true }),
 
   // Bulk actions
   initializeFromServer: data => {

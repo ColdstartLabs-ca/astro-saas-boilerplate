@@ -7,6 +7,10 @@ import { DashboardRouter } from '@client/components/dashboard/DashboardRouter';
 import { CreditsDisplay } from '@client/components/stripe/CreditsDisplay';
 import { useLowCreditWarning } from '@client/hooks/useLowCreditWarning';
 import { useUserStore } from '@client/store/userStore';
+import { useOnboardingStore } from '@client/store/onboardingStore';
+import { useOnboardingStatus } from '@client/hooks/useOnboardingStatus';
+import { OnboardingSetupBanner } from '@client/components/onboarding/OnboardingSetupBanner';
+import { onDashboardNavigate } from '@client/utils/dashboardNavigation';
 import { useShallow } from 'zustand/react/shallow';
 import { Menu } from 'lucide-react';
 import React from 'react';
@@ -30,6 +34,15 @@ const MIN_REFRESH_INTERVAL_MS = 30_000;
 
 function DashboardLayout(): JSX.Element {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [pathname, setPathname] = useState(() =>
+    typeof window !== 'undefined' ? window.location.pathname : '/dashboard'
+  );
+  const { isDismissed } = useOnboardingStore();
+  const { isComplete } = useOnboardingStatus();
+
+  useEffect(() => {
+    return onDashboardNavigate(setPathname);
+  }, []);
   const { isAuthenticated, isLoading, userId, lastFetched, fetchUserData } = useUserStore(
     useShallow(state => ({
       isAuthenticated: state.isAuthenticated,
@@ -119,6 +132,9 @@ function DashboardLayout(): JSX.Element {
 
       <main className="flex-1 flex flex-col min-h-0 pt-16 md:pt-0">
         <DashboardHeader />
+        {isDismissed && !isComplete && !pathname.startsWith('/dashboard/onboarding') && (
+          <OnboardingSetupBanner />
+        )}
         <div className="flex-1 overflow-y-auto overflow-x-hidden p-4 md:p-8">
           <div className="max-w-7xl mx-auto">
             <DashboardRouter />

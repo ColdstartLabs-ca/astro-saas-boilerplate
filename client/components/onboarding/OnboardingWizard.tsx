@@ -37,7 +37,7 @@ interface IOnboardingWizardProps {
 export function OnboardingWizard({ isOpen, onClose }: IOnboardingWizardProps): JSX.Element | null {
   const { isLoading: isStatusLoading } = useOnboardingStatus();
 
-  const { currentStep, completedSteps, skippedSteps, projectId, setCurrentStep } =
+  const { currentStep, completedSteps, skippedSteps, setCurrentStep, dismiss } =
     useOnboardingStore();
 
   // Handle step completion (move to next step)
@@ -64,18 +64,11 @@ export function OnboardingWizard({ isOpen, onClose }: IOnboardingWizardProps): J
     }
   }, [currentStep, setCurrentStep]);
 
-  // Handle wizard close with confirmation
+  // Dismiss for this session so DashboardRouter won't redirect back
   const handleClose = useCallback(() => {
-    // Allow closing only if project is created (step 1 complete)
-    // Otherwise, user needs to complete the required step
-    if (projectId) {
-      onClose();
-    } else {
-      // Could show a confirmation dialog here
-      // For now, just close
-      onClose();
-    }
-  }, [projectId, onClose]);
+    dismiss();
+    onClose();
+  }, [dismiss, onClose]);
 
   // Don't render if not open
   if (!isOpen) return null;
@@ -151,7 +144,7 @@ export function OnboardingWizard({ isOpen, onClose }: IOnboardingWizardProps): J
   const getStepTitle = () => {
     switch (currentStep) {
       case OnboardingStep.PROJECT_CREATION:
-        return 'Create Your First Project';
+        return 'Add Your First Project';
       case OnboardingStep.GSC_CONNECTION:
         return 'Connect Google Search Console';
       case OnboardingStep.KEYWORDS_UPLOAD:
@@ -191,7 +184,7 @@ export function OnboardingWizard({ isOpen, onClose }: IOnboardingWizardProps): J
       title={getStepTitle()}
       subtitle={getStepSubtitle()}
       size="xl"
-      showCloseButton={currentStep > OnboardingStep.PROJECT_CREATION || !!projectId}
+      showCloseButton={true}
     >
       {/* Stepper Progress */}
       <OnboardingStepperProgress
