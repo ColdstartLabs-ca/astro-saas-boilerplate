@@ -7,8 +7,8 @@ import { type Locale } from '../../i18n/config';
 
 // Auth is handled by middleware (src/middleware.ts) for all /dashboard/* routes
 
-// Get current locale from Astro's i18n system
-const currentLocale = Astro.currentLocale || 'en';
+// Get current locale — prefer locals.locale (set by middleware rewrite for non-default locales)
+const currentLocale = (Astro.locals as { locale?: string }).locale || Astro.currentLocale || 'en';
 
 interface IProps {
   title?: string;

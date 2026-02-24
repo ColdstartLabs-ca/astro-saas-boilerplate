@@ -138,6 +138,20 @@ function stripTrackingParams(url: URL): URL {
 }
 
 /**
+ * Auth/UI query params used by homepage modal flows.
+ * These must stay on the unprefixed root path to avoid locale redirect loops.
+ */
+function hasAuthFlowQueryParams(url: URL): boolean {
+  return (
+    url.searchParams.get('login') === '1' ||
+    url.searchParams.get('signup') === '1' ||
+    url.searchParams.has('forbidden') ||
+    url.searchParams.has('error') ||
+    url.searchParams.has('next')
+  );
+}
+
+/**
  * Handle WWW to non-WWW redirect for SEO consistency
  */
 function handleWWWRedirect(url: URL): Response | null {
@@ -310,6 +324,14 @@ export const onRequest = defineMiddleware(async (context, next) => {
   const { request, cookies, url } = context;
   const pathname = url.pathname;
 
+  // Detect if this is an internal rewrite from a locale-prefixed path.
+  // When we rewrite /pt-BR/pricing → /pricing, this header carries the original locale
+  // so the second middleware pass knows not to redirect back to /pt-BR/pricing.
+  const rewriteLocale = request.headers.get('x-astro-locale') as Locale | null;
+  if (rewriteLocale && isValidLocale(rewriteLocale)) {
+    context.locals.locale = rewriteLocale;
+  }
+
   // Handle WWW to non-WWW redirect for SEO (must be first)
   const wwwRedirect = handleWWWRedirect(url);
   if (wwwRedirect) {
@@ -430,11 +452,27 @@ export const onRequest = defineMiddleware(async (context, next) => {
 
   // Handle locale routing
   const detectedLocale = detectLocale(request, cookies);
+  const hasAuthFlowQuery = hasAuthFlowQueryParams(url);
 
   // For root path (/ or /{locale}/), check auth and redirect to dashboard if authenticated
   const pathLocalePrefix = getLocaleFromPath(pathname);
-  const isRootPath = pathname === '/' || (pathLocalePrefix !== null && pathname.replace(`/${pathLocalePrefix}`, '') === '') || (pathLocalePrefix !== null && pathname.replace(`/${pathLocalePrefix}`, '') === '/');
-  if (isRootPath) {
+  const isRootPath =
+    pathname === '/' ||
+    (pathLocalePrefix !== null && pathname.replace(`/${pathLocalePrefix}`, '') === '') ||
+    (pathLocalePrefix !== null && pathname.replace(`/${pathLocalePrefix}`, '') === '/');
+
+  // Auth modal flows are rendered on the unprefixed homepage route only.
+  // If a locale-prefixed root URL carries these params, canonicalize once to `/`.
+  if (isRootPath && pathLocalePrefix !== null && hasAuthFlowQuery) {
+    const rootAuthUrl = new URL(url.toString());
+    rootAuthUrl.pathname = '/';
+    return new Response(null, {
+      status: 302,
+      headers: { Location: rootAuthUrl.toString() },
+    });
+  }
+
+  if (isRootPath && !rewriteLocale) {
     const isTestEnv = serverEnv.ENV === 'test';
     const hasTestHeader =
       context.request.headers.get('x-test-env') === 'true' ||
@@ -446,9 +484,8 @@ export const onRequest = defineMiddleware(async (context, next) => {
         const loginRequired = url.searchParams.get('login');
         if (!loginRequired) {
           // Redirect to locale-prefixed dashboard if non-default locale
-          const dashboardPath = detectedLocale !== DEFAULT_LOCALE
-            ? `/${detectedLocale}/dashboard`
-            : '/dashboard';
+          const dashboardPath =
+            detectedLocale !== DEFAULT_LOCALE ? `/${detectedLocale}/dashboard` : '/dashboard';
           const dashboardUrl = new URL(dashboardPath, url);
           dashboardUrl.searchParams.delete('login');
           dashboardUrl.searchParams.delete('next');
@@ -464,6 +501,68 @@ export const onRequest = defineMiddleware(async (context, next) => {
   // If path has no locale prefix, handle locale routing
   const segments = pathname.split('/').filter(Boolean);
   if (segments.length === 0 || !isValidLocale(segments[0])) {
+    // Keep auth modal flows on `/` (unprefixed), even for non-default locale cookies.
+    if (pathname === '/' && hasAuthFlowQuery) {
+      if (cookies.get(LOCALE_COOKIE)?.value !== detectedLocale) {
+        cookies.set(LOCALE_COOKIE, detectedLocale, {
+          maxAge: 60 * 60 * 24 * 365,
+          sameSite: 'lax',
+          path: '/',
+        });
+      }
+
+      const response = await next();
+      applySecurityHeaders(response);
+      return response;
+    }
+
+    // If this is an internal rewrite from a locale-prefixed URL, serve the page
+    // without redirecting back to the locale prefix (which would cause a loop).
+    if (rewriteLocale) {
+      // Check auth for dashboard routes
+      if (isDashboardPath(pathname)) {
+        const isTestEnv = serverEnv.ENV === 'test';
+        const hasTestHeader =
+          context.request.headers.get('x-test-env') === 'true' ||
+          context.request.headers.get('x-playwright-test') === 'true';
+
+        const { user } = await updateSession(cookies, request);
+
+        if (!user && !isTestEnv && !hasTestHeader) {
+          // Reconstruct the original locale-prefixed path for the `next` param
+          const originalPath = `/${rewriteLocale}${pathname}`;
+          const newUrl = new URL(url.toString());
+          newUrl.pathname = '/';
+          newUrl.searchParams.set('login', '1');
+          newUrl.searchParams.set('next', originalPath);
+
+          return new Response(null, {
+            status: 302,
+            headers: { Location: newUrl.toString() },
+          });
+        }
+
+        if (user) {
+          Object.assign(context.locals, addUserContextLocals({ id: user.id, email: user.email }));
+
+          // Check admin role for admin routes
+          if (isAdminDashboardPath(pathname)) {
+            const adminCheck = await requireAdmin(cookies, request);
+            if (!adminCheck.isAdmin) {
+              return new Response(null, {
+                status: 302,
+                headers: { Location: '/?forbidden=1' },
+              });
+            }
+          }
+        }
+      }
+
+      const response = await next();
+      applySecurityHeaders(response);
+      return response;
+    }
+
     // For default locale (en), just continue (no prefix needed)
     if (detectedLocale === DEFAULT_LOCALE) {
       // Update locale cookie if needed
@@ -538,10 +637,10 @@ export const onRequest = defineMiddleware(async (context, next) => {
     return response;
   }
 
-  // Path has locale prefix, ensure cookie is set
+  // Path has locale prefix — handle it
   const pathLocale = segments[0] as Locale;
   if (isValidLocale(pathLocale)) {
-    // Update locale cookie if needed
+    // Update locale cookie
     if (cookies.get(LOCALE_COOKIE)?.value !== pathLocale) {
       cookies.set(LOCALE_COOKIE, pathLocale, {
         maxAge: 60 * 60 * 24 * 365,
@@ -550,6 +649,26 @@ export const onRequest = defineMiddleware(async (context, next) => {
       });
     }
 
+    // For non-default locales, rewrite to strip the locale prefix.
+    // Astro's i18n fallback doesn't properly rewrite in SSR mode (returns 302 loop),
+    // so we strip the prefix ourselves and let Astro match the default-locale page file.
+    // The x-astro-locale header signals the second middleware pass to skip locale redirects.
+    if (pathLocale !== DEFAULT_LOCALE) {
+      const pathWithoutLocale = '/' + segments.slice(1).join('/') || '/';
+      const rewriteUrl = new URL(pathWithoutLocale, url);
+      rewriteUrl.search = url.search;
+
+      return context.rewrite(
+        new Request(rewriteUrl.toString(), {
+          headers: new Headers([
+            ...Array.from(request.headers.entries()),
+            ['x-astro-locale', pathLocale],
+          ]),
+        })
+      );
+    }
+
+    // Default locale with prefix (e.g., /en/dashboard) — shouldn't normally happen
     // Check auth for dashboard routes
     if (isDashboardPath(pathname)) {
       const isTestEnv = serverEnv.ENV === 'test';
@@ -559,12 +678,9 @@ export const onRequest = defineMiddleware(async (context, next) => {
 
       const { user } = await updateSession(cookies, request);
 
-      // Unauthenticated user on protected dashboard routes
       if (!user && !isTestEnv && !hasTestHeader) {
-        const pathLocale = getLocaleFromPath(pathname);
-
         const newUrl = new URL(url.toString());
-        newUrl.pathname = pathLocale ? `/${pathLocale}` : '/';
+        newUrl.pathname = '/';
         newUrl.searchParams.set('login', '1');
         newUrl.searchParams.set('next', pathname);
 
@@ -574,18 +690,15 @@ export const onRequest = defineMiddleware(async (context, next) => {
         });
       }
 
-      // Add user to locals
       if (user) {
         Object.assign(context.locals, addUserContextLocals({ id: user.id, email: user.email }));
 
-        // Check admin role for admin routes
         if (isAdminDashboardPath(pathname)) {
           const adminCheck = await requireAdmin(cookies);
           if (!adminCheck.isAdmin) {
-            const pathLocale = getLocaleFromPath(pathname);
             return new Response(null, {
               status: 302,
-              headers: { Location: pathLocale ? `/${pathLocale}/?forbidden=1` : '/?forbidden=1' },
+              headers: { Location: '/?forbidden=1' },
             });
           }
         }

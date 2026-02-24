@@ -19,6 +19,8 @@ declare global {
       userEmail?: string;
       /** Regional currency for price display (detected from CF-IPCountry) */
       currency: RegionalCurrency | null;
+      /** Active locale (set by i18n middleware from URL prefix or cookie) */
+      locale?: string;
     }
   }
 }

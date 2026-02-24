@@ -5,8 +5,8 @@ interface IProps {
 
 const { title = 'AutopilotRank' } = Astro.props;
 
-// Get current locale from Astro's i18n system
-const currentLocale = Astro.currentLocale || 'en';
+// Get current locale — prefer locals.locale (set by middleware rewrite for non-default locales)
+const currentLocale = (Astro.locals as { locale?: string }).locale || Astro.currentLocale || 'en';
 
 // Import global styles
 import '@client/styles/index.css';

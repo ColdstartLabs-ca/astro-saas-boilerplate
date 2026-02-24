@@ -8,7 +8,7 @@ interface IProps {
 }
 
 const { title = 'AutopilotRank' } = Astro.props;
-const currentLocale = Astro.currentLocale || 'en';
+const currentLocale = (Astro.locals as { locale?: string }).locale || Astro.currentLocale || 'en';
 ---
 
 <!DOCTYPE html>
