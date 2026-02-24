@@ -161,6 +161,183 @@ test.describe('API: Projects (§3.1)', () => {
 });
 
 // =============================================================================
+// Project Limits by Subscription Tier (§3.1)
+// =============================================================================
+
+test.describe('API: Project Limits by Subscription Tier (§3.1)', () => {
+  /**
+   * Project limits by tier (from subscription.config.ts):
+   * - Free: 1 project max
+   * - Starter: 1 project max
+   * - Growth: 3 projects max
+   * - Agency: unlimited
+   */
+
+  test.describe('Free tier (1 project max)', () => {
+    let freeUser: Awaited<ReturnType<typeof ctx.createUser>>;
+
+    test.beforeEach(async () => {
+      freeUser = await ctx.createUser({ subscription: 'free', credits: 3 });
+    });
+
+    test('should allow creating 1 project for free tier', async ({ request }) => {
+      const api = new ApiClient(request).withAuth(freeUser.token);
+      const response = await api.post('/api/projects', { name: 'First Project' });
+      response.expectStatus(201).expectSuccess();
+      const data = await response.getData();
+      expect(data.project.id).toBeDefined();
+      expect(data.project.name).toBe('First Project');
+    });
+
+    test('should block 2nd project creation for free tier with FORBIDDEN error', async ({
+      request,
+    }) => {
+      const api = new ApiClient(request).withAuth(freeUser.token);
+
+      // Create first project - should succeed
+      const first = await api.post('/api/projects', { name: 'First Project' });
+      first.expectStatus(201).expectSuccess();
+
+      // Attempt to create second project - should fail with 403 FORBIDDEN
+      const second = await api.post('/api/projects', { name: 'Second Project' });
+      second.expectStatus(403);
+      await second.expectErrorCode('FORBIDDEN');
+      await second.expectErrorMessage('Project limit exceeded');
+    });
+  });
+
+  test.describe('Starter tier (1 project max)', () => {
+    let starterUser: Awaited<ReturnType<typeof ctx.createUser>>;
+
+    test.beforeEach(async () => {
+      starterUser = await ctx.createUser({
+        subscription: 'active',
+        tier: 'starter',
+        credits: 30,
+      });
+    });
+
+    test('should allow creating 1 project for starter tier', async ({ request }) => {
+      const api = new ApiClient(request).withAuth(starterUser.token);
+      const response = await api.post('/api/projects', { name: 'Starter Project' });
+      response.expectStatus(201).expectSuccess();
+      const data = await response.getData();
+      expect(data.project.name).toBe('Starter Project');
+    });
+
+    test('should block 2nd project creation for starter tier with FORBIDDEN error', async ({
+      request,
+    }) => {
+      const api = new ApiClient(request).withAuth(starterUser.token);
+
+      // Create first project - should succeed
+      const first = await api.post('/api/projects', { name: 'First Starter Project' });
+      first.expectStatus(201).expectSuccess();
+
+      // Attempt to create second project - should fail with 403 FORBIDDEN
+      const second = await api.post('/api/projects', { name: 'Second Starter Project' });
+      second.expectStatus(403);
+      await second.expectErrorCode('FORBIDDEN');
+      await second.expectErrorMessage('Project limit exceeded');
+    });
+  });
+
+  test.describe('Growth tier (3 projects max)', () => {
+    let growthUser: Awaited<ReturnType<typeof ctx.createUser>>;
+
+    test.beforeEach(async () => {
+      growthUser = await ctx.createUser({
+        subscription: 'active',
+        tier: 'growth',
+        credits: 100,
+      });
+    });
+
+    test('should allow creating 3 projects for growth tier', async ({ request }) => {
+      const api = new ApiClient(request).withAuth(growthUser.token);
+
+      // Create 3 projects - all should succeed
+      for (let i = 1; i <= 3; i++) {
+        const response = await api.post('/api/projects', { name: `Growth Project ${i}` });
+        response.expectStatus(201).expectSuccess();
+        const data = await response.getData();
+        expect(data.project.name).toBe(`Growth Project ${i}`);
+      }
+
+      // Verify all 3 projects exist
+      const list = await api.get('/api/projects');
+      list.expectStatus(200).expectSuccess();
+      const listData = await list.getData();
+      expect(listData.projects.length).toBe(3);
+    });
+
+    test('should block 4th project creation for growth tier with FORBIDDEN error', async ({
+      request,
+    }) => {
+      const api = new ApiClient(request).withAuth(growthUser.token);
+
+      // Create 3 projects - all should succeed
+      for (let i = 1; i <= 3; i++) {
+        const response = await api.post('/api/projects', { name: `Growth Project ${i}` });
+        response.expectStatus(201).expectSuccess();
+      }
+
+      // Attempt to create 4th project - should fail with 403 FORBIDDEN
+      const fourth = await api.post('/api/projects', { name: 'Fourth Growth Project' });
+      fourth.expectStatus(403);
+      await fourth.expectErrorCode('FORBIDDEN');
+      await fourth.expectErrorMessage('Project limit exceeded');
+    });
+  });
+
+  test.describe('Agency tier (unlimited projects)', () => {
+    let agencyUser: Awaited<ReturnType<typeof ctx.createUser>>;
+
+    test.beforeEach(async () => {
+      agencyUser = await ctx.createUser({
+        subscription: 'active',
+        tier: 'agency',
+        credits: 500,
+      });
+    });
+
+    test('should allow creating 5 projects for agency tier (unlimited)', async ({ request }) => {
+      const api = new ApiClient(request).withAuth(agencyUser.token);
+
+      // Create 5 projects - all should succeed
+      for (let i = 1; i <= 5; i++) {
+        const response = await api.post('/api/projects', { name: `Agency Project ${i}` });
+        response.expectStatus(201).expectSuccess();
+        const data = await response.getData();
+        expect(data.project.name).toBe(`Agency Project ${i}`);
+      }
+
+      // Verify all 5 projects exist
+      const list = await api.get('/api/projects');
+      list.expectStatus(200).expectSuccess();
+      const listData = await list.getData();
+      expect(listData.projects.length).toBe(5);
+    });
+
+    test('should allow creating many projects for agency tier', async ({ request }) => {
+      const api = new ApiClient(request).withAuth(agencyUser.token);
+
+      // Create 10 projects to verify unlimited - all should succeed
+      for (let i = 1; i <= 10; i++) {
+        const response = await api.post('/api/projects', { name: `Agency Site ${i}` });
+        response.expectStatus(201).expectSuccess();
+      }
+
+      // Verify all 10 projects exist
+      const list = await api.get('/api/projects');
+      list.expectStatus(200).expectSuccess();
+      const listData = await list.getData();
+      expect(listData.projects.length).toBe(10);
+    });
+  });
+});
+
+// =============================================================================
 // Campaigns
 // =============================================================================
 

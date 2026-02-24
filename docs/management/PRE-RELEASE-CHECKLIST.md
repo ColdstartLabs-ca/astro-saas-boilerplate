@@ -112,33 +112,33 @@
 
 ### Google OAuth Consent Screen
 
-- [ ] In GCP project > **APIs & Services > OAuth consent screen**
-- [ ] Select **External** user type
-- [ ] Fill in app info: name=`AutopilotRank`, support email, authorized domains=`autopilotrank.com`, `supabase.co`
-- [ ] Add scopes: `openid`, `email`, `profile`
-- [ ] Add test users for pre-launch testing
-- [ ] **Before launch:** Click **"Publish App"** to move from Testing to Production mode
+- [x] In GCP project > **APIs & Services > OAuth consent screen**
+- [x] Select **External** user type
+- [x] Fill in app info: name=`AutopilotRank`, support email, authorized domains=`autopilotrank.com`, `supabase.co`
+- [x] Add scopes: `openid`, `email`, `profile`
+- [x] Add test users for pre-launch testing
+- [x] **Before launch:** Click **"Publish App"** to move from Testing to Production mode
 
 ### Google OAuth Credentials
 
-- [ ] Create OAuth client ID (**APIs & Services > Credentials > Create > OAuth client ID**)
-- [ ] Application type: `Web application`
-- [ ] Add **Authorized JavaScript Origins**:
+- [x] Create OAuth client ID (**APIs & Services > Credentials > Create > OAuth client ID**)
+- [x] Application type: `Web application`
+- [x] Add **Authorized JavaScript Origins**:
   - `http://localhost` (no port - required for GIS)
   - `http://localhost:4321` (dev server)
   - `https://autopilotrank.com`
   - `https://www.autopilotrank.com`
-- [ ] Add **Authorized Redirect URIs**:
+- [x] Add **Authorized Redirect URIs**:
   - `https://xuuwrabuavfplyyolngf.supabase.co/auth/v1/callback` (Supabase fallback flow)
-- [ ] Copy **Client ID** and **Client Secret**
+- [x] Copy **Client ID** and **Client Secret**
 
 ### Supabase Google Provider
 
-- [ ] In Supabase Dashboard > **Authentication > Providers > Google**: toggle ON
-- [ ] Paste Client ID and Client Secret
-- [ ] Add Client ID to the **"Client IDs"** field (required for `signInWithIdToken`)
-- [ ] In **Authentication > URL Configuration**: set Site URL to `https://autopilotrank.com`
-- [ ] Add redirect URLs: `http://localhost:4321/**`, `https://autopilotrank.com/**`
+- [x] In Supabase Dashboard > **Authentication > Providers > Google**: toggle ON
+- [x] Paste Client ID and Client Secret
+- [x] Add Client ID to the **"Client IDs"** field (required for `signInWithIdToken`)
+- [x] In **Authentication > URL Configuration**: set Site URL to `https://autopilotrank.com`
+- [x] Add redirect URLs: `http://localhost:4321/**`, `https://autopilotrank.com/**`
 
 ### Supabase Email Templates
 
@@ -152,10 +152,10 @@
 
 ### Verify Auth
 
-- [ ] Test GIS popup flow on localhost
-- [ ] Test GIS popup flow on production domain
+- [x] Test GIS popup flow on localhost
+- [x] Test GIS popup flow on production domain
 - [ ] Test fallback redirect flow works if GIS blocked
-- [ ] Test email/password signup + email verification
+- [x] Test email/password signup + email verification
 
 ---
 
@@ -165,10 +165,10 @@
 
 ### Brevo (Primary)
 
-- [ ] Create Brevo account and get API key
-- [ ] Register and verify sender domain (`autopilotrank.com`) in Brevo
-- [ ] Copy SPF and DKIM values from Brevo into Cloudflare DNS (see Section 1)
-- [ ] Test email delivery to Gmail, Outlook, Yahoo
+- [x] Create Brevo account and get API key
+- [x] Register and verify sender domain (`autopilotrank.com`) in Brevo
+- [x] Copy SPF and DKIM values from Brevo into Cloudflare DNS (see Section 1)
+- [x] Test email delivery to Gmail, Outlook, Yahoo
 
 ### Resend (Fallback)
 
@@ -177,11 +177,11 @@
 
 ### Store Secrets
 
-- [ ] Add `BREVO_API_KEY` to Google Secret Manager
+- [x] Add `BREVO_API_KEY` to Google Secret Manager
 - [ ] Add `RESEND_API_KEY` to Google Secret Manager
-- [ ] Set `EMAIL_FROM_ADDRESS=noreply@autopilotrank.com`
-- [ ] Set `SUPPORT_EMAIL=support@autopilotrank.com`
-- [ ] Ensure `ALLOW_TRANSACTIONAL_EMAILS_IN_DEV=false` in production
+- [x] Set `EMAIL_FROM_ADDRESS=noreply@autopilotrank.com`
+- [x] Set `SUPPORT_EMAIL=support@autopilotrank.com`
+- [x] Ensure `ALLOW_TRANSACTIONAL_EMAILS_IN_DEV=false` in production
 
 ---
 

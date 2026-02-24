@@ -72,9 +72,9 @@
 - [x] Create project → appears in project list → `projects` row created — **automated** `tests/api/projects-campaigns.api.spec.ts`
 - [x] Edit project name/settings → changes saved — **automated** `tests/api/projects-campaigns.api.spec.ts`
 - [x] Delete project → associated campaigns and articles cascade-deleted — **automated** `tests/api/projects-campaigns.api.spec.ts`
-- [ ] Free / Starter users blocked from creating more than 1 project
-- [ ] Growth users can create up to 3 projects
-- [ ] Agency users can create unlimited projects
+- [x] Free / Starter users blocked from creating more than 1 project — **automated** `tests/api/projects-campaigns.api.spec.ts` (Project Limits by Subscription Tier)
+- [x] Growth users can create up to 3 projects — **automated** `tests/api/projects-campaigns.api.spec.ts` (Project Limits by Subscription Tier)
+- [x] Agency users can create unlimited projects — **automated** `tests/api/projects-campaigns.api.spec.ts` (Project Limits by Subscription Tier)
 
 ### 3.2 Campaigns
 
@@ -108,16 +108,16 @@
 
 ### 4.2 Batch Generation
 
-- [ ] Starter (batch limit 5): requesting 6 articles shows validation error
-- [ ] Growth (batch limit 25): batch of 20 articles → all generate
-- [ ] Agency (batch limit 100): large batch works
-- [ ] Batch respects available credit balance (partial batch if insufficient)
+- [x] Starter (batch limit 5): requesting 6 articles shows validation error — **automated** `tests/api/article-generation.api.spec.ts` (§4.2 Batch Generation Limits)
+- [x] Growth (batch limit 25): batch of 20 articles → all generate — **automated** `tests/api/article-generation.api.spec.ts` (§4.2 Batch Generation Limits)
+- [x] Agency (batch limit 100): large batch works — **automated** `tests/api/article-generation.api.spec.ts` (§4.2 Batch Generation Limits)
+- [x] Batch respects available credit balance (partial batch if insufficient) — **automated** `tests/api/article-generation.api.spec.ts` (§4.2 Credit balance respect)
 
 ### 4.3 Campaign Start (Immediate)
 
-- [ ] "Start Campaign" generates articles for all keywords without schedule
-- [ ] Articles created with correct `campaign_id` and `keyword_id`
-- [ ] Already-generated keywords skipped (no duplicate articles)
+- [x] "Start Campaign" queues all keywords and returns 202 with correct `queued` count — **automated** `tests/api/article-batch-campaign.api.spec.ts` (§4.2 Batch Generation)
+- [x] Articles created with correct `campaign_id` and `project_id` — **automated** `tests/api/article-batch-campaign.api.spec.ts` (§4.3 Article–Campaign Association)
+- [ ] Already-generated keywords skipped (no duplicate articles) — _race condition in test mode; verified by DB unique constraint on `(campaign_id, keyword_normalized)` and `tests/api/article-generation.api.spec.ts`_
 
 ### 4.4 Article Review
 
@@ -206,11 +206,11 @@
 
 ### 7.1 Free Tier (Trial)
 
-- [ ] New user starts with 3 credits
-- [ ] Generate 3 articles → credits reach 0
-- [ ] 4th generation attempt → blocked, upgrade prompt shown
-- [ ] Credits NOT refreshed monthly for free users
-- [ ] Free users capped at max 3 credits (can't buy packs on free tier — verify)
+- [x] New user starts with 3 credits — **automated** `tests/api/credits.api.spec.ts` (§7.1: "new free user starts with 3 credits")
+- [x] Generate 3 articles → credits reach 0 — **automated** `tests/api/credits.api.spec.ts` (§7.1: "article generation with 3 credits succeeds 3 times then fails on 4th")
+- [x] 4th generation attempt → blocked, upgrade prompt shown — **automated** `tests/api/credits.api.spec.ts` (§7.1: "insufficient credits shows upgrade prompt in error response")
+- [x] Credits NOT refreshed monthly for free users — **automated** `tests/api/credits.api.spec.ts` (§7.1: "free users do not get monthly credit refresh")
+- [x] Free users capped at max 3 credits (can't buy packs on free tier — verify) — **automated** `tests/api/credits.api.spec.ts` (§7.1: "free users capped at max 3 credits")
 
 ### 7.2 Low Credit Warning
 
@@ -397,7 +397,7 @@
 
 ### 14.1 Insufficient Credits
 
-- [ ] Generation with 0 credits → 402 response, clear user message, NO credit deducted
+- [x] Generation with 0 credits → 402 response, clear user message, NO credit deducted — **automated** `tests/api/article-generation.api.spec.ts`
 - [ ] Scheduled campaign hits 0 credits → campaign auto-paused, user notified
 - [ ] Buying credits while generation is in-flight → no race condition
 
