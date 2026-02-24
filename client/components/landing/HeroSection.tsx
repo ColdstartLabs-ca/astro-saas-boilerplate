@@ -364,9 +364,9 @@ const CalendarView: React.FC = () => (
 
     <div className="flex-1 bg-slate-900 rounded-xl border border-slate-800 p-3">
       <div className="grid grid-cols-7 gap-1 h-full auto-rows-fr">
-        {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map(d => (
+        {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((d, i) => (
           <div
-            key={d}
+            key={i}
             className="h-6 text-[10px] font-bold text-slate-600 text-center flex items-center justify-center"
           >
             {d}
