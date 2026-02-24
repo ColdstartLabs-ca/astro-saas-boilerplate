@@ -59,10 +59,16 @@ export interface IOnboardingState {
   /** Set whether an integration is configured */
   setHasIntegration: (value: boolean) => void;
 
-  // Session-only dismiss flag (not persisted to DB)
+  // Session-only dismiss flag (persisted in user-scoped localStorage)
   /** Whether user has dismissed the onboarding wizard this session */
   isDismissed: boolean;
-  /** Dismiss the onboarding wizard for this session */
+  /**
+   * Sync the dismissed flag from localStorage for the given user.
+   * Must be called once the user ID is known (e.g. in useOnboardingStatus).
+   * Also cleans up the legacy non-scoped key.
+   */
+  syncDismissed: (userId: string) => void;
+  /** Dismiss the onboarding wizard (persisted per user) */
   dismiss: () => void;
 
   // Bulk actions
@@ -90,7 +96,9 @@ export interface IOnboardingState {
 // Constants
 // =============================================================================
 
-const DISMISSED_STORAGE_KEY = 'onboarding_dismissed';
+/** Legacy key from before user-scoped storage — cleaned up on first syncDismissed() call */
+const LEGACY_DISMISSED_KEY = 'onboarding_dismissed';
+const getDismissedKey = (userId: string) => `onboarding_dismissed_${userId}`;
 
 /** Total number of onboarding steps */
 const TOTAL_STEPS = 5;
@@ -105,8 +113,12 @@ const REQUIRED_STEPS = new Set([OnboardingStep.PROJECT_CREATION, OnboardingStep.
 // Store
 // =============================================================================
 
-const readDismissed = (): boolean =>
-  typeof window !== 'undefined' && localStorage.getItem(DISMISSED_STORAGE_KEY) === 'true';
+/**
+ * Module-level variable to track the current user's ID for localStorage keying.
+ * Set by syncDismissed() when the user is known. Avoids exposing internal state
+ * in the Zustand interface.
+ */
+let _currentUserId: string | null = null;
 
 const initialState = {
   currentStep: OnboardingStep.PROJECT_CREATION,
@@ -117,7 +129,7 @@ const initialState = {
   keywordCount: 0,
   hasGscConnection: false,
   hasIntegration: false,
-  isDismissed: readDismissed(),
+  isDismissed: false, // always starts false; synced via syncDismissed(userId)
 };
 
 export const useOnboardingStore = create<IOnboardingState>((set, get) => ({
@@ -186,10 +198,22 @@ export const useOnboardingStore = create<IOnboardingState>((set, get) => ({
 
   setHasIntegration: value => set({ hasIntegration: value }),
 
-  // Persist dismiss flag so it survives page refreshes
-  dismiss: () => {
+  // Sync dismissed state from user-scoped localStorage key.
+  // Also removes the legacy generic key to avoid cross-user contamination.
+  syncDismissed: (userId: string) => {
+    _currentUserId = userId;
     if (typeof window !== 'undefined') {
-      localStorage.setItem(DISMISSED_STORAGE_KEY, 'true');
+      // Clean up legacy non-scoped key (left over from before user-scoped storage)
+      localStorage.removeItem(LEGACY_DISMISSED_KEY);
+      const isDismissed = localStorage.getItem(getDismissedKey(userId)) === 'true';
+      set({ isDismissed });
+    }
+  },
+
+  // Persist dismiss flag to user-scoped key so it survives page refreshes
+  dismiss: () => {
+    if (_currentUserId && typeof window !== 'undefined') {
+      localStorage.setItem(getDismissedKey(_currentUserId), 'true');
     }
     set({ isDismissed: true });
   },
@@ -205,8 +229,12 @@ export const useOnboardingStore = create<IOnboardingState>((set, get) => ({
 
   reset: () => {
     if (typeof window !== 'undefined') {
-      localStorage.removeItem(DISMISSED_STORAGE_KEY);
+      if (_currentUserId) {
+        localStorage.removeItem(getDismissedKey(_currentUserId));
+      }
+      localStorage.removeItem(LEGACY_DISMISSED_KEY);
     }
+    _currentUserId = null;
     set({ ...initialState, isDismissed: false });
   },
 

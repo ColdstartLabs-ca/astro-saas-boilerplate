@@ -75,7 +75,7 @@ export function useOnboardingStatus(): IUseOnboardingStatusReturn {
   const logger = useLogger('useOnboardingStatus');
   const queryClient = useQueryClient();
   const { user, isAuthenticated } = useUserStore();
-  const { initializeFromServer, setCurrentStep } = useOnboardingStore();
+  const { initializeFromServer, setCurrentStep, syncDismissed } = useOnboardingStore();
 
   // Fetch status query
   const {
@@ -89,6 +89,14 @@ export function useOnboardingStatus(): IUseOnboardingStatusReturn {
     staleTime: 1000 * 60 * 5, // 5 minutes
     retry: 1, // Only retry once on failure
   });
+
+  // Sync dismissed flag from user-scoped localStorage when the user ID is known.
+  // This prevents a previous user's dismissed state from leaking into a new session.
+  useEffect(() => {
+    if (user?.id) {
+      syncDismissed(user.id);
+    }
+  }, [user?.id, syncDismissed]);
 
   // Sync status with Zustand store when it changes
   useEffect(() => {
