@@ -53,6 +53,7 @@ for (const endpoint of CRON_ENDPOINTS) {
     });
 
     test('should accept requests with valid cron secret (200)', async ({ request }) => {
+      test.skip(isTestMode(), 'Skipped in mock test mode — requires real DB');
 
       const response = await request.post(endpoint, {
         headers: {
