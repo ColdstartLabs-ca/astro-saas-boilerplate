@@ -1,7 +1,11 @@
 'use client';
 
 import React, { Suspense, useState, useEffect, useTransition, useCallback } from 'react';
-import { dashboardNavigate, onDashboardNavigate } from '@client/utils/dashboardNavigation';
+import {
+  dashboardNavigate,
+  onDashboardNavigate,
+  stripLocalePrefix,
+} from '@client/utils/dashboardNavigation';
 import { useIsAdmin } from '@client/store/userStore';
 import { getRouteByPath, matchDynamicRoute } from '@client/config/dashboardRoutes';
 import { useOnboardingStatus } from '@client/hooks/useOnboardingStatus';
@@ -173,7 +177,7 @@ function getRouteElement(pathname: string): JSX.Element {
 
 export function DashboardRouter(): JSX.Element {
   const [pathname, setPathname] = useState(() =>
-    typeof window !== 'undefined' ? window.location.pathname : '/dashboard'
+    typeof window !== 'undefined' ? stripLocalePrefix(window.location.pathname) : '/dashboard'
   );
   const [isPending, startTransition] = useTransition();
   const {

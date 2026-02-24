@@ -10,7 +10,7 @@ import { useUserStore } from '@client/store/userStore';
 import { useOnboardingStore } from '@client/store/onboardingStore';
 import { useOnboardingStatus } from '@client/hooks/useOnboardingStatus';
 import { OnboardingSetupBanner } from '@client/components/onboarding/OnboardingSetupBanner';
-import { onDashboardNavigate } from '@client/utils/dashboardNavigation';
+import { onDashboardNavigate, stripLocalePrefix } from '@client/utils/dashboardNavigation';
 import { useShallow } from 'zustand/react/shallow';
 import { Menu } from 'lucide-react';
 import React from 'react';
@@ -35,7 +35,7 @@ const MIN_REFRESH_INTERVAL_MS = 30_000;
 function DashboardLayout(): JSX.Element {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [pathname, setPathname] = useState(() =>
-    typeof window !== 'undefined' ? window.location.pathname : '/dashboard'
+    typeof window !== 'undefined' ? stripLocalePrefix(window.location.pathname) : '/dashboard'
   );
   const { isDismissed } = useOnboardingStore();
   const { isComplete } = useOnboardingStatus();

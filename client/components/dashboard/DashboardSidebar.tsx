@@ -11,7 +11,11 @@ import {
 import { usePendingActions } from '@client/hooks/usePendingActions';
 import { useIsAdmin, useUserStore } from '@client/store/userStore';
 import { cn } from '@client/utils/cn';
-import { dashboardNavigate, onDashboardNavigate } from '@client/utils/dashboardNavigation';
+import {
+  dashboardNavigate,
+  onDashboardNavigate,
+  stripLocalePrefix,
+} from '@client/utils/dashboardNavigation';
 import { useLogger } from '@client/utils/logger';
 import { getTranslations, type TFunction } from '@src/i18n/utils';
 import { LogOut, X, Badge } from 'lucide-react';
@@ -86,7 +90,7 @@ export const DashboardSidebar: React.FC<IDashboardSidebarProps> = ({ isOpen, onC
   const { hasCampaigns, skippedIntegrations, isOnboardingComplete } = usePendingActions();
 
   const [pathname, setPathname] = useState(() =>
-    typeof window !== 'undefined' ? window.location.pathname : '/dashboard'
+    typeof window !== 'undefined' ? stripLocalePrefix(window.location.pathname) : '/dashboard'
   );
   useEffect(() => {
     return onDashboardNavigate(setPathname);
