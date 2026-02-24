@@ -1,5 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
 import { supabaseAdmin } from '@server/supabase/supabaseAdmin';
+import fs from 'node:fs';
 
 export function isTestRuntime(): boolean {
   const playwrightTest = process.env.PLAYWRIGHT_TEST;
@@ -16,6 +17,91 @@ export type ITestUser = {
   email: string;
   token: string;
 };
+
+// DB path must match the one in inMemorySupabaseAdmin.ts
+const DEFAULT_DB_PATH = '/tmp/autopilotrank-playwright-mock-db.json';
+const DB_PATH = process.env.PLAYWRIGHT_MOCK_DB_PATH ?? DEFAULT_DB_PATH;
+
+function readMockDb(): Record<string, Record<string, unknown>[]> {
+  try {
+    if (!fs.existsSync(DB_PATH)) {
+      return {
+        profiles: [],
+        projects: [],
+        campaigns: [],
+        keywords: [],
+        articles: [],
+        opportunities: [],
+        gsc_connections: [],
+        integrations: [],
+        campaign_integrations: [],
+        subscriptions: [],
+        user_credits: [],
+        credit_transactions: [],
+        article_deliveries: [],
+        user_onboarding: [],
+        email_preferences: [],
+        email_logs: [],
+      };
+    }
+    const raw = fs.readFileSync(DB_PATH, 'utf8');
+    if (!raw.trim()) {
+      return {
+        profiles: [],
+        projects: [],
+        campaigns: [],
+        keywords: [],
+        articles: [],
+        opportunities: [],
+        gsc_connections: [],
+        integrations: [],
+        campaign_integrations: [],
+        subscriptions: [],
+        user_credits: [],
+        credit_transactions: [],
+        article_deliveries: [],
+        user_onboarding: [],
+        email_preferences: [],
+        email_logs: [],
+      };
+    }
+    return JSON.parse(raw) as Record<string, Record<string, unknown>[]>;
+  } catch {
+    return {
+      profiles: [],
+      projects: [],
+      campaigns: [],
+      keywords: [],
+      articles: [],
+      opportunities: [],
+      gsc_connections: [],
+      integrations: [],
+      campaign_integrations: [],
+      subscriptions: [],
+      user_credits: [],
+      credit_transactions: [],
+      article_deliveries: [],
+      user_onboarding: [],
+      email_preferences: [],
+      email_logs: [],
+    };
+  }
+}
+
+function writeMockDb(data: Record<string, Record<string, unknown>[]>): void {
+  try {
+    fs.writeFileSync(DB_PATH, JSON.stringify(data), 'utf8');
+  } catch (error) {
+    console.warn('Failed to write mock DB:', error);
+  }
+}
+
+function insertProfileToMockDb(profile: Record<string, unknown>): void {
+  const db = readMockDb();
+  if (!db.profiles) db.profiles = [];
+  db.profiles.push(profile);
+  writeMockDb(db);
+}
 
 export class TestDataManager {
   private supabase: ReturnType<typeof createClient> | null = null;
@@ -201,16 +287,25 @@ export class TestDataManager {
       const mockToken = `test_token_mock_user_${mockUserId}`;
       const now = new Date().toISOString();
 
-      this.createdUsers.push(mockUserId);
-      this.testModeProfiles.set(mockUserId, {
+      const profile = {
         id: mockUserId,
-        credits_balance: 10,
-        subscription_status: 'free',
+        email: testEmail,
+        display_name: `Test User ${mockUserId.slice(0, 8)}`,
+        role: 'user',
+        subscription_status: null,
         subscription_tier: null,
-        stripe_subscription_id: null,
+        subscription_credits_balance: 10,
+        purchased_credits_balance: 0,
+        stripe_customer_id: null,
         created_at: now,
         updated_at: now,
-      });
+      };
+
+      this.createdUsers.push(mockUserId);
+      this.testModeProfiles.set(mockUserId, profile);
+
+      // Also insert into mock DB file so web server can find it
+      insertProfileToMockDb(profile);
 
       return {
         id: mockUserId,
@@ -671,17 +766,27 @@ export class TestDataManager {
         status === 'free'
           ? `test_token_mock_user_${mockUserId}`
           : `test_token_mock_user_${mockUserId}_sub_${status}_${tier || 'growth'}`;
+      const now = new Date().toISOString();
+
+      const profile = {
+        id: mockUserId,
+        email: testEmail,
+        display_name: `Test User ${mockUserId.slice(0, 8)}`,
+        role: 'user',
+        subscription_status: status === 'free' ? null : status,
+        subscription_tier: status === 'free' ? null : tier || 'growth',
+        subscription_credits_balance: status === 'free' ? 0 : initialCredits,
+        purchased_credits_balance: 0,
+        stripe_customer_id: null,
+        created_at: now,
+        updated_at: now,
+      };
 
       this.createdUsers.push(mockUserId);
-      this.testModeProfiles.set(mockUserId, {
-        id: mockUserId,
-        credits_balance: initialCredits,
-        subscription_status: status,
-        subscription_tier: status === 'free' ? null : tier || 'growth',
-        stripe_subscription_id: status === 'free' ? null : `sub_test_${mockUserId}`,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-      });
+      this.testModeProfiles.set(mockUserId, profile);
+
+      // Also insert into mock DB file so web server can find it
+      insertProfileToMockDb(profile);
 
       return {
         id: mockUserId,

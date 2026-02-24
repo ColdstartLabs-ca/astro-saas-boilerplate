@@ -483,6 +483,22 @@ class InMemoryQueryBuilder implements PromiseLike<QueryResult<unknown>> {
   }
 
   private executeSelect(): QueryResult<unknown> {
+    // Special handling for user_credits view — computed from profiles in test mode
+    if (this.tableName === 'user_credits') {
+      const userCreditsRows = store.get('profiles').map(p => ({
+        user_id: p.id,
+        total_credits_balance:
+          Number(p.subscription_credits_balance ?? 0) + Number(p.purchased_credits_balance ?? 0),
+      }));
+      const filtered = this.filterRows(userCreditsRows as Row[]);
+      const rows = this.applyReadTransforms(filtered);
+      return {
+        data: this.selectOptions.head === true ? null : this.projectRows(rows),
+        error: null,
+        count: this.selectOptions.count === 'exact' ? filtered.length : null,
+      };
+    }
+
     const rows = this.applyReadTransforms(this.filterRows(store.get(this.tableName)));
     const count =
       this.selectOptions.count === 'exact'
@@ -744,6 +760,45 @@ class InMemoryQueryBuilder implements PromiseLike<QueryResult<unknown>> {
       });
     }
 
+    // Handle articles + campaigns join (and optionally article_images):
+    // select("*, campaigns (...)", ...)
+    // Used by GET/PATCH /api/articles, GET/PATCH /api/articles/:id, regenerate, deliver
+    if (this.tableName === 'articles' && normalizedSelect.includes('campaigns (')) {
+      const campaigns = store.get('campaigns');
+      return rows.map(row => {
+        const campaign = campaigns.find(c => c.id === row.campaign_id) ?? null;
+        const result: Row = { ...clone(row) };
+        result.campaigns = campaign ? clone(campaign) : null;
+        // article_images is always empty in test mode (no real image generation)
+        if (normalizedSelect.includes('article_images (')) {
+          result.article_images = [];
+        }
+        return result;
+      });
+    }
+
+    // Handle articles + article_images join (without campaigns):
+    // Used by deliveryService.deliverArticle
+    if (this.tableName === 'articles' && normalizedSelect.includes('article_images(')) {
+      return rows.map(row => ({
+        ...clone(row),
+        article_images: [],
+      }));
+    }
+
+    // Handle campaigns + projects join:
+    // Used by deliveryService.deliverArticle (campaigns.select('..., projects(id, name, domain)'))
+    if (this.tableName === 'campaigns' && normalizedSelect.includes('projects(')) {
+      const projects = store.get('projects');
+      return rows.map(row => {
+        const project = projects.find(p => p.id === row.project_id) ?? null;
+        return {
+          ...clone(row),
+          projects: project ? clone(project) : null,
+        };
+      });
+    }
+
     if (normalizedSelect === '*' || normalizedSelect.length === 0) {
       return rows.map(row => clone(row));
     }
@@ -812,6 +867,130 @@ class InMemorySupabaseAdmin {
         profile.updated_at = nowIso();
       }
       store.persistToDisk();
+      return { data: null, error: null, count: null };
+    }
+
+    if (functionName === 'create_article_with_credits') {
+      const userId = params.p_user_id as string;
+      const campaignId = params.p_campaign_id as string;
+      const projectId = params.p_project_id as string;
+      const keyword = params.p_primary_keyword as string;
+      const creditsNeeded = Number(params.p_credits_needed ?? 1);
+      const status = (params.p_status as string) ?? 'generating';
+      const imagePreset = (params.p_image_preset as string | null) ?? null;
+
+      const profiles = store.get('profiles');
+      const profile = profiles.find(row => row.id === userId);
+
+      if (!profile) {
+        return {
+          data: null,
+          error: postgrestError('Insufficient credits', 'P0001'),
+          count: null,
+        };
+      }
+
+      const subCredits = Number(profile.subscription_credits_balance ?? 0);
+      const purchCredits = Number(profile.purchased_credits_balance ?? 0);
+      const totalBalance = subCredits + purchCredits;
+
+      if (totalBalance < creditsNeeded) {
+        return {
+          data: null,
+          error: postgrestError('Insufficient credits', 'P0001'),
+          count: null,
+        };
+      }
+
+      // Create article record
+      const articleId = generateId();
+      const now = nowIso();
+      store.get('articles').push({
+        id: articleId,
+        user_id: userId,
+        campaign_id: campaignId,
+        project_id: projectId,
+        primary_keyword: keyword,
+        keyword_normalized: keyword.toLowerCase().trim(),
+        status,
+        credits_used: creditsNeeded,
+        image_preset: imagePreset,
+        created_at: now,
+        updated_at: now,
+        title: null,
+        content: null,
+        meta_description: null,
+        word_count: 0,
+        seo_score: null,
+        generation_error: null,
+        topic_fingerprint: null,
+      });
+
+      // Deduct credits (subscription first, then purchased)
+      const newSubCredits = Math.max(0, subCredits - creditsNeeded);
+      const remainder = creditsNeeded - (subCredits - newSubCredits);
+      const newPurchCredits = Math.max(0, purchCredits - Math.max(0, remainder));
+
+      profile.subscription_credits_balance = newSubCredits;
+      profile.purchased_credits_balance = newPurchCredits;
+      profile.updated_at = now;
+
+      const newTotalBalance = newSubCredits + newPurchCredits;
+
+      // Log credit transaction
+      store.get('credit_transactions').push({
+        id: generateId(),
+        user_id: userId,
+        amount: -creditsNeeded,
+        type: 'usage',
+        reference_id: articleId,
+        description: `Article generation: ${keyword}`,
+        created_at: now,
+      });
+
+      store.persistToDisk();
+
+      return {
+        data: [{ article_id: articleId, new_total_balance: newTotalBalance }],
+        error: null,
+        count: null,
+      };
+    }
+
+    if (functionName === 'consume_credits_v2') {
+      const userId = params.target_user_id as string;
+      const amount = Number(params.amount ?? 0);
+      const refId = (params.ref_id as string | null) ?? null;
+      const description = (params.description as string | null) ?? null;
+
+      const profiles = store.get('profiles');
+      const profile = profiles.find(row => row.id === userId);
+
+      if (profile) {
+        const subCredits = Number(profile.subscription_credits_balance ?? 0);
+        const purchCredits = Number(profile.purchased_credits_balance ?? 0);
+
+        const newSubCredits = Math.max(0, subCredits - amount);
+        const remainder = amount - (subCredits - newSubCredits);
+        const newPurchCredits = Math.max(0, purchCredits - Math.max(0, remainder));
+
+        profile.subscription_credits_balance = newSubCredits;
+        profile.purchased_credits_balance = newPurchCredits;
+        profile.updated_at = nowIso();
+
+        store.get('credit_transactions').push({
+          id: generateId(),
+          user_id: userId,
+          amount: -amount,
+          type: 'usage',
+          reference_id: refId,
+          description,
+          created_at: nowIso(),
+        });
+
+        store.persistToDisk();
+      }
+
       return { data: null, error: null, count: null };
     }
 

@@ -1,7 +1,92 @@
 import { TestDataManager, type ITestUser, isTestRuntime } from './test-data-manager';
+import fs from 'node:fs';
 
 export interface ITestContextOptions {
   autoCleanup?: boolean;
+}
+
+// DB path must match the one in inMemorySupabaseAdmin.ts
+const DEFAULT_DB_PATH = '/tmp/autopilotrank-playwright-mock-db.json';
+const DB_PATH = process.env.PLAYWRIGHT_MOCK_DB_PATH ?? DEFAULT_DB_PATH;
+
+/**
+ * Read the mock DB file and return the tables
+ */
+function readMockDb(): Record<string, Record<string, unknown>[]> {
+  try {
+    if (!fs.existsSync(DB_PATH)) {
+      return {
+        profiles: [],
+        projects: [],
+        campaigns: [],
+        keywords: [],
+        articles: [],
+        opportunities: [],
+        gsc_connections: [],
+        integrations: [],
+        campaign_integrations: [],
+        subscriptions: [],
+        user_credits: [],
+        credit_transactions: [],
+        article_deliveries: [],
+        user_onboarding: [],
+        email_preferences: [],
+        email_logs: [],
+      };
+    }
+    const raw = fs.readFileSync(DB_PATH, 'utf8');
+    if (!raw.trim()) {
+      return {
+        profiles: [],
+        projects: [],
+        campaigns: [],
+        keywords: [],
+        articles: [],
+        opportunities: [],
+        gsc_connections: [],
+        integrations: [],
+        campaign_integrations: [],
+        subscriptions: [],
+        user_credits: [],
+        credit_transactions: [],
+        article_deliveries: [],
+        user_onboarding: [],
+        email_preferences: [],
+        email_logs: [],
+      };
+    }
+    return JSON.parse(raw) as Record<string, Record<string, unknown>[]>;
+  } catch {
+    return {
+      profiles: [],
+      projects: [],
+      campaigns: [],
+      keywords: [],
+      articles: [],
+      opportunities: [],
+      gsc_connections: [],
+      integrations: [],
+      campaign_integrations: [],
+      subscriptions: [],
+      user_credits: [],
+      credit_transactions: [],
+      article_deliveries: [],
+      user_onboarding: [],
+      email_preferences: [],
+      email_logs: [],
+    };
+  }
+}
+
+/**
+ * Write the mock DB file with updated tables
+ */
+function writeMockDb(data: Record<string, Record<string, unknown>[]>): void {
+  try {
+    fs.writeFileSync(DB_PATH, JSON.stringify(data, null, 2), 'utf8');
+  } catch (error) {
+    console.warn('Failed to write mock DB:', error);
+  }
 }
 
 /**
@@ -31,8 +116,9 @@ export class TestContext {
     subscription?: 'free' | 'active' | 'trialing' | 'past_due' | 'canceled';
     tier?: 'starter' | 'growth' | 'agency';
     credits?: number;
+    role?: 'user' | 'admin';
   }): Promise<ITestUser> {
-    const { subscription = 'free', tier, credits = 10 } = options || {};
+    const { subscription = 'free', tier, credits = 10, role = 'user' } = options || {};
 
     try {
       const user =
@@ -45,7 +131,6 @@ export class TestContext {
     } catch (error) {
       // In test environment, if user creation fails, create a mock user
       if (isTestRuntime()) {
-        console.warn('User creation failed, creating mock user for test environment:', error);
         const mockUserId = this.generateUUID();
         const mockToken =
           subscription === 'free'
@@ -57,6 +142,27 @@ export class TestContext {
           email: `test-${mockUserId}@example.com`,
           token: mockToken,
         };
+
+        // Insert user profile into mock DB file so API routes can find it
+        const db = readMockDb();
+        if (!db.profiles) db.profiles = [];
+        const now = new Date().toISOString();
+        const subscriptionStatus =
+          subscription === 'free' ? null : subscription === 'active' ? 'active' : subscription;
+        db.profiles.push({
+          id: mockUserId,
+          email: mockUser.email,
+          display_name: `Test User ${mockUserId.slice(0, 8)}`,
+          role,
+          subscription_status: subscriptionStatus,
+          subscription_tier: subscription === 'free' ? null : tier || 'growth',
+          subscription_credits_balance: subscription === 'free' ? 0 : credits,
+          purchased_credits_balance: 0,
+          stripe_customer_id: null,
+          created_at: now,
+          updated_at: now,
+        });
+        writeMockDb(db);
 
         this.users.push(mockUser);
         return mockUser;
@@ -275,9 +381,21 @@ export class TestContext {
     }
   ): Promise<{ id: string }> {
     const projectId = this.generateUUID();
+    const now = new Date().toISOString();
 
-    // In test mode, return mock project without database operations
+    // In test mode, insert into mock DB file for web server access
     if (isTestRuntime()) {
+      const db = readMockDb();
+      if (!db.projects) db.projects = [];
+      db.projects.push({
+        id: projectId,
+        user_id: userId,
+        name: options.name,
+        domain: options.domain || options.url || null,
+        created_at: now,
+        updated_at: now,
+      });
+      writeMockDb(db);
       return { id: projectId };
     }
 

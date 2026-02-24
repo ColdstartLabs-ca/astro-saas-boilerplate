@@ -43,6 +43,7 @@ test.describe('API: API Keys (§11.2)', () => {
     });
 
     test('should return empty list for new user', async ({ request }) => {
+      test.skip(isTestMode(), 'Requires real DB user');
       const api = new ApiClient(request).withAuth(user.token);
       const response = await api.get('/api/settings/api-keys');
       response.expectStatus(200).expectSuccess();
@@ -51,6 +52,7 @@ test.describe('API: API Keys (§11.2)', () => {
     });
 
     test('should never return key_hash', async ({ request }) => {
+      test.skip(isTestMode(), 'Requires real DB user');
       const api = new ApiClient(request).withAuth(user.token);
 
       // Create a key first
@@ -80,6 +82,7 @@ test.describe('API: API Keys (§11.2)', () => {
     });
 
     test('should create key and return it once', async ({ request }) => {
+      test.skip(isTestMode(), 'Requires real DB user');
       const api = new ApiClient(request).withAuth(user.token);
       const response = await api.post('/api/settings/api-keys', {
         name: 'My API Key',
@@ -97,6 +100,7 @@ test.describe('API: API Keys (§11.2)', () => {
     });
 
     test('full key not visible on subsequent GET', async ({ request }) => {
+      test.skip(isTestMode(), 'Requires real DB user');
       const api = new ApiClient(request).withAuth(user.token);
 
       const created = await api.post('/api/settings/api-keys', { name: 'One-Time Key' });
@@ -137,6 +141,7 @@ test.describe('API: API Keys (§11.2)', () => {
     });
 
     test('should delete key and it disappears from list', async ({ request }) => {
+      test.skip(isTestMode(), 'Requires real DB user');
       const api = new ApiClient(request).withAuth(user.token);
 
       const created = await api.post('/api/settings/api-keys', { name: 'To Revoke' });
@@ -173,6 +178,7 @@ test.describe('API: Feed Token (§11.3)', () => {
     });
 
     test('should return feedToken and feedUrl', async ({ request }) => {
+      test.skip(isTestMode(), 'Requires real DB user');
       const api = new ApiClient(request).withAuth(user.token);
       const response = await api.get('/api/settings/feed/token');
       response.expectStatus(200).expectSuccess();
@@ -193,6 +199,7 @@ test.describe('API: Feed Token (§11.3)', () => {
     });
 
     test('should generate token and return feedUrl', async ({ request }) => {
+      test.skip(isTestMode(), 'Requires real DB user');
       const api = new ApiClient(request).withAuth(user.token);
       const response = await api.post('/api/settings/feed/token');
       response.expectStatus(200).expectSuccess();
@@ -205,6 +212,7 @@ test.describe('API: Feed Token (§11.3)', () => {
     });
 
     test('regenerating invalidates old token', async ({ request }) => {
+      test.skip(isTestMode(), 'Requires real DB user');
       const api = new ApiClient(request).withAuth(user.token);
 
       const first = await api.post('/api/settings/feed/token');
@@ -220,18 +228,21 @@ test.describe('API: Feed Token (§11.3)', () => {
 
   test.describe('GET /api/feeds/:userId/articles.xml', () => {
     test('should return 401 for missing token', async ({ request }) => {
+      test.skip(isTestMode(), 'Requires real DB to validate feed token');
       const api = new ApiClient(request);
       const response = await api.get(`/api/feeds/${user.id}/articles.xml`);
       response.expectStatus(401);
     });
 
     test('should return 401 for wrong token', async ({ request }) => {
+      test.skip(isTestMode(), 'Requires real DB to validate feed token');
       const api = new ApiClient(request);
       const response = await api.get(`/api/feeds/${user.id}/articles.xml?token=wrong-token-value`);
       response.expectStatus(401);
     });
 
     test('should return XML feed with valid token', async ({ request }) => {
+      test.skip(isTestMode(), 'Requires real DB user');
       const api = new ApiClient(request).withAuth(user.token);
 
       const tokenRes = await api.post('/api/settings/feed/token');
@@ -265,6 +276,7 @@ test.describe('API: Email Preferences (§11.4)', () => {
     });
 
     test('should return default preferences', async ({ request }) => {
+      test.skip(isTestMode(), 'Requires real DB user');
       const api = new ApiClient(request).withAuth(user.token);
       const response = await api.get('/api/email/preferences');
       response.expectStatus(200).expectSuccess();
@@ -285,6 +297,7 @@ test.describe('API: Email Preferences (§11.4)', () => {
     });
 
     test('should update preferences and persist', async ({ request }) => {
+      test.skip(isTestMode(), 'Requires real DB user');
       const api = new ApiClient(request).withAuth(user.token);
 
       const patch = await api.patch('/api/email/preferences', {

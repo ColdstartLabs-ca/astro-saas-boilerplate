@@ -274,7 +274,8 @@ function loadServerEnv(): IServerEnv {
     // Test flags - Playwright sets this to "1", accept string or number
     PLAYWRIGHT_TEST: metaEnv.PLAYWRIGHT_TEST ?? undefined,
     // Path to mock database for Playwright tests
-    PLAYWRIGHT_MOCK_DB_PATH: metaEnv.PLAYWRIGHT_MOCK_DB_PATH ?? undefined,
+    PLAYWRIGHT_MOCK_DB_PATH:
+      metaEnv.PLAYWRIGHT_MOCK_DB_PATH || processEnv.PLAYWRIGHT_MOCK_DB_PATH || undefined,
     // Public URLs
     SUPABASE_URL: metaEnv.PUBLIC_SUPABASE_URL,
     BASE_URL: metaEnv.PUBLIC_BASE_URL,

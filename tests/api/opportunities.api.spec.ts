@@ -32,17 +32,9 @@ test.describe('API: Opportunities', () => {
   test.beforeEach(async ({ request }) => {
     user = await ctx.createUser({ subscription: 'active', tier: 'growth', credits: 100 });
 
-    // In test mode with mock users, we cannot create projects via direct DB insert
-    // because user_id FK references auth.users. Use API instead.
-    if (isTestMode()) {
-      // Generate a valid UUID v4 format for the mock project ID
-      // The API will validate project ownership using the extracted user ID from the token
-      projectId = crypto.randomUUID();
-    } else {
-      // In non-test mode, create project via direct DB insert
-      const project = await ctx.createProject(user.id, { name: 'Test Project' });
-      projectId = project.id;
-    }
+    // Create project - this now works in test mode with mock DB
+    const project = await ctx.createProject(user.id, { name: 'Test Project' });
+    projectId = project.id;
   });
 
   // =============================================================================
@@ -68,28 +60,20 @@ test.describe('API: Opportunities', () => {
       await response.expectErrorCode('VALIDATION_ERROR');
     });
 
-    // In test mode, this will return 404 because the project doesn't exist in DB
-    // This is expected behavior - the API correctly validates project ownership
+    // Returns empty list when project has no opportunities
     test('should return empty list for project with no opportunities', async ({ request }) => {
       const api = new ApiClient(request).withAuth(user.token);
 
       const response = await api.get(`/api/opportunities?projectId=${projectId}`);
 
-      if (isTestMode()) {
-        // In test mode, project doesn't exist in DB, so we get 404
-        response.expectStatus(404);
-        await response.expectErrorCode('NOT_FOUND');
-      } else {
-        response.expectStatus(200).expectSuccess();
-        const data = await response.getData();
-        expect(data.opportunities).toEqual([]);
-        expect(data.total).toBe(0);
-      }
+      response.expectStatus(200).expectSuccess();
+      const data = await response.getData();
+      expect(data.opportunities).toEqual([]);
+      expect(data.total).toBe(0);
     });
 
     // Skip in test mode because we can't seed opportunities with mock user IDs
     test('should return paginated list', async ({ request }) => {
-
       const { supabaseAdmin } = ctx;
 
       // Seed opportunities
@@ -130,7 +114,6 @@ test.describe('API: Opportunities', () => {
     });
 
     test('should filter by category', async ({ request }) => {
-
       const { supabaseAdmin } = ctx;
 
       await supabaseAdmin.from('opportunities').insert([
@@ -172,7 +155,6 @@ test.describe('API: Opportunities', () => {
     });
 
     test('should filter by status', async ({ request }) => {
-
       const { supabaseAdmin } = ctx;
 
       await supabaseAdmin.from('opportunities').insert([
@@ -211,7 +193,6 @@ test.describe('API: Opportunities', () => {
     });
 
     test('should filter by type', async ({ request }) => {
-
       const { supabaseAdmin } = ctx;
 
       await supabaseAdmin.from('opportunities').insert([
@@ -250,7 +231,6 @@ test.describe('API: Opportunities', () => {
     });
 
     test('should search by text', async ({ request }) => {
-
       const { supabaseAdmin } = ctx;
 
       await supabaseAdmin.from('opportunities').insert([
@@ -291,7 +271,6 @@ test.describe('API: Opportunities', () => {
     });
 
     test('should sort by priority desc', async ({ request }) => {
-
       const { supabaseAdmin } = ctx;
 
       await supabaseAdmin.from('opportunities').insert([
@@ -349,7 +328,6 @@ test.describe('API: Opportunities', () => {
     });
 
     test('should return opportunity by ID', async ({ request }) => {
-
       const { supabaseAdmin } = ctx;
 
       const { data: opportunity } = await supabaseAdmin
@@ -386,7 +364,6 @@ test.describe('API: Opportunities', () => {
     });
 
     test('should return 404 for other user opportunity', async ({ request }) => {
-
       const otherUser = await ctx.createUser({ subscription: 'active' });
       const otherProject = await ctx.createProject(otherUser.id, { name: 'Other Project' });
 
@@ -432,7 +409,6 @@ test.describe('API: Opportunities', () => {
     });
 
     test('should update opportunity status', async ({ request }) => {
-
       const { supabaseAdmin } = ctx;
 
       const { data: opportunity } = await supabaseAdmin
@@ -469,7 +445,6 @@ test.describe('API: Opportunities', () => {
     });
 
     test('should reject invalid status', async ({ request }) => {
-
       const { supabaseAdmin } = ctx;
 
       const { data: opportunity } = await supabaseAdmin
@@ -513,7 +488,6 @@ test.describe('API: Opportunities', () => {
     });
 
     test('should create campaign from content opportunity', async ({ request }) => {
-
       const { supabaseAdmin } = ctx;
 
       const { data: opportunity } = await supabaseAdmin
@@ -546,7 +520,6 @@ test.describe('API: Opportunities', () => {
     });
 
     test('should reject non-content type opportunity', async ({ request }) => {
-
       const { supabaseAdmin } = ctx;
 
       const { data: opportunity } = await supabaseAdmin
@@ -576,7 +549,6 @@ test.describe('API: Opportunities', () => {
     });
 
     test('should update opportunity status to in_progress', async ({ request }) => {
-
       const { supabaseAdmin } = ctx;
 
       const { data: opportunity } = await supabaseAdmin

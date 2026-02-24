@@ -30,8 +30,7 @@ test.describe('GET /api/seo/indexnow', () => {
   });
 
   test('should return status with valid x-cron-secret', async ({ request }) => {
-    test.skip(
-    );
+    test.skip(isTestMode(), 'Requires valid cron secret and running IndexNow endpoint');
 
     const response = await request.get('/api/seo/indexnow', {
       headers: { 'x-cron-secret': getCronSecret() },
@@ -67,8 +66,6 @@ test.describe('POST /api/seo/indexnow', () => {
   });
 
   test('should reject invalid request body (400) with valid cron secret', async ({ request }) => {
-    );
-
     const response = await request.post('/api/seo/indexnow', {
       headers: {
         'Content-Type': 'application/json',
@@ -83,8 +80,7 @@ test.describe('POST /api/seo/indexnow', () => {
   });
 
   test('should accept a valid single URL with valid cron secret', async ({ request }) => {
-    );
-
+    test.skip(isTestMode(), 'Makes real IndexNow submission — skip in test mode');
     const response = await request.post('/api/seo/indexnow', {
       headers: {
         'Content-Type': 'application/json',
@@ -97,8 +93,6 @@ test.describe('POST /api/seo/indexnow', () => {
   });
 
   test('should reject empty urls array with valid cron secret', async ({ request }) => {
-    );
-
     const response = await request.post('/api/seo/indexnow', {
       headers: {
         'Content-Type': 'application/json',

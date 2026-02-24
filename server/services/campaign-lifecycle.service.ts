@@ -339,6 +339,31 @@ export class CampaignLifecycleService {
         keywords,
       };
       testModeCampaigns.set(campaignId, campaign);
+
+      // Also persist to the file-based mock DB so API endpoints that query
+      // via supabaseAdmin (e.g. generate.ts) can find the campaign.
+      await supabaseAdmin.from('campaigns').insert({
+        id: campaignId,
+        user_id: userId,
+        project_id: validated.projectId,
+        name: validated.name,
+        status: 'draft',
+        ai_model: validated.model || 'pro',
+        tone: validated.tone || 'professional',
+        target_word_count: validated.targetWordCount || 1500,
+        settings: {},
+        image_preset: validated.imagePreset || null,
+        schedule_frequency: validated.scheduleFrequency || null,
+        schedule_batch_size: validated.scheduleBatchSize || 1,
+        next_run_at: null,
+        last_run_at: null,
+        schedule_timezone: validated.scheduleTimezone || DEFAULT_SCHEDULE_TIMEZONE,
+        schedule_hour: validated.scheduleHour ?? DEFAULT_SCHEDULE_HOUR,
+        generation_run_id: null,
+        created_at: campaign.created_at,
+        updated_at: campaign.updated_at,
+      });
+
       return campaign;
     }
 
