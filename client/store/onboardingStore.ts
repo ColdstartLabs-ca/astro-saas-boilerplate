@@ -90,6 +90,8 @@ export interface IOnboardingState {
 // Constants
 // =============================================================================
 
+const DISMISSED_STORAGE_KEY = 'onboarding_dismissed';
+
 /** Total number of onboarding steps */
 const TOTAL_STEPS = 5;
 
@@ -103,6 +105,9 @@ const REQUIRED_STEPS = new Set([OnboardingStep.PROJECT_CREATION, OnboardingStep.
 // Store
 // =============================================================================
 
+const readDismissed = (): boolean =>
+  typeof window !== 'undefined' && localStorage.getItem(DISMISSED_STORAGE_KEY) === 'true';
+
 const initialState = {
   currentStep: OnboardingStep.PROJECT_CREATION,
   completedSteps: new Set<number>(),
@@ -112,7 +117,7 @@ const initialState = {
   keywordCount: 0,
   hasGscConnection: false,
   hasIntegration: false,
-  isDismissed: false,
+  isDismissed: readDismissed(),
 };
 
 export const useOnboardingStore = create<IOnboardingState>((set, get) => ({
@@ -181,8 +186,13 @@ export const useOnboardingStore = create<IOnboardingState>((set, get) => ({
 
   setHasIntegration: value => set({ hasIntegration: value }),
 
-  // Session-only dismiss
-  dismiss: () => set({ isDismissed: true }),
+  // Persist dismiss flag so it survives page refreshes
+  dismiss: () => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem(DISMISSED_STORAGE_KEY, 'true');
+    }
+    set({ isDismissed: true });
+  },
 
   // Bulk actions
   initializeFromServer: data => {
@@ -193,7 +203,12 @@ export const useOnboardingStore = create<IOnboardingState>((set, get) => ({
     });
   },
 
-  reset: () => set(initialState),
+  reset: () => {
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem(DISMISSED_STORAGE_KEY);
+    }
+    set({ ...initialState, isDismissed: false });
+  },
 
   // Computed getters
   canProceedToNext: () => {
