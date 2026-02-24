@@ -1,12 +1,12 @@
 import { clientEnv } from '@shared/config/env';
 import { LocaleSwitcher } from '@client/components/i18n/LocaleSwitcher';
 import { Logo } from '@client/components/logo/Logo';
-import { useMemo } from 'react';
-import { getTranslations } from '@src/i18n/utils';
+import { getTranslations } from '@shared/i18n';
 import { DEFAULT_LOCALE } from '@src/i18n/config';
 
+const t = getTranslations('footer');
+
 export function FooterAstro(): JSX.Element {
-  const t = useMemo(() => getTranslations('footer'), []);
   const currentYear = new Date().getFullYear();
 
   // Helper to generate localized URLs
