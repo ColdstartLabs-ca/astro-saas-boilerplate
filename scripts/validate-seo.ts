@@ -1,20 +1,29 @@
 /**
- * Static SEO validation for all pSEO data files.
+ * Static SEO validation for:
+ *   1. pSEO data files (JSON)
+ *   2. Blog MDX files
+ *
  * Runs as part of `yarn verify` to catch issues at development time.
  *
  * ERRORS (fail the build):
- *   - Missing required fields
+ *   - Missing required fields / frontmatter
  *   - Duplicate slugs
  *   - Slug not URL-safe
- *   - metaTitle > 60 chars
- *   - metaDescription not in 150–160 chars
+ *   - metaTitle / title > 60 chars
+ *   - metaDescription / description not in 120–160 chars
+ *   - Blog word count < 300 (thin content)
+ *   - Blog missing H1 or multiple H1s
  *
  * WARNINGS (print but don't fail):
- *   - Primary keyword not in first 50 chars of metaDescription
+ *   - Primary keyword not in first 50 chars of metaDescription (pSEO)
+ *   - Blog word count < 800
+ *   - Blog title < 30 chars
+ *   - Blog missing H2 headings
+ *   - Blog missing tags
  */
 
-import { readFileSync } from 'fs';
-import { join } from 'path';
+import { readFileSync, readdirSync } from 'fs';
+import { join, extname, basename } from 'path';
 
 interface IPageEntry {
   slug: string;
@@ -56,9 +65,138 @@ interface IIssue {
   detail: string;
 }
 
+// ─── Blog MDX constants ───────────────────────────────────────────────────────
+
+const BLOG_DIR = 'content/blog';
+const BLOG_REQUIRED_FRONTMATTER = ['title', 'description', 'date', 'author', 'image'] as const;
+const BLOG_TITLE_MAX = 60;
+const BLOG_TITLE_MIN = 30;
+const BLOG_DESC_MIN = 120;
+const BLOG_DESC_MAX = 160;
+const BLOG_WORDS_ERROR = 300;
+const BLOG_WORDS_WARN = 800;
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
 function slugIsUrlSafe(slug: string): boolean {
   return /^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(slug);
 }
+
+function parseFrontmatter(content: string): { meta: Record<string, string>; body: string } {
+  const match = content.match(/^---\r?\n([\s\S]*?)\r?\n---\r?\n([\s\S]*)$/);
+  if (!match) return { meta: {}, body: content };
+
+  const meta: Record<string, string> = {};
+  for (const line of match[1].split(/\r?\n/)) {
+    const colonIdx = line.indexOf(':');
+    if (colonIdx === -1) continue;
+    const key = line.slice(0, colonIdx).trim();
+    const value = line
+      .slice(colonIdx + 1)
+      .trim()
+      .replace(/^["']|["']$/g, '');
+    meta[key] = value;
+  }
+
+  return { meta, body: match[2] };
+}
+
+function countWords(mdxBody: string): number {
+  return mdxBody
+    .replace(/```[\s\S]*?```/g, '') // fenced code blocks
+    .replace(/`[^`]*`/g, '') // inline code
+    .replace(/!\[.*?\]\(.*?\)/g, '') // images
+    .replace(/\[([^\]]*)\]\([^)]*\)/g, '$1') // links → keep text
+    .replace(/^#{1,6}\s+/gm, '') // heading markers
+    .replace(/[*_~|>]/g, '') // emphasis / table / blockquote chars
+    .split(/\s+/)
+    .filter(w => w.length > 0).length;
+}
+
+// ─── Blog MDX validator ───────────────────────────────────────────────────────
+
+function validateBlogMdx(): { errors: IIssue[]; warnings: IIssue[] } {
+  const errors: IIssue[] = [];
+  const warnings: IIssue[] = [];
+
+  let files: string[];
+  try {
+    files = readdirSync(join(ROOT, BLOG_DIR)).filter(f => extname(f) === '.mdx');
+  } catch {
+    errors.push({ file: 'blog', slug: '(dir)', rule: 'read-dir', detail: `Cannot read ${BLOG_DIR}` });
+    return { errors, warnings };
+  }
+
+  for (const filename of files) {
+    const label = basename(filename, '.mdx');
+    let content: string;
+    try {
+      content = readFileSync(join(ROOT, BLOG_DIR, filename), 'utf8');
+    } catch {
+      errors.push({ file: 'blog', slug: label, rule: 'read-file', detail: `Cannot read ${filename}` });
+      continue;
+    }
+
+    const { meta, body } = parseFrontmatter(content);
+
+    // Required frontmatter
+    for (const field of BLOG_REQUIRED_FRONTMATTER) {
+      if (!meta[field]) {
+        errors.push({ file: 'blog', slug: label, rule: 'required', detail: `Missing frontmatter: ${field}` });
+      }
+    }
+
+    // title length
+    if (meta.title) {
+      const len = meta.title.length;
+      if (len > BLOG_TITLE_MAX) {
+        errors.push({ file: 'blog', slug: label, rule: 'title-length', detail: `title is ${len} chars (max ${BLOG_TITLE_MAX}): "${meta.title}"` });
+      } else if (len < BLOG_TITLE_MIN) {
+        warnings.push({ file: 'blog', slug: label, rule: 'title-length', detail: `title is ${len} chars — consider ${BLOG_TITLE_MIN}–${BLOG_TITLE_MAX} chars for best CTR: "${meta.title}"` });
+      }
+    }
+
+    // description length
+    if (meta.description) {
+      const len = meta.description.length;
+      if (len < BLOG_DESC_MIN || len > BLOG_DESC_MAX) {
+        errors.push({ file: 'blog', slug: label, rule: 'desc-length', detail: `description is ${len} chars (must be ${BLOG_DESC_MIN}–${BLOG_DESC_MAX}): "${meta.description.slice(0, 60)}..."` });
+      }
+    }
+
+    // Word count
+    const wordCount = countWords(body);
+    if (wordCount < BLOG_WORDS_ERROR) {
+      errors.push({ file: 'blog', slug: label, rule: 'word-count', detail: `${wordCount} words — minimum is ${BLOG_WORDS_ERROR} (thin content)` });
+    } else if (wordCount < BLOG_WORDS_WARN) {
+      warnings.push({ file: 'blog', slug: label, rule: 'word-count', detail: `${wordCount} words — recommended minimum is ${BLOG_WORDS_WARN} for ranking` });
+    }
+
+    // H1 presence and uniqueness
+    const h1Matches = body.match(/^# .+/gm) ?? [];
+    if (h1Matches.length === 0) {
+      errors.push({ file: 'blog', slug: label, rule: 'h1-missing', detail: 'No H1 heading found (# Heading)' });
+    } else if (h1Matches.length > 1) {
+      errors.push({ file: 'blog', slug: label, rule: 'h1-multiple', detail: `${h1Matches.length} H1 headings found — should have exactly one` });
+    }
+
+    // H2 presence (structure warning)
+    const h2Count = (body.match(/^## .+/gm) ?? []).length;
+    if (h2Count === 0) {
+      warnings.push({ file: 'blog', slug: label, rule: 'h2-missing', detail: 'No H2 headings (## Heading) — poor content structure for SEO' });
+    }
+
+    // Tags
+    const tagsValue = meta.tags ?? '';
+    if (!tagsValue || tagsValue === '[]') {
+      warnings.push({ file: 'blog', slug: label, rule: 'tags-missing', detail: 'No tags defined — add tags for content discovery' });
+    }
+  }
+
+  return { errors, warnings };
+}
+
+// ─── Main ─────────────────────────────────────────────────────────────────────
 
 function validate(): void {
   const errors: IIssue[] = [];
@@ -159,6 +297,11 @@ function validate(): void {
       }
     }
   }
+
+  // Blog MDX validation
+  const blog = validateBlogMdx();
+  errors.push(...blog.errors);
+  warnings.push(...blog.warnings);
 
   const hasErrors = errors.length > 0;
 

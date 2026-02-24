@@ -124,4 +124,5 @@ export const PUBLIC_API_ROUTES = [
   '/api/support/*', // Support contact form (public, uses validation and rate limiting)
   '/api/gsc/callback', // Google OAuth callback (uses state param + project lookup for auth)
   '/api/feeds/*', // RSS feeds (public, uses feed token auth)
+  '/api/seo/*', // SEO tools - IndexNow uses x-cron-secret auth
 ] as const;

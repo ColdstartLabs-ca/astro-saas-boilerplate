@@ -241,6 +241,13 @@ const serverEnvSchema = z.object({
   // Google Search Console OAuth flow (CSRF protection). Falls back to CRON_SECRET.
   // Generate with: openssl rand -hex 32
   GSC_STATE_SECRET: z.string().default(''),
+
+  // ==========================================
+  // SEO
+  // ==========================================
+  // IndexNow key for instant URL submission to search engines
+  // Generate with: tsx scripts/create-indexnow-keyfile.ts --generate
+  INDEXNOW_KEY: z.string().default(''),
 });
 
 export type IServerEnv = z.infer<typeof serverEnvSchema>;
@@ -345,6 +352,8 @@ function loadServerEnv(): IServerEnv {
       metaEnv.GOOGLE_OAUTH_CLIENT_SECRET || processEnv.GOOGLE_OAUTH_CLIENT_SECRET || '',
     // GSC OAuth state signing (separate from CRON_SECRET for security)
     GSC_STATE_SECRET: metaEnv.GSC_STATE_SECRET || processEnv.GSC_STATE_SECRET || '',
+    // IndexNow
+    INDEXNOW_KEY: metaEnv.INDEXNOW_KEY || processEnv.INDEXNOW_KEY || '',
   };
 
   return serverEnvSchema.parse(env);
