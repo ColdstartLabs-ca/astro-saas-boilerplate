@@ -431,8 +431,9 @@ export const onRequest = defineMiddleware(async (context, next) => {
   // Handle locale routing
   const detectedLocale = detectLocale(request, cookies);
 
-  // For root path, check auth and redirect to dashboard if authenticated
-  const isRootPath = pathname === '/';
+  // For root path (/ or /{locale}/), check auth and redirect to dashboard if authenticated
+  const pathLocalePrefix = getLocaleFromPath(pathname);
+  const isRootPath = pathname === '/' || (pathLocalePrefix !== null && pathname.replace(`/${pathLocalePrefix}`, '') === '') || (pathLocalePrefix !== null && pathname.replace(`/${pathLocalePrefix}`, '') === '/');
   if (isRootPath) {
     const isTestEnv = serverEnv.ENV === 'test';
     const hasTestHeader =
@@ -444,7 +445,11 @@ export const onRequest = defineMiddleware(async (context, next) => {
       if (user) {
         const loginRequired = url.searchParams.get('login');
         if (!loginRequired) {
-          const dashboardUrl = new URL('/dashboard', url);
+          // Redirect to locale-prefixed dashboard if non-default locale
+          const dashboardPath = detectedLocale !== DEFAULT_LOCALE
+            ? `/${detectedLocale}/dashboard`
+            : '/dashboard';
+          const dashboardUrl = new URL(dashboardPath, url);
           dashboardUrl.searchParams.delete('login');
           dashboardUrl.searchParams.delete('next');
           return new Response(null, {

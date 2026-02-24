@@ -59,9 +59,14 @@ export default defineConfig({
   i18n: {
     defaultLocale: DEFAULT_LOCALE,
     locales: SUPPORTED_LOCALES,
+    fallback: {
+      'pt-BR': 'en',
+    },
     routing: {
       // Don't prefix default locale (en) in URLs
       prefixDefaultLocale: false,
+      // Serve fallback content at the locale URL (no redirect)
+      fallbackType: 'rewrite',
     },
   },
   vite: {
