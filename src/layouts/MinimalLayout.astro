@@ -1,0 +1,32 @@
+---
+import '@client/styles/index.css';
+import { LocaleInit } from '@client/components/i18n/LocaleInit';
+import { type Locale } from '../../i18n/config';
+
+interface IProps {
+  title?: string;
+}
+
+const { title = 'AutopilotRank' } = Astro.props;
+const currentLocale = Astro.currentLocale || 'en';
+---
+
+<!DOCTYPE html>
+<html lang={currentLocale} class="bg-base">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>{title}</title>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700;800&family=Inter:wght@300;400;500;600;700;800&display=swap"
+    />
+  </head>
+  <body class="font-sans antialiased">
+    <LocaleInit locale={currentLocale as Locale} client:load />
+    <slot />
+  </body>
+</html>

@@ -1,7 +1,8 @@
 ---
-// Auth confirm page - handles email confirmation tokens
-// This must be a React-only client component due to heavy use of React hooks
+import MinimalLayout from '../../layouts/MinimalLayout.astro';
 import AuthConfirmClient from '@client/components/pages/AuthConfirmClient';
 ---
 
-<AuthConfirmClient client:only="react" />
+<MinimalLayout title="Confirming...">
+  <AuthConfirmClient client:only="react" />
+</MinimalLayout>

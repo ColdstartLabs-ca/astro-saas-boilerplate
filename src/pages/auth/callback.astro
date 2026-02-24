@@ -1,7 +1,8 @@
 ---
-// Auth callback page - handles OAuth redirects from Supabase
-// This must be a React-only client component due to heavy use of React hooks
+import MinimalLayout from '../../layouts/MinimalLayout.astro';
 import AuthCallbackClient from '@client/components/pages/AuthCallbackClient';
 ---
 
-<AuthCallbackClient client:only="react" />
+<MinimalLayout title="Signing in...">
+  <AuthCallbackClient client:only="react" />
+</MinimalLayout>
