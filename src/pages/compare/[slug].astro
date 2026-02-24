@@ -11,6 +11,7 @@ import SEO from '../../components/SEO.astro';
 import ComparisonTable from '../../components/pseo/ComparisonTable.astro';
 import FAQ from '../../components/pseo/FAQ.astro';
 import CTASection from '../../components/pseo/CTASection.astro';
+import CrossCategoryLinks from '../../components/pseo/CrossCategoryLinks.astro';
 import {
   getComparisonBySlug,
   getAllComparisonSlugs,
@@ -322,6 +323,9 @@ const pageUrl = `/compare/${page.slug}`;
         </div>
       </section>
     )}
+
+    <!-- Cross-Category Internal Links -->
+    <CrossCategoryLinks currentCategory="comparison" />
 
     <!-- Last Updated -->
     <div class="max-w-5xl mx-auto px-4 py-6 text-center text-sm text-muted-foreground">

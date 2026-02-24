@@ -22,6 +22,7 @@ interface IFeatureSection {
   bullets: string[];
   screenshotAlt: string;
   reversed?: boolean;
+  learnMoreSlug?: string;
 }
 
 const featureSections: IFeatureSection[] = [
@@ -55,6 +56,7 @@ const featureSections: IFeatureSection[] = [
     ],
     screenshotAlt: 'Humanizer processing view showing before/after AI detection score',
     reversed: true,
+    learnMoreSlug: 'humanizer',
   },
   {
     id: 'cms-publishing',
@@ -71,6 +73,7 @@ const featureSections: IFeatureSection[] = [
       'Webflow support coming soon',
     ],
     screenshotAlt: 'One-click WordPress publish button on article review screen',
+    learnMoreSlug: 'auto-publishing',
   },
   {
     id: 'campaign-scheduling',
@@ -87,6 +90,7 @@ const featureSections: IFeatureSection[] = [
     ],
     screenshotAlt: 'Campaign schedule configuration showing frequency options and next run time',
     reversed: true,
+    learnMoreSlug: 'auto-publishing',
   },
   {
     id: 'credits',
@@ -118,6 +122,7 @@ const featureSections: IFeatureSection[] = [
     ],
     screenshotAlt: 'Keyword import screen with CSV upload and Google Search Console connection',
     reversed: true,
+    learnMoreSlug: 'keyword-research',
   },
   {
     id: 'seo-optimization',
@@ -134,6 +139,7 @@ const featureSections: IFeatureSection[] = [
     ],
     screenshotAlt:
       'SEO panel showing meta title, description, heading structure, and internal links',
+    learnMoreSlug: 'content-quality',
   },
 ];
 
@@ -240,6 +246,15 @@ export default function FeaturesPageClient(): React.ReactElement {
                     </li>
                   ))}
                 </ul>
+                {feature.learnMoreSlug && (
+                  <a
+                    href={`/features/${feature.learnMoreSlug}`}
+                    className="inline-flex items-center gap-1.5 mt-6 text-sm font-medium text-accent hover:text-accent-hover transition-colors"
+                  >
+                    Learn more about this feature
+                    <ChevronRight className="w-3.5 h-3.5" />
+                  </a>
+                )}
               </div>
 
               {/* Screenshot placeholder */}

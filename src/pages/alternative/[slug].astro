@@ -9,6 +9,7 @@
 import Layout from '../../layouts/Layout.astro';
 import SEO from '../../components/SEO.astro';
 import ComparisonTable from '../../components/pseo/ComparisonTable.astro';
+import CrossCategoryLinks from '../../components/pseo/CrossCategoryLinks.astro';
 import {
   getAlternativeBySlug,
   getAllAlternativeSlugs,
@@ -256,6 +257,9 @@ const pageUrl = `/alternative/${page.slug}`;
         </div>
       </section>
     )}
+
+    <!-- Cross-Category Internal Links -->
+    <CrossCategoryLinks currentCategory="alternative" />
 
     <!-- Last Updated -->
     <div class="max-w-5xl mx-auto px-4 py-6 text-center text-sm text-muted-foreground">

@@ -12,6 +12,9 @@ import { TitleTagTool } from './TitleTagTool';
 import { SeoRoiCalculator } from './SeoRoiCalculator';
 import { ReadingLevelChecker } from './ReadingLevelChecker';
 import { ContentLengthAnalyzer } from './ContentLengthAnalyzer';
+import { BlogKeywordGeneratorTool } from './BlogKeywordGeneratorTool';
+import { SeoTitleGeneratorTool } from './SeoTitleGeneratorTool';
+import { ContentBriefGeneratorTool } from './ContentBriefGeneratorTool';
 
 export const toolRegistry: Record<string, ComponentType<{ className?: string }>> = {
   KeywordDensityTool,
@@ -20,4 +23,7 @@ export const toolRegistry: Record<string, ComponentType<{ className?: string }>>
   SeoRoiCalculator,
   ReadingLevelChecker,
   ContentLengthAnalyzer,
+  BlogKeywordGeneratorTool,
+  SeoTitleGeneratorTool,
+  ContentBriefGeneratorTool,
 };

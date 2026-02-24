@@ -18,9 +18,11 @@ export const GET: APIRoute = () => {
     '/sitemap-comparisons.xml',
     '/sitemap-alternatives.xml',
     '/sitemap-use-cases.xml',
+    '/sitemap-geo.xml',
+    '/sitemap-features.xml',
   ];
 
-  const now = new Date().toISOString();
+  const lastmod = '2026-02-23';
 
   const xml = `<?xml version="1.0" encoding="UTF-8"?>
 <sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
@@ -28,7 +30,7 @@ ${sitemaps
   .map(
     sitemap => `  <sitemap>
     <loc>${BASE_URL}${sitemap}</loc>
-    <lastmod>${now}</lastmod>
+    <lastmod>${lastmod}</lastmod>
   </sitemap>`
   )
   .join('\n')}

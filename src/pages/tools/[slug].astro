@@ -94,6 +94,19 @@ const breadcrumbJsonLd = {
   ],
 };
 
+const howToJsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'HowTo',
+  name: `How to Use ${page.toolName}`,
+  description: page.toolDescription,
+  step: page.howToUse.map((step, index) => ({
+    '@type': 'HowToStep',
+    position: index + 1,
+    name: step,
+    text: step,
+  })),
+};
+
 const pageUrl = `/tools/${page.slug}`;
 ---
 
@@ -111,6 +124,7 @@ const pageUrl = `/tools/${page.slug}`;
     <script type="application/ld+json" set:html={JSON.stringify(webAppJsonLd)} />
     <script type="application/ld+json" set:html={JSON.stringify(faqJsonLd)} />
     <script type="application/ld+json" set:html={JSON.stringify(breadcrumbJsonLd)} />
+    <script type="application/ld+json" set:html={JSON.stringify(howToJsonLd)} />
   </Fragment>
 
   <div class="min-h-screen bg-main">

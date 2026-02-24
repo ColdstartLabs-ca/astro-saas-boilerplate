@@ -15,14 +15,14 @@ const BASE_URL = `https://${clientEnv.PRIMARY_DOMAIN}`;
  * These are the main localized pages
  */
 const localizablePages = [
-  { path: '/', priority: '1.0', changefreq: 'daily' },
-  { path: '/pricing', priority: '0.9', changefreq: 'weekly' },
-  { path: '/features', priority: '0.85', changefreq: 'weekly' },
-  { path: '/how-it-works', priority: '0.85', changefreq: 'weekly' },
-  { path: '/blog', priority: '0.8', changefreq: 'daily' },
-  { path: '/help', priority: '0.6', changefreq: 'monthly' },
-  { path: '/privacy', priority: '0.3', changefreq: 'yearly' },
-  { path: '/terms', priority: '0.3', changefreq: 'yearly' },
+  { path: '/', priority: '1.0', changefreq: 'daily', lastmod: '2026-02-20' },
+  { path: '/pricing', priority: '0.9', changefreq: 'weekly', lastmod: '2026-02-15' },
+  { path: '/features', priority: '0.85', changefreq: 'weekly', lastmod: '2026-02-15' },
+  { path: '/how-it-works', priority: '0.85', changefreq: 'weekly', lastmod: '2026-02-15' },
+  { path: '/blog', priority: '0.8', changefreq: 'daily', lastmod: '2026-02-23' },
+  { path: '/help', priority: '0.6', changefreq: 'monthly', lastmod: '2026-01-15' },
+  { path: '/privacy', priority: '0.3', changefreq: 'yearly', lastmod: '2026-01-01' },
+  { path: '/terms', priority: '0.3', changefreq: 'yearly', lastmod: '2026-01-01' },
 ];
 
 /**
@@ -30,12 +30,17 @@ const localizablePages = [
  * These don't get locale variants
  */
 const englishOnlyPages = [
-  { path: '/alternative', priority: '0.8', changefreq: 'weekly' },
-  { path: '/compare', priority: '0.8', changefreq: 'weekly' },
-  { path: '/use-cases', priority: '0.8', changefreq: 'weekly' },
-  { path: '/tools', priority: '0.8', changefreq: 'weekly' },
-  { path: '/resources', priority: '0.7', changefreq: 'weekly' },
-  { path: '/resources/best-ai-seo-tools-2026', priority: '0.8', changefreq: 'monthly' },
+  { path: '/alternative', priority: '0.8', changefreq: 'weekly', lastmod: '2026-02-17' },
+  { path: '/compare', priority: '0.8', changefreq: 'weekly', lastmod: '2026-02-17' },
+  { path: '/use-cases', priority: '0.8', changefreq: 'weekly', lastmod: '2026-02-17' },
+  { path: '/tools', priority: '0.8', changefreq: 'weekly', lastmod: '2026-02-13' },
+  { path: '/resources', priority: '0.7', changefreq: 'weekly', lastmod: '2026-02-01' },
+  {
+    path: '/resources/best-ai-seo-tools-2026',
+    priority: '0.8',
+    changefreq: 'monthly',
+    lastmod: '2026-02-01',
+  },
 ];
 
 /**
@@ -83,12 +88,10 @@ ${hreflangLinks}
 }
 
 export const GET: APIRoute = () => {
-  const lastmod = new Date().toISOString();
-
   // Generate localized page entries
   const localizedUrls = localizablePages.flatMap(page =>
     SUPPORTED_LOCALES.map(locale =>
-      generateUrlEntry(page.path, page.priority, page.changefreq, locale, lastmod)
+      generateUrlEntry(page.path, page.priority, page.changefreq, locale, page.lastmod)
     )
   );
 
@@ -96,7 +99,7 @@ export const GET: APIRoute = () => {
   const englishUrls = englishOnlyPages.map(
     page => `  <url>
     <loc>${BASE_URL}${page.path}</loc>
-    <lastmod>${lastmod}</lastmod>
+    <lastmod>${page.lastmod}</lastmod>
     <changefreq>${page.changefreq}</changefreq>
     <priority>${page.priority}</priority>
   </url>`

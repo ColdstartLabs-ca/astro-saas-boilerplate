@@ -182,3 +182,31 @@ export interface IGeoPageMeta {
   topic: string;
   lastUpdated: string;
 }
+
+/** Feature page data */
+export interface IFeaturePage extends IPseoBase {
+  featureName: string;
+  heroSubtitle: string;
+  howItWorks: Array<{ step: number; title: string; description: string }>;
+  benefits: Array<{ title: string; description: string }>;
+  planAvailability: Array<{ plan: string; included: boolean; note?: string }>;
+  featureComparison: Array<{
+    feature: string;
+    us: boolean | string;
+    outrank: boolean | string;
+    rankyak: boolean | string;
+  }>;
+  faqs: IFaqItem[];
+  relatedFeatures: string[]; // slugs
+}
+
+/** Feature page metadata (for listing) */
+export interface IFeaturePageMeta {
+  slug: string;
+  title: string;
+  metaTitle: string;
+  metaDescription: string;
+  h1: string;
+  featureName: string;
+  lastUpdated: string;
+}

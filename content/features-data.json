@@ -1,0 +1,472 @@
+{
+  "pages": [
+    {
+      "slug": "auto-publishing",
+      "title": "Auto-Publish SEO Content to WordPress",
+      "metaTitle": "Auto-Publish SEO Content to WordPress | AutopilotRank",
+      "metaDescription": "Automatically publish AI-generated SEO articles to WordPress on a schedule. Connect in 2 minutes, drip-feed or batch publish. 6 CMS integrations. From $49/mo.",
+      "h1": "Auto-Publish SEO Content to Your CMS",
+      "heroSubtitle": "Connect your WordPress, Webflow, Shopify, Ghost, or Notion site and publish SEO content on autopilot. Drip-feed or batch — your choice.",
+      "primaryKeyword": "auto publish WordPress",
+      "secondaryKeywords": [
+        "auto publish blog posts",
+        "WordPress auto-publishing",
+        "scheduled content publishing",
+        "automatic blog posting"
+      ],
+      "lastUpdated": "2026-02-23",
+      "featureName": "Auto-Publishing",
+      "howItWorks": [
+        {
+          "step": 1,
+          "title": "Connect Your CMS",
+          "description": "Connect WordPress, Webflow, Shopify, Ghost, Notion, or any platform via webhook in under 2 minutes."
+        },
+        {
+          "step": 2,
+          "title": "Generate Content",
+          "description": "AutopilotRank's multi-model AI generates SEO-optimized articles targeting your keywords."
+        },
+        {
+          "step": 3,
+          "title": "Set Your Schedule",
+          "description": "Choose drip-feed publishing (1 article per day) or batch publish. Set timezone and publishing time."
+        },
+        {
+          "step": 4,
+          "title": "Publish on Autopilot",
+          "description": "Articles are automatically published with categories, tags, featured images, and proper metadata."
+        }
+      ],
+      "benefits": [
+        {
+          "title": "6 CMS Integrations",
+          "description": "Native adapters for WordPress, Webflow, Shopify, Ghost, Notion, and custom webhooks."
+        },
+        {
+          "title": "Scheduled Drip-Feed",
+          "description": "Publish one article per day automatically — consistent content signals to Google without manual effort."
+        },
+        {
+          "title": "Batch Publishing",
+          "description": "Publish multiple articles at once for faster content builds and programmatic SEO campaigns."
+        },
+        {
+          "title": "Zero Manual Work",
+          "description": "Once set up, your campaign publishes indefinitely. No logins, no copy-pasting, no scheduling."
+        }
+      ],
+      "planAvailability": [
+        { "plan": "starter", "included": true, "note": "1 CMS site" },
+        { "plan": "growth", "included": true, "note": "3 CMS sites" },
+        { "plan": "agency", "included": true, "note": "Unlimited CMS sites" }
+      ],
+      "featureComparison": [
+        { "feature": "WordPress Publishing", "us": true, "outrank": true, "rankyak": true },
+        { "feature": "Webflow Publishing", "us": true, "outrank": false, "rankyak": true },
+        { "feature": "Shopify Publishing", "us": true, "outrank": false, "rankyak": true },
+        { "feature": "Ghost Publishing", "us": true, "outrank": false, "rankyak": false },
+        { "feature": "Notion Publishing", "us": true, "outrank": false, "rankyak": false },
+        { "feature": "Scheduled Publishing", "us": true, "outrank": true, "rankyak": true },
+        { "feature": "Drip-Feed Mode", "us": true, "outrank": true, "rankyak": false },
+        { "feature": "Starting Price", "us": "$49/mo", "outrank": "$99/mo", "rankyak": "$99/mo" }
+      ],
+      "faqs": [
+        {
+          "question": "Which CMS platforms does AutopilotRank support?",
+          "answer": "AutopilotRank supports WordPress, Webflow, Shopify, Ghost, Notion, and any platform via custom webhooks."
+        },
+        {
+          "question": "How do I auto-publish to WordPress?",
+          "answer": "Connect your WordPress site using your site URL and application password. AutopilotRank handles publishing categories, tags, featured images, and scheduling automatically."
+        },
+        {
+          "question": "Can I control when articles are published?",
+          "answer": "Yes. Choose drip-feed mode (1 article per day at a set time) or batch mode to publish multiple articles at once. You can set the timezone and exact time."
+        },
+        {
+          "question": "What happens if publishing fails?",
+          "answer": "AutopilotRank retries failed publications automatically and notifies you if persistent errors occur."
+        },
+        {
+          "question": "How many CMS sites can I connect?",
+          "answer": "Starter plan: 1 site. Growth plan: 3 sites. Agency plan: unlimited sites."
+        }
+      ],
+      "relatedFeatures": ["keyword-research", "gsc-integration"]
+    },
+    {
+      "slug": "humanizer",
+      "title": "AI Content Humanizer — Undetectable AI Writing",
+      "metaTitle": "AI Content Humanizer — Undetectable AI | AutopilotRank",
+      "metaDescription": "Built-in AI humanizer makes AI content pass detection tools. Anti-AI writing patterns baked into every generation. No extra tools needed. From $49/mo.",
+      "h1": "AI Content Humanizer: Write Like a Human, Scale Like a Machine",
+      "heroSubtitle": "AutopilotRank's built-in humanizer engine removes AI tells, avoids forbidden patterns, and produces content that reads naturally — passing AI detection tools without manual editing.",
+      "primaryKeyword": "AI content humanizer",
+      "secondaryKeywords": [
+        "humanize AI content",
+        "make AI content undetectable",
+        "humanized AI writing",
+        "AI detection bypass for SEO"
+      ],
+      "lastUpdated": "2026-02-23",
+      "featureName": "Humanizer Engine",
+      "howItWorks": [
+        {
+          "step": 1,
+          "title": "Anti-AI Writing Rules Applied",
+          "description": "Every generation uses a comprehensive set of anti-AI writing patterns based on Wikipedia's 'Signs of AI writing' guide — forbidden words, forbidden phrases, structural anti-patterns."
+        },
+        {
+          "step": 2,
+          "title": "Natural Sentence Variation",
+          "description": "The humanizer enforces varied sentence lengths, avoids repetitive structures, and introduces natural transitions that AI typically omits."
+        },
+        {
+          "step": 3,
+          "title": "Forbidden Word Filtering",
+          "description": "A curated list of AI-typical words (e.g., 'delve', 'leverage', 'cutting-edge', 'robust') is blocked at the prompt level — they never appear in output."
+        },
+        {
+          "step": 4,
+          "title": "Publish Ready",
+          "description": "Content is generated human-quality from the start. No post-processing or manual editing required."
+        }
+      ],
+      "benefits": [
+        {
+          "title": "No Extra Tools Needed",
+          "description": "Unlike competitors, AutopilotRank's humanizer is built-in. No separate Undetectable.ai or similar subscription required."
+        },
+        {
+          "title": "Based on Wikipedia Guidelines",
+          "description": "Our anti-AI patterns are derived from Wikipedia's documented 'Signs of AI writing' — a trusted, evidence-based source."
+        },
+        {
+          "title": "Zero Editing Required",
+          "description": "Content passes AI detection and reads naturally without any manual editing or post-processing."
+        },
+        {
+          "title": "Works Across All Models",
+          "description": "The humanizer applies to content from GPT-4o, Claude Sonnet, and Gemini Flash — consistent quality regardless of model."
+        }
+      ],
+      "planAvailability": [
+        { "plan": "starter", "included": true, "note": "Humanizer engine included" },
+        { "plan": "growth", "included": true, "note": "Advanced humanizer" },
+        { "plan": "agency", "included": true, "note": "Advanced humanizer" }
+      ],
+      "featureComparison": [
+        { "feature": "Built-in Humanizer", "us": true, "outrank": false, "rankyak": false },
+        { "feature": "AI Detection Scoring", "us": true, "outrank": false, "rankyak": false },
+        { "feature": "Forbidden Word Filter", "us": true, "outrank": false, "rankyak": false },
+        { "feature": "Multi-Model Support", "us": true, "outrank": false, "rankyak": false },
+        { "feature": "Starting Price", "us": "$49/mo", "outrank": "$99/mo", "rankyak": "$99/mo" }
+      ],
+      "faqs": [
+        {
+          "question": "What is an AI content humanizer?",
+          "answer": "An AI content humanizer transforms AI-generated text to sound more natural and human-written, avoiding patterns that AI detection tools flag."
+        },
+        {
+          "question": "Does AutopilotRank's humanizer work with all AI models?",
+          "answer": "Yes. The humanizer applies to all supported models: GPT-4o, Claude Sonnet, and Gemini Flash."
+        },
+        {
+          "question": "Do I need a separate tool to humanize content?",
+          "answer": "No. The humanizer is built directly into AutopilotRank's generation pipeline. There's no need for separate tools like Undetectable.ai."
+        },
+        {
+          "question": "How does the humanizer avoid AI detection?",
+          "answer": "It uses a comprehensive system prompt that enforces natural writing patterns, blocks AI-typical words, varies sentence structure, and avoids repetitive phrasing."
+        },
+        {
+          "question": "Is the humanizer available on all plans?",
+          "answer": "Yes, the humanizer is included on all paid plans. Growth and Agency plans include advanced humanizer settings."
+        }
+      ],
+      "relatedFeatures": ["content-quality", "keyword-research"]
+    },
+    {
+      "slug": "gsc-integration",
+      "title": "Google Search Console Integration for Automated SEO",
+      "metaTitle": "GSC Integration for Automated SEO | AutopilotRank",
+      "metaDescription": "Connect GSC to find content gaps, track rankings, and auto-generate articles from real search data. Data-driven SEO automation. Growth plan and above.",
+      "h1": "Google Search Console Integration: Data-Driven SEO Automation",
+      "heroSubtitle": "Connect your Google Search Console and AutopilotRank automatically surfaces your best keyword opportunities — then generates and publishes articles targeting them.",
+      "primaryKeyword": "Google Search Console integration",
+      "secondaryKeywords": [
+        "GSC SEO tool",
+        "automated GSC analysis",
+        "search console automation",
+        "GSC data for content"
+      ],
+      "lastUpdated": "2026-02-23",
+      "featureName": "GSC Integration",
+      "howItWorks": [
+        {
+          "step": 1,
+          "title": "Connect GSC via OAuth",
+          "description": "Authorize AutopilotRank to read your Google Search Console data via secure OAuth. No API keys or manual setup."
+        },
+        {
+          "step": 2,
+          "title": "Opportunity Analysis",
+          "description": "AutopilotRank analyzes your GSC data to find keywords where you get impressions but few clicks — high-opportunity content gaps."
+        },
+        {
+          "step": 3,
+          "title": "Keyword Prioritization",
+          "description": "Opportunities are ranked by search volume, competition level, and your site's current performance. The best opportunities surface first."
+        },
+        {
+          "step": 4,
+          "title": "Auto-Generate Content",
+          "description": "Approve opportunities and AutopilotRank generates targeted articles, then publishes them to your CMS automatically."
+        }
+      ],
+      "benefits": [
+        {
+          "title": "Data-Driven Keyword Selection",
+          "description": "Stop guessing what to write. Use your own GSC data to find keywords your site is already being shown for but not ranking for."
+        },
+        {
+          "title": "Automatic Opportunity Discovery",
+          "description": "AutopilotRank continuously analyzes your GSC data and surfaces new opportunities as your site grows."
+        },
+        {
+          "title": "Performance Tracking",
+          "description": "Track how articles perform over time using GSC data — impressions, clicks, and ranking position improvements."
+        },
+        {
+          "title": "Unique to AutopilotRank",
+          "description": "Most AI SEO tools lack native GSC integration. AutopilotRank is one of the few platforms that closes the loop from data to published content."
+        }
+      ],
+      "planAvailability": [
+        { "plan": "starter", "included": false, "note": "Not included" },
+        { "plan": "growth", "included": true, "note": "GSC integration included" },
+        { "plan": "agency", "included": true, "note": "GSC integration included" }
+      ],
+      "featureComparison": [
+        { "feature": "GSC Integration", "us": true, "outrank": false, "rankyak": false },
+        { "feature": "Keyword Gap Analysis", "us": true, "outrank": false, "rankyak": false },
+        { "feature": "Performance Tracking", "us": true, "outrank": false, "rankyak": true },
+        { "feature": "Auto-Generate from Data", "us": true, "outrank": false, "rankyak": false },
+        {
+          "feature": "Starting Price",
+          "us": "$99/mo (Growth)",
+          "outrank": "$99/mo",
+          "rankyak": "$99/mo"
+        }
+      ],
+      "faqs": [
+        {
+          "question": "How do I connect Google Search Console to AutopilotRank?",
+          "answer": "Go to Integrations in your dashboard, click 'Connect GSC', and authorize via Google OAuth. Your data syncs automatically."
+        },
+        {
+          "question": "What data does AutopilotRank use from GSC?",
+          "answer": "AutopilotRank reads search queries, impressions, clicks, and average positions to identify keyword opportunities for new content."
+        },
+        {
+          "question": "Which plans include GSC integration?",
+          "answer": "GSC integration is available on the Growth plan ($99/mo) and Agency plan ($249/mo)."
+        },
+        {
+          "question": "How does AutopilotRank find content opportunities from GSC data?",
+          "answer": "It identifies keywords where your site appears in search results (impressions) but isn't getting many clicks — indicating content gaps where a targeted article could win clicks."
+        },
+        {
+          "question": "Is my Google Search Console data secure?",
+          "answer": "Yes. AutopilotRank uses read-only OAuth access and never stores your Google credentials."
+        }
+      ],
+      "relatedFeatures": ["auto-publishing", "keyword-research"]
+    },
+    {
+      "slug": "keyword-research",
+      "title": "Automated Keyword Research & AI Content Generation",
+      "metaTitle": "AI Keyword Research & Content Generation | AutopilotRank",
+      "metaDescription": "Upload keywords via CSV, let AI generate SEO-optimized articles automatically. Multi-model engine (GPT-4, Claude, Gemini) for variety and quality. From $49/mo.",
+      "h1": "Automated Keyword Research & AI Content Generation",
+      "heroSubtitle": "Upload your keyword list and let AutopilotRank's multi-model AI engine generate publish-ready SEO articles — in bulk, on schedule, on autopilot.",
+      "primaryKeyword": "automated keyword research",
+      "secondaryKeywords": [
+        "AI SEO content generation",
+        "AI article generator",
+        "bulk content generation",
+        "programmatic SEO tool"
+      ],
+      "lastUpdated": "2026-02-23",
+      "featureName": "Keyword Research & Content Generation",
+      "howItWorks": [
+        {
+          "step": 1,
+          "title": "Add Your Keywords",
+          "description": "Upload a CSV or Excel file with your target keywords, or enter them manually. Organize into campaigns."
+        },
+        {
+          "step": 2,
+          "title": "Choose Your AI Model",
+          "description": "Select GPT-4o, Claude Sonnet, Gemini Flash, or let AutopilotRank automatically choose the best model per article."
+        },
+        {
+          "step": 3,
+          "title": "Generate at Scale",
+          "description": "Starter: up to 5 articles per batch. Growth: up to 25. Agency: up to 100. All with quality scoring and humanizer applied."
+        },
+        {
+          "step": 4,
+          "title": "Review & Publish",
+          "description": "Articles are scored for SEO, readability, and AI detection. Approve individually or auto-publish your entire campaign."
+        }
+      ],
+      "benefits": [
+        {
+          "title": "Multi-Model AI Engine",
+          "description": "Access GPT-4o, Claude Sonnet, and Gemini Flash through one platform — no separate API keys or subscriptions needed."
+        },
+        {
+          "title": "Bulk CSV Import",
+          "description": "Upload hundreds of keywords at once via CSV or Excel. AutopilotRank generates one article per keyword."
+        },
+        {
+          "title": "Campaign Organization",
+          "description": "Group keywords into campaigns by topic, site, or client. Manage everything from one dashboard."
+        },
+        {
+          "title": "Batch Limits Matched to Scale",
+          "description": "Generate 5 articles at once on Starter, 25 on Growth, or 100 on Agency — scale as your needs grow."
+        }
+      ],
+      "planAvailability": [
+        { "plan": "starter", "included": true, "note": "Batch of 5 articles" },
+        { "plan": "growth", "included": true, "note": "Batch of 25 articles" },
+        { "plan": "agency", "included": true, "note": "Batch of 100 articles" }
+      ],
+      "featureComparison": [
+        { "feature": "CSV Keyword Upload", "us": true, "outrank": false, "rankyak": false },
+        { "feature": "Multi-Model AI", "us": true, "outrank": false, "rankyak": false },
+        { "feature": "Bulk Generation", "us": true, "outrank": true, "rankyak": true },
+        { "feature": "Campaign Organization", "us": true, "outrank": true, "rankyak": true },
+        { "feature": "Starting Price", "us": "$49/mo", "outrank": "$99/mo", "rankyak": "$99/mo" }
+      ],
+      "faqs": [
+        {
+          "question": "Can I upload my own keyword list?",
+          "answer": "Yes. Upload keywords via CSV or Excel, or enter them manually. AutopilotRank generates one SEO-optimized article per keyword."
+        },
+        {
+          "question": "Which AI models does AutopilotRank use?",
+          "answer": "AutopilotRank supports GPT-4o, Claude Sonnet, and Gemini Flash. You can select a preferred model or let AutopilotRank choose automatically."
+        },
+        {
+          "question": "How many articles can I generate at once?",
+          "answer": "Starter: 5 articles per batch. Growth: 25 articles per batch. Agency: 100 articles per batch."
+        },
+        {
+          "question": "How is AI content generation different from keyword research tools?",
+          "answer": "AutopilotRank combines keyword targeting with AI article generation. You bring the keywords; AutopilotRank generates the articles. You can also use GSC integration to discover keywords automatically."
+        },
+        {
+          "question": "What does a generated article include?",
+          "answer": "Each article includes a title, meta description, structured H2/H3 sections, internal linking suggestions, and is scored for SEO quality and AI detection before publishing."
+        }
+      ],
+      "relatedFeatures": ["auto-publishing", "gsc-integration"]
+    },
+    {
+      "slug": "content-quality",
+      "title": "Pre-Publication QA & SEO Content Scoring",
+      "metaTitle": "Pre-Publication QA & SEO Content Scoring | AutopilotRank",
+      "metaDescription": "Every AI-generated article is scored for SEO, readability, and AI detection before publishing. Multi-layer QA catches issues automatically. From $49/mo.",
+      "h1": "Pre-Publication QA: Every Article Scored Before It Goes Live",
+      "heroSubtitle": "AutopilotRank's multi-layer quality assurance pipeline scores every generated article for SEO, readability, and AI detection — so only publish-ready content reaches your CMS.",
+      "primaryKeyword": "AI content quality scoring",
+      "secondaryKeywords": [
+        "pre-publication QA",
+        "AI detection scoring",
+        "SEO content optimization",
+        "content quality assurance"
+      ],
+      "lastUpdated": "2026-02-23",
+      "featureName": "Pre-Publication QA",
+      "howItWorks": [
+        {
+          "step": 1,
+          "title": "SEO Scoring",
+          "description": "Each article is scored for keyword density, title optimization, meta description quality, heading structure, and overall SEO signal strength."
+        },
+        {
+          "step": 2,
+          "title": "Readability Analysis",
+          "description": "Content is analyzed for readability: sentence length variety, paragraph structure, and reading level appropriateness for the target audience."
+        },
+        {
+          "step": 3,
+          "title": "AI Detection Check",
+          "description": "Articles are evaluated against known AI writing patterns. Content scoring below threshold triggers revision before delivery."
+        },
+        {
+          "step": 4,
+          "title": "Approve or Auto-Publish",
+          "description": "Review scores in your dashboard and approve manually, or set a quality threshold for automatic publishing of high-scoring articles."
+        }
+      ],
+      "benefits": [
+        {
+          "title": "Multi-Layer Validation",
+          "description": "SEO scoring, readability analysis, and AI detection checks all run automatically — no manual review needed."
+        },
+        {
+          "title": "Unique to AutopilotRank",
+          "description": "Most AI SEO tools have no pre-publication QA. AutopilotRank catches quality issues before they reach your site."
+        },
+        {
+          "title": "Configurable Thresholds",
+          "description": "Set minimum quality scores for auto-publishing. Articles below threshold are queued for review rather than published."
+        },
+        {
+          "title": "Quality at Scale",
+          "description": "Whether generating 1 or 100 articles, every piece goes through the same QA pipeline before publication."
+        }
+      ],
+      "planAvailability": [
+        { "plan": "starter", "included": true, "note": "Basic QA scoring" },
+        { "plan": "growth", "included": true, "note": "Full QA suite" },
+        { "plan": "agency", "included": true, "note": "Full QA suite" }
+      ],
+      "featureComparison": [
+        { "feature": "Pre-Publication QA", "us": true, "outrank": false, "rankyak": false },
+        { "feature": "AI Detection Scoring", "us": true, "outrank": false, "rankyak": false },
+        { "feature": "SEO Scoring", "us": true, "outrank": false, "rankyak": true },
+        { "feature": "Readability Analysis", "us": true, "outrank": false, "rankyak": false },
+        { "feature": "Starting Price", "us": "$49/mo", "outrank": "$99/mo", "rankyak": "$99/mo" }
+      ],
+      "faqs": [
+        {
+          "question": "What does pre-publication QA check?",
+          "answer": "AutopilotRank checks SEO quality (keyword density, title, meta description, heading structure), readability (sentence length, paragraph structure), and AI detection (known AI writing patterns)."
+        },
+        {
+          "question": "Can I set quality thresholds for auto-publishing?",
+          "answer": "Yes. Set a minimum quality score and AutopilotRank will only auto-publish articles that meet or exceed it. Lower-scoring articles are queued for manual review."
+        },
+        {
+          "question": "How is this different from competitors?",
+          "answer": "Most AI SEO tools have no QA pipeline. Outrank.so is known for publishing generic AI content without review. AutopilotRank adds a quality gate before anything reaches your site."
+        },
+        {
+          "question": "Is QA available on all plans?",
+          "answer": "Yes. Basic QA scoring is available on all paid plans. Full QA suite (including AI detection) is on Growth and Agency plans."
+        },
+        {
+          "question": "What happens if an article fails QA?",
+          "answer": "Articles below your quality threshold are placed in a review queue. You can edit, regenerate, or manually approve them before publishing."
+        }
+      ],
+      "relatedFeatures": ["humanizer", "auto-publishing"]
+    }
+  ]
+}

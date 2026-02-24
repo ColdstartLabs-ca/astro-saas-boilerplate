@@ -41,6 +41,8 @@ Sitemap: ${BASE_URL}/sitemap-alternatives.xml
 Sitemap: ${BASE_URL}/sitemap-comparisons.xml
 Sitemap: ${BASE_URL}/sitemap-use-cases.xml
 Sitemap: ${BASE_URL}/sitemap-tools.xml
+Sitemap: ${BASE_URL}/sitemap-geo.xml
+Sitemap: ${BASE_URL}/sitemap-features.xml
 
 # Host
 Host: ${BASE_URL}

@@ -17,7 +17,7 @@ export function FooterAstro(): JSX.Element {
   return (
     <footer className="bg-main text-text-muted mt-auto border-t border-border">
       <div className="max-w-[1600px] mx-auto px-6 py-20">
-        <div className="grid grid-cols-1 md:grid-cols-5 gap-12 mb-16">
+        <div className="grid grid-cols-1 md:grid-cols-6 gap-12 mb-16">
           {/* Company Info */}
           <div className="space-y-4">
             <a href="/">
@@ -40,8 +40,84 @@ export function FooterAstro(): JSX.Element {
                 </a>
               </li>
               <li>
+                <a href="/features" className="hover:text-accent transition-colors">
+                  Features
+                </a>
+              </li>
+              <li>
+                <a href="/features/auto-publishing" className="hover:text-accent transition-colors">
+                  Auto-Publishing
+                </a>
+              </li>
+              <li>
+                <a href="/features/humanizer" className="hover:text-accent transition-colors">
+                  AI Humanizer
+                </a>
+              </li>
+              <li>
+                <a href="/features/gsc-integration" className="hover:text-accent transition-colors">
+                  GSC Integration
+                </a>
+              </li>
+              <li>
+                <a
+                  href="/features/keyword-research"
+                  className="hover:text-accent transition-colors"
+                >
+                  Keyword Research
+                </a>
+              </li>
+              <li>
+                <a href="/features/content-quality" className="hover:text-accent transition-colors">
+                  Content QA
+                </a>
+              </li>
+              <li>
+                <a href="/how-it-works" className="hover:text-accent transition-colors">
+                  How It Works
+                </a>
+              </li>
+              <li>
                 <a href={localizedPath('/blog')} className="hover:text-accent transition-colors">
                   {t('latestUpdates')}
+                </a>
+              </li>
+            </ul>
+          </div>
+
+          {/* Free Tools */}
+          <div>
+            <h4 className="text-white font-bold mb-6 uppercase text-xs tracking-widest">
+              Free Tools
+            </h4>
+            <ul className="space-y-4 text-sm font-medium">
+              <li>
+                <a
+                  href="/tools/keyword-density-checker"
+                  className="hover:text-accent transition-colors"
+                >
+                  Keyword Density Checker
+                </a>
+              </li>
+              <li>
+                <a
+                  href="/tools/meta-description-validator"
+                  className="hover:text-accent transition-colors"
+                >
+                  Meta Description Validator
+                </a>
+              </li>
+              <li>
+                <a
+                  href="/tools/title-tag-optimizer"
+                  className="hover:text-accent transition-colors"
+                >
+                  Title Tag Optimizer
+                </a>
+              </li>
+              <li>
+                <a href="/geo" className="hover:text-accent transition-colors">
+                  GEO Guides
                 </a>
               </li>
             </ul>
@@ -54,8 +130,8 @@ export function FooterAstro(): JSX.Element {
             </h4>
             <ul className="space-y-4 text-sm font-medium">
               <li>
-                <a href="/alternative" className="hover:text-accent transition-colors">
-                  {t('alternatives')}
+                <a href={localizedPath('/blog')} className="hover:text-accent transition-colors">
+                  Blog
                 </a>
               </li>
               <li>
@@ -64,13 +140,13 @@ export function FooterAstro(): JSX.Element {
                 </a>
               </li>
               <li>
-                <a href="/use-cases" className="hover:text-accent transition-colors">
-                  {t('useCases')}
+                <a href="/alternative" className="hover:text-accent transition-colors">
+                  {t('alternatives')}
                 </a>
               </li>
               <li>
-                <a href="/tools" className="hover:text-accent transition-colors">
-                  {t('freeSeoTools')}
+                <a href="/use-cases" className="hover:text-accent transition-colors">
+                  {t('useCases')}
                 </a>
               </li>
             </ul>
