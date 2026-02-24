@@ -24,9 +24,9 @@
 - [ ] Welcome email received after confirmation
 - [x] Sign in with verified credentials → dashboard loads
 - [x] Sign in with wrong password → error shown, account NOT locked after 1 attempt
-- [ ] "Forgot password" → reset email received → link works → new password accepted
+- [x] "Forgot password" → reset email received → link works → new password accepted
 - [x] Sign out → session cleared, redirected to home
-- [ ] Expired session → redirected to login, not a blank/broken page
+- [x] Expired session → redirected to login, not a blank/broken page
 
 ### 1.2 Google OAuth
 
@@ -40,7 +40,7 @@
 
 - [x] Authenticated route `/dashboard` redirects to login when unauthenticated — **automated** `tests/e2e/protected-routes.e2e.spec.ts`
 - [ ] JWT token refreshes automatically (no silent logout during active use)
-- [ ] Accessing another user's resource returns 403, not 404 or 200
+- [x] Accessing another user's resource returns 403, not 404 or 200 — **automated** `tests/api/authorization.api.spec.ts`
 
 ---
 
@@ -76,25 +76,25 @@
 
 ### 3.1 Projects
 
-- [ ] Create project → appears in project list → `projects` row created
-- [ ] Edit project name/settings → changes saved
-- [ ] Delete project → associated campaigns and articles cascade-deleted
+- [x] Create project → appears in project list → `projects` row created — **automated** `tests/api/projects-campaigns.api.spec.ts`
+- [x] Edit project name/settings → changes saved — **automated** `tests/api/projects-campaigns.api.spec.ts`
+- [x] Delete project → associated campaigns and articles cascade-deleted — **automated** `tests/api/projects-campaigns.api.spec.ts`
 - [ ] Free / Starter users blocked from creating more than 1 project
 - [ ] Growth users can create up to 3 projects
 - [ ] Agency users can create unlimited projects
 
 ### 3.2 Campaigns
 
-- [ ] Create campaign inside a project → campaign appears in list
-- [ ] Edit campaign name / writer model / image model → changes saved
-- [ ] Delete campaign → keywords removed, articles remain
+- [x] Create campaign inside a project → campaign appears in list — **automated** `tests/api/projects-campaigns.api.spec.ts`
+- [x] Edit campaign name / writer model / image model → changes saved — **automated** `tests/api/projects-campaigns.api.spec.ts`
+- [x] Delete campaign → keywords removed, articles remain — **automated** `tests/api/projects-campaigns.api.spec.ts`
 - [ ] Campaign shows correct status: `draft`, `active`, `paused`, `completed`
 
 ### 3.3 Keywords
 
-- [ ] Add keywords one by one → each saved to `keywords` table
-- [ ] Bulk-add keywords (comma/newline separated) → all saved
-- [ ] Delete a keyword → removed from list
+- [x] Add keywords one by one → each saved to `keywords` table — **automated** `tests/api/projects-campaigns.api.spec.ts`
+- [x] Bulk-add keywords (comma/newline separated) → all saved — **automated** `tests/api/projects-campaigns.api.spec.ts`
+- [x] Delete a keyword → removed from list — **automated** `tests/api/projects-campaigns.api.spec.ts`
 - [ ] Duplicate keyword → rejected with validation error
 - [ ] Maximum keyword limit respected (if applicable)
 
@@ -154,20 +154,20 @@
 
 - [ ] Set schedule on campaign (daily/weekly frequency, time, timezone)
 - [ ] Schedule saved → campaign shows scheduled status
-- [ ] `POST /api/campaigns/[id]/start-schedule` returns 200
+- [x] `POST /api/campaigns/[id]/start-schedule` returns 200 — **automated** `tests/api/schedule.api.spec.ts`
 
 ### 5.2 Schedule Operations
 
-- [ ] Pause schedule → campaign moves to `paused`, cron skips it
-- [ ] Resume schedule → campaign active again, next run fires
+- [x] Pause schedule → campaign moves to `paused`, cron skips it — **automated** `tests/api/schedule.api.spec.ts`
+- [x] Resume schedule → campaign active again, next run fires — **automated** `tests/api/schedule.api.spec.ts`
 - [ ] Cancel schedule → schedule removed, campaign back to draft
 
 ### 5.3 Cron Execution
 
-- [ ] `POST /api/cron/process-scheduled-campaigns` (with valid `X-Cron-Secret`) returns 200
+- [x] `POST /api/cron/process-scheduled-campaigns` (with valid `X-Cron-Secret`) returns 200 — **automated** `tests/api/cron/cron-remaining.api.spec.ts`
 - [ ] Scheduled campaigns generate articles at correct time
 - [ ] Campaigns with 0 credits: auto-paused, user NOT silently failing
-- [ ] Stale `generating` articles (stuck) recovered by `POST /api/cron/recover-stale-articles`
+- [x] Stale `generating` articles (stuck) recovered by `POST /api/cron/recover-stale-articles` — **automated** `tests/api/cron/cron-remaining.api.spec.ts`
 
 ---
 
@@ -180,7 +180,7 @@
 - [ ] Add WordPress integration: enter site URL + Application Password → validate
 - [ ] Valid credentials → integration saved, status = `connected`
 - [ ] Invalid credentials → clear error message, nothing saved
-- [ ] `POST /api/integrations/validate` returns 200 on valid, 422 on invalid
+- [x] `POST /api/integrations/validate` returns 200 on valid, 422 on invalid — **automated** `tests/api/integrations.api.spec.ts`
 - [ ] Credentials stored encrypted (AES-256-GCM) in `integrations` table, never in plaintext
 
 ### 6.2 Test Connection
@@ -253,9 +253,9 @@
 
 ### 7.6 Credit History
 
-- [ ] `GET /api/credits/history` returns paginated transaction log
-- [ ] Each entry shows: amount, type, description, timestamp
-- [ ] Negative amounts for usage; positive for purchase/subscription/refund
+- [x] `GET /api/credits/history` returns paginated transaction log — **automated** `tests/api/credits.api.spec.ts`
+- [x] Each entry shows: amount, type, description, timestamp — **automated** `tests/api/credits.api.spec.ts`
+- [x] Negative amounts for usage; positive for purchase/subscription/refund — **automated** `tests/api/credits.api.spec.ts`
 
 ---
 
@@ -288,20 +288,20 @@
 
 ### 8.4 Stripe Customer Portal
 
-- [ ] `GET /api/portal` → redirect to Stripe-hosted portal
+- [x] `GET /api/portal` → redirect to Stripe-hosted portal — **automated** `tests/api/portal.api.spec.ts`
 - [ ] Portal shows: current plan, payment method, invoice history
 - [ ] Update payment method in portal → Stripe updates, dashboard reflects new method
 
 ### 8.5 Stripe Webhooks
 
-- [ ] `checkout.session.completed` → credits granted, subscription created
-- [ ] `customer.subscription.updated` → `subscriptions` table synced
-- [ ] `customer.subscription.deleted` → user moved to free tier
-- [ ] `invoice.paid` → monthly credits refreshed
-- [ ] `invoice.payment_failed` → subscription flagged, user notified by Stripe
-- [ ] Webhook signature validation passes (correct `STRIPE_WEBHOOK_SECRET`)
+- [x] `checkout.session.completed` → credits granted, subscription created — **automated** `tests/api/webhooks.api.spec.ts`
+- [x] `customer.subscription.updated` → `subscriptions` table synced — **automated** `tests/api/webhooks.api.spec.ts`
+- [x] `customer.subscription.deleted` → user moved to free tier — **automated** `tests/api/webhooks.api.spec.ts`
+- [x] `invoice.paid` → monthly credits refreshed — **automated** `tests/api/webhooks.api.spec.ts`
+- [x] `invoice.payment_failed` → subscription flagged, user notified by Stripe — **automated** `tests/api/webhooks.api.spec.ts`
+- [x] Webhook signature validation passes (correct `STRIPE_WEBHOOK_SECRET`) — **automated** `tests/api/webhooks.api.spec.ts`
 - [ ] Failed webhook replays succeed (idempotent handlers)
-- [ ] `POST /api/cron/recover-webhooks` reschedules any missed events
+- [x] `POST /api/cron/recover-webhooks` reschedules any missed events — **automated** `tests/api/cron/cron-remaining.api.spec.ts`
 
 ---
 
@@ -309,23 +309,23 @@
 
 ### 9.1 OAuth Connect
 
-- [ ] "Connect GSC" → initiates OAuth flow (`POST /api/gsc/connect`)
+- [x] "Connect GSC" → initiates OAuth flow (`POST /api/gsc/connect`) — **automated** `tests/api/gsc.api.spec.ts`
 - [ ] Google OAuth consent → redirects to `/api/gsc/callback`
 - [ ] Callback stores refresh token, connection appears in `gsc_connections`
 - [ ] Disconnect button removes connection
 
 ### 9.2 Site List
 
-- [ ] After connecting, `GET /api/gsc/connections/[id]/sites` returns verified sites
+- [x] After connecting, `GET /api/gsc/connections/[id]/sites` returns verified sites — **automated** `tests/api/gsc.api.spec.ts`
 - [ ] User selects site → saved as active site for opportunity analysis
 
 ### 9.3 Keyword Opportunities
 
-- [ ] `POST /api/opportunities/analyze` triggers GSC data fetch
+- [x] `POST /api/opportunities/analyze` triggers GSC data fetch — **automated** `tests/api/opportunities.api.spec.ts`
 - [ ] Opportunities appear in list (low-competition, position 4-20 keywords)
-- [ ] `POST /api/cron/analyze-opportunities` processes opportunities in background
+- [x] `POST /api/cron/analyze-opportunities` processes opportunities in background — **automated** `tests/api/cron/analyze-opportunities.api.spec.ts`
 - [ ] "Create Article" from opportunity → article generation starts
-- [ ] `POST /api/opportunities/[id]/create-article` returns article ID
+- [x] `POST /api/opportunities/[id]/create-article` returns article ID — **automated** `tests/api/opportunities.api.spec.ts`
 
 ---
 
@@ -362,39 +362,39 @@
 
 ### 11.2 API Keys
 
-- [ ] `GET /api/settings/api-keys` → existing keys listed
-- [ ] Generate new API key → key shown once, saved hashed
-- [ ] Revoke key → no longer usable
+- [x] `GET /api/settings/api-keys` → existing keys listed — **automated** `tests/api/settings.api.spec.ts`
+- [x] Generate new API key → key shown once, saved hashed — **automated** `tests/api/settings.api.spec.ts`
+- [x] Revoke key → no longer usable — **automated** `tests/api/settings.api.spec.ts`
 
 ### 11.3 RSS/Atom Feed
 
-- [ ] `GET /api/settings/feed/token` → generates feed token
-- [ ] `GET /api/feeds/[userId]/articles.xml` → valid XML feed of user's articles
-- [ ] Feed requires valid token (unauthorized access returns 401)
+- [x] `GET /api/settings/feed/token` → generates feed token — **automated** `tests/api/settings.api.spec.ts`
+- [x] `GET /api/feeds/[userId]/articles.xml` → valid XML feed of user's articles — **automated** `tests/api/settings.api.spec.ts`
+- [x] Feed requires valid token (unauthorized access returns 401) — **automated** `tests/api/settings.api.spec.ts`
 
 ### 11.4 Email Preferences
 
-- [ ] `GET /api/email/preferences` → current preferences loaded
-- [ ] Toggle notification types → saved, respected on next email send
+- [x] `GET /api/email/preferences` → current preferences loaded — **automated** `tests/api/settings.api.spec.ts`
+- [x] Toggle notification types → saved, respected on next email send — **automated** `tests/api/settings.api.spec.ts`
 
 ---
 
 ## 12. Admin Panel
 
-- [ ] `GET /api/admin/stats` → returns platform-wide stats (total users, articles, revenue)
-- [ ] `GET /api/admin/users` → paginated user list with filters
-- [ ] `GET /api/admin/users/[id]` → user detail (subscription, credits, activity)
-- [ ] `POST /api/admin/credits/adjust` → add/remove credits for user → transaction logged
-- [ ] `GET /api/admin/failure-metrics` → article generation failure rates
-- [ ] Admin routes return 403 for non-admin users
+- [x] `GET /api/admin/stats` → returns platform-wide stats (total users, articles, revenue) — **automated** `tests/api/admin.api.spec.ts`
+- [x] `GET /api/admin/users` → paginated user list with filters — **automated** `tests/api/admin.api.spec.ts`
+- [x] `GET /api/admin/users/[id]` → user detail (subscription, credits, activity) — **automated** `tests/api/admin.api.spec.ts`
+- [x] `POST /api/admin/credits/adjust` → add/remove credits for user → transaction logged — **automated** `tests/api/admin.api.spec.ts`
+- [x] `GET /api/admin/failure-metrics` → article generation failure rates — **automated** `tests/api/admin.api.spec.ts`
+- [x] Admin routes return 403 for non-admin users — **automated** `tests/api/admin.api.spec.ts`
 
 ---
 
 ## 13. Health & Monitoring
 
-- [ ] `GET /api/health` returns 200 with `{ status: "ok" }` (or equivalent)
-- [ ] `GET /api/health/stripe` returns 200 (Stripe connection verified)
-- [ ] `GET /api/models` returns available AI writer models
+- [x] `GET /api/health` returns 200 with `{ status: "ok" }` (or equivalent) — **automated** `tests/api/health.api.spec.ts`
+- [x] `GET /api/health/stripe` returns 200 (Stripe connection verified) — **automated** `tests/api/health.api.spec.ts`
+- [x] `GET /api/models` returns available AI writer models — **automated** `tests/api/health.api.spec.ts`
 - [ ] Errors appear in Baselime within minutes of occurrence
 - [ ] Analytics events (signup, generation, purchase) appear in Amplitude
 
@@ -455,9 +455,9 @@
 | `POST /api/cron/analyze-opportunities`         | Daily       | GSC opportunities refreshed               |
 | `POST /api/cron/check-opportunity-performance` | Weekly      | Opportunity rankings checked              |
 
-- [ ] All cron endpoints return 200 with valid secret
-- [ ] All cron endpoints return 401 with invalid/missing secret
-- [ ] No cron endpoint is callable by unauthenticated public (not in `PUBLIC_API_ROUTES`)
+- [x] All cron endpoints return 200 with valid secret — **automated** `tests/api/cron/cron-remaining.api.spec.ts`, `tests/api/cron/analyze-opportunities.api.spec.ts`, `tests/api/cron/check-opportunity-performance.api.spec.ts`
+- [x] All cron endpoints return 401 with invalid/missing secret — **automated** `tests/api/cron/cron-remaining.api.spec.ts`, `tests/api/cron/analyze-opportunities.api.spec.ts`, `tests/api/cron/check-opportunity-performance.api.spec.ts`
+- [x] No cron endpoint is callable by unauthenticated public (not in `PUBLIC_API_ROUTES`) — **automated** `tests/api/cron/cron-remaining.api.spec.ts`
 
 ---
 
@@ -470,7 +470,7 @@
 - [x] Legal pages (`/privacy`, `/terms`) load correctly — **automated** `tests/e2e/public-pages.e2e.spec.ts`
 - [x] `sitemap.xml` accessible and lists public pages + blog posts — **automated** `tests/e2e/public-pages.e2e.spec.ts`
 - [x] `robots.txt` blocks `/api/` and `/dashboard/` — **automated** `tests/e2e/public-pages.e2e.spec.ts`
-- [ ] `IndexNow` ping fires on new content (`POST /api/seo/indexnow`)
+- [x] `IndexNow` ping fires on new content (`POST /api/seo/indexnow`) — **automated** `tests/api/seo.api.spec.ts`
 
 ---
 

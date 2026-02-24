@@ -49,19 +49,19 @@
 - [ ] `A` or `CNAME` record for `@` pointing to Pages project (auto-configured when adding custom domain)
 - [x] `CNAME` record for `www` -> `autopilotrank.com` ✓ set via API
 - [x] SPF record: `TXT @ "v=spf1 include:_spf.mx.cloudflare.net include:sendinblue.com ~all"` ✓ set via API
-- [ ] DKIM record: add TXT record from Brevo's domain authentication page (needs Brevo account)
+- [x] DKIM record: add TXT record from Brevo's domain authentication page (needs Brevo account)
 - [x] DMARC record: `TXT _dmarc "v=DMARC1; p=quarantine; rua=mailto:admin@autopilotrank.com"` ✓ set via API
 - [x] Old Namecheap MX records removed; Cloudflare Email Routing MX records added (route1/2/3.mx.cloudflare.net) ✓
-- [ ] Verify DNS propagation: `dig autopilotrank.com NS` shows Cloudflare nameservers
-- [ ] Verify email DNS: check SPF + DKIM + DMARC with [MXToolbox](https://mxtoolbox.com/) (after DKIM added)
+- [x] Verify DNS propagation: `dig autopilotrank.com NS` shows Cloudflare nameservers
+- [x] Verify email DNS: check SPF + DKIM + DMARC with [MXToolbox](https://mxtoolbox.com/) (after DKIM added)
 
 ### Pages Project (Deploy via Wrangler)
 
 - [x] Cloudflare Pages project created
-- [ ] Login to Wrangler CLI: `npx wrangler login`
-- [ ] Add custom domain: Cloudflare Dashboard > **Pages > autopilotrank > Custom domains** > add `autopilotrank.com`
-- [ ] First deploy: `yarn deploy` (builds + deploys via Wrangler)
-- [ ] Verify deployment at `https://autopilotrank.com`
+- [x] Login to Wrangler CLI: `npx wrangler login`
+- [x] Add custom domain: Cloudflare Dashboard > **Pages > autopilotrank > Custom domains** > add `autopilotrank.com`
+- [x] First deploy: `yarn deploy` (builds + deploys via Wrangler)
+- [x] Verify deployment at `https://autopilotrank.com`
 
 ---
 
@@ -70,10 +70,10 @@
 > Single GCP project serves OAuth, Search Console API, and Secret Manager.
 
 - [x] Create Google Cloud project (e.g., `autopilotrank`) at [console.cloud.google.com](https://console.cloud.google.com/)
-- [ ] Enable **Google Identity Services** API (for OAuth)
-- [ ] Enable **Search Console API** (for GSC integration)
-- [ ] Enable **Secret Manager API** (for production secrets)
-- [ ] Install `gcloud` CLI and authenticate: `gcloud auth login`
+- [x] Enable **Google Identity Services** API (for OAuth)
+- [x] Enable **Search Console API** (for GSC integration)
+- [x] Enable **Secret Manager API** (for production secrets)
+- [x] Install `gcloud` CLI and authenticate: `gcloud auth login`
 
 ---
 
@@ -81,11 +81,11 @@
 
 > All production secrets live here. Set up the vault before populating it with service keys.
 
-- [ ] In GCP Console > **Secret Manager**: create secrets for each `.env.api` value (see Section 13 for full list)
-- [ ] Create a CI/CD service account in GCP > **IAM & Admin > Service Accounts**
-- [ ] Grant the service account `secretmanager.secretAccessor` role
-- [ ] Export service account key JSON (for GitHub Actions)
-- [ ] Verify secrets accessible: `gcloud secrets versions access latest --secret=STRIPE_SECRET_KEY`
+- [x] In GCP Console > **Secret Manager**: create secrets for each `.env.api` value (see Section 13 for full list)
+- [x] Create a CI/CD service account in GCP > **IAM & Admin > Service Accounts**
+- [x] Grant the service account `secretmanager.secretAccessor` role
+- [x] Export service account key JSON (for GitHub Actions)
+- [x] Verify secrets accessible: `gcloud secrets versions access latest --secret=STRIPE_SECRET_KEY`
 
 ---
 

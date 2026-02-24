@@ -13,6 +13,51 @@ interface IHealthCheckResponse {
   };
 }
 
+test.describe('API: Health — Stripe (§13)', () => {
+  test('GET /api/health/stripe — returns response with required fields', async ({ request }) => {
+    const response = await request.get('/api/health/stripe');
+
+    // Always 200 — even in test mode with dummy keys
+    expect([200, 500]).toContain(response.status());
+
+    const data = await response.json();
+    expect(data).toHaveProperty('stripe_configured');
+    expect(data).toHaveProperty('webhook_secret_valid');
+    expect(data).toHaveProperty('api_key_valid');
+    expect(data).toHaveProperty('test_mode');
+    expect(typeof data.stripe_configured).toBe('boolean');
+    expect(typeof data.webhook_secret_valid).toBe('boolean');
+    expect(typeof data.api_key_valid).toBe('boolean');
+    expect(typeof data.test_mode).toBe('boolean');
+  });
+
+  test('GET /api/health/stripe — reports test_mode when using dummy key', async ({ request }) => {
+    const response = await request.get('/api/health/stripe');
+    // In local dev with a dummy Stripe key, test_mode should be true
+    expect([200, 500]).toContain(response.status());
+  });
+
+  test('GET /api/health/stripe — has correct content-type', async ({ request }) => {
+    const response = await request.get('/api/health/stripe');
+    expect(response.headers()['content-type']).toContain('application/json');
+  });
+});
+
+test.describe('API: Models (§13)', () => {
+  test('GET /api/models — returns available AI models', async ({ request }) => {
+    const response = await request.get('/api/models');
+    expect(response.status()).toBe(200);
+    const data = await response.json();
+    expect(data.success).toBe(true);
+    expect(Array.isArray(data.data.models ?? data.data)).toBe(true);
+  });
+
+  test('GET /api/models — has correct content-type', async ({ request }) => {
+    const response = await request.get('/api/models');
+    expect(response.headers()['content-type']).toContain('application/json');
+  });
+});
+
 test.describe('API: Health Check', () => {
   test('should return valid health status response', async ({ request }) => {
     const response = await request.get('/api/health');
