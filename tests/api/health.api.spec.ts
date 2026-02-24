@@ -17,8 +17,8 @@ test.describe('API: Health — Stripe (§13)', () => {
   test('GET /api/health/stripe — returns response with required fields', async ({ request }) => {
     const response = await request.get('/api/health/stripe');
 
-    // Always 200 — even in test mode with dummy keys
-    expect([200, 500]).toContain(response.status());
+    // Should always return 200 (even with dummy keys)
+    expect(response.status()).toBe(200);
 
     const data = await response.json();
     expect(data).toHaveProperty('stripe_configured');
@@ -33,8 +33,10 @@ test.describe('API: Health — Stripe (§13)', () => {
 
   test('GET /api/health/stripe — reports test_mode when using dummy key', async ({ request }) => {
     const response = await request.get('/api/health/stripe');
+    expect(response.status()).toBe(200);
+    const data = await response.json();
     // In local dev with a dummy Stripe key, test_mode should be true
-    expect([200, 500]).toContain(response.status());
+    expect(data.test_mode).toBe(true);
   });
 
   test('GET /api/health/stripe — has correct content-type', async ({ request }) => {
@@ -48,8 +50,13 @@ test.describe('API: Models (§13)', () => {
     const response = await request.get('/api/models');
     expect(response.status()).toBe(200);
     const data = await response.json();
-    expect(data.success).toBe(true);
-    expect(Array.isArray(data.data.models ?? data.data)).toBe(true);
+    // Endpoint returns presets/models directly, not wrapped in success envelope
+    expect(data).toHaveProperty('writerPresets');
+    expect(data).toHaveProperty('imagePresets');
+    expect(data).toHaveProperty('writerModels');
+    expect(Array.isArray(data.writerPresets)).toBe(true);
+    expect(Array.isArray(data.imagePresets)).toBe(true);
+    expect(Array.isArray(data.writerModels)).toBe(true);
   });
 
   test('GET /api/models — has correct content-type', async ({ request }) => {

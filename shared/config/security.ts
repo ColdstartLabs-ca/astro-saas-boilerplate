@@ -115,7 +115,8 @@ export const SECURITY_HEADERS = {
  * Supports wildcard patterns with * suffix
  */
 export const PUBLIC_API_ROUTES = [
-  '/api/health',
+  '/api/health', // Main health check endpoint
+  '/api/health/*', // Health sub-endpoints (stripe, db, etc.)
   '/api/models', // Available AI models and image presets (public, read-only)
   '/api/webhooks/*', // All webhook routes are public (they use their own auth mechanisms)
   '/api/analytics/*', // Analytics events support both anonymous and authenticated tracking
