@@ -91,6 +91,16 @@ export const useUserStore = create<IUserState>((set, get) => ({
     // Load cache first for instant UI, but validate against current session
     const cached = loadUserCache();
     if (cached) {
+      // In Playwright test mode, trust the user cache directly without Supabase session
+      // validation. Test fixtures inject auth state via localStorage, and the Supabase
+      // session cookie may not be detectable when the test server uses a placeholder URL.
+      const isTestMode =
+        typeof window !== 'undefined' && (window as Window & { __TEST_ENV__?: boolean }).__TEST_ENV__;
+      if (isTestMode) {
+        set({ user: cached, isAuthenticated: true, isLoading: false });
+        return;
+      }
+
       // Quick session check - if session user doesn't match cache, discard it
       const {
         data: { session },
@@ -344,6 +354,13 @@ if (typeof window !== 'undefined') {
     const store = useUserStore.getState();
 
     if (event === 'SIGNED_OUT' || !session) {
+      // In Playwright test mode, ignore INITIAL_SESSION with null session.
+      // Test auth is injected via localStorage cache; no real Supabase cookie is present.
+      const isTestMode =
+        typeof window !== 'undefined' && (window as Window & { __TEST_ENV__?: boolean }).__TEST_ENV__;
+      if (isTestMode && event !== 'SIGNED_OUT') {
+        return;
+      }
       store.reset();
       // Clear stale project selection from localStorage
       useProjectStore.getState().clearActiveProjectId();

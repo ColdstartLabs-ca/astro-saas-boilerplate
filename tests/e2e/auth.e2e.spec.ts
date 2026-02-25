@@ -295,7 +295,11 @@ test.describe('Authentication', () => {
       const navigated = await navigationPromise;
       // If we're still on the same page, the navigation was blocked (expected in test env)
       // If we navigated, the OAuth flow initiated correctly
-      expect(navigated !== null || page.url().includes('localhost')).toBeTruthy();
+      // Note: Playwright may use 127.0.0.1 instead of localhost as the base URL
+      const currentUrl = page.url();
+      const isStillOnLocalPage =
+        currentUrl.includes('localhost') || currentUrl.includes('127.0.0.1');
+      expect(navigated !== null || isStillOnLocalPage).toBeTruthy();
     });
 
     test('handles OAuth error hash gracefully', async ({ page }) => {

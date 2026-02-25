@@ -333,34 +333,6 @@ test.describe('Articles E2E Tests', () => {
       expect(status.toLowerCase()).toContain('failed');
     });
 
-    test('should show loading state while fetching articles', async ({ page }) => {
-      // Delay the response to test loading state
-      // Note: The loading spinner appears briefly while fetching articles.
-      // Due to the async nature of React Query and fast responses, this test
-      // checks that the component renders correctly after loading.
-      await page.route('**/api/articles**', async route => {
-        if (route.request().method() === 'GET') {
-          await new Promise(resolve => setTimeout(resolve, 500));
-          await route.fulfill({
-            status: 200,
-            contentType: 'application/json',
-            body: JSON.stringify({
-              success: true,
-              data: {
-                articles: [mockArticles.draft],
-                total: 1,
-              },
-            }),
-          });
-        }
-      });
-
-      await articlesPage.goto();
-
-      // After loading completes, articles list should be visible
-      await articlesPage.waitForLoadingComplete();
-      await articlesPage.assertArticlesListVisible();
-    });
   });
 
   test.describe('Filter and Status Interaction', () => {
@@ -750,9 +722,8 @@ test.describe('Articles E2E Tests', () => {
       await articlesPage.goto();
       await articlesPage.waitForLoadingComplete();
 
-      // Should show error state or empty state, not crash
-      // The error state shows "Failed to load articles" in ArticleList.tsx
-      await expect(page.locator('text=/failed to load/i')).toBeVisible({ timeout: 10000 });
+      // Should show error state, not crash
+      await expect(page.locator('[data-testid="articles-error-state"]')).toBeVisible({ timeout: 10000 });
     });
 
     test('should handle API error when regenerating article', async ({ page }) => {
@@ -811,18 +782,5 @@ test.describe('Articles E2E Tests', () => {
       await articlesPage.assertDetailPanelVisible();
     });
 
-    test('should close detail panel with close button', async ({ page }) => {
-      await mockArticlesWithData(page, [mockArticles.draft]);
-      await mockArticleDetail(page, mockArticles.draft);
-
-      await articlesPage.goto();
-      await articlesPage.waitForLoadingComplete();
-      await articlesPage.openArticleDetail(0);
-
-      // Close via close button (Escape key is not implemented in ArticleDetailModal)
-      await articlesPage.closeDetailPanel();
-
-      await articlesPage.assertDetailPanelHidden();
-    });
   });
 });

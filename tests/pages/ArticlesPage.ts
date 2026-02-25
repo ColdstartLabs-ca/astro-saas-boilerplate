@@ -53,13 +53,10 @@ export class ArticlesPage extends BasePage {
 
   /**
    * Gets inline error message in detail panel (error shown after failed action)
+   * Uses data-testid="article-inline-error" from ArticleDetailModal.tsx
    */
   get inlineError(): Locator {
-    // The error message is in a div with red background in the content area
-    // ArticleDetailModal uses: bg-red-500/10 border border-red-500/30 rounded-lg text-red-400
-    return this.detailPanel.locator('.bg-red-500\\/10').filter({
-      hasText: /failed|error/i,
-    });
+    return this.detailPanel.locator('[data-testid="article-inline-error"]');
   }
 
   /**
@@ -245,6 +242,29 @@ export class ArticlesPage extends BasePage {
   async goto(path?: string): Promise<void> {
     await super.goto(path ?? '/dashboard/articles');
     await this.waitForPageLoad();
+  }
+
+  /**
+   * Overrides base waitForLoadingComplete to also wait for the articles page
+   * to reach a stable content state (articles list, empty state, or error).
+   *
+   * The articles page has async auth/project loading that can leave the page
+   * in a "No Project Selected" or "Create Campaign First" transient state
+   * before showing the actual articles content. This override ensures we wait
+   * through the full initialization chain.
+   */
+  override async waitForLoadingComplete(): Promise<void> {
+    await super.waitForLoadingComplete();
+    // Wait for page to reach stable content state after all async loading completes
+    await this.page
+      .locator(
+        '[data-testid="articles-list"], [data-testid="articles-empty-state"], [data-testid="articles-error-state"]'
+      )
+      .first()
+      .waitFor({ state: 'visible', timeout: 10000 })
+      .catch(() => {
+        // If none appears (unexpected state), continue — the test assertion will report failure
+      });
   }
 
   // ============================================================================

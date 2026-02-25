@@ -31,7 +31,7 @@ process.env.PLAYWRIGHT_MOCK_DB_PATH = PLAYWRIGHT_MOCK_DB_PATH;
 export default defineConfig({
   testDir: './tests',
   globalTeardown: './tests/global-teardown.ts', // Clean up test users after all tests
-  fullyParallel: false, // Disable full parallelization for memory optimization
+  fullyParallel: true, // Run tests within files in parallel (each test has isolated browser context)
   forbidOnly: isCI,
   retries: isCI ? 2 : 0,
   workers: process.env.CI ? 2 : 4, // Use more workers locally, fewer in CI to prevent rate limiting
