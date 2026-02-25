@@ -54,34 +54,58 @@ function getSupabaseSessionCookieValue(): string {
 }
 
 /**
+ * Derive the Supabase project ref from the PUBLIC_SUPABASE_URL env var.
+ *
+ * The project ref is the subdomain of the Supabase URL.
+ * e.g. https://xuuwrabuavfplyyolngf.supabase.co → "xuuwrabuavfplyyolngf"
+ *
+ * This must match the project ref used by the browser Supabase client so that
+ * the session cookie name is identical (sb-{projectRef}-auth-token).
+ */
+function getProjectRefFromUrl(): string {
+  const supabaseUrl = process.env.PUBLIC_SUPABASE_URL || '';
+  try {
+    const hostname = new URL(supabaseUrl).hostname; // e.g. "xuuwrabuavfplyyolngf.supabase.co"
+    return hostname.split('.')[0]; // e.g. "xuuwrabuavfplyyolngf"
+  } catch {
+    return 'xuuwrabuavfplyyolngf'; // fallback to real project ref
+  }
+}
+
+/**
  * Build the init script that injects auth state into the browser.
  *
  * Sets up localStorage to mimic @supabase/ssr storage behavior.
  * Also sets up a cookie that @supabase/ssr can read.
+ *
+ * The cookie and localStorage key names use the project ref derived from
+ * PUBLIC_SUPABASE_URL so they match what the browser Supabase client expects.
  */
 function getSupabaseSessionScript(): string {
   const session = buildFakeSession();
   const sessionStr = JSON.stringify(session);
   const cookieValue = getSupabaseSessionCookieValue();
+  const projectRef = getProjectRefFromUrl();
 
   // We set up multiple storage mechanisms to maximize compatibility
   return `
     (function() {
       var sessionObj = ${sessionStr};
       var cookieValue = "${cookieValue}";
+      var projectRef = "${projectRef}";
 
       // Method 1: Set cookie for @supabase/ssr using document.cookie
       // This runs BEFORE the Supabase client initializes
       try {
         // Set the base cookie (non-chunked, for small sessions)
-        document.cookie = 'sb-xuuwrabuavfplyyolngf-auth-token=' + cookieValue + '; path=/; max-age=86400; SameSite=Lax';
+        document.cookie = 'sb-' + projectRef + '-auth-token=' + cookieValue + '; path=/; max-age=86400; SameSite=Lax';
       } catch (e) {
         console.warn('Failed to set cookie session:', e);
       }
 
       // Method 2: Store in localStorage with @supabase/ssr format as backup
       try {
-        localStorage.setItem('sb-xuuwrabuavfplyyolngf-auth-token', JSON.stringify(sessionObj));
+        localStorage.setItem('sb-' + projectRef + '-auth-token', JSON.stringify(sessionObj));
       } catch (e) {
         console.warn('Failed to set localStorage session:', e);
       }
