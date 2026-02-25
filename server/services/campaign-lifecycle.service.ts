@@ -337,6 +337,16 @@ export class CampaignLifecycleService {
         last_run_at: null,
         schedule_timezone: validated.scheduleTimezone || DEFAULT_SCHEDULE_TIMEZONE,
         schedule_hour: validated.scheduleHour ?? DEFAULT_SCHEDULE_HOUR,
+        // Outrank feature parity fields
+        article_style: validated.articleStyle || null,
+        internal_links_count: validated.internalLinksCount ?? 3,
+        global_instructions: validated.globalInstructions || null,
+        auto_publish: validated.autoPublish ?? false,
+        include_youtube: validated.includeYoutube ?? false,
+        include_cta: validated.includeCta ?? false,
+        include_infographics: validated.includeInfographics ?? false,
+        include_emojis: validated.includeEmojis ?? false,
+        image_style: validated.imageStyle || null,
         // Test mode keywords
         keywords,
       };
@@ -364,6 +374,16 @@ export class CampaignLifecycleService {
         generation_run_id: null,
         created_at: campaign.created_at,
         updated_at: campaign.updated_at,
+        // Outrank feature parity fields
+        article_style: validated.articleStyle || null,
+        internal_links_count: validated.internalLinksCount ?? 3,
+        global_instructions: validated.globalInstructions || null,
+        auto_publish: validated.autoPublish ?? false,
+        include_youtube: validated.includeYoutube ?? false,
+        include_cta: validated.includeCta ?? false,
+        include_infographics: validated.includeInfographics ?? false,
+        include_emojis: validated.includeEmojis ?? false,
+        image_style: validated.imageStyle || null,
       });
 
       return campaign;
@@ -386,6 +406,16 @@ export class CampaignLifecycleService {
         schedule_batch_size: validated.scheduleBatchSize || 1,
         schedule_timezone: validated.scheduleTimezone || DEFAULT_SCHEDULE_TIMEZONE,
         schedule_hour: validated.scheduleHour ?? DEFAULT_SCHEDULE_HOUR,
+        // Outrank feature parity fields
+        article_style: validated.articleStyle || null,
+        internal_links_count: validated.internalLinksCount ?? 3,
+        global_instructions: validated.globalInstructions || null,
+        auto_publish: validated.autoPublish ?? false,
+        include_youtube: validated.includeYoutube ?? false,
+        include_cta: validated.includeCta ?? false,
+        include_infographics: validated.includeInfographics ?? false,
+        include_emojis: validated.includeEmojis ?? false,
+        image_style: validated.imageStyle || null,
       })
       .select()
       .single();

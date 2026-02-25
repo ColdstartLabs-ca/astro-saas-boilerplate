@@ -74,6 +74,12 @@ class InMemoryStore {
       'user_onboarding',
       'email_preferences',
       'email_logs',
+      // Outrank feature parity tables
+      'project_target_audiences',
+      'project_competitors',
+      'project_example_articles',
+      'sitemap_pages',
+      'content_strategies',
     ];
 
     for (const table of this.defaults) {

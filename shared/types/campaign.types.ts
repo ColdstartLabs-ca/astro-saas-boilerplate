@@ -37,6 +37,16 @@ export type KeywordDifficulty = 'easy' | 'medium' | 'hard' | 'unknown';
 export type CampaignTone = 'professional' | 'casual' | 'witty' | 'academic';
 
 /**
+ * Article writing style options
+ */
+export type ArticleStyle = 'informative' | 'how-to' | 'listicle' | 'opinion' | 'tutorial';
+
+/**
+ * Image generation style options
+ */
+export type ImageStyle = 'brand_text' | 'watercolor' | 'cinematic' | 'illustration' | 'sketch';
+
+/**
  * Reasons why a scheduled campaign might be auto-paused
  */
 export type SchedulePauseReason =
@@ -69,6 +79,16 @@ export interface ICampaign {
   last_run_at: string | null;
   schedule_timezone: string;
   schedule_hour: number;
+  // Outrank feature parity fields
+  article_style: ArticleStyle | null;
+  internal_links_count: number;
+  global_instructions: string | null;
+  auto_publish: boolean;
+  include_youtube: boolean;
+  include_cta: boolean;
+  include_infographics: boolean;
+  include_emojis: boolean;
+  image_style: ImageStyle | null;
 }
 
 /**
@@ -125,6 +145,25 @@ export interface ICreateCampaignInput {
   scheduleTimezone?: string;
   /** Preferred hour in user timezone (optional, 0-23, default 9) */
   scheduleHour?: number;
+  // Outrank feature parity fields
+  /** Article writing style */
+  articleStyle?: ArticleStyle | null;
+  /** Number of internal links to include in articles */
+  internalLinksCount?: number;
+  /** Global instructions for content generation */
+  globalInstructions?: string | null;
+  /** Whether to auto-publish generated articles */
+  autoPublish?: boolean;
+  /** Whether to include YouTube video recommendations */
+  includeYoutube?: boolean;
+  /** Whether to include call-to-action elements */
+  includeCta?: boolean;
+  /** Whether to include infographics */
+  includeInfographics?: boolean;
+  /** Whether to include emojis in content */
+  includeEmojis?: boolean;
+  /** Image generation style */
+  imageStyle?: ImageStyle | null;
 }
 
 /**
@@ -154,6 +193,25 @@ export interface IUpdateCampaignInput {
   scheduleHour?: number;
   /** Next scheduled run time (for scheduling) */
   nextRunAt?: string | null;
+  // Outrank feature parity fields
+  /** Article writing style */
+  articleStyle?: ArticleStyle | null;
+  /** Number of internal links to include in articles */
+  internalLinksCount?: number;
+  /** Global instructions for content generation */
+  globalInstructions?: string | null;
+  /** Whether to auto-publish generated articles */
+  autoPublish?: boolean;
+  /** Whether to include YouTube video recommendations */
+  includeYoutube?: boolean;
+  /** Whether to include call-to-action elements */
+  includeCta?: boolean;
+  /** Whether to include infographics */
+  includeInfographics?: boolean;
+  /** Whether to include emojis in content */
+  includeEmojis?: boolean;
+  /** Image generation style */
+  imageStyle?: ImageStyle | null;
 }
 
 /**

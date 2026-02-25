@@ -38,6 +38,13 @@ export interface IProject {
   cms_credentials: Record<string, unknown>;
   content_preferences: IContentPreferences;
   status: ProjectStatus;
+  // Outrank feature parity fields
+  language: string;
+  country: string;
+  description: string | null;
+  sitemap_url: string | null;
+  blog_url: string | null;
+  brand_color: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -56,6 +63,19 @@ export interface ICreateProjectInput {
   cms_type?: CmsType;
   /** Content generation preferences */
   content_preferences?: IContentPreferences;
+  // Outrank feature parity fields
+  /** ISO 639-1 language code (e.g., 'en', 'es') */
+  language?: string;
+  /** ISO 3166-1 alpha-2 country code (e.g., 'US', 'GB') */
+  country?: string;
+  /** Project description */
+  description?: string;
+  /** Sitemap URL for content discovery */
+  sitemap_url?: string;
+  /** Blog URL for content discovery */
+  blog_url?: string;
+  /** Brand color in hex format (e.g., '#FF5733') */
+  brand_color?: string;
 }
 
 /**
@@ -74,6 +94,19 @@ export interface IUpdateProjectInput {
   content_preferences?: IContentPreferences;
   /** Project status */
   status?: ProjectStatus;
+  // Outrank feature parity fields
+  /** ISO 639-1 language code (e.g., 'en', 'es') */
+  language?: string;
+  /** ISO 3166-1 alpha-2 country code (e.g., 'US', 'GB') */
+  country?: string;
+  /** Project description */
+  description?: string;
+  /** Sitemap URL for content discovery */
+  sitemap_url?: string;
+  /** Blog URL for content discovery */
+  blog_url?: string;
+  /** Brand color in hex format (e.g., '#FF5733') */
+  brand_color?: string;
 }
 
 /**

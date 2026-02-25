@@ -36,7 +36,11 @@ function normalizeDomain(domain: string | undefined | null): string | null {
  * Zod schema for project creation input
  */
 const createProjectSchema = z.object({
-  name: z.string().min(1, 'Project name is required').max(100, 'Project name must be 100 characters or less').trim(),
+  name: z
+    .string()
+    .min(1, 'Project name is required')
+    .max(100, 'Project name must be 100 characters or less')
+    .trim(),
   domain: z.string().max(255, 'Domain URL is too long').optional().or(z.literal('')),
   industry: z.string().max(50, 'Industry must be 50 characters or less').optional(),
   cms_type: z.enum(['wordpress', 'webflow', 'shopify', 'other']).optional(),
@@ -47,6 +51,17 @@ const createProjectSchema = z.object({
       targetWordCount: z.number().int().positive().optional(),
     })
     .optional(),
+  // Outrank feature parity fields
+  language: z.string().min(2).max(5).optional(),
+  country: z.string().min(2).max(2).toUpperCase().optional(),
+  description: z.string().max(2000).optional().or(z.literal('')),
+  sitemap_url: z.string().url().max(500).optional().or(z.literal('')),
+  blog_url: z.string().url().max(500).optional().or(z.literal('')),
+  brand_color: z
+    .string()
+    .regex(/^#[0-9A-Fa-f]{6}$/, 'Must be a valid hex color (e.g., #FF5733)')
+    .optional()
+    .or(z.literal('')),
 });
 
 /**
@@ -65,6 +80,17 @@ const updateProjectSchema = z.object({
     })
     .optional(),
   status: z.enum(['active', 'inactive', 'error']).optional(),
+  // Outrank feature parity fields
+  language: z.string().min(2).max(5).optional(),
+  country: z.string().min(2).max(2).toUpperCase().optional(),
+  description: z.string().max(2000).optional().or(z.literal('')),
+  sitemap_url: z.string().url().max(500).optional().or(z.literal('')),
+  blog_url: z.string().url().max(500).optional().or(z.literal('')),
+  brand_color: z
+    .string()
+    .regex(/^#[0-9A-Fa-f]{6}$/, 'Must be a valid hex color (e.g., #FF5733)')
+    .optional()
+    .or(z.literal('')),
 });
 
 // =============================================================================
@@ -166,6 +192,13 @@ export class ProjectService {
         cms_type: validated.cms_type || 'wordpress',
         content_preferences: validated.content_preferences || {},
         status: 'active',
+        // Outrank feature parity fields
+        language: validated.language ?? 'en',
+        country: validated.country ?? 'US',
+        description: validated.description || null,
+        sitemap_url: validated.sitemap_url || null,
+        blog_url: validated.blog_url || null,
+        brand_color: validated.brand_color || null,
       })
       .select()
       .single();
@@ -191,8 +224,16 @@ export class ProjectService {
     if (validated.domain !== undefined) updates.domain = normalizeDomain(validated.domain);
     if (validated.industry !== undefined) updates.industry = validated.industry || null;
     if (validated.cms_type !== undefined) updates.cms_type = validated.cms_type;
-    if (validated.content_preferences !== undefined) updates.content_preferences = validated.content_preferences;
+    if (validated.content_preferences !== undefined)
+      updates.content_preferences = validated.content_preferences;
     if (validated.status !== undefined) updates.status = validated.status;
+    // Outrank feature parity fields
+    if (validated.language !== undefined) updates.language = validated.language;
+    if (validated.country !== undefined) updates.country = validated.country;
+    if (validated.description !== undefined) updates.description = validated.description || null;
+    if (validated.sitemap_url !== undefined) updates.sitemap_url = validated.sitemap_url || null;
+    if (validated.blog_url !== undefined) updates.blog_url = validated.blog_url || null;
+    if (validated.brand_color !== undefined) updates.brand_color = validated.brand_color || null;
 
     // Update project with ownership check
     const { data, error } = await supabaseAdmin

@@ -30,6 +30,24 @@ export const SCHEDULE_FREQUENCIES = [
 ] as const;
 export type ScheduleFrequency = (typeof SCHEDULE_FREQUENCIES)[number];
 
+/**
+ * Article writing style options
+ */
+export const ARTICLE_STYLES = ['informative', 'how-to', 'listicle', 'opinion', 'tutorial'] as const;
+export type ArticleStyle = (typeof ARTICLE_STYLES)[number];
+
+/**
+ * Image generation style options
+ */
+export const IMAGE_STYLES = [
+  'brand_text',
+  'watercolor',
+  'cinematic',
+  'illustration',
+  'sketch',
+] as const;
+export type ImageStyle = (typeof IMAGE_STYLES)[number];
+
 // =============================================================================
 // Schemas
 // =============================================================================
@@ -67,6 +85,16 @@ export const createCampaignSchema = z.object({
     .refine(isValidTimezone, { message: 'Invalid IANA timezone (e.g., America/New_York)' })
     .optional(),
   scheduleHour: z.number().int().min(0).max(23).optional(),
+  // Outrank feature parity fields
+  articleStyle: z.enum(ARTICLE_STYLES).nullable().optional(),
+  internalLinksCount: z.number().int().min(0).max(20).optional(),
+  globalInstructions: z.string().max(2000).optional().or(z.literal('')),
+  autoPublish: z.coerce.boolean().optional(),
+  includeYoutube: z.coerce.boolean().optional(),
+  includeCta: z.coerce.boolean().optional(),
+  includeInfographics: z.coerce.boolean().optional(),
+  includeEmojis: z.coerce.boolean().optional(),
+  imageStyle: z.enum(IMAGE_STYLES).nullable().optional(),
 });
 
 /**
@@ -94,6 +122,16 @@ export const updateCampaignSchema = z.object({
     .refine(isValidTimezone, { message: 'Invalid IANA timezone (e.g., America/New_York)' })
     .optional(),
   scheduleHour: z.number().int().min(0).max(23).optional(),
+  // Outrank feature parity fields
+  articleStyle: z.enum(ARTICLE_STYLES).nullable().optional(),
+  internalLinksCount: z.number().int().min(0).max(20).optional(),
+  globalInstructions: z.string().max(2000).optional().or(z.literal('')),
+  autoPublish: z.coerce.boolean().optional(),
+  includeYoutube: z.coerce.boolean().optional(),
+  includeCta: z.coerce.boolean().optional(),
+  includeInfographics: z.coerce.boolean().optional(),
+  includeEmojis: z.coerce.boolean().optional(),
+  imageStyle: z.enum(IMAGE_STYLES).nullable().optional(),
 });
 
 /**
