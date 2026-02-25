@@ -10,9 +10,9 @@ interface IProps {
 export function FeaturesSection({ className = '' }: IProps): JSX.Element {
   const features = [
     {
-      title: 'Why Most AI SEO Tools Sound Identical (And How We&apos;re Different)',
-      desc: 'Most tools: GPT-4 or Claude. Pick one. Get repetitive output. AutopilotRank: GPT-4o, Claude Sonnet, Gemini Flash. Use each strategically for different content types. More variety. Less repetition. Better rankings.',
-      sub: 'Google&apos;s systems detect repetitive patterns across sites using the same AI model. Multi-model approach = more natural content footprint.',
+      title: 'Four AI Models. Less Repetition. Better Rankings.',
+      desc: 'Most tools: GPT-4 or Claude. Pick one. Get repetitive output. AutopilotRank uses GPT-4o, Claude Sonnet, and Gemini Flash — each applied strategically for different content types. More variety. Less repetition. Better rankings.',
+      sub: "Google's systems detect repetitive patterns across sites using the same AI model. Multi-model approach = more natural content footprint.",
       icon: <Brain className="h-6 w-6 text-brand-400" />,
       image:
         'https://images.unsplash.com/photo-1677442136019-21780ecad995?auto=format&fit=crop&q=80&w=800&h=600',
@@ -20,8 +20,8 @@ export function FeaturesSection({ className = '' }: IProps): JSX.Element {
     },
     {
       title: 'Stop Editing AI Content For 2-4 Hours Per Article',
-      desc: 'Problem: Even &apos;good&apos; AI content has tells—overuse of transition words, predictable sentence structures, generic phrases, lack of specific opinions. Solution: Our Humanizer engine rewrites content to avoid 24+ known AI patterns. Result: 95%+ pass rate on AI detection tools. Average editing time: 0 minutes.',
-      sub: 'No more &apos;In today&apos;s digital landscape&apos; intros that scream AI.',
+      desc: "Problem: Even 'good' AI content has tells — overuse of transition words, predictable sentence structures, generic phrases. Solution: Our Humanizer engine rewrites content to avoid 24+ known AI patterns. Result: High pass rates on AI detection tools. Minimal editing required.",
+      sub: "No more 'In today's digital landscape' intros that scream AI.",
       icon: <Sparkles className="h-6 w-6 text-purple-400" />,
       image:
         'https://images.unsplash.com/photo-1555421689-d68471e189f2?auto=format&fit=crop&q=80&w=800&h=600',
@@ -29,7 +29,7 @@ export function FeaturesSection({ className = '' }: IProps): JSX.Element {
     },
     {
       title: 'Quality Checks That Catch Issues Before They Cost You Rankings',
-      desc: 'Before publishing, we check: SEO optimization score (keyword density, heading structure, meta description), AI detection score (will this flag as AI?), readability analysis (grade level, sentence length), plagiarism check (original content verification). Nothing gets published that doesn&apos;t meet thresholds.',
+      desc: "Before publishing, we check: SEO optimization score (keyword density, heading structure, meta description), AI detection score (will this flag as AI?), and readability analysis (grade level, sentence length). Nothing gets published that doesn't meet quality thresholds.",
       sub: 'Most tools publish first, let you find problems later.',
       icon: <ShieldCheck className="h-6 w-6 text-blue-400" />,
       image:
@@ -47,7 +47,7 @@ export function FeaturesSection({ className = '' }: IProps): JSX.Element {
     },
     {
       title: 'Stop Guessing—Let Your Own Search Data Guide Content Strategy',
-      desc: 'Connect Google Search Console. We analyze: Keywords you&apos;re already ranking for (positions 11-30), content gaps (keywords where competitors rank but you don&apos;t have content), quick wins (low competition, decent volume, you&apos;re close to ranking). Result: Data-driven content roadmap, not &apos;this keyword seems good&apos; guesses.',
+      desc: "Connect Google Search Console. We analyze: keywords you're already ranking for (positions 11–30), content gaps where competitors rank but you don't, and quick wins with low competition and decent volume. Result: A data-driven SEO content roadmap — not 'this keyword seems good' guesses.",
       sub: 'Your search data knows best. We help you listen to it.',
       icon: <BarChart3 className="h-6 w-6 text-orange-400" />,
       image:
