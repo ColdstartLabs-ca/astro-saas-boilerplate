@@ -788,6 +788,22 @@ export class TestDataManager {
       // Also insert into mock DB file so web server can find it
       insertProfileToMockDb(profile);
 
+      // Insert initial subscription credit transaction for non-free users
+      if (status !== 'free' && initialCredits > 0) {
+        const db = readMockDb();
+        if (!db.credit_transactions) db.credit_transactions = [];
+        db.credit_transactions.push({
+          id: this.generateUUID(),
+          user_id: mockUserId,
+          amount: initialCredits,
+          type: 'subscription',
+          description: 'Initial subscription credits',
+          reference_id: null,
+          created_at: now,
+        });
+        writeMockDb(db);
+      }
+
       return {
         id: mockUserId,
         email: testEmail,

@@ -66,12 +66,19 @@ export class CronArticleRecoveryService {
       // Create sync run record
       syncRunId = await createSyncRun('stale_article_recovery');
 
-      // Find stale articles in queued or generating status
+      // Find stale articles in queued/generating status.
+      // Use last_attempt_at when present so recently retried jobs are not picked up again
+      // on the next cron tick simply because created_at is old.
+      const staleThresholdIso = staleThreshold.toISOString();
       const { data: staleArticles, error: fetchError } = await supabaseAdmin
         .from('articles')
-        .select('id, user_id, status, attempt_count, credits_used, created_at, primary_keyword')
+        .select(
+          'id, user_id, status, attempt_count, credits_used, created_at, last_attempt_at, primary_keyword, campaign_id, project_id'
+        )
         .in('status', ['queued', 'generating'])
-        .lt('created_at', staleThreshold.toISOString())
+        .or(
+          `last_attempt_at.lt.${staleThresholdIso},and(last_attempt_at.is.null,created_at.lt.${staleThresholdIso})`
+        )
         .order('created_at', { ascending: true })
         .limit(ARTICLE_RECOVERY_BATCH_SIZE);
 
@@ -106,6 +113,7 @@ export class CronArticleRecoveryService {
       for (const article of staleArticles) {
         processed++;
         const newAttemptCount = article.attempt_count + 1;
+        let generationStarted = false;
 
         try {
           console.log(
@@ -149,49 +157,50 @@ export class CronArticleRecoveryService {
               })
               .eq('id', article.id);
 
-            // Re-trigger generation
-            // We need to fetch the original generation parameters
-            const { data: articleDetails } = await supabaseAdmin
-              .from('articles')
-              .select('campaign_id, project_id')
-              .eq('id', article.id)
-              .single();
-
-            if (articleDetails) {
-              // Use minimal input for retry - just the keyword and IDs
-              const retryInput = {
-                keyword: article.primary_keyword,
-                projectId: articleDetails.project_id || '',
-                campaignId: articleDetails.campaign_id || '',
-              };
-
-              // Fire and forget the regeneration
-              // Note: We don't charge additional credits for retries
-              await articleGenerationService.generateArticle(
-                article.id,
-                article.user_id,
-                retryInput
+            if (!article.campaign_id || !article.project_id) {
+              console.error(
+                `[CRON] Missing campaign/project for article ${article.id}; cannot recover`
               );
-
-              recovered++;
-              console.log(`[CRON] Successfully initiated recovery for article ${article.id}`);
-            } else {
-              console.error(`[CRON] Could not fetch details for article ${article.id}`);
+              await supabaseAdmin
+                .from('articles')
+                .update({
+                  status: 'failed',
+                  generation_error:
+                    'Recovery failed: missing campaign/project reference on article record.',
+                })
+                .eq('id', article.id);
               failed++;
+              continue;
             }
+
+            // Use minimal input for retry - just the keyword and IDs
+            const retryInput = {
+              keyword: article.primary_keyword,
+              projectId: article.project_id,
+              campaignId: article.campaign_id,
+            };
+
+            // Retry generation without charging additional credits.
+            generationStarted = true;
+            await articleGenerationService.generateArticle(article.id, article.user_id, retryInput);
+
+            recovered++;
+            console.log(`[CRON] Successfully initiated recovery for article ${article.id}`);
           }
         } catch (error: unknown) {
           const errorMessage = error instanceof Error ? error.message : 'Unknown error';
           console.error(`[CRON] Error recovering article ${article.id}:`, errorMessage);
 
-          // Update attempt count even on failure
-          await supabaseAdmin
-            .from('articles')
-            .update({
-              last_attempt_at: new Date().toISOString(),
-              attempt_count: newAttemptCount,
-            })
-            .eq('id', article.id);
+          // If generation was started, generateArticle already handled status and attempt tracking.
+          if (!generationStarted) {
+            await supabaseAdmin
+              .from('articles')
+              .update({
+                last_attempt_at: new Date().toISOString(),
+                attempt_count: newAttemptCount,
+              })
+              .eq('id', article.id);
+          }
 
           failed++;
         }

@@ -2,7 +2,7 @@
  * Article Regenerate API Unit Tests
  *
  * Tests for the /api/articles/[articleId]/regenerate endpoint:
- * - Status precondition validation (only failed/rejected)
+ * - Status precondition validation (only retryable statuses)
  * - Proper credit cost calculation using getImagePresetCreditCost
  * - Conditional update to prevent race conditions
  * - 409 Conflict response when regenerate already in progress
@@ -160,6 +160,23 @@ describe('POST /api/articles/[articleId]/regenerate', () => {
         .mockResolvedValueOnce({ data: mockArticle, error: null }) // Article
         .mockResolvedValueOnce({ data: { total_credits_balance: 10 }, error: null }) // Credits
         .mockResolvedValueOnce({ data: { id: 'article-123' }, error: null }); // Update
+
+      const result = await POST('user-123', {
+        params: { articleId: 'article-123' },
+        locals: {},
+      });
+
+      expect(result.status).toBe(202);
+      const json = await result.json();
+      expect(json.success).toBe(true);
+    });
+
+    it('should allow regeneration for failed_quality articles', async () => {
+      const mockArticle = createMockArticle({ status: 'failed_quality' });
+      mockSingle
+        .mockResolvedValueOnce({ data: mockArticle, error: null })
+        .mockResolvedValueOnce({ data: { total_credits_balance: 10 }, error: null })
+        .mockResolvedValueOnce({ data: { id: 'article-123' }, error: null });
 
       const result = await POST('user-123', {
         params: { articleId: 'article-123' },
@@ -424,8 +441,8 @@ describe('POST /api/articles/[articleId]/regenerate', () => {
       // Verify update was called
       expect(mockUpdate).toHaveBeenCalled();
 
-      // Verify that .in() was called with status array (for conditional update)
-      expect(mockIn).toHaveBeenCalledWith('status', ['failed', 'rejected']);
+      // Verify that .in() was called with retryable statuses (for conditional update)
+      expect(mockIn).toHaveBeenCalledWith('status', ['failed', 'failed_quality', 'rejected']);
     });
 
     it('should return 409 Conflict when conditional update affects 0 rows (race condition)', async () => {

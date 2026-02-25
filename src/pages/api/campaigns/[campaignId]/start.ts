@@ -70,11 +70,20 @@ export const POST = withAuth(async (userId, { params, locals, request }) => {
         }
 
         try {
-          // Update keyword status to 'generating'
-          await supabaseAdmin
+          // Claim this keyword atomically to prevent duplicate workers from processing
+          // the same keyword when /start is retried.
+          const { data: claimedKeyword } = await supabaseAdmin
             .from('keywords')
             .update({ status: 'generating' })
-            .eq('id', keyword.id);
+            .eq('id', keyword.id)
+            .eq('status', 'queued')
+            .select('id')
+            .maybeSingle();
+
+          if (!claimedKeyword) {
+            // Another worker already claimed or finished this keyword.
+            continue;
+          }
 
           // Find the article for this keyword (sequential lookup)
           const { data: article } = await supabaseAdmin
@@ -86,7 +95,15 @@ export const POST = withAuth(async (userId, { params, locals, request }) => {
             .single();
 
           if (!article) {
-            throw new Error(`Article not found for keyword: ${keyword.keyword}`);
+            console.warn(
+              `[Campaign] Keyword claimed but no queued article found, returning keyword to queue: ${keyword.keyword}`
+            );
+            await supabaseAdmin
+              .from('keywords')
+              .update({ status: 'queued' })
+              .eq('id', keyword.id)
+              .eq('status', 'generating');
+            continue;
           }
 
           // Generate article (sequential generation)

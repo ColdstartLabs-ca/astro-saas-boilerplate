@@ -345,13 +345,17 @@ test.describe('API: Campaigns (§3.2)', () => {
   let user: Awaited<ReturnType<typeof ctx.createUser>>;
   let projectId: string;
 
-  test.beforeEach(async () => {
+  test.beforeEach(async ({ request }) => {
     user = await ctx.createUser({ subscription: 'active', tier: 'growth', credits: 50 });
     if (!isTestMode()) {
       const project = await ctx.createProject(user.id, { name: 'Campaign Test Project' });
       projectId = project.id;
     } else {
-      projectId = crypto.randomUUID();
+      // In test mode, create a real project via API so it exists in the mock DB
+      const api = new ApiClient(request).withAuth(user.token);
+      const projectRes = await api.post('/api/projects', { name: 'Campaign Test Project' });
+      const projectData = await projectRes.getData() as { project: { id: string } };
+      projectId = projectData.project.id;
     }
   });
 
@@ -374,7 +378,7 @@ test.describe('API: Campaigns (§3.2)', () => {
       const api = new ApiClient(request).withAuth(user.token);
       const response = await api.get(`/api/campaigns?projectId=${projectId}`);
       response.expectStatus(200).expectSuccess();
-      const data = await response.getData();
+      const data = await response.getData() as any;
       expect(Array.isArray(data.campaigns)).toBe(true);
     });
   });
@@ -401,7 +405,7 @@ test.describe('API: Campaigns (§3.2)', () => {
         projectId,
       });
       response.expectStatus(201).expectSuccess();
-      const data = await response.getData();
+      const data = await response.getData() as any;
       expect(data.campaign.id).toBeDefined();
       expect(data.campaign.name).toBe('My Campaign');
       expect(data.campaign.project_id).toBe(projectId);
@@ -428,7 +432,7 @@ test.describe('API: Campaigns (§3.2)', () => {
       // Create
       const created = await api.post('/api/campaigns', { name: 'CRUD Test', projectId });
       created.expectStatus(201);
-      const { campaign } = await created.getData();
+      const { campaign } = await created.getData() as any;
 
       // Read
       const fetched = await api.get(`/api/campaigns/${campaign.id}`);
@@ -437,7 +441,7 @@ test.describe('API: Campaigns (§3.2)', () => {
       // Update
       const patched = await api.patch(`/api/campaigns/${campaign.id}`, { name: 'Updated Name' });
       patched.expectStatus(200).expectSuccess();
-      const patchedData = await patched.getData();
+      const patchedData = await patched.getData() as any;
       expect(patchedData.campaign.name).toBe('Updated Name');
 
       // Delete
@@ -459,7 +463,7 @@ test.describe('API: Keywords (§3.3)', () => {
   let user: Awaited<ReturnType<typeof ctx.createUser>>;
   let campaignId: string;
 
-  test.beforeEach(async () => {
+  test.beforeEach(async ({ request }) => {
     user = await ctx.createUser({ subscription: 'active', tier: 'growth', credits: 50 });
     if (!isTestMode()) {
       const project = await ctx.createProject(user.id, { name: 'Keywords Test Project' });
@@ -469,7 +473,17 @@ test.describe('API: Keywords (§3.3)', () => {
       });
       campaignId = campaign.id;
     } else {
-      campaignId = crypto.randomUUID();
+      // In test mode, create a real campaign via API so it exists in testModeCampaigns
+      const api = new ApiClient(request).withAuth(user.token);
+      const projectRes = await api.post('/api/projects', { name: 'Keywords Test Project' });
+      const projectData = await projectRes.getData();
+      const createdProjectId = (projectData as { project: { id: string } }).project.id;
+      const campaignRes = await api.post('/api/campaigns', {
+        name: 'Keywords Campaign',
+        projectId: createdProjectId,
+      });
+      const campaignData = await campaignRes.getData();
+      campaignId = (campaignData as { campaign: { id: string } }).campaign.id;
     }
   });
 
@@ -503,13 +517,13 @@ test.describe('API: Keywords (§3.3)', () => {
       keywords: ['best seo tools', 'keyword research tips'],
     });
     added.expectStatus(200).expectSuccess();
-    const addedData = await added.getData();
+    const addedData = await added.getData() as any;
     expect(addedData.added).toBe(2);
 
     // List keywords
     const list = await api.get(`/api/campaigns/${campaignId}/keywords`);
     list.expectStatus(200).expectSuccess();
-    const listData = await list.getData();
+    const listData = await list.getData() as any;
     expect(Array.isArray(listData.keywords)).toBe(true);
     expect(listData.keywords.length).toBeGreaterThanOrEqual(2);
   });
@@ -528,7 +542,7 @@ test.describe('API: Keywords (§3.3)', () => {
       keywords: ['delete me keyword'],
     });
     added.expectStatus(200);
-    const addedData = await added.getData();
+    const addedData = await added.getData() as any;
     const keywordId = addedData.keywords?.[0]?.id ?? addedData.added;
 
     if (typeof keywordId === 'string') {

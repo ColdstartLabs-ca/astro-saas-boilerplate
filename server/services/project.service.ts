@@ -218,6 +218,13 @@ export class ProjectService {
    * Uses hard delete for MVP (can be changed to soft delete later)
    */
   async delete(projectId: string, userId: string): Promise<void> {
+    // Verify ownership before deleting so we can return 404 when the project
+    // doesn't belong to this user, rather than silently succeeding.
+    const project = await this.getById(projectId, userId);
+    if (!project) {
+      throw new Error('Project not found');
+    }
+
     const { error } = await supabaseAdmin
       .from('projects')
       .delete()

@@ -313,10 +313,17 @@ interface ILocalsWithRuntime {
  * otherwise fire-and-forget with error logging.
  */
 export function fireAndForget(locals: unknown, promise: Promise<unknown>): void {
+  // Always attach a rejection handler before handing off to waitUntil().
+  // This avoids process-level unhandled rejection noise in local/test runtimes
+  // while still preserving non-blocking background execution semantics.
+  const guardedPromise = promise.catch(err => {
+    console.error('[fireAndForget] Background task failed:', err);
+  });
+
   const ctx = (locals as ILocalsWithRuntime).runtime?.ctx;
   if (ctx?.waitUntil) {
-    ctx.waitUntil(promise);
+    ctx.waitUntil(guardedPromise);
   } else {
-    promise.catch(err => console.error('[fireAndForget] Background task failed:', err));
+    void guardedPromise;
   }
 }

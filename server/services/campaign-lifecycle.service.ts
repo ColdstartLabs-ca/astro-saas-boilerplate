@@ -22,7 +22,7 @@ import { isAvailableWriterPreset } from '@shared/config/ai-models.config';
 import { calculateArticleCreditCost } from '@shared/constants';
 import { serverEnv } from '@shared/config/env';
 import { AppError } from '@shared/utils/errors';
-import { createCampaignSchema, updateCampaignSchema } from '@shared/validation/campaign.schema';
+import { updateCampaignSchema } from '@shared/validation/campaign.schema';
 import {
   calculateNextRunAt,
   DEFAULT_SCHEDULE_TIMEZONE,
@@ -284,8 +284,10 @@ export class CampaignLifecycleService {
    * Create a new campaign with keywords
    */
   async create(userId: string, input: ICreateCampaignInput): Promise<ICampaign> {
-    // Validate input
-    const validated = createCampaignSchema.parse(input);
+    // Note: input is already validated by the API route via createCampaignSchema.
+    // Do not re-parse here — the transform (undefined keywords → []) would produce
+    // an empty array that fails .min(1) on a second parse.
+    const validated = input;
 
     // Server-side validation: check if model is available
     if (
@@ -398,11 +400,13 @@ export class CampaignLifecycleService {
       validated.keywords.map(k => k.trim())
     );
 
-    const { error: keywordsError } = await supabaseAdmin.from('keywords').insert(keywordRows);
+    if (keywordRows.length > 0) {
+      const { error: keywordsError } = await supabaseAdmin.from('keywords').insert(keywordRows);
 
-    // Ignore duplicate key errors (ON CONFLICT DO NOTHING equivalent)
-    if (keywordsError && keywordsError.code !== '23505') {
-      throw new Error(`Failed to add keywords: ${keywordsError.message}`);
+      // Ignore duplicate key errors (ON CONFLICT DO NOTHING equivalent)
+      if (keywordsError && keywordsError.code !== '23505') {
+        throw new Error(`Failed to add keywords: ${keywordsError.message}`);
+      }
     }
 
     return campaign as ICampaign;
@@ -542,6 +546,12 @@ export class CampaignLifecycleService {
    * Keywords and articles cascade delete via FK
    */
   async delete(campaignId: string, userId: string): Promise<void> {
+    // In test mode with mock users, remove from in-memory store
+    if (serverEnv.ENV === 'test' && userId.includes('mock_user_')) {
+      testModeCampaigns.delete(campaignId);
+      return;
+    }
+
     const { error } = await supabaseAdmin
       .from('campaigns')
       .delete()

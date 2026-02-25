@@ -162,6 +162,19 @@ export class TestContext {
           created_at: now,
           updated_at: now,
         });
+        // Insert initial subscription credit transaction for non-free users
+        if (subscription !== 'free' && credits > 0) {
+          if (!db.credit_transactions) db.credit_transactions = [];
+          db.credit_transactions.push({
+            id: this.generateUUID(),
+            user_id: mockUserId,
+            amount: credits,
+            type: 'subscription',
+            description: 'Initial subscription credits',
+            reference_id: null,
+            created_at: now,
+          });
+        }
         writeMockDb(db);
 
         this.users.push(mockUser);
@@ -414,6 +427,202 @@ export class TestContext {
   }
 
   /**
+   * Creates a campaign record directly in the mock DB file (works in both test and non-test mode).
+   * Unlike createCampaign, this always persists to the DB so the web server can find it.
+   *
+   * @param userId - User ID who owns the campaign
+   * @param projectId - Project ID the campaign belongs to
+   * @param options - Campaign configuration
+   * @returns Created campaign with id
+   */
+  async createCampaignRecord(
+    userId: string,
+    projectId: string,
+    options: { name: string; settings?: Record<string, unknown> }
+  ): Promise<{ id: string }> {
+    const campaignId = this.generateUUID();
+    const now = new Date().toISOString();
+
+    if (isTestRuntime()) {
+      const db = readMockDb();
+      if (!db.campaigns) db.campaigns = [];
+      db.campaigns.push({
+        id: campaignId,
+        user_id: userId,
+        project_id: projectId,
+        name: options.name,
+        status: 'draft',
+        settings: options.settings ?? {},
+        created_at: now,
+        updated_at: now,
+      });
+      writeMockDb(db);
+      return { id: campaignId };
+    }
+
+    const { error } = await this.supabaseAdmin.from('campaigns').insert({
+      id: campaignId,
+      user_id: userId,
+      project_id: projectId,
+      name: options.name,
+      status: 'draft',
+      settings: options.settings ?? {},
+    });
+
+    if (error) {
+      throw new Error(`Failed to create campaign record: ${error.message}`);
+    }
+
+    return { id: campaignId };
+  }
+
+  /**
+   * Creates an integration record directly in the mock DB file (works in both test and non-test mode).
+   *
+   * @param userId - User ID who owns the integration
+   * @param options - Integration configuration
+   * @returns Created integration with id
+   */
+  async createIntegrationRecord(
+    userId: string,
+    options: {
+      type: string;
+      name: string;
+      config: Record<string, unknown>;
+      status?: string;
+    }
+  ): Promise<{ id: string }> {
+    const integrationId = this.generateUUID();
+    const now = new Date().toISOString();
+
+    if (isTestRuntime()) {
+      const db = readMockDb();
+      if (!db.integrations) db.integrations = [];
+      db.integrations.push({
+        id: integrationId,
+        user_id: userId,
+        type: options.type,
+        name: options.name,
+        config: options.config,
+        encrypted_credentials: 'test-encrypted',
+        status: options.status ?? 'active',
+        last_tested_at: null,
+        created_at: now,
+        updated_at: now,
+      });
+      writeMockDb(db);
+      return { id: integrationId };
+    }
+
+    const { error } = await this.supabaseAdmin.from('integrations').insert({
+      id: integrationId,
+      user_id: userId,
+      type: options.type,
+      name: options.name,
+      config: options.config,
+      encrypted_credentials: 'test-encrypted',
+      status: options.status ?? 'active',
+    });
+
+    if (error) {
+      throw new Error(`Failed to create integration record: ${error.message}`);
+    }
+
+    return { id: integrationId };
+  }
+
+  /**
+   * Creates an article record directly in the mock DB file (works in both test and non-test mode).
+   *
+   * @param userId - User ID who owns the article
+   * @param campaignId - Campaign the article belongs to
+   * @param options - Article configuration
+   * @returns Created article with id
+   */
+  async createArticleRecord(
+    userId: string,
+    campaignId: string,
+    options: { title: string; slug: string; content?: string; status?: string }
+  ): Promise<{ id: string }> {
+    const articleId = this.generateUUID();
+    const now = new Date().toISOString();
+
+    if (isTestRuntime()) {
+      const db = readMockDb();
+      if (!db.articles) db.articles = [];
+      db.articles.push({
+        id: articleId,
+        user_id: userId,
+        campaign_id: campaignId,
+        title: options.title,
+        slug: options.slug,
+        content: options.content ?? '',
+        status: options.status ?? 'draft',
+        created_at: now,
+        updated_at: now,
+      });
+      writeMockDb(db);
+      return { id: articleId };
+    }
+
+    const { error } = await this.supabaseAdmin.from('articles').insert({
+      id: articleId,
+      user_id: userId,
+      campaign_id: campaignId,
+      title: options.title,
+      slug: options.slug,
+      content: options.content ?? '',
+      status: options.status ?? 'draft',
+    });
+
+    if (error) {
+      throw new Error(`Failed to create article record: ${error.message}`);
+    }
+
+    return { id: articleId };
+  }
+
+  /**
+   * Creates a campaign_integrations junction record directly in the mock DB file.
+   *
+   * @param campaignId - Campaign ID
+   * @param integrationId - Integration ID
+   * @param enabled - Whether the integration is enabled
+   */
+  async assignIntegrationToCampaign(
+    campaignId: string,
+    integrationId: string,
+    enabled = true
+  ): Promise<void> {
+    const now = new Date().toISOString();
+
+    if (isTestRuntime()) {
+      const db = readMockDb();
+      if (!db.campaign_integrations) db.campaign_integrations = [];
+      db.campaign_integrations.push({
+        id: this.generateUUID(),
+        campaign_id: campaignId,
+        integration_id: integrationId,
+        enabled,
+        created_at: now,
+        updated_at: now,
+      });
+      writeMockDb(db);
+      return;
+    }
+
+    const { error } = await this.supabaseAdmin.from('campaign_integrations').insert({
+      campaign_id: campaignId,
+      integration_id: integrationId,
+      enabled,
+    });
+
+    if (error) {
+      throw new Error(`Failed to assign integration to campaign: ${error.message}`);
+    }
+  }
+
+  /**
    * Creates a test campaign for a user
    *
    * @param userId - User ID who owns the campaign
@@ -497,6 +706,71 @@ export class TestContext {
     }
 
     return data || [];
+  }
+
+  /**
+   * Creates a test article directly in the mock DB with a specified status.
+   *
+   * Useful in test mode when the real generation service is unavailable and you
+   * need an article in a specific non-initial state (e.g. "draft", "approved").
+   *
+   * @param options - Article configuration
+   * @returns Created article id
+   */
+  async createArticle(options: {
+    userId: string;
+    campaignId: string;
+    keyword?: string;
+    status?: string;
+    title?: string;
+  }): Promise<{ id: string }> {
+    const articleId = this.generateUUID();
+    const now = new Date().toISOString();
+
+    if (isTestRuntime()) {
+      const db = readMockDb();
+      if (!db.articles) db.articles = [];
+      db.articles.push({
+        id: articleId,
+        campaign_id: options.campaignId,
+        user_id: options.userId,
+        primary_keyword: options.keyword ?? 'test keyword',
+        title: options.title ?? null,
+        content: null,
+        status: options.status ?? 'draft',
+        ai_model_used: null,
+        seo_score: null,
+        ai_detection_score: null,
+        word_count: null,
+        meta_description: null,
+        published_url: null,
+        slug: null,
+        credits_used: 1,
+        generation_error: null,
+        generated_at: null,
+        published_at: null,
+        created_at: now,
+        updated_at: now,
+      });
+      writeMockDb(db);
+      return { id: articleId };
+    }
+
+    const { error } = await this.supabaseAdmin.from('articles').insert({
+      id: articleId,
+      campaign_id: options.campaignId,
+      user_id: options.userId,
+      primary_keyword: options.keyword ?? 'test keyword',
+      title: options.title ?? null,
+      status: options.status ?? 'draft',
+      credits_used: 1,
+    });
+
+    if (error) {
+      throw new Error(`Failed to create article: ${error.message}`);
+    }
+
+    return { id: articleId };
   }
 
   /**

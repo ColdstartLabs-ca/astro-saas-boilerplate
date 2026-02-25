@@ -1,9 +1,9 @@
 /**
  * POST /api/articles/[articleId]/regenerate
- * Regenerate a failed or rejected article (uses same campaign settings)
+ * Regenerate a retryable article (uses same campaign settings)
  *
  * Security:
- * - Only allows regeneration for 'failed' or 'rejected' status articles
+ * - Only allows regeneration for retryable status articles
  * - Uses conditional UPDATE to prevent race conditions
  * - Returns 409 Conflict if regeneration is already in progress
  */
@@ -15,7 +15,7 @@ import { calculateArticleCreditCost } from '@shared/config/credits.config';
 import type { IGenerateArticleInput, ArticleStatus } from '@shared/types/article.types';
 
 // Valid statuses for regeneration
-const REGENERATABLE_STATUSES: ArticleStatus[] = ['failed', 'rejected'];
+const REGENERATABLE_STATUSES: ArticleStatus[] = ['failed', 'failed_quality', 'rejected'];
 
 export const POST = withAuth(async (userId, { params, locals }) => {
   const { articleId } = params;
@@ -60,11 +60,11 @@ export const POST = withAuth(async (userId, { params, locals }) => {
     return errorResponse('VALIDATION_ERROR', 'Article has no associated campaign', 400);
   }
 
-  // Validate article status - only allow regeneration for failed or rejected
+  // Validate article status - only allow regeneration for explicit retryable states
   if (!REGENERATABLE_STATUSES.includes(article.status as ArticleStatus)) {
     return errorResponse(
       'VALIDATION_ERROR',
-      `Article cannot be regenerated. Current status: ${article.status}. Only failed or rejected articles can be regenerated.`,
+      `Article cannot be regenerated. Current status: ${article.status}. Only failed, failed_quality, or rejected articles can be regenerated.`,
       400
     );
   }

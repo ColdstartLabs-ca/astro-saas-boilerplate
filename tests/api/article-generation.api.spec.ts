@@ -282,14 +282,14 @@ test.describe('API: Article Generation (§4.1)', () => {
       });
       const api = new ApiClient(request).withAuth(creditUser.token);
       const { projectId, campaignId } = await createProjectAndCampaign(request, creditUser.token, {
-        model: 'standard', // 1 credit cost
+        model: 'budget', // 1 credit cost
       });
 
       const genResponse = await api.post('/api/articles/generate', {
         keyword: 'credit deduction test',
         projectId,
         campaignId,
-        model: 'standard',
+        model: 'budget',
       });
       genResponse.expectStatus(202);
 
@@ -466,7 +466,9 @@ test.describe('API: Article List (§4.4)', () => {
       const data = await response.getData();
       expect(data.article.id).toBe(articleId);
       expect(data.article.primary_keyword).toBe('detail test article');
-      expect(data.article.status).toBe('generating');
+      // In test mode the background generation job fails immediately (no OpenRouter key),
+      // so the status may be either 'generating' (race won) or 'failed' (job finished first).
+      expect(['generating', 'failed']).toContain(data.article.status);
     });
   });
 
@@ -495,11 +497,8 @@ test.describe('API: Article List (§4.4)', () => {
       });
       const { articleId } = await genRes.getData();
 
-      // Transition to draft first (generate → draft is a valid transition for mocked articles)
-      // In test mode, the article starts in 'generating'. We'll patch status to 'draft' first.
-      const draftRes = await api.patch(`/api/articles/${articleId}`, { status: 'draft' });
-      draftRes.expectStatus(200);
-
+      // Title updates are allowed on any article status (no status restriction in PATCH handler).
+      // In test mode the article may be 'generating' or 'failed' — both accept title updates.
       const response = await api.patch(`/api/articles/${articleId}`, {
         title: 'Updated Article Title',
       });
@@ -531,15 +530,14 @@ test.describe('API: Article List (§4.4)', () => {
       const api = new ApiClient(request).withAuth(user.token);
       const { projectId, campaignId } = await createProjectAndCampaign(request, user.token);
 
-      const genRes = await api.post('/api/articles/generate', {
-        keyword: 'approve test',
-        projectId,
+      // In test mode, background generation fails immediately so we cannot reach 'draft' via
+      // the API (failed → draft is not a valid transition). Seed the article directly as 'draft'.
+      const { id: articleId } = await ctx.createArticle({
+        userId: user.id,
         campaignId,
+        keyword: 'approve test',
+        status: 'draft',
       });
-      const { articleId } = await genRes.getData();
-
-      // Move to draft first
-      await api.patch(`/api/articles/${articleId}`, { status: 'draft' });
 
       // Approve
       const response = await api.patch(`/api/articles/${articleId}`, { status: 'approved' });
@@ -660,22 +658,23 @@ test.describe('API: Article Regeneration (§4.5)', () => {
       response.expectStatus(404);
     });
 
-    test('should return 400 when article status is not regeneratable (draft)', async ({
+    test('should return 400 when article status is not regeneratable (approved)', async ({
       request,
     }) => {
       const api = new ApiClient(request).withAuth(user.token);
       const { projectId, campaignId } = await createProjectAndCampaign(request, user.token);
 
-      // Create and move to draft
-      const genRes = await api.post('/api/articles/generate', {
-        keyword: 'draft regen test',
-        projectId,
+      // In test mode, background generation fails immediately so we cannot reach 'draft' via the
+      // API (failed → draft is not a valid transition). Seed an 'approved' article directly —
+      // approved is also not in REGENERATABLE_STATUSES, so the endpoint must return 400.
+      const { id: articleId } = await ctx.createArticle({
+        userId: user.id,
         campaignId,
+        keyword: 'approved regen test',
+        status: 'approved',
       });
-      const { articleId } = await genRes.getData();
-      await api.patch(`/api/articles/${articleId}`, { status: 'draft' });
 
-      // Trying to regenerate a draft article should fail
+      // Trying to regenerate an approved article should fail
       const response = await api.post(`/api/articles/${articleId}/regenerate`, {});
       response.expectStatus(400);
       await response.expectErrorCode('VALIDATION_ERROR');

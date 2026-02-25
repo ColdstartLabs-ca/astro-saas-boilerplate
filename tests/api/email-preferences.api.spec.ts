@@ -40,7 +40,8 @@ test.describe('GET /api/email/preferences', () => {
     const response = await api.get('/api/email/preferences');
     response.expectStatus(200);
 
-    const data = await response.json();
+    const body = await response.json();
+    const data = body.data ?? body;
     expect(data).toHaveProperty('marketing_emails');
     expect(data).toHaveProperty('product_updates');
     expect(data).toHaveProperty('low_credit_alerts');
@@ -59,7 +60,8 @@ test.describe('GET /api/email/preferences', () => {
     const response = await api.get('/api/email/preferences');
     response.expectStatus(200);
 
-    const data = await response.json();
+    const body = await response.json();
+    const data = body.data ?? body;
     if (data.user_id === undefined) {
       // No row yet → defaults
       expect(data.marketing_emails).toBe(true);
@@ -89,7 +91,8 @@ test.describe('PATCH /api/email/preferences', () => {
     });
     response.expectStatus(200);
 
-    const data = await response.json();
+    const body = await response.json();
+    const data = body.data ?? body;
     expect(data.marketing_emails).toBe(false);
   });
 
@@ -105,7 +108,8 @@ test.describe('PATCH /api/email/preferences', () => {
     });
     response.expectStatus(200);
 
-    const data = await response.json();
+    const body = await response.json();
+    const data = body.data ?? body;
     expect(data.marketing_emails).toBe(false);
     expect(data.product_updates).toBe(false);
     expect(data.low_credit_alerts).toBe(true);
@@ -120,7 +124,8 @@ test.describe('PATCH /api/email/preferences', () => {
 
     const getResponse = await api.get('/api/email/preferences');
     getResponse.expectStatus(200);
-    const data = await getResponse.json();
+    const body = await getResponse.json();
+    const data = body.data ?? body;
     expect(data.marketing_emails).toBe(false);
   });
 
@@ -150,7 +155,8 @@ test.describe('PATCH /api/email/preferences', () => {
     const api2 = new ApiClient(request).withAuth(user2.token);
     const response = await api2.get('/api/email/preferences');
     response.expectStatus(200);
-    const data = await response.json();
+    const body = await response.json();
+    const data = body.data ?? body;
 
     if (data.user_id) {
       expect(data.user_id).toBe(user2.id);

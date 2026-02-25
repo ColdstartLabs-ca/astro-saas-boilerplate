@@ -47,7 +47,9 @@ export const createCampaignSchema = z.object({
   keywords: z
     .array(z.string().min(1).max(200))
     .min(1, 'At least one keyword is required')
-    .max(500, 'Maximum 500 keywords allowed'),
+    .max(500, 'Maximum 500 keywords allowed')
+    .optional()
+    .transform(v => v ?? []),
   model: z.string().optional(),
   tone: z.enum(TONES).optional(),
   targetWordCount: z.number().int().min(800).max(3000).optional(),

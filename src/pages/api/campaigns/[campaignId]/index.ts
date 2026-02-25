@@ -39,6 +39,18 @@ export const PUT = withAuthAndBody(updateCampaignSchema, async (userId, input, {
 });
 
 /**
+ * PATCH /api/campaigns/:campaignId
+ * Partial update of campaign settings (alias for PUT)
+ */
+export const PATCH = withAuthAndBody(updateCampaignSchema, async (userId, input, { params }) => {
+  const campaignId = params.campaignId as string;
+  const campaign = await campaignService.update(campaignId, userId, input);
+
+  const response: ICampaignResponse = { campaign };
+  return jsonResponse(response);
+});
+
+/**
  * DELETE /api/campaigns/:campaignId
  * Delete campaign (cascades to keywords and articles)
  */

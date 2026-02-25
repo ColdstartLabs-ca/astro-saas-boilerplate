@@ -36,11 +36,36 @@ export class CampaignKeywordService {
       if (!campaign || campaign.user_id !== userId) {
         throw new CampaignNotFoundError(campaignId);
       }
-      // For test mode, just return the count without actual keyword manipulation
+      // Add keywords to the in-memory campaign
       const newKeywords = keywords.map(k => k.trim()).filter(k => k.length > 0);
+      if (!campaign.keywords) {
+        campaign.keywords = [];
+      }
+      const existingKeywords = new Set(campaign.keywords.map(k => k.keyword.toLowerCase()));
+      const uniqueNew: string[] = [];
+      const duplicates: string[] = [];
+      for (const kw of newKeywords) {
+        if (existingKeywords.has(kw.toLowerCase())) {
+          duplicates.push(kw);
+        } else {
+          uniqueNew.push(kw);
+          existingKeywords.add(kw.toLowerCase());
+        }
+      }
+      for (const kw of uniqueNew) {
+        campaign.keywords.push({
+          id: crypto.randomUUID(),
+          campaign_id: campaignId,
+          keyword: kw,
+          status: 'pending',
+          difficulty: 'unknown',
+          priority: 0,
+        });
+      }
+      testModeCampaigns.set(campaignId, campaign);
       return {
-        added: newKeywords.length,
-        duplicates: 0,
+        added: uniqueNew.length,
+        duplicates: duplicates.length,
       };
     }
 

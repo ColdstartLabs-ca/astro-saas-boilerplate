@@ -41,7 +41,8 @@ test.describe('GET /api/settings/api-keys', () => {
     const response = await api.get('/api/settings/api-keys');
     response.expectStatus(200);
 
-    const data = await response.json();
+    const body = await response.json();
+    const data = body.data ?? body;
     expect(data).toHaveProperty('keys');
     expect(Array.isArray(data.keys)).toBe(true);
   });
@@ -56,7 +57,8 @@ test.describe('GET /api/settings/api-keys', () => {
     const response = await api.get('/api/settings/api-keys');
     response.expectStatus(200);
 
-    const data = await response.json();
+    const body = await response.json();
+    const data = body.data ?? body;
     for (const key of data.keys) {
       expect(key).not.toHaveProperty('key_hash');
       expect(key).not.toHaveProperty('key');
@@ -75,7 +77,8 @@ test.describe('GET /api/settings/api-keys', () => {
     const response = await api2.get('/api/settings/api-keys');
     response.expectStatus(200);
 
-    const data = await response.json();
+    const body = await response.json();
+    const data = body.data ?? body;
     for (const key of data.keys) {
       expect(key.user_id).toBe(user2.id);
     }
@@ -98,7 +101,8 @@ test.describe('POST /api/settings/api-keys', () => {
     const response = await api.post('/api/settings/api-keys', { name: 'My Integration Key' });
     response.expectStatus(201);
 
-    const data = await response.json();
+    const body = await response.json();
+    const data = body.data ?? body;
     expect(data).toHaveProperty('key');
     expect(data).toHaveProperty('warning');
     expect(data.key).toHaveProperty('id');
@@ -119,7 +123,8 @@ test.describe('POST /api/settings/api-keys', () => {
     });
     response.expectStatus(201);
 
-    const data = await response.json();
+    const body = await response.json();
+    const data = body.data ?? body;
     expect(data.key.scopes).toContain('articles:read');
     expect(data.key.scopes).toContain('campaigns:read');
   });
@@ -165,11 +170,13 @@ test.describe('POST /api/settings/api-keys', () => {
 
     const createResponse = await api.post('/api/settings/api-keys', { name: 'Listed Key' });
     createResponse.expectStatus(201);
-    const created = await createResponse.json();
+    const createdBody = await createResponse.json();
+    const created = createdBody.data ?? createdBody;
 
     const listResponse = await api.get('/api/settings/api-keys');
     listResponse.expectStatus(200);
-    const list = await listResponse.json();
+    const listBody = await listResponse.json();
+    const list = listBody.data ?? listBody;
 
     const found = list.keys.find((k: { id: string }) => k.id === created.key.id);
     expect(found).toBeDefined();
@@ -209,7 +216,8 @@ test.describe('DELETE /api/settings/api-keys', () => {
 
     const createResponse = await api.post('/api/settings/api-keys', { name: 'Key To Delete' });
     createResponse.expectStatus(201);
-    const created = await createResponse.json();
+    const createdBody = await createResponse.json();
+    const created = createdBody.data ?? createdBody;
 
     const deleteResponse = await request.delete(
       `/api/settings/api-keys?keyId=${created.key.id}`,
@@ -219,7 +227,8 @@ test.describe('DELETE /api/settings/api-keys', () => {
 
     const listResponse = await api.get('/api/settings/api-keys');
     listResponse.expectStatus(200);
-    const list = await listResponse.json();
+    const listBody = await listResponse.json();
+    const list = listBody.data ?? listBody;
     const found = list.keys.find((k: { id: string }) => k.id === created.key.id);
     expect(found).toBeUndefined();
   });
@@ -232,7 +241,8 @@ test.describe('DELETE /api/settings/api-keys', () => {
     const api1 = new ApiClient(request).withAuth(user1.token);
     const createResponse = await api1.post('/api/settings/api-keys', { name: 'User1 Key' });
     createResponse.expectStatus(201);
-    const created = await createResponse.json();
+    const createdBody = await createResponse.json();
+    const created = createdBody.data ?? createdBody;
 
     const deleteResponse = await request.delete(
       `/api/settings/api-keys?keyId=${created.key.id}`,

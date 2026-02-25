@@ -555,9 +555,11 @@ export function ArticleDetailModal({
               </DashboardButton>
             )}
 
-            {/* Approve/Reject buttons - show for draft, reviewed articles */}
+            {/* Approve/Reject buttons - show for reviewable articles */}
             {!isEditing &&
-              (currentArticle.status === 'draft' || currentArticle.status === 'reviewed') && (
+              (currentArticle.status === 'draft' ||
+                currentArticle.status === 'qa_passed' ||
+                currentArticle.status === 'reviewed') && (
                 <>
                   <DashboardButton
                     data-testid="approve-button"
@@ -584,8 +586,10 @@ export function ArticleDetailModal({
                 </>
               )}
 
-            {/* Regenerate button (for failed articles) */}
-            {!isEditing && currentArticle.status === 'failed' && (
+            {/* Regenerate button (for retryable failure states) */}
+            {!isEditing &&
+              (currentArticle.status === 'failed' ||
+                currentArticle.status === 'failed_quality') && (
               <DashboardButton
                 data-testid="regenerate-button"
                 variant="outline"
@@ -702,6 +706,8 @@ export function ArticleDetailModal({
 
 const STATUS_STYLES: Record<string, string> = {
   draft: 'bg-blue-500/10 text-blue-400 border-blue-500/20',
+  qa_passed: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
+  qa_failed: 'bg-orange-500/10 text-orange-400 border-orange-500/20',
   generating: 'bg-amber-500/10 text-amber-400 border-amber-500/20',
   queued: 'bg-surface-light text-muted border-border',
   reviewed: 'bg-purple-500/10 text-purple-400 border-purple-500/20',
@@ -709,6 +715,8 @@ const STATUS_STYLES: Record<string, string> = {
   rejected: 'bg-red-500/10 text-red-400 border-red-500/20',
   published: 'bg-brand-500/10 text-brand-400 border-brand-500/20',
   failed: 'bg-red-500/10 text-red-400 border-red-500/20',
+  failed_quality: 'bg-rose-500/10 text-rose-400 border-rose-500/20',
+  failed_timeout: 'bg-rose-500/10 text-rose-400 border-rose-500/20',
 };
 
 function StatusBadge({ status }: { status: string }) {

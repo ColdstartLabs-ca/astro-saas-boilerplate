@@ -6,10 +6,6 @@ import type { ICampaignIntegrationWithDetails } from '@shared/types/integration.
  * Campaign Integrations API Tests
  *
  * Tests assigning integrations to campaigns and auto-publish settings.
- *
- * NOTE: In test mode (ENV=test), we cannot use direct DB inserts for
- * campaigns/integrations because the user_id FK references profiles/auth.users.
- * Tests that require seeded data via direct DB inserts are skipped in test mode.
  */
 
 let ctx: TestContext;
@@ -22,9 +18,6 @@ test.afterAll(async () => {
   await ctx.cleanup();
 });
 
-// Check if we're in test mode with mock users
-const isTestMode = () => process.env.ENV === 'test' || process.env.PLAYWRIGHT_TEST === '1';
-
 test.describe('API: Campaign Integrations', () => {
   let user: Awaited<ReturnType<typeof ctx.createUser>>;
   let campaignId: string;
@@ -33,52 +26,19 @@ test.describe('API: Campaign Integrations', () => {
   test.beforeEach(async () => {
     user = await ctx.createUser({ subscription: 'active', tier: 'growth', credits: 100 });
 
-    // Skip DB setup in test mode since we can't insert with mock user IDs
-    if (isTestMode()) {
-      // Use mock IDs for tests that don't need DB verification
-      campaignId = crypto.randomUUID();
-      integrationId = crypto.randomUUID();
-      return;
-    }
+    const project = await ctx.createProject(user.id, { name: 'Test Project' });
 
-    // Create a campaign and integration for testing (only in non-test mode)
-    const { supabaseAdmin } = ctx;
-    const project = await ctx.createProject(user.id, {
-      name: 'Test Project',
+    const campaign = await ctx.createCampaignRecord(user.id, project.id, {
+      name: 'Test Campaign',
     });
+    campaignId = campaign.id;
 
-    const { data: campaign } = await supabaseAdmin
-      .from('campaigns')
-      .insert({
-        user_id: user.id,
-        project_id: project.id,
-        name: 'Test Campaign',
-        status: 'draft',
-        settings: {},
-      })
-      .select()
-      .single();
-
-    campaignId = campaign!.id;
-
-    const { data: integration } = await supabaseAdmin
-      .from('integrations')
-      .insert({
-        user_id: user.id,
-        type: 'wordpress',
-        name: 'Test Integration',
-        config: {
-          site_url: 'https://test.com',
-          username: 'testuser',
-          app_password: 'testpass',
-        },
-        encrypted_credentials: 'encrypted',
-        status: 'active',
-      })
-      .select()
-      .single();
-
-    integrationId = integration!.id;
+    const integration = await ctx.createIntegrationRecord(user.id, {
+      type: 'wordpress',
+      name: 'Test Integration',
+      config: { site_url: 'https://test.com', username: 'testuser' },
+    });
+    integrationId = integration.id;
   });
 
   // =============================================================================
@@ -100,14 +60,7 @@ test.describe('API: Campaign Integrations', () => {
       const api = new ApiClient(request).withAuth(user.token);
 
       // Add campaign_integrations junction record
-      await ctx.supabaseAdmin
-        .from('campaign_integrations')
-        .insert({
-          campaign_id: campaignId,
-          integration_id: integrationId,
-          enabled: true,
-        })
-        .select();
+      await ctx.assignIntegrationToCampaign(campaignId, integrationId, true);
 
       const response = await api.get(`/api/campaigns/${campaignId}/integrations`);
 
@@ -201,30 +154,16 @@ test.describe('API: Campaign Integrations', () => {
 
       const otherUser = await ctx.createUser({ subscription: 'active' });
 
-      const { supabaseAdmin } = ctx;
-      await ctx.createProject(otherUser.id, {
-        name: 'Other User Project',
+      const otherIntegration = await ctx.createIntegrationRecord(otherUser.id, {
+        type: 'wordpress',
+        name: 'Other User Integration',
+        config: { site_url: 'https://other.com' },
       });
-
-      const { data: otherIntegration } = await supabaseAdmin
-        .from('integrations')
-        .insert({
-          user_id: otherUser.id,
-          type: 'wordpress',
-          name: 'Other User Integration',
-          config: {
-            site_url: 'https://other.com',
-          },
-          encrypted_credentials: 'encrypted',
-          status: 'active',
-        })
-        .select()
-        .single();
 
       const api = new ApiClient(request).withAuth(user.token);
 
       const response = await api.put(`/api/campaigns/${campaignId}/integrations`, {
-        integrationIds: [otherIntegration!.id],
+        integrationIds: [otherIntegration.id],
         autoPublish: true,
       });
 
@@ -241,70 +180,16 @@ test.describe('API: Campaign Integrations', () => {
     let articleId: string;
 
     test.beforeEach(async () => {
-      // Skip DB setup in test mode
-      if (isTestMode()) {
-        articleId = crypto.randomUUID();
-        return;
-      }
-
-      // Create an article for testing
-      const { supabaseAdmin } = ctx;
-      const project = await ctx.createProject(user.id, {
-        name: 'Test Project',
+      const article = await ctx.createArticleRecord(user.id, campaignId, {
+        title: 'Test Article',
+        slug: `test-article-${Date.now()}`,
+        content: 'Test content',
+        status: 'draft',
       });
+      articleId = article.id;
 
-      const { data: campaign } = await supabaseAdmin
-        .from('campaigns')
-        .insert({
-          user_id: user.id,
-          project_id: project.id,
-          name: 'Test Campaign',
-          status: 'draft',
-          settings: {},
-        })
-        .select()
-        .single();
-
-      campaignId = campaign!.id;
-
-      const { data: article } = await supabaseAdmin
-        .from('articles')
-        .insert({
-          user_id: user.id,
-          campaign_id: campaignId,
-          title: 'Test Article',
-          slug: 'test-article',
-          content: 'Test content',
-          status: 'draft',
-        })
-        .select()
-        .single();
-
-      articleId = article!.id;
-
-      // Create and assign an integration
-      const { data: integration } = await supabaseAdmin
-        .from('integrations')
-        .insert({
-          user_id: user.id,
-          type: 'webhook',
-          name: 'Test Webhook',
-          config: {
-            url: 'https://example.com/webhook',
-          },
-          encrypted_credentials: 'encrypted',
-          status: 'active',
-        })
-        .select()
-        .single();
-
-      integrationId = integration!.id;
-
-      await supabaseAdmin.from('campaign_integrations').insert({
-        campaign_id: campaignId,
-        integration_id: integrationId,
-        enabled: true,
-      });
+      // Assign the integration from the outer beforeEach to the campaign
+      await ctx.assignIntegrationToCampaign(campaignId, integrationId, true);
     });
 
     test('should reject unauthenticated requests', async ({ request }) => {
@@ -390,46 +275,13 @@ test.describe('API: Campaign Integrations', () => {
     let articleId: string;
 
     test.beforeEach(async () => {
-      // Skip DB setup in test mode
-      if (isTestMode()) {
-        articleId = crypto.randomUUID();
-        return;
-      }
-
-      // Create an article for testing
-      const { supabaseAdmin } = ctx;
-      const project = await ctx.createProject(user.id, {
-        name: 'Test Project',
+      const article = await ctx.createArticleRecord(user.id, campaignId, {
+        title: 'Test Article for Deliveries',
+        slug: `test-article-deliveries-${Date.now()}`,
+        content: 'Test content',
+        status: 'draft',
       });
-
-      const { data: campaign } = await supabaseAdmin
-        .from('campaigns')
-        .insert({
-          user_id: user.id,
-          project_id: project.id,
-          name: 'Test Campaign',
-          status: 'draft',
-          settings: {},
-        })
-        .select()
-        .single();
-
-      campaignId = campaign!.id;
-
-      const { data: article } = await supabaseAdmin
-        .from('articles')
-        .insert({
-          user_id: user.id,
-          campaign_id: campaignId,
-          title: 'Test Article for Deliveries',
-          slug: 'test-article-deliveries',
-          content: 'Test content',
-          status: 'draft',
-        })
-        .select()
-        .single();
-
-      articleId = article!.id;
+      articleId = article.id;
     });
 
     test('should reject unauthenticated requests', async ({ request }) => {

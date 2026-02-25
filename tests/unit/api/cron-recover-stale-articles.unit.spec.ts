@@ -62,7 +62,7 @@ describe('CronController - recoverStaleArticles', () => {
       vi.mocked(supabaseAdmin.from).mockReturnValue({
         select: vi.fn(() => ({
           in: vi.fn(() => ({
-            lt: vi.fn(() => ({
+            or: vi.fn(() => ({
               order: vi.fn(() => ({
                 limit: vi.fn(() => Promise.resolve({ data: [], error: null })),
               })),
@@ -101,7 +101,7 @@ describe('CronController - recoverStaleArticles', () => {
       vi.mocked(supabaseAdmin.from).mockReturnValue({
         select: vi.fn().mockReturnValue({
           in: vi.fn().mockReturnValue({
-            lt: vi.fn().mockReturnValue({
+            or: vi.fn().mockReturnValue({
               order: vi.fn().mockReturnValue({
                 limit: vi.fn().mockResolvedValue({
                   data: mockStaleArticles,
@@ -149,7 +149,7 @@ describe('CronController - recoverStaleArticles', () => {
       const fromMock = vi.fn().mockReturnValue({
         select: vi.fn().mockReturnValue({
           in: vi.fn().mockReturnValue({
-            lt: vi.fn().mockReturnValue({
+            or: vi.fn().mockReturnValue({
               order: vi.fn().mockReturnValue({
                 limit: vi.fn().mockResolvedValue({
                   data: mockStaleArticles,
@@ -201,7 +201,7 @@ describe('CronController - recoverStaleArticles', () => {
       vi.mocked(supabaseAdmin.from).mockReturnValue({
         select: vi.fn().mockReturnValue({
           in: vi.fn().mockReturnValue({
-            lt: vi.fn().mockReturnValue({
+            or: vi.fn().mockReturnValue({
               order: vi.fn().mockReturnValue({
                 limit: vi.fn().mockResolvedValue({
                   data: mockStaleArticles,
@@ -254,7 +254,7 @@ describe('CronController - recoverStaleArticles', () => {
       vi.mocked(supabaseAdmin.from).mockReturnValue({
         select: vi.fn().mockReturnValue({
           in: vi.fn().mockReturnValue({
-            lt: vi.fn().mockReturnValue({
+            or: vi.fn().mockReturnValue({
               order: vi.fn().mockReturnValue({
                 limit: vi.fn().mockResolvedValue({
                   data: null,
@@ -300,7 +300,7 @@ describe('CronController - recoverStaleArticles', () => {
       vi.mocked(supabaseAdmin.from).mockReturnValue({
         select: vi.fn().mockReturnValue({
           in: vi.fn().mockReturnValue({
-            lt: vi.fn().mockReturnValue({
+            or: vi.fn().mockReturnValue({
               order: vi.fn().mockReturnValue({
                 limit: vi.fn().mockResolvedValue({
                   data: mockStaleArticles,
@@ -349,7 +349,7 @@ describe('CronController - recoverStaleArticles', () => {
       vi.mocked(supabaseAdmin.from).mockReturnValue({
         select: vi.fn().mockReturnValue({
           in: vi.fn().mockReturnValue({
-            lt: vi.fn().mockReturnValue({
+            or: vi.fn().mockReturnValue({
               order: vi.fn().mockReturnValue({
                 limit: vi.fn().mockResolvedValue({
                   data: [recentArticle],
@@ -372,7 +372,7 @@ describe('CronController - recoverStaleArticles', () => {
         return {
           select: vi.fn().mockReturnValue({
             in: vi.fn().mockReturnValue({
-              lt: vi.fn().mockReturnValue({
+              or: vi.fn().mockReturnValue({
                 order: vi.fn().mockReturnValue({
                   limit: vi.fn().mockResolvedValue({
                     data: [], // Empty because 29 min is under threshold
@@ -410,7 +410,7 @@ describe('CronController - recoverStaleArticles', () => {
       vi.mocked(supabaseAdmin.from).mockReturnValue({
         select: vi.fn().mockReturnValue({
           in: vi.fn().mockReturnValue({
-            lt: vi.fn().mockReturnValue({
+            or: vi.fn().mockReturnValue({
               order: vi.fn().mockReturnValue({
                 limit: vi.fn().mockResolvedValue({
                   data: mockStaleArticles,
@@ -456,7 +456,7 @@ describe('CronController - recoverStaleArticles', () => {
           return {
             select: vi.fn().mockReturnValue({
               in: vi.fn().mockReturnValue({
-                lt: vi.fn().mockReturnValue({
+                or: vi.fn().mockReturnValue({
                   order: vi.fn().mockReturnValue({
                     limit: vi.fn().mockResolvedValue({
                       data: mockStaleArticles,

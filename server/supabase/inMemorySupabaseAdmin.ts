@@ -65,6 +65,7 @@ class InMemoryStore {
       'gsc_connections',
       'integrations',
       'campaign_integrations',
+      'integration_deliveries',
       'opportunities',
       'subscriptions',
       'user_credits',
@@ -784,6 +785,22 @@ class InMemoryQueryBuilder implements PromiseLike<QueryResult<unknown>> {
         ...clone(row),
         article_images: [],
       }));
+    }
+
+    // Handle integration_deliveries + integrations join:
+    // Used by deliveryService.getArticleDeliveries
+    if (
+      this.tableName === 'integration_deliveries' &&
+      normalizedSelect.includes('integration:integrations (')
+    ) {
+      const integrations = store.get('integrations');
+      return rows.map(row => {
+        const integration = integrations.find(item => item.id === row.integration_id) ?? null;
+        return {
+          ...clone(row),
+          integration: integration ? clone(integration) : null,
+        };
+      });
     }
 
     // Handle campaigns + projects join:

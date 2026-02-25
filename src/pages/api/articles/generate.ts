@@ -85,8 +85,9 @@ export const POST = withAuthAndBody(generateSchema, async (userId, input, { loca
   // Use the resolved model to ensure billing matches actual generation
   const totalCreditsNeeded = calculateArticleCreditCost(resolvedModel, input.imagePreset);
 
-  // Check for existing non-failed article with the same normalized keyword in this campaign
-  // This prevents duplicate article generation for the same topic
+  // Check for existing article with the same normalized keyword in this campaign
+  // This prevents duplicate article generation for the same topic.
+  // Failed articles are included in the check: use forceRegenerate:true to retry them.
   if (!input.forceRegenerate) {
     const normalizedKeyword = normalizeKeyword(input.keyword);
 
@@ -95,10 +96,9 @@ export const POST = withAuthAndBody(generateSchema, async (userId, input, { loca
       .select('id')
       .eq('campaign_id', campaign.id)
       .eq('keyword_normalized', normalizedKeyword)
-      .not('status', 'eq', 'failed') // Exclude failed articles from duplicate check
       .maybeSingle();
 
-    // If we found an existing article with the same keyword (case-insensitive), return 409
+    // If we found any existing article with the same keyword, return 409
     if (existingArticle) {
       return errorResponse(
         'DUPLICATE_ARTICLE',

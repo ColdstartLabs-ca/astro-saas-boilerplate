@@ -1,5 +1,6 @@
 import { BaseController } from './BaseController';
 import { supabaseAdmin } from '@server/supabase/supabaseAdmin';
+import { getAuthenticatedUser } from '@server/middleware/getAuthenticatedUser';
 
 /**
  * Credit transaction type
@@ -30,23 +31,13 @@ interface ICreditHistoryQuery {
 export class CreditsController extends BaseController {
   /**
    * Authenticate user from Authorization header
+   * Supports both real JWT and test-mode mock tokens
    */
   private async authenticateUser(req: Request): Promise<{ userId: string } | Response> {
-    const authHeader = req.headers.get('authorization');
-    if (!authHeader) {
+    const user = await getAuthenticatedUser(req);
+    if (!user) {
       return this.error('UNAUTHORIZED', 'Unauthorized', 401);
     }
-
-    const token = authHeader.replace('Bearer ', '');
-    const {
-      data: { user },
-      error: authError,
-    } = await supabaseAdmin.auth.getUser(token);
-
-    if (authError || !user) {
-      return this.error('UNAUTHORIZED', 'Unauthorized', 401);
-    }
-
     return { userId: user.id };
   }
 
