@@ -193,6 +193,58 @@ Free users are valuable network participants — their articles carry outbound b
 
 **Upgrade hook:** Free users see their backlinks page, see credits accumulating slowly, and understand that upgrading gives them monthly credits + full earning rate. The 50% penalty creates a clear value gap without locking them out entirely.
 
+### Anti-Abuse: Tiered Monitoring & Credit Clawback
+
+**Problem:** A shady participant could join the exchange, receive verified backlinks to their site, then manually remove the outbound links from their own blog posts — getting free backlinks while giving nothing.
+
+**Tiered Monitoring Schedule:**
+
+| Backlink Age | Check Frequency | Rationale                                    |
+| ------------ | --------------- | -------------------------------------------- |
+| 0–30 days    | Daily           | High-risk window — most removals happen here |
+| 30–90 days   | Weekly          | Still worth watching                         |
+| 90+ days     | Stop monitoring | If it survived 3 months, it's staying        |
+
+**Cron: `monitor-backlinks` (runs daily):**
+
+```sql
+-- Recent backlinks: check daily
+SELECT * FROM backlinks
+WHERE status = 'verified'
+  AND last_checked_at < now() - interval '24 hours'
+  AND created_at > now() - interval '30 days'
+UNION ALL
+-- Mature backlinks: check weekly
+SELECT * FROM backlinks
+WHERE status = 'verified'
+  AND last_checked_at < now() - interval '7 days'
+  AND created_at BETWEEN now() - interval '90 days' AND now() - interval '30 days'
+```
+
+**Removal Detection & Clawback Flow:**
+
+1. Verification crawl fails to find a previously-verified link
+2. Increment `failed_checks` counter on the backlink record
+3. **Grace period**: After **3 consecutive failures** (72h minimum, accounts for temporary downtime):
+   - Set `status: removed`
+   - **Credit clawback**: Debit the credits that were originally earned by the link remover (recorded in `credits_earned` on the backlink)
+   - Create a `backlink_credit_transaction` with `type: clawback` and negative amount
+   - Increment `strikes` on the offending project's `backlink_exchange_settings`
+4. If link reappears during grace period → reset `failed_checks` to 0 (no penalty)
+
+**Strike System:**
+
+| Strikes | Consequence                                                            |
+| ------- | ---------------------------------------------------------------------- |
+| 1       | Warning notification to user                                           |
+| 2       | 30-day cooldown — project cannot receive new backlinks                 |
+| 3+      | `screening_status: suspended` — project ejected from exchange entirely |
+
+**Cycle Impact:** When an ABC cycle leg is marked `removed`, the cycle status transitions to `broken`. The other two participants are not penalized — they keep their earned credits. Only the remover gets the clawback + strike.
+
+**Credit Transaction Types** (updated):
+`subscription_grant | earned | spent | purchased | expired | clawback`
+
 ## 3. Sequence Flow
 
 ### Article Generation with ABC Backlink Injection
@@ -289,9 +341,10 @@ sequenceDiagram
   enabled BOOLEAN DEFAULT false
   min_domain_rating INT DEFAULT 5 (CHECK >= 0 AND <= 100)
   -- Network quality screening
-  screening_status TEXT DEFAULT 'pending' (pending | approved | rejected)
+  screening_status TEXT DEFAULT 'pending' (pending | approved | rejected | suspended)
   screening_reason TEXT
   screened_at TIMESTAMPTZ
+  strikes INT DEFAULT 0 — incremented on confirmed link removal; 3 strikes = suspended
   created_at TIMESTAMPTZ
   updated_at TIMESTAMPTZ
   ```
@@ -315,7 +368,7 @@ sequenceDiagram
   id UUID PK
   user_id UUID FK → auth.users(id) ON DELETE CASCADE
   amount INT NOT NULL (positive = earn, negative = spend)
-  type TEXT NOT NULL (subscription_grant | earned | spent | purchased | expired)
+  type TEXT NOT NULL (subscription_grant | earned | spent | purchased | expired | clawback)
   reference_id UUID (nullable, FK to backlink or article)
   description TEXT
   created_at TIMESTAMPTZ
@@ -335,6 +388,7 @@ sequenceDiagram
   status TEXT DEFAULT 'placed' (placed | verified | not_verified | removed)
   domain_rating INT — DR of source site at time of verification
   credits_earned INT DEFAULT 0 — credits credited to target user
+  failed_checks INT DEFAULT 0 — consecutive failed verification checks (reset on success)
   verified_at TIMESTAMPTZ
   last_checked_at TIMESTAMPTZ
   created_at TIMESTAMPTZ
@@ -408,6 +462,13 @@ sequenceDiagram
       intervalHours: 24,
       maxRetries: 3,
       crawlerTimeoutMs: 10000,
+    },
+    monitoring: {
+      recentWindowDays: 30, // 0-30 days: check daily
+      matureWindowDays: 90, // 30-90 days: check weekly
+      // 90+ days: stop monitoring
+      failedChecksBeforeRemoval: 3, // 3 consecutive failures (72h grace) → removed
+      strikesBeforeSuspension: 3, // 3 removed backlinks → project suspended from exchange
     },
     blogPathPatterns: ['/blog/', '/posts/', '/articles/', '/news/', '/journal/', '/insights/'],
   } as const;
@@ -677,20 +738,25 @@ sequenceDiagram
 
 ---
 
-### Phase 7: Backlink Verification Service — "Placed backlinks are periodically verified"
+### Phase 7: Backlink Verification & Monitoring — "Placed backlinks are verified and continuously monitored for removal"
 
-**Files (4):**
+**Files (6):**
 
-- `server/services/backlink-verification.service.ts` — crawler + DR lookup
+- `server/services/backlink-verification.service.ts` — crawler + DR lookup + initial verification
+- `server/services/backlink-monitoring.service.ts` — tiered re-verification, removal detection, clawback
 - `server/services/__tests__/backlink-verification.service.spec.ts` — unit tests
-- `src/pages/api/cron/verify-backlinks.ts` — cron endpoint
-- `shared/config/security.ts` — add cron route to public API routes
+- `server/services/__tests__/backlink-monitoring.service.spec.ts` — unit tests
+- `src/pages/api/cron/verify-backlinks.ts` — cron endpoint (initial verification)
+- `src/pages/api/cron/monitor-backlinks.ts` — cron endpoint (ongoing monitoring)
+- `shared/config/security.ts` — add cron routes to public API routes
 
 **Implementation:**
 
+#### Cron 1: Initial Verification (`verify-backlinks`)
+
 - [ ] `BacklinkVerificationService`:
   - `verifyPendingBacklinks()`:
-    1. Query backlinks with `status=placed` or `last_checked_at > 24h ago`
+    1. Query backlinks with `status=placed` or `status=not_verified` (never verified yet)
     2. For each: HTTP GET the source URL, parse HTML, check for target URL link
     3. Check if link is dofollow (no `rel="nofollow"` or `rel="ugc"`)
     4. If found + dofollow: fetch DR from Ahrefs API (or cache), update status=verified, credit target user
@@ -709,6 +775,37 @@ sequenceDiagram
   - Process backlinks in batches (max 50 per run to stay within CPU limits)
   - Schedule: every 6 hours
 
+#### Cron 2: Ongoing Monitoring (`monitor-backlinks`)
+
+- [ ] `BacklinkMonitoringService`:
+  - `monitorVerifiedBacklinks()`:
+    1. Query verified backlinks using **tiered schedule**:
+       - **Recent (0–30 days old)**: `last_checked_at < now() - 24h` — checked daily
+       - **Mature (30–90 days old)**: `last_checked_at < now() - 7 days` — checked weekly
+       - **Old (90+ days)**: not checked (monitoring ends)
+    2. Re-crawl source URL, check if target link still exists + is dofollow
+    3. **If link still present**: reset `failed_checks` to 0, update `last_checked_at`
+    4. **If link missing**: increment `failed_checks`
+    5. **If `failed_checks` >= 3** (grace period exhausted):
+       - Set `status: removed`
+       - **Credit clawback**: create `backlink_credit_transaction` with `type: clawback`, negative amount = `credits_earned`
+       - Debit the clawback amount from the remover's `backlink_credits.balance`
+       - Increment `strikes` on the remover's `backlink_exchange_settings`
+       - If `strikes >= 3`: set `screening_status: suspended`
+       - If cycle exists: mark cycle `status: broken`
+       - Send notification to affected user (link remover)
+
+  - `processClawback(backlinkId)`:
+    1. Look up backlink's `credits_earned` and `source_project_id`
+    2. Find the user who owns the source project (the one who removed the link)
+    3. Debit `credits_earned` from their balance
+    4. Record clawback transaction
+    5. Increment strikes
+
+- [ ] Cron endpoint `POST /api/cron/monitor-backlinks` (protected by `CRON_SECRET`):
+  - Process in batches (max 100 per run)
+  - Schedule: daily
+
 **Tests Required:**
 | Test File | Test Name | Assertion |
 |-----------|-----------|-----------|
@@ -716,12 +813,22 @@ sequenceDiagram
 | `backlink-verification.service.spec.ts` | `should detect nofollow link` | status=not_verified |
 | `backlink-verification.service.spec.ts` | `should detect missing link` | status=not_verified |
 | `backlink-verification.service.spec.ts` | `should credit target user on verification` | credits increased by DR |
+| `backlink-monitoring.service.spec.ts` | `should reset failed_checks when link reappears` | failed_checks=0 |
+| `backlink-monitoring.service.spec.ts` | `should increment failed_checks on missing link` | failed_checks++ |
+| `backlink-monitoring.service.spec.ts` | `should clawback credits after 3 consecutive failures` | balance decreased, status=removed |
+| `backlink-monitoring.service.spec.ts` | `should add strike to offending project` | strikes++ |
+| `backlink-monitoring.service.spec.ts` | `should suspend project after 3 strikes` | screening_status=suspended |
+| `backlink-monitoring.service.spec.ts` | `should only check recent backlinks daily` | old backlinks not queried |
+| `backlink-monitoring.service.spec.ts` | `should check mature backlinks weekly` | 30-90 day backlinks included when stale |
+| `backlink-monitoring.service.spec.ts` | `should skip backlinks older than 90 days` | 90+ day backlinks excluded |
 
 **Verification Plan:**
 
 1. Unit tests pass (with mocked HTTP responses)
-2. `curl POST /api/cron/verify-backlinks` with CRON_SECRET → processes backlinks
-3. `yarn verify` passes
+2. `curl POST /api/cron/verify-backlinks` with CRON_SECRET → processes placed backlinks
+3. `curl POST /api/cron/monitor-backlinks` with CRON_SECRET → re-checks verified backlinks
+4. Simulate link removal → after 3 failed checks, credits clawed back + strike added
+5. `yarn verify` passes
 
 ---
 
@@ -830,7 +937,8 @@ How will this feature be reached?
 - [x] Caller: DashboardRouter renders BacklinksPageClient
 - [x] Registration: Enable route in dashboardRoutes.ts
 - [x] Article gen: BacklinkMatchingService called by ArticleGenerationService
-- [x] Cron: verify-backlinks endpoint called by external scheduler
+- [x] Cron: verify-backlinks endpoint called by external scheduler (every 6h)
+- [x] Cron: monitor-backlinks endpoint called by external scheduler (daily) — tiered re-verification + clawback
 - [x] Webhook: Monthly credit grant wired into Stripe subscription handler
 
 Is this user-facing?
@@ -864,6 +972,9 @@ Full user flow:
 - [ ] Verification cron detects placed links and credits users
 - [ ] Backlink credit balance tracks independently from article credits
 - [ ] Monthly backlink credits granted per subscription tier (free users earn at 50% rate, no monthly grant)
+- [ ] **Tiered monitoring active**: daily checks for 0–30 day backlinks, weekly for 30–90 days, none after 90 days
+- [ ] **Credit clawback works**: removed backlinks trigger credit reversal after 3 failed checks (72h grace)
+- [ ] **Strike system enforced**: 3 strikes → project suspended from exchange
 - [ ] All automated checkpoint reviews pass
 
 ## 7. Environment Variables
