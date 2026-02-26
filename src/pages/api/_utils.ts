@@ -277,6 +277,15 @@ export function handleApiError(error: unknown, context?: string): Response {
       case 'EncryptionKeyError':
       case 'DecryptionError':
         return errorResponse('INTERNAL_ERROR', error.message, 500);
+      // Website crawler errors
+      case 'InvalidUrlError':
+        return errorResponse('VALIDATION_ERROR', error.message, 400);
+      case 'SsrProtectionError':
+        return errorResponse('FORBIDDEN', error.message, 403);
+      case 'FetchTimeoutError':
+        return errorResponse('TIMEOUT', error.message, 504);
+      case 'NonHtmlResponseError':
+        return errorResponse('VALIDATION_ERROR', error.message, 400);
     }
   }
 

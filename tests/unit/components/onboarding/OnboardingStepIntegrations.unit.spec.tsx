@@ -1,6 +1,6 @@
 /**
  * OnboardingStepIntegrations Component Tests
- * Tests for Step 4: Set up CMS integration
+ * Tests for Step 4: Content preferences and CMS integration setup
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
@@ -29,6 +29,10 @@ vi.mock('lucide-react', () => {
     Zap: icon,
     RefreshCw: icon,
     Clock: icon,
+    Palette: icon,
+    Image: icon,
+    FileText: icon,
+    Link2: icon,
   };
 });
 
@@ -41,6 +45,7 @@ let mockStoreState = {
   ]),
   skippedSteps: new Set<number>(),
   campaignId: null as string | null,
+  projectId: 'project-123' as string | null,
   setHasIntegration: vi.fn(),
   markStepComplete: vi.fn(),
   markStepSkipped: vi.fn(),
@@ -99,6 +104,38 @@ vi.mock('@client/components/dashboard/ui/DashboardButton', () => ({
   ),
 }));
 
+// Mock ContentPreferencesSection
+vi.mock('@client/components/onboarding/steps/ContentPreferencesSection', () => ({
+  ContentPreferencesSection: ({
+    value,
+    onChange,
+  }: {
+    value: Record<string, unknown>;
+    onChange: (prefs: Record<string, unknown>) => void;
+  }) => (
+    <div data-testid="content-preferences-section">
+      <h3>Content Preferences</h3>
+      <p>Article Style: {value.articleStyle as string}</p>
+      <p>Internal Links: {value.internalLinksCount as number}</p>
+      <p>Brand Color: {value.brandColor as string}</p>
+      <p>Image Style: {value.imageStyle as string}</p>
+      <button
+        data-testid="change-article-style"
+        onClick={() => onChange({ ...value, articleStyle: 'how-to' })}
+      >
+        Change Article Style
+      </button>
+    </div>
+  ),
+  CONTENT_PREFERENCES_DEFAULTS: {
+    articleStyle: 'informative',
+    internalLinksCount: 2,
+    brandColor: '#4F46E5',
+    imageStyle: 'cinematic',
+    globalInstructions: '',
+  },
+}));
+
 describe('OnboardingStepIntegrations', () => {
   const mockOnComplete = vi.fn();
   const mockOnSkip = vi.fn();
@@ -113,6 +150,7 @@ describe('OnboardingStepIntegrations', () => {
       ]),
       skippedSteps: new Set<number>(),
       campaignId: null,
+      projectId: 'project-123',
       setHasIntegration: vi.fn(),
       markStepComplete: vi.fn(),
       markStepSkipped: vi.fn(),
@@ -127,6 +165,96 @@ describe('OnboardingStepIntegrations', () => {
     mockApiFetch.mockReset();
     mockApiFetch.mockResolvedValue({ data: { integrations: [] } });
   });
+
+  // =============================================================================
+  // Content Preferences Section Tests
+  // =============================================================================
+
+  it('should render content preferences section at the top', () => {
+    const { getByTestId } = render(
+      <OnboardingStepIntegrations onComplete={mockOnComplete} onSkip={mockOnSkip} />
+    );
+
+    expect(getByTestId('content-preferences-section')).toBeDefined();
+  });
+
+  it('should have correct default values for content preferences', () => {
+    const { getByText } = render(
+      <OnboardingStepIntegrations onComplete={mockOnComplete} onSkip={mockOnSkip} />
+    );
+
+    expect(getByText('Article Style: informative')).toBeDefined();
+    expect(getByText('Internal Links: 2')).toBeDefined();
+    expect(getByText('Brand Color: #4F46E5')).toBeDefined();
+    expect(getByText('Image Style: cinematic')).toBeDefined();
+  });
+
+  it('should save content preferences on skip', async () => {
+    const { getByText } = render(
+      <OnboardingStepIntegrations onComplete={mockOnComplete} onSkip={mockOnSkip} />
+    );
+
+    // Click "Skip for now" then "Skip Anyway"
+    fireEvent.click(getByText('Skip for now'));
+    fireEvent.click(getByText('Skip Anyway'));
+
+    await waitFor(() => {
+      // Should call PATCH to save content preferences
+      expect(mockApiFetch).toHaveBeenCalledWith(
+        '/api/projects/project-123',
+        expect.objectContaining({
+          method: 'PATCH',
+        })
+      );
+      expect(mockStoreState.markStepSkipped).toHaveBeenCalledWith(OnboardingStep.INTEGRATIONS);
+      expect(mockOnSkip).toHaveBeenCalled();
+    });
+  });
+
+  it('should save content preferences on integration submit', async () => {
+    const { getByText, container } = render(
+      <OnboardingStepIntegrations onComplete={mockOnComplete} onSkip={mockOnSkip} />
+    );
+
+    // Select WordPress
+    fireEvent.click(getByText('WordPress'));
+
+    // Fill form
+    const inputs = container.querySelectorAll('input');
+    fireEvent.change(inputs[0], { target: { value: 'My WP Site' } }); // name
+    fireEvent.change(inputs[1], { target: { value: 'https://mysite.com' } }); // siteUrl
+    fireEvent.change(inputs[2], { target: { value: 'admin' } }); // username
+    fireEvent.change(inputs[3], { target: { value: 'app-password-123' } }); // appPassword
+
+    // Submit
+    const submitButton = container.querySelector('[data-testid="dashboard-button"]')!;
+    fireEvent.click(submitButton);
+
+    await waitFor(() => {
+      // Should call PATCH to save content preferences first
+      expect(mockApiFetch).toHaveBeenCalledWith(
+        '/api/projects/project-123',
+        expect.objectContaining({
+          method: 'PATCH',
+        })
+      );
+      expect(mockIntegrationState.createIntegration).toHaveBeenCalled();
+      expect(mockOnComplete).toHaveBeenCalled();
+    });
+  });
+
+  it('should still render CMS integration below preferences', () => {
+    const { getByText } = render(
+      <OnboardingStepIntegrations onComplete={mockOnComplete} onSkip={mockOnSkip} />
+    );
+
+    expect(getByText('WordPress')).toBeDefined();
+    expect(getByText('Webhook')).toBeDefined();
+  });
+
+  // =============================================================================
+  // Existing Integration Tests
+  // =============================================================================
 
   it('should render the integrations step header', () => {
     const { getByText } = render(

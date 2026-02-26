@@ -172,6 +172,7 @@ let mockStoreState = {
   }),
   canSkipStep: (step: number) =>
     step === OnboardingStep.GSC_CONNECTION || step === OnboardingStep.INTEGRATIONS,
+  dismiss: vi.fn(),
 };
 
 // Mock Zustand store - use a factory function to return the selector result
@@ -218,6 +219,7 @@ describe('OnboardingWizard', () => {
       }),
       canSkipStep: (step: number) =>
         step === OnboardingStep.GSC_CONNECTION || step === OnboardingStep.INTEGRATIONS,
+      dismiss: vi.fn(),
     };
   });
 
@@ -251,7 +253,7 @@ describe('OnboardingWizard', () => {
     it('should show step title in modal header', () => {
       const { getByTestId } = render(<OnboardingWizard isOpen={true} onClose={mockOnClose} />);
 
-      expect(getByTestId('modal-title').textContent).toContain('Create Your First Project');
+      expect(getByTestId('modal-title').textContent).toContain('Add Your First Project');
     });
 
     it('should call setCurrentStep when step is completed', async () => {

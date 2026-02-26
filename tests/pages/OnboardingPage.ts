@@ -99,12 +99,28 @@ export class OnboardingPage extends BasePage {
    * Gets step 1 (project creation) form elements
    */
   get step1Fields() {
-    const nameInput = this.page.getByLabel(/project name/i);
-    const websiteInput = this.page.getByLabel(/website domain/i);
+    // Scope to modal to avoid conflicts with header elements
+    const modal = this.wizardModal;
+    const nameInput = modal.getByLabel(/project name/i);
+    const websiteInput = modal.getByLabel(/website url/i);
+    const industrySelect = modal.getByLabel(/industry/i);
+    const descriptionTextarea = modal.getByLabel(/description/i);
+    const languageSelect = modal.getByLabel(/^language$/i);
+    const countrySelect = modal.getByLabel(/^country$/i);
+    const sitemapInput = modal.getByLabel(/sitemap url/i);
+    const blogInput = modal.getByLabel(/blog url/i);
+    const analyzeButton = modal.getByRole('button', { name: /analyze/i });
 
     return {
       nameInput,
       websiteInput,
+      industrySelect,
+      descriptionTextarea,
+      languageSelect,
+      countrySelect,
+      sitemapInput,
+      blogInput,
+      analyzeButton,
     };
   }
 
@@ -191,8 +207,23 @@ export class OnboardingPage extends BasePage {
   async fillStep1(data: {
     name?: string;
     website?: string;
+    industry?: string;
+    description?: string;
+    language?: string;
+    country?: string;
+    sitemapUrl?: string;
+    blogUrl?: string;
   }): Promise<void> {
-    const { nameInput, websiteInput } = this.step1Fields;
+    const {
+      nameInput,
+      websiteInput,
+      industrySelect,
+      descriptionTextarea,
+      languageSelect,
+      countrySelect,
+      sitemapInput,
+      blogInput,
+    } = this.step1Fields;
 
     if (data.name !== undefined) {
       await nameInput.fill(data.name);
@@ -201,6 +232,103 @@ export class OnboardingPage extends BasePage {
     if (data.website !== undefined) {
       await websiteInput.fill(data.website);
     }
+
+    if (data.industry !== undefined) {
+      await industrySelect.selectOption(data.industry);
+    }
+
+    if (data.description !== undefined) {
+      await descriptionTextarea.fill(data.description);
+    }
+
+    if (data.language !== undefined) {
+      await languageSelect.selectOption(data.language);
+    }
+
+    if (data.country !== undefined) {
+      await countrySelect.selectOption(data.country);
+    }
+
+    if (data.sitemapUrl !== undefined) {
+      await sitemapInput.fill(data.sitemapUrl);
+    }
+
+    if (data.blogUrl !== undefined) {
+      await blogInput.fill(data.blogUrl);
+    }
+  }
+
+  /**
+   * Clicks the "Analyze" button in step 1
+   */
+  async clickAnalyzeWebsite(): Promise<void> {
+    const { analyzeButton } = this.step1Fields;
+    await analyzeButton.click();
+  }
+
+  /**
+   * Asserts that the Analyze button is visible in step 1
+   */
+  async assertAnalyzeButtonVisible(): Promise<void> {
+    const { analyzeButton } = this.step1Fields;
+    await expect(analyzeButton).toBeVisible();
+  }
+
+  /**
+   * Asserts that the Analyze button is hidden in step 1
+   */
+  async assertAnalyzeButtonHidden(): Promise<void> {
+    const { analyzeButton } = this.step1Fields;
+    await expect(analyzeButton).toBeHidden();
+  }
+
+  /**
+   * Asserts that all enhanced step 1 fields are visible
+   */
+  async assertEnhancedStep1FieldsVisible(): Promise<void> {
+    const {
+      nameInput,
+      websiteInput,
+      industrySelect,
+      descriptionTextarea,
+      languageSelect,
+      countrySelect,
+      sitemapInput,
+      blogInput,
+    } = this.step1Fields;
+
+    await expect(nameInput).toBeVisible();
+    await expect(websiteInput).toBeVisible();
+    await expect(industrySelect).toBeVisible();
+    await expect(descriptionTextarea).toBeVisible();
+    await expect(languageSelect).toBeVisible();
+    await expect(countrySelect).toBeVisible();
+    await expect(sitemapInput).toBeVisible();
+    await expect(blogInput).toBeVisible();
+  }
+
+  /**
+   * Asserts that sitemap URL has the expected value (auto-suggested)
+   */
+  async assertSitemapUrlValue(expected: string): Promise<void> {
+    const { sitemapInput } = this.step1Fields;
+    await expect(sitemapInput).toHaveValue(expected);
+  }
+
+  /**
+   * Asserts that blog URL has the expected value (auto-suggested)
+   */
+  async assertBlogUrlValue(expected: string): Promise<void> {
+    const { blogInput } = this.step1Fields;
+    await expect(blogInput).toHaveValue(expected);
+  }
+
+  /**
+   * Asserts that description has the expected value (auto-filled from crawl)
+   */
+  async assertDescriptionValue(expected: string): Promise<void> {
+    const { descriptionTextarea } = this.step1Fields;
+    await expect(descriptionTextarea).toHaveValue(expected);
   }
 
   /**
@@ -460,10 +588,14 @@ export class OnboardingPage extends BasePage {
    * @param errorMessage - Expected error message pattern
    */
   async assertFieldValidationError(fieldName: string, errorMessage?: string): Promise<void> {
+    // Scope to modal to avoid conflicts with header elements
+    const modal = this.wizardModal;
     // Find the field container (parent div with space-y-2 class)
-    const field = this.page.getByLabel(new RegExp(fieldName, 'i'));
+    const field = modal.getByLabel(new RegExp(fieldName, 'i'));
     // Go up to the parent container that has the error message as a sibling
-    const fieldParent = field.locator('xpath=../..');
+    // For domain field: input -> div.relative -> div.flex -> div.space-y-2
+    // The error p.text-red-400 is a direct child of div.space-y-2
+    const fieldParent = field.locator('xpath=../../..');
     const errorInContainer = fieldParent.locator('p.text-red-400, .error-message, [data-testid="validation-error"]');
 
     if (errorMessage) {

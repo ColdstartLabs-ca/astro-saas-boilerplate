@@ -117,6 +117,7 @@ FALLBACK to direct only when:
 - **Prompt injection** — backlinks are added as instructions to the article generation prompt, not post-processed into content
 - **New articles only** — backlinks inserted during generation, no retroactive updates to published articles
 - **Fully automatic** — once opted in, no per-link approval needed. Users trust the system.
+- **DR-relative min threshold** — on screening approval, `min_domain_rating` auto-set to `max(5, ownDR - 20)` so users get quality-matched exchanges by default without manual tuning
 - **Sitemap heuristics for blog detection** — parse sitemap, identify blog URLs via path patterns (`/blog/`, `/posts/`, `/articles/`, `/news/`), add `page_type` column to `sitemap_pages`
 - **Link profile safety** — rate limiting per domain pair (max 3 links), source diversity cap (max 10% of backlinks from one domain), temporal spreading (no more than 2 new backlinks per site per week)
 
@@ -339,8 +340,9 @@ sequenceDiagram
   project_id UUID FK → projects(id) ON DELETE CASCADE (UNIQUE)
   user_id UUID FK → auth.users(id) ON DELETE CASCADE
   enabled BOOLEAN DEFAULT false
-  min_domain_rating INT DEFAULT 5 (CHECK >= 0 AND <= 100)
+  min_domain_rating INT DEFAULT 5 (CHECK >= 0 AND <= 100) — auto-set to max(5, project_domain_rating - 20) on screening approval
   -- Network quality screening
+  project_domain_rating INT — DR fetched from Ahrefs during screening
   screening_status TEXT DEFAULT 'pending' (pending | approved | rejected | suspended)
   screening_reason TEXT
   screened_at TIMESTAMPTZ
@@ -587,7 +589,9 @@ sequenceDiagram
     2. **Banned niche check**: scan site title, meta description, and top 5 sitemap page URLs/titles for banned keywords
     3. **Minimum content check**: verify >= 5 blog posts exist in sitemap
     4. **Spam signal check**: fetch homepage, count external links (reject if >50), check for redirect chains
-    5. Update `screening_status` on `backlink_exchange_settings`
+    5. **Fetch Domain Rating** from Ahrefs API → store as `project_domain_rating` on `backlink_exchange_settings`
+    6. **Auto-set `min_domain_rating`** to `max(5, project_domain_rating - 20)` — so users get quality-matched exchanges by default (editable later)
+    7. Update `screening_status` on `backlink_exchange_settings`
   - `getBannedKeywords()` → returns banned keywords list from config
 
 - [ ] Add to `BACKLINK_CONFIG`:
@@ -614,6 +618,7 @@ sequenceDiagram
 | `backlink-screening.service.spec.ts` | `should reject site with <5 blog posts` | status=rejected |
 | `backlink-screening.service.spec.ts` | `should reject site with excessive outbound links` | status=rejected |
 | `backlink-screening.service.spec.ts` | `should approve clean site` | status=approved |
+| `backlink-screening.service.spec.ts` | `should store project DR and auto-set min_domain_rating` | project_domain_rating=fetched DR, min_domain_rating=max(5, DR-20) |
 
 **Verification Plan:**
 
@@ -846,7 +851,8 @@ sequenceDiagram
 
 - [ ] **BacklinkExchangeSettings** component:
   - Network participation toggle (enabled/disabled)
-  - Min Domain Rating slider (5-100)
+  - Min Domain Rating slider (5-100), pre-filled with DR-relative default (`max(5, ownDR - 20)`)
+  - Show helper text: "Based on your site's DR of {X}, we recommend accepting sites with DR {Y}+"
   - Calls `PUT /api/backlinks/settings`
 
 - [ ] **BacklinkCreditsCard** component:

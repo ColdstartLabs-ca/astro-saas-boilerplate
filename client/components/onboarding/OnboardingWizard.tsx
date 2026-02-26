@@ -162,13 +162,13 @@ export function OnboardingWizard({ isOpen, onClose }: IOnboardingWizardProps): J
   const getStepSubtitle = () => {
     switch (currentStep) {
       case OnboardingStep.PROJECT_CREATION:
-        return 'Projects help you organize your SEO campaigns. Start by naming your first project.';
+        return 'Create a project and tell us about your website.';
       case OnboardingStep.GSC_CONNECTION:
         return 'Link your Google Search Console account to discover keyword opportunities from your actual search data.';
       case OnboardingStep.KEYWORDS_UPLOAD:
         return "Enter the keywords you want to target. We'll create your first campaign with these keywords.";
       case OnboardingStep.INTEGRATIONS:
-        return 'Auto-publish articles directly to your website. You can always set this up later.';
+        return 'Set content preferences and connect your CMS.';
       case OnboardingStep.COMPLETION:
         return "Your workspace is ready. Here's a summary of what was set up.";
       default:

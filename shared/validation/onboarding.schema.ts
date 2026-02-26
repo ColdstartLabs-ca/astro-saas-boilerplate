@@ -7,6 +7,7 @@
 
 import { z } from 'zod';
 import { OnboardingStep } from '@shared/types/onboarding.types';
+import { LANGUAGES, COUNTRIES } from '@shared/validation/project.schema';
 
 // =============================================================================
 // Constants
@@ -25,6 +26,70 @@ export const VALID_ONBOARDING_STEPS = [
 
 export const MIN_STEP = 1;
 export const MAX_STEP = 5;
+
+/**
+ * Language options with human-readable labels for Step 1 form
+ */
+export const LANGUAGE_OPTIONS = LANGUAGES.map(code => {
+  const labels: Record<string, string> = {
+    en: 'English',
+    es: 'Spanish',
+    fr: 'French',
+    de: 'German',
+    it: 'Italian',
+    pt: 'Portuguese',
+    nl: 'Dutch',
+    ja: 'Japanese',
+    ko: 'Korean',
+    zh: 'Chinese',
+    ar: 'Arabic',
+    ru: 'Russian',
+    hi: 'Hindi',
+    sv: 'Swedish',
+    da: 'Danish',
+    no: 'Norwegian',
+    fi: 'Finnish',
+    pl: 'Polish',
+    cs: 'Czech',
+    tr: 'Turkish',
+  };
+  return { value: code, label: `${labels[code] ?? code} (${code})` };
+});
+
+/**
+ * Country options with human-readable labels for Step 1 form
+ */
+export const COUNTRY_OPTIONS = COUNTRIES.map(code => {
+  const labels: Record<string, string> = {
+    US: 'United States',
+    GB: 'United Kingdom',
+    CA: 'Canada',
+    AU: 'Australia',
+    DE: 'Germany',
+    FR: 'France',
+    ES: 'Spain',
+    IT: 'Italy',
+    PT: 'Portugal',
+    BR: 'Brazil',
+    NL: 'Netherlands',
+    JP: 'Japan',
+    KR: 'South Korea',
+    CN: 'China',
+    IN: 'India',
+    SE: 'Sweden',
+    DK: 'Denmark',
+    NO: 'Norway',
+    FI: 'Finland',
+    PL: 'Poland',
+    CZ: 'Czech Republic',
+    TR: 'Turkey',
+    MX: 'Mexico',
+    AR: 'Argentina',
+    CL: 'Chile',
+    CO: 'Colombia',
+  };
+  return { value: code, label: `${labels[code] ?? code} (${code})` };
+});
 
 // =============================================================================
 // Helper Functions
@@ -102,6 +167,44 @@ export const markCompleteSchema = z.object({});
  * Schema for resetting onboarding (admin/testing only)
  */
 export const resetOnboardingSchema = z.object({});
+
+// =============================================================================
+// Enhanced Step 1 Project Schema
+// =============================================================================
+
+/**
+ * Schema for enhanced Step 1 project form with website intelligence fields
+ * Used by the OnboardingStepProject component
+ */
+export const enhancedProjectSchema = z.object({
+  name: z
+    .string()
+    .min(1, 'Project name is required')
+    .max(100, 'Project name must be 100 characters or less'),
+  domain: z
+    .string()
+    .optional()
+    .refine(
+      val =>
+        !val ||
+        val.startsWith('localhost') ||
+        /^https?:\/\/.+\..+/.test(val) ||
+        /^[a-zA-Z0-9][a-zA-Z0-9-]*\.[a-zA-Z]{2,}/.test(val),
+      'Please enter a valid domain (e.g., example.com)'
+    ),
+  industry: z.string().optional(),
+  // New enhanced fields
+  description: z.string().max(500, 'Description must be 500 characters or less').optional(),
+  language: z.enum(LANGUAGES).default('en'),
+  country: z.enum(COUNTRIES).default('US'),
+  sitemap_url: z.string().url('Please enter a valid URL').max(500).optional().or(z.literal('')),
+  blog_url: z.string().url('Please enter a valid URL').max(500).optional().or(z.literal('')),
+});
+
+/**
+ * Type for enhanced Step 1 project form
+ */
+export type IEnhancedProjectFormData = z.infer<typeof enhancedProjectSchema>;
 
 // =============================================================================
 // Types

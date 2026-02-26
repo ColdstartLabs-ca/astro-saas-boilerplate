@@ -42,7 +42,7 @@ const ONBOARDING_STEPS: IOnboardingStepConfig[] = [
   { number: OnboardingStep.PROJECT_CREATION, label: 'Project', isOptional: false },
   { number: OnboardingStep.GSC_CONNECTION, label: 'GSC', isOptional: true },
   { number: OnboardingStep.KEYWORDS_UPLOAD, label: 'Keywords', isOptional: false },
-  { number: OnboardingStep.INTEGRATIONS, label: 'Integration', isOptional: true },
+  { number: OnboardingStep.INTEGRATIONS, label: 'Preferences', isOptional: true },
   { number: OnboardingStep.COMPLETION, label: 'Complete', isOptional: false },
 ];
 

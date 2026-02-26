@@ -46,9 +46,16 @@ const createProjectSchema = z.object({
   cms_type: z.enum(['wordpress', 'webflow', 'shopify', 'other']).optional(),
   content_preferences: z
     .object({
+      // Legacy fields
       tone: z.enum(['professional', 'casual', 'witty', 'academic']).optional(),
       frequency: z.enum(['daily', '3x_week', 'weekly']).optional(),
       targetWordCount: z.number().int().positive().optional(),
+      // Article preferences (Phase 3)
+      articleStyle: z.enum(['informative', 'how-to', 'listicle', 'opinion', 'tutorial', 'review', 'comparison']).optional(),
+      internalLinksCount: z.number().int().min(0).max(5).optional(),
+      brandColor: z.string().regex(/^#[0-9A-Fa-f]{6}$/).optional(),
+      imageStyle: z.enum(['brand-text', 'watercolor', 'cinematic', 'illustration', 'sketch']).optional(),
+      globalInstructions: z.string().max(1000).optional(),
     })
     .optional(),
   // Outrank feature parity fields
@@ -74,9 +81,16 @@ const updateProjectSchema = z.object({
   cms_type: z.enum(['wordpress', 'webflow', 'shopify', 'other']).optional(),
   content_preferences: z
     .object({
+      // Legacy fields
       tone: z.enum(['professional', 'casual', 'witty', 'academic']).optional(),
       frequency: z.enum(['daily', '3x_week', 'weekly']).optional(),
       targetWordCount: z.number().int().positive().optional(),
+      // Article preferences (Phase 3)
+      articleStyle: z.enum(['informative', 'how-to', 'listicle', 'opinion', 'tutorial', 'review', 'comparison']).optional(),
+      internalLinksCount: z.number().int().min(0).max(5).optional(),
+      brandColor: z.string().regex(/^#[0-9A-Fa-f]{6}$/).optional(),
+      imageStyle: z.enum(['brand-text', 'watercolor', 'cinematic', 'illustration', 'sketch']).optional(),
+      globalInstructions: z.string().max(1000).optional(),
     })
     .optional(),
   status: z.enum(['active', 'inactive', 'error']).optional(),

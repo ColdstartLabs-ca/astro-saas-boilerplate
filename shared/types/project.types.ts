@@ -7,12 +7,39 @@
 export type SubscriptionTier = 'free' | 'starter' | 'growth' | 'agency';
 
 /**
+ * Article style options for content generation
+ */
+export type ArticleStyle =
+  | 'informative'
+  | 'how-to'
+  | 'listicle'
+  | 'opinion'
+  | 'tutorial'
+  | 'review'
+  | 'comparison';
+
+/**
+ * Image style options for content generation
+ */
+export type ImageStyle = 'brand-text' | 'watercolor' | 'cinematic' | 'illustration' | 'sketch';
+
+/**
  * Content generation preferences for a project
  * Note: Tone and word count are now set per Campaign, not per Project
  */
 export interface IContentPreferences {
   /** Publishing frequency for content scheduling */
   frequency?: 'daily' | '3x_week' | 'weekly';
+  /** Article writing style */
+  articleStyle?: ArticleStyle;
+  /** Number of internal links to include in articles (0, 1, 2, 3, or 5) */
+  internalLinksCount?: number;
+  /** Brand color in hex format (e.g., '#4F46E5') */
+  brandColor?: string;
+  /** Image generation style */
+  imageStyle?: ImageStyle;
+  /** Global instructions for content generation (max 1000 chars) */
+  globalInstructions?: string;
 }
 
 /**

@@ -391,7 +391,7 @@ test.describe('Onboarding Wizard E2E Tests', () => {
 
       // Verify validation error is shown for domain field
       // The component validates on submit and shows an inline error message
-      await onboardingPage.assertFieldValidationError('domain', 'valid domain');
+      await onboardingPage.assertFieldValidationError('website url', 'valid domain');
     });
 
     test('should accept valid domain and normalize it without protocol', async ({ page }) => {
@@ -509,6 +509,126 @@ test.describe('Onboarding Wizard E2E Tests', () => {
         expect(isCompleted).toBe(false);
         expect(isSkipped).toBe(false);
       }
+    });
+
+    // Enhanced Step 1 tests - Website Intelligence
+    test('should render all enhanced fields on step 1', async () => {
+      await onboardingPage.goto();
+      await onboardingPage.assertStep1Visible();
+
+      // Verify all enhanced fields are visible
+      await onboardingPage.assertEnhancedStep1FieldsVisible();
+    });
+
+    test('should show Analyze button when domain is entered', async () => {
+      await onboardingPage.goto();
+      await onboardingPage.assertStep1Visible();
+
+      // Analyze button should not be visible initially
+      await onboardingPage.assertAnalyzeButtonHidden();
+
+      // Fill in domain
+      await onboardingPage.fillStep1({ website: 'https://example.com' });
+
+      // Now Analyze button should be visible
+      await onboardingPage.assertAnalyzeButtonVisible();
+    });
+
+    test('should auto-suggest sitemap URL from domain', async () => {
+      await onboardingPage.goto();
+      await onboardingPage.assertStep1Visible();
+
+      // Fill in domain
+      await onboardingPage.fillStep1({ website: 'https://example.com' });
+
+      // Wait for auto-suggestion
+      await onboardingPage.assertSitemapUrlValue('https://example.com/sitemap.xml');
+    });
+
+    test('should auto-suggest blog URL from domain', async () => {
+      await onboardingPage.goto();
+      await onboardingPage.assertStep1Visible();
+
+      // Fill in domain
+      await onboardingPage.fillStep1({ website: 'https://example.com' });
+
+      // Wait for auto-suggestion
+      await onboardingPage.assertBlogUrlValue('https://example.com/blog');
+    });
+
+    test('should still work with only name (backward compat)', async () => {
+      await onboardingPage.goto();
+      await onboardingPage.assertStep1Visible();
+
+      // Fill only name (no domain or other enhanced fields)
+      await onboardingPage.fillStep1({ name: 'Backward Compat Project' });
+
+      // Should be able to submit
+      await onboardingPage.nextButton.click();
+      await onboardingPage.waitForStepTransition();
+
+      // Should advance to step 2
+      await onboardingPage.assertStep2Visible();
+    });
+
+    test('should include enhanced fields in POST /api/projects payload', async ({ page }) => {
+      await onboardingPage.goto();
+      await onboardingPage.assertStep1Visible();
+
+      // Set up request capture before submitting
+      const projectRequestPromise = onboardingPage.captureApiRequest('/api/projects');
+
+      // Fill all enhanced fields
+      await onboardingPage.fillStep1({
+        name: 'Enhanced Project',
+        website: 'https://enhanced-test.com',
+        industry: 'tech',
+        description: 'Test description',
+        language: 'en',
+        country: 'US',
+        sitemapUrl: 'https://enhanced-test.com/sitemap.xml',
+        blogUrl: 'https://enhanced-test.com/blog',
+      });
+
+      await onboardingPage.nextButton.click();
+
+      // Verify the API call was made with correct payload
+      const projectRequest = await projectRequestPromise;
+      expect(projectRequest.url).toContain('/api/projects');
+      expect(projectRequest.method).toBe('POST');
+
+      const requestBody = projectRequest.body as {
+        name?: string;
+        domain?: string;
+        industry?: string;
+        description?: string;
+        language?: string;
+        country?: string;
+        sitemap_url?: string;
+        blog_url?: string;
+      };
+
+      expect(requestBody.name).toBe('Enhanced Project');
+      expect(requestBody.domain).toBe('https://enhanced-test.com');
+      expect(requestBody.industry).toBe('tech');
+      expect(requestBody.description).toBe('Test description');
+      expect(requestBody.language).toBe('en');
+      expect(requestBody.country).toBe('US');
+      expect(requestBody.sitemap_url).toBe('https://enhanced-test.com/sitemap.xml');
+      expect(requestBody.blog_url).toBe('https://enhanced-test.com/blog');
+    });
+
+    test('should show default language and country values', async () => {
+      await onboardingPage.goto();
+      await onboardingPage.assertStep1Visible();
+
+      const { languageSelect, countrySelect } = onboardingPage.step1Fields;
+
+      // Default language should be English
+      await expect(languageSelect).toHaveValue('en');
+
+      // Default country should be United States
+      await expect(countrySelect).toHaveValue('US');
     });
   });
 
