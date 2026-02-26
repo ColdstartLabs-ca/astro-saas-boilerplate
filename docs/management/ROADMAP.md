@@ -2,7 +2,7 @@
 
 > AI SEO Content Automation Platform - "Outrank's Automation + Surfer's Quality. Finally."
 
-**Last Updated:** 2026-02-13
+**Last Updated:** 2026-02-25
 **Launch Target:** Early March 2026
 
 ---
@@ -22,7 +22,14 @@
 - [x] Legal: Privacy policy, terms of service, help/FAQ
 - [x] Landing page: Rebranded hero, pain points, solution, features, pricing, FAQ
 
-**Not built yet:** Content generation, campaign management, CMS publishing, humanizer, SEO scoring — all core product functionality.
+**Recent Progress (Feb 2026):**
+
+- [x] i18n: pt-BR translations, regional currency display, hreflang SEO
+- [x] pSEO: 6 free tools, 22 comparison pages, 20 alternative pages, 14 use-cases, 8 GEO guides
+- [x] Security: Comprehensive audit report with remediation recommendations
+- [x] Testing: E2E pruning (291 passing), API test expansion, CI workflow
+- [x] Brand: Complete AutopilotRank rebrand (removed all boilerplate/MIU references)
+- [x] Outrank PRD Series: 6 PRDs created, PRD 1 (schema) implemented
 
 ---
 
@@ -294,6 +301,59 @@ M1 Foundation ✅
 
 ---
 
+## Outrank Feature Parity Initiative
+
+> **Status:** In Progress (2026-02-25)
+> **Goal:** Achieve feature parity with Outrank.so to validate competitive positioning
+> **Series:** 6 PRDs implementing core Outrank capabilities
+
+**PRD 1: Schema & Data Model Foundation** ✅ (Completed 2026-02-25)
+
+- [x] 7 migrations: projects/campaigns extended, 5 new tables
+- [x] TypeScript types and Zod schemas
+- [x] 5 service classes (audiences, competitors, example articles, sitemap pages, content strategy)
+- [x] 10 API endpoints for CRUD operations
+
+**PRD 2: Website Intelligence** (Draft)
+
+- [ ] Sitemap import and parsing
+- [ ] Website crawl for content analysis
+- [ ] Competitor favicon fetching
+- [ ] Page metadata extraction
+
+**PRD 3: DataForSEO Integration** (Draft)
+
+- [ ] Keyword research API integration
+- [ ] Search volume data
+- [ ] Keyword difficulty scores
+- [ ] SERP analysis data
+
+**PRD 4: Enhanced Onboarding** (Draft - additive version created)
+
+- [ ] Onboarding Enhancement PRD created for additive improvements
+- [ ] Website auto-populate from crawl
+- [ ] Content preferences section
+- [ ] Language, country, sitemap URL, blog URL fields
+
+**PRD 5: Content Strategy Generator** (Draft)
+
+- [ ] AI-powered content strategy generation
+- [ ] Topic clustering from GSC + sitemap
+- [ ] Content gap analysis vs competitors
+- [ ] Editorial calendar recommendations
+
+**PRD 6: Enhanced Article Generation** (Draft)
+
+- [ ] Article style presets (blog, news, how-to, etc.)
+- [ ] Internal linking configuration
+- [ ] Global instructions per campaign
+- [ ] YouTube, CTA, infographic, emoji toggles
+- [ ] Image style selection
+
+> PRDs are in `docs/PRDs/outrank-*.md`. Implementation tracking in each PRD.
+
+---
+
 ## Post-MVP Phase 1: Product-Market Fit (Months 2-3)
 
 **Goal:** Iterate based on beta feedback. Reach 200 users, 50 paying, validate PMF (Sean Ellis 40%+).
@@ -330,7 +390,7 @@ M1 Foundation ✅
 - [ ] Keyword research API integration (DataForSEO or Keywords Everywhere)
 - [ ] Keyword clustering (group related keywords into campaigns)
 - [ ] Campaign analytics dashboard
-- [ ] Content calendar view
+- [ ] Content calendar view (PRD created: `docs/PRDs/calendar-system-PRD.md`)
 - [ ] Export articles (Markdown, HTML, DOCX)
 - [ ] Webflow CMS API publishing
 - [ ] Shopify blog publishing
@@ -445,6 +505,19 @@ M1 Foundation ✅
 
 | Date       | Change                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
 | ---------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 2026-02-25 | **Outrank PRD Series launched!** 6-PRD series for Outrank feature parity created: (1) Schema & Data Model Foundation, (2) Website Intelligence, (3) DataForSEO Integration, (4) Enhanced Onboarding, (5) Content Strategy Generator, (6) Enhanced Article Generation. PRD 1 implemented: 7 migrations, TypeScript types, Zod schemas, 5 service classes, 10 API routes for target audiences, competitors, example articles, sitemap pages, and content strategies. Onboarding enhancement PRD created for additive improvements to onboarding flow. DEV-ONBOARDING.md added with comprehensive developer guide. |
+| 2026-02-25 | **Dead Code Report completed!** Comprehensive analysis of 920 files identified 550+ instances of dead code (41 CRITICAL, 482 HIGH, 34 MEDIUM). Key findings: 34 orphaned boilerplate files (image compression, bulk processing), 11 dead UI components, 3 dead stores/hooks, 6 unreachable API endpoints from incomplete PRDs. Calendar system PRD created for content scheduling with month/week/day views.                                                                                                                                                                                                                                                                                                                                                                           |
+| 2026-02-24 | **E2E Tests 100% passing!** All e2e tests now passing with comprehensive fixes to auth, checkout, billing, and features test suites. Reduced test code by 720 lines while improving reliability.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
+| 2026-02-24 | **Landing page polish!** Fixed `&apos;` rendering bugs and improved pain point card design. Hero copy refined. Updated blog posts for better SEO.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
+| 2026-02-23 | **API Testing Expansion!** Added §4 article generation API tests and updated validation checklists. In-memory Supabase mock enabled for Playwright API tests. Skip conditions added for tests requiring real DB/external access.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
+| 2026-02-23 | **Dashboard fixes!** Stripped locale prefix in dashboard React router for i18n support. Added `/api/health/*` to public routes. Fixed duplicate React keys in CalendarView day headers. Persisted onboarding dismissed flag in localStorage. Added pt-BR translation for humanizer FAQ key. Removed invalid useMemo hook from FooterAstro. Fixed auth callback pages CSS layout. Resolved merge conflict in Layout.astro (favicon + hreflang/canonical).                                                                                                                                                                                                                                                                                                 |
+| 2026-02-18 | **Brand cleanup complete!** Replaced all SaaS Boilerplate and MyImageUpscaler references with AutopilotRank branding. Updated logger service name assertion to autopilotrank-api. Pre-release content and SEO polish pass completed. Fixed non-existent autopilotrank-vs-jasper slug in comparisons data. Skipp updates for onboarding flow.                                                                                                                                                                                                                                                                                                                                                                                                                                               |
+| 2026-02-18 | **Cloudflare Workers deployment fixes!** Resolved secret injection and CSP issues for production deployment. Merged i18n-geo-expansion and pseo-scale-geo-expansion PRs. OAUTH_STATE_SECRET renamed to GSC_STATE_SECRET for clarity. |
+| 2026-02-18 | **i18n Geo Expansion completed!** pt-BR locale (96.4% complete, 19 translation files), regional currency display (8 currencies: BRL, INR, GBP, EUR, AUD, PHP, PKR, IDR), hreflang SEO links, sitemap index. Zustand localeStore, LocaleInit component. Merged PR #11. |
+| 2026-02-18 | **pSEO Scale & GEO Expansion completed!** 6 interactive tools (MetaDescriptionTool, TitleTagTool, SeoRoiCalculator, ReadingLevelChecker, ContentLengthAnalyzer), scaled content (22 comparisons, 20 alternatives, 14 use-cases, 8 GEO guides), 5 blog posts. Tool component registry for scalability. Merged PR #10. |
+| 2026-02-18 | **Security Audit Report completed!** Comprehensive audit: 1 CRITICAL (live API keys in .env.api), 3 HIGH (unencrypted OAuth tokens, CSP weaknesses), 6 MEDIUM findings. 18-page report with remediation recommendations. Merged PR #6. |
+| 2026-02-18 | **Tests Quality improvements!** Test quality PRD with CI workflow (.github/workflows/test.yml). E2E test pruning (fixed 7 broken files, removed 3 redundant: billing-flow, critical-path, help). 291 tests passing. Page object enhancements (ArticlesPage, BillingPage, CampaignsPage). Merged PR #9. |
+| 2026-02-18 | **E2E test improvements!** Improved admin tests reliability and reorganized PRDs. Moved e2e-articles-skip-onboarding PRD to done. PRDs reorganized for better clarity. |
 | 2026-02-16 | **Milestone 7 Launch Readiness completed!** Full launch gate implementation: (1) **Emails** — Updated WelcomeEmail and LowCreditsEmail for AutopilotRank, added ArticleCompleteEmail, wired email triggers in generation pipeline and low-credit alerts. (2) **Content** — Updated help page with AutopilotRank guidance, refreshed FAQ and features page, added 3 launch blog posts. (3) **Testing** — 7 new E2E test files covering critical paths (campaign→generate→review), billing flow, mobile responsiveness, blog, features, and help. (4) **Monitoring** — Baselime alert configuration documented. PRD moved to `docs/PRDs/night-watch/done/`. |
 | 2026-02-16 | **Blog pages redesigned!** BlogGrid React island with search, category filters, pagination, and adaptive grid (2-col for few posts, 3-col for many). BlogSearch component added. Blog post pages now render markdown via marked with proper prose typography, reading progress bar, SEO meta tags, cover image, and bottom CTA. Updated hero copy from image upscaling to SEO content.                                                                                                                                                                                                                                                                    |
 | 2026-02-16 | **CI improvements!** Fixed CI failures for launch readiness PR. Added dependency pinning and lint error fixes.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
