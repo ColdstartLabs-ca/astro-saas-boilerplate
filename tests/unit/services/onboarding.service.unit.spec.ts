@@ -337,7 +337,7 @@ describe('OnboardingService', () => {
           completedSteps: [1], // Missing steps 2, 3, 4
           skippedSteps: [],
         })
-      ).rejects.toThrow('Cannot skip to this step');
+      ).rejects.toThrow('Cannot move to completion');
     });
 
     it('should throw error on database failure', async () => {
@@ -504,6 +504,11 @@ describe('OnboardingService', () => {
   describe('skipStep', () => {
     it('should mark a step as skipped', async () => {
       const { supabaseAdmin } = await import('@server/supabase/supabaseAdmin');
+      const step2Onboarding = {
+        ...mockOnboarding,
+        current_step: 2,
+        completed_steps: [1],
+      };
 
       let callCount = 0;
       (supabaseAdmin.from as unknown as ReturnType<typeof vi.fn>).mockImplementation(() => {
@@ -512,7 +517,7 @@ describe('OnboardingService', () => {
           return {
             select: vi.fn().mockReturnValue({
               eq: vi.fn().mockReturnValue({
-                maybeSingle: vi.fn().mockResolvedValue({ data: mockOnboarding, error: null }),
+                maybeSingle: vi.fn().mockResolvedValue({ data: step2Onboarding, error: null }),
               }),
             }),
           } as unknown;
@@ -523,10 +528,10 @@ describe('OnboardingService', () => {
         }
       });
 
-      const status = await onboardingService.skipStep(mockUserId, 1);
+      const status = await onboardingService.skipStep(mockUserId, 2);
 
-      expect(status.skippedSteps).toContain(1);
-      expect(status.currentStep).toBe(2);
+      expect(status.skippedSteps).toContain(2);
+      expect(status.currentStep).toBe(3);
     });
 
     it('should return existing status if step already skipped', async () => {
@@ -534,7 +539,9 @@ describe('OnboardingService', () => {
 
       const existingOnboarding = {
         ...mockOnboarding,
-        skipped_steps: [1],
+        current_step: 3,
+        completed_steps: [1],
+        skipped_steps: [2],
       };
 
       (supabaseAdmin.from as unknown as ReturnType<typeof vi.fn>).mockReturnValueOnce({
@@ -545,9 +552,9 @@ describe('OnboardingService', () => {
         }),
       } as unknown);
 
-      const status = await onboardingService.skipStep(mockUserId, 1);
+      const status = await onboardingService.skipStep(mockUserId, 2);
 
-      expect(status.skippedSteps).toContain(1);
+      expect(status.skippedSteps).toContain(2);
     });
 
     it('should throw error when trying to skip completion step', async () => {
@@ -563,6 +570,22 @@ describe('OnboardingService', () => {
 
       await expect(onboardingService.skipStep(mockUserId, 5)).rejects.toThrow(
         'Cannot skip the completion step'
+      );
+    });
+
+    it('should throw error when trying to skip required step', async () => {
+      const { supabaseAdmin } = await import('@server/supabase/supabaseAdmin');
+
+      (supabaseAdmin.from as unknown as ReturnType<typeof vi.fn>).mockReturnValueOnce({
+        select: vi.fn().mockReturnValue({
+          eq: vi.fn().mockReturnValue({
+            maybeSingle: vi.fn().mockResolvedValue({ data: mockOnboarding, error: null }),
+          }),
+        }),
+      } as unknown);
+
+      await expect(onboardingService.skipStep(mockUserId, 1)).rejects.toThrow(
+        'Only optional steps can be skipped'
       );
     });
 

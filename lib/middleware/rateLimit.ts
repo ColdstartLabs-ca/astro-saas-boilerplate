@@ -101,11 +101,15 @@ export async function applyPublicRateLimit(
   }
 
   // Add rate limit headers to successful responses
-  Object.entries(rateLimitHeaders).forEach(([key, value]) => {
-    if (key !== 'Retry-After') {
-      res.headers.set(key, value);
-    }
-  });
+  try {
+    Object.entries(rateLimitHeaders).forEach(([key, value]) => {
+      if (key !== 'Retry-After') {
+        res.headers.set(key, value);
+      }
+    });
+  } catch {
+    // Some runtime responses have immutable headers (e.g. redirects).
+  }
 
   return null;
 }
@@ -153,11 +157,15 @@ export async function applyUserRateLimit(
   }
 
   // Add rate limit headers to successful responses
-  Object.entries(rateLimitHeaders).forEach(([key, value]) => {
-    if (key !== 'Retry-After') {
-      res.headers.set(key, value);
-    }
-  });
+  try {
+    Object.entries(rateLimitHeaders).forEach(([key, value]) => {
+      if (key !== 'Retry-After') {
+        res.headers.set(key, value);
+      }
+    });
+  } catch {
+    // Some runtime responses have immutable headers (e.g. redirects).
+  }
 
   return null;
 }

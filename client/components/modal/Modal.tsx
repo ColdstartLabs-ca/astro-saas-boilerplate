@@ -13,6 +13,8 @@ interface IModalProps {
   icon?: React.ReactNode;
   showLogo?: boolean;
   children: React.ReactNode;
+  /** Non-scrolling footer rendered below the scrollable body */
+  footer?: React.ReactNode;
   onClose: () => void;
   isOpen: boolean;
   showCloseButton?: boolean;
@@ -44,6 +46,7 @@ export const Modal = forwardRef<HTMLDivElement, IModalProps>(
       icon,
       showLogo = false,
       children,
+      footer,
       onClose,
       isOpen,
       showCloseButton = true,
@@ -169,6 +172,11 @@ export const Modal = forwardRef<HTMLDivElement, IModalProps>(
 
           {/* Body */}
           <div className="px-6 py-4 overflow-y-auto flex-1 custom-scrollbar">{children}</div>
+
+          {/* Footer (non-scrolling) */}
+          {footer && (
+            <div className="shrink-0 px-6 py-3 border-t border-border/50">{footer}</div>
+          )}
         </div>
       </div>
     );

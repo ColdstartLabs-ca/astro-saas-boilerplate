@@ -8,6 +8,8 @@ import { render, fireEvent, waitFor } from '@testing-library/react';
 import { OnboardingStepKeywords } from '@client/components/onboarding/steps/OnboardingStepKeywords';
 import { OnboardingStep } from '@shared/types/onboarding.types';
 
+let mockApiFetch = vi.fn();
+
 // Mock lucide-react icons
 vi.mock('lucide-react', () => ({
   Loader2: ({ className }: { className?: string }) => (
@@ -19,6 +21,10 @@ vi.mock('lucide-react', () => ({
   ArrowRight: ({ className }: { className?: string }) => (
     <span className={className} data-icon="ArrowRight" />
   ),
+}));
+
+vi.mock('@client/utils/api-client', () => ({
+  apiFetch: (...args: unknown[]) => mockApiFetch(...args),
 }));
 
 // Mutable store state
@@ -102,6 +108,14 @@ describe('OnboardingStepKeywords', () => {
         .fn()
         .mockResolvedValue({ id: 'campaign-123', name: 'Onboarding Campaign' }),
     };
+    mockApiFetch = vi.fn().mockResolvedValue({
+      data: {
+        keywords: [],
+        source: 'none',
+        reason: 'no_gsc_connection',
+        model: null,
+      },
+    });
   });
 
   it('should render the keywords step header', () => {
@@ -234,6 +248,46 @@ describe('OnboardingStepKeywords', () => {
     });
   });
 
+  it('should auto-fill suggestions and require edit click to unlock input', async () => {
+    mockStoreState.projectId = '11111111-1111-4111-8111-111111111111';
+    mockApiFetch = vi.fn().mockResolvedValue({
+      data: {
+        keywords: ['seo tips', 'content marketing'],
+        source: 'openrouter_gsc',
+        reason: 'ok',
+        model: 'test-model',
+      },
+    });
+
+    const { container, getByText } = render(<OnboardingStepKeywords onComplete={mockOnComplete} />);
+
+    await waitFor(() => {
+      expect(getByText('Keywords auto-suggested from your GSC data with AI.')).toBeDefined();
+    });
+
+    expect(container.querySelector('textarea')).toBeNull();
+    expect(getByText('seo tips')).toBeDefined();
+    expect(getByText('content marketing')).toBeDefined();
+
+    fireEvent.click(getByText('Customize Keywords'));
+    expect(container.querySelector('textarea')).toBeDefined();
+  });
+
+  it('should parse uploaded CSV and populate keywords', async () => {
+    const { getByLabelText, getByText } = render(<OnboardingStepKeywords onComplete={mockOnComplete} />);
+
+    const csvFile = new File(['keyword\nseo tips\ncontent marketing'], 'keywords.csv', {
+      type: 'text/csv',
+    });
+
+    const input = getByLabelText(/upload csv/i) as HTMLInputElement;
+    fireEvent.change(input, { target: { files: [csvFile] } });
+
+    await waitFor(() => {
+      expect(getByText('2 keywords detected')).toBeDefined();
+    });
+  });
+
   it('should filter out empty keywords', () => {
     const { container, getByText } = render(<OnboardingStepKeywords onComplete={mockOnComplete} />);
 
@@ -246,6 +300,6 @@ describe('OnboardingStepKeywords', () => {
   it('should show tip text', () => {
     const { getByText } = render(<OnboardingStepKeywords onComplete={mockOnComplete} />);
 
-    expect(getByText(/paste keywords from a spreadsheet/)).toBeDefined();
+    expect(getByText(/Start with auto-suggested keywords/i)).toBeDefined();
   });
 });

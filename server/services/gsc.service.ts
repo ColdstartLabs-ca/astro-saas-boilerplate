@@ -53,6 +53,12 @@ interface IGscSearchAnalyticsResponse {
   }>;
 }
 
+interface IGscSearchAnalyticsOptions {
+  dimensions?: Array<'query' | 'page' | 'country' | 'device' | 'date'>;
+  rowLimit?: number;
+  searchType?: 'web' | 'image' | 'video' | 'news' | 'discover' | 'googleNews';
+}
+
 // =============================================================================
 // Service
 // =============================================================================
@@ -62,8 +68,9 @@ interface IGscSearchAnalyticsResponse {
  * Manages OAuth flow, token lifecycle, and data fetching from GSC.
  */
 export class GscService {
-  private get redirectUri(): string {
-    return `${clientEnv.BASE_URL}/api/gsc/callback`;
+  private getRedirectUri(baseUrl?: string): string {
+    const origin = (baseUrl || clientEnv.BASE_URL).replace(/\/+$/, '');
+    return `${origin}/api/gsc/callback`;
   }
 
   private get clientId(): string {
@@ -82,7 +89,7 @@ export class GscService {
    * Generate Google OAuth URL for GSC authorization.
    * State param is cryptographically signed to prevent CSRF attacks.
    */
-  async getAuthUrl(projectId: string, userId: string): Promise<string> {
+  async getAuthUrl(projectId: string, userId: string, baseUrl?: string): Promise<string> {
     // Create signed state token with HMAC protection
     const stateData = `${userId}:${projectId}`;
     // Use dedicated OAuth state secret (not CRON_SECRET) for security isolation
@@ -91,7 +98,7 @@ export class GscService {
 
     const params = new URLSearchParams({
       client_id: this.clientId,
-      redirect_uri: this.redirectUri,
+      redirect_uri: this.getRedirectUri(baseUrl),
       response_type: 'code',
       scope: GSC_SCOPES,
       access_type: 'offline',
@@ -107,7 +114,7 @@ export class GscService {
   /**
    * Exchange an authorization code for access and refresh tokens.
    */
-  async exchangeCode(code: string): Promise<IGoogleTokenResponse> {
+  async exchangeCode(code: string, baseUrl?: string): Promise<IGoogleTokenResponse> {
     console.log('[GscService] Exchanging authorization code for tokens');
 
     const response = await fetch(GOOGLE_TOKEN_URL, {
@@ -117,7 +124,7 @@ export class GscService {
         code,
         client_id: this.clientId,
         client_secret: this.clientSecret,
-        redirect_uri: this.redirectUri,
+        redirect_uri: this.getRedirectUri(baseUrl),
         grant_type: 'authorization_code',
       }),
     });
@@ -227,9 +234,18 @@ export class GscService {
     accessToken: string,
     siteUrl: string,
     startDate: string,
-    endDate: string
+    endDate: string,
+    options: IGscSearchAnalyticsOptions = {}
   ): Promise<IGscSearchAnalyticsResponse> {
-    console.log('[GscService] Fetching search analytics for:', siteUrl);
+    const dimensions = options.dimensions ?? ['query', 'page'];
+    const rowLimit = options.rowLimit ?? 1000;
+    const searchType = options.searchType ?? 'web';
+
+    console.log(
+      '[GscService] Fetching search analytics for:',
+      siteUrl,
+      `(dimensions=${dimensions.join(',')}, rowLimit=${rowLimit}, searchType=${searchType})`
+    );
 
     const encodedSiteUrl = encodeURIComponent(siteUrl);
     const url = `${GSC_SITES_URL}/${encodedSiteUrl}/searchAnalytics/query`;
@@ -243,8 +259,9 @@ export class GscService {
       body: JSON.stringify({
         startDate,
         endDate,
-        dimensions: ['query', 'page'],
-        rowLimit: 1000,
+        dimensions,
+        rowLimit,
+        searchType,
       }),
     });
 

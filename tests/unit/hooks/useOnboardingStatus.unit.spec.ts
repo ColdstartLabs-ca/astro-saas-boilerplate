@@ -81,6 +81,7 @@ vi.mock('@client/store/userStore', () => ({
 // Mock onboarding store
 const mockInitializeFromServer = vi.fn();
 const mockSetCurrentStep = vi.fn();
+const mockSyncDismissed = vi.fn();
 
 vi.mock('@client/store/onboardingStore', () => ({
   useOnboardingStore: vi.fn((selector?: (state: unknown) => unknown) => {
@@ -90,6 +91,7 @@ vi.mock('@client/store/onboardingStore', () => ({
       skippedSteps: new Set<number>(),
       initializeFromServer: mockInitializeFromServer,
       setCurrentStep: mockSetCurrentStep,
+      syncDismissed: mockSyncDismissed,
     };
     return selector ? selector(state) : state;
   }),
@@ -127,6 +129,7 @@ describe('useOnboardingStatus Hook', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockFetch.mockReset();
+    mockSyncDismissed.mockReset();
   });
 
   describe('Query', () => {

@@ -74,14 +74,29 @@ async function updateProgress(input: IUpdateOnboardingProgressInput): Promise<IO
   return data.data.onboarding;
 }
 
+interface ICompleteOnboardingResponse {
+  success?: boolean;
+  completedAt?: string;
+  onboarding?: IOnboardingStatus;
+}
+
 /**
  * Complete onboarding
  */
 async function completeOnboarding(): Promise<IOnboardingStatus> {
-  const data = await apiFetch<{ data: IUpdateOnboardingResponse }>('/api/onboarding/complete', {
+  const data = await apiFetch<{ data: ICompleteOnboardingResponse }>('/api/onboarding/complete', {
     method: 'POST',
   });
-  return data.data.onboarding;
+
+  if (data.data.onboarding) {
+    return data.data.onboarding;
+  }
+
+  // Backward-compatible fallback if complete endpoint returns no onboarding payload.
+  const status = await apiFetch<{ data: { onboarding: IOnboardingStatus } }>('/api/onboarding/status', {
+    method: 'GET',
+  });
+  return status.data.onboarding;
 }
 
 // =============================================================================
@@ -103,6 +118,14 @@ interface IUseOnboardingProgressReturn {
   error: Error | null;
 }
 
+interface IProgressMutationContext {
+  previousStatus: IOnboardingStatus | undefined;
+}
+
+interface ICompleteMutationContext {
+  previousStatus: IOnboardingStatus | undefined;
+}
+
 /**
  * Hook for updating onboarding progress
  *
@@ -110,30 +133,12 @@ interface IUseOnboardingProgressReturn {
  * - Automatic optimistic updates to the Zustand store
  * - Server sync via API calls
  * - Toast notifications for success/failure
- *
- * @example
- * ```tsx
- * const { updateProgress, markComplete, goToNextStep, isUpdating } = useOnboardingProgress();
- *
- * // After completing a step
- * await goToNextStep();
- *
- * // When all steps are done
- * await markComplete();
- * ```
  */
 export function useOnboardingProgress(): IUseOnboardingProgressReturn {
   const logger = useLogger('useOnboardingProgress');
   const queryClient = useQueryClient();
   const { user } = useUserStore();
-  const {
-    currentStep,
-    completedSteps,
-    skippedSteps,
-    setCurrentStep,
-    markStepComplete,
-    initializeFromServer,
-  } = useOnboardingStore();
+  const { currentStep, completedSteps, skippedSteps, initializeFromServer } = useOnboardingStore();
   const t = getTranslations('dashboard');
 
   // Convert Set to array for API calls
@@ -162,51 +167,79 @@ export function useOnboardingProgress(): IUseOnboardingProgressReturn {
   );
 
   // Update progress mutation
-  const updateMutation = useMutation({
+  const updateMutation = useMutation<
+    IOnboardingStatus,
+    Error,
+    IUpdateOnboardingProgressInput,
+    IProgressMutationContext
+  >({
     mutationFn: updateProgress,
     onMutate: async variables => {
-      // Optimistic update to store
+      const previousStatus = queryClient.getQueryData<IOnboardingStatus>([
+        'onboarding-status',
+        user?.id,
+      ]);
+
       logger.info('Optimistically updating progress', { variables });
       initializeFromServer({
         currentStep: variables.currentStep,
         completedSteps: variables.completedSteps,
         skippedSteps: variables.skippedSteps,
       });
+
+      return { previousStatus };
     },
     onSuccess: data => {
-      // Update query cache (must match shape returned by fetchOnboardingStatus)
       queryClient.setQueryData(['onboarding-status', user?.id], data);
     },
-    onError: (error, variables) => {
+    onError: (error, variables, context) => {
       logger.error('Failed to update progress', {
         error: error instanceof Error ? error.message : 'Unknown error',
         variables,
       });
+
+      if (context?.previousStatus) {
+        initializeFromServer({
+          currentStep: context.previousStatus.currentStep,
+          completedSteps: context.previousStatus.completedSteps,
+          skippedSteps: context.previousStatus.skippedSteps,
+        });
+      }
     },
   });
 
   // Complete onboarding mutation
-  const completeMutation = useMutation({
+  const completeMutation = useMutation<IOnboardingStatus, Error, void, ICompleteMutationContext>({
     mutationFn: completeOnboarding,
     onMutate: async () => {
+      const previousStatus = queryClient.getQueryData<IOnboardingStatus>([
+        'onboarding-status',
+        user?.id,
+      ]);
       logger.info('Optimistically completing onboarding');
+      return { previousStatus };
     },
     onSuccess: data => {
-      // Update query cache (must match shape returned by fetchOnboardingStatus)
       queryClient.setQueryData(['onboarding-status', user?.id], data);
-      // Invalidate to ensure fresh data
       queryClient.invalidateQueries({ queryKey: ['onboarding-status', user?.id] });
-      // Invalidate projects cache so OverviewView sees newly created project
       queryClient.invalidateQueries({ queryKey: ['projects', user?.id] });
     },
-    onError: error => {
+    onError: (error, _variables, context) => {
       logger.error('Failed to complete onboarding', {
         error: error instanceof Error ? error.message : 'Unknown error',
       });
+
+      if (context?.previousStatus) {
+        queryClient.setQueryData(['onboarding-status', user?.id], context.previousStatus);
+        initializeFromServer({
+          currentStep: context.previousStatus.currentStep,
+          completedSteps: context.previousStatus.completedSteps,
+          skippedSteps: context.previousStatus.skippedSteps,
+        });
+      }
     },
   });
 
-  // Wrapped mutations with toast notifications
   const updateProgressWithToast = useMutationWithToast(updateMutation, {
     successMessage: t('onboarding.progressSaved') || 'Progress saved',
     errorMessage: t('onboarding.progressError') || 'Failed to save progress',
@@ -219,7 +252,6 @@ export function useOnboardingProgress(): IUseOnboardingProgressReturn {
     loggerContext: 'Failed to complete onboarding',
   });
 
-  // Go to next step
   const goToNextStep = useCallback(async () => {
     const nextStep = currentStep + 1;
     if (nextStep > 5) {
@@ -227,31 +259,16 @@ export function useOnboardingProgress(): IUseOnboardingProgressReturn {
       return;
     }
 
-    // Mark current step as complete and move to next
     const newCompletedSteps = new Set(completedSteps);
     newCompletedSteps.add(currentStep);
 
-    // Optimistic update
-    setCurrentStep(nextStep);
-    markStepComplete(currentStep);
-
-    // Sync with server
     await updateProgressWithToast({
       currentStep: nextStep,
       completedSteps: Array.from(newCompletedSteps),
       skippedSteps: Array.from(skippedSteps),
     });
-  }, [
-    currentStep,
-    completedSteps,
-    skippedSteps,
-    setCurrentStep,
-    markStepComplete,
-    updateProgressWithToast,
-    logger,
-  ]);
+  }, [currentStep, completedSteps, skippedSteps, updateProgressWithToast, logger]);
 
-  // Go to specific step
   const goToStep = useCallback(
     async (step: number) => {
       if (step < 1 || step > 5) {
@@ -259,17 +276,13 @@ export function useOnboardingProgress(): IUseOnboardingProgressReturn {
         return;
       }
 
-      // Optimistic update
-      setCurrentStep(step);
-
-      // Sync with server
       await updateProgressWithToast({
         currentStep: step,
         completedSteps: Array.from(completedSteps),
         skippedSteps: Array.from(skippedSteps),
       });
     },
-    [completedSteps, skippedSteps, setCurrentStep, updateProgressWithToast, logger]
+    [completedSteps, skippedSteps, updateProgressWithToast, logger]
   );
 
   return {

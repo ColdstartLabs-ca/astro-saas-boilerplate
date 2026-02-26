@@ -14,7 +14,7 @@ import { withAuthAndBody, jsonResponse, errorResponse } from '../_utils';
  * Generate Google OAuth URL and return it to the client.
  * The client should redirect the user to this URL.
  */
-export const POST = withAuthAndBody(connectGscSchema, async (userId, body) => {
+export const POST = withAuthAndBody(connectGscSchema, async (userId, body, context) => {
   // Verify user owns the project before initiating OAuth
   const { data: project, error: projectError } = await supabaseAdmin
     .from('projects')
@@ -27,7 +27,7 @@ export const POST = withAuthAndBody(connectGscSchema, async (userId, body) => {
     return errorResponse('NOT_FOUND', 'Project not found', 404);
   }
 
-  const authUrl = await gscService.getAuthUrl(body.projectId, userId);
+  const authUrl = await gscService.getAuthUrl(body.projectId, userId, context.url.origin);
   const response: IGscConnectResponse = { authUrl };
   return jsonResponse(response);
 });

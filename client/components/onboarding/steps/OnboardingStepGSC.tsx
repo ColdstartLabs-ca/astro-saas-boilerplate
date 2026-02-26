@@ -16,12 +16,13 @@ import {
   AlertTriangle,
 } from 'lucide-react';
 import { DashboardButton } from '@client/components/dashboard/ui/DashboardButton';
+import { GscSiteSelector } from '@client/components/dashboard/views/opportunities/GscSiteSelector';
 import { useOnboardingStore } from '@client/store/onboardingStore';
 import { useProjectStore } from '@client/store/projectStore';
 import { useOnboardingProgress } from '@client/hooks/useOnboardingProgress';
 import { apiFetch } from '@client/utils/api-client';
 import { OnboardingStep } from '@shared/types/onboarding.types';
-import type { IGscConnectionSafe } from '@shared/types/opportunity.types';
+import type { IGscConnectionSafe, IGscSite } from '@shared/types/opportunity.types';
 
 // =============================================================================
 // Props
@@ -46,6 +47,18 @@ interface IGscConnectionResponse {
   data: { connection: IGscConnectionSafe | null };
 }
 
+interface IGscSitesResponse {
+  data: {
+    sites: IGscSite[];
+    recommendedSiteUrl?: string | null;
+    selectedSiteUrl?: string | null;
+  };
+}
+
+interface IUpdateConnectionResponse {
+  data: { connection: IGscConnectionSafe };
+}
+
 // =============================================================================
 // Main Component
 // =============================================================================
@@ -56,6 +69,9 @@ export function OnboardingStepGSC({ onComplete, onSkip }: IOnboardingStepGSCProp
   const [isSkipping, setIsSkipping] = useState(false);
   const [showSkipConfirm, setShowSkipConfirm] = useState(false);
   const [connection, setConnection] = useState<IGscConnectionSafe | null>(null);
+  const [sites, setSites] = useState<IGscSite[]>([]);
+  const [isLoadingSites, setIsLoadingSites] = useState(false);
+  const [isSelectingSite, setIsSelectingSite] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const {
@@ -102,6 +118,42 @@ export function OnboardingStepGSC({ onComplete, onSkip }: IOnboardingStepGSCProp
     fetchConnection();
   }, [projectId, setHasGscConnection, markStepComplete]);
 
+  // Fetch available properties once a connection is active.
+  useEffect(() => {
+    const fetchSites = async () => {
+      if (!connection?.id || connection.status !== 'active') {
+        setSites([]);
+        return;
+      }
+
+      setIsLoadingSites(true);
+      try {
+        const res = await apiFetch<IGscSitesResponse>(`/api/gsc/connections/${connection.id}/sites`, {
+          method: 'GET',
+        });
+        setSites(res.data.sites || []);
+
+        if (res.data.selectedSiteUrl) {
+          setConnection(prev =>
+            prev
+              ? {
+                  ...prev,
+                  site_url: res.data.selectedSiteUrl ?? prev.site_url,
+                }
+              : prev
+          );
+        }
+      } catch (err) {
+        console.error('Failed to fetch GSC sites:', err);
+        setSites([]);
+      } finally {
+        setIsLoadingSites(false);
+      }
+    };
+
+    fetchSites();
+  }, [connection?.id, connection?.status]);
+
   // Handle GSC connection initiation
   const handleConnect = useCallback(async () => {
     if (!projectId) {
@@ -131,6 +183,7 @@ export function OnboardingStepGSC({ onComplete, onSkip }: IOnboardingStepGSCProp
   // Handle skip
   const handleSkip = useCallback(async () => {
     setIsSkipping(true);
+    setError(null);
     try {
       markStepSkipped(OnboardingStep.GSC_CONNECTION);
 
@@ -146,6 +199,7 @@ export function OnboardingStepGSC({ onComplete, onSkip }: IOnboardingStepGSCProp
       onSkip();
     } catch (err) {
       console.error('Failed to skip step:', err);
+      setError(err instanceof Error ? err.message : 'Failed to skip this step. Please try again.');
     } finally {
       setIsSkipping(false);
     }
@@ -153,22 +207,55 @@ export function OnboardingStepGSC({ onComplete, onSkip }: IOnboardingStepGSCProp
 
   // Handle continue when already connected
   const handleContinue = useCallback(async () => {
-    markStepComplete(OnboardingStep.GSC_CONNECTION);
+    setError(null);
+    try {
+      markStepComplete(OnboardingStep.GSC_CONNECTION);
 
-    // Build new set including the current step (store update is async, closure is stale)
-    const newCompletedSteps = new Set(completedSteps);
-    newCompletedSteps.add(OnboardingStep.GSC_CONNECTION);
+      // Build new set including the current step (store update is async, closure is stale)
+      const newCompletedSteps = new Set(completedSteps);
+      newCompletedSteps.add(OnboardingStep.GSC_CONNECTION);
 
-    await updateProgress({
-      currentStep: OnboardingStep.KEYWORDS_UPLOAD,
-      completedSteps: Array.from(newCompletedSteps),
-      skippedSteps: Array.from(skippedSteps),
-    });
+      await updateProgress({
+        currentStep: OnboardingStep.KEYWORDS_UPLOAD,
+        completedSteps: Array.from(newCompletedSteps),
+        skippedSteps: Array.from(skippedSteps),
+      });
 
-    onComplete();
+      onComplete();
+    } catch (err) {
+      console.error('Failed to continue from GSC step:', err);
+      setError(
+        err instanceof Error ? err.message : 'Failed to save progress. Please try again.'
+      );
+    }
   }, [markStepComplete, updateProgress, onComplete, completedSteps, skippedSteps]);
 
-  const isLoading = isUpdating || isSkipping;
+  const handleSelectSite = useCallback(
+    async (siteUrl: string) => {
+      if (!connection?.id) return;
+      setIsSelectingSite(true);
+      setError(null);
+      try {
+        const res = await apiFetch<IUpdateConnectionResponse>(`/api/gsc/connections/${connection.id}`, {
+          method: 'PUT',
+          body: JSON.stringify({ siteUrl }),
+        });
+        setConnection(res.data.connection);
+      } catch (err) {
+        console.error('Failed to select GSC property:', err);
+        setError(
+          err instanceof Error
+            ? err.message
+            : 'Failed to save selected property. Please try again.'
+        );
+      } finally {
+        setIsSelectingSite(false);
+      }
+    },
+    [connection?.id]
+  );
+
+  const isLoading = isUpdating || isSkipping || isSelectingSite;
 
   // Loading state
   if (isLoadingConnection) {
@@ -202,14 +289,27 @@ export function OnboardingStepGSC({ onComplete, onSkip }: IOnboardingStepGSCProp
           </div>
 
           <div className="mt-6">
-            <DashboardButton onClick={handleContinue} disabled={isLoading} className="w-full">
-              {isLoading ? (
-                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-              ) : (
-                <ArrowRight className="w-4 h-4 mr-2" />
-              )}
-              Continue to Keywords
-            </DashboardButton>
+            <div className="space-y-4">
+              <GscSiteSelector
+                sites={sites}
+                selectedSiteUrl={connection.site_url}
+                onSelectSite={handleSelectSite}
+                isLoading={isLoadingSites || isSelectingSite}
+              />
+
+              <DashboardButton
+                onClick={handleContinue}
+                disabled={isLoading || (sites.length > 0 && !connection.site_url)}
+                className="w-full"
+              >
+                {isLoading ? (
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                ) : (
+                  <ArrowRight className="w-4 h-4 mr-2" />
+                )}
+                Continue to Keywords
+              </DashboardButton>
+            </div>
           </div>
         </div>
       )}

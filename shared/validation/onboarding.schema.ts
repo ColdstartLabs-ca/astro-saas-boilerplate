@@ -168,6 +168,13 @@ export const markCompleteSchema = z.object({});
  */
 export const resetOnboardingSchema = z.object({});
 
+/**
+ * Schema for onboarding keyword suggestion query params
+ */
+export const onboardingKeywordSuggestionsQuerySchema = z.object({
+  projectId: z.string().uuid('Invalid project ID'),
+});
+
 // =============================================================================
 // Enhanced Step 1 Project Schema
 // =============================================================================
@@ -215,3 +222,6 @@ export type IUpdateOnboardingProgressSchemaInput = z.infer<
 >;
 export type ICompleteStepSchemaInput = z.infer<typeof completeStepSchema>;
 export type ISkipStepSchemaInput = z.infer<typeof skipStepSchema>;
+export type IOnboardingKeywordSuggestionsQuerySchemaInput = z.infer<
+  typeof onboardingKeywordSuggestionsQuerySchema
+>;

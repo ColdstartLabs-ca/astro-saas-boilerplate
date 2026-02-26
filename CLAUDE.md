@@ -41,6 +41,15 @@ When working with React files that violate code quality principles (SRP, DRY, KI
 - Roadmap: `docs/management/ROADMAP.md`
 - Env: `.env.client` (public) | `.env.api` (secrets)
 
+## Golden Rules by Domain
+
+- **UX**: Don't make users think — clarity beats cleverness every time.
+- **Security**: Never trust the client — validate and authorize everything server-side.
+- **Testing**: Test behavior, not implementation — tests should survive refactors.
+- **Database**: Every schema change is a migration — never alter directly.
+- **API**: Fail loudly with actionable errors — vague 500s are bugs in themselves.
+- **State**: Use zustand to avoid prop drilling when state is shared across multiple components.
+
 ## Stack
 
 Astro 5 (SSR + Islands), React 18, React Hook Form, Zod, Zustand, Supabase, Stripe, Cloudflare Pages, Baselime

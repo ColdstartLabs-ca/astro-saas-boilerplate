@@ -20,7 +20,7 @@ import type { IProject, IUpdateProjectInput } from '@shared/types/project.types'
 import { getTranslations } from '@src/i18n/utils';
 import { useMemo } from 'react';
 import { cn } from '@client/utils/cn';
-import { ProjectOnboarding } from './ProjectOnboarding';
+import { OnboardingWizard } from '@client/components/onboarding/OnboardingWizard';
 import { ProjectEditModal } from './ProjectEditModal';
 import { ConfirmDialog } from '@client/components/ui/ConfirmDialog';
 
@@ -248,7 +248,7 @@ export function ProjectList({ onProjectUpdated }: IProjectListProps): JSX.Elemen
       </div>
 
       {/* Onboarding Modal */}
-      <ProjectOnboarding isOpen={showOnboarding} onClose={() => setShowOnboarding(false)} />
+      <OnboardingWizard isOpen={showOnboarding} onClose={() => setShowOnboarding(false)} isNewProject={true} />
 
       {/* Delete Confirmation Dialog */}
       {projectToDelete && (

@@ -92,8 +92,6 @@ vi.mock('@client/store/userStore', () => ({
 
 // Mock onboarding store
 const mockInitializeFromServer = vi.fn();
-const mockSetCurrentStep = vi.fn();
-const mockMarkStepComplete = vi.fn();
 let storeState = {
   currentStep: 1,
   completedSteps: new Set<number>(),
@@ -105,8 +103,6 @@ vi.mock('@client/store/onboardingStore', () => ({
     const state = {
       ...storeState,
       initializeFromServer: mockInitializeFromServer,
-      setCurrentStep: mockSetCurrentStep,
-      markStepComplete: mockMarkStepComplete,
     };
     return selector ? selector(state) : state;
   }),
@@ -257,6 +253,34 @@ describe('useOnboardingProgress Hook', () => {
       expect(status.isComplete).toBe(true);
     });
 
+    it('should fallback to status endpoint when complete response has no onboarding', async () => {
+      mockFetch
+        .mockResolvedValueOnce(
+          createMockResponse({
+            ok: true,
+            json: async () => ({
+              data: { success: true, completedAt: new Date().toISOString() },
+            }),
+          })
+        )
+        .mockResolvedValueOnce(
+          createMockResponse({
+            ok: true,
+            json: async () => ({
+              data: { onboarding: mockCompletedStatus },
+            }),
+          })
+        );
+
+      const { result } = renderHook(() => useOnboardingProgress(), {
+        wrapper: createWrapper(),
+      });
+
+      const status = await result.current.markComplete();
+      expect(status).toEqual(mockCompletedStatus);
+      expect(mockFetch).toHaveBeenCalledTimes(2);
+    });
+
     it('should handle completion errors', async () => {
       mockFetch.mockRejectedValueOnce(new Error('Failed to complete'));
 
@@ -293,8 +317,11 @@ describe('useOnboardingProgress Hook', () => {
         await result.current.goToNextStep();
       });
 
-      expect(mockSetCurrentStep).toHaveBeenCalledWith(2);
-      expect(mockMarkStepComplete).toHaveBeenCalledWith(1);
+      expect(mockInitializeFromServer).toHaveBeenCalledWith({
+        currentStep: 2,
+        completedSteps: [1],
+        skippedSteps: [],
+      });
     });
 
     it('should not proceed past step 5', async () => {
@@ -337,7 +364,11 @@ describe('useOnboardingProgress Hook', () => {
         await result.current.goToStep(3);
       });
 
-      expect(mockSetCurrentStep).toHaveBeenCalledWith(3);
+      expect(mockInitializeFromServer).toHaveBeenCalledWith({
+        currentStep: 3,
+        completedSteps: [],
+        skippedSteps: [],
+      });
     });
 
     it('should reject invalid step numbers', async () => {

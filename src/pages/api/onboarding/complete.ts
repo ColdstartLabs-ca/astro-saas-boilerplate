@@ -6,6 +6,7 @@
  */
 
 import { onboardingService } from '@server/services/onboarding.service';
+import type { IOnboardingStatus } from '@shared/types/onboarding.types';
 import { withAuth, jsonResponse } from '../_utils';
 
 /**
@@ -14,6 +15,7 @@ import { withAuth, jsonResponse } from '../_utils';
 interface ICompleteOnboardingResponse {
   success: boolean;
   completedAt: string;
+  onboarding: IOnboardingStatus;
 }
 
 /**
@@ -22,10 +24,12 @@ interface ICompleteOnboardingResponse {
  */
 export const POST = withAuth(async (userId) => {
   await onboardingService.markComplete(userId);
+  const onboarding = await onboardingService.getStatus(userId);
 
   const response: ICompleteOnboardingResponse = {
     success: true,
     completedAt: new Date().toISOString(),
+    onboarding: onboarding as IOnboardingStatus,
   };
 
   return jsonResponse(response);

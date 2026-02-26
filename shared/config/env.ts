@@ -217,6 +217,8 @@ const serverEnvSchema = z.object({
   OPENROUTER_VL_MODEL: z.string().default('google/gemini-2.0-flash-exp:free'),
   // OpenRouter for text generation (article content)
   OPENROUTER_TEXT_MODEL: z.string().default('openai/gpt-4o'),
+  // OpenRouter default model (used by onboarding keyword suggestions)
+  OPENROUTER_DEFAULT_MODEL: z.string().default(''),
   // Replicate for image generation
   REPLICATE_API_KEY: z.string().default(''),
   // Available writer presets — format: "key(model-id),key2" (empty = all with defaults)
@@ -336,6 +338,8 @@ function loadServerEnv(): IServerEnv {
       'google/gemini-2.0-flash-exp:free',
     OPENROUTER_TEXT_MODEL:
       metaEnv.OPENROUTER_TEXT_MODEL || processEnv.OPENROUTER_TEXT_MODEL || 'openai/gpt-4o',
+    OPENROUTER_DEFAULT_MODEL:
+      metaEnv.OPENROUTER_DEFAULT_MODEL || processEnv.OPENROUTER_DEFAULT_MODEL || '',
     // Replicate for image generation
     REPLICATE_API_KEY: metaEnv.REPLICATE_API_KEY || processEnv.REPLICATE_API_KEY || '',
     // Available writer presets (key(model) format, empty = all)

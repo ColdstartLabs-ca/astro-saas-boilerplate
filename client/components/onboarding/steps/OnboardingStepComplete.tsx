@@ -64,7 +64,7 @@ function SummaryItem({ label, value, isCompleted, isSkipped }: ISummaryItemProps
 export function OnboardingStepComplete({ onClose }: IOnboardingStepCompleteProps): JSX.Element {
   const [isCompleting, setIsCompleting] = useState(false);
 
-  const { completedSteps, skippedSteps, keywordCount } = useOnboardingStore();
+  const { completedSteps, skippedSteps, keywordCount, currentStep } = useOnboardingStore();
   const { markComplete } = useOnboardingProgress();
 
   const handleGoToDashboard = useCallback(async () => {
@@ -81,10 +81,11 @@ export function OnboardingStepComplete({ onClose }: IOnboardingStepCompleteProps
 
   // Required steps MUST have been completed to reach step 5 - treat as completed
   // even if the store was reset by a re-sync
+  const reachedCompletionStep = currentStep >= OnboardingStep.COMPLETION;
   const isProjectComplete =
-    completedSteps.has(OnboardingStep.PROJECT_CREATION) || true;
+    completedSteps.has(OnboardingStep.PROJECT_CREATION) || reachedCompletionStep;
   const isKeywordsComplete =
-    completedSteps.has(OnboardingStep.KEYWORDS_UPLOAD) || true;
+    completedSteps.has(OnboardingStep.KEYWORDS_UPLOAD) || reachedCompletionStep;
 
   // Optional steps: check completed first, then skipped, otherwise infer skipped
   const isGscComplete = completedSteps.has(OnboardingStep.GSC_CONNECTION);

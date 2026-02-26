@@ -111,17 +111,29 @@ test.describe('API: Onboarding', () => {
     test('should allow skipping steps', async ({ request }) => {
       const api = new ApiClient(request).withAuth(user.token);
       const response = await api.put('/api/onboarding/progress', {
-        currentStep: 2,
-        completedSteps: [],
-        skippedSteps: [1],
+        currentStep: 3,
+        completedSteps: [1],
+        skippedSteps: [2],
       });
 
       response.expectStatus(200).expectSuccess();
       const data = await response.getData();
 
-      expect(data.onboarding.currentStep).toBe(2);
-      expect(data.onboarding.completedSteps).toEqual([]);
-      expect(data.onboarding.skippedSteps).toEqual([1]);
+      expect(data.onboarding.currentStep).toBe(3);
+      expect(data.onboarding.completedSteps).toEqual([1]);
+      expect(data.onboarding.skippedSteps).toEqual([2]);
+    });
+
+    test('should reject skipping required steps', async ({ request }) => {
+      const api = new ApiClient(request).withAuth(user.token);
+      const response = await api.put('/api/onboarding/progress', {
+        currentStep: 2,
+        completedSteps: [],
+        skippedSteps: [1],
+      });
+
+      response.expectStatus(400);
+      await response.expectErrorCode('VALIDATION_ERROR');
     });
 
     test('should reject invalid step numbers', async ({ request }) => {
@@ -235,6 +247,9 @@ test.describe('API: Onboarding', () => {
 
       expect(data.success).toBe(true);
       expect(data.completedAt).toBeDefined();
+      expect(data.onboarding).toBeDefined();
+      expect(data.onboarding.isComplete).toBe(true);
+      expect(data.onboarding.currentStep).toBe(5);
 
       // Verify ISO date format
       const completedAtDate = new Date(data.completedAt);

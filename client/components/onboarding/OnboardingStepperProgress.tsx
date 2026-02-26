@@ -1,19 +1,17 @@
 /**
  * OnboardingStepperProgress Component
- * Thin wrapper around generic StepperProgress with onboarding-specific concerns
+ * Visual step indicator for the onboarding wizard
  *
  * Features:
  * - 5 hardcoded onboarding steps
  * - Skipped-step styling (amber color)
  * - Optional step labels
- * - Delegates visual rendering to generic StepperProgress
  */
 
 'use client';
 
 import { useMemo } from 'react';
 import { SkipForward, Check } from 'lucide-react';
-import { StepperProgress, type IStepConfig } from '@client/components/stepper/StepperProgress';
 import { cn } from '@client/utils/cn';
 import { OnboardingStep } from '@shared/types/onboarding.types';
 
@@ -34,8 +32,10 @@ interface IOnboardingStepperProgressProps {
 // Constants
 // =============================================================================
 
-interface IOnboardingStepConfig extends IStepConfig {
+interface IOnboardingStepConfig {
   number: number;
+  label?: string;
+  isOptional?: boolean;
 }
 
 const ONBOARDING_STEPS: IOnboardingStepConfig[] = [
@@ -136,7 +136,7 @@ export function OnboardingStepperProgress({
   const currentStepIndex = clampedStep - 1;
 
   // Memoize the conversion of 1-based step numbers to 0-based indices
-  const { completedIndices, skippedIndices, hasSkippedSteps } = useMemo(() => {
+  const { completedIndices, skippedIndices } = useMemo(() => {
     const completed = new Set<number>();
     const skipped = new Set<number>();
     ONBOARDING_STEPS.forEach((step, index) => {
@@ -147,26 +147,9 @@ export function OnboardingStepperProgress({
         skipped.add(index);
       }
     });
-    return {
-      completedIndices: completed,
-      skippedIndices: skipped,
-      hasSkippedSteps: skipped.size > 0,
-    };
+    return { completedIndices: completed, skippedIndices: skipped };
   }, [completedSteps, skippedSteps]);
 
-  // If there are no skipped steps, use the generic stepper directly
-  if (!hasSkippedSteps) {
-    return (
-      <StepperProgress
-        currentStep={currentStepIndex}
-        steps={ONBOARDING_STEPS}
-        completedSteps={completedIndices}
-        data-testid="onboarding-stepper"
-      />
-    );
-  }
-
-  // When there are skipped steps, render manually to apply amber styling
   return (
     <div data-testid="onboarding-stepper" className="w-full py-3 sm:py-4">
       {/* Desktop/Tablet: Horizontal layout */}

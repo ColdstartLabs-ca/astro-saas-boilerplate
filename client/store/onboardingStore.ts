@@ -102,12 +102,23 @@ const getDismissedKey = (userId: string) => `onboarding_dismissed_${userId}`;
 
 /** Total number of onboarding steps */
 const TOTAL_STEPS = 5;
+const COMPLETION_STEP = OnboardingStep.COMPLETION;
 
 /** Steps that are optional (can be skipped) */
 const OPTIONAL_STEPS = new Set([OnboardingStep.GSC_CONNECTION, OnboardingStep.INTEGRATIONS]);
 
 /** Required steps that must be completed */
 const REQUIRED_STEPS = new Set([OnboardingStep.PROJECT_CREATION, OnboardingStep.KEYWORDS_UPLOAD]);
+
+function sanitizeSteps(steps: number[]): number[] {
+  return Array.from(
+    new Set(
+      steps.filter(
+        step => Number.isInteger(step) && step >= OnboardingStep.PROJECT_CREATION && step < COMPLETION_STEP
+      )
+    )
+  ).sort((a, b) => a - b);
+}
 
 // =============================================================================
 // Store
@@ -220,10 +231,15 @@ export const useOnboardingStore = create<IOnboardingState>((set, get) => ({
 
   // Bulk actions
   initializeFromServer: data => {
+    const completedSteps = sanitizeSteps(data.completedSteps);
+    const skippedSteps = sanitizeSteps(data.skippedSteps).filter(step => !REQUIRED_STEPS.has(step));
+    const completedSet = new Set(completedSteps);
+    const normalizedSkipped = skippedSteps.filter(step => !completedSet.has(step));
+
     set({
-      currentStep: data.currentStep,
-      completedSteps: new Set(data.completedSteps),
-      skippedSteps: new Set(data.skippedSteps),
+      currentStep: Math.min(Math.max(data.currentStep, OnboardingStep.PROJECT_CREATION), TOTAL_STEPS),
+      completedSteps: new Set(completedSteps),
+      skippedSteps: new Set(normalizedSkipped),
     });
   },
 

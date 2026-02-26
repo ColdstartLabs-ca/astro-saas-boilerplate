@@ -106,3 +106,25 @@ export interface IOnboardingStatusResponse {
 export interface IUpdateOnboardingResponse {
   onboarding: IOnboardingStatus;
 }
+
+export type OnboardingKeywordSuggestionSource =
+  | 'openrouter_gsc'
+  | 'openrouter_metadata'
+  | 'gsc_fallback'
+  | 'metadata_fallback'
+  | 'none';
+
+export type OnboardingKeywordSuggestionReason =
+  | 'ok'
+  | 'no_gsc_connection'
+  | 'no_selected_site'
+  | 'no_query_data'
+  | 'ai_not_configured'
+  | 'ai_failed';
+
+export interface IOnboardingKeywordSuggestionsResponse {
+  keywords: string[];
+  source: OnboardingKeywordSuggestionSource;
+  reason: OnboardingKeywordSuggestionReason;
+  model: string | null;
+}

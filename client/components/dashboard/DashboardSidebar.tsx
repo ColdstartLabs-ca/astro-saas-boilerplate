@@ -1,7 +1,7 @@
 'use client';
 
 import { BrandLink } from '@client/components/logo/BrandLink';
-import { ProjectOnboarding } from '@client/components/projects/ProjectOnboarding';
+import { OnboardingWizard } from '@client/components/onboarding/OnboardingWizard';
 import { ProjectSelector } from '@client/components/projects/ProjectSelector';
 import {
   getRoutesByGroup,
@@ -232,7 +232,7 @@ export const DashboardSidebar: React.FC<IDashboardSidebarProps> = ({ isOpen, onC
       </aside>
 
       {/* Onboarding Modal */}
-      <ProjectOnboarding isOpen={showOnboarding} onClose={() => setShowOnboarding(false)} />
+      <OnboardingWizard isOpen={showOnboarding} onClose={() => setShowOnboarding(false)} isNewProject={true} />
     </>
   );
 };

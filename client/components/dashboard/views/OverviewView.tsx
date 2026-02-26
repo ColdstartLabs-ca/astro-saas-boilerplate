@@ -4,7 +4,7 @@ import { ConfirmDialog } from '@client/components/ui/ConfirmDialog';
 import { DashboardCard } from '@client/components/dashboard/ui/DashboardCard';
 import { ProjectEditModal } from '@client/components/projects/ProjectEditModal';
 import { ProjectList } from '@client/components/projects/ProjectList';
-import { ProjectOnboarding } from '@client/components/projects/ProjectOnboarding';
+import { OnboardingWizard } from '@client/components/onboarding/OnboardingWizard';
 import { CreditsDisplay } from '@client/components/stripe/CreditsDisplay';
 import { useProjects } from '@client/hooks/useProjects';
 import { useSubscription, useUserStore } from '@client/store/userStore';
@@ -415,7 +415,7 @@ export function OverviewView(): JSX.Element {
       </div>
 
       {/* Onboarding Modal */}
-      <ProjectOnboarding isOpen={showOnboarding} onClose={() => setShowOnboarding(false)} />
+      <OnboardingWizard isOpen={showOnboarding} onClose={() => setShowOnboarding(false)} isNewProject={true} />
 
       {/* Delete Confirmation Dialog */}
       <ConfirmDialog

@@ -28,6 +28,9 @@ import { serverEnv } from '@shared/config/env';
 
 const MIN_STEP = 1;
 const MAX_STEP = 5;
+const COMPLETION_STEP = 5;
+const REQUIRED_STEPS = new Set([1, 3]);
+const OPTIONAL_STEPS = new Set([2, 4]);
 
 // In-memory test data store for test mode
 // This avoids database operations when using mock users
@@ -38,6 +41,44 @@ const testModeOnboarding = new Map<string, IUserOnboarding>();
 // =============================================================================
 
 export class OnboardingService {
+  /**
+   * Normalize persisted onboarding data to a safe status object for clients.
+   * This protects the UI from corrupted/legacy rows (invalid step numbers, overlaps, etc.).
+   */
+  private normalizeStatus(raw: IOnboardingStatus): IOnboardingStatus {
+    const completedSet = new Set(
+      raw.completedSteps.filter(step => Number.isInteger(step) && step >= MIN_STEP && step < COMPLETION_STEP)
+    );
+    const skippedSet = new Set(
+      raw.skippedSteps
+        .filter(step => Number.isInteger(step) && step >= MIN_STEP && step < COMPLETION_STEP)
+        .filter(step => !REQUIRED_STEPS.has(step))
+    );
+
+    // Completed takes precedence over skipped when overlap exists.
+    for (const step of completedSet) {
+      skippedSet.delete(step);
+    }
+
+    const completedSteps = Array.from(completedSet).sort((a, b) => a - b);
+    const skippedSteps = Array.from(skippedSet).sort((a, b) => a - b);
+
+    const requiredComplete = Array.from(REQUIRED_STEPS).every(step => completedSet.has(step));
+    const targetStep = this.getRecommendedNextStep(completedSteps, skippedSteps);
+    const normalizedCurrentStep = raw.isComplete
+      ? COMPLETION_STEP
+      : this.isStepAchievable(raw.currentStep, completedSteps, skippedSteps)
+        ? Math.max(MIN_STEP, Math.min(MAX_STEP, raw.currentStep))
+        : targetStep;
+
+    return {
+      isComplete: raw.isComplete && requiredComplete,
+      currentStep: normalizedCurrentStep,
+      completedSteps,
+      skippedSteps,
+    };
+  }
+
   /**
    * Get onboarding status for a user.
    * Creates a new record if one doesn't exist.
@@ -50,12 +91,12 @@ export class OnboardingService {
     if (serverEnv.ENV === 'test' && userId.includes('mock_user_')) {
       const onboarding = testModeOnboarding.get(userId);
       if (onboarding) {
-        return {
+        return this.normalizeStatus({
           isComplete: onboarding.is_complete,
           currentStep: onboarding.current_step,
           completedSteps: onboarding.completed_steps,
           skippedSteps: onboarding.skipped_steps,
-        };
+        });
       }
       // Create new in-memory record
       const newOnboarding: IUserOnboarding = {
@@ -70,12 +111,12 @@ export class OnboardingService {
         updated_at: new Date().toISOString(),
       };
       testModeOnboarding.set(userId, newOnboarding);
-      return {
+      return this.normalizeStatus({
         isComplete: false,
         currentStep: 1,
         completedSteps: [],
         skippedSteps: [],
-      };
+      });
     }
 
     // Try to get existing record
@@ -92,12 +133,12 @@ export class OnboardingService {
     // Return existing record
     if (existing) {
       const onboarding = existing as IUserOnboarding;
-      return {
+      return this.normalizeStatus({
         isComplete: onboarding.is_complete,
         currentStep: onboarding.current_step,
         completedSteps: onboarding.completed_steps,
         skippedSteps: onboarding.skipped_steps,
-      };
+      });
     }
 
     // EDGE CASE: Check if user already has projects (existing user)
@@ -155,12 +196,12 @@ export class OnboardingService {
         }
 
         const onboarding = retryData as IUserOnboarding;
-        return {
+        return this.normalizeStatus({
           isComplete: onboarding.is_complete,
           currentStep: onboarding.current_step,
           completedSteps: onboarding.completed_steps,
           skippedSteps: onboarding.skipped_steps,
-        };
+        });
       }
 
       throw new Error(`Failed to create onboarding record: ${createError.message}`);
@@ -168,20 +209,20 @@ export class OnboardingService {
 
     // Return based on whether user has existing projects
     if (hasExistingProjects) {
-      return {
+      return this.normalizeStatus({
         isComplete: true,
         currentStep: MAX_STEP,
         completedSteps: [1, 2, 3, 4],
         skippedSteps: [],
-      };
+      });
     }
 
-    return {
+    return this.normalizeStatus({
       isComplete: false,
       currentStep: 1,
       completedSteps: [],
       skippedSteps: [],
-    };
+    });
   }
 
   /**
@@ -202,6 +243,37 @@ export class OnboardingService {
       throw new OnboardingStepError(
         validated.currentStep,
         `Steps cannot be both completed and skipped: ${overlap.join(', ')}`
+      );
+    }
+
+    // Completion step should never be tracked as completed/skipped in arrays.
+    if (
+      validated.completedSteps.includes(COMPLETION_STEP) ||
+      validated.skippedSteps.includes(COMPLETION_STEP)
+    ) {
+      throw new OnboardingStepError(
+        COMPLETION_STEP,
+        'Completion step cannot be included in completedSteps/skippedSteps'
+      );
+    }
+
+    // Required steps cannot be skipped.
+    const skippedRequired = validated.skippedSteps.filter(step => REQUIRED_STEPS.has(step));
+    if (skippedRequired.length > 0) {
+      throw new OnboardingStepError(
+        skippedRequired[0],
+        `Required steps cannot be skipped: ${skippedRequired.join(', ')}`
+      );
+    }
+
+    // Final step requires all required steps to be completed.
+    if (
+      (validated.currentStep === COMPLETION_STEP || validated.isComplete === true) &&
+      !Array.from(REQUIRED_STEPS).every(step => validated.completedSteps.includes(step))
+    ) {
+      throw new OnboardingStepError(
+        validated.currentStep,
+        'Cannot move to completion without completing all required steps'
       );
     }
 
@@ -233,8 +305,8 @@ export class OnboardingService {
       }
 
       existing.current_step = validated.currentStep;
-      existing.completed_steps = validated.completedSteps;
-      existing.skipped_steps = validated.skippedSteps;
+      existing.completed_steps = Array.from(new Set(validated.completedSteps)).sort((a, b) => a - b);
+      existing.skipped_steps = Array.from(new Set(validated.skippedSteps)).sort((a, b) => a - b);
       if (validated.isComplete !== undefined) {
         existing.is_complete = validated.isComplete;
         if (validated.isComplete) {
@@ -250,8 +322,8 @@ export class OnboardingService {
     const upsertData: Record<string, unknown> = {
       user_id: userId,
       current_step: validated.currentStep,
-      completed_steps: validated.completedSteps,
-      skipped_steps: validated.skippedSteps,
+      completed_steps: Array.from(new Set(validated.completedSteps)).sort((a, b) => a - b),
+      skipped_steps: Array.from(new Set(validated.skippedSteps)).sort((a, b) => a - b),
       updated_at: new Date().toISOString(),
     };
 
@@ -341,6 +413,10 @@ export class OnboardingService {
     // Completion step (5) cannot be skipped
     if (step === MAX_STEP) {
       throw new OnboardingStepError(step, 'Cannot skip the completion step');
+    }
+
+    if (!OPTIONAL_STEPS.has(step)) {
+      throw new OnboardingStepError(step, 'Only optional steps can be skipped');
     }
 
     // Don't add if already skipped or completed
@@ -507,10 +583,10 @@ export class OnboardingService {
    * Returns the first incomplete required step, or the completion step if all required are done.
    */
   getRecommendedNextStep(completedSteps: number[], _skippedSteps: number[]): number {
-    const REQUIRED_STEPS = [1, 3]; // PROJECT_CREATION, KEYWORDS_UPLOAD
+    const requiredSteps = [1, 3]; // PROJECT_CREATION, KEYWORDS_UPLOAD
 
     // Find first incomplete required step
-    for (const step of REQUIRED_STEPS) {
+    for (const step of requiredSteps) {
       if (!completedSteps.includes(step)) {
         return step;
       }

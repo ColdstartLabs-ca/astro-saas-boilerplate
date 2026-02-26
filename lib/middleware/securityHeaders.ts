@@ -42,13 +42,18 @@ refreshAllowedOrigins();
  * Includes standard security headers and Content Security Policy
  */
 export function applySecurityHeaders(res: Response): void {
-  // Apply standard security headers (environment-aware)
-  Object.entries(getSecurityHeaders()).forEach(([key, value]) => {
-    res.headers.set(key, value);
-  });
+  try {
+    // Apply standard security headers (environment-aware)
+    Object.entries(getSecurityHeaders()).forEach(([key, value]) => {
+      res.headers.set(key, value);
+    });
 
-  // Apply Content Security Policy
-  res.headers.set('Content-Security-Policy', buildCspHeader());
+    // Apply Content Security Policy
+    res.headers.set('Content-Security-Policy', buildCspHeader());
+  } catch {
+    // Some responses (e.g. redirects returned by the runtime) expose immutable headers.
+    // We must not throw from middleware in this case.
+  }
 }
 
 /**
@@ -57,19 +62,23 @@ export function applySecurityHeaders(res: Response): void {
  * Browsers always send Origin header. No header means non-browser request (e.g., webhook) which doesn't need CORS.
  */
 export function applyCorsHeaders(res: Response, origin?: string): void {
-  // Only set CORS headers if origin is provided and allowed
-  if (origin && ALLOWED_ORIGINS.includes(origin)) {
-    res.headers.set('Access-Control-Allow-Origin', origin);
-    res.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-    res.headers.set(
-      'Access-Control-Allow-Headers',
-      'Content-Type, Authorization, X-Requested-With'
-    );
-    res.headers.set('Access-Control-Allow-Credentials', 'true');
-    res.headers.set('Access-Control-Max-Age', '86400'); // 24 hours
+  try {
+    // Only set CORS headers if origin is provided and allowed
+    if (origin && ALLOWED_ORIGINS.includes(origin)) {
+      res.headers.set('Access-Control-Allow-Origin', origin);
+      res.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+      res.headers.set(
+        'Access-Control-Allow-Headers',
+        'Content-Type, Authorization, X-Requested-With'
+      );
+      res.headers.set('Access-Control-Allow-Credentials', 'true');
+      res.headers.set('Access-Control-Max-Age', '86400'); // 24 hours
+    }
+    // REMOVED: Wildcard fallback for missing origin
+    // Non-browser clients (webhooks, APIs) don't need CORS headers
+  } catch {
+    // Ignore immutable-header responses.
   }
-  // REMOVED: Wildcard fallback for missing origin
-  // Non-browser clients (webhooks, APIs) don't need CORS headers
 }
 
 /**

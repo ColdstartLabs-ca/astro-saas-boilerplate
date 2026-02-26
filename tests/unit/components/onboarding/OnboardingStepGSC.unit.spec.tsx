@@ -25,6 +25,12 @@ vi.mock('lucide-react', () => ({
   ArrowRight: ({ className }: { className?: string }) => (
     <span className={className} data-icon="ArrowRight" />
   ),
+  ChevronDown: ({ className }: { className?: string }) => (
+    <span className={className} data-icon="ChevronDown" />
+  ),
+  Globe: ({ className }: { className?: string }) => (
+    <span className={className} data-icon="Globe" />
+  ),
   SkipForward: ({ className }: { className?: string }) => (
     <span className={className} data-icon="SkipForward" />
   ),
@@ -321,6 +327,9 @@ describe('OnboardingStepGSC', () => {
       (apiFetch as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
         data: { connection: activeConnection },
       });
+      (apiFetch as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
+        data: { sites: [] },
+      });
 
       const { container } = render(
         <OnboardingStepGSC onComplete={mockOnComplete} onSkip={mockOnSkip} />
@@ -345,6 +354,9 @@ describe('OnboardingStepGSC', () => {
       (apiFetch as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
         data: { connection: activeConnection },
       });
+      (apiFetch as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
+        data: { sites: [] },
+      });
 
       const { container } = render(
         <OnboardingStepGSC onComplete={mockOnComplete} onSkip={mockOnSkip} />
@@ -365,6 +377,39 @@ describe('OnboardingStepGSC', () => {
 
       await waitFor(() => {
         expect(mockOnComplete).toHaveBeenCalled();
+      });
+    });
+
+    it('should apply default selected property from sites API response', async () => {
+      const activeConnection = {
+        id: 'conn-1',
+        project_id: 'project-123',
+        google_email: 'user@example.com',
+        site_url: null,
+        status: 'active',
+        created_at: '2026-01-01T00:00:00Z',
+      };
+
+      (apiFetch as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
+        data: { connection: activeConnection },
+      });
+      (apiFetch as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
+        data: {
+          sites: [
+            { siteUrl: 'https://example.com/', permissionLevel: 'siteOwner' },
+            { siteUrl: 'sc-domain:example.com', permissionLevel: 'siteOwner' },
+          ],
+          selectedSiteUrl: 'sc-domain:example.com',
+          recommendedSiteUrl: 'sc-domain:example.com',
+        },
+      });
+
+      const { container } = render(
+        <OnboardingStepGSC onComplete={mockOnComplete} onSkip={mockOnSkip} />
+      );
+
+      await waitFor(() => {
+        expect(container.textContent).toContain('Site: sc-domain:example.com');
       });
     });
   });

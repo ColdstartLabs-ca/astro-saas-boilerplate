@@ -448,6 +448,7 @@ export function OnboardingStepIntegrations({
 
   const handleSkip = useCallback(async () => {
     setIsSkipping(true);
+    setError(null);
     try {
       // Save content preferences first before skipping
       await saveContentPreferences();
@@ -466,6 +467,7 @@ export function OnboardingStepIntegrations({
       onSkip();
     } catch (err) {
       console.error('Failed to skip step:', err);
+      setError(err instanceof Error ? err.message : 'Failed to skip this step. Please try again.');
     } finally {
       setIsSkipping(false);
     }
