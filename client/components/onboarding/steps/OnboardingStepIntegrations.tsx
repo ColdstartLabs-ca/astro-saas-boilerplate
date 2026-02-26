@@ -25,12 +25,13 @@ import {
   Clock,
 } from 'lucide-react';
 import { DashboardButton } from '@client/components/dashboard/ui/DashboardButton';
-import { ContentPreferencesSection, CONTENT_PREFERENCES_DEFAULTS } from './ContentPreferencesSection';
+import {
+  ContentPreferencesSection,
+  CONTENT_PREFERENCES_DEFAULTS,
+} from './ContentPreferencesSection';
 import { useOnboardingStore } from '@client/store/onboardingStore';
 import { useIntegrations } from '@client/hooks/useIntegrations';
-import { useOnboardingProgress } from '@client/hooks/useOnboardingProgress';
 import { apiFetch } from '@client/utils/api-client';
-import { OnboardingStep } from '@shared/types/onboarding.types';
 import type { IntegrationType } from '@shared/types/integration.types';
 import type { IContentPreferences } from '@shared/types/project.types';
 
@@ -298,17 +299,8 @@ export function OnboardingStepIntegrations({
   );
   const [isSavingPreferences, setIsSavingPreferences] = useState(false);
 
-  const {
-    completedSteps,
-    skippedSteps,
-    campaignId,
-    projectId,
-    setHasIntegration,
-    markStepComplete,
-    markStepSkipped,
-  } = useOnboardingStore();
+  const { campaignId, projectId, setHasIntegration } = useOnboardingStore();
   const { createIntegration } = useIntegrations();
-  const { updateProgress, isUpdating } = useOnboardingProgress();
 
   const selectedOption = INTEGRATION_OPTIONS.find(o => o.type === selectedType);
 
@@ -408,20 +400,7 @@ export function OnboardingStepIntegrations({
         await createIntegration(input);
       }
 
-      // Update store
       setHasIntegration(true);
-      markStepComplete(OnboardingStep.INTEGRATIONS);
-
-      // Persist progress
-      const newCompletedSteps = new Set(completedSteps);
-      newCompletedSteps.add(OnboardingStep.INTEGRATIONS);
-
-      await updateProgress({
-        currentStep: OnboardingStep.COMPLETION,
-        completedSteps: Array.from(newCompletedSteps),
-        skippedSteps: Array.from(skippedSteps),
-      });
-
       onComplete();
     } catch (err) {
       console.error('Failed to create integration:', err);
@@ -436,13 +415,9 @@ export function OnboardingStepIntegrations({
     canSubmit,
     formData,
     campaignId,
-    completedSteps,
-    skippedSteps,
     createIntegration,
     setHasIntegration,
     saveContentPreferences,
-    markStepComplete,
-    updateProgress,
     onComplete,
   ]);
 
@@ -450,20 +425,7 @@ export function OnboardingStepIntegrations({
     setIsSkipping(true);
     setError(null);
     try {
-      // Save content preferences first before skipping
       await saveContentPreferences();
-
-      markStepSkipped(OnboardingStep.INTEGRATIONS);
-
-      const newSkippedSteps = new Set(skippedSteps);
-      newSkippedSteps.add(OnboardingStep.INTEGRATIONS);
-
-      await updateProgress({
-        currentStep: OnboardingStep.COMPLETION,
-        completedSteps: Array.from(completedSteps),
-        skippedSteps: Array.from(newSkippedSteps),
-      });
-
       onSkip();
     } catch (err) {
       console.error('Failed to skip step:', err);
@@ -471,18 +433,15 @@ export function OnboardingStepIntegrations({
     } finally {
       setIsSkipping(false);
     }
-  }, [completedSteps, skippedSteps, markStepSkipped, updateProgress, onSkip, saveContentPreferences]);
+  }, [onSkip, saveContentPreferences]);
 
-  const isLoading = isSubmitting || isUpdating || isSkipping || isSavingPreferences;
+  const isLoading = isSubmitting || isSkipping || isSavingPreferences;
 
   return (
     <div className="space-y-4">
       {/* Content Preferences Section - always shown at top */}
       <div className="bg-surface border border-border rounded-xl p-5">
-        <ContentPreferencesSection
-          value={contentPreferences}
-          onChange={setContentPreferences}
-        />
+        <ContentPreferencesSection value={contentPreferences} onChange={setContentPreferences} />
       </div>
 
       {/* Divider */}
@@ -491,9 +450,7 @@ export function OnboardingStepIntegrations({
           <div className="w-full border-t border-border"></div>
         </div>
         <div className="relative flex justify-center">
-          <span className="bg-main px-3 text-xs text-muted uppercase tracking-wider">
-            Optional
-          </span>
+          <span className="bg-main px-3 text-xs text-muted uppercase tracking-wider">Optional</span>
         </div>
       </div>
 

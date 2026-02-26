@@ -1,18 +1,16 @@
 /**
  * OnboardingStepComplete Component Tests
- * Tests for Step 5: Success screen with setup summary
+ * Tests for Step 5: Success screen with setup summary.
+ * completedSteps and skippedSteps are now received as props (not from store).
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, fireEvent, waitFor } from '@testing-library/react';
+import { render, fireEvent } from '@testing-library/react';
 import { OnboardingStepComplete } from '@client/components/onboarding/steps/OnboardingStepComplete';
 import { OnboardingStep } from '@shared/types/onboarding.types';
 
 // Mock lucide-react icons
 vi.mock('lucide-react', () => ({
-  Loader2: ({ className }: { className?: string }) => (
-    <span className={className} data-icon="Loader2" />
-  ),
   CheckCircle2: ({ className }: { className?: string }) => (
     <span className={className} data-icon="CheckCircle2" />
   ),
@@ -27,35 +25,16 @@ vi.mock('lucide-react', () => ({
   ),
 }));
 
-// Mutable store state
-let mockStoreState = {
-  completedSteps: new Set([
-    OnboardingStep.PROJECT_CREATION,
-    OnboardingStep.GSC_CONNECTION,
-    OnboardingStep.KEYWORDS_UPLOAD,
-    OnboardingStep.INTEGRATIONS,
-  ]),
-  skippedSteps: new Set<number>(),
-  keywordCount: 5,
-};
-
-// Mock Zustand store
+// Mock Zustand store (only keywordCount is still read from store)
+let mockKeywordCount = 5;
 vi.mock('@client/store/onboardingStore', () => ({
-  useOnboardingStore: vi.fn((selector?: (state: typeof mockStoreState) => unknown) => {
+  useOnboardingStore: vi.fn((selector?: (state: { keywordCount: number }) => unknown) => {
+    const state = { keywordCount: mockKeywordCount };
     if (typeof selector === 'function') {
-      return selector(mockStoreState);
+      return selector(state);
     }
-    return mockStoreState;
+    return state;
   }),
-}));
-
-// Mock useOnboardingProgress
-let mockProgressState = {
-  markComplete: vi.fn().mockResolvedValue({}),
-};
-
-vi.mock('@client/hooks/useOnboardingProgress', () => ({
-  useOnboardingProgress: () => mockProgressState,
 }));
 
 // Mock DashboardButton
@@ -78,35 +57,42 @@ vi.mock('@client/components/dashboard/ui/DashboardButton', () => ({
   ),
 }));
 
+const allCompletedSteps = new Set([
+  OnboardingStep.PROJECT_CREATION,
+  OnboardingStep.GSC_CONNECTION,
+  OnboardingStep.KEYWORDS_UPLOAD,
+  OnboardingStep.INTEGRATIONS,
+]);
+
 describe('OnboardingStepComplete', () => {
   const mockOnClose = vi.fn();
 
   beforeEach(() => {
     vi.clearAllMocks();
-    mockStoreState = {
-      completedSteps: new Set([
-        OnboardingStep.PROJECT_CREATION,
-        OnboardingStep.GSC_CONNECTION,
-        OnboardingStep.KEYWORDS_UPLOAD,
-        OnboardingStep.INTEGRATIONS,
-      ]),
-      skippedSteps: new Set<number>(),
-      keywordCount: 5,
-    };
-    mockProgressState = {
-      markComplete: vi.fn().mockResolvedValue({}),
-    };
+    mockKeywordCount = 5;
   });
 
-  it('should render the completion header', () => {
-    const { container } = render(<OnboardingStepComplete onClose={mockOnClose} />);
+  it('should render the setup summary and "What\'s Next?" section', () => {
+    const { container } = render(
+      <OnboardingStepComplete
+        onClose={mockOnClose}
+        completedSteps={allCompletedSteps}
+        skippedSteps={new Set()}
+      />
+    );
 
     expect(container.textContent).toContain('Project');
     expect(container.textContent).toContain("What's Next?");
   });
 
   it('should show setup summary with all steps completed', () => {
-    const { getByText, getAllByText } = render(<OnboardingStepComplete onClose={mockOnClose} />);
+    const { getByText, getAllByText } = render(
+      <OnboardingStepComplete
+        onClose={mockOnClose}
+        completedSteps={allCompletedSteps}
+        skippedSteps={new Set()}
+      />
+    );
 
     expect(getByText('Project')).toBeDefined();
     expect(getByText('Created')).toBeDefined();
@@ -119,78 +105,90 @@ describe('OnboardingStepComplete', () => {
   });
 
   it('should show skipped steps correctly', () => {
-    mockStoreState = {
-      completedSteps: new Set([OnboardingStep.PROJECT_CREATION, OnboardingStep.KEYWORDS_UPLOAD]),
-      skippedSteps: new Set([OnboardingStep.GSC_CONNECTION, OnboardingStep.INTEGRATIONS]),
-      keywordCount: 3,
-    };
-
-    const { getAllByText } = render(<OnboardingStepComplete onClose={mockOnClose} />);
+    const { getAllByText } = render(
+      <OnboardingStepComplete
+        onClose={mockOnClose}
+        completedSteps={new Set([OnboardingStep.PROJECT_CREATION, OnboardingStep.KEYWORDS_UPLOAD])}
+        skippedSteps={new Set([OnboardingStep.GSC_CONNECTION, OnboardingStep.INTEGRATIONS])}
+      />
+    );
 
     const skippedElements = getAllByText('Skipped');
     expect(skippedElements.length).toBe(2);
   });
 
   it('should show reminder about skipped steps', () => {
-    mockStoreState = {
-      completedSteps: new Set([OnboardingStep.PROJECT_CREATION, OnboardingStep.KEYWORDS_UPLOAD]),
-      skippedSteps: new Set([OnboardingStep.GSC_CONNECTION]),
-      keywordCount: 3,
-    };
-
-    const { getByText } = render(<OnboardingStepComplete onClose={mockOnClose} />);
+    const { getByText } = render(
+      <OnboardingStepComplete
+        onClose={mockOnClose}
+        completedSteps={new Set([OnboardingStep.PROJECT_CREATION, OnboardingStep.KEYWORDS_UPLOAD])}
+        skippedSteps={new Set([OnboardingStep.GSC_CONNECTION])}
+      />
+    );
 
     expect(getByText(/You skipped some optional steps/)).toBeDefined();
   });
 
   it('should not show skipped reminder when no steps were skipped', () => {
-    const { queryByText } = render(<OnboardingStepComplete onClose={mockOnClose} />);
+    const { queryByText } = render(
+      <OnboardingStepComplete
+        onClose={mockOnClose}
+        completedSteps={allCompletedSteps}
+        skippedSteps={new Set()}
+      />
+    );
 
     expect(queryByText(/You skipped some optional steps/)).toBeNull();
   });
 
   it('should show "What\'s Next?" section', () => {
-    const { getByText } = render(<OnboardingStepComplete onClose={mockOnClose} />);
+    const { getByText } = render(
+      <OnboardingStepComplete
+        onClose={mockOnClose}
+        completedSteps={allCompletedSteps}
+        skippedSteps={new Set()}
+      />
+    );
 
     expect(getByText("What's Next?")).toBeDefined();
     expect(getByText(/Generate articles from your campaign keywords/)).toBeDefined();
   });
 
   it('should show "Go to Dashboard" button', () => {
-    const { getByText } = render(<OnboardingStepComplete onClose={mockOnClose} />);
+    const { getByText } = render(
+      <OnboardingStepComplete
+        onClose={mockOnClose}
+        completedSteps={allCompletedSteps}
+        skippedSteps={new Set()}
+      />
+    );
 
     expect(getByText('Go to Dashboard')).toBeDefined();
   });
 
-  it('should call markComplete and onClose when clicking "Go to Dashboard"', async () => {
-    const { getByTestId } = render(<OnboardingStepComplete onClose={mockOnClose} />);
+  it('should call onClose directly when clicking "Go to Dashboard"', () => {
+    const { getByTestId } = render(
+      <OnboardingStepComplete
+        onClose={mockOnClose}
+        completedSteps={allCompletedSteps}
+        skippedSteps={new Set()}
+      />
+    );
 
-    const button = getByTestId('dashboard-button');
-    fireEvent.click(button);
-
-    await waitFor(() => {
-      expect(mockProgressState.markComplete).toHaveBeenCalled();
-      expect(mockOnClose).toHaveBeenCalled();
-    });
-  });
-
-  it('should still close even if markComplete fails', async () => {
-    mockProgressState.markComplete = vi.fn().mockRejectedValue(new Error('Failed'));
-
-    const { getByTestId } = render(<OnboardingStepComplete onClose={mockOnClose} />);
-
-    const button = getByTestId('dashboard-button');
-    fireEvent.click(button);
-
-    await waitFor(() => {
-      expect(mockOnClose).toHaveBeenCalled();
-    });
+    fireEvent.click(getByTestId('dashboard-button'));
+    expect(mockOnClose).toHaveBeenCalledTimes(1);
   });
 
   it('should show keyword count in summary', () => {
-    mockStoreState.keywordCount = 42;
+    mockKeywordCount = 42;
 
-    const { getByText } = render(<OnboardingStepComplete onClose={mockOnClose} />);
+    const { getByText } = render(
+      <OnboardingStepComplete
+        onClose={mockOnClose}
+        completedSteps={allCompletedSteps}
+        skippedSteps={new Set()}
+      />
+    );
 
     expect(getByText('42 uploaded')).toBeDefined();
   });

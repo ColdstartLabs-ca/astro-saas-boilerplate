@@ -8,8 +8,6 @@ import { OnboardingWizard } from '@client/components/onboarding/OnboardingWizard
 import { CreditsDisplay } from '@client/components/stripe/CreditsDisplay';
 import { useProjects } from '@client/hooks/useProjects';
 import { useSubscription, useUserStore } from '@client/store/userStore';
-import { useOnboardingStore } from '@client/store/onboardingStore';
-import { OnboardingStep } from '@shared/types/onboarding.types';
 import { cn } from '@client/utils/cn';
 import { dashboardNavigate } from '@client/utils/dashboardNavigation';
 import { getGreeting } from '@client/utils/timeUtils';
@@ -40,9 +38,6 @@ export function OverviewView(): JSX.Element {
   const { user } = useUserStore();
   const subscription = useSubscription();
   const { projects, activeProject, isLoading, deleteProject, updateProject } = useProjects();
-  const isOnboardingComplete = useOnboardingStore(state =>
-    state.completedSteps.has(OnboardingStep.COMPLETION)
-  );
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [projectToDelete, setProjectToDelete] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -66,19 +61,12 @@ export function OverviewView(): JSX.Element {
   const greeting = getGreeting();
 
   // Auto-show onboarding modal for users with no projects (only once per session).
-  // Skip if onboarding wizard is already complete (projects cache may still be refreshing).
   useEffect(() => {
-    if (
-      !isLoading &&
-      projects.length === 0 &&
-      !showOnboarding &&
-      !hasAutoOpenedOnboarding &&
-      isOnboardingComplete
-    ) {
+    if (!isLoading && projects.length === 0 && !showOnboarding && !hasAutoOpenedOnboarding) {
       setShowOnboarding(true);
       sessionStorage.setItem('hasAutoOpenedOnboarding', 'true');
     }
-  }, [isLoading, projects.length, showOnboarding, hasAutoOpenedOnboarding, isOnboardingComplete]);
+  }, [isLoading, projects.length, showOnboarding, hasAutoOpenedOnboarding]);
 
   const handleDeleteClick = (projectId: string) => {
     setProjectToDelete(projectId);
@@ -415,7 +403,7 @@ export function OverviewView(): JSX.Element {
       </div>
 
       {/* Onboarding Modal */}
-      <OnboardingWizard isOpen={showOnboarding} onClose={() => setShowOnboarding(false)} isNewProject={true} />
+      <OnboardingWizard isOpen={showOnboarding} onClose={() => setShowOnboarding(false)} />
 
       {/* Delete Confirmation Dialog */}
       <ConfirmDialog

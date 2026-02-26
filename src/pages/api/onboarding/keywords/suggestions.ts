@@ -73,6 +73,25 @@ interface IProjectKeywordContext {
   blog_url: string | null;
 }
 
+function firstNonEmptyEnvValue(...values: Array<string | null | undefined>): string {
+  for (const value of values) {
+    if (typeof value !== 'string') continue;
+    const trimmed = value.trim();
+    if (trimmed.length > 0) {
+      return trimmed;
+    }
+  }
+  return '';
+}
+
+function resolvePreferredOpenRouterModel(): string {
+  return firstNonEmptyEnvValue(
+    serverEnv.OPENROUTER_DEFAULT_MODEL,
+    serverEnv.OPENROUTER_TEXT_MODEL,
+    'openai/gpt-4o'
+  );
+}
+
 function formatDate(date: Date): string {
   return date.toISOString().split('T')[0];
 }
@@ -88,7 +107,10 @@ function extractHost(domain: string | null): string {
     const normalized = /^https?:\/\//i.test(domain) ? domain : `https://${domain}`;
     return new URL(normalized).hostname.toLowerCase().replace(/^www\./, '');
   } catch {
-    return domain.toLowerCase().replace(/^https?:\/\//i, '').replace(/^www\./, '');
+    return domain
+      .toLowerCase()
+      .replace(/^https?:\/\//i, '')
+      .replace(/^www\./, '');
   }
 }
 
@@ -111,7 +133,10 @@ function dedupeKeywords(keywords: string[]): string[] {
 }
 
 function aggregateQueries(rows: IRawGscRow[]): IAggregatedQuery[] {
-  const byQuery = new Map<string, { clicks: number; impressions: number; weightedPosition: number }>();
+  const byQuery = new Map<
+    string,
+    { clicks: number; impressions: number; weightedPosition: number }
+  >();
 
   for (const row of rows) {
     const query = (row.keys?.[0] ?? '').trim();
@@ -151,7 +176,13 @@ function extractAiKeywordCandidates(payload: IAiKeywordResponse): unknown {
 }
 
 function parseAiKeywords(content: string): string[] {
-  const rawCandidates = [content.trim(), content.trim().replace(/^```(?:json)?\s*/i, '').replace(/```$/i, '')];
+  const rawCandidates = [
+    content.trim(),
+    content
+      .trim()
+      .replace(/^```(?:json)?\s*/i, '')
+      .replace(/```$/i, ''),
+  ];
 
   for (const raw of rawCandidates) {
     try {
@@ -201,7 +232,9 @@ function buildMetadataSeedKeywords(project: IProjectKeywordContext): string[] {
   const hostTokens = host
     .split('.')
     .filter(Boolean)
-    .filter(token => token.length > 2 && !['com', 'net', 'org', 'io', 'co', 'ai', 'app'].includes(token));
+    .filter(
+      token => token.length > 2 && !['com', 'net', 'org', 'io', 'co', 'ai', 'app'].includes(token)
+    );
 
   const domainPhrase = hostTokens.join(' ').trim();
   const base = dedupeKeywords(
@@ -364,7 +397,10 @@ function extractKeywordsFromPageUrl(pageUrl: string): string[] {
 }
 
 function aggregatePageRowsToKeywordContext(rows: IRawGscRow[]): IAggregatedQuery[] {
-  const byQuery = new Map<string, { clicks: number; impressions: number; weightedPosition: number }>();
+  const byQuery = new Map<
+    string,
+    { clicks: number; impressions: number; weightedPosition: number }
+  >();
 
   for (const row of rows) {
     const pageUrl = (row.keys?.[0] ?? '').trim();
@@ -380,7 +416,8 @@ function aggregatePageRowsToKeywordContext(rows: IRawGscRow[]): IAggregatedQuery
       const existing = byQuery.get(candidate) ?? { clicks: 0, impressions: 0, weightedPosition: 0 };
       const nextClicks = existing.clicks + perCandidateClicks;
       const nextImpressions = existing.impressions + perCandidateImpressions;
-      const nextWeightedPosition = existing.weightedPosition + row.position * perCandidateImpressions;
+      const nextWeightedPosition =
+        existing.weightedPosition + row.position * perCandidateImpressions;
 
       byQuery.set(candidate, {
         clicks: nextClicks,
@@ -494,7 +531,8 @@ export const GET = withAuth(async (userId, { url }) => {
 
   const projectContext = project as IProjectKeywordContext;
   const openRouter = new OpenRouterService();
-  const preferredModel = serverEnv.OPENROUTER_DEFAULT_MODEL || serverEnv.OPENROUTER_TEXT_MODEL;
+  const preferredModel = resolvePreferredOpenRouterModel();
+  console.log(`[OnboardingKeywordSuggestions] using preferred model=${preferredModel}`);
 
   // Find the latest active connection for this project
   const { data: connection, error: connectionError } = await supabaseAdmin

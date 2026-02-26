@@ -6,7 +6,7 @@
 
 'use client';
 
-import { useEffect } from 'react';
+import { type ChangeEvent, useEffect } from 'react';
 import { ChevronDown, Globe, Loader2 } from 'lucide-react';
 import { useTranslations } from '@client/hooks/useTranslations';
 import type { IGscSite } from '@shared/types/opportunity.types';
@@ -41,7 +41,7 @@ export function GscSiteSelector({
     }
   }, [sites, selectedSiteUrl, onSelectSite]);
 
-  const handleChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+  const handleChange = (e: ChangeEvent<HTMLSelectElement>) => {
     const value = e.target.value;
     if (value) {
       onSelectSite(value);

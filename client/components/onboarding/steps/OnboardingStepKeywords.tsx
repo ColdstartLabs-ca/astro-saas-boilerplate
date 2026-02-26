@@ -13,9 +13,7 @@ import { DashboardButton } from '@client/components/dashboard/ui/DashboardButton
 import { useOnboardingStore } from '@client/store/onboardingStore';
 import { useProjectStore } from '@client/store/projectStore';
 import { useCampaigns } from '@client/hooks/useCampaigns';
-import { useOnboardingProgress } from '@client/hooks/useOnboardingProgress';
 import { apiFetch } from '@client/utils/api-client';
-import { OnboardingStep } from '@shared/types/onboarding.types';
 import type { IOnboardingKeywordSuggestionsResponse } from '@shared/types/onboarding.types';
 
 // =============================================================================
@@ -134,26 +132,18 @@ export function OnboardingStepKeywords({ onComplete }: IOnboardingStepKeywordsPr
   const autoSuggestProjectRef = useRef<string | null>(null);
   const dragDepthRef = useRef(0);
 
-  const {
-    projectId: onboardingProjectId,
-    completedSteps,
-    skippedSteps,
-    setCampaignId,
-    setKeywordCount,
-    markStepComplete,
-  } = useOnboardingStore();
+  const { projectId: onboardingProjectId, setCampaignId, setKeywordCount } = useOnboardingStore();
   const { activeProjectId } = useProjectStore();
   const projectId = onboardingProjectId || activeProjectId;
   const canSuggestFromGsc = !!projectId && UUID_PATTERN.test(projectId);
   const { createCampaign } = useCampaigns(projectId);
-  const { updateProgress, isUpdating } = useOnboardingProgress();
 
   const parsedKeywords = useMemo(() => parseKeywords(rawInput), [rawInput]);
   const keywordCount = parsedKeywords.length;
   const canSubmit = keywordCount >= MIN_KEYWORDS && keywordCount <= MAX_KEYWORDS && !!projectId;
   const isEditorVisible = !(isInputLocked && keywordCount > 0);
   const isInputDisabled =
-    isSubmitting || isUpdating || isSuggesting || isParsingCsv || (isInputLocked && keywordCount > 0);
+    isSubmitting || isSuggesting || isParsingCsv || (isInputLocked && keywordCount > 0);
 
   useEffect(() => {
     rawInputRef.current = rawInput;
@@ -193,7 +183,7 @@ export function OnboardingStepKeywords({ onComplete }: IOnboardingStepKeywordsPr
                 ? 'Keywords auto-suggested from your website URL and metadata with AI.'
                 : response.data.source === 'metadata_fallback'
                   ? 'Loaded keyword ideas from your website URL and metadata.'
-              : 'Loaded top keyword ideas from your GSC data.'
+                  : 'Loaded top keyword ideas from your GSC data.'
           );
         } else if (suggestions.length > 0) {
           setStatusMessage(
@@ -212,7 +202,9 @@ export function OnboardingStepKeywords({ onComplete }: IOnboardingStepKeywordsPr
       } catch (err) {
         console.error('Failed to fetch onboarding keyword suggestions:', err);
         setIsInputLocked(false);
-        setStatusMessage('Could not auto-suggest keywords right now. You can still continue manually.');
+        setStatusMessage(
+          'Could not auto-suggest keywords right now. You can still continue manually.'
+        );
       } finally {
         setIsSuggesting(false);
         onSettled?.();
@@ -275,14 +267,14 @@ export function OnboardingStepKeywords({ onComplete }: IOnboardingStepKeywordsPr
       event.stopPropagation();
       setIsCsvDragging(false);
 
-      if (isSubmitting || isUpdating || isParsingCsv) return;
+      if (isSubmitting || isParsingCsv) return;
 
       const file = event.dataTransfer.files?.[0];
       if (file) {
         void handleCsvFile(file);
       }
     },
-    [handleCsvFile, isSubmitting, isUpdating, isParsingCsv]
+    [handleCsvFile, isSubmitting, isParsingCsv]
   );
 
   useEffect(() => {
@@ -321,7 +313,7 @@ export function OnboardingStepKeywords({ onComplete }: IOnboardingStepKeywordsPr
       event.preventDefault();
       dragDepthRef.current = 0;
       setIsCsvDragging(false);
-      if (isSubmitting || isUpdating || isParsingCsv) return;
+      if (isSubmitting || isParsingCsv) return;
 
       const file = event.dataTransfer?.files?.[0];
       if (file) {
@@ -342,7 +334,7 @@ export function OnboardingStepKeywords({ onComplete }: IOnboardingStepKeywordsPr
       window.removeEventListener('dragleave', handleDragLeave);
       window.removeEventListener('drop', handleDrop);
     };
-  }, [isEditorVisible, isSubmitting, isUpdating, isParsingCsv, handleCsvFile]);
+  }, [isEditorVisible, isSubmitting, isParsingCsv, handleCsvFile]);
 
   const handleSubmit = useCallback(async () => {
     if (!canSubmit || !projectId) return;
@@ -358,21 +350,8 @@ export function OnboardingStepKeywords({ onComplete }: IOnboardingStepKeywordsPr
         keywords: parsedKeywords,
       });
 
-      // Update store
       setCampaignId(campaign.id);
       setKeywordCount(keywordCount);
-      markStepComplete(OnboardingStep.KEYWORDS_UPLOAD);
-
-      // Persist progress
-      const newCompletedSteps = new Set(completedSteps);
-      newCompletedSteps.add(OnboardingStep.KEYWORDS_UPLOAD);
-
-      await updateProgress({
-        currentStep: OnboardingStep.INTEGRATIONS,
-        completedSteps: Array.from(newCompletedSteps),
-        skippedSteps: Array.from(skippedSteps),
-      });
-
       onComplete();
     } catch (err) {
       console.error('Failed to create campaign with keywords:', err);
@@ -385,23 +364,21 @@ export function OnboardingStepKeywords({ onComplete }: IOnboardingStepKeywordsPr
     projectId,
     parsedKeywords,
     keywordCount,
-    completedSteps,
-    skippedSteps,
     createCampaign,
     setCampaignId,
     setKeywordCount,
-    markStepComplete,
-    updateProgress,
     onComplete,
   ]);
 
-  const isLoading = isSubmitting || isUpdating || isParsingCsv;
+  const isLoading = isSubmitting || isParsingCsv;
 
   if (canSuggestFromGsc && !isInitialSuggestionsReady) {
     return (
       <div className="flex flex-col items-center justify-center gap-3 py-16">
         <Loader2 className="w-7 h-7 animate-spin text-accent" />
-        <p className="text-sm text-secondary">Preparing keyword suggestions from your GSC data...</p>
+        <p className="text-sm text-secondary">
+          Preparing keyword suggestions from your GSC data...
+        </p>
       </div>
     );
   }
@@ -419,7 +396,7 @@ export function OnboardingStepKeywords({ onComplete }: IOnboardingStepKeywordsPr
             onClick={() =>
               void fetchSuggestedKeywords({ lockAfterLoad: false, forceReplace: true })
             }
-            disabled={isSuggesting || !canSuggestFromGsc || isSubmitting || isUpdating || isParsingCsv}
+            disabled={isSuggesting || !canSuggestFromGsc || isSubmitting || isParsingCsv}
             className="px-3 py-1.5 text-xs rounded-md border border-border text-secondary hover:text-white hover:border-accent/40 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
             {isSuggesting ? 'Loading Suggestions...' : 'Refresh Suggestions'}
@@ -428,7 +405,7 @@ export function OnboardingStepKeywords({ onComplete }: IOnboardingStepKeywordsPr
             <button
               type="button"
               onClick={() => setIsInputLocked(false)}
-              disabled={isSubmitting || isUpdating || isParsingCsv}
+              disabled={isSubmitting || isParsingCsv}
               className="px-3 py-1.5 text-xs rounded-md border border-accent/40 text-accent hover:text-accent-hover hover:border-accent disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
               Customize Keywords
@@ -461,7 +438,7 @@ export function OnboardingStepKeywords({ onComplete }: IOnboardingStepKeywordsPr
               id="keywords-csv-upload"
               type="file"
               accept=".csv,text/csv"
-              disabled={isSubmitting || isUpdating || isParsingCsv}
+              disabled={isSubmitting || isParsingCsv}
               onChange={event => {
                 const file = event.target.files?.[0];
                 if (file) {
@@ -473,14 +450,16 @@ export function OnboardingStepKeywords({ onComplete }: IOnboardingStepKeywordsPr
             <label
               htmlFor="keywords-csv-upload"
               className={`inline-flex items-center px-3 py-1.5 text-xs rounded-md border transition-colors ${
-                isSubmitting || isUpdating || isParsingCsv
+                isSubmitting || isParsingCsv
                   ? 'border-border text-muted opacity-50 cursor-not-allowed'
                   : 'border-border text-secondary hover:text-white hover:border-accent/40 cursor-pointer'
               }`}
             >
               {isParsingCsv ? 'Parsing CSV...' : 'Upload CSV'}
             </label>
-            <p className="text-xs text-muted">Drag a CSV file onto this step to import instantly.</p>
+            <p className="text-xs text-muted">
+              Drag a CSV file onto this step to import instantly.
+            </p>
           </div>
 
           {isCsvDragging && (

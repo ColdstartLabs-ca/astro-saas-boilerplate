@@ -232,7 +232,7 @@ export const DashboardSidebar: React.FC<IDashboardSidebarProps> = ({ isOpen, onC
       </aside>
 
       {/* Onboarding Modal */}
-      <OnboardingWizard isOpen={showOnboarding} onClose={() => setShowOnboarding(false)} isNewProject={true} />
+      <OnboardingWizard isOpen={showOnboarding} onClose={() => setShowOnboarding(false)} />
     </>
   );
 };

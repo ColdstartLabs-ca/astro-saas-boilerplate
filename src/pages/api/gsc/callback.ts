@@ -24,7 +24,10 @@ function normalizeHost(value: string): string | null {
 
   try {
     const parsed = new URL(/^https?:\/\//.test(trimmed) ? trimmed : `https://${trimmed}`);
-    return parsed.hostname.toLowerCase().replace(/\.$/, '').replace(/^www\./, '');
+    return parsed.hostname
+      .toLowerCase()
+      .replace(/\.$/, '')
+      .replace(/^www\./, '');
   } catch {
     return null;
   }
@@ -86,7 +89,7 @@ function pickBestSite(projectDomain: string | null, sites: IGscSite[]): string |
  */
 export const GET: APIRoute = async ({ url }) => {
   const baseUrl = url.origin || clientEnv.BASE_URL;
-  const dashboardUrl = `${baseUrl}/dashboard/opportunities`;
+  const successUrl = `${baseUrl}/gsc-oauth-success`;
 
   try {
     // Parse query parameters
@@ -103,14 +106,14 @@ export const GET: APIRoute = async ({ url }) => {
 
     if (!stateResult.valid || !stateResult.data) {
       console.error('[GscCallback] Invalid state token:', stateResult.error);
-      return Response.redirect(`${dashboardUrl}?error=connection_failed`, 302);
+      return Response.redirect(`${successUrl}?error=connection_failed`, 302);
     }
 
     // Parse state data: "userId:projectId"
     const stateParts = stateResult.data.split(':');
     if (stateParts.length !== 2) {
       console.error('[GscCallback] Invalid state data format:', stateResult.data);
-      return Response.redirect(`${dashboardUrl}?error=connection_failed`, 302);
+      return Response.redirect(`${successUrl}?error=connection_failed`, 302);
     }
     const [userId, projectId] = stateParts;
 
@@ -128,7 +131,7 @@ export const GET: APIRoute = async ({ url }) => {
         projectId,
         projectError?.message
       );
-      return Response.redirect(`${dashboardUrl}?error=connection_failed`, 302);
+      return Response.redirect(`${successUrl}?error=connection_failed`, 302);
     }
 
     // Exchange authorization code for tokens
@@ -188,16 +191,16 @@ export const GET: APIRoute = async ({ url }) => {
 
     if (insertError) {
       console.error('[GscCallback] Failed to store connection:', insertError.message);
-      return Response.redirect(`${dashboardUrl}?error=connection_failed`, 302);
+      return Response.redirect(`${successUrl}?error=connection_failed`, 302);
     }
 
     console.log('[GscCallback] Connection stored for project:', projectId, 'email:', googleEmail);
 
-    // Redirect to dashboard with success indicator
-    return Response.redirect(`${dashboardUrl}?connected=true`, 302);
+    // Redirect to the popup success page which posts a message back to the opener
+    return Response.redirect(successUrl, 302);
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unknown error';
     console.error('[GscCallback] OAuth callback failed:', message);
-    return Response.redirect(`${dashboardUrl}?error=connection_failed`, 302);
+    return Response.redirect(`${successUrl}?error=connection_failed`, 302);
   }
 };

@@ -1,17 +1,16 @@
 /**
  * OnboardingWizard Component
- * Main wizard container that orchestrates the multi-step onboarding flow
- * Steps 1-5: Project, GSC, Keywords, Integration, Complete
+ * Main wizard container that orchestrates the multi-step onboarding flow.
+ * Steps 1–5: Project, GSC, Keywords, Integration, Complete.
  *
- * Supports two modes:
- * - Initial onboarding (default): synced with DB, dismissible
- * - New project setup (isNewProject=true): local state, resets on open, not dismissible
+ * The wizard is always ephemeral — it always starts at step 1 and uses
+ * local React state for navigation. No DB progress is tracked.
  */
 
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
-import { Loader2, FolderPlus, Search, FileText, Plug, Rocket } from 'lucide-react';
+import { FolderPlus, Search, FileText, Plug, Rocket } from 'lucide-react';
 import { Modal } from '@client/components/modal/Modal';
 import { OnboardingStepperProgress } from './OnboardingStepperProgress';
 import { OnboardingStepProject } from './steps/OnboardingStepProject';
@@ -20,7 +19,6 @@ import { OnboardingStepKeywords } from './steps/OnboardingStepKeywords';
 import { OnboardingStepIntegrations } from './steps/OnboardingStepIntegrations';
 import { OnboardingStepComplete } from './steps/OnboardingStepComplete';
 import { useOnboardingStore } from '@client/store/onboardingStore';
-import { useOnboardingStatus } from '@client/hooks/useOnboardingStatus';
 import { OnboardingStep } from '@shared/types/onboarding.types';
 
 // =============================================================================
@@ -32,123 +30,56 @@ interface IOnboardingWizardProps {
   isOpen: boolean;
   /** Callback when wizard is closed */
   onClose: () => void;
-  /**
-   * When true, runs a fresh new-project setup flow:
-   * - Starts at step 1 regardless of DB state
-   * - Uses local step state (does not affect DB-synced store step)
-   * - Close does not set the "dismissed" flag
-   */
-  isNewProject?: boolean;
 }
 
 // =============================================================================
 // Main Component
 // =============================================================================
 
-export function OnboardingWizard({
-  isOpen,
-  onClose,
-  isNewProject = false,
-}: IOnboardingWizardProps): JSX.Element | null {
-  // Local state used only in new-project mode so DB-synced store doesn't interfere
-  const [localStep, setLocalStep] = useState<number>(OnboardingStep.PROJECT_CREATION);
-  const [localSkipped, setLocalSkipped] = useState<Set<number>>(new Set());
+export function OnboardingWizard({ isOpen, onClose }: IOnboardingWizardProps): JSX.Element | null {
+  const [currentStep, setCurrentStep] = useState<number>(OnboardingStep.PROJECT_CREATION);
+  const [completedSteps, setCompletedSteps] = useState<Set<number>>(new Set());
+  const [skippedSteps, setSkippedSteps] = useState<Set<number>>(new Set());
 
-  const { isLoading: isStatusLoading } = useOnboardingStatus();
+  const { reset } = useOnboardingStore();
 
-  const { currentStep: storeStep, completedSteps, skippedSteps, setCurrentStep, dismiss } =
-    useOnboardingStore();
-
-  // Which step is active depends on mode
-  const currentStep = isNewProject ? localStep : storeStep;
-
-  // Reset local state each time the new-project modal opens
+  // Reset to step 1 and clear inter-step store data each time the modal opens
   useEffect(() => {
-    if (isOpen && isNewProject) {
-      setLocalStep(OnboardingStep.PROJECT_CREATION);
-      setLocalSkipped(new Set());
+    if (isOpen) {
+      setCurrentStep(OnboardingStep.PROJECT_CREATION);
+      setCompletedSteps(new Set());
+      setSkippedSteps(new Set());
+      reset();
     }
-  }, [isOpen, isNewProject]);
+  }, [isOpen, reset]);
 
-  // In initial mode, auto-advance to the first incomplete step when the wizard opens.
-  // This avoids showing a completed step if the user re-opens after partial progress.
-  useEffect(() => {
-    if (!isOpen || isNewProject || isStatusLoading) return;
-    const firstIncomplete = ([1, 2, 3, 4] as const).find(
-      step => !completedSteps.has(step) && !skippedSteps.has(step)
-    );
-    if (firstIncomplete != null && firstIncomplete !== storeStep) {
-      setCurrentStep(firstIncomplete);
-    }
-  }, [isOpen, isNewProject, isStatusLoading]); // eslint-disable-line react-hooks/exhaustive-deps
-  // ^ intentionally only runs when open/mode/loading change, not on every step change
-
-  // Advance to next step
+  // Advance to next step and mark current as completed
   const handleStepComplete = useCallback(() => {
     const nextStep = currentStep + 1;
     if (nextStep <= OnboardingStep.COMPLETION) {
-      if (isNewProject) {
-        setLocalStep(nextStep);
-      } else {
-        setCurrentStep(nextStep);
-      }
+      setCompletedSteps(prev => new Set([...prev, currentStep]));
+      setCurrentStep(nextStep);
     }
-  }, [currentStep, isNewProject, setCurrentStep]);
+  }, [currentStep]);
 
-  // Skip current step (optional steps only)
+  // Skip current optional step
   const handleStepSkip = useCallback(() => {
     const nextStep = currentStep + 1;
     if (nextStep <= OnboardingStep.COMPLETION) {
-      if (isNewProject) {
-        setLocalSkipped(prev => new Set([...prev, currentStep]));
-        setLocalStep(nextStep);
-      } else {
-        setCurrentStep(nextStep);
-      }
+      setSkippedSteps(prev => new Set([...prev, currentStep]));
+      setCurrentStep(nextStep);
     }
-  }, [currentStep, isNewProject, setCurrentStep]);
+  }, [currentStep]);
 
   // Go back one step
   const handleBack = useCallback(() => {
     const prevStep = currentStep - 1;
     if (prevStep >= OnboardingStep.PROJECT_CREATION) {
-      if (isNewProject) {
-        setLocalStep(prevStep);
-      } else {
-        setCurrentStep(prevStep);
-      }
+      setCurrentStep(prevStep);
     }
-  }, [currentStep, isNewProject, setCurrentStep]);
+  }, [currentStep]);
 
-  // Close: only dismiss initial onboarding (not new-project flow)
-  const handleClose = useCallback(() => {
-    if (!isNewProject) {
-      dismiss();
-    }
-    onClose();
-  }, [isNewProject, dismiss, onClose]);
-
-  // Don't render if not open
   if (!isOpen) return null;
-
-  // In initial mode, show spinner while fetching DB status
-  if (isStatusLoading && !isNewProject) {
-    return (
-      <Modal isOpen={isOpen} onClose={handleClose} size="xl" showCloseButton={false}>
-        <div className="flex items-center justify-center py-20">
-          <Loader2 className="w-8 h-8 animate-spin text-accent" />
-        </div>
-      </Modal>
-    );
-  }
-
-  // Derive display progress for stepper
-  const displayCompletedSteps = isNewProject
-    ? new Set(
-        Array.from({ length: localStep - 1 }, (_, i) => i + 1).filter(s => !localSkipped.has(s))
-      )
-    : completedSteps;
-  const displaySkippedSteps = isNewProject ? localSkipped : skippedSteps;
 
   // Render current step component
   const renderStep = () => {
@@ -168,7 +99,13 @@ export function OnboardingWizard({
         );
 
       case OnboardingStep.COMPLETION:
-        return <OnboardingStepComplete onClose={handleClose} />;
+        return (
+          <OnboardingStepComplete
+            onClose={onClose}
+            completedSteps={completedSteps}
+            skippedSteps={skippedSteps}
+          />
+        );
 
       default:
         return <OnboardingStepProject onComplete={handleStepComplete} />;
@@ -206,11 +143,10 @@ export function OnboardingWizard({
     );
   };
 
-  // Step title — "Add New Project" in new-project mode, otherwise initial onboarding titles
   const getStepTitle = () => {
     switch (currentStep) {
       case OnboardingStep.PROJECT_CREATION:
-        return isNewProject ? 'Add New Project' : 'Add Your First Project';
+        return 'Add Your Project';
       case OnboardingStep.GSC_CONNECTION:
         return 'Connect Google Search Console';
       case OnboardingStep.KEYWORDS_UPLOAD:
@@ -218,13 +154,12 @@ export function OnboardingWizard({
       case OnboardingStep.INTEGRATIONS:
         return 'Connect Your CMS';
       case OnboardingStep.COMPLETION:
-        return isNewProject ? 'Project Ready!' : "You're All Set!";
+        return 'Project Ready!';
       default:
-        return 'Onboarding';
+        return 'Setup';
     }
   };
 
-  // Step subtitle
   const getStepSubtitle = () => {
     switch (currentStep) {
       case OnboardingStep.PROJECT_CREATION:
@@ -236,9 +171,7 @@ export function OnboardingWizard({
       case OnboardingStep.INTEGRATIONS:
         return 'Set content preferences and connect your CMS.';
       case OnboardingStep.COMPLETION:
-        return isNewProject
-          ? "Your new project is set up. Here's a summary of what was configured."
-          : "Your workspace is ready. Here's a summary of what was set up.";
+        return "Your project is set up. Here's a summary of what was configured.";
       default:
         return `Step ${currentStep} of ${OnboardingStep.COMPLETION}`;
     }
@@ -250,7 +183,7 @@ export function OnboardingWizard({
   return (
     <Modal
       isOpen={isOpen}
-      onClose={handleClose}
+      onClose={onClose}
       icon={getStepIcon()}
       title={getStepTitle()}
       subtitle={getStepSubtitle()}
@@ -271,8 +204,8 @@ export function OnboardingWizard({
       {/* Stepper Progress */}
       <OnboardingStepperProgress
         currentStep={currentStep}
-        completedSteps={displayCompletedSteps}
-        skippedSteps={displaySkippedSteps}
+        completedSteps={completedSteps}
+        skippedSteps={skippedSteps}
       />
 
       {/* Step Content */}

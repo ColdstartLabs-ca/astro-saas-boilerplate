@@ -6,7 +6,7 @@
 
 'use client';
 
-import React, { useState, useCallback, useRef } from 'react';
+import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import {
@@ -24,8 +24,6 @@ import { DashboardButton } from '@client/components/dashboard/ui/DashboardButton
 import { useOnboardingStore } from '@client/store/onboardingStore';
 import { useProjectStore } from '@client/store/projectStore';
 import { useProjects } from '@client/hooks/useProjects';
-import { useOnboardingProgress } from '@client/hooks/useOnboardingProgress';
-import { OnboardingStep } from '@shared/types/onboarding.types';
 import type { ICreateProjectInput } from '@shared/types/project.types';
 import {
   enhancedProjectSchema,
@@ -115,11 +113,12 @@ export function OnboardingStepProject({ onComplete }: IOnboardingStepProjectProp
   // Abort controllers to cancel stale in-flight validation requests
   const sitemapAbortRef = useRef<AbortController | null>(null);
   const blogAbortRef = useRef<AbortController | null>(null);
+  // Debounce timer for auto-analyze
+  const analyzeDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const { setProjectId: setOnboardingProjectId, markStepComplete } = useOnboardingStore();
+  const { setProjectId: setOnboardingProjectId } = useOnboardingStore();
   const { setActiveProjectId } = useProjectStore();
   const { createProject } = useProjects();
-  const { updateProgress, isUpdating } = useOnboardingProgress();
 
   const {
     register,
@@ -257,7 +256,11 @@ export function OnboardingStepProject({ onComplete }: IOnboardingStepProjectProp
   );
 
   /** Sitemap: clear stale validation on typing, validate on blur. */
-  const { onBlur: rhfSitemapOnBlur, onChange: rhfSitemapOnChange, ...sitemapRegisterRest } = register('sitemap_url');
+  const {
+    onBlur: rhfSitemapOnBlur,
+    onChange: rhfSitemapOnChange,
+    ...sitemapRegisterRest
+  } = register('sitemap_url');
 
   const handleSitemapChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -271,13 +274,22 @@ export function OnboardingStepProject({ onComplete }: IOnboardingStepProjectProp
   const handleSitemapBlur = useCallback(
     (e: React.FocusEvent<HTMLInputElement>) => {
       rhfSitemapOnBlur(e);
-      validateUrlField(getValues('sitemap_url') ?? '', setSitemapValidation, 'Sitemap URL', sitemapAbortRef);
+      validateUrlField(
+        getValues('sitemap_url') ?? '',
+        setSitemapValidation,
+        'Sitemap URL',
+        sitemapAbortRef
+      );
     },
     [rhfSitemapOnBlur, getValues, validateUrlField]
   );
 
   /** Blog: clear stale validation on typing, validate on blur. */
-  const { onBlur: rhfBlogOnBlur, onChange: rhfBlogOnChange, ...blogRegisterRest } = register('blog_url');
+  const {
+    onBlur: rhfBlogOnBlur,
+    onChange: rhfBlogOnChange,
+    ...blogRegisterRest
+  } = register('blog_url');
 
   const handleBlogChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -322,7 +334,10 @@ export function OnboardingStepProject({ onComplete }: IOnboardingStepProjectProp
       });
 
       const { title, description } = response.data.metadata;
-      console.info('[OnboardingStepProject] Crawl result', { title, hasDescription: !!description });
+      console.info('[OnboardingStepProject] Crawl result', {
+        title,
+        hasDescription: !!description,
+      });
 
       if (title && !getValues('name')) {
         setValue('name', title);
@@ -352,6 +367,28 @@ export function OnboardingStepProject({ onComplete }: IOnboardingStepProjectProp
   }, [getValues, setValue, suggestUrlsFromDomain, validateUrlField]);
 
   // ---------------------------------------------------------------------------
+  // Auto-analyze when domain looks valid (debounced)
+  // ---------------------------------------------------------------------------
+
+  useEffect(() => {
+    if (analyzeDebounceRef.current) clearTimeout(analyzeDebounceRef.current);
+
+    const domain = watchedDomain ?? '';
+    if (!looksLikeDomain(domain)) return;
+
+    // Skip if we already analyzed this exact domain
+    if (normalizeDomain(domain) === lastAnalyzedDomainRef.current) return;
+
+    analyzeDebounceRef.current = setTimeout(() => {
+      handleAnalyzeWebsite();
+    }, 700);
+
+    return () => {
+      if (analyzeDebounceRef.current) clearTimeout(analyzeDebounceRef.current);
+    };
+  }, [watchedDomain, handleAnalyzeWebsite]);
+
+  // ---------------------------------------------------------------------------
   // Form submit
   // ---------------------------------------------------------------------------
 
@@ -373,14 +410,6 @@ export function OnboardingStepProject({ onComplete }: IOnboardingStepProjectProp
 
         setOnboardingProjectId(project.id);
         setActiveProjectId(project.id);
-        markStepComplete(OnboardingStep.PROJECT_CREATION);
-
-        await updateProgress({
-          currentStep: OnboardingStep.GSC_CONNECTION,
-          completedSteps: [OnboardingStep.PROJECT_CREATION],
-          skippedSteps: [],
-        });
-
         onComplete();
       } catch (error) {
         console.error('Failed to create project:', error);
@@ -391,14 +420,14 @@ export function OnboardingStepProject({ onComplete }: IOnboardingStepProjectProp
         setIsSubmitting(false);
       }
     },
-    [createProject, setOnboardingProjectId, setActiveProjectId, markStepComplete, updateProgress, onComplete]
+    [createProject, setOnboardingProjectId, setActiveProjectId, onComplete]
   );
 
   // ---------------------------------------------------------------------------
   // Derived state
   // ---------------------------------------------------------------------------
 
-  const isLoading = isSubmitting || isUpdating;
+  const isLoading = isSubmitting;
   const showAnalyzeButton = looksLikeDomain(watchedDomain ?? '');
 
   // Clear stale analyze banners when domain is changed after a previous analyze.
@@ -703,7 +732,9 @@ export function OnboardingStepProject({ onComplete }: IOnboardingStepProjectProp
                 <AlertTriangle className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-amber-400" />
               )}
             </div>
-            {errors.blog_url && <p className="text-red-400 text-xs mt-1">{errors.blog_url.message}</p>}
+            {errors.blog_url && (
+              <p className="text-red-400 text-xs mt-1">{errors.blog_url.message}</p>
+            )}
             {blogValidation.error && !errors.blog_url && (
               <p className="text-amber-400 text-xs mt-1">{blogValidation.error}</p>
             )}

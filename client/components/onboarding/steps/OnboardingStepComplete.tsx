@@ -1,16 +1,14 @@
 /**
  * OnboardingStepComplete Component
- * Step 5 of onboarding: Success screen with setup summary
- * Auto-shown when all required steps are done
+ * Step 5 of onboarding: Success screen with setup summary.
+ * Receives completed/skipped step sets from the wizard (no DB state).
  */
 
 'use client';
 
-import { useState, useCallback } from 'react';
-import { Loader2, CheckCircle2, SkipForward, Rocket, ArrowRight } from 'lucide-react';
+import { CheckCircle2, SkipForward, Rocket, ArrowRight } from 'lucide-react';
 import { DashboardButton } from '@client/components/dashboard/ui/DashboardButton';
 import { useOnboardingStore } from '@client/store/onboardingStore';
-import { useOnboardingProgress } from '@client/hooks/useOnboardingProgress';
 import { OnboardingStep } from '@shared/types/onboarding.types';
 
 // =============================================================================
@@ -20,6 +18,10 @@ import { OnboardingStep } from '@shared/types/onboarding.types';
 interface IOnboardingStepCompleteProps {
   /** Callback when user clicks "Go to Dashboard" */
   onClose: () => void;
+  /** Steps completed during this wizard run */
+  completedSteps: Set<number>;
+  /** Steps skipped during this wizard run */
+  skippedSteps: Set<number>;
 }
 
 // =============================================================================
@@ -61,36 +63,17 @@ function SummaryItem({ label, value, isCompleted, isSkipped }: ISummaryItemProps
 // Main Component
 // =============================================================================
 
-export function OnboardingStepComplete({ onClose }: IOnboardingStepCompleteProps): JSX.Element {
-  const [isCompleting, setIsCompleting] = useState(false);
+export function OnboardingStepComplete({
+  onClose,
+  completedSteps,
+  skippedSteps,
+}: IOnboardingStepCompleteProps): JSX.Element {
+  const { keywordCount } = useOnboardingStore();
 
-  const { completedSteps, skippedSteps, keywordCount, currentStep } = useOnboardingStore();
-  const { markComplete } = useOnboardingProgress();
-
-  const handleGoToDashboard = useCallback(async () => {
-    setIsCompleting(true);
-    try {
-      await markComplete();
-      onClose();
-    } catch (err) {
-      console.error('Failed to complete onboarding:', err);
-      // Still redirect even if marking complete fails
-      onClose();
-    }
-  }, [markComplete, onClose]);
-
-  // Required steps MUST have been completed to reach step 5 - treat as completed
-  // even if the store was reset by a re-sync
-  const reachedCompletionStep = currentStep >= OnboardingStep.COMPLETION;
-  const isProjectComplete =
-    completedSteps.has(OnboardingStep.PROJECT_CREATION) || reachedCompletionStep;
-  const isKeywordsComplete =
-    completedSteps.has(OnboardingStep.KEYWORDS_UPLOAD) || reachedCompletionStep;
-
-  // Optional steps: check completed first, then skipped, otherwise infer skipped
+  const isProjectComplete = completedSteps.has(OnboardingStep.PROJECT_CREATION);
+  const isKeywordsComplete = completedSteps.has(OnboardingStep.KEYWORDS_UPLOAD);
   const isGscComplete = completedSteps.has(OnboardingStep.GSC_CONNECTION);
-  const isGscSkipped =
-    skippedSteps.has(OnboardingStep.GSC_CONNECTION) || !isGscComplete;
+  const isGscSkipped = skippedSteps.has(OnboardingStep.GSC_CONNECTION) || !isGscComplete;
   const isIntegrationsComplete = completedSteps.has(OnboardingStep.INTEGRATIONS);
   const isIntegrationsSkipped =
     skippedSteps.has(OnboardingStep.INTEGRATIONS) || !isIntegrationsComplete;
@@ -166,21 +149,11 @@ export function OnboardingStepComplete({ onClose }: IOnboardingStepCompleteProps
       <div className="pt-2">
         <DashboardButton
           type="button"
-          onClick={handleGoToDashboard}
+          onClick={onClose}
           className="w-full shadow-lg shadow-accent/20"
-          disabled={isCompleting}
         >
-          {isCompleting ? (
-            <>
-              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-              Finishing up...
-            </>
-          ) : (
-            <>
-              <Rocket className="w-4 h-4 mr-2" />
-              Go to Dashboard
-            </>
-          )}
+          <Rocket className="w-4 h-4 mr-2" />
+          Go to Dashboard
         </DashboardButton>
       </div>
     </div>

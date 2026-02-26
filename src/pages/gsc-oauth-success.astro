@@ -1,0 +1,37 @@
+---
+/**
+ * GSC OAuth Success Page
+ *
+ * This page is the target of the OAuth popup flow.
+ * It posts a message to the opener window (the onboarding modal) and closes itself.
+ * If opened directly (not as a popup), it falls back to a dashboard redirect.
+ */
+const error = Astro.url.searchParams.get('error');
+---
+
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>Connecting Google Search Console...</title>
+  </head>
+  <body>
+    <script define:vars={{ error }}>
+      if (window.opener && !window.opener.closed) {
+        window.opener.postMessage(
+          { type: 'gsc_oauth_complete', error: error || null },
+          window.location.origin
+        );
+        window.close();
+      } else {
+        // Opened directly (not as popup) — redirect to dashboard
+        window.location.href = error
+          ? '/dashboard/overview?gsc_error=' + encodeURIComponent(error)
+          : '/dashboard/overview?gsc_connected=true';
+      }
+    </script>
+    <p style="font-family:sans-serif;text-align:center;margin-top:4rem;color:#888">
+      Connecting... this window should close automatically.
+    </p>
+  </body>
+</html>

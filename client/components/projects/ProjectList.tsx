@@ -248,7 +248,7 @@ export function ProjectList({ onProjectUpdated }: IProjectListProps): JSX.Elemen
       </div>
 
       {/* Onboarding Modal */}
-      <OnboardingWizard isOpen={showOnboarding} onClose={() => setShowOnboarding(false)} isNewProject={true} />
+      <OnboardingWizard isOpen={showOnboarding} onClose={() => setShowOnboarding(false)} />
 
       {/* Delete Confirmation Dialog */}
       {projectToDelete && (

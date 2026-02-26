@@ -19,9 +19,7 @@ import { DashboardButton } from '@client/components/dashboard/ui/DashboardButton
 import { GscSiteSelector } from '@client/components/dashboard/views/opportunities/GscSiteSelector';
 import { useOnboardingStore } from '@client/store/onboardingStore';
 import { useProjectStore } from '@client/store/projectStore';
-import { useOnboardingProgress } from '@client/hooks/useOnboardingProgress';
 import { apiFetch } from '@client/utils/api-client';
-import { OnboardingStep } from '@shared/types/onboarding.types';
 import type { IGscConnectionSafe, IGscSite } from '@shared/types/opportunity.types';
 
 // =============================================================================
@@ -66,6 +64,7 @@ interface IUpdateConnectionResponse {
 export function OnboardingStepGSC({ onComplete, onSkip }: IOnboardingStepGSCProps): JSX.Element {
   const [isLoadingConnection, setIsLoadingConnection] = useState(true);
   const [isConnecting, setIsConnecting] = useState(false);
+  const [isWaitingForPopup, setIsWaitingForPopup] = useState(false);
   const [isSkipping, setIsSkipping] = useState(false);
   const [showSkipConfirm, setShowSkipConfirm] = useState(false);
   const [connection, setConnection] = useState<IGscConnectionSafe | null>(null);
@@ -74,16 +73,8 @@ export function OnboardingStepGSC({ onComplete, onSkip }: IOnboardingStepGSCProp
   const [isSelectingSite, setIsSelectingSite] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const {
-    projectId: onboardingProjectId,
-    completedSteps,
-    skippedSteps,
-    setHasGscConnection,
-    markStepComplete,
-    markStepSkipped,
-  } = useOnboardingStore();
+  const { projectId: onboardingProjectId, setHasGscConnection } = useOnboardingStore();
   const { activeProjectId } = useProjectStore();
-  const { updateProgress, isUpdating } = useOnboardingProgress();
 
   // Onboarding store projectId is in-memory only; fall back to the persisted active project
   const projectId = onboardingProjectId || activeProjectId;
@@ -102,10 +93,8 @@ export function OnboardingStepGSC({ onComplete, onSkip }: IOnboardingStepGSCProp
         );
         setConnection(res.data.connection);
 
-        // If already connected, mark step as complete
         if (res.data.connection?.status === 'active') {
           setHasGscConnection(true);
-          markStepComplete(OnboardingStep.GSC_CONNECTION);
         }
       } catch (err) {
         console.error('Failed to fetch GSC connection:', err);
@@ -116,7 +105,7 @@ export function OnboardingStepGSC({ onComplete, onSkip }: IOnboardingStepGSCProp
     };
 
     fetchConnection();
-  }, [projectId, setHasGscConnection, markStepComplete]);
+  }, [projectId, setHasGscConnection]);
 
   // Fetch available properties once a connection is active.
   useEffect(() => {
@@ -128,9 +117,12 @@ export function OnboardingStepGSC({ onComplete, onSkip }: IOnboardingStepGSCProp
 
       setIsLoadingSites(true);
       try {
-        const res = await apiFetch<IGscSitesResponse>(`/api/gsc/connections/${connection.id}/sites`, {
-          method: 'GET',
-        });
+        const res = await apiFetch<IGscSitesResponse>(
+          `/api/gsc/connections/${connection.id}/sites`,
+          {
+            method: 'GET',
+          }
+        );
         setSites(res.data.sites || []);
 
         if (res.data.selectedSiteUrl) {
@@ -154,6 +146,45 @@ export function OnboardingStepGSC({ onComplete, onSkip }: IOnboardingStepGSCProp
     fetchSites();
   }, [connection?.id, connection?.status]);
 
+  // Listen for the popup postMessage when OAuth completes
+  useEffect(() => {
+    if (!isWaitingForPopup) return;
+
+    const handleMessage = async (event: MessageEvent) => {
+      if (event.origin !== window.location.origin) return;
+      if (event.data?.type !== 'gsc_oauth_complete') return;
+
+      setIsWaitingForPopup(false);
+      setIsConnecting(false);
+
+      if (event.data.error) {
+        setError('Failed to connect to Google Search Console. Please try again.');
+        return;
+      }
+
+      // Re-fetch the connection now that OAuth succeeded
+      if (!projectId) return;
+      setIsLoadingConnection(true);
+      try {
+        const res = await apiFetch<IGscConnectionResponse>(
+          `/api/gsc/connection?projectId=${projectId}`
+        );
+        setConnection(res.data.connection);
+        if (res.data.connection?.status === 'active') {
+          setHasGscConnection(true);
+        }
+      } catch (err) {
+        console.error('Failed to fetch GSC connection after OAuth:', err);
+        setError('Connected, but failed to load connection details. Please refresh.');
+      } finally {
+        setIsLoadingConnection(false);
+      }
+    };
+
+    window.addEventListener('message', handleMessage);
+    return () => window.removeEventListener('message', handleMessage);
+  }, [isWaitingForPopup, projectId, setHasGscConnection]);
+
   // Handle GSC connection initiation
   const handleConnect = useCallback(async () => {
     if (!projectId) {
@@ -165,14 +196,25 @@ export function OnboardingStepGSC({ onComplete, onSkip }: IOnboardingStepGSCProp
     setError(null);
 
     try {
-      // Get OAuth URL from API
       const res = await apiFetch<IGscConnectResponse>('/api/gsc/connect', {
         method: 'POST',
         body: JSON.stringify({ projectId }),
       });
 
-      // Redirect to Google OAuth
-      window.location.href = res.data.authUrl;
+      // Open OAuth in a popup — keeps the onboarding modal open
+      const popup = window.open(
+        res.data.authUrl,
+        'gsc-oauth',
+        'width=600,height=700,left=200,top=100,resizable=yes,scrollbars=yes'
+      );
+
+      if (!popup) {
+        // Popup blocked — fall back to full-page redirect
+        window.location.href = res.data.authUrl;
+        return;
+      }
+
+      setIsWaitingForPopup(true);
     } catch (err) {
       console.error('Failed to initiate GSC connection:', err);
       setError('Failed to connect to Google Search Console. Please try again.');
@@ -181,54 +223,15 @@ export function OnboardingStepGSC({ onComplete, onSkip }: IOnboardingStepGSCProp
   }, [projectId]);
 
   // Handle skip
-  const handleSkip = useCallback(async () => {
+  const handleSkip = useCallback(() => {
     setIsSkipping(true);
-    setError(null);
-    try {
-      markStepSkipped(OnboardingStep.GSC_CONNECTION);
-
-      const newSkippedSteps = new Set(skippedSteps);
-      newSkippedSteps.add(OnboardingStep.GSC_CONNECTION);
-
-      await updateProgress({
-        currentStep: OnboardingStep.KEYWORDS_UPLOAD,
-        completedSteps: Array.from(completedSteps),
-        skippedSteps: Array.from(newSkippedSteps),
-      });
-
-      onSkip();
-    } catch (err) {
-      console.error('Failed to skip step:', err);
-      setError(err instanceof Error ? err.message : 'Failed to skip this step. Please try again.');
-    } finally {
-      setIsSkipping(false);
-    }
-  }, [markStepSkipped, updateProgress, onSkip, completedSteps, skippedSteps]);
+    onSkip();
+  }, [onSkip]);
 
   // Handle continue when already connected
-  const handleContinue = useCallback(async () => {
-    setError(null);
-    try {
-      markStepComplete(OnboardingStep.GSC_CONNECTION);
-
-      // Build new set including the current step (store update is async, closure is stale)
-      const newCompletedSteps = new Set(completedSteps);
-      newCompletedSteps.add(OnboardingStep.GSC_CONNECTION);
-
-      await updateProgress({
-        currentStep: OnboardingStep.KEYWORDS_UPLOAD,
-        completedSteps: Array.from(newCompletedSteps),
-        skippedSteps: Array.from(skippedSteps),
-      });
-
-      onComplete();
-    } catch (err) {
-      console.error('Failed to continue from GSC step:', err);
-      setError(
-        err instanceof Error ? err.message : 'Failed to save progress. Please try again.'
-      );
-    }
-  }, [markStepComplete, updateProgress, onComplete, completedSteps, skippedSteps]);
+  const handleContinue = useCallback(() => {
+    onComplete();
+  }, [onComplete]);
 
   const handleSelectSite = useCallback(
     async (siteUrl: string) => {
@@ -236,17 +239,18 @@ export function OnboardingStepGSC({ onComplete, onSkip }: IOnboardingStepGSCProp
       setIsSelectingSite(true);
       setError(null);
       try {
-        const res = await apiFetch<IUpdateConnectionResponse>(`/api/gsc/connections/${connection.id}`, {
-          method: 'PUT',
-          body: JSON.stringify({ siteUrl }),
-        });
+        const res = await apiFetch<IUpdateConnectionResponse>(
+          `/api/gsc/connections/${connection.id}`,
+          {
+            method: 'PUT',
+            body: JSON.stringify({ siteUrl }),
+          }
+        );
         setConnection(res.data.connection);
       } catch (err) {
         console.error('Failed to select GSC property:', err);
         setError(
-          err instanceof Error
-            ? err.message
-            : 'Failed to save selected property. Please try again.'
+          err instanceof Error ? err.message : 'Failed to save selected property. Please try again.'
         );
       } finally {
         setIsSelectingSite(false);
@@ -255,7 +259,7 @@ export function OnboardingStepGSC({ onComplete, onSkip }: IOnboardingStepGSCProp
     [connection?.id]
   );
 
-  const isLoading = isUpdating || isSkipping || isSelectingSite;
+  const isLoading = isSkipping || isSelectingSite;
 
   // Loading state
   if (isLoadingConnection) {
@@ -368,10 +372,15 @@ export function OnboardingStepGSC({ onComplete, onSkip }: IOnboardingStepGSCProp
           <div className="space-y-4">
             <DashboardButton
               onClick={handleConnect}
-              disabled={isConnecting || isLoading || !projectId}
+              disabled={isConnecting || isWaitingForPopup || isLoading || !projectId}
               className="w-full"
             >
-              {isConnecting ? (
+              {isWaitingForPopup ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Waiting for Google...
+                </>
+              ) : isConnecting ? (
                 <>
                   <Loader2 className="w-4 h-4 mr-2 animate-spin" />
                   Connecting...
