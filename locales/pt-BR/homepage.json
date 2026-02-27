@@ -5,17 +5,17 @@
   "heroTitleHighlight": "Rankings",
   "heroSubtitle": "Crie conteúdo SEO pronto para publicação, com qualidade humana no piloto automático. A única plataforma de IA com automação completa, publicação nativa em CMS e QA pré-publicação.",
   "heroDescription": "Comece grátis.",
-  "heroDescriptionHighlight": "Sem cartão de crédito.",
+  "heroDescriptionHighlight": "Pague conforme o uso.",
   "heroDescriptionMiddle": "Crie conteúdo SEO pronto para publicação, com qualidade humana com",
   "heroDescriptionTextSharp": "automação completa",
-  "ctaStartFreeTrial": "Iniciar Teste Grátis",
+  "ctaStartFreeTrial": "Começar",
   "ctaWatchDemo": "Ver Demo",
   "ctaGetStarted": "Começar",
   "ctaSignIn": "Entrar",
-  "ctaSubtext": "Sem cartão de crédito • 3 artigos grátis • Cancele quando quiser",
-  "ctaStartNow": "Comece Seu Teste Grátis",
+  "ctaSubtext": "Pague conforme o uso • 3 artigos grátis • Cancele quando quiser",
+  "ctaStartNow": "Começar Agora",
   "ctaComparePlans": "Comparar Planos",
-  "finalCtaSubtext": "Sem cartão de crédito • 3 artigos grátis • Configuração em 15 minutos",
+  "finalCtaSubtext": "Pague conforme o uso • 3 artigos grátis • Configuração em 15 minutos",
   "socialProofBar": {
     "heading": "Confiado por equipes de conteúdo em todo o mundo"
   },
@@ -162,7 +162,7 @@
     "humanizer": "Motor Humanizer",
     "qa": "QA pré-publicação",
     "wordpress": "Publicação no WordPress",
-    "trust": "Sem cartão de crédito - Cancele quando quiser - 3 artigos grátis para experimentar",
+    "trust": "Pague conforme o uso - Cancele quando quiser - 3 artigos grátis para experimentar",
     "starter": {
       "name": "Starter",
       "price": "US$49",
@@ -171,7 +171,7 @@
       "articles": "30 artigos/mês",
       "sites": "1 site",
       "integrations": "WordPress",
-      "cta": "Iniciar Teste Grátis"
+      "cta": "Começar"
     },
     "growth": {
       "name": "Growth",
@@ -182,7 +182,7 @@
       "articles": "100 artigos/mês",
       "sites": "3 sites",
       "integrations": "Todas as integrações",
-      "cta": "Iniciar Teste Grátis"
+      "cta": "Começar"
     },
     "agency": {
       "name": "Agency",
@@ -236,8 +236,8 @@
   "pricingCtaDescription": "Escolha o plano que atende às suas necessidades. Escale conforme cresce.",
   "ctaTryFree": "Experimente 3 Artigos Grátis",
   "ctaGetFree": "Ganhe 3 Artigos Grátis",
-  "pricingCtaSubtext": "3 artigos grátis • Sem cartão de crédito • Créditos não utilizados acumulam",
-  "finalCtaTitleHighlight": "Comece o teste grátis hoje.",
+  "pricingCtaSubtext": "3 artigos grátis • Pague conforme o uso • Créditos não utilizados acumulam",
+  "finalCtaTitleHighlight": "Comece grátis hoje.",
   "finalCtaDescription": "Junte-se a empresas publicando conteúdo de qualidade no piloto automático.",
   "featuresTitle": "Tudo Que Você Precisa",
   "featuresSubtitle": "Recursos poderosos para ajudá-lo a construir e escalar",

@@ -1,13 +1,13 @@
 'use client';
 
-import React, { useState } from 'react';
 import { ChevronDown, ChevronUp } from 'lucide-react';
+import React, { useState } from 'react';
 
 interface IProps {
   className?: string;
 }
 
-const FAQItem: React.FC<{ question: string; answer: string }> = ({ question, answer }) => {
+const FAQItem: React.FC<{ question: string; answer: React.ReactNode }> = ({ question, answer }) => {
   const [isOpen, setIsOpen] = useState(false);
 
   return (
@@ -34,11 +34,23 @@ export function FAQSection({ className = '' }: IProps): JSX.Element {
   const faqs = [
     {
       question: 'Will Google penalize AI-generated content?',
-      answer:
-        "Google Search Central has stated AI content is fine when it's helpful, reliable, and people-first. Our Humanizer engine ensures your content meets those standards by avoiding detectable patterns.",
+      answer: (
+        <>
+          <a
+            href="https://developers.google.com/search/blog/2023/02/google-search-and-ai-content"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-brand-500 hover:text-brand-400 underline"
+          >
+            Google Search Central has stated
+          </a>{' '}
+          AI content is fine when it&apos;s helpful, reliable, and people-first. Our Humanizer engine
+          ensures your content meets those standards by avoiding detectable patterns.
+        </>
+      ),
     },
     {
-      question: 'How is this different from Outrank.so?',
+      question: 'How is this different from other SEO tools?',
       answer:
         'Three key differences: (1) Quality - our Humanizer engine produces human-level content, not generic AI slop. (2) Reliability - 99.9% uptime vs. constant bugs. (3) Support - 24/7 chat vs. days of waiting. Same price, better everything.',
     },
@@ -56,11 +68,6 @@ export function FAQSection({ className = '' }: IProps): JSX.Element {
       question: 'Can I review content before it publishes?',
       answer:
         'Yes. Choose between: (1) Full autopilot - content publishes automatically after QA passes, (2) Review mode - content queued for your approval, (3) Draft mode - content saved as drafts in your CMS.',
-    },
-    {
-      question: "What's your refund policy?",
-      answer:
-        '14-day money-back guarantee, no questions asked. Unlike some competitors (looking at you, Byword), we honor refund requests immediately.',
     },
   ];
 

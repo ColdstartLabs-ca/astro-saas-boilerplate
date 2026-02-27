@@ -1,21 +1,20 @@
 'use client';
 
+import {
+  FAQSection,
+  FeaturesSection,
+  FinalCTASection,
+  HeroSection,
+  PainPointsSection,
+  PricingPreviewSection,
+  SocialProofSection,
+  SolutionSection
+} from '@client/components/landing';
 import { useModalStore } from '@client/store/modalStore';
 import { useToastStore } from '@client/store/toastStore';
 import { prepareAuthRedirect } from '@client/utils/authRedirectManager';
 import { getTranslations } from '@src/i18n/utils';
 import { useEffect } from 'react';
-import {
-  HeroSection,
-  PainPointsSection,
-  SolutionSection,
-  FeaturesSection,
-  ComparisonSection,
-  UseCasesSection,
-  SocialProofSection,
-  PricingPreviewSection,
-  FAQSection,
-} from '@client/components/landing';
 
 export function HomePageClient(): JSX.Element {
   const { openAuthModal } = useModalStore();
@@ -76,25 +75,19 @@ export function HomePageClient(): JSX.Element {
       {/* Section 3: Pain Points */}
       <PainPointsSection />
 
-      {/* Section 4: Solution */}
-      <SolutionSection />
-
-      {/* Section 5: Features */}
+      {/* Section 4: Features */}
       <FeaturesSection />
 
-      {/* Section 6: Comparison */}
-      <ComparisonSection />
+      {/* Section 5: Solution */}
+      <SolutionSection />
 
-      {/* Section 7: Use Cases */}
-      <UseCasesSection />
-
-      {/* Section 8: Social Proof Bottom */}
-      <SocialProofSection location="bottom" />
-
-      {/* Section 9: Pricing Preview */}
+      {/* Section 6: Pricing Preview */}
       <PricingPreviewSection />
 
-      {/* Section 10: FAQ */}
+      {/* Section 7: Final CTA */}
+      <FinalCTASection />
+
+      {/* Section 8: FAQ */}
       <FAQSection />
     </div>
   );

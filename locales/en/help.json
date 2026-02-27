@@ -75,7 +75,7 @@
       },
       "refunds": {
         "question": "What is your refund policy?",
-        "answer": "We offer a 14-day money-back guarantee, no questions asked. If you're not satisfied with the service, contact support for a full refund within 14 days of your purchase."
+        "answer": "Due to the computationally expensive nature of AI generation, all purchases are final and we do not offer refunds. You can cancel your subscription at any time to prevent future charges."
       }
     }
   },

@@ -1,7 +1,6 @@
 'use client';
 
-import React from 'react';
-import { Brain, Sparkles, ShieldCheck, UploadCloud, BarChart3, Zap } from 'lucide-react';
+import { BarChart3, Brain, ShieldCheck, Sparkles, UploadCloud, Zap } from 'lucide-react';
 
 interface IProps {
   className?: string;
@@ -10,12 +9,12 @@ interface IProps {
 export function FeaturesSection({ className = '' }: IProps): JSX.Element {
   const features = [
     {
-      title: 'Four AI Models. Less Repetition. Better Rankings.',
-      desc: 'Most tools: GPT-4 or Claude. Pick one. Get repetitive output. AutopilotRank uses GPT-4o, Claude Sonnet, and Gemini Flash — each applied strategically for different content types. More variety. Less repetition. Better rankings.',
+      title: 'Multiple AI Models. Less Repetition. Better Rankings.',
+      desc: 'Most tools rely on a single AI model, resulting in repetitive output. AutopilotRank intelligently routes tasks across multiple premium AI models — each applied strategically for different content types. More variety. Less repetition. Better rankings.',
       sub: "Google's systems detect repetitive patterns across sites using the same AI model. Multi-model approach = more natural content footprint.",
       icon: <Brain className="h-6 w-6 text-brand-400" />,
       image:
-        'https://images.unsplash.com/photo-1677442136019-21780ecad995?auto=format&fit=crop&q=80&w=800&h=600',
+        'https://images.unsplash.com/photo-1620712943543-bcc4688e7485?auto=format&fit=crop&q=80&w=800&h=600',
       alt: 'AI Model Selection Interface',
     },
     {
@@ -24,7 +23,7 @@ export function FeaturesSection({ className = '' }: IProps): JSX.Element {
       sub: "No more 'In today's digital landscape' intros that scream AI.",
       icon: <Sparkles className="h-6 w-6 text-purple-400" />,
       image:
-        'https://images.unsplash.com/photo-1555421689-d68471e189f2?auto=format&fit=crop&q=80&w=800&h=600',
+        'https://images.unsplash.com/photo-1675271591211-126ad94e495d?auto=format&fit=crop&q=80&w=800&h=600',
       alt: 'Human-like content editor',
     },
     {
@@ -33,7 +32,7 @@ export function FeaturesSection({ className = '' }: IProps): JSX.Element {
       sub: 'Most tools publish first, let you find problems later.',
       icon: <ShieldCheck className="h-6 w-6 text-blue-400" />,
       image:
-        'https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&q=80&w=800&h=600',
+        'https://images.unsplash.com/photo-1550751827-4bd374c3f58b?auto=format&fit=crop&q=80&w=800&h=600',
       alt: 'Quality Assurance Dashboard',
     },
     {
@@ -42,7 +41,7 @@ export function FeaturesSection({ className = '' }: IProps): JSX.Element {
       sub: 'Unlike some competitors, we test compatibility across hosting providers.',
       icon: <UploadCloud className="h-6 w-6 text-green-400" />,
       image:
-        'https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&q=80&w=800&h=600',
+        'https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?auto=format&fit=crop&q=80&w=800&h=600',
       alt: 'CMS Publishing Interface',
     },
     {
@@ -70,7 +69,7 @@ export function FeaturesSection({ className = '' }: IProps): JSX.Element {
             Built for Quality at Scale
           </h2>
           <p className="text-slate-400 max-w-2xl mx-auto text-lg">
-            We didn&apos;t just wrap ChatGPT in a UI. We built a complete publishing engine.
+            We didn&apos;t just wrap a basic AI chat in a UI. We built a complete publishing engine.
           </p>
         </div>
 
@@ -116,17 +115,6 @@ export function FeaturesSection({ className = '' }: IProps): JSX.Element {
                       alt={feature.alt}
                       className="w-full h-auto object-cover grayscale-[0.3] group-hover:grayscale-0 transition-all duration-1000 transform group-hover:scale-110 ease-out"
                     />
-                  </div>
-
-                  {/* Overlay UI elements to make it look active */}
-                  <div className="absolute bottom-6 left-6 right-6 p-4 bg-slate-900/90 backdrop-blur-md rounded-xl border border-slate-700 z-20 translate-y-4 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-500 delay-100">
-                    <div className="flex items-center justify-between">
-                      <div className="text-sm font-medium text-white">System Status</div>
-                      <div className="text-xs text-brand-400 flex items-center">
-                        <span className="w-2 h-2 bg-brand-500 rounded-full mr-2 animate-pulse"></span>
-                        Operational
-                      </div>
-                    </div>
                   </div>
                 </div>
               </div>

@@ -1,29 +1,29 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import { useGoogleSignIn } from '@client/hooks/useGoogleSignIn';
+import { useModalStore } from '@client/store/modalStore';
+import { getAndClearAuthIntent } from '@client/utils/authRedirectManager';
+import { getTranslations } from '@src/i18n/utils';
 import {
-  PlayCircle,
-  CheckCircle2,
-  Loader2,
-  FileText,
   BarChart2,
-  Calendar as CalendarIcon,
-  Search,
-  Check,
-  LayoutGrid,
-  Settings,
   Bell,
+  Calendar as CalendarIcon,
+  Check,
+  CheckCircle2,
+  ChevronDown,
+  FileText,
+  Filter,
+  LayoutGrid,
+  Loader2,
+  PlayCircle,
+  Plus,
+  Search,
+  Settings,
   User,
   Zap,
-  ChevronDown,
-  Plus,
-  Filter,
 } from 'lucide-react';
-import { motion } from 'framer-motion';
-import { useModalStore } from '@client/store/modalStore';
-import { getTranslations } from '@src/i18n/utils';
-import { useMemo } from 'react';
-import { HeroGrowthLine } from './HeroGrowthLine';
+import React, { useEffect, useMemo, useState } from 'react';
+import { FaGoogle } from 'react-icons/fa';
 
 // --- Sub-components defined outside to prevent re-renders ---
 
@@ -432,6 +432,12 @@ const CalendarView: React.FC = () => (
 export function HeroSection(): JSX.Element {
   const { openAuthModal } = useModalStore();
   useMemo(() => getTranslations('homepage'), []);
+  const { signIn, loading: isGoogleLoading } = useGoogleSignIn();
+
+  const handleGoogleSignIn = async () => {
+    const intent = getAndClearAuthIntent();
+    await signIn(intent?.returnTo);
+  };
 
   // Typewriter state
   const fullText = 'generative search experiences (SGE).';
@@ -477,65 +483,77 @@ export function HeroSection(): JSX.Element {
   }, []);
 
   return (
-    <section className="relative pt-32 pb-20 md:pt-48 md:pb-40 overflow-hidden bg-slate-900">
+    <section className="relative pt-32 pb-20 md:pt-44 md:pb-40 overflow-hidden bg-slate-950">
       {/* Background Elements */}
-      <div className="absolute inset-0 z-0 bg-grid-pattern opacity-30 h-[800px] pointer-events-none"></div>
+      <div className="absolute inset-0 z-0 bg-[linear-gradient(to_right,#4f4f4f2e_1px,transparent_1px),linear-gradient(to_bottom,#4f4f4f2e_1px,transparent_1px)] bg-[size:14px_24px] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_0%,#000_70%,transparent_100%)] pointer-events-none"></div>
 
-      {/* Growth Chart Line */}
-      <HeroGrowthLine className="z-[1] opacity-50 h-[800px]" />
-
-      {/* Animated Blobs */}
-      <div className="absolute top-0 -left-4 w-72 h-72 bg-purple-500 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob"></div>
-      <div className="absolute top-0 -right-4 w-72 h-72 bg-brand-500 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob animation-delay-2000"></div>
-      <div className="absolute -bottom-8 left-20 w-72 h-72 bg-pink-500 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob animation-delay-4000"></div>
+      {/* Animated Blobs - Refined for premium feel */}
+      <div className="absolute top-0 left-1/4 w-96 h-96 bg-brand-600/20 rounded-full mix-blend-screen filter blur-[100px] animate-pulse-slow"></div>
+      <div className="absolute top-1/4 right-1/4 w-96 h-96 bg-purple-600/20 rounded-full mix-blend-screen filter blur-[100px] animate-pulse-slow delay-1000"></div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center relative z-10">
         {/* Headline */}
         <h1
-          className={`text-4xl md:text-6xl lg:text-7xl font-bold tracking-tight text-white mb-6 leading-[1.15] transition-all duration-700 transform ${isVisible ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0'}`}
+          className={`text-5xl md:text-7xl lg:text-8xl font-black tracking-tighter text-white mb-6 leading-[1.1] transition-all duration-700 transform ${isVisible ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0'}`}
         >
           Scale Your Organic Traffic <br className="hidden md:block" />
-          <span className="gradient-text">on Autopilot</span>
+          <span className="bg-gradient-to-r from-brand-400 via-purple-400 to-brand-600 bg-clip-text text-transparent drop-shadow-sm">on Autopilot</span>
         </h1>
 
         {/* Subheadline */}
         <p
-          className={`max-w-2xl mx-auto text-lg md:text-xl text-slate-400 mb-10 leading-relaxed transition-all duration-700 delay-100 transform ${isVisible ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0'}`}
+          className={`max-w-2xl mx-auto text-lg md:text-xl text-slate-300 font-light mb-10 leading-relaxed transition-all duration-700 delay-100 transform ${isVisible ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0'}`}
         >
           AI content that ranks and reads human. Set it, forget it, watch traffic grow.
         </p>
 
         {/* CTAs */}
         <div
-          className={`flex flex-col sm:flex-row items-center justify-center space-y-4 sm:space-y-0 sm:space-x-4 mb-16 transition-all duration-700 delay-300 transform ${isVisible ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0'}`}
+          className={`flex flex-col items-center justify-center space-y-4 mb-6 transition-all duration-700 delay-300 transform ${isVisible ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0'}`}
         >
-          <motion.button
+          {/* Primary Google CTA - Highly Visible */}
+          <div className="w-full sm:w-auto sm:min-w-[320px] relative group/btn">
+            <div className="absolute -inset-1 bg-gradient-to-r from-brand-500 via-purple-500 to-brand-500 rounded-xl blur opacity-20 group-hover/btn:opacity-50 transition duration-500 group-hover/btn:duration-200"></div>
+            <button
+              onClick={handleGoogleSignIn}
+              disabled={isGoogleLoading}
+              className="relative w-full bg-slate-900/80 backdrop-blur-xl border border-slate-700/50 text-white font-semibold text-center rounded-xl shadow-2xl hover:bg-slate-800 hover:border-brand-500/50 transition-all duration-300 px-8 py-4 text-lg flex items-center justify-center gap-3 disabled:opacity-70 group-hover/btn:shadow-[0_0_20px_rgba(139,92,246,0.3)]"
+            >
+              <FaGoogle className="text-xl" />
+              {isGoogleLoading ? 'Connecting...' : 'Continue with Google'}
+            </button>
+          </div>
+
+          {/* Secondary Email CTA - Subtle */}
+          <button
             onClick={() => openAuthModal('register')}
-            className="block w-full sm:w-auto bg-brand-600 text-white font-semibold text-center py-3 rounded-lg shadow-lg shadow-brand-900/20 hover:bg-brand-500 transition-colors px-8 py-4 text-lg"
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
+            className="text-sm text-slate-400 hover:text-white transition-colors underline decoration-slate-700 hover:decoration-slate-400 underline-offset-4"
           >
-            Start Free Trial
-          </motion.button>
-          <motion.button
-            className="block w-full sm:w-auto px-8 py-4 text-lg bg-slate-950/50 backdrop-blur-sm border border-slate-700 hover:bg-slate-800 hover:text-white transition-all duration-300 group flex items-center justify-center gap-2"
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
-          >
-            <PlayCircle className="text-slate-400 group-hover:text-brand-400 transition-colors" />
-            Watch Demo
-          </motion.button>
+            or sign up with email
+          </button>
         </div>
 
-        {/* Trust Badges */}
+        <div
+          className={`flex items-center justify-center mb-16 transition-all duration-700 delay-400 transform ${isVisible ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0'}`}
+        >
+          <button
+            className="text-sm text-slate-400 hover:text-white transition-colors flex items-center gap-2 group"
+          >
+            <div className="w-8 h-8 rounded-full bg-slate-800/80 border border-slate-700 flex items-center justify-center group-hover:bg-brand-500/20 group-hover:border-brand-500/50 transition-colors">
+              <PlayCircle className="w-4 h-4 text-slate-300 group-hover:text-brand-400 transition-colors" />
+            </div>
+            Watch Demo
+          </button>
+        </div>
+
         <div
           className={`flex flex-wrap justify-center gap-x-8 gap-y-4 text-sm text-slate-500 mb-20 transition-all duration-700 delay-400 transform ${isVisible ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0'}`}
         >
           <div className="flex items-center hover:text-slate-300 transition-colors">
-            <CheckCircle2 className="h-4 w-4 mr-2 text-brand-500" /> No credit card required
+            <CheckCircle2 className="h-4 w-4 mr-2 text-brand-500" /> Pay as you go
           </div>
           <div className="flex items-center hover:text-slate-300 transition-colors">
-            <CheckCircle2 className="h-4 w-4 mr-2 text-brand-500" /> 14-day free trial
+            <CheckCircle2 className="h-4 w-4 mr-2 text-brand-500" /> Start for free
           </div>
           <div className="flex items-center hover:text-slate-300 transition-colors">
             <CheckCircle2 className="h-4 w-4 mr-2 text-brand-500" /> Cancel anytime

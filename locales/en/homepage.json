@@ -8,19 +8,17 @@
   "heroDescriptionHighlight": "No credit card required.",
   "heroDescriptionMiddle": "Generate publish-ready, human-quality SEO content with",
   "heroDescriptionTextSharp": "full automation",
-  "ctaStartFreeTrial": "Start Free Trial",
+  "ctaStartFreeTrial": "Get Started",
   "ctaWatchDemo": "Watch Demo",
   "ctaGetStarted": "Get Started",
   "ctaSignIn": "Sign In",
-  "ctaSubtext": "No credit card required • 3 free articles • Cancel anytime",
-  "ctaStartNow": "Start Your Free Trial",
+  "ctaSubtext": "Pay as you go • 3 free articles • Cancel anytime",
+  "ctaStartNow": "Get Started",
   "ctaComparePlans": "Compare Plans",
-  "finalCtaSubtext": "No credit card required • 3 free articles • Setup in 15 minutes",
-
+  "finalCtaSubtext": "Pay as you go • 3 free articles • Setup in 15 minutes",
   "socialProofBar": {
     "heading": "Trusted by content teams worldwide"
   },
-
   "painPoints": {
     "title": "Sound Familiar?",
     "subtitle": "Common challenges that hold content growth back",
@@ -38,7 +36,6 @@
     },
     "transition": "There's a better way →"
   },
-
   "solution": {
     "title": "One Platform. Complete Automation. Human-Quality Content.",
     "subtitle": "From keywords to published content—entirely on autopilot",
@@ -69,7 +66,6 @@
       }
     }
   },
-
   "features": {
     "label": "Feature Deep Dive",
     "title": "Built for Quality at Scale",
@@ -93,7 +89,6 @@
       "proof": "Quality checks happen before publishing, not after"
     }
   },
-
   "comparison": {
     "title": "How We Compare",
     "subtitle": "See what sets AutopilotRank apart from other tools",
@@ -114,7 +109,6 @@
       "toolC": "Byword"
     }
   },
-
   "useCases": {
     "title": "Built For Teams Like Yours",
     "subtitle": "See how AutopilotRank fits your workflow",
@@ -152,7 +146,6 @@
       "testimonial": "[Testimonial from beta user]"
     }
   },
-
   "socialProof": {
     "metrics": {
       "aiModels": "3 AI Models",
@@ -162,7 +155,6 @@
     },
     "testimonialsNote": "Beta user testimonials coming soon"
   },
-
   "pricing": {
     "title": "Simple, Transparent Pricing",
     "subtitle": "No per-word charges. No seat limits. No surprise fees.",
@@ -170,7 +162,7 @@
     "humanizer": "Humanizer engine",
     "qa": "Pre-publication QA",
     "wordpress": "WordPress publishing",
-    "trust": "No credit card required - Cancel anytime - 3 free articles to try",
+    "trust": "Pay as you go - Cancel anytime - 3 free articles to try",
     "starter": {
       "name": "Starter",
       "price": "$49",
@@ -179,7 +171,7 @@
       "articles": "30 articles/mo",
       "sites": "1 site",
       "integrations": "WordPress",
-      "cta": "Start Free Trial"
+      "cta": "Get Started"
     },
     "growth": {
       "name": "Growth",
@@ -190,7 +182,7 @@
       "articles": "100 articles/mo",
       "sites": "3 sites",
       "integrations": "All integrations",
-      "cta": "Start Free Trial"
+      "cta": "Get Started"
     },
     "agency": {
       "name": "Agency",
@@ -204,7 +196,6 @@
     },
     "compareLink": "See full plan comparison"
   },
-
   "faq": {
     "title": "Frequently Asked Questions",
     "subtitle": "Everything you need to know about AutopilotRank",
@@ -235,22 +226,19 @@
       }
     ]
   },
-
   "finalCta": {
     "title": "Ready to Scale Your Organic Traffic?",
     "subtitle": "Join businesses publishing quality content on autopilot"
   },
-
   "toastLoginRequired": "Please sign in to access the dashboard",
   "ctaSeePricing": "See Pricing",
   "pricingCtaTitle": "Simple, Transparent Pricing",
   "pricingCtaDescription": "Choose the plan that fits your needs. Scale as you grow.",
   "ctaTryFree": "Try 3 Free Articles",
   "ctaGetFree": "Get 3 Free Articles",
-  "pricingCtaSubtext": "3 free articles • No credit card • Unused credits roll over",
-  "finalCtaTitleHighlight": "Start free trial today.",
+  "pricingCtaSubtext": "3 free articles • Pay as you go • Unused credits roll over",
+  "finalCtaTitleHighlight": "Start for free today.",
   "finalCtaDescription": "Join businesses publishing quality content on autopilot.",
-
   "featuresTitle": "Everything You Need",
   "featuresSubtitle": "Powerful features to help you build and scale",
   "feature1Title": "Simple API",
@@ -259,7 +247,6 @@
   "feature2Description": "Built to handle millions of requests. Auto-scaling and load balancing out of the box.",
   "feature3Title": "Transparent Pricing",
   "feature3Description": "Pay only for what you use. Credits roll over monthly. No hidden fees.",
-
   "footer": {
     "description": "AI SEO content automation platform. Generate publish-ready, human-quality SEO content on autopilot.",
     "copyright": "Built for content creators.",

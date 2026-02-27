@@ -1,8 +1,7 @@
 'use client';
 
-import React from 'react';
-import { Check, Zap } from 'lucide-react';
 import { useModalStore } from '@client/store/modalStore';
+import { Check, Zap } from 'lucide-react';
 
 interface IProps {
   className?: string;
@@ -33,7 +32,7 @@ export function PricingPreviewSection({ className = '' }: IProps): JSX.Element {
             </div>
             <ul className="space-y-4 mb-8 flex-1">
               {[
-                "50 articles/mo",
+                "30 articles/mo",
                 "1 site included",
                 "WordPress integration",
                 "Humanizer Engine",
@@ -49,52 +48,54 @@ export function PricingPreviewSection({ className = '' }: IProps): JSX.Element {
               onClick={() => openAuthModal('register')}
               className="w-full py-3 rounded-xl font-semibold transition-all duration-300 bg-elevated hover:bg-surface text-white border border-border"
             >
-              Start Free Trial
+              Get Started
             </button>
           </div>
 
           {/* Growth Plan - Popular */}
-          <div className="relative rounded-2xl p-[1px] bg-gradient-to-b from-brand-500 to-transparent shadow-2xl shadow-brand-900/20 transform md:-translate-y-4 z-10">
+          <div className="relative rounded-2xl p-[1px] bg-gradient-to-b from-brand-500 to-transparent shadow-2xl shadow-brand-900/20 transform md:-translate-y-4 z-10 flex flex-col">
             <div className="absolute inset-0 bg-brand-500/20 blur-xl -z-10"></div>
-            <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-brand-500 text-white px-4 py-1 rounded-full text-xs font-bold uppercase tracking-wide flex items-center shadow-lg">
+            <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-brand-500 text-white px-4 py-1 rounded-full text-xs font-bold uppercase tracking-wide flex items-center shadow-lg z-20">
               <Zap className="w-3 h-3 mr-1 fill-white" /> Most Popular
             </div>
 
-            <div className="bg-slate-900 rounded-2xl p-8 h-full flex flex-col relative overflow-hidden">
-                {/* Shine effect */}
-                <div className="absolute top-0 right-0 -mr-16 -mt-16 w-32 h-32 bg-brand-500/10 blur-2xl rounded-full pointer-events-none"></div>
+            <div className="bg-slate-900 rounded-2xl p-8 h-full flex flex-col relative overflow-hidden flex-1">
+              {/* Shine effect */}
+              <div className="absolute top-0 right-0 -mr-16 -mt-16 w-32 h-32 bg-brand-500/10 blur-2xl rounded-full pointer-events-none"></div>
 
-                <h3 className="text-xl font-semibold text-white mb-2">Growth</h3>
-                <p className="text-brand-200 text-sm mb-6">For SMBs & Content Sites</p>
-                <div className="flex items-baseline mb-8">
-                  <span className="text-5xl font-bold text-white tracking-tight">$99</span>
-                  <span className="text-slate-400 ml-2">/month</span>
-                </div>
-                <div className="w-full h-px bg-slate-800 mb-8"></div>
-                <ul className="space-y-4 mb-8 flex-1">
-                  {[
-                    "150 articles/mo",
-                    "3 sites included",
-                    "All integrations (Shopify, Webflow)",
-                    "Humanizer Engine",
-                    "GSC Integration",
-                    "Pre-publication QA",
-                    "Priority support"
-                  ].map((item, i) => (
-                    <li key={i} className="flex items-center text-white font-medium">
-                      <div className="bg-brand-500/20 p-0.5 rounded-full mr-3">
-                        <Check className="h-3 w-3 text-brand-400" />
-                      </div>
-                      {item}
-                    </li>
-                  ))}
-                </ul>
-                <button
-                  onClick={() => openAuthModal('register')}
-                  className="w-full py-4 text-lg font-semibold rounded-xl transition-all duration-300 gradient-cta shine-effect hover:scale-[1.02] active:scale-[0.98] shadow-lg shadow-brand-500/20 hover:shadow-brand-500/40 text-white"
-                >
-                  Start Free Trial
-                </button>
+              <h3 className="text-xl font-semibold text-white mb-2">Growth</h3>
+              <p className="text-brand-200 text-sm mb-6">For SMBs & Content Sites</p>
+              <div className="flex items-baseline mb-8">
+                <span className="text-5xl font-bold text-white tracking-tight">$99</span>
+                <span className="text-slate-400 ml-2">/month</span>
+              </div>
+              <div className="w-full h-px bg-slate-800 mb-8"></div>
+
+              {/* Features List */}
+              <ul className="space-y-4 mb-8 flex-1">
+                {[
+                  "150 articles/mo",
+                  "3 sites included",
+                  "All integrations (Shopify, Webflow)",
+                  "Humanizer Engine",
+                  "GSC Integration",
+                  "Pre-publication QA",
+                  "Priority support"
+                ].map((item, i) => (
+                  <li key={i} className="flex items-center text-white font-medium">
+                    <div className="bg-brand-500/20 p-0.5 rounded-full mr-3 shrink-0">
+                      <Check className="h-4 w-4 text-brand-400" />
+                    </div>
+                    {item}
+                  </li>
+                ))}
+              </ul>
+              <button
+                onClick={() => openAuthModal('register')}
+                className="w-full py-4 text-lg font-semibold rounded-xl transition-all duration-300 bg-brand-500 hover:bg-brand-400 text-white shadow-lg shadow-brand-500/20 hover:shadow-brand-500/40 mt-auto"
+              >
+                Get Started
+              </button>
             </div>
           </div>
 
@@ -129,7 +130,7 @@ export function PricingPreviewSection({ className = '' }: IProps): JSX.Element {
         </div>
 
         <div className="text-center mt-12 text-slate-500 text-sm">
-          No credit card required • Cancel anytime • 14-day money-back guarantee
+          Pay as you go • Cancel anytime
         </div>
       </div>
     </section>

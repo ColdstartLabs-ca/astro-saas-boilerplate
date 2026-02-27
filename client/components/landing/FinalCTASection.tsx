@@ -1,11 +1,11 @@
 'use client';
 
 import { FadeIn } from '@client/components/ui/MotionWrappers';
-import { getTranslations } from '@src/i18n/utils';
-import { useMemo } from 'react';
-import { Rocket, ArrowRight } from 'lucide-react';
-import { motion } from 'framer-motion';
 import { useModalStore } from '@client/store/modalStore';
+import { getTranslations } from '@src/i18n/utils';
+import { motion } from 'framer-motion';
+import { ArrowRight, Rocket } from 'lucide-react';
+import { useMemo } from 'react';
 
 interface IProps {
   className?: string;
@@ -42,12 +42,6 @@ export function FinalCTASection({ className = '' }: IProps): JSX.Element {
               {t('ctaStartNow')}
               <ArrowRight size={20} className="group-hover:translate-x-1 transition-transform" />
             </motion.button>
-            <a
-              href="/pricing"
-              className="inline-flex items-center gap-2 px-10 py-5 glass-strong hover:bg-white/5 text-white font-semibold rounded-xl transition-all duration-300 text-lg hover:scale-[1.05] active:scale-[0.95]"
-            >
-              {t('ctaComparePlans')}
-            </a>
           </div>
           <p className="mt-8 text-sm text-text-muted">{t('finalCtaSubtext')}</p>
         </div>
