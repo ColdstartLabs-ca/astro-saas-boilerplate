@@ -72,14 +72,20 @@ export const POST = withAuth(async (userId, { params, locals }) => {
   // Calculate credit cost using shared helper (fixes hardcoded 1 cost bug)
   const totalCreditsNeeded = calculateArticleCreditCost(campaign.ai_model, campaign.image_preset);
 
-  // Check user has credits
-  const { data: profile } = await supabaseAdmin
-    .from('user_credits')
-    .select('total_credits_balance')
-    .eq('user_id', userId)
-    .single();
+  // BUG H1 FIX: Deduct credits FIRST (atomic via RPC) before updating status.
+  // This prevents concurrent requests from overdrawing the balance — the atomic
+  // consume_credits_v2 RPC will fail for whichever concurrent caller loses the race,
+  // so we never charge more credits than the user has.
+  // If the subsequent status update fails we immediately refund the deduction.
+  const { error: deductError } = await supabaseAdmin.rpc('consume_credits_v2', {
+    target_user_id: userId,
+    amount: totalCreditsNeeded,
+    ref_id: articleId,
+    description: `Article regeneration: ${article.primary_keyword}`,
+  });
 
-  if (!profile || profile.total_credits_balance < totalCreditsNeeded) {
+  if (deductError) {
+    // consume_credits_v2 returns an error when the balance is insufficient
     return errorResponse(
       'INSUFFICIENT_CREDITS',
       `Insufficient credits. Need ${totalCreditsNeeded} credits.`,
@@ -88,7 +94,7 @@ export const POST = withAuth(async (userId, { params, locals }) => {
   }
 
   // Use conditional update to prevent race conditions
-  // Only update if status is still in REGENERATABLE_STATUSES (acquires lock)
+  // Only update if status is still in REGENERATABLE_STATUSES
   // IMPORTANT: Update credits_used here so refund reads correct amount if generation fails
   const { data: updateResult, error: updateError } = await supabaseAdmin
     .from('articles')
@@ -105,22 +111,22 @@ export const POST = withAuth(async (userId, { params, locals }) => {
     .select('id')
     .single();
 
-  // If no rows were updated, another request already started regeneration
+  // If no rows were updated, another request already started regeneration.
+  // Refund the credits we just deducted so the user is not left out of pocket.
   if (updateError || !updateResult) {
+    await supabaseAdmin.rpc('refund_credits_v2', {
+      target_user_id: userId,
+      amount: totalCreditsNeeded,
+      job_id: articleId,
+      p_description: `Refund for failed regeneration lock: ${article.primary_keyword}`,
+    });
+
     return errorResponse(
       'CONFLICT',
       'Article regeneration is already in progress. Please wait for the current regeneration to complete.',
       409
     );
   }
-
-  // Deduct credit
-  await supabaseAdmin.rpc('consume_credits_v2', {
-    target_user_id: userId,
-    amount: totalCreditsNeeded,
-    ref_id: articleId,
-    description: `Article regeneration: ${article.primary_keyword}`,
-  });
 
   // Fire & forget generation
   const generateInput: IGenerateArticleInput = {

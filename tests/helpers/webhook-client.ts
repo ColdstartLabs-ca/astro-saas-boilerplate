@@ -1,3 +1,4 @@
+import crypto from 'node:crypto';
 import { APIRequestContext } from '@playwright/test';
 import {
   StripeWebhookMockFactory,
@@ -21,7 +22,6 @@ export interface IWebhookClientOptions {
  */
 export class WebhookClient {
   private endpoint: string;
-  private signature: string;
   private enableSignatureVerification: boolean;
 
   constructor(
@@ -29,7 +29,6 @@ export class WebhookClient {
     options: IWebhookClientOptions = {}
   ) {
     this.endpoint = options.endpoint || '/api/webhooks/stripe';
-    this.signature = options.signature || 'test-signature';
     this.enableSignatureVerification = options.enableSignatureVerification ?? false;
   }
 
@@ -179,31 +178,26 @@ export class WebhookClient {
    * @returns ApiResponse with fluent assertion methods
    */
   async send(event: unknown, signature?: string | null): Promise<ApiResponse> {
+    // Serialize first so the signature covers the exact bytes sent
+    const bodyString = JSON.stringify(event);
+
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',
     };
 
-    // Add signature header if verification is enabled
-    if (this.enableSignatureVerification) {
-      const webhookSignature = signature || this.generateSignature(event);
-      headers['Stripe-Signature'] = webhookSignature;
+    if (signature === null) {
+      // Explicitly omit the Stripe-Signature header (tests for missing-header rejection)
+    } else if (signature !== undefined) {
+      // Caller provided an explicit signature value
+      headers['Stripe-Signature'] = signature;
     } else {
-      // In test mode, handle signature based on what's passed
-      if (signature === null) {
-        // Explicitly omit the signature header
-        // Do nothing - don't add the Stripe-Signature header at all
-      } else if (signature === undefined) {
-        // Use default test signature
-        headers['Stripe-Signature'] = this.signature;
-      } else {
-        // Use the provided signature (even if empty string)
-        headers['Stripe-Signature'] = signature;
-      }
+      // Generate a real HMAC-SHA256 Stripe signature so the server can verify it
+      headers['Stripe-Signature'] = this.generateSignature(bodyString);
     }
 
     const response = await this.request.post(this.endpoint, {
       headers,
-      data: event,
+      data: bodyString,
     });
 
     return new ApiResponse(response);
@@ -306,23 +300,22 @@ export class WebhookClient {
   }
 
   /**
-   * Generates a Stripe webhook signature for the given payload
+   * Generates a valid Stripe webhook signature (HMAC-SHA256) for the given serialized payload.
+   * Uses STRIPE_WEBHOOK_SECRET from the environment (same secret the server uses),
+   * so the server's constructEventAsync call will accept it.
    *
-   * @param payload - Webhook event payload
-   * @param secret - Webhook secret (optional for test mode)
-   * @returns Generated signature string
+   * @param bodyString - Already-serialized JSON string that will be sent as the request body
+   * @returns Stripe-Signature header value in format `t=TIMESTAMP,v1=HMAC_HEX`
    */
-  private generateSignature(payload: unknown, secret?: string): string {
-    const payloadString = JSON.stringify(payload);
-
-    if (process.env.ENV === 'test' || !this.enableSignatureVerification) {
-      // In test mode, return a simple test signature
-      return `t=${Date.now()},v1=test_signature_${Date.now()}`;
-    }
-
-    // In non-test mode with verification enabled, would need actual HMAC-SHA256 implementation
-    // For now, return mock signature - real implementation would require crypto module
-    return StripeWebhookMockFactory.createMockSignature(payloadString, secret || 'whsec_test');
+  private generateSignature(bodyString: string): string {
+    const secret =
+      process.env.STRIPE_WEBHOOK_SECRET || 'whsec_test_your_stripe_webhook_secret';
+    const timestamp = Math.floor(Date.now() / 1000);
+    const signedPayload = `${timestamp}.${bodyString}`;
+    const hmac = crypto.createHmac('sha256', secret);
+    hmac.update(signedPayload, 'utf8');
+    const signature = hmac.digest('hex');
+    return `t=${timestamp},v1=${signature}`;
   }
 
   /**

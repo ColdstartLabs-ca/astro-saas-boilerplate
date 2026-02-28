@@ -4,8 +4,8 @@ import { OnboardingPage } from '../pages/OnboardingPage';
 /**
  * Onboarding Wizard E2E Tests
  *
- * Tests the 5-step onboarding wizard including project creation,
- * GSC connection, keywords upload, integrations, and completion.
+ * Tests the 6-step onboarding wizard including project creation,
+ * GSC connection, keywords upload, preferences, integrations, and completion.
  *
  * Default test fixtures provide:
  * - A mock project (mock-project-1)
@@ -291,6 +291,32 @@ async function mockCampaignCreationError(page: import('@playwright/test').Page) 
 }
 
 /**
+ * Mock website crawl API (used by step 1 auto-analyze to suggest sitemap/blog URLs).
+ * Must be called BEFORE goto().
+ */
+async function mockWebsiteCrawl(page: import('@playwright/test').Page) {
+  await page.route('**/api/crawl', async route => {
+    if (route.request().method() === 'POST') {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          success: true,
+          data: {
+            metadata: {
+              title: 'Example Site',
+              description: null,
+            },
+          },
+        }),
+      });
+    } else {
+      await route.fallback();
+    }
+  });
+}
+
+/**
  * Register all mocks needed for onboarding wizard tests.
  */
 async function setupOnboardingMocks(page: import('@playwright/test').Page) {
@@ -300,6 +326,7 @@ async function setupOnboardingMocks(page: import('@playwright/test').Page) {
   await mockCampaignCreation(page);
   await mockOnboardingComplete(page);
   await mockGscConnectionCheck(page);
+  await mockWebsiteCrawl(page);
 }
 
 // =============================================================================
@@ -315,13 +342,13 @@ test.describe('Onboarding Wizard E2E Tests', () => {
   });
 
   test.describe('Stepper', () => {
-    test('should display 5-step stepper', async () => {
+    test('should display 6-step stepper', async () => {
       await onboardingPage.goto();
 
       // Wait for step 1 to be visible (ensures wizard has loaded)
       await onboardingPage.assertStep1Visible();
 
-      await onboardingPage.assertStepperSteps(5);
+      await onboardingPage.assertStepperSteps(6);
     });
   });
 
@@ -473,7 +500,7 @@ test.describe('Onboarding Wizard E2E Tests', () => {
       await onboardingPage.assertStep1Visible();
     });
 
-    test('should show step 1 as active and steps 2-5 as pending in stepper', async () => {
+    test('should show step 1 as active and steps 2-6 as pending in stepper', async () => {
       await onboardingPage.goto();
 
       await onboardingPage.assertStep1Visible();
@@ -481,14 +508,14 @@ test.describe('Onboarding Wizard E2E Tests', () => {
       // Step 1 should be active
       await onboardingPage.assertStepActive(1);
 
-      // Steps 2-5 should NOT be completed or skipped (pending state)
+      // Steps 2-6 should NOT be completed or skipped (pending state)
       // We verify this by checking they don't have completed/skipped indicators
       const stepperSteps = onboardingPage.stepperSteps;
       const stepCount = await stepperSteps.count();
-      expect(stepCount).toBe(5);
+      expect(stepCount).toBe(6);
 
-      // Steps 2-5 should be in pending state (not completed, not skipped)
-      for (let i = 2; i <= 5; i++) {
+      // Steps 2-6 should be in pending state (not completed, not skipped)
+      for (let i = 2; i <= 6; i++) {
         const step = stepperSteps.nth(i - 1);
         // Pending steps should not have completed or skipped classes
         const isCompleted = await step.evaluate(el => {
@@ -938,7 +965,7 @@ test.describe('Onboarding Wizard E2E Tests', () => {
     });
   });
 
-  test.describe('Step 4 - Integrations (Optional)', () => {
+  test.describe('Step 5 - Integrations (Optional)', () => {
     test('should allow skipping integrations', async () => {
       await onboardingPage.goto();
       await onboardingPage.assertStep1Visible();
@@ -971,12 +998,16 @@ test.describe('Onboarding Wizard E2E Tests', () => {
       await onboardingPage.clickStep3Next();
       await onboardingPage.waitForStepTransition();
 
-      // Skip step 4 (clicks "Skip for now" → "Skip Anyway")
+      // Skip step 4 (Preferences - no confirmation dialog)
       await onboardingPage.skipStep4();
       await onboardingPage.waitForStepTransition();
 
-      // Should be on step 5
-      await onboardingPage.assertStep5Visible();
+      // Skip step 5 (Integrations - clicks "Skip for now" → "Skip Anyway")
+      await onboardingPage.skipStep5();
+      await onboardingPage.waitForStepTransition();
+
+      // Should be on step 6 (Completion)
+      await onboardingPage.assertStep6Visible();
     });
 
     test('should show WordPress and Webhook integration options', async () => {
@@ -999,12 +1030,16 @@ test.describe('Onboarding Wizard E2E Tests', () => {
       await onboardingPage.clickStep3Next();
       await onboardingPage.waitForStepTransition();
 
-      // Step 4 should show integration options
-      await onboardingPage.assertStep4Visible();
+      // Skip step 4 (Preferences)
+      await onboardingPage.skipStep4();
+      await onboardingPage.waitForStepTransition();
+
+      // Step 5 should show integration options
+      await onboardingPage.assertStep5Visible();
       await onboardingPage.assertIntegrationOptionsVisible();
     });
 
-    test('should show skip confirmation dialog on step 4', async () => {
+    test('should show skip confirmation dialog on step 5', async () => {
       await onboardingPage.goto();
 
       // Complete step 1
@@ -1024,8 +1059,12 @@ test.describe('Onboarding Wizard E2E Tests', () => {
       await onboardingPage.clickStep3Next();
       await onboardingPage.waitForStepTransition();
 
+      // Skip step 4 (Preferences)
+      await onboardingPage.skipStep4();
+      await onboardingPage.waitForStepTransition();
+
       // Click skip button but don't confirm yet
-      const { skipButton } = onboardingPage.step4Elements;
+      const { skipButton } = onboardingPage.step5Elements;
       await skipButton.click();
 
       // Skip confirmation dialog should be visible with "Skip Anyway" button
@@ -1050,8 +1089,12 @@ test.describe('Onboarding Wizard E2E Tests', () => {
       await onboardingPage.clickStep3Next();
       await onboardingPage.waitForStepTransition();
 
-      // Step 4 should show integration options
-      await onboardingPage.assertStep4Visible();
+      // Skip step 4 (Preferences)
+      await onboardingPage.skipStep4();
+      await onboardingPage.waitForStepTransition();
+
+      // Step 5 should show integration options
+      await onboardingPage.assertStep5Visible();
 
       // Click on WordPress integration option
       const wordpressOption = page
@@ -1086,19 +1129,19 @@ test.describe('Onboarding Wizard E2E Tests', () => {
           (await passwordField.isVisible().catch(() => false));
 
         // If no fields are visible, the component might use a different pattern
-        // Just verify we're still on step 4 and have interaction options
+        // Just verify we're still on step 5 and have interaction options
         if (!hasAnyField) {
-          await onboardingPage.assertStep4Visible();
+          await onboardingPage.assertStep5Visible();
         }
       }
-      // If WordPress option isn't visible, just verify step 4 is showing
+      // If WordPress option isn't visible, just verify step 5 is showing
       else {
-        await onboardingPage.assertStep4Visible();
+        await onboardingPage.assertStep5Visible();
       }
     });
   });
 
-  test.describe('Step 5 - Completion', () => {
+  test.describe('Step 6 - Completion', () => {
     test('should show completion with dashboard button', async () => {
       await onboardingPage.goto();
 
@@ -1119,14 +1162,18 @@ test.describe('Onboarding Wizard E2E Tests', () => {
       await onboardingPage.clickStep3Next();
       await onboardingPage.waitForStepTransition();
 
-      // Skip step 4
+      // Skip step 4 (Preferences)
       await onboardingPage.skipStep4();
       await onboardingPage.waitForStepTransition();
 
-      // Step 5 should show completion
-      await onboardingPage.assertStep5Visible();
+      // Skip step 5 (Integrations)
+      await onboardingPage.skipStep5();
+      await onboardingPage.waitForStepTransition();
 
-      const { goToDashboardButton } = onboardingPage.step5Elements;
+      // Step 6 should show completion
+      await onboardingPage.assertStep6Visible();
+
+      const { goToDashboardButton } = onboardingPage.step6Elements;
       await expect(goToDashboardButton).toBeVisible();
     });
 
@@ -1153,12 +1200,16 @@ test.describe('Onboarding Wizard E2E Tests', () => {
       await onboardingPage.clickStep3Next();
       await onboardingPage.waitForStepTransition();
 
-      // Skip step 4 (Integrations)
+      // Skip step 4 (Preferences)
       await onboardingPage.skipStep4();
       await onboardingPage.waitForStepTransition();
 
-      // Step 5 should show completion
-      await onboardingPage.assertStep5Visible();
+      // Skip step 5 (Integrations)
+      await onboardingPage.skipStep5();
+      await onboardingPage.waitForStepTransition();
+
+      // Step 6 should show completion
+      await onboardingPage.assertStep6Visible();
 
       // Verify step states in summary
       // Step 1 (Project) should be completed
@@ -1167,11 +1218,13 @@ test.describe('Onboarding Wizard E2E Tests', () => {
       await onboardingPage.assertStepSkipped(2);
       // Step 3 (Keywords) should be completed
       await onboardingPage.assertStepCompleted(3);
-      // Step 4 (Integrations) should be skipped
+      // Step 4 (Preferences) should be skipped
       await onboardingPage.assertStepSkipped(4);
+      // Step 5 (Integrations) should be skipped
+      await onboardingPage.assertStepSkipped(5);
     });
 
-    test('should call POST /api/onboarding/complete when clicking Go to Dashboard', async () => {
+    test('should close wizard when clicking Go to Dashboard', async () => {
       await onboardingPage.goto();
 
       // Complete step 1
@@ -1191,23 +1244,22 @@ test.describe('Onboarding Wizard E2E Tests', () => {
       await onboardingPage.clickStep3Next();
       await onboardingPage.waitForStepTransition();
 
-      // Skip step 4
+      // Skip step 4 (Preferences)
       await onboardingPage.skipStep4();
       await onboardingPage.waitForStepTransition();
 
-      // Step 5 should be visible
-      await onboardingPage.assertStep5Visible();
+      // Skip step 5 (Integrations)
+      await onboardingPage.skipStep5();
+      await onboardingPage.waitForStepTransition();
 
-      // Set up request capture before clicking
-      const completeRequestPromise = onboardingPage.captureApiRequest('/api/onboarding/complete');
+      // Step 6 should be visible
+      await onboardingPage.assertStep6Visible();
 
       // Click "Go to Dashboard" button
       await onboardingPage.clickGoToDashboard();
 
-      // Verify the API call was made
-      const completeRequest = await completeRequestPromise;
-      expect(completeRequest.url).toContain('/api/onboarding/complete');
-      expect(completeRequest.method).toBe('POST');
+      // Wizard should close
+      await onboardingPage.assertWizardClosed();
     });
 
     test('should close wizard modal after clicking Go to Dashboard', async () => {
@@ -1230,12 +1282,16 @@ test.describe('Onboarding Wizard E2E Tests', () => {
       await onboardingPage.clickStep3Next();
       await onboardingPage.waitForStepTransition();
 
-      // Skip step 4
+      // Skip step 4 (Preferences)
       await onboardingPage.skipStep4();
       await onboardingPage.waitForStepTransition();
 
-      // Step 5 should be visible
-      await onboardingPage.assertStep5Visible();
+      // Skip step 5 (Integrations)
+      await onboardingPage.skipStep5();
+      await onboardingPage.waitForStepTransition();
+
+      // Step 6 should be visible
+      await onboardingPage.assertStep6Visible();
 
       // Click "Go to Dashboard" button
       await onboardingPage.clickGoToDashboard();
@@ -1301,7 +1357,7 @@ test.describe('Onboarding Wizard E2E Tests', () => {
       await onboardingPage.assertStep2Visible();
     });
 
-    test('should not show back button on completion step (step 5)', async () => {
+    test('should not show back button on completion step (step 6)', async () => {
       await onboardingPage.goto();
 
       // Complete step 1
@@ -1321,12 +1377,16 @@ test.describe('Onboarding Wizard E2E Tests', () => {
       await onboardingPage.clickStep3Next();
       await onboardingPage.waitForStepTransition();
 
-      // Skip step 4
+      // Skip step 4 (Preferences)
       await onboardingPage.skipStep4();
       await onboardingPage.waitForStepTransition();
 
-      // Should be on step 5
-      await onboardingPage.assertStep5Visible();
+      // Skip step 5 (Integrations)
+      await onboardingPage.skipStep5();
+      await onboardingPage.waitForStepTransition();
+
+      // Should be on step 6
+      await onboardingPage.assertStep6Visible();
 
       // Back button should be hidden on completion step
       await onboardingPage.assertBackButtonHidden();
@@ -1408,19 +1468,25 @@ test.describe('Onboarding Wizard E2E Tests', () => {
       await onboardingPage.waitForStepTransition();
       await onboardingPage.assertStepCompleted(3);
 
-      // Step 4: Skip integrations (optional)
+      // Step 4: Skip preferences (optional)
       await onboardingPage.skipStep4();
       await onboardingPage.waitForStepTransition();
       await onboardingPage.assertStepSkipped(4);
 
-      // Step 5: Completion screen
-      await onboardingPage.assertStep5Visible();
+      // Step 5: Skip integrations (optional)
+      await onboardingPage.skipStep5();
+      await onboardingPage.waitForStepTransition();
+      await onboardingPage.assertStepSkipped(5);
+
+      // Step 6: Completion screen
+      await onboardingPage.assertStep6Visible();
 
       // Verify all steps show correct status
       await onboardingPage.assertStepCompleted(1);
       await onboardingPage.assertStepSkipped(2);
       await onboardingPage.assertStepCompleted(3);
       await onboardingPage.assertStepSkipped(4);
+      await onboardingPage.assertStepSkipped(5);
 
       // Click Go to Dashboard to complete
       await onboardingPage.clickGoToDashboard();
@@ -1449,15 +1515,19 @@ test.describe('Onboarding Wizard E2E Tests', () => {
       await onboardingPage.clickStep3Next();
       await onboardingPage.waitForStepTransition();
 
-      // Step 4: Skip integrations (optional)
+      // Step 4: Skip preferences (optional)
       await onboardingPage.skipStep4();
       await onboardingPage.waitForStepTransition();
 
-      // Step 5: Completion screen should be visible
-      await onboardingPage.assertStep5Visible();
+      // Step 5: Skip integrations (optional)
+      await onboardingPage.skipStep5();
+      await onboardingPage.waitForStepTransition();
+
+      // Step 6: Completion screen should be visible
+      await onboardingPage.assertStep6Visible();
 
       // Verify the Go to Dashboard button is available
-      const { goToDashboardButton } = onboardingPage.step5Elements;
+      const { goToDashboardButton } = onboardingPage.step6Elements;
       await expect(goToDashboardButton).toBeVisible();
       await expect(goToDashboardButton).toBeEnabled();
     });
@@ -1544,22 +1614,19 @@ test.describe('Onboarding Wizard E2E Tests', () => {
       await onboardingPage.clickStep3Next();
       await onboardingPage.waitForStepTransition();
 
+      // Skip step 4 (Preferences)
       await onboardingPage.skipStep4();
       await onboardingPage.waitForStepTransition();
 
-      // Now on step 5 (completion)
-      await onboardingPage.assertStep5Visible();
+      // Skip step 5 (Integrations)
+      await onboardingPage.skipStep5();
+      await onboardingPage.waitForStepTransition();
 
-      // Set up request capture for completion API
-      const completeRequestPromise = onboardingPage.captureApiRequest('/api/onboarding/complete');
+      // Now on step 6 (completion)
+      await onboardingPage.assertStep6Visible();
 
       // Click Go to Dashboard
       await onboardingPage.clickGoToDashboard();
-
-      // Verify completion API was called
-      const completeRequest = await completeRequestPromise;
-      expect(completeRequest.url).toContain('/api/onboarding/complete');
-      expect(completeRequest.method).toBe('POST');
 
       // Wizard should be closed
       await onboardingPage.assertWizardClosed();

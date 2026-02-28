@@ -48,6 +48,11 @@ export const POST = withAuthAndBody(crawlRequestSchema, async (userId, body, { p
   }
 
   // Crawl the URL and extract metadata
+  // Errors are handled by the withAuth wrapper via handleApiError:
+  //   InvalidUrlError    → 400 VALIDATION_ERROR
+  //   SsrProtectionError → 403 FORBIDDEN
+  //   FetchTimeoutError  → 504 TIMEOUT
+  //   generic Error      → 500 INTERNAL_ERROR
   const metadata = await websiteCrawlerService.fetchMetadata(body.url);
 
   const response: ICrawlResponse = { metadata };

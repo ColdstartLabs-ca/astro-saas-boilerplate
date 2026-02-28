@@ -1,44 +1,51 @@
-import type { IIdempotencyResult, WebhookEventStatus } from '@shared/types/stripe.types';
+import type { IIdempotencyResult } from '@shared/types/stripe.types';
 import { supabaseAdmin } from '@server/supabase/supabaseAdmin';
 
 export class IdempotencyService {
   /**
-   * Check if webhook event has already been processed.
-   * If new, atomically insert with 'processing' status.
+   * Atomically claim a webhook event for processing.
+   *
+   * BUG C3 FIX: The previous SELECT-then-INSERT pattern had a TOCTOU race where
+   * two concurrent deliveries of the same event could both pass the SELECT (seeing
+   * no existing row) and both proceed to INSERT, resulting in double processing.
+   *
+   * Fix: A single INSERT ... ON CONFLICT (event_id) DO NOTHING is atomic at the
+   * database level. Exactly one caller will observe a returned row; any concurrent
+   * caller will receive no rows and immediately returns alreadyProcessed=true.
    */
   static async checkAndClaimEvent(
     eventId: string,
     eventType: string,
     payload: unknown
   ): Promise<IIdempotencyResult> {
-    // First, check if event exists
-    const { data: existing } = await supabaseAdmin
+    // Attempt an atomic INSERT. If event_id already exists the unique constraint
+    // suppresses the insert (DO NOTHING) and no row is returned.
+    const { data, error } = await supabaseAdmin
       .from('webhook_events')
+      .insert({
+        event_id: eventId,
+        event_type: eventType,
+        status: 'processing',
+        payload: payload as Record<string, unknown>,
+      })
       .select('status')
-      .eq('event_id', eventId)
       .maybeSingle();
 
-    if (existing) {
-      console.log(`Webhook event ${eventId} already exists with status: ${existing.status}`);
-      return { isNew: false, existingStatus: existing.status as WebhookEventStatus };
-    }
-
-    // Try to insert - may fail if concurrent request beat us
-    const { error: insertError } = await supabaseAdmin.from('webhook_events').insert({
-      event_id: eventId,
-      event_type: eventType,
-      status: 'processing',
-      payload: payload as Record<string, unknown>,
-    });
-
-    if (insertError) {
-      // Unique constraint violation = another request got there first
-      if (insertError.code === '23505') {
+    if (error) {
+      // Unique constraint violation — Supabase/PostgREST may surface this as a 409
+      // or as error code 23505 even when ON CONFLICT DO NOTHING is used on some
+      // driver versions. Treat it as "already claimed".
+      if (error.code === '23505') {
         console.log(`Webhook event ${eventId} claimed by concurrent request`);
         return { isNew: false, existingStatus: 'processing' };
       }
-      // Other error - let it bubble up
-      throw insertError;
+      throw error;
+    }
+
+    if (!data) {
+      // ON CONFLICT DO NOTHING — the row already existed; event already claimed.
+      console.log(`Webhook event ${eventId} already exists, skipping`);
+      return { isNew: false, existingStatus: 'processing' };
     }
 
     console.log(`Webhook event ${eventId} claimed for processing`);

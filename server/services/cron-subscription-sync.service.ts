@@ -87,11 +87,14 @@ export class CronSubscriptionSyncService {
       syncRunId = await createSyncRun('expiration_check');
 
       // Find subscriptions that are active but past their current_period_end
+      // BUG M21 FIX: Apply BATCH_SIZE limit so we don't fetch unbounded rows in one
+      // query (same cap as reconcile()). Re-run the cron to process remaining items.
       const { data: expiredSubs, error: fetchError } = await supabaseAdmin
         .from('subscriptions')
         .select('id, user_id, status, current_period_end')
         .eq('status', 'active')
-        .lt('current_period_end', new Date().toISOString());
+        .lt('current_period_end', new Date().toISOString())
+        .limit(BATCH_SIZE);
 
       if (fetchError) {
         throw new Error(`Failed to fetch expired subscriptions: ${fetchError.message}`);

@@ -219,7 +219,7 @@ export function CampaignsView({
             className="bg-surface border border-border rounded-xl p-6 hover:border-border transition-all cursor-pointer group hover:shadow-xl hover:shadow-black/20 text-left w-full"
             role="button"
             tabIndex={0}
-            onKeyPress={e => {
+            onKeyDown={e => {
               if (e.key === 'Enter' || e.key === ' ') {
                 setViewMode('detail');
                 onCampaignClick(campaign.id);

@@ -272,11 +272,36 @@ export async function processStripeEvent(event: Stripe.Event): Promise<void> {
       const userId = await getUserIdFromCustomerId(customerId);
 
       if (userId) {
-        // Update profile to past_due status
+        // BUG M20/M23 FIX: Update BOTH profiles AND subscriptions table to past_due.
+        // Previously only profiles was updated, leaving subscriptions.status stale.
+        const invoiceWithSub = invoice as Stripe.Invoice & {
+          subscription?: string | { id: string } | null;
+        };
+        const subscriptionId =
+          typeof invoiceWithSub.subscription === 'string'
+            ? invoiceWithSub.subscription
+            : invoiceWithSub.subscription?.id;
+
+        // Update profile subscription status
         await supabaseAdmin
           .from('profiles')
           .update({ subscription_status: 'past_due' })
           .eq('id', userId);
+
+        // Also update subscriptions table so it stays in sync with profiles
+        if (subscriptionId) {
+          const { error: subError } = await supabaseAdmin
+            .from('subscriptions')
+            .update({ status: 'past_due' })
+            .eq('id', subscriptionId);
+
+          if (subError) {
+            console.error(
+              `Failed to update subscriptions table to past_due for ${subscriptionId}:`,
+              subError
+            );
+          }
+        }
 
         console.log(`Marked user ${userId} as past_due due to failed payment`);
       }

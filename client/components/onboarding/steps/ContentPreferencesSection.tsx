@@ -12,7 +12,7 @@
 
 'use client';
 
-import { useCallback } from 'react';
+import { useCallback, useEffect } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -121,8 +121,9 @@ export function ContentPreferencesSection({
     [onChange]
   );
 
-  // Trigger onChange when form values change
-  useCallback(() => {
+  // BUG C4 fix: useEffect (not useCallback) to propagate form changes to parent.
+  // useCallback only returns a memoised function — it never executes the body.
+  useEffect(() => {
     handleChange(formValues);
   }, [formValues, handleChange]);
 
@@ -250,8 +251,9 @@ export function ContentPreferencesSection({
               </div>
             )}
           />
+          {/* BUG L8: use semantic error token */}
           {errors.brandColor && (
-            <p className="text-xs text-red-400">{errors.brandColor.message}</p>
+            <p className="text-xs text-error">{errors.brandColor.message}</p>
           )}
         </div>
 
@@ -316,8 +318,9 @@ export function ContentPreferencesSection({
           )}
         />
         <div className="flex justify-between items-center">
+          {/* BUG L8: use semantic error token */}
           {errors.globalInstructions && (
-            <p className="text-xs text-red-400">{errors.globalInstructions.message}</p>
+            <p className="text-xs text-error">{errors.globalInstructions.message}</p>
           )}
           <p className="text-xs text-muted ml-auto">
             {formValues.globalInstructions?.length ?? 0}/1000

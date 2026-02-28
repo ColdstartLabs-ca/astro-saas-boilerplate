@@ -100,6 +100,16 @@ describe('CampaignService - Schedule Management', () => {
     last_run_at: null,
     schedule_timezone: 'UTC',
     schedule_hour: 9,
+    // Outrank feature parity fields
+    article_style: null,
+    internal_links_count: 3,
+    global_instructions: null,
+    auto_publish: false,
+    include_youtube: false,
+    include_cta: false,
+    include_infographics: false,
+    include_emojis: false,
+    image_style: null,
     ...overrides,
   });
 
@@ -653,5 +663,241 @@ describe('CampaignService - Schedule Management', () => {
 
       expect(mockCalculateNextRunAt).toHaveBeenCalledWith('weekly', 'America/New_York', 14);
     });
+  });
+});
+
+// =============================================================================
+// processScheduledBatch Tests (BUG H7)
+// =============================================================================
+
+// Mock articleGenerationService for processScheduledBatch tests
+vi.mock('@server/services/article-generation.service', () => ({
+  articleGenerationService: {
+    generateArticle: vi.fn(),
+  },
+}));
+
+import { CampaignSchedulingService } from '../campaign-scheduling.service';
+import { articleGenerationService } from '@server/services/article-generation.service';
+
+describe('CampaignSchedulingService - processScheduledBatch (BUG H7)', () => {
+  let schedulingService: CampaignSchedulingService;
+  const campaignId = 'campaign-batch-test';
+
+  const mockScheduledCampaign = {
+    id: campaignId,
+    user_id: 'user-123',
+    project_id: 'project-123',
+    status: 'active', // claimed (transition from scheduled → active)
+    ai_model: 'pro',
+    tone: 'professional',
+    target_word_count: 1500,
+    settings: {},
+    image_preset: null,
+    schedule_frequency: 'daily',
+    schedule_batch_size: 2,
+    next_run_at: '2024-01-01T09:00:00Z',
+    last_run_at: null,
+    schedule_timezone: 'UTC',
+    schedule_hour: 9,
+    article_style: null,
+    internal_links_count: 3,
+    global_instructions: null,
+    auto_publish: false,
+    include_youtube: false,
+    include_cta: false,
+    include_infographics: false,
+    include_emojis: false,
+    image_style: null,
+    generation_run_id: null,
+    name: 'Batch Test Campaign',
+    created_at: '2024-01-01T00:00:00Z',
+    updated_at: '2024-01-01T00:00:00Z',
+  };
+
+  const mockKeywords = [{ id: 'kw-1', keyword: 'test keyword 1' }];
+
+  beforeEach(() => {
+    schedulingService = new CampaignSchedulingService();
+    vi.resetAllMocks();
+    mockCalculateNextRunAt.mockReturnValue('2024-02-15T10:00:00.000Z');
+  });
+
+  it('should pause campaign when all batch articles fail (BUG H7 fix)', async () => {
+    // Call 1: claim campaign (update status: scheduled → active)
+    mockSupabaseAdmin.from.mockReturnValueOnce({
+      update: vi.fn(() => ({
+        eq: vi.fn(() => ({
+          eq: vi.fn(() => ({
+            select: vi.fn(() => ({
+              single: vi.fn(() => ({ data: mockScheduledCampaign, error: null })),
+            })),
+          })),
+        })),
+      })),
+    });
+
+    // Call 2: get pending keywords
+    mockSupabaseAdmin.from.mockReturnValueOnce({
+      select: vi.fn(() => ({
+        eq: vi.fn(() => ({
+          eq: vi.fn(() => ({
+            order: vi.fn(() => ({
+              limit: vi.fn(() => ({ data: mockKeywords, error: null })),
+            })),
+          })),
+        })),
+      })),
+    });
+
+    // Call 3: create_articles_with_credits RPC (success)
+    (supabaseAdmin as unknown as { rpc: vi.Mock }).rpc = vi.fn(() => ({
+      error: null,
+    }));
+
+    // Call 4: update keywords to 'queued'
+    mockSupabaseAdmin.from.mockReturnValueOnce({
+      update: vi.fn(() => ({
+        in: vi.fn(() => ({ error: null })),
+      })),
+    });
+
+    // Call 5: update keyword status to 'generating'
+    mockSupabaseAdmin.from.mockReturnValueOnce({
+      update: vi.fn(() => ({
+        eq: vi.fn(() => ({ error: null })),
+      })),
+    });
+
+    // Call 6: find article for keyword
+    mockSupabaseAdmin.from.mockReturnValueOnce({
+      select: vi.fn(() => ({
+        eq: vi.fn(() => ({
+          eq: vi.fn(() => ({
+            eq: vi.fn(() => ({
+              single: vi.fn(() => ({ data: { id: 'article-1' }, error: null })),
+            })),
+          })),
+        })),
+      })),
+    });
+
+    // Make generateArticle FAIL for all keywords
+    (articleGenerationService.generateArticle as vi.Mock).mockRejectedValue(
+      new Error('AI API error')
+    );
+
+    // Call 7: update keyword status to 'failed' (after generation error)
+    mockSupabaseAdmin.from.mockReturnValueOnce({
+      update: vi.fn(() => ({
+        eq: vi.fn(() => ({ error: null })),
+      })),
+    });
+
+    // Call 8: update campaign to paused (all-fail path — BUG H7 fix)
+    mockSupabaseAdmin.from.mockReturnValueOnce({
+      update: vi.fn(() => ({
+        eq: vi.fn(() => ({ error: null })),
+      })),
+    });
+
+    const result = await schedulingService.processScheduledBatch(campaignId);
+
+    expect(result.paused).toBe(true);
+    expect(result.pauseReason).toBe('batch_generation_failed');
+    expect(result.articlesQueued).toBe(1);
+    expect(result.nextRunAt).toBeUndefined();
+  });
+
+  it('should reschedule campaign when at least one article succeeds', async () => {
+    // Call 1: claim campaign
+    mockSupabaseAdmin.from.mockReturnValueOnce({
+      update: vi.fn(() => ({
+        eq: vi.fn(() => ({
+          eq: vi.fn(() => ({
+            select: vi.fn(() => ({
+              single: vi.fn(() => ({ data: mockScheduledCampaign, error: null })),
+            })),
+          })),
+        })),
+      })),
+    });
+
+    // Call 2: get pending keywords
+    mockSupabaseAdmin.from.mockReturnValueOnce({
+      select: vi.fn(() => ({
+        eq: vi.fn(() => ({
+          eq: vi.fn(() => ({
+            order: vi.fn(() => ({
+              limit: vi.fn(() => ({ data: mockKeywords, error: null })),
+            })),
+          })),
+        })),
+      })),
+    });
+
+    // Call 3: create_articles_with_credits RPC
+    (supabaseAdmin as unknown as { rpc: vi.Mock }).rpc = vi.fn(() => ({
+      error: null,
+    }));
+
+    // Call 4: update keywords to 'queued'
+    mockSupabaseAdmin.from.mockReturnValueOnce({
+      update: vi.fn(() => ({
+        in: vi.fn(() => ({ error: null })),
+      })),
+    });
+
+    // Call 5: update keyword status to 'generating'
+    mockSupabaseAdmin.from.mockReturnValueOnce({
+      update: vi.fn(() => ({
+        eq: vi.fn(() => ({ error: null })),
+      })),
+    });
+
+    // Call 6: find article for keyword
+    mockSupabaseAdmin.from.mockReturnValueOnce({
+      select: vi.fn(() => ({
+        eq: vi.fn(() => ({
+          eq: vi.fn(() => ({
+            eq: vi.fn(() => ({
+              single: vi.fn(() => ({ data: { id: 'article-1' }, error: null })),
+            })),
+          })),
+        })),
+      })),
+    });
+
+    // generateArticle SUCCEEDS
+    (articleGenerationService.generateArticle as vi.Mock).mockResolvedValue(undefined);
+
+    // Call 7: update keyword status to 'generated' (after success)
+    mockSupabaseAdmin.from.mockReturnValueOnce({
+      update: vi.fn(() => ({
+        eq: vi.fn(() => ({ error: null })),
+      })),
+    });
+
+    // Call 8: check if campaign was paused during processing
+    mockSupabaseAdmin.from.mockReturnValueOnce({
+      select: vi.fn(() => ({
+        eq: vi.fn(() => ({
+          single: vi.fn(() => ({ data: { status: 'active' }, error: null })),
+        })),
+      })),
+    });
+
+    // Call 9: update campaign back to scheduled with nextRunAt
+    mockSupabaseAdmin.from.mockReturnValueOnce({
+      update: vi.fn(() => ({
+        eq: vi.fn(() => ({ error: null })),
+      })),
+    });
+
+    const result = await schedulingService.processScheduledBatch(campaignId);
+
+    expect(result.paused).toBeUndefined();
+    expect(result.nextRunAt).toBe('2024-02-15T10:00:00.000Z');
+    expect(result.articlesQueued).toBe(1);
   });
 });

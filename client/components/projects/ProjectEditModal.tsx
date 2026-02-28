@@ -65,6 +65,10 @@ export function ProjectEditModal({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
+    // BUG H2: Only `frequency` is sent here intentionally — this modal only
+    // exposes the frequency field. The server-side update() deep-merges the
+    // incoming content_preferences with existing values, so fields set by
+    // OnboardingStepPreferences (articleStyle, imageStyle, etc.) are preserved.
     const updates: IUpdateProjectInput = {
       name: formData.name.trim(),
       domain: formData.domain.trim() || undefined,

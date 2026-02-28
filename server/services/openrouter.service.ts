@@ -183,7 +183,7 @@ export class OpenRouterService {
     }
 
     // Model is already resolved from preset key by the calling service
-    const modelToUse = params.model || serverEnv.OPENROUTER_TEXT_MODEL;
+    const modelToUse = params.model || serverEnv.OPENROUTER_DEFAULT_MODEL || serverEnv.OPENROUTER_TEXT_MODEL;
 
     const requestBody = {
       model: modelToUse,

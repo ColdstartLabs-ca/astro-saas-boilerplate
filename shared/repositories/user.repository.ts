@@ -2,6 +2,7 @@ import type { IUserProfile, SubscriptionStatus } from '@/shared/types/stripe.typ
 import { SupabaseClient } from '@supabase/supabase-js';
 import { BaseRepository } from './base.repository';
 import type { IBaseRepository } from './base.repository';
+import { getFreeUserCredits } from '@shared/config/subscription.utils';
 
 /**
  * User profile interface for database operations
@@ -168,7 +169,8 @@ export class UserRepository
   ): Promise<IUserProfileDB> {
     const defaultData: ICreateUserProfile = {
       id: userId,
-      subscription_credits_balance: 10, // Default subscription credits
+      // BUG H15 FIX: Use configured value instead of hardcoded 10
+      subscription_credits_balance: getFreeUserCredits(),
       purchased_credits_balance: 0, // No purchased credits initially
       subscription_status: null,
       subscription_tier: null,
@@ -215,23 +217,26 @@ export class UserRepository
     amount: number,
     type: 'subscription' | 'purchased'
   ): Promise<IUserProfileDB> {
-    const currentProfile = await this.findById(userId);
-    if (!currentProfile) {
-      throw this.handleError({ message: 'User profile not found' }, 'addCredits');
+    // BUG H13 FIX: Replace read-modify-write with an atomic RPC that issues a single
+    // UPDATE SET col = col + amount. This prevents concurrent requests from reading
+    // the same stale balance and each adding credits independently (double-credit bug).
+    const rpcName = type === 'subscription' ? 'add_subscription_credits' : 'add_purchased_credits';
+
+    const { error } = await this.supabase.rpc(rpcName, {
+      target_user_id: userId,
+      amount,
+    });
+
+    if (error) {
+      throw this.handleError(error, 'addCredits');
     }
 
-    const updates: Partial<ICreditBalance> = {
-      subscription_credits_balance: currentProfile.subscription_credits_balance,
-      purchased_credits_balance: currentProfile.purchased_credits_balance,
-    };
-
-    if (type === 'subscription') {
-      updates.subscription_credits_balance = (updates.subscription_credits_balance ?? 0) + amount;
-    } else {
-      updates.purchased_credits_balance = (updates.purchased_credits_balance ?? 0) + amount;
+    // Return the updated profile after the atomic increment
+    const updated = await this.findById(userId);
+    if (!updated) {
+      throw this.handleError({ message: 'User profile not found after addCredits' }, 'addCredits');
     }
-
-    return this.updateCreditBalances(userId, updates);
+    return updated;
   }
 
   async consumeCredits(userId: string, amount: number): Promise<IUserProfileDB> {

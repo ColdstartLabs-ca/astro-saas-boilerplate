@@ -18,7 +18,7 @@ export interface ICapturedApiRequest {
  * including project creation, GSC connection, keywords upload, and completion.
  *
  * The wizard is a Modal rendered at /dashboard/onboarding.
- * Steps 1-5: Project, GSC, Keywords, Integrations, Complete.
+ * Steps 1-6: Project, GSC, Keywords, Preferences, Integrations, Complete.
  */
 export class OnboardingPage extends BasePage {
   // ============================================================================
@@ -151,9 +151,22 @@ export class OnboardingPage extends BasePage {
   }
 
   /**
-   * Gets step 4 (integrations) elements
+   * Gets step 4 (preferences) elements
    */
   get step4Elements() {
+    const skipButton = this.page.getByRole('button', { name: /skip.*use defaults/i });
+    const saveButton = this.page.getByRole('button', { name: /save & continue/i });
+
+    return {
+      skipButton,
+      saveButton,
+    };
+  }
+
+  /**
+   * Gets step 5 (integrations) elements
+   */
+  get step5Elements() {
     const skipButton = this.page.getByRole('button', { name: /skip for now/i });
     const nextButton = this.page.getByRole('button', { name: /connect wordpress|connect webhook|continue/i });
     const wordpressOption = this.page.locator('[data-testid="integration-wordpress"], button:has-text("WordPress")');
@@ -168,9 +181,9 @@ export class OnboardingPage extends BasePage {
   }
 
   /**
-   * Gets step 5 (completion) elements
+   * Gets step 6 (completion) elements
    */
-  get step5Elements() {
+  get step6Elements() {
     const goToDashboardButton = this.page.getByRole('button', { name: /go to dashboard/i });
 
     return {
@@ -182,7 +195,7 @@ export class OnboardingPage extends BasePage {
    * Gets validation error messages (red text paragraphs)
    */
   get validationErrors(): Locator {
-    return this.page.locator('p.text-red-400, [data-testid="validation-error"], .error-message');
+    return this.page.locator('p.text-red-400, p.text-error, [data-testid="validation-error"], .error-message');
   }
 
   // ============================================================================
@@ -367,10 +380,28 @@ export class OnboardingPage extends BasePage {
   }
 
   /**
-   * Skips step 4 (Integrations) by clicking "Skip for now" -> "Skip Anyway"
+   * Skips step 4 (Preferences) by clicking "Skip, use defaults"
+   * No confirmation dialog for this step
    */
   async skipStep4(): Promise<void> {
     const { skipButton } = this.step4Elements;
+    await skipButton.click();
+    // No confirmation dialog for Preferences step
+  }
+
+  /**
+   * Clicks save button in step 4 (Preferences)
+   */
+  async clickStep4Save(): Promise<void> {
+    const { saveButton } = this.step4Elements;
+    await saveButton.click();
+  }
+
+  /**
+   * Skips step 5 (Integrations) by clicking "Skip for now" -> "Skip Anyway"
+   */
+  async skipStep5(): Promise<void> {
+    const { skipButton } = this.step5Elements;
     await skipButton.click();
 
     // Wait for confirmation dialog and click "Skip Anyway"
@@ -378,25 +409,26 @@ export class OnboardingPage extends BasePage {
   }
 
   /**
-   * Clicks next button in step 4
+   * Clicks next button in step 5 (Integrations)
    */
-  async clickStep4Next(): Promise<void> {
-    const { nextButton } = this.step4Elements;
+  async clickStep5Next(): Promise<void> {
+    const { nextButton } = this.step5Elements;
     await nextButton.click();
   }
 
   /**
-   * Clicks go to dashboard button in step 5
+   * Clicks go to dashboard button in step 6
    */
   async clickGoToDashboard(): Promise<void> {
-    const { goToDashboardButton } = this.step5Elements;
+    const { goToDashboardButton } = this.step6Elements;
     await goToDashboardButton.click();
   }
 
   /**
-   * Clicks back button
+   * Clicks back button (accepts the window.confirm dialog that appears)
    */
   async clickBack(): Promise<void> {
+    this.page.once('dialog', dialog => void dialog.accept());
     await this.backButton.click();
   }
 
@@ -430,7 +462,7 @@ export class OnboardingPage extends BasePage {
   /**
    * Asserts stepper shows specific number of steps
    */
-  async assertStepperSteps(stepCount = 5): Promise<void> {
+  async assertStepperSteps(stepCount = 6): Promise<void> {
     await expect(this.stepper).toBeVisible();
     await expect(this.stepperSteps).toHaveCount(stepCount);
   }
@@ -538,7 +570,7 @@ export class OnboardingPage extends BasePage {
   }
 
   /**
-   * Asserts step 4 is visible (integration options visible)
+   * Asserts step 4 is visible (preferences skip button visible)
    */
   async assertStep4Visible(): Promise<void> {
     const { skipButton } = this.step4Elements;
@@ -546,19 +578,27 @@ export class OnboardingPage extends BasePage {
   }
 
   /**
-   * Asserts integration options (WordPress and Webhook) are visible on step 4
+   * Asserts step 5 is visible (integration options visible)
+   */
+  async assertStep5Visible(): Promise<void> {
+    const { skipButton } = this.step5Elements;
+    await expect(skipButton).toBeVisible({ timeout: 10000 });
+  }
+
+  /**
+   * Asserts integration options (WordPress and Webhook) are visible on step 5
    */
   async assertIntegrationOptionsVisible(): Promise<void> {
-    const { wordpressOption, webhookOption } = this.step4Elements;
+    const { wordpressOption, webhookOption } = this.step5Elements;
     await expect(wordpressOption).toBeVisible({ timeout: 5000 });
     await expect(webhookOption).toBeVisible({ timeout: 5000 });
   }
 
   /**
-   * Asserts step 5 (completion) is visible
+   * Asserts step 6 (completion) is visible
    */
-  async assertStep5Visible(): Promise<void> {
-    const { goToDashboardButton } = this.step5Elements;
+  async assertStep6Visible(): Promise<void> {
+    const { goToDashboardButton } = this.step6Elements;
     await expect(goToDashboardButton).toBeVisible({ timeout: 10000 });
   }
 

@@ -62,11 +62,16 @@ export const createCampaignSchema = z.object({
     .max(100, 'Campaign name must be 100 characters or less')
     .trim(),
   projectId: z.string().uuid('Invalid project ID'),
+  // BUG L7: `.min(1).optional()` was misleading — `min(1)` only applies when keywords
+  // are provided, but `.optional()` allows omitting the field entirely (which returns []).
+  // Using `.refine()` makes the contract explicit: if keywords are provided, they must be non-empty.
   keywords: z
     .array(z.string().min(1).max(200))
-    .min(1, 'At least one keyword is required')
     .max(500, 'Maximum 500 keywords allowed')
     .optional()
+    .refine(v => v === undefined || v.length >= 1, {
+      message: 'At least one keyword is required when keywords are provided',
+    })
     .transform(v => v ?? []),
   model: z.string().optional(),
   tone: z.enum(TONES).optional(),
@@ -99,10 +104,17 @@ export const createCampaignSchema = z.object({
 
 /**
  * Schema for campaign update (all fields optional)
+ *
+ * BUG H5: Valid status transitions enforced at the service layer (campaign-lifecycle.service.ts):
+ * - active → paused  (pause a running campaign)
+ * - paused → active  (resume a paused campaign)
+ * All other transitions (e.g., draft → active, * → completed, * → scheduled) are rejected
+ * with INVALID_STATUS_TRANSITION. Use dedicated scheduling endpoints for scheduled campaigns.
  */
 export const updateCampaignSchema = z.object({
   name: z.string().min(1).max(100).trim().optional(),
-  // Status is allowed for simple pause/resume transitions on non-scheduled campaigns
+  // Status is allowed for simple pause/resume transitions on non-scheduled campaigns.
+  // Transition validation is enforced by the service layer (not the schema).
   // For scheduled campaigns, use dedicated endpoints: startSchedule, pauseSchedule, resumeSchedule
   status: z.enum(['active', 'paused']).optional(),
   model: z.string().optional(),

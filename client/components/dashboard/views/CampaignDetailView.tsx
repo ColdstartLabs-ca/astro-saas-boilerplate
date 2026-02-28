@@ -115,7 +115,10 @@ export function CampaignDetailView({
     await addKeywords(keywords);
   };
 
-  // Handle pause/resume campaign
+  // Handle pause/resume campaign.
+  // BUG M22: This only toggles between 'active' and 'paused'.
+  // Status transition validation (active→paused, paused→active only) is enforced server-side
+  // in campaign-lifecycle.service.ts (BUG H5 fix) — no client-side guard is needed here.
   const handleTogglePause = async () => {
     if (!campaign) return;
     const newStatus = campaign.status === 'active' ? 'paused' : 'active';

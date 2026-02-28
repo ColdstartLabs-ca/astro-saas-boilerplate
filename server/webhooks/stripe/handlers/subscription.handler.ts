@@ -5,7 +5,7 @@ import type { ISubscriptionCredits } from '@server/interfaces';
 import { stripe } from '@server/stripe';
 import { serverEnv } from '@shared/config/env';
 import { getPlanForPriceId, resolvePlanOrPack, assertKnownPriceId } from '@shared/config/stripe';
-import { getTrialConfig } from '@shared/config/subscription.config';
+import { getTrialConfig, getPlanConfig } from '@shared/config/subscription.config';
 import { getEmailService } from '@server/services/email.service';
 import { isTest } from '@shared/config/env';
 import Stripe from 'stripe';
@@ -413,17 +413,24 @@ export class SubscriptionHandler {
             (profile.subscription_credits_balance ?? 0) + (profile.purchased_credits_balance ?? 0);
 
           // Use SubscriptionCreditsService for consistent credit calculation
+          // BUG M17 FIX: Pass maxRollover from the NEW plan config so plans with
+          // maxRollover:0 (e.g. Agency) correctly disallow rollover during upgrades.
+          const newPlanConfig = getPlanConfig(priceId);
+          const maxRolloverForNewPlan = newPlanConfig?.maxRollover ?? undefined;
+
           const creditsService = getService<ISubscriptionCredits>('ISubscriptionCredits');
           const calculation = creditsService.calculateUpgradeCredits({
             currentBalance,
             previousTierCredits: previousCredits,
             newTierCredits: newCredits,
+            maxRollover: maxRolloverForNewPlan,
           });
 
           const explanation = creditsService.getExplanation(calculation, {
             currentBalance,
             previousTierCredits: previousCredits,
             newTierCredits: newCredits,
+            maxRollover: maxRolloverForNewPlan,
           });
 
           console.log('[WEBHOOK_CREDITS_UPGRADE_START]', {

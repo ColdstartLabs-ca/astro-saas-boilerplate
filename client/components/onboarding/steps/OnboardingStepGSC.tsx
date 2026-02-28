@@ -79,8 +79,10 @@ export function OnboardingStepGSC({ onComplete, onSkip }: IOnboardingStepGSCProp
   // Onboarding store projectId is in-memory only; fall back to the persisted active project
   const projectId = onboardingProjectId || activeProjectId;
 
-  // Fetch existing GSC connection on mount
+  // Fetch existing GSC connection on mount — BUG H20: abort on unmount
   useEffect(() => {
+    const controller = new AbortController();
+
     const fetchConnection = async () => {
       if (!projectId) {
         setIsLoadingConnection(false);
@@ -89,26 +91,34 @@ export function OnboardingStepGSC({ onComplete, onSkip }: IOnboardingStepGSCProp
 
       try {
         const res = await apiFetch<IGscConnectionResponse>(
-          `/api/gsc/connection?projectId=${projectId}`
+          `/api/gsc/connection?projectId=${projectId}`,
+          { signal: controller.signal }
         );
+        if (controller.signal.aborted) return;
         setConnection(res.data.connection);
 
         if (res.data.connection?.status === 'active') {
           setHasGscConnection(true);
         }
       } catch (err) {
+        if (controller.signal.aborted) return;
         console.error('Failed to fetch GSC connection:', err);
         // Connection doesn't exist yet, that's okay
       } finally {
-        setIsLoadingConnection(false);
+        if (!controller.signal.aborted) {
+          setIsLoadingConnection(false);
+        }
       }
     };
 
-    fetchConnection();
+    void fetchConnection();
+    return () => controller.abort();
   }, [projectId, setHasGscConnection]);
 
-  // Fetch available properties once a connection is active.
+  // Fetch available properties once a connection is active — BUG H20: abort on unmount
   useEffect(() => {
+    const controller = new AbortController();
+
     const fetchSites = async () => {
       if (!connection?.id || connection.status !== 'active') {
         setSites([]);
@@ -121,8 +131,10 @@ export function OnboardingStepGSC({ onComplete, onSkip }: IOnboardingStepGSCProp
           `/api/gsc/connections/${connection.id}/sites`,
           {
             method: 'GET',
+            signal: controller.signal,
           }
         );
+        if (controller.signal.aborted) return;
         setSites(res.data.sites || []);
 
         if (res.data.selectedSiteUrl) {
@@ -136,14 +148,18 @@ export function OnboardingStepGSC({ onComplete, onSkip }: IOnboardingStepGSCProp
           );
         }
       } catch (err) {
+        if (controller.signal.aborted) return;
         console.error('Failed to fetch GSC sites:', err);
         setSites([]);
       } finally {
-        setIsLoadingSites(false);
+        if (!controller.signal.aborted) {
+          setIsLoadingSites(false);
+        }
       }
     };
 
-    fetchSites();
+    void fetchSites();
+    return () => controller.abort();
   }, [connection?.id, connection?.status]);
 
   // Listen for the popup postMessage when OAuth completes
@@ -223,6 +239,8 @@ export function OnboardingStepGSC({ onComplete, onSkip }: IOnboardingStepGSCProp
   }, [projectId]);
 
   // Handle skip
+  // BUG L4 note: isSkipping is intentionally never reset — the component unmounts
+  // immediately after onSkip() is called (wizard advances to next step).
   const handleSkip = useCallback(() => {
     setIsSkipping(true);
     onSkip();
@@ -276,10 +294,10 @@ export function OnboardingStepGSC({ onComplete, onSkip }: IOnboardingStepGSCProp
     <div className="space-y-4">
       {/* Already Connected State */}
       {connection?.status === 'active' && (
-        <div className="bg-emerald-500/10 border border-emerald-500/30 rounded-xl p-6">
+        <div className="bg-success/10 border border-success/30 rounded-xl p-6">
           <div className="flex items-center gap-4">
-            <div className="w-12 h-12 rounded-full bg-emerald-500/20 flex items-center justify-center">
-              <CheckCircle2 className="w-6 h-6 text-emerald-400" />
+            <div className="w-12 h-12 rounded-full bg-success/20 flex items-center justify-center">
+              <CheckCircle2 className="w-6 h-6 text-success" />
             </div>
             <div className="flex-1">
               <h3 className="text-lg font-semibold text-white">GSC Connected</h3>
@@ -363,8 +381,8 @@ export function OnboardingStepGSC({ onComplete, onSkip }: IOnboardingStepGSCProp
 
           {/* Error Message */}
           {error && (
-            <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-4">
-              <p className="text-sm text-red-400">{error}</p>
+            <div className="bg-error/10 border border-error/30 rounded-lg p-4">
+              <p className="text-sm text-error">{error}</p>
             </div>
           )}
 

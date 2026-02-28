@@ -1,6 +1,6 @@
 /**
  * OnboardingStepComplete Component
- * Step 5 of onboarding: Success screen with setup summary.
+ * Step 6 of onboarding: Success screen with setup summary.
  * Receives completed/skipped step sets from the wizard (no DB state).
  */
 

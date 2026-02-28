@@ -72,10 +72,14 @@ export function OnboardingWizard({ isOpen, onClose }: IOnboardingWizardProps): J
     }
   }, [currentStep]);
 
-  // Go back one step
+  // Go back one step — BUG M2 fix: confirm before losing unsaved data
   const handleBack = useCallback(() => {
     const prevStep = currentStep - 1;
     if (prevStep >= OnboardingStep.PROJECT_CREATION) {
+      const confirmed = window.confirm(
+        'Going back will lose any unsaved changes on this step. Continue?'
+      );
+      if (!confirmed) return;
       setCurrentStep(prevStep);
     }
   }, [currentStep]);

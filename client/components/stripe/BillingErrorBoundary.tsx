@@ -92,8 +92,9 @@ export class BillingErrorBoundary extends React.Component<
   };
 
   handleContactSupport = (): void => {
-    // Open email client or redirect to support page
-    window.location.href = `mailto:${clientEnv.SUPPORT_EMAIL}?subject=Billing Error`;
+    // BUG L18 FIX: Use window.open with '_blank' instead of assigning window.location.href.
+    // Assigning a mailto: URL to location.href navigates away from the page, losing checkout context.
+    window.open(`mailto:${clientEnv.SUPPORT_EMAIL}?subject=Billing Error`, '_blank');
   };
 
   getErrorContent(): {

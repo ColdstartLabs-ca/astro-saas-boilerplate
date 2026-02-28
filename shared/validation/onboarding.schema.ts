@@ -14,18 +14,20 @@ import { LANGUAGES, COUNTRIES } from '@shared/validation/project.schema';
 // =============================================================================
 
 /**
- * Valid onboarding step numbers (1-5)
+ * Valid onboarding step numbers (1-6)
+ * BUG H19 fix: PREFERENCES (step 4) was missing, MAX_STEP was 5 instead of 6
  */
 export const VALID_ONBOARDING_STEPS = [
   OnboardingStep.PROJECT_CREATION,
   OnboardingStep.GSC_CONNECTION,
   OnboardingStep.KEYWORDS_UPLOAD,
+  OnboardingStep.PREFERENCES,
   OnboardingStep.INTEGRATIONS,
   OnboardingStep.COMPLETION,
 ] as const;
 
 export const MIN_STEP = 1;
-export const MAX_STEP = 5;
+export const MAX_STEP = 6;
 
 /**
  * Language options with human-readable labels for Step 1 form

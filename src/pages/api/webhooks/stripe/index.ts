@@ -7,6 +7,10 @@ import { SubscriptionHandler } from '@server/webhooks/stripe/handlers/subscripti
 import { InvoiceHandler } from '@server/webhooks/stripe/handlers/invoice.handler';
 import { DisputeHandler } from '@server/webhooks/stripe/handlers/dispute.handler';
 
+// BUG H12 FIX: 'invoice.payment_succeeded' removed from this union.
+// Stripe fires BOTH 'invoice.payment_succeeded' AND 'invoice.paid' for the same payment
+// with different event IDs. Handling both would double-allocate credits even with
+// event-ID-based idempotency. Only 'invoice.paid' is handled going forward.
 type StripeWebhookEventType =
   | 'checkout.session.completed'
   | 'customer.created'
@@ -14,7 +18,6 @@ type StripeWebhookEventType =
   | 'customer.subscription.updated'
   | 'customer.subscription.deleted'
   | 'customer.subscription.trial_will_end'
-  | 'invoice.payment_succeeded'
   | 'invoice.paid'
   | 'invoice_payment.paid'
   | 'invoice.payment_failed'
@@ -91,20 +94,25 @@ export const POST: APIRoute = async (context) => {
     const { event } = await WebhookVerificationService.verifyWebhook(request);
 
     // 2. Idempotency check - prevent duplicate processing
+    // BUG M18 FIX: If idempotency service is unavailable, return 500 immediately so
+    // Stripe will retry when the DB recovers. Previously this fell through with
+    // idempotencyEnabled=false, which risked double-processing events.
     let idempotencyResult = null;
-    let idempotencyEnabled = true;
 
     try {
       idempotencyResult = await IdempotencyService.checkAndClaimEvent(event.id, event.type, event);
     } catch (idempotencyError) {
-      idempotencyEnabled = false;
       console.error(
-        'Webhook idempotency table unavailable - processing without DB tracking:',
+        'Webhook idempotency table unavailable - returning 500 so Stripe will retry:',
         idempotencyError
+      );
+      return new Response(
+        JSON.stringify({ error: 'Idempotency service unavailable - please retry' }),
+        { status: 500, headers: { 'Content-Type': 'application/json' } }
       );
     }
 
-    if (idempotencyEnabled && idempotencyResult && !idempotencyResult.isNew) {
+    if (idempotencyResult && !idempotencyResult.isNew) {
       console.log('[WEBHOOK_DUPLICATE_SKIPPED]', {
         eventId: event.id,
         eventType: event.type,
@@ -161,7 +169,10 @@ export const POST: APIRoute = async (context) => {
           await SubscriptionHandler.handleTrialWillEnd(event.data.object as Stripe.Subscription);
           break;
 
-        case 'invoice.payment_succeeded':
+        // BUG H12 FIX: 'invoice.payment_succeeded' removed - only 'invoice.paid' handles credits.
+        // Both events fire for the same payment but with different event IDs, so event-ID
+        // idempotency cannot prevent double credit allocation. Stripe recommends using
+        // 'invoice.paid' as the authoritative event for credit allocation.
         case 'invoice.paid':
         case 'invoice_payment.paid':
           await InvoiceHandler.handleInvoicePaymentSucceeded(event.data.object as Stripe.Invoice);
@@ -200,9 +211,7 @@ export const POST: APIRoute = async (context) => {
 
         default:
           console.warn(`UNHANDLED WEBHOOK TYPE: ${event.type} - this may require code update`);
-          if (idempotencyEnabled) {
-            await IdempotencyService.markEventUnrecoverable(event.id, event.type);
-          }
+          await IdempotencyService.markEventUnrecoverable(event.id, event.type);
 
           return new Response(
             JSON.stringify({
@@ -214,9 +223,7 @@ export const POST: APIRoute = async (context) => {
       }
 
       // Mark event as completed after successful processing
-      if (idempotencyEnabled) {
-        await IdempotencyService.markEventCompleted(event.id);
-      }
+      await IdempotencyService.markEventCompleted(event.id);
 
       return new Response(
         JSON.stringify({ received: true }),
@@ -226,9 +233,7 @@ export const POST: APIRoute = async (context) => {
       // Mark event as failed and re-throw
       const errorMessage =
         processingError instanceof Error ? processingError.message : 'Unknown error';
-      if (idempotencyEnabled) {
-        await IdempotencyService.markEventFailed(event.id, errorMessage);
-      }
+      await IdempotencyService.markEventFailed(event.id, errorMessage);
       throw processingError;
     }
   } catch (error: unknown) {

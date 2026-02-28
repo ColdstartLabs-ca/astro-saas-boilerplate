@@ -9,17 +9,18 @@ import { getTrialConfig } from '@shared/config/subscription.config';
 import Stripe from 'stripe';
 
 // Request schema
+// BUG M19 FIX: `metadata` field removed — clients must not supply Stripe session metadata.
+// All metadata is server-generated to prevent injection of sensitive keys (e.g. `credits`).
 const checkoutSchema = z.object({
   priceId: z.string().min(1),
   successUrl: z.string().url().optional(),
   cancelUrl: z.string().url().optional(),
-  metadata: z.record(z.unknown()).optional(),
   uiMode: z.enum(['hosted', 'embedded']).default('hosted'),
 });
 
 /** POST /api/checkout — create a Stripe Checkout session */
 export const POST = withAuthAndBody(checkoutSchema, async (userId, body, { request, locals }) => {
-  const { priceId, successUrl, cancelUrl, metadata, uiMode } = body;
+  const { priceId, successUrl, cancelUrl, uiMode } = body;
 
   // Check if we're in test mode
   const isTestMode = serverEnv.ENV === 'test' || serverEnv.STRIPE_SECRET_KEY?.includes('dummy_key');
@@ -183,7 +184,6 @@ export const POST = withAuthAndBody(checkoutSchema, async (userId, body, { reque
                 }),
           }
         : {}),
-      ...metadata,
     },
   };
 
@@ -234,9 +234,11 @@ export const POST = withAuthAndBody(checkoutSchema, async (userId, body, { reque
     { apiKey: serverEnv.AMPLITUDE_API_KEY, userId }
   );
 
+  // BUG H17 FIX: Only include clientSecret for embedded checkout (uiMode === 'embedded').
+  // For hosted checkout the client_secret is unnecessary and leaking it is a security concern.
   return jsonResponse({
     url: session.url,
     sessionId: session.id,
-    clientSecret: session.client_secret,
+    ...(uiMode === 'embedded' ? { clientSecret: session.client_secret } : {}),
   });
 });

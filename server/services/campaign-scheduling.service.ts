@@ -368,9 +368,13 @@ export class CampaignSchedulingService {
       const keywordIds = keywords.map(k => k.id);
       await supabaseAdmin.from('keywords').update({ status: 'queued' }).in('id', keywordIds);
 
-      // Process articles sequentially (awaited - NOT fire-and-forget).
-      // Each article generation is mostly network I/O (AI API calls) so CPU time stays low.
-      // If any article fails, it stays in 'queued' and recover-stale-articles cron will retry.
+      // BUG M24: Sequential processing risks exceeding Cloudflare's 10ms CPU limit for large batches.
+      // Each iteration is predominantly network I/O (AI API calls, DB queries) so CPU time stays low.
+      // TODO: If batch sizes exceed ~5 articles, consider offloading to a queue or cron sub-job.
+      // Track success/failure counts to implement BUG H7 fix below.
+      let batchSuccessCount = 0;
+      let batchFailureCount = 0;
+
       for (const keyword of keywords) {
         try {
           // Update keyword status to 'generating'
@@ -406,6 +410,7 @@ export class CampaignSchedulingService {
           // Update keyword status to 'generated' on success
           await supabaseAdmin.from('keywords').update({ status: 'generated' }).eq('id', keyword.id);
 
+          batchSuccessCount++;
           console.log(`[ScheduledBatch] Generated article for keyword: ${keyword.keyword}`);
         } catch (error) {
           console.error(
@@ -414,7 +419,37 @@ export class CampaignSchedulingService {
           );
           // Update keyword status to 'failed' on error
           await supabaseAdmin.from('keywords').update({ status: 'failed' }).eq('id', keyword.id);
+          batchFailureCount++;
         }
+      }
+
+      // BUG H7: If every article in the batch failed, pause the campaign instead of rescheduling.
+      // Rescheduling on total failure would loop indefinitely wasting credits on retries.
+      // The recover-stale-articles cron will reset failed keywords to 'queued' for future retries.
+      if (batchSuccessCount === 0 && batchFailureCount > 0) {
+        const settings = {
+          ...(campaign.settings as object),
+          pause_reason: 'batch_generation_failed',
+          paused_at: new Date().toISOString(),
+        };
+        await supabaseAdmin
+          .from('campaigns')
+          .update({
+            status: 'paused',
+            next_run_at: null,
+            last_run_at: new Date().toISOString(),
+            settings,
+          })
+          .eq('id', campaignId);
+
+        console.warn(
+          `[ScheduledBatch] Campaign ${campaignId} paused: all ${batchFailureCount} article(s) in batch failed.`
+        );
+        return {
+          articlesQueued: keywords.length,
+          paused: true,
+          pauseReason: 'batch_generation_failed',
+        };
       }
 
       // Calculate next run time

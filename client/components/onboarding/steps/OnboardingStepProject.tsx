@@ -113,8 +113,20 @@ export function OnboardingStepProject({ onComplete }: IOnboardingStepProjectProp
   // Abort controllers to cancel stale in-flight validation requests
   const sitemapAbortRef = useRef<AbortController | null>(null);
   const blogAbortRef = useRef<AbortController | null>(null);
+  // BUG H20: abort controller for the crawl/analyze request
+  const crawlAbortRef = useRef<AbortController | null>(null);
   // Debounce timer for auto-analyze
   const analyzeDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // BUG H20: abort all in-flight requests on unmount
+  useEffect(() => {
+    return () => {
+      sitemapAbortRef.current?.abort();
+      blogAbortRef.current?.abort();
+      crawlAbortRef.current?.abort();
+      if (analyzeDebounceRef.current) clearTimeout(analyzeDebounceRef.current);
+    };
+  }, []);
 
   const { setProjectId: setOnboardingProjectId } = useOnboardingStore();
   const { setActiveProjectId } = useProjectStore();
@@ -327,11 +339,18 @@ export function OnboardingStepProject({ onComplete }: IOnboardingStepProjectProp
     lastAnalyzedDomainRef.current = normalizedDomain;
     console.info('[OnboardingStepProject] Analyzing website', { url: normalizedDomain });
 
+    // BUG H20: abort any prior crawl request, then create a fresh controller
+    crawlAbortRef.current?.abort();
+    const crawlController = new AbortController();
+    crawlAbortRef.current = crawlController;
+
     try {
       const response = await apiFetch<ICrawlResponse>('/api/crawl', {
         method: 'POST',
         body: JSON.stringify({ url: normalizedDomain }),
+        signal: crawlController.signal,
       });
+      if (crawlController.signal.aborted) return;
 
       const { title, description } = response.data.metadata;
       console.info('[OnboardingStepProject] Crawl result', {
@@ -380,13 +399,14 @@ export function OnboardingStepProject({ onComplete }: IOnboardingStepProjectProp
     if (normalizeDomain(domain) === lastAnalyzedDomainRef.current) return;
 
     analyzeDebounceRef.current = setTimeout(() => {
-      handleAnalyzeWebsite();
+      if (isSubmitting) return; // BUG L12: don't fire during form submission
+      void handleAnalyzeWebsite();
     }, 700);
 
     return () => {
       if (analyzeDebounceRef.current) clearTimeout(analyzeDebounceRef.current);
     };
-  }, [watchedDomain, handleAnalyzeWebsite]);
+  }, [watchedDomain, handleAnalyzeWebsite, isSubmitting]);
 
   // ---------------------------------------------------------------------------
   // Form submit

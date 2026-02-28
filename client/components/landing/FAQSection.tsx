@@ -69,6 +69,11 @@ export function FAQSection({ className = '' }: IProps): JSX.Element {
       answer:
         'Yes. Choose between: (1) Full autopilot - content publishes automatically after QA passes, (2) Review mode - content queued for your approval, (3) Draft mode - content saved as drafts in your CMS.',
     },
+    {
+      question: "What's your refund policy?",
+      answer:
+        'We offer a 14-day money-back guarantee on all plans. If you are not satisfied with AutopilotRank, contact our support team within 14 days of your purchase for a full refund. No questions asked.',
+    },
   ];
 
   return (

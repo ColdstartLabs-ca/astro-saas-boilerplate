@@ -39,7 +39,7 @@ export const PLAN_FIXTURES = {
       'Credits roll over (up to 90)',
       'Multi-model AI (GPT-4, Claude, Gemini)',
       'Humanizer engine',
-      '1 WordPress site',
+      'Unlimited projects',
       'SEO scoring & AI detection',
       'Email support',
     ],

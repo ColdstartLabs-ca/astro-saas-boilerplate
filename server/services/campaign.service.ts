@@ -19,6 +19,7 @@ import {
   type ICampaignArticleStats,
   type ICampaignCreditStats,
   CampaignNotFoundError,
+  CampaignAlreadyActiveError,
   InsufficientCreditsError,
   NoPendingKeywordsError,
 } from '@shared/types/campaign.types';
@@ -215,8 +216,11 @@ export class CampaignService {
         result.creditsRequired
       );
 
-      // Clear the generation_run_id from campaign (allows restart)
-      await CampaignIdempotencyService.clearCampaignRunId(campaignId);
+      // BUG C6: Do NOT clearCampaignRunId here — articles are queued but not yet generated.
+      // The background worker (fireAndForget in start.ts) clears the run ID when processing
+      // completes. Clearing here allows a concurrent /start call to race with the background
+      // worker and start a second generation batch while the first is still running.
+      // clearCampaignRunId is called at the END of processSequentially in start.ts instead.
 
       return {
         ...result,
@@ -227,7 +231,7 @@ export class CampaignService {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       await CampaignIdempotencyService.markFailed(claimResult.generationRunId, errorMessage);
 
-      // Clear the generation_run_id from campaign on failure too
+      // Clear the generation_run_id from campaign on failure (generation never started)
       await CampaignIdempotencyService.clearCampaignRunId(campaignId);
 
       throw error;
@@ -272,6 +276,13 @@ export class CampaignService {
     const campaign = await this.getById(campaignId, userId);
     if (!campaign) {
       throw new CampaignNotFoundError(campaignId);
+    }
+
+    // BUG C5: Guard against invalid status transitions.
+    // Only 'draft' and 'paused' campaigns may be started; any other status means
+    // the campaign is already running, completed, or scheduled.
+    if (campaign.status !== 'draft' && campaign.status !== 'paused') {
+      throw new CampaignAlreadyActiveError(campaign.status);
     }
 
     // In test mode with mock users, use in-memory keywords

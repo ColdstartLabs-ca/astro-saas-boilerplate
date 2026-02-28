@@ -19,7 +19,14 @@ import { z } from 'zod';
 
 // =============================================================================
 // Validation Schemas
-// ============================================================================
+// =============================================================================
+//
+// BUG L1: Canonical schema note
+// These schemas are the single source of truth for project field validation.
+// If you add new fields to the `projects` table, update BOTH createProjectSchema
+// and updateProjectSchema (and the corresponding IProject / ICreateProjectInput /
+// IUpdateProjectInput types in shared/types/project.types.ts).
+//
 
 /**
  * Normalize domain by auto-prepending https:// if missing
@@ -201,6 +208,10 @@ export class ProjectService {
 
   /**
    * Update an existing project, enforcing ownership
+   *
+   * BUG H2 fix: content_preferences is deep-merged with existing values so that
+   * a partial update (e.g. only `frequency`) does not wipe out fields set by
+   * other screens (e.g. `articleStyle`, `imageStyle` set by OnboardingStepPreferences).
    */
   async update(projectId: string, userId: string, input: IUpdateProjectInput): Promise<IProject> {
     // Validate input
@@ -213,8 +224,12 @@ export class ProjectService {
     if (validated.domain !== undefined) updates.domain = normalizeDomain(validated.domain);
     if (validated.industry !== undefined) updates.industry = validated.industry || null;
     if (validated.cms_type !== undefined) updates.cms_type = validated.cms_type;
-    if (validated.content_preferences !== undefined)
-      updates.content_preferences = validated.content_preferences;
+    if (validated.content_preferences !== undefined) {
+      // BUG H2: merge incoming preferences with existing ones instead of replacing
+      const existing = await this.getById(projectId, userId);
+      const existingPreferences = (existing?.content_preferences ?? {}) as Record<string, unknown>;
+      updates.content_preferences = { ...existingPreferences, ...validated.content_preferences };
+    }
     if (validated.status !== undefined) updates.status = validated.status;
     // Outrank feature parity fields
     if (validated.language !== undefined) updates.language = validated.language;

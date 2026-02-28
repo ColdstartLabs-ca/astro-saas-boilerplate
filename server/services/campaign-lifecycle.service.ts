@@ -469,6 +469,46 @@ export class CampaignLifecycleService {
       throw new AppError('MODEL_NOT_AVAILABLE', 'Selected image preset is not available', 400);
     }
 
+    // BUG H5: Validate status transitions before any update.
+    // The updateCampaignSchema only accepts 'active' or 'paused', but we must also enforce
+    // that the transition is valid for the campaign's current state.
+    // Valid transitions: active → paused, paused → active (simple toggle).
+    // Scheduled campaigns must use dedicated endpoints (startSchedule, pauseSchedule, resumeSchedule).
+    if (validated.status !== undefined) {
+      // Fetch current status - test mode reads from memory, production reads from DB
+      let currentStatus: string;
+      if (serverEnv.ENV === 'test' && userId.includes('mock_user_')) {
+        const existingCampaign = testModeCampaigns.get(campaignId);
+        if (!existingCampaign || existingCampaign.user_id !== userId) {
+          throw new CampaignNotFoundError(campaignId);
+        }
+        currentStatus = existingCampaign.status;
+      } else {
+        const { data: existingCampaign, error: fetchError } = await supabaseAdmin
+          .from('campaigns')
+          .select('status')
+          .eq('id', campaignId)
+          .eq('user_id', userId)
+          .single();
+        if (fetchError || !existingCampaign) {
+          throw new CampaignNotFoundError(campaignId);
+        }
+        currentStatus = existingCampaign.status;
+      }
+
+      const requestedStatus = validated.status;
+      const isValidTransition =
+        (currentStatus === 'active' && requestedStatus === 'paused') ||
+        (currentStatus === 'paused' && requestedStatus === 'active');
+      if (!isValidTransition) {
+        throw new AppError(
+          'INVALID_STATUS_TRANSITION',
+          `Cannot transition campaign from '${currentStatus}' to '${requestedStatus}'. Valid transitions: active→paused, paused→active.`,
+          400
+        );
+      }
+    }
+
     // In test mode with mock users, update in-memory store
     if (serverEnv.ENV === 'test' && userId.includes('mock_user_')) {
       const campaign = testModeCampaigns.get(campaignId);
@@ -493,6 +533,19 @@ export class CampaignLifecycleService {
       if (validated.scheduleTimezone !== undefined)
         campaign.schedule_timezone = validated.scheduleTimezone;
       if (validated.scheduleHour !== undefined) campaign.schedule_hour = validated.scheduleHour;
+      // BUG H6: Outrank feature parity fields (previously missing from test-mode path)
+      if (validated.articleStyle !== undefined) campaign.article_style = validated.articleStyle;
+      if (validated.internalLinksCount !== undefined)
+        campaign.internal_links_count = validated.internalLinksCount;
+      if (validated.globalInstructions !== undefined)
+        campaign.global_instructions = validated.globalInstructions;
+      if (validated.autoPublish !== undefined) campaign.auto_publish = validated.autoPublish;
+      if (validated.includeYoutube !== undefined) campaign.include_youtube = validated.includeYoutube;
+      if (validated.includeCta !== undefined) campaign.include_cta = validated.includeCta;
+      if (validated.includeInfographics !== undefined)
+        campaign.include_infographics = validated.includeInfographics;
+      if (validated.includeEmojis !== undefined) campaign.include_emojis = validated.includeEmojis;
+      if (validated.imageStyle !== undefined) campaign.image_style = validated.imageStyle;
 
       campaign.updated_at = new Date().toISOString();
       testModeCampaigns.set(campaignId, campaign);
@@ -518,6 +571,19 @@ export class CampaignLifecycleService {
     if (validated.scheduleTimezone !== undefined)
       updates.schedule_timezone = validated.scheduleTimezone;
     if (validated.scheduleHour !== undefined) updates.schedule_hour = validated.scheduleHour;
+    // BUG H6: Outrank feature parity fields (previously missing from DB update path)
+    if (validated.articleStyle !== undefined) updates.article_style = validated.articleStyle;
+    if (validated.internalLinksCount !== undefined)
+      updates.internal_links_count = validated.internalLinksCount;
+    if (validated.globalInstructions !== undefined)
+      updates.global_instructions = validated.globalInstructions;
+    if (validated.autoPublish !== undefined) updates.auto_publish = validated.autoPublish;
+    if (validated.includeYoutube !== undefined) updates.include_youtube = validated.includeYoutube;
+    if (validated.includeCta !== undefined) updates.include_cta = validated.includeCta;
+    if (validated.includeInfographics !== undefined)
+      updates.include_infographics = validated.includeInfographics;
+    if (validated.includeEmojis !== undefined) updates.include_emojis = validated.includeEmojis;
+    if (validated.imageStyle !== undefined) updates.image_style = validated.imageStyle;
 
     // If schedule config changed on a scheduled campaign, recalculate next_run_at
     const scheduleFieldsChanged =
@@ -578,8 +644,38 @@ export class CampaignLifecycleService {
   async delete(campaignId: string, userId: string): Promise<void> {
     // In test mode with mock users, remove from in-memory store
     if (serverEnv.ENV === 'test' && userId.includes('mock_user_')) {
+      const campaign = testModeCampaigns.get(campaignId);
+      // BUG M6: Prevent deleting active or scheduled campaigns in test mode too
+      if (campaign && (campaign.status === 'active' || campaign.status === 'scheduled')) {
+        throw new AppError(
+          'CAMPAIGN_DELETION_BLOCKED',
+          `Cannot delete campaign in '${campaign.status}' state. Please pause the campaign before deleting.`,
+          409
+        );
+      }
       testModeCampaigns.delete(campaignId);
       return;
+    }
+
+    // BUG M6: Fetch campaign to validate its status before deleting
+    const { data: campaignData, error: fetchError } = await supabaseAdmin
+      .from('campaigns')
+      .select('status')
+      .eq('id', campaignId)
+      .eq('user_id', userId)
+      .single();
+
+    if (fetchError || !campaignData) {
+      // Campaign not found or not owned by user — proceed with delete (will be a no-op)
+      return;
+    }
+
+    if (campaignData.status === 'active' || campaignData.status === 'scheduled') {
+      throw new AppError(
+        'CAMPAIGN_DELETION_BLOCKED',
+        `Cannot delete campaign in '${campaignData.status}' state. Please pause the campaign before deleting.`,
+        409
+      );
     }
 
     const { error } = await supabaseAdmin

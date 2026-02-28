@@ -127,15 +127,24 @@ export class CampaignKeywordService {
    * Remove a single keyword with ownership check through campaign
    */
   async removeKeyword(keywordId: string, userId: string): Promise<void> {
-    // First verify ownership by getting the keyword's campaign
+    // First verify ownership by getting the keyword's campaign and its current status
     const { data: keyword } = await supabaseAdmin
       .from('keywords')
-      .select('campaign_id')
+      .select('campaign_id, status')
       .eq('id', keywordId)
       .single();
 
     if (!keyword) {
       throw new Error('Keyword not found');
+    }
+
+    // BUG M5: Prevent deleting keywords that are actively being processed.
+    // Deleting a 'queued' or 'generating' keyword orphans the article record and
+    // may cause credit accounting inconsistencies (credit already deducted).
+    if (keyword.status === 'queued' || keyword.status === 'generating') {
+      throw new Error(
+        `Cannot delete keyword in '${keyword.status}' status — it is currently being processed. Wait for generation to complete or fail before removing.`
+      );
     }
 
     // Verify campaign ownership using direct query

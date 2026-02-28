@@ -3,7 +3,7 @@
  * Visual step indicator for the onboarding wizard
  *
  * Features:
- * - 5 hardcoded onboarding steps
+ * - 6 hardcoded onboarding steps
  * - Skipped-step styling (amber color)
  * - Optional step labels
  */
@@ -20,7 +20,7 @@ import { OnboardingStep } from '@shared/types/onboarding.types';
 // =============================================================================
 
 interface IOnboardingStepperProgressProps {
-  /** Current active step (1-5) */
+  /** Current active step (1-6) */
   currentStep: number;
   /** Set of completed step numbers */
   completedSteps: Set<number>;

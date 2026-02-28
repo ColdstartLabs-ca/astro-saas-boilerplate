@@ -746,7 +746,7 @@ export class OpportunityAnalysisService {
 
     try {
       const result = await this.openRouterService.chatCompletionWithRetry({
-        model: '', // Uses default OPENROUTER_TEXT_MODEL
+        model: '', // Uses OPENROUTER_DEFAULT_MODEL (falls back to OPENROUTER_TEXT_MODEL)
         messages: [
           { role: 'system', content: ANALYSIS_PROMPT },
           {

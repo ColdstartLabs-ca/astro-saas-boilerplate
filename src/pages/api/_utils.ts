@@ -247,6 +247,8 @@ export function handleApiError(error: unknown, context?: string): Response {
     switch (error.name) {
       case 'CampaignNotFoundError':
         return errorResponse('NOT_FOUND', error.message, 404);
+      case 'CampaignAlreadyActiveError':
+        return errorResponse('CAMPAIGN_ALREADY_ACTIVE', error.message, 409);
       case 'NoPendingKeywordsError':
         return errorResponse('NO_PENDING_KEYWORDS', error.message, 400);
       case 'ScheduleValidationError':

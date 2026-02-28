@@ -131,6 +131,10 @@ export function OnboardingStepKeywords({ onComplete }: IOnboardingStepKeywordsPr
   const rawInputRef = useRef('');
   const autoSuggestProjectRef = useRef<string | null>(null);
   const dragDepthRef = useRef(0);
+  // BUG H20: abort controller for fetchSuggestedKeywords
+  const suggestionsAbortRef = useRef<AbortController | null>(null);
+  // BUG M1: double-click guard for handleSubmit
+  const submittingRef = useRef(false);
 
   const { projectId: onboardingProjectId, setCampaignId, setKeywordCount } = useOnboardingStore();
   const { activeProjectId } = useProjectStore();
@@ -144,6 +148,13 @@ export function OnboardingStepKeywords({ onComplete }: IOnboardingStepKeywordsPr
   const isEditorVisible = !(isInputLocked && keywordCount > 0);
   const isInputDisabled =
     isSubmitting || isSuggesting || isParsingCsv || (isInputLocked && keywordCount > 0);
+
+  // BUG H20: abort in-flight suggestion requests on unmount
+  useEffect(() => {
+    return () => {
+      suggestionsAbortRef.current?.abort();
+    };
+  }, []);
 
   useEffect(() => {
     rawInputRef.current = rawInput;
@@ -161,14 +172,20 @@ export function OnboardingStepKeywords({ onComplete }: IOnboardingStepKeywordsPr
     }) => {
       if (!projectId || !canSuggestFromGsc) return;
 
+      // BUG H20: abort any prior suggestions request, start a fresh one
+      suggestionsAbortRef.current?.abort();
+      const controller = new AbortController();
+      suggestionsAbortRef.current = controller;
+
       setIsSuggesting(true);
       setError(null);
 
       try {
         const response = await apiFetch<IKeywordSuggestionResponse>(
           `/api/onboarding/keywords/suggestions?projectId=${projectId}`,
-          { method: 'GET' }
+          { method: 'GET', signal: controller.signal }
         );
+        if (controller.signal.aborted) return;
 
         const suggestions = dedupeKeywords(parseKeywords(response.data.keywords.join('\n')));
         const shouldReplace = forceReplace || !rawInputRef.current.trim();
@@ -200,14 +217,17 @@ export function OnboardingStepKeywords({ onComplete }: IOnboardingStepKeywordsPr
           );
         }
       } catch (err) {
+        if (controller.signal.aborted) return;
         console.error('Failed to fetch onboarding keyword suggestions:', err);
         setIsInputLocked(false);
         setStatusMessage(
           'Could not auto-suggest keywords right now. You can still continue manually.'
         );
       } finally {
-        setIsSuggesting(false);
-        onSettled?.();
+        if (!controller.signal.aborted) {
+          setIsSuggesting(false);
+          onSettled?.();
+        }
       }
     },
     [projectId, canSuggestFromGsc]
@@ -338,6 +358,9 @@ export function OnboardingStepKeywords({ onComplete }: IOnboardingStepKeywordsPr
 
   const handleSubmit = useCallback(async () => {
     if (!canSubmit || !projectId) return;
+    // BUG M1: prevent double-click from firing multiple concurrent submissions
+    if (submittingRef.current) return;
+    submittingRef.current = true;
 
     setIsSubmitting(true);
     setError(null);
@@ -358,6 +381,7 @@ export function OnboardingStepKeywords({ onComplete }: IOnboardingStepKeywordsPr
       setError(err instanceof Error ? err.message : 'Failed to upload keywords. Please try again.');
     } finally {
       setIsSubmitting(false);
+      submittingRef.current = false;
     }
   }, [
     canSubmit,
@@ -418,7 +442,7 @@ export function OnboardingStepKeywords({ onComplete }: IOnboardingStepKeywordsPr
       {isEditorVisible && (
         <div className="space-y-2">
           <label htmlFor="keywords-input" className="block text-sm font-medium text-white">
-            Keywords <span className="text-red-400">*</span>
+            Keywords <span className="text-error">*</span>
           </label>
           <textarea
             id="keywords-input"
@@ -427,7 +451,7 @@ export function OnboardingStepKeywords({ onComplete }: IOnboardingStepKeywordsPr
             placeholder={`Enter keywords separated by commas or new lines:\n\nseo tips\ncontent marketing\nblog writing strategies`}
             rows={8}
             className={`w-full bg-main border rounded-lg px-4 py-3 text-white placeholder:text-muted focus:ring-1 focus:ring-accent outline-none transition-all resize-none font-mono text-sm ${
-              error ? 'border-red-500 ring-1 ring-red-500/20' : 'border-border'
+              error ? 'border-error ring-1 ring-error/20' : 'border-border'
             }`}
             disabled={isInputDisabled}
             autoFocus
@@ -480,9 +504,9 @@ export function OnboardingStepKeywords({ onComplete }: IOnboardingStepKeywordsPr
             <span
               className={
                 keywordCount > MAX_KEYWORDS
-                  ? 'text-red-400'
+                  ? 'text-error'
                   : keywordCount > 0
-                    ? 'text-emerald-400'
+                    ? 'text-success'
                     : 'text-muted'
               }
             >
@@ -494,7 +518,7 @@ export function OnboardingStepKeywords({ onComplete }: IOnboardingStepKeywordsPr
           </div>
 
           {keywordCount > MAX_KEYWORDS && (
-            <p className="text-red-400 text-xs">Too many keywords. Maximum is {MAX_KEYWORDS}.</p>
+            <p className="text-error text-xs">Too many keywords. Maximum is {MAX_KEYWORDS}.</p>
           )}
         </div>
       )}
@@ -539,8 +563,8 @@ export function OnboardingStepKeywords({ onComplete }: IOnboardingStepKeywordsPr
 
       {/* Error Message */}
       {error && (
-        <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-4">
-          <p className="text-sm text-red-400">{error}</p>
+        <div className="bg-error/10 border border-error/30 rounded-lg p-4">
+          <p className="text-sm text-error">{error}</p>
         </div>
       )}
 

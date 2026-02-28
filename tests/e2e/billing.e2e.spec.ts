@@ -350,7 +350,7 @@ test.describe('Billing E2E Tests', () => {
       await expect(starterCard).toContainText('Credits roll over (up to 90)');
       await expect(starterCard).toContainText('Multi-model AI');
       await expect(starterCard).toContainText('Humanizer engine');
-      await expect(starterCard).toContainText('1 WordPress site');
+      await expect(starterCard).toContainText('Unlimited projects');
       await expect(starterCard).toContainText('Email support');
 
       // Check for "Get Started" button

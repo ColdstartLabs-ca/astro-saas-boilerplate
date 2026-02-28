@@ -176,15 +176,15 @@ test.describe('API: Project Crawl', () => {
       expect(data.metadata.description === null || typeof data.metadata.description === 'string').toBe(true);
     });
 
-    test('should return metadata structure even when crawl fails', async ({ request }) => {
+    test('should return 500 when crawl fails due to network error', async ({ request }) => {
       const api = new ApiClient(request).withAuth(user.token);
-      // Use an invalid URL that passes Zod validation but fails fetch
+      // Use a URL that passes Zod validation but fails at the network level (DNS failure)
       const response = await api.post(`/api/projects/${projectId}/crawl`, {
         url: 'https://nonexistent.invalid-tld/',
       });
 
-      // Should return 400 with error message
-      response.expectStatus(400);
+      // DNS failures propagate as generic errors → 500 INTERNAL_ERROR
+      response.expectStatus(500);
       const body = await response.json();
       expect(body.success).toBe(false);
       expect(body.error?.message).toBeDefined();

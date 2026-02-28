@@ -6,7 +6,7 @@
 
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef } from 'react';
 import {
   Loader2,
   Plug,
@@ -287,6 +287,8 @@ export function OnboardingStepIntegrations({
   const [showSkipConfirm, setShowSkipConfirm] = useState(false);
   const [showWebhookHelp, setShowWebhookHelp] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // BUG M1: ref-based guard to prevent double-click from firing multiple submits
+  const submittingRef = useRef(false);
 
   const { campaignId, setHasIntegration } = useOnboardingStore();
   const { createIntegration } = useIntegrations();
@@ -305,6 +307,9 @@ export function OnboardingStepIntegrations({
 
   const handleSubmit = useCallback(async () => {
     if (!selectedType || !canSubmit) return;
+    // BUG M1: prevent double-click from firing multiple concurrent submissions
+    if (submittingRef.current) return;
+    submittingRef.current = true;
 
     setIsSubmitting(true);
     setError(null);
@@ -368,6 +373,7 @@ export function OnboardingStepIntegrations({
       );
     } finally {
       setIsSubmitting(false);
+      submittingRef.current = false;
     }
   }, [
     selectedType,
@@ -379,6 +385,8 @@ export function OnboardingStepIntegrations({
     onComplete,
   ]);
 
+  // BUG L4 note: isSkipping is intentionally never reset — the component unmounts
+  // immediately after onSkip() is called (wizard advances to next step).
   const handleSkip = useCallback(() => {
     setIsSkipping(true);
     onSkip();
@@ -524,7 +532,7 @@ export function OnboardingStepIntegrations({
                 htmlFor={`integration-${field.name}`}
                 className="block text-sm font-medium text-white"
               >
-                {field.label} {field.required && <span className="text-red-400">*</span>}
+                {field.label} {field.required && <span className="text-error">*</span>}
               </label>
               <input
                 id={`integration-${field.name}`}
@@ -556,8 +564,8 @@ export function OnboardingStepIntegrations({
 
           {/* Error Message */}
           {error && (
-            <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-4">
-              <p className="text-sm text-red-400">{error}</p>
+            <div className="bg-error/10 border border-error/30 rounded-lg p-4">
+              <p className="text-sm text-error">{error}</p>
             </div>
           )}
 
@@ -585,9 +593,9 @@ export function OnboardingStepIntegrations({
 
       {/* Skip Button / Confirmation */}
       {showSkipConfirm ? (
-        <div className="bg-amber-500/5 border border-amber-500/20 rounded-lg p-4 space-y-3">
+        <div className="bg-warning/5 border border-warning/20 rounded-lg p-4 space-y-3">
           <div className="flex items-start gap-2">
-            <AlertTriangle className="w-4 h-4 text-amber-400 mt-0.5 flex-shrink-0" />
+            <AlertTriangle className="w-4 h-4 text-warning mt-0.5 flex-shrink-0" />
             <p className="text-sm text-secondary">
               Are you sure? Without an integration, you&apos;ll need to manually copy and publish
               every generated article.
@@ -606,7 +614,7 @@ export function OnboardingStepIntegrations({
               type="button"
               onClick={handleSkip}
               disabled={isLoading}
-              className="flex-1 py-2 text-sm text-amber-400 border border-amber-500/30 rounded-lg hover:bg-amber-500/10 transition-colors"
+              className="flex-1 py-2 text-sm text-warning border border-warning/30 rounded-lg hover:bg-warning/10 transition-colors"
             >
               {isSkipping ? 'Skipping...' : 'Skip Anyway'}
             </button>

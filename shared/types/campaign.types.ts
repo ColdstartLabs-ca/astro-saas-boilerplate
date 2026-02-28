@@ -375,6 +375,22 @@ export class ScheduleValidationError extends Error {
 }
 
 /**
+ * Error thrown when attempting to start a campaign that is not in a startable state.
+ * Only 'draft' and 'paused' campaigns can be started.
+ */
+export class CampaignAlreadyActiveError extends Error {
+  public readonly currentStatus: string;
+
+  constructor(currentStatus: string) {
+    super(
+      `Cannot start campaign: campaign is already in '${currentStatus}' state. Only 'draft' or 'paused' campaigns can be started.`
+    );
+    this.name = 'CampaignAlreadyActiveError';
+    this.currentStatus = currentStatus;
+  }
+}
+
+/**
  * Result data from a campaign generation run (stored for idempotency)
  */
 export interface ICampaignGenerationRunResult {

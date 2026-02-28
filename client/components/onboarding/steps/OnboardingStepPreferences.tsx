@@ -43,15 +43,19 @@ export function OnboardingStepPreferences({
   const { projectId } = useOnboardingStore();
 
   const handleSaveAndContinue = useCallback(async () => {
+    // BUG M3 fix: guard against null projectId — cannot save without a project
+    if (!projectId) {
+      setError('No project found. Please go back and create a project first.');
+      return;
+    }
+
     setIsSaving(true);
     setError(null);
     try {
-      if (projectId) {
-        await apiFetch(`/api/projects/${projectId}`, {
-          method: 'PATCH',
-          body: JSON.stringify({ content_preferences: contentPreferences }),
-        });
-      }
+      await apiFetch(`/api/projects/${projectId}`, {
+        method: 'PATCH',
+        body: JSON.stringify({ content_preferences: contentPreferences }),
+      });
       onComplete();
     } catch (err) {
       setError(
@@ -69,8 +73,8 @@ export function OnboardingStepPreferences({
       </div>
 
       {error && (
-        <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-4">
-          <p className="text-sm text-red-400">{error}</p>
+        <div className="bg-error/10 border border-error/30 rounded-lg p-4">
+          <p className="text-sm text-error">{error}</p>
         </div>
       )}
 

@@ -182,6 +182,18 @@ export function useCampaignDetail(campaignId: string | null | undefined): IUseCa
   const queryClient = useQueryClient();
   const t = useMemo(() => getTranslations('dashboard'), []);
 
+  // BUG M4: Campaign detail query needs polling so that keyword/article counts update
+  // while the campaign is actively generating (active) or scheduled.
+  // We read the cached status without creating a circular dependency by using queryClient.
+  const cachedDetail = queryClient.getQueryData<{ campaign: { status: string } } | null>([
+    'campaign-detail',
+    campaignId,
+  ]);
+  const cachedStatus = cachedDetail?.campaign?.status ?? null;
+  // Poll every 5s when active (articles being generated), every 30s when scheduled (waiting for next run)
+  const detailRefetchInterval: number | false =
+    cachedStatus === 'active' ? 5000 : cachedStatus === 'scheduled' ? 30000 : false;
+
   // Fetch campaign detail query
   const {
     data: detailData,
@@ -192,6 +204,7 @@ export function useCampaignDetail(campaignId: string | null | undefined): IUseCa
     queryFn: () => (campaignId ? fetchCampaignDetail(campaignId) : Promise.resolve(null)),
     enabled: !!campaignId && campaignId !== '',
     staleTime: 1000 * 30, // 30 seconds - reduce refetch frequency
+    refetchInterval: detailRefetchInterval,
   });
 
   // Derived data - extract campaign first to use its status for polling

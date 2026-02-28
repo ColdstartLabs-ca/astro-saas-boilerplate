@@ -7,25 +7,42 @@ import { campaignService } from '@server/services/campaign.service';
 import type { IStartCampaignResponse } from '@shared/types/campaign.types';
 import { articleGenerationService } from '@server/services/article-generation.service';
 import { supabaseAdmin } from '@server/supabase/supabaseAdmin';
-import { withAuth, jsonResponse, fireAndForget } from '../../_utils';
+import { batchLimitCheck } from '@server/services/batch-limit.service';
+import { getAuthenticatedUser } from '@server/middleware/getAuthenticatedUser';
+import { withAuth, jsonResponse, errorResponse, fireAndForget } from '../../_utils';
+import { CampaignIdempotencyService } from '@server/services/campaign-idempotency.service';
 
 /**
  * POST /api/campaigns/:campaignId/start
  * Start bulk article generation for a campaign
  *
  * Flow:
- * 1. Extract idempotency key from X-Idempotency-Key header (optional but recommended)
- * 2. Claim campaign generation with idempotency (uses DB locking)
- * 3. Return cached response if idempotency key was already used
- * 4. Get pending keywords for campaign
- * 5. Check user has enough credits (1 per keyword)
- * 6. Set campaign status to active
- * 7. For each pending keyword: create article record, update keyword status to queued
- * 8. Use fireAndForget() to run sequential generation in background
- * 9. Return 202 with queued count
+ * 1. BUG H8: Check batch generation limit for user's subscription tier
+ * 2. Extract idempotency key from X-Idempotency-Key header (optional but recommended)
+ * 3. Claim campaign generation with idempotency (uses DB locking)
+ * 4. Return cached response if idempotency key was already used
+ * 5. Get pending keywords for campaign
+ * 6. Check user has enough credits (1 per keyword)
+ * 7. Set campaign status to active
+ * 8. For each pending keyword: create article record, update keyword status to queued
+ * 9. Use fireAndForget() to run sequential generation in background
+ * 10. Return 202 with queued count
  */
 export const POST = withAuth(async (userId, { params, locals, request }) => {
   const campaignId = params.campaignId as string;
+
+  // BUG H8: Check batch generation rate limit before proceeding.
+  // This prevents free/low-tier users from starting unlimited concurrent generation runs.
+  const userProfile = await getAuthenticatedUser(request);
+  const tier = userProfile?.subscription_tier ?? null;
+  const limitResult = await batchLimitCheck.checkAndIncrement(userId, tier);
+  if (!limitResult.allowed) {
+    return errorResponse(
+      'BATCH_LIMIT_EXCEEDED',
+      `Batch generation limit reached for your plan. Please wait before starting another campaign. Resets at: ${limitResult.resetAt ?? 'end of period'}.`,
+      429
+    );
+  }
 
   // Extract idempotency key from header (optional but recommended)
   const idempotencyKey = request.headers.get('X-Idempotency-Key') || undefined;
@@ -140,13 +157,37 @@ export const POST = withAuth(async (userId, { params, locals, request }) => {
         }
       }
 
-      // Update campaign status to 'completed' if all keywords processed
-      // Only if we weren't paused (processedCount should equal queuedKeywords.length)
+      // BUG C7: Only mark campaign as 'completed' when at least one article succeeded.
+      // If every article failed, pause the campaign so the user can investigate and retry.
+      // This prevents a silent "completed" state where no content was actually generated.
       if (processedCount === queuedKeywords.length) {
-        await supabaseAdmin.from('campaigns').update({ status: 'completed' }).eq('id', campaignId);
-        console.log(
-          `[Campaign] Campaign ${campaignId} completed with ${successCount} successes and ${failureCount} failures`
-        );
+        if (successCount === 0 && failureCount > 0) {
+          await supabaseAdmin
+            .from('campaigns')
+            .update({ status: 'paused' })
+            .eq('id', campaignId);
+          console.warn(
+            `[Campaign] Campaign ${campaignId} paused: all ${failureCount} article(s) failed to generate.`
+          );
+        } else {
+          await supabaseAdmin
+            .from('campaigns')
+            .update({ status: 'completed' })
+            .eq('id', campaignId);
+          console.log(
+            `[Campaign] Campaign ${campaignId} completed with ${successCount} successes and ${failureCount} failures`
+          );
+        }
+      }
+
+      // BUG C6: Clear generation_run_id at the END of background processing.
+      // Clearing it synchronously (before background worker completes) allowed a concurrent
+      // /start request to race with this worker and start a second generation batch.
+      // The run ID must remain set until all articles are processed.
+      try {
+        await CampaignIdempotencyService.clearCampaignRunId(campaignId);
+      } catch (err) {
+        console.error(`[Campaign] Failed to clear generation run ID for campaign ${campaignId}:`, err);
       }
     };
 

@@ -347,6 +347,30 @@ export class PaymentHandler {
             newSubscriptionBalance: result[0].new_subscription_balance,
             newPurchasedBalance: result[0].new_purchased_balance,
           });
+
+          // BUG M25 FIX: Guard against negative balances produced by the clawback RPC.
+          // The RPC can return sub-zero values if more credits were clawed back than
+          // the user currently holds (e.g., partially spent credits). Floor to 0.
+          const subBalance = result[0].new_subscription_balance ?? 0;
+          const purBalance = result[0].new_purchased_balance ?? 0;
+          if (subBalance < 0 || purBalance < 0) {
+            console.error('[CRITICAL][CHARGE_REFUND] Clawback produced negative balance', {
+              userId,
+              chargeId: charge.id,
+              refId,
+              newSubscriptionBalance: subBalance,
+              newPurchasedBalance: purBalance,
+              action: 'flooring_to_zero',
+            });
+            await supabaseAdmin
+              .from('profiles')
+              .update({
+                subscription_credits_balance: Math.max(0, subBalance),
+                purchased_credits_balance: Math.max(0, purBalance),
+              })
+              .eq('id', userId);
+          }
+
           clawbackSucceeded = true;
           break;
         }
@@ -412,6 +436,26 @@ export class PaymentHandler {
               `(sub: ${clawbackResult.subscription_clawed}, pur: ${clawbackResult.purchased_clawed}) ` +
               `New balances - sub: ${clawbackResult.new_subscription_balance}, pur: ${clawbackResult.new_purchased_balance}`
           );
+
+          // BUG M25 FIX: Guard against negative balances produced by the clawback RPC.
+          const subBalance = clawbackResult.new_subscription_balance ?? 0;
+          const purBalance = clawbackResult.new_purchased_balance ?? 0;
+          if (subBalance < 0 || purBalance < 0) {
+            console.error('[CRITICAL][INVOICE_REFUND] Clawback produced negative balance', {
+              userId: profile.id,
+              invoiceId: invoice.id,
+              newSubscriptionBalance: subBalance,
+              newPurchasedBalance: purBalance,
+              action: 'flooring_to_zero',
+            });
+            await supabaseAdmin
+              .from('profiles')
+              .update({
+                subscription_credits_balance: Math.max(0, subBalance),
+                purchased_credits_balance: Math.max(0, purBalance),
+              })
+              .eq('id', profile.id);
+          }
         } else {
           console.error(`[INVOICE_REFUND] Clawback failed: ${clawbackResult.error_message}`);
         }
