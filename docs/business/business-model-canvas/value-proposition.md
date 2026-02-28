@@ -6,7 +6,7 @@
 
 **AutopilotRank** is an autonomous SEO content automation platform that combines programmatic SEO with AI-powered content generation to help businesses scale their organic search presence without manual content creation overhead.
 
-**Core Promise:** _"The only AI SEO platform that truly does it all – automating content creation, optimization, and backlink building with human-level quality and reliability. Scale your organic traffic on autopilot without the generic content or technical headaches. Bonus: Demand Sniffer for opportunity discovery and Directory Submission for instant local SEO wins."_
+**Core Promise:** _"The only AI SEO platform that owns the full content lifecycle — from keyword discovery to published article. One platform replaces your entire content toolchain: research, generate, optimize, and publish on autopilot."_
 
 ---
 
@@ -15,10 +15,12 @@
 ```
 For SMB owners and marketing agencies
 who need to scale organic traffic but lack time/resources,
-AutopilotRank is an autonomous SEO content platform
-that generates publish-ready, human-quality content at scale.
-Unlike Outrank.so (buggy, generic content) and Surfer SEO (manual work required),
-we deliver true automation with Surfer-level quality and rock-solid reliability.
+AutopilotRank is the SEO content platform that owns the full pipeline —
+keyword in, published article out.
+Unlike Outrank.so (buggy, generic, no workflow control)
+and fragmented toolchains (Surfer + Jasper + manual publishing),
+we automate every step: research → generate → optimize → publish.
+One subscription replaces 4 separate tools.
 ```
 
 ---
@@ -307,6 +309,8 @@ quadrantChart
 
 ### Core Features Comparison
 
+> Legend: ✅ Live · 🔜 Planned/In progress · ❌ Not available
+
 | Feature                   | AutopilotRank                     | Outrank.so | RankYak | Byword  | Surfer | Frase | Jasper | SEO.ai |
 | ------------------------- | --------------------------------- | ---------- | ------- | ------- | ------ | ----- | ------ | ------ |
 | **Fully Autonomous**      | ✅                                | ✅         | ✅      | ❌      | ❌     | ❌    | ❌     | ✅     |
@@ -314,14 +318,14 @@ quadrantChart
 | **Multi-Model AI**        | ✅ (GPT-4, Claude, Gemini, Llama) | ❌         | ❌      | ❌      | ❌     | ❌    | ❌     | ❌     |
 | **Humanizer Engine**      | ✅                                | ❌         | ❌      | ❌      | ❌     | ❌    | ❌     | ❌     |
 | **Pre-Publication QA**    | ✅ (Multi-layer)                  | ❌         | ❌      | ❌      | ❌     | ❌    | ❌     | ❌     |
-| **Keyword Research**      | ✅                                | ✅         | ✅      | Limited | ✅     | ✅    | ❌     | ✅     |
-| **Custom Keyword Upload** | ✅ (CSV, Excel)                   | ❌         | ❌      | Limited | ❌     | ❌    | ❌     | ❌     |
-| **SERP Analysis**         | ✅                                | ✅         | ✅      | ❌      | ✅     | ✅    | ❌     | ✅     |
-| **Content Optimization**  | ✅                                | Basic      | ✅      | ❌      | ✅     | ✅    | ❌     | ✅     |
-| **On-Page SEO Scoring**   | ✅                                | Basic      | ✅      | ❌      | ✅     | ✅    | ❌     | ✅     |
+| **Keyword Research**      | 🔜                                | ✅         | ✅      | Limited | ✅     | ✅    | ❌     | ✅     |
+| **Custom Keyword Upload** | ✅ (CSV)                          | ❌         | ❌      | Limited | ❌     | ❌    | ❌     | ❌     |
+| **SERP Analysis**         | 🔜                                | ✅         | ✅      | ❌      | ✅     | ✅    | ❌     | ✅     |
+| **Content Optimization**  | 🔜                                | Basic      | ✅      | ❌      | ✅     | ✅    | ❌     | ✅     |
+| **On-Page SEO Scoring**   | ✅ (In generation)                | Basic      | ✅      | ❌      | ✅     | ✅    | ❌     | ✅     |
 | **Internal Linking**      | ✅ (Automated)                    | ❌         | ✅      | ❌      | ❌     | ❌    | ❌     | ❌     |
 | **Schema Markup**         | ✅ (Automated)                    | ❌         | ❌      | ❌      | ❌     | ❌    | ❌     | ❌     |
-| **Programmatic SEO**      | ✅ (Bulk 100s-1000s)              | Limited    | Limited | ✅      | ❌     | ❌    | ❌     | ❌     |
+| **Programmatic SEO**      | ✅ (Bulk via campaigns)           | Limited    | Limited | ✅      | ❌     | ❌    | ❌     | ❌     |
 
 ### Publishing & Integration
 
@@ -342,21 +346,21 @@ quadrantChart
 | Feature                    | AutopilotRank | Outrank.so | RankYak | Byword | Surfer   | Frase | Jasper | SEO.ai |
 | -------------------------- | ------------- | ---------- | ------- | ------ | -------- | ----- | ------ | ------ |
 | **GSC Integration**        | ✅            | ❌         | ❌      | ❌     | ❌       | ✅    | ❌     | ❌     |
-| **Rank Tracking**          | ✅            | Limited    | ✅      | ❌     | ❌       | ❌    | ❌     | ✅     |
-| **Traffic Analytics**      | ✅            | ❌         | ✅      | ❌     | ❌       | ❌    | ❌     | ✅     |
-| **AI Visibility Tracking** | ✅            | ❌         | ❌      | ❌     | ✅ (New) | ❌    | ❌     | ❌     |
-| **Content Performance**    | ✅            | Basic      | ✅      | ❌     | ✅       | ❌    | ❌     | ✅     |
-| **Automated Refresh Recs** | ✅            | ❌         | ❌      | ❌     | ❌       | ❌    | ❌     | ❌     |
+| **Rank Tracking**          | 🔜            | Limited    | ✅      | ❌     | ❌       | ❌    | ❌     | ✅     |
+| **Traffic Analytics**      | 🔜            | ❌         | ✅      | ❌     | ❌       | ❌    | ❌     | ✅     |
+| **AI Visibility Tracking** | 🔜            | ❌         | ❌      | ❌     | ✅ (New) | ❌    | ❌     | ❌     |
+| **Content Performance**    | 🔜            | Basic      | ✅      | ❌     | ✅       | ❌    | ❌     | ✅     |
+| **Automated Refresh Recs** | 🔜            | ❌         | ❌      | ❌     | ❌       | ❌    | ❌     | ❌     |
 
 ### Quality Assurance
 
 | Feature                       | AutopilotRank | Outrank.so | RankYak | Byword | Surfer | Frase | Jasper | SEO.ai |
 | ----------------------------- | ------------- | ---------- | ------- | ------ | ------ | ----- | ------ | ------ |
-| **Plagiarism Check**          | ✅            | ❌         | ❌      | ❌     | ❌     | ❌    | ✅     | ❌     |
+| **Plagiarism Check**          | 🔜            | ❌         | ❌      | ❌     | ❌     | ❌    | ✅     | ❌     |
 | **AI Detection Scoring**      | ✅            | ❌         | ❌      | ❌     | ❌     | ❌    | ❌     | ✅     |
 | **Readability Analysis**      | ✅            | ❌         | ❌      | ❌     | ✅     | ✅    | ❌     | ❌     |
-| **Brand Voice Customization** | ✅            | ❌         | ❌      | ❌     | ❌     | ❌    | ✅     | ❌     |
-| **Fact-Checking**             | ✅            | ❌         | ❌      | ❌     | ❌     | ❌    | ❌     | ❌     |
+| **Brand Voice Customization** | 🔜            | ❌         | ❌      | ❌     | ❌     | ❌    | ✅     | ❌     |
+| **Fact-Checking**             | 🔜            | ❌         | ❌      | ❌     | ❌     | ❌    | ❌     | ❌     |
 | **Human Review Queue**        | ✅            | ❌         | ❌      | ❌     | N/A    | ❌    | ❌     | ✅     |
 
 ### Media & Assets
@@ -370,14 +374,14 @@ quadrantChart
 
 ### SEO Tools & Automation (Bonus Features)
 
-| Feature                       | AutopilotRank | Outrank.so | RankYak | Byword | Surfer | Frase | Jasper | SEO.ai |
-| ----------------------------- | ------------- | ---------- | ------- | ------ | ------ | ----- | ------ | ------ |
-| **Demand Sniffer (GSC)**      | ✅            | ❌         | ❌      | ❌     | ❌     | ❌    | ❌     | ❌     |
-| **Opportunity Scoring**       | ✅            | ❌         | ❌      | ❌     | ❌     | ❌    | ❌     | ❌     |
-| **Trend Detection**           | ✅            | ❌         | ❌      | ❌     | ❌     | ❌    | ❌     | ❌     |
-| **CPC/Competition Analysis**  | ✅            | ❌         | ❌      | ❌     | ❌     | ❌    | ❌     | ❌     |
-| **Directory Submission Tool** | ✅            | ❌         | ❌      | ❌     | ❌     | ❌    | ❌     | ❌     |
-| **Citation Tracking**         | ✅            | ❌         | ❌      | ❌     | ❌     | ❌    | ❌     | ❌     |
+| Feature                                | AutopilotRank | Outrank.so | RankYak | Byword | Surfer | Frase | Jasper | SEO.ai |
+| -------------------------------------- | ------------- | ---------- | ------- | ------ | ------ | ----- | ------ | ------ |
+| **GSC Opportunities (Demand Sniffer)** | ✅            | ❌         | ❌      | ❌     | ❌     | ❌    | ❌     | ❌     |
+| **Opportunity Scoring**                | ✅            | ❌         | ❌      | ❌     | ❌     | ❌    | ❌     | ❌     |
+| **Trend Detection**                    | 🔜            | ❌         | ❌      | ❌     | ❌     | ❌    | ❌     | ❌     |
+| **CPC/Competition Analysis**           | 🔜            | ❌         | ❌      | ❌     | ❌     | ❌    | ❌     | ❌     |
+| **Directory Submission Tool**          | 🔜            | ❌         | ❌      | ❌     | ❌     | ❌    | ❌     | ❌     |
+| **Citation Tracking**                  | 🔜            | ❌         | ❌      | ❌     | ❌     | ❌    | ❌     | ❌     |
 
 ---
 
@@ -542,17 +546,28 @@ flowchart LR
     style MONITOR fill:#581c87,color:#fff
 ```
 
-### 1. True Autonomy
+### 1. Full Content Lifecycle Ownership
+
+**This is the primary differentiator.** No competitor owns the full pipeline:
+
+- Outrank: automates but produces poor-quality content
+- Jasper / Frase: write but don't publish or track
+- Surfer: optimizes but requires manual writing
+- Byword: generates and publishes but no keyword research or tracking
+
+AutopilotRank is the only platform where **keyword in → published article out** is fully automated. Users replace 4 subscriptions with 1.
+
+### 2. True Autonomy
 
 Set up campaigns once, let them run indefinitely with GSC-guided content opportunities. Unlike Outrank's "set and forget with quality issues," AutopilotRank delivers quality autonomy.
 
-### 2. Quality at Scale
+### 3. Quality at Scale
 
 - **Multi-layer pre-publication QA** catches issues before they go live
 - **Humanizer engine** produces undetectable AI content (vs. Outrank's "screams AI" output)
 - **Multi-model AI** (GPT-4, Claude, Gemini, Llama) for variety and avoiding repetition
 
-### 3. End-to-End Integration
+### 4. End-to-End Integration
 
 From custom keyword research uploads to auto-publishing:
 
@@ -560,7 +575,7 @@ From custom keyword research uploads to auto-publishing:
 - Flexible webhooks for any platform
 - Direct GSC integration (competitors lack this)
 
-### 4. Programmatic Excellence
+### 5. Programmatic Excellence
 
 Built specifically for pSEO with:
 
@@ -569,7 +584,7 @@ Built specifically for pSEO with:
 - Dynamic schema markup
 - Template-based page generation
 
-### 5. Full Content Control
+### 6. Full Content Control
 
 - Choose your AI model and tune parameters
 - Control image generation and placement
@@ -577,7 +592,7 @@ Built specifically for pSEO with:
 - Custom keyword upload (CSV, Excel)
 - Approval workflows before publish
 
-### 6. Bonus Tools for SEO Wins
+### 7. Bonus Tools for SEO Wins
 
 #### Demand Sniffer
 
@@ -596,7 +611,7 @@ Built specifically for pSEO with:
 - Track submission status and approval history
 - Built for easy wins that compound with your content strategy
 
-### 7. Transparent & Fair Pricing
+### 8. Transparent & Fair Pricing
 
 - Pay for results, not seat licenses or per-word charges
 - No hidden fees or surprise limits
@@ -615,20 +630,18 @@ config:
 ---
 xychart-beta
     title "AutopilotRank Competitive Positioning (1-5 Scale)"
-    x-axis ["Automation", "Quality", "Reliability", "Features", "Support", "Value"]
+    x-axis ["Automation", "Quality", "Pipeline Coverage", "CMS Integrations", "Value"]
     y-axis "Score" 0 --> 5
-    bar [5, 5, 5, 5, 5, 5]
-    line [5, 5, 5, 5, 5, 5]
+    bar [4.5, 4, 4.5, 4.5, 4.5]
 ```
 
-| Dimension                | AutopilotRank Position                              |
-| ------------------------ | --------------------------------------------------- |
-| **Automation Level**     | Highest (vs. Surfer/Frase that require manual work) |
-| **Content Quality**      | Highest (vs. Outrank's generic output)              |
-| **Platform Reliability** | Highest (vs. Outrank/Byword's bugs)                 |
-| **Feature Completeness** | Most complete (vs. fragmented competitor offerings) |
-| **Customer Support**     | Premium (vs. industry-wide complaints)              |
-| **Price/Value**          | Best value (all-in-one vs. paying for 3-4 tools)    |
+| Dimension             | AutopilotRank Position                                            | Notes                                                      |
+| --------------------- | ----------------------------------------------------------------- | ---------------------------------------------------------- |
+| **Automation Level**  | 4.5/5 — High (vs. Surfer/Frase/Jasper that require manual steps)  | Missing: standalone keyword research tool, analytics       |
+| **Content Quality**   | 4/5 — Good (multi-model + humanizer vs. Outrank's generic output) | Humanizer is prompt-based, not proprietary post-processing |
+| **Pipeline Coverage** | 4.5/5 — Best in class (research → generate → optimize → publish)  | Analytics/tracking still 🔜                                |
+| **CMS Integrations**  | 4.5/5 — Broadest (WordPress native + webhooks for 6 platforms)    | No direct Webflow/Shopify API; webhook-based               |
+| **Price/Value**       | 4.5/5 — Strong (replaces 4 tools; transparent credit pricing)     |                                                            |
 
 ---
 

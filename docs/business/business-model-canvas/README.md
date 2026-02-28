@@ -26,9 +26,11 @@
 ```
 ┌─────────────────────────────────────────────────────┐
 │  TARGET CUSTOMER: Time-Poor Tom (SMB Owner)         │
-│  UNDERSERVED NEED: Quality content + No time        │
-│  VALUE PROP: Quality automation (vs generic AI)     │
-│  DIFFERENTIATOR: Humanizer + Reliability + Support  │
+│  UNDERSERVED NEED: Full pipeline, not just writing  │
+│  VALUE PROP: Full workflow ownership (keyword →     │
+│              generate → optimize → publish)         │
+│  DIFFERENTIATOR: End-to-end pipeline + GSC moat +  │
+│                  Multi-model AI                     │
 └─────────────────────────────────────────────────────┘
 ```
 
@@ -38,9 +40,9 @@
 
 Based on Lean Product Playbook analysis:
 
-### 1. Lead with Quality, Not Just Automation
+### 1. Own the Full Content Lifecycle
 
-Outrank owns "automation" positioning. We own **"quality automation"** - the humanizer engine is our moat.
+Outrank automates but produces garbage. Jasper and Frase write but don't publish. Surfer optimizes but requires manual work. Nobody owns the full pipeline: **keyword → generate → optimize → publish**. That's our moat — not any single feature, but the end-to-end workflow. One subscription replaces 4 separate tools.
 
 ### 2. Target SMBs First (Phase 1)
 
