@@ -5,6 +5,7 @@ import { DashboardCard } from '@client/components/dashboard/ui/DashboardCard';
 import { ProjectEditModal } from '@client/components/projects/ProjectEditModal';
 import { ProjectList } from '@client/components/projects/ProjectList';
 import { OnboardingWizard } from '@client/components/onboarding/OnboardingWizard';
+import { OnboardingSetupBanner } from '@client/components/onboarding/OnboardingSetupBanner';
 import { CreditsDisplay } from '@client/components/stripe/CreditsDisplay';
 import { useProjects } from '@client/hooks/useProjects';
 import { useSubscription, useUserStore } from '@client/store/userStore';
@@ -32,6 +33,8 @@ import {
 } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 
+const AUTO_OPENED_ONBOARDING_SESSION_KEY = 'hasAutoOpenedOnboarding';
+
 export function OverviewView(): JSX.Element {
   const t = useMemo(() => getTranslations('dashboard'), []);
   const logger = useLogger('OverviewView');
@@ -39,16 +42,14 @@ export function OverviewView(): JSX.Element {
   const subscription = useSubscription();
   const { projects, activeProject, isLoading, deleteProject, updateProject } = useProjects();
   const [showOnboarding, setShowOnboarding] = useState(false);
+  const [hasAutoOpenedOnboarding, setHasAutoOpenedOnboarding] = useState(() => {
+    if (typeof window === 'undefined') return false;
+    return sessionStorage.getItem(AUTO_OPENED_ONBOARDING_SESSION_KEY) === 'true';
+  });
   const [projectToDelete, setProjectToDelete] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const [projectToEdit, setProjectToEdit] = useState<IProject | null>(null);
   const [isEditing, setIsEditing] = useState(false);
-
-  // Track if we've already auto-opened onboarding this session to prevent repeated reopening
-  const hasAutoOpenedOnboarding = useMemo(() => {
-    if (typeof window === 'undefined') return false;
-    return sessionStorage.getItem('hasAutoOpenedOnboarding') === 'true';
-  }, []);
 
   const planDisplayName = getPlanDisplayName({
     subscriptionTier: user?.profile?.subscription_tier,
@@ -64,9 +65,18 @@ export function OverviewView(): JSX.Element {
   useEffect(() => {
     if (!isLoading && projects.length === 0 && !showOnboarding && !hasAutoOpenedOnboarding) {
       setShowOnboarding(true);
-      sessionStorage.setItem('hasAutoOpenedOnboarding', 'true');
+      setHasAutoOpenedOnboarding(true);
+      sessionStorage.setItem(AUTO_OPENED_ONBOARDING_SESSION_KEY, 'true');
     }
   }, [isLoading, projects.length, showOnboarding, hasAutoOpenedOnboarding]);
+
+  const handleOpenOnboarding = () => {
+    setShowOnboarding(true);
+  };
+
+  const handleCloseOnboarding = () => {
+    setShowOnboarding(false);
+  };
 
   const handleDeleteClick = (projectId: string) => {
     setProjectToDelete(projectId);
@@ -152,6 +162,11 @@ export function OverviewView(): JSX.Element {
       animate="visible"
       className="space-y-8 pb-10"
     >
+      {/* Setup Warning Banner — only after wizard has auto-opened at least once */}
+      {projects.length === 0 && !showOnboarding && hasAutoOpenedOnboarding && (
+        <OnboardingSetupBanner onSetup={handleOpenOnboarding} />
+      )}
+
       {/* Welcome Header */}
       <motion.div
         variants={itemVariants}
@@ -173,7 +188,7 @@ export function OverviewView(): JSX.Element {
         <motion.button
           whileHover={{ scale: 1.02 }}
           whileTap={{ scale: 0.98 }}
-          onClick={() => setShowOnboarding(true)}
+          onClick={handleOpenOnboarding}
           className="flex items-center gap-2 bg-accent hover:bg-accent-hover text-white px-4 py-2 rounded-lg transition-all shadow-lg shadow-accent/20 font-medium text-sm"
         >
           <Plus className="w-4 h-4" />
@@ -212,11 +227,7 @@ export function OverviewView(): JSX.Element {
         </DashboardCard>
 
         {/* Projects Status */}
-        <DashboardCard
-          title="Total Projects"
-          icon={LayoutGrid}
-          onClick={() => setShowOnboarding(true)}
-        >
+        <DashboardCard title="Total Projects" icon={LayoutGrid} onClick={handleOpenOnboarding}>
           <div className="flex items-baseline justify-between mt-2">
             <div className="text-xl font-bold text-white">{projects.length}</div>
             <div className="flex items-center text-[10px] uppercase tracking-wide text-accent font-bold bg-accent/10 px-2 py-0.5 rounded transition-colors group-hover:bg-accent group-hover:text-white">
@@ -323,7 +334,7 @@ export function OverviewView(): JSX.Element {
                   {t('projects.noProjectsDescription')}
                 </p>
                 <button
-                  onClick={() => setShowOnboarding(true)}
+                  onClick={handleOpenOnboarding}
                   className="bg-accent hover:bg-accent-hover text-white px-6 py-2 rounded-lg transition-colors font-medium shadow-lg shadow-accent/20"
                 >
                   {t('projects.createFirst')}
@@ -403,7 +414,7 @@ export function OverviewView(): JSX.Element {
       </div>
 
       {/* Onboarding Modal */}
-      <OnboardingWizard isOpen={showOnboarding} onClose={() => setShowOnboarding(false)} />
+      <OnboardingWizard isOpen={showOnboarding} onClose={handleCloseOnboarding} />
 
       {/* Delete Confirmation Dialog */}
       <ConfirmDialog
