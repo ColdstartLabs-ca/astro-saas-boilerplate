@@ -387,15 +387,15 @@ M1 Foundation ✅
 
 > Priority order: Quality first (what users complain about), then features that drive upgrades.
 
-### P0 — Content Performance Analytics (closes the full-workflow loop)
+### ✅ P0 — Content Performance Analytics (closes the full-workflow loop)
 
-> **Why P0:** Without this, we can't claim "full workflow". Users publish content but have no way to see if it's working. No ROI proof = high churn. The GSC OAuth is already built — this is mostly a data-pull + UI layer.
+> **Status:** Done — PRD: `content-performance-analytics.md`
 
-- [ ] **PRD needed:** `content-performance-analytics.md`
-- [ ] Per-article performance dashboard: clicks, impressions, position, CTR (pulled from GSC by article URL)
-- [ ] Article → published URL linkage (capture `published_url` when auto-publishing, allow manual input)
-- [ ] Analytics dashboard view (currently disabled stub at `/dashboard/analytics`)
-- [ ] Campaign-level aggregate: total clicks/impressions for all articles in campaign
+- [x] **PRD:** `content-performance-analytics.md`
+- [x] Per-article performance dashboard: clicks, impressions, position, CTR (pulled from GSC by article URL)
+- [x] Article → published URL linkage (capture `published_url` when auto-publishing, allow manual input)
+- [x] Analytics dashboard view (enabled at `/dashboard/analytics`)
+- [x] Campaign-level aggregate: total clicks/impressions for all articles in campaign
 - [ ] "Top performing articles" sort/filter in article list
 - [ ] Basic rank tracking: show current position for each article's target keyword
 

@@ -9,6 +9,7 @@ import {
   type IDashboardRoute,
 } from '@client/config/dashboardRoutes';
 import { usePendingActions } from '@client/hooks/usePendingActions';
+import { useProjects } from '@client/hooks/useProjects';
 import { useIsAdmin, useUserStore } from '@client/store/userStore';
 import { cn } from '@client/utils/cn';
 import {
@@ -55,7 +56,7 @@ function SidebarItem({
           <span>{label}</span>
         </span>
         <span className="text-[10px] uppercase tracking-wider font-semibold text-muted bg-surface-light px-1.5 py-0.5 rounded">
-          Soon
+          {t('sidebar.soon')}
         </span>
       </span>
     );
@@ -88,6 +89,8 @@ export const DashboardSidebar: React.FC<IDashboardSidebarProps> = ({ isOpen, onC
   const isAdmin = useIsAdmin();
   const logger = useLogger('DashboardSidebar');
   const { hasCampaigns, skippedIntegrations, isOnboardingComplete } = usePendingActions();
+  const { activeProject } = useProjects();
+  const hasProject = !!activeProject;
 
   const [pathname, setPathname] = useState(() =>
     typeof window !== 'undefined' ? stripLocalePrefix(window.location.pathname) : '/dashboard'
@@ -182,16 +185,18 @@ export const DashboardSidebar: React.FC<IDashboardSidebarProps> = ({ isOpen, onC
 
         {/* Primary Navigation */}
         <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
-          {primaryItems.map(item => (
-            <SidebarItem
-              key={item.path}
-              route={item}
-              pathname={pathname}
-              onNavigate={handleNavigation}
-              t={t}
-              showBadge={getShowBadge(item.path)}
-            />
-          ))}
+          {primaryItems
+            .filter(item => !item.requiresProject || hasProject)
+            .map(item => (
+              <SidebarItem
+                key={item.path}
+                route={item}
+                pathname={pathname}
+                onNavigate={handleNavigation}
+                t={t}
+                showBadge={getShowBadge(item.path)}
+              />
+            ))}
 
           {/* Separator */}
           <div className="border-t border-border my-2" />

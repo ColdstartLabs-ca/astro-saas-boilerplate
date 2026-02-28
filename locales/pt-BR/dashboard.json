@@ -21,6 +21,7 @@
     "helpSupport": "Ajuda e Suporte",
     "signOut": "Sair",
     "closeMenu": "Fechar menu",
+    "soon": "Em breve",
     "plan": "Plano",
     "activeProject": "Projeto Ativo",
     "manageProjects": "Gerenciar Projetos",
@@ -625,6 +626,55 @@
       "connect": "Falha ao conectar Google Search Console",
       "disconnect": "Falha ao desconectar"
     }
+  },
+  "analytics": {
+    "title": "Analytics",
+    "subtitle": "Acompanhe o desempenho dos seus artigos publicados na busca.",
+    "syncButton": "Sincronizar GSC",
+    "syncing": "Sincronizando...",
+    "lastSynced": "Última sincronização {date}",
+    "noConnection": "Conecte o Google Search Console para rastrear o desempenho dos artigos.",
+    "noData": "Nenhum dado de desempenho ainda. Sincronize para obter dados do Google Search Console.",
+    "dateRange": {
+      "7d": "7 dias",
+      "28d": "28 dias",
+      "90d": "90 dias"
+    },
+    "table": {
+      "article": "Artigo",
+      "clicks": "Cliques",
+      "impressions": "Impressões",
+      "ctr": "CTR",
+      "position": "Posição Média",
+      "publishedUrl": "URL",
+      "snapshotDate": "Última Atualização",
+      "empty": "Sem dados do GSC ainda — o artigo pode não estar indexado.",
+      "noArticles": "Nenhum artigo publicado encontrado.",
+      "noQueries": "Nenhum dado de consulta disponível.",
+      "topQueries": "Principais Consultas",
+      "untitled": "Artigo sem título"
+    },
+    "summary": {
+      "clicks": "Total de Cliques",
+      "impressions": "Total de Impressões",
+      "ctr": "CTR Médio",
+      "position": "Posição Média",
+      "tracked": "Artigos Rastreados",
+      "avgCtr": "CTR Médio",
+      "avgPosition": "Posição Média",
+      "articlesTracked": "{tracked} / {published} artigos rastreados"
+    },
+    "error": {
+      "sync": "Falha ao sincronizar dados do GSC. Por favor, tente novamente.",
+      "load": "Falha ao carregar dados de analytics."
+    },
+    "success": {
+      "sync": "Sincronizados com sucesso {count} artigos."
+    },
+    "noDataDescription": "Nenhum dado de desempenho ainda. Clique em 'Sincronizar GSC' para obter seus dados de pesquisa mais recentes do Google Search Console.",
+    "noProject": "Nenhum Projeto Selecionado",
+    "noProjectDescription": "Crie ou selecione um projeto para ver os dados de analytics.",
+    "goToOverview": "Ir para Visão Geral"
   },
   "campaigns": {
     "title": "Campanhas",

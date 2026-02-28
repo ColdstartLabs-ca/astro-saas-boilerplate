@@ -80,6 +80,8 @@ class InMemoryStore {
       'project_example_articles',
       'sitemap_pages',
       'content_strategies',
+      // Analytics
+      'article_performance_snapshots',
     ];
 
     for (const table of this.defaults) {

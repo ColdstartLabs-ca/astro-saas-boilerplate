@@ -1,6 +1,6 @@
 # PRD: Content Performance Analytics
 
-> **Status:** Pending
+> **Status:** Done
 > **Priority:** P0 — closes the full-workflow loop (Track step)
 > **Created:** 2026-02-27
 > **Complexity:** 9 → HIGH mode (mandatory checkpoints every phase)

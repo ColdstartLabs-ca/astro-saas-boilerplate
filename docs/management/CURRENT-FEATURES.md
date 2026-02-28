@@ -31,7 +31,7 @@ This document lists what is **actually built and live** vs what is **planned**. 
 
 ```
 Research   →   Generate   →   Optimize   →   Publish   →   Track   →   Iterate
- Partial         ✅             Partial         ✅          ❌ TODO      ❌ TODO
+ Partial         ✅             Partial         ✅           ✅          ❌ TODO
 ```
 
 ---
@@ -92,23 +92,23 @@ Research   →   Generate   →   Optimize   →   Publish   →   Track   →  
 
 ### Dashboard Sections (disabled — `enabled: false` in dashboardRoutes.ts)
 
-| Section                  | Path                      | Code Status                                                |
-| ------------------------ | ------------------------- | ---------------------------------------------------------- |
-| **Keywords Research**    | `/dashboard/keywords`     | UI exists (`_disabled/KeywordsView.tsx`), no backend       |
-| **Content Optimization** | `/dashboard/optimization` | UI exists (`_disabled/OptimizationView.tsx`), no backend   |
-| **Publishing Calendar**  | `/dashboard/calendar`     | Full UI exists (`_disabled/CalendarView.tsx`), PRD written |
-| **Backlink Exchange**    | `/dashboard/backlinks`    | UI stub exists, no backend                                 |
-| **Analytics & Tracking** | `/dashboard/analytics`    | Stub only (13 lines), **P0 priority**                      |
+| Section                      | Path                       | Code Status                                                |
+| ---------------------------- | -------------------------- | ---------------------------------------------------------- |
+| **Keywords Research**        | `/dashboard/keywords`      | UI exists (`_disabled/KeywordsView.tsx`), no backend       |
+| **Content Optimization**     | `/dashboard/optimization`  | UI exists (`_disabled/OptimizationView.tsx`), no backend   |
+| **Publishing Calendar**      | `/dashboard/calendar`      | Full UI exists (`_disabled/CalendarView.tsx`), PRD written |
+| **Backlink Exchange**        | `/dashboard/backlinks`     | UI stub exists, no backend                                 |
+| ~~**Analytics & Tracking**~~ | ~~`/dashboard/analytics`~~ | ✅ Live — see "GSC Integration" below                      |
 
-### Content Performance Analytics (P0 — closes full-workflow loop)
+### ✅ Content Performance Analytics (Live — closes full-workflow loop)
 
-> The GSC OAuth is already built. This is primarily a data-pull + UI layer.
-> PRD needed: `docs/PRDs/content-performance-analytics.md`
+> PRD: `docs/PRDs/content-performance-analytics.md` (Status: Done)
 
 - Per-article performance: clicks, impressions, position, CTR (from GSC by article URL)
 - Article → published URL linkage
-- Campaign-level aggregate metrics
-- Basic rank tracking per keyword
+- Date range filtering (7d / 28d / 90d)
+- GSC sync button with last-synced timestamp
+- Summary row: total clicks/impressions, avg CTR/position, articles tracked
 
 ### Keyword & Research Features
 

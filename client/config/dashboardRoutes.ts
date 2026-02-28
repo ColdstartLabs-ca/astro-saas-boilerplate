@@ -15,10 +15,10 @@ import {
   LayoutGrid,
   Layers,
   FileText,
-  Search,
-  CheckCircle2,
-  Calendar as CalendarIcon,
-  Link2,
+  // Search,      // KeywordsPage — activate when implemented
+  // CheckCircle2, // OptimizationPage — activate when implemented
+  // Calendar as CalendarIcon, // CalendarPage — activate when implemented
+  // Link2,       // BacklinksPage — activate when implemented
   BarChart2,
   CreditCard,
   Settings,
@@ -33,19 +33,18 @@ import {
 const DashboardPage = lazy(() => import('@client/components/pages/DashboardPageClient'));
 const CampaignsPage = lazy(() => import('@client/components/pages/CampaignsPageClient'));
 const ArticlesPage = lazy(() => import('@client/components/pages/ArticlesPageClient'));
-const KeywordsPage = lazy(() => import('@client/components/pages/KeywordsPageClient'));
-const OptimizationPage = lazy(() => import('@client/components/pages/OptimizationPageClient'));
-const CalendarPage = lazy(() => import('@client/components/pages/CalendarPageClient'));
-const BacklinksPage = lazy(() => import('@client/components/pages/BacklinksPageClient'));
+// Activate when implemented:
+// const _KeywordsPage = lazy(() => import('@client/components/pages/KeywordsPageClient'));
+// const _OptimizationPage = lazy(() => import('@client/components/pages/OptimizationPageClient'));
+// const _CalendarPage = lazy(() => import('@client/components/pages/CalendarPageClient'));
+// const _BacklinksPage = lazy(() => import('@client/components/pages/BacklinksPageClient'));
 const AnalyticsPage = lazy(() => import('@client/components/pages/AnalyticsPageClient'));
 const OpportunitiesPage = lazy(() => import('@client/components/pages/OpportunitiesPageClient'));
 const SettingsPage = lazy(() => import('@client/components/pages/SettingsPageClient'));
 const BillingPage = lazy(() => import('@client/components/pages/BillingPageClient'));
 const _HistoryPage = lazy(() => import('@client/components/pages/HistoryPageClient'));
 const SupportPage = lazy(() => import('@client/components/pages/SupportPageClient'));
-const IntegrationsPage = lazy(() =>
-  import('@client/components/pages/IntegrationsPageClient')
-);
+const IntegrationsPage = lazy(() => import('@client/components/pages/IntegrationsPageClient'));
 const OnboardingPage = lazy(() => import('@client/components/pages/OnboardingPageClient'));
 
 // Admin pages
@@ -88,6 +87,8 @@ export interface IDashboardRoute {
   component: ComponentType;
   /** Whether route is disabled/enabled */
   enabled?: boolean;
+  /** Whether route requires an active project to be navigable */
+  requiresProject?: boolean;
   /** Optional route guard */
   guard?: RouteGuard;
   /** Sidebar grouping */
@@ -117,6 +118,7 @@ export const DASHBOARD_ROUTES: readonly IDashboardRoute[] = [
     icon: Layers,
     component: CampaignsPage,
     enabled: true,
+    requiresProject: true,
     group: 'primary',
     children: [
       {
@@ -135,6 +137,7 @@ export const DASHBOARD_ROUTES: readonly IDashboardRoute[] = [
     icon: Plug,
     component: IntegrationsPage,
     enabled: true,
+    requiresProject: true,
     group: 'primary',
   },
   {
@@ -143,6 +146,7 @@ export const DASHBOARD_ROUTES: readonly IDashboardRoute[] = [
     icon: Lightbulb,
     component: OpportunitiesPage,
     enabled: true,
+    requiresProject: true,
     group: 'primary',
   },
   {
@@ -151,46 +155,49 @@ export const DASHBOARD_ROUTES: readonly IDashboardRoute[] = [
     icon: FileText,
     component: ArticlesPage,
     enabled: true,
+    requiresProject: true,
     group: 'primary',
   },
-  {
-    path: '/dashboard/keywords',
-    labelKey: 'sidebar.keywords',
-    icon: Search,
-    component: KeywordsPage,
-    enabled: false, // Disabled until implemented
-    group: 'primary',
-  },
-  {
-    path: '/dashboard/optimization',
-    labelKey: 'sidebar.optimization',
-    icon: CheckCircle2,
-    component: OptimizationPage,
-    enabled: false, // Disabled until implemented
-    group: 'primary',
-  },
-  {
-    path: '/dashboard/calendar',
-    labelKey: 'sidebar.calendar',
-    icon: CalendarIcon,
-    component: CalendarPage,
-    enabled: false, // Disabled until implemented
-    group: 'primary',
-  },
-  {
-    path: '/dashboard/backlinks',
-    labelKey: 'sidebar.backlinks',
-    icon: Link2,
-    component: BacklinksPage,
-    enabled: false, // Disabled until implemented
-    group: 'primary',
-  },
+  // Activate when implemented:
+  // {
+  //   path: '/dashboard/keywords',
+  //   labelKey: 'sidebar.keywords',
+  //   icon: Search,
+  //   component: KeywordsPage,
+  //   enabled: false,
+  //   group: 'primary',
+  // },
+  // {
+  //   path: '/dashboard/optimization',
+  //   labelKey: 'sidebar.optimization',
+  //   icon: CheckCircle2,
+  //   component: OptimizationPage,
+  //   enabled: false,
+  //   group: 'primary',
+  // },
+  // {
+  //   path: '/dashboard/calendar',
+  //   labelKey: 'sidebar.calendar',
+  //   icon: CalendarIcon,
+  //   component: CalendarPage,
+  //   enabled: false,
+  //   group: 'primary',
+  // },
+  // {
+  //   path: '/dashboard/backlinks',
+  //   labelKey: 'sidebar.backlinks',
+  //   icon: Link2,
+  //   component: BacklinksPage,
+  //   enabled: false,
+  //   group: 'primary',
+  // },
   {
     path: '/dashboard/analytics',
     labelKey: 'sidebar.analytics',
     icon: BarChart2,
     component: AnalyticsPage,
-    enabled: false, // Disabled until implemented
+    enabled: true,
+    requiresProject: true,
     group: 'primary',
   },
 

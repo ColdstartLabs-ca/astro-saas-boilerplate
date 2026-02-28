@@ -21,6 +21,7 @@
     "helpSupport": "Help & Support",
     "signOut": "Sign Out",
     "closeMenu": "Close menu",
+    "soon": "Soon",
     "plan": "Plan",
     "activeProject": "Active Project",
     "manageProjects": "Manage Projects",
@@ -204,7 +205,6 @@
     "noProjectsDescription": "Create your first project to get started with content generation",
     "createFirst": "Create Your First Project",
     "activeProject": "Active Project",
-    "manageProjects": "Manage Projects",
     "noProjectSelected": "No project selected",
     "onboarding": {
       "title": "Add New Project",
@@ -627,6 +627,55 @@
       "disconnect": "Failed to disconnect"
     }
   },
+  "analytics": {
+    "title": "Analytics",
+    "subtitle": "Track how your published articles perform in search.",
+    "syncButton": "Sync GSC Data",
+    "syncing": "Syncing...",
+    "lastSynced": "Last synced {date}",
+    "noConnection": "Connect Google Search Console to track article performance.",
+    "noData": "No performance data yet. Sync to pull data from Google Search Console.",
+    "dateRange": {
+      "7d": "7 days",
+      "28d": "28 days",
+      "90d": "90 days"
+    },
+    "table": {
+      "article": "Article",
+      "clicks": "Clicks",
+      "impressions": "Impressions",
+      "ctr": "CTR",
+      "position": "Avg Position",
+      "publishedUrl": "URL",
+      "snapshotDate": "Last Updated",
+      "empty": "No GSC data yet — article may not be indexed.",
+      "noArticles": "No published articles found.",
+      "noQueries": "No query data available.",
+      "topQueries": "Top Queries",
+      "untitled": "Untitled Article"
+    },
+    "summary": {
+      "clicks": "Total Clicks",
+      "impressions": "Total Impressions",
+      "ctr": "Avg CTR",
+      "position": "Avg Position",
+      "tracked": "Articles Tracked",
+      "avgCtr": "Avg CTR",
+      "avgPosition": "Avg Position",
+      "articlesTracked": "{tracked} / {published} articles tracked"
+    },
+    "error": {
+      "sync": "Failed to sync GSC data. Please try again.",
+      "load": "Failed to load analytics data."
+    },
+    "success": {
+      "sync": "Successfully synced {count} articles."
+    },
+    "noDataDescription": "No performance data yet. Click 'Sync GSC Data' to pull your latest search data from Google Search Console.",
+    "noProject": "No Project Selected",
+    "noProjectDescription": "Create or select a project to view analytics data.",
+    "goToOverview": "Go to Overview"
+  },
   "campaigns": {
     "title": "Campaigns",
     "subtitle": "Manage your content generation queues.",
@@ -883,14 +932,13 @@
       },
       "webhook": {
         "label": "Webhook",
-        "description": "Send article data to a custom HTTP endpoint",
+        "description": "Description",
         "url": "Webhook URL",
         "urlPlaceholder": "https://api.example.com/webhook",
         "urlHelp": "The endpoint URL that will receive article data",
         "secret": "Secret (optional)",
         "secretPlaceholder": "Optional HMAC secret",
         "secretHelp": "Optional secret for HMAC signature verification",
-        "description": "Description",
         "descriptionPlaceholder": "Optional description for this webhook",
         "urlRequired": "Webhook URL is required",
         "urlInvalid": "Please enter a valid URL",
