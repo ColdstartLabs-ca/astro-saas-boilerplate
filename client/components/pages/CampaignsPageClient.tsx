@@ -45,8 +45,8 @@ export default function CampaignsPage({ campaignId }: ICampaignsPageClientProps)
   };
 
   const handleCreateCampaign = async (input: ICreateCampaignInput) => {
-    await createCampaign(input);
-    setIsNewCampaignModalOpen(false);
+    const campaign = await createCampaign(input);
+    return { id: campaign.id, name: campaign.name };
   };
 
   const handleDeleteCampaign = async (campaignIdToDelete: string) => {

@@ -2,12 +2,17 @@
  * OnboardingStepComplete Component
  * Step 6 of onboarding: Success screen with setup summary.
  * Receives completed/skipped step sets from the wizard (no DB state).
+ *
+ * When the user has a campaignId, clicking "Go to Dashboard" opens the
+ * PlanContentModal with autoTrigger so content planning starts immediately.
  */
 
 'use client';
 
+import { useState } from 'react';
 import { CheckCircle2, SkipForward, Rocket, ArrowRight } from 'lucide-react';
 import { DashboardButton } from '@client/components/dashboard/ui/DashboardButton';
+import { PlanContentModal } from '@client/components/dashboard/views/calendar/PlanContentModal';
 import { useOnboardingStore } from '@client/store/onboardingStore';
 import { OnboardingStep } from '@shared/types/onboarding.types';
 
@@ -68,7 +73,8 @@ export function OnboardingStepComplete({
   completedSteps,
   skippedSteps,
 }: IOnboardingStepCompleteProps): JSX.Element {
-  const { keywordCount } = useOnboardingStore();
+  const { keywordCount, campaignId } = useOnboardingStore();
+  const [showPlanningModal, setShowPlanningModal] = useState(false);
 
   const isProjectComplete = completedSteps.has(OnboardingStep.PROJECT_CREATION);
   const isKeywordsComplete = completedSteps.has(OnboardingStep.KEYWORDS_UPLOAD);
@@ -158,13 +164,37 @@ export function OnboardingStepComplete({
       <div className="pt-2">
         <DashboardButton
           type="button"
-          onClick={onClose}
+          onClick={() => {
+            if (campaignId) {
+              setShowPlanningModal(true);
+            } else {
+              onClose();
+            }
+          }}
           className="w-full shadow-lg shadow-accent/20"
         >
           <Rocket className="w-4 h-4 mr-2" />
           Go to Dashboard
         </DashboardButton>
       </div>
+
+      {/* Content Planning Modal — auto-triggered when campaign exists */}
+      {campaignId && (
+        <PlanContentModal
+          isOpen={showPlanningModal}
+          campaignId={campaignId}
+          autoTrigger={true}
+          onClose={() => {
+            setShowPlanningModal(false);
+            onClose();
+          }}
+          onSuccess={() => {
+            setShowPlanningModal(false);
+            onClose();
+            window.location.href = '/dashboard/calendar';
+          }}
+        />
+      )}
     </div>
   );
 }

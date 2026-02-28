@@ -20,6 +20,7 @@ describe('Article Status Transitions', () => {
   describe('isValidTransition', () => {
     it('should allow same status (no-op)', () => {
       const statuses: ArticleStatus[] = [
+        'planned',
         'queued',
         'generating',
         'draft',
@@ -32,6 +33,24 @@ describe('Article Status Transitions', () => {
 
       statuses.forEach(status => {
         expect(isValidTransition(status, status)).toBe(true);
+      });
+    });
+
+    describe('Planning flow', () => {
+      it('should allow planned → queued transition', () => {
+        expect(isValidTransition('planned', 'queued')).toBe(true);
+      });
+
+      it('should block planned → generating transition', () => {
+        expect(isValidTransition('planned', 'generating')).toBe(false);
+      });
+
+      it('planned -> draft: invalid (must go through queued and generating)', () => {
+        expect(isValidTransition('planned', 'draft')).toBe(false);
+      });
+
+      it('planned -> published: invalid', () => {
+        expect(isValidTransition('planned', 'published')).toBe(false);
       });
     });
 
@@ -218,6 +237,7 @@ describe('Article Status Transitions', () => {
 
     it('all other statuses should not be terminal', () => {
       const nonTerminal: ArticleStatus[] = [
+        'planned',
         'queued',
         'generating',
         'draft',
@@ -235,6 +255,10 @@ describe('Article Status Transitions', () => {
   });
 
   describe('getValidTransitions', () => {
+    it('should return valid transitions for planned', () => {
+      expect(getValidTransitions('planned')).toEqual(['queued']);
+    });
+
     it('should return valid transitions for queued', () => {
       expect(getValidTransitions('queued')).toEqual(['generating']);
     });

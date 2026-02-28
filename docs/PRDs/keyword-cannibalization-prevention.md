@@ -3,7 +3,9 @@
 **Status:** Draft
 **Complexity Score:** 6 → MEDIUM
 **Created:** 2026-02-25
+**Updated:** 2026-02-28 — Verified against Content Planning PRD (now complete)
 **Author:** Claude (Principal Architect)
+**Depends on:** `content-planning-PRD.md` (complete — `planned` status, `ContentPlanningService`, and calendar integration are live)
 
 ---
 
@@ -56,15 +58,17 @@ The content generation system prevents exact keyword duplicates within a campaig
 
 ### Files Analyzed
 
-| File                                                                              | Purpose                                         |
-| --------------------------------------------------------------------------------- | ----------------------------------------------- |
-| `server/services/campaign-keyword.service.ts`                                     | Primary file to modify — `addKeywords()` method |
-| `server/services/openai-embeddings.service.ts`                                    | Existing embeddings service — add batch method  |
-| `server/services/campaign.service.ts`                                             | Facade — update return type                     |
-| `shared/types/campaign.types.ts`                                                  | `IAddKeywordsResponse`, `IKeyword`              |
-| `src/pages/api/campaigns/[campaignId]/keywords.ts`                                | API route — no structural change needed         |
-| `client/hooks/useCampaignDetail.ts`                                               | Client hook — update return types               |
-| `supabase/migrations/20260210240100_add_topic_fingerprint_for_semantic_dedup.sql` | Reference pattern for vector column + index     |
+| File                                                                              | Purpose                                                                       |
+| --------------------------------------------------------------------------------- | ----------------------------------------------------------------------------- |
+| `server/services/campaign-keyword.service.ts`                                     | Primary file to modify — `addKeywords()` method                               |
+| `server/services/openai-embeddings.service.ts`                                    | Existing embeddings service — add batch method                                |
+| `server/services/campaign.service.ts`                                             | Facade — update return type                                                   |
+| `shared/types/campaign.types.ts`                                                  | `IAddKeywordsResponse`, `IKeyword`                                            |
+| `src/pages/api/campaigns/[campaignId]/keywords.ts`                                | API route — no structural change needed                                       |
+| `client/hooks/useCampaignDetail.ts`                                               | Client hook — update return types                                             |
+| `supabase/migrations/20260210240100_add_topic_fingerprint_for_semantic_dedup.sql` | Reference pattern for vector column + index                                   |
+| `server/services/content-planning.service.ts`                                     | Content planning — NOT modified (uses existing keywords, no new dedup needed) |
+| `server/services/planned-article-generation.service.ts`                           | Cron auto-generation — NOT modified (downstream of keyword addition)          |
 
 ### Current Behavior
 
@@ -73,6 +77,7 @@ The content generation system prevents exact keyword duplicates within a campaig
 - `articles.topic_fingerprint vector(1536)` exists and uses IVFFlat index for article-level dedup
 - `keywords` table has no embedding column
 - Semantic dedup (E10) runs only at generation time, too late to warn the user
+- **Content Planning** (new): `ContentPlanningService` creates `planned` article stubs from pending keywords — these stubs have `credits_used=0` and no content. Cannibalization is NOT checked at planning time since keywords are already validated at addition. This PRD's check at keyword addition time is the correct interception point — before content planning or generation.
 
 ### Target Behavior
 
@@ -131,7 +136,7 @@ flowchart LR
 
 ### Data Changes
 
-New migration `supabase/migrations/20260225100000_add_keyword_cannibalization.sql`:
+New migration `supabase/migrations/20260228200000_add_keyword_cannibalization.sql`:
 
 - `keywords.keyword_embedding vector(1536)` — nullable; populated fire-and-forget after insertion
 - IVFFlat index on `keyword_embedding` with `vector_cosine_ops`
@@ -189,7 +194,7 @@ sequenceDiagram
 
 **Files (2):**
 
-- `supabase/migrations/20260225100000_add_keyword_cannibalization.sql` — CREATE
+- `supabase/migrations/20260228200000_add_keyword_cannibalization.sql` — CREATE
 
 **Implementation:**
 

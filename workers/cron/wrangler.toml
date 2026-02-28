@@ -18,7 +18,9 @@ crons = [
   # Expiration check - every hour at :05
   "5 * * * *",
   # Full reconciliation - daily at 3:05 AM UTC
-  "5 3 * * *"
+  "5 3 * * *",
+  # Planned article generation - every 5 minutes (offset by 2 minutes)
+  "2/5 * * * *"
 ]
 
 # Environment Variables (non-sensitive defaults)

@@ -86,6 +86,12 @@ export const MAX_PUBLISH_RETRIES = 3;
 /** Interval between cron runs in minutes */
 export const CRON_INTERVAL_MINUTES = 5;
 
+/** Minimum days in advance a planned article must be scheduled before auto-generation triggers */
+export const GENERATION_LEAD_TIME_DAYS = 3;
+
+/** Maximum number of planned articles promoted to queued per auto-generation cron run */
+export const MAX_PLANNED_ARTICLES_PER_RUN = 10;
+
 // =============================================================================
 // SEO Velocity Advisory Thresholds
 // =============================================================================

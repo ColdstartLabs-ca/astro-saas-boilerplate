@@ -14,10 +14,11 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { getImagePresetCreditCost } from '@shared/config/image-models.config';
 import type { ScheduleFrequency, ICreateCampaignInput } from '@shared/types/campaign.types';
 import type { IAvailableWriterPreset } from '@shared/types/models.types';
-import { ArrowRight, Loader2, Zap, Calendar } from 'lucide-react';
+import { ArrowRight, Loader2, Zap, Calendar, CalendarDays } from 'lucide-react';
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useForm } from 'react-hook-form';
 import { DashboardButton } from '../ui/DashboardButton';
+import { PlanContentModal } from './calendar/PlanContentModal';
 import {
   CampaignInfoStep,
   GenerationSettingsStep,
@@ -27,10 +28,15 @@ import {
 } from './new-campaign-modal';
 import type { CampaignFormData } from './new-campaign-modal';
 
+interface ICreatedCampaign {
+  id: string;
+  name: string;
+}
+
 interface INewCampaignModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSubmit: (input: ICreateCampaignInput) => Promise<void>;
+  onSubmit: (input: ICreateCampaignInput) => Promise<ICreatedCampaign>;
   projectId: string;
 }
 
@@ -46,6 +52,8 @@ export function NewCampaignModal({
   const [loading, setLoading] = useState(false);
   const [keywordInputTab, setKeywordInputTab] = useState<'manual' | 'csv'>('manual');
   const [seoAdvisoryDismissed, setSeoAdvisoryDismissed] = useState(false);
+  const [createdCampaign, setCreatedCampaign] = useState<ICreatedCampaign | null>(null);
+  const [isPlanContentOpen, setIsPlanContentOpen] = useState(false);
 
   const {
     register,
@@ -129,7 +137,7 @@ export function NewCampaignModal({
 
       setLoading(true);
       try {
-        await onSubmit({
+        const campaign = await onSubmit({
           name: data.name,
           projectId,
           keywords: parsedKeywords,
@@ -146,12 +154,33 @@ export function NewCampaignModal({
               }
             : {}),
         });
+        setCreatedCampaign(campaign);
+        setStep(4);
       } finally {
         setLoading(false);
       }
     },
     [hasEnoughCredits, onSubmit, projectId, parsedKeywords]
   );
+
+  const handleSkipPlanning = useCallback(() => {
+    onClose();
+  }, [onClose]);
+
+  const handleOpenPlanContent = useCallback(() => {
+    setIsPlanContentOpen(true);
+  }, []);
+
+  const handlePlanContentClose = useCallback(() => {
+    setIsPlanContentOpen(false);
+    onClose();
+  }, [onClose]);
+
+  const handlePlanContentSuccess = useCallback(() => {
+    setIsPlanContentOpen(false);
+    onClose();
+    window.location.href = '/dashboard/calendar';
+  }, [onClose]);
 
   if (!isOpen) return null;
 
@@ -178,6 +207,65 @@ export function NewCampaignModal({
   }
 
   const totalSteps = 3;
+
+  // Step 4: Planning prompt — shown after successful campaign creation
+  if (step === 4 && createdCampaign) {
+    return (
+      <>
+        <Modal
+          isOpen={isOpen}
+          onClose={handleSkipPlanning}
+          title="Campaign Created!"
+          size="sm"
+          showCloseButton={true}
+        >
+          <div
+            className="flex flex-col items-center gap-6 py-2"
+            data-testid="campaign-success-prompt"
+          >
+            <div className="flex items-center justify-center w-14 h-14 rounded-full bg-accent/10 border border-accent/20">
+              <CalendarDays className="w-7 h-7 text-accent" />
+            </div>
+            <div className="text-center">
+              <p className="text-white font-semibold text-lg">Campaign created!</p>
+              <p className="text-secondary text-sm mt-2">
+                Want to plan your content calendar for{' '}
+                <span className="text-white font-medium">{createdCampaign.name}</span>?
+              </p>
+            </div>
+            <div className="flex gap-3 w-full">
+              <DashboardButton
+                variant="outline"
+                onClick={handleSkipPlanning}
+                className="flex-1"
+                data-testid="skip-planning-button"
+              >
+                Skip
+              </DashboardButton>
+              <DashboardButton
+                onClick={handleOpenPlanContent}
+                className="flex-1"
+                data-testid="plan-content-button-prompt"
+              >
+                <CalendarDays className="w-4 h-4 mr-2" /> Plan Content
+              </DashboardButton>
+            </div>
+          </div>
+        </Modal>
+
+        {isPlanContentOpen && (
+          <PlanContentModal
+            isOpen={isPlanContentOpen}
+            onClose={handlePlanContentClose}
+            campaignId={createdCampaign.id}
+            campaignName={createdCampaign.name}
+            onSuccess={handlePlanContentSuccess}
+            autoTrigger={false}
+          />
+        )}
+      </>
+    );
+  }
 
   return (
     <Modal

@@ -4,6 +4,7 @@
  * Enforces valid status transitions for articles to prevent invalid workflow states.
  *
  * Valid transitions:
+ * - planned -> queued (promote to generation queue)
  * - queued -> generating
  * - generating -> draft (success) | failed (error)
  * - draft -> approved | rejected
@@ -36,6 +37,7 @@ export class InvalidStatusTransitionError extends Error {
  * State machine defining all valid article status transitions
  *
  * Key transitions:
+ * - Planning flow: planned -> queued (promote stub to generation queue)
  * - Generation flow: queued -> generating -> draft/failed/failed_quality
  * - QA flow: draft -> qa_checking -> qa_passed/qa_failed
  * - Approval flow: qa_passed -> approved -> reviewed -> published
@@ -44,6 +46,9 @@ export class InvalidStatusTransitionError extends Error {
  */
 export const ARTICLE_STATUS_TRANSITIONS: Readonly<Record<ArticleStatus, readonly ArticleStatus[]>> =
   {
+    // Planning stub — no content, no credits spent; can be promoted to the generation queue
+    planned: ['queued'] as const,
+
     // Initial state for generation queue
     queued: ['generating'] as const,
 

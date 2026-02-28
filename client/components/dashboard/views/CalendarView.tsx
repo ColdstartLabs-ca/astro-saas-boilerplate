@@ -1,15 +1,19 @@
 'use client';
 
-import React, { useState, useCallback, useMemo } from 'react';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import React, { useState, useCallback, useMemo, useRef } from 'react';
+import { ChevronLeft, ChevronRight, CalendarPlus, ChevronDown } from 'lucide-react';
 import { DashboardButton } from '../ui/DashboardButton';
 import { useCalendarArticles } from '@client/hooks/useCalendarArticles';
+import { useProjects } from '@client/hooks/useProjects';
+import { useCampaigns } from '@client/hooks/useCampaigns';
+import { useClickOutside } from '@client/hooks/useClickOutside';
 import { MonthView } from './calendar/MonthView';
 import { WeekView } from './calendar/WeekView';
 import { DayView } from './calendar/DayView';
 import { CalendarFilters, filterArticlesByStatus } from './calendar/CalendarFilters';
 import { CampaignLegend } from './calendar/CampaignLegend';
 import { ArticleDetailModal } from './calendar/ArticleDetailModal';
+import { PlanContentModal } from './calendar/PlanContentModal';
 import { useArticleActions } from '@client/hooks/useArticleActions';
 import type { ICalendarArticle } from '@shared/types/calendar.types';
 import type { CalendarView as CalendarViewType } from '@shared/types/calendar.types';
@@ -80,7 +84,12 @@ function getDisplayTitle(view: CalendarViewType, date: Date): string {
     return getWeekTitle(date);
   }
   // day
-  return new Intl.DateTimeFormat('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' }).format(date);
+  return new Intl.DateTimeFormat('en-US', {
+    weekday: 'long',
+    month: 'long',
+    day: 'numeric',
+    year: 'numeric',
+  }).format(date);
 }
 
 // --- Navigation helpers ---
@@ -88,7 +97,10 @@ function getDisplayTitle(view: CalendarViewType, date: Date): string {
 function navigatePrev(view: CalendarViewType, date: Date): Date {
   const d = new Date(date);
   if (view === 'month') return new Date(d.getFullYear(), d.getMonth() - 1, 1);
-  if (view === 'week') { d.setDate(d.getDate() - 7); return d; }
+  if (view === 'week') {
+    d.setDate(d.getDate() - 7);
+    return d;
+  }
   d.setDate(d.getDate() - 1);
   return d;
 }
@@ -96,9 +108,19 @@ function navigatePrev(view: CalendarViewType, date: Date): Date {
 function navigateNext(view: CalendarViewType, date: Date): Date {
   const d = new Date(date);
   if (view === 'month') return new Date(d.getFullYear(), d.getMonth() + 1, 1);
-  if (view === 'week') { d.setDate(d.getDate() + 7); return d; }
+  if (view === 'week') {
+    d.setDate(d.getDate() + 7);
+    return d;
+  }
   d.setDate(d.getDate() + 1);
   return d;
+}
+
+// --- Plan Content Modal state ---
+
+interface IPlanContentTarget {
+  campaignId: string;
+  campaignName: string;
 }
 
 export function CalendarView(): JSX.Element {
@@ -113,10 +135,27 @@ export function CalendarView(): JSX.Element {
   const [selectedArticle, setSelectedArticle] = useState<ICalendarArticle | null>(null);
   const [statusFilter, setStatusFilter] = useState<CalendarStatusFilter>('all');
   const [hiddenCampaignIds, setHiddenCampaignIds] = useState<Set<string>>(new Set());
+  const [planContentTarget, setPlanContentTarget] = useState<IPlanContentTarget | null>(null);
+  const [isCampaignPickerOpen, setIsCampaignPickerOpen] = useState(false);
+
+  const pickerRef = useRef<HTMLDivElement>(null);
+  useClickOutside(pickerRef, () => setIsCampaignPickerOpen(false));
 
   const { dateFrom, dateTo } = getDateRange(activeView, currentDate);
   const { articles, isLoading, error, refetch } = useCalendarArticles({ dateFrom, dateTo });
-  const { reschedule, publishNow, isRescheduling, isPublishing } = useArticleActions({ onSuccess: refetch });
+  const { reschedule, publishNow, isRescheduling, isPublishing } = useArticleActions({
+    onSuccess: refetch,
+  });
+
+  // Fetch campaigns for the plan content picker
+  const { activeProjectId } = useProjects();
+  const { campaigns } = useCampaigns(activeProjectId);
+
+  // Filter to only plannable campaigns (draft, active, paused — not completed)
+  const plannableCampaigns = useMemo(
+    () => campaigns.filter(c => c.status !== 'completed'),
+    [campaigns]
+  );
 
   const filteredArticles = useMemo(() => {
     let result = filterArticlesByStatus(articles, statusFilter);
@@ -126,8 +165,14 @@ export function CalendarView(): JSX.Element {
     return result;
   }, [articles, statusFilter, hiddenCampaignIds]);
 
-  const goToPrev = useCallback(() => setCurrentDate(d => navigatePrev(activeView, d)), [activeView]);
-  const goToNext = useCallback(() => setCurrentDate(d => navigateNext(activeView, d)), [activeView]);
+  const goToPrev = useCallback(
+    () => setCurrentDate(d => navigatePrev(activeView, d)),
+    [activeView]
+  );
+  const goToNext = useCallback(
+    () => setCurrentDate(d => navigateNext(activeView, d)),
+    [activeView]
+  );
   const goToToday = useCallback(() => setCurrentDate(new Date()), []);
 
   const handleToggleCampaign = useCallback((campaignId: string) => {
@@ -154,26 +199,61 @@ export function CalendarView(): JSX.Element {
     setSelectedArticle(article);
   }, []);
 
-  const handleArticleDrop = useCallback(async (articleId: string, newDate: Date) => {
-    // Validate: not a past date
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    if (newDate < today) {
+  const handleArticleDrop = useCallback(
+    async (articleId: string, newDate: Date) => {
+      // Validate: not a past date
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      if (newDate < today) {
+        return;
+      }
+      const isoDate = new Date(
+        newDate.getFullYear(),
+        newDate.getMonth(),
+        newDate.getDate(),
+        9,
+        0,
+        0
+      ).toISOString();
+      try {
+        await reschedule(articleId, isoDate);
+      } catch {
+        // reschedule already sets error state; refetch to restore correct data
+        refetch();
+      }
+    },
+    [reschedule, refetch]
+  );
+
+  // Plan Content button handlers
+  const handlePlanContentClick = useCallback(() => {
+    if (plannableCampaigns.length === 0) return;
+    if (plannableCampaigns.length === 1) {
+      const campaign = plannableCampaigns[0];
+      setPlanContentTarget({ campaignId: campaign.id, campaignName: campaign.name });
       return;
     }
-    const isoDate = new Date(newDate.getFullYear(), newDate.getMonth(), newDate.getDate(), 9, 0, 0).toISOString();
-    try {
-      await reschedule(articleId, isoDate);
-    } catch {
-      // reschedule already sets error state; refetch to restore correct data
-      refetch();
-    }
-  }, [reschedule, refetch]);
+    setIsCampaignPickerOpen(prev => !prev);
+  }, [plannableCampaigns]);
+
+  const handleCampaignPick = useCallback((campaignId: string, campaignName: string) => {
+    setIsCampaignPickerOpen(false);
+    setPlanContentTarget({ campaignId, campaignName });
+  }, []);
 
   const displayTitle = getDisplayTitle(activeView, currentDate);
 
-  const prevLabel = activeView === 'month' ? 'Previous month' : activeView === 'week' ? 'Previous week' : 'Previous day';
-  const nextLabel = activeView === 'month' ? 'Next month' : activeView === 'week' ? 'Next week' : 'Next day';
+  const prevLabel =
+    activeView === 'month'
+      ? 'Previous month'
+      : activeView === 'week'
+        ? 'Previous week'
+        : 'Previous day';
+  const nextLabel =
+    activeView === 'month' ? 'Next month' : activeView === 'week' ? 'Next week' : 'Next day';
+
+  const noCampaigns = plannableCampaigns.length === 0;
+  const showPickerChevron = plannableCampaigns.length > 1;
 
   return (
     <div className="h-[calc(100vh-140px)] flex flex-col animate-fadeIn" data-testid="calendar-view">
@@ -197,11 +277,49 @@ export function CalendarView(): JSX.Element {
               <ChevronRight className="w-4 h-4" />
             </button>
           </div>
-          <DashboardButton variant="outline" size="sm" onClick={goToToday} className="h-8">Today</DashboardButton>
+          <DashboardButton variant="outline" size="sm" onClick={goToToday} className="h-8">
+            Today
+          </DashboardButton>
         </div>
 
-        {/* View Switcher */}
+        {/* View Switcher + Plan Content */}
         <div className="flex items-center gap-2">
+          {/* Plan Content button — always rendered once campaigns are known */}
+          <div className="relative" ref={pickerRef}>
+            <DashboardButton
+              variant="outline"
+              size="sm"
+              onClick={handlePlanContentClick}
+              className="h-8 gap-1.5"
+              data-testid="plan-content-button"
+              disabled={noCampaigns}
+              title={noCampaigns ? 'No campaigns to plan' : undefined}
+            >
+              <CalendarPlus className="w-4 h-4" />
+              Plan Content
+              {showPickerChevron && <ChevronDown className="w-3.5 h-3.5 ml-0.5" />}
+            </DashboardButton>
+
+            {/* Campaign picker dropdown (only when multiple campaigns) */}
+            {isCampaignPickerOpen && (
+              <div
+                className="absolute right-0 top-full mt-1 z-30 min-w-[200px] bg-surface border border-border rounded-lg shadow-xl py-1"
+                data-testid="campaign-picker-dropdown"
+              >
+                {plannableCampaigns.map(campaign => (
+                  <button
+                    key={campaign.id}
+                    onClick={() => handleCampaignPick(campaign.id, campaign.name)}
+                    className="w-full text-left px-3 py-2 text-sm text-secondary hover:text-white hover:bg-surface-light transition-colors truncate"
+                    data-testid="campaign-picker-item"
+                  >
+                    {campaign.name}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+
           <div className="flex bg-surface rounded-lg border border-border p-0.5">
             {(['month', 'week', 'day'] as CalendarViewType[]).map(view => (
               <button
@@ -230,7 +348,10 @@ export function CalendarView(): JSX.Element {
 
       {/* Loading state */}
       {isLoading && (
-        <div className="flex-1 flex items-center justify-center text-secondary" data-testid="calendar-loading">
+        <div
+          className="flex-1 flex items-center justify-center text-secondary"
+          data-testid="calendar-loading"
+        >
           Loading calendar...
         </div>
       )}
@@ -277,6 +398,18 @@ export function CalendarView(): JSX.Element {
           onPublishNow={publishNow}
           isRescheduling={isRescheduling}
           isPublishing={isPublishing}
+          onSuccess={refetch}
+        />
+      )}
+
+      {/* Plan content modal */}
+      {planContentTarget && (
+        <PlanContentModal
+          isOpen={true}
+          onClose={() => setPlanContentTarget(null)}
+          campaignId={planContentTarget.campaignId}
+          campaignName={planContentTarget.campaignName}
+          onSuccess={refetch}
         />
       )}
     </div>

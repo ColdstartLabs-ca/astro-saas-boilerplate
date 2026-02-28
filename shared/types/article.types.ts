@@ -10,6 +10,7 @@ import type { IGscArticleContext } from './opportunity.types';
  * Article status enum representing the lifecycle of an article
  */
 export type ArticleStatus =
+  | 'planned'
   | 'queued'
   | 'generating'
   | 'draft'
