@@ -77,6 +77,12 @@ export const DEFAULT_SCHEDULE_TIMEZONE = 'UTC';
 /** Maximum campaigns to process per cron run */
 export const MAX_CAMPAIGNS_PER_CRON_RUN = 10;
 
+/** Maximum articles to publish per cron run */
+export const MAX_PUBLISH_PER_RUN = 10;
+
+/** Maximum delivery retry attempts before skipping article */
+export const MAX_PUBLISH_RETRIES = 3;
+
 /** Interval between cron runs in minutes */
 export const CRON_INTERVAL_MINUTES = 5;
 

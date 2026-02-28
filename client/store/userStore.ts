@@ -97,7 +97,7 @@ export const useUserStore = create<IUserState>((set, get) => ({
       const isTestMode =
         typeof window !== 'undefined' && (window as Window & { __TEST_ENV__?: boolean }).__TEST_ENV__;
       if (isTestMode) {
-        set({ user: cached, isAuthenticated: true, isLoading: false });
+        set({ user: cached, isAuthenticated: true, isLoading: false, lastFetched: Date.now() });
         return;
       }
 

@@ -483,6 +483,33 @@ export function IntegrationFormModal({
                   {errors.url && <p className="text-red-400 text-sm mt-1">{errors.url.message}</p>}
                 </div>
 
+                <div>
+                  <label className="block text-sm font-medium text-white mb-2">
+                    {t('integrations.form.webhook.secret')}
+                  </label>
+                  <input
+                    {...form.register('secret')}
+                    type="password"
+                    placeholder={t('integrations.form.webhook.secretPlaceholder')}
+                    className="w-full px-3 py-2 bg-elevated border border-border rounded-lg text-white placeholder:text-secondary focus:outline-none focus:ring-2 focus:ring-accent/50"
+                  />
+                  <p className="text-xs text-muted mt-1">
+                    {t('integrations.form.webhook.secretHelp')}
+                  </p>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-white mb-2">
+                    {t('integrations.form.webhook.description')}
+                  </label>
+                  <input
+                    {...form.register('description')}
+                    type="text"
+                    placeholder={t('integrations.form.webhook.descriptionPlaceholder')}
+                    className="w-full px-3 py-2 bg-elevated border border-border rounded-lg text-white placeholder:text-secondary focus:outline-none focus:ring-2 focus:ring-accent/50"
+                  />
+                </div>
+
                 {/* Webhook Help Panel */}
                 {showWebhookHelp && (
                   <div className="bg-surface border border-border rounded-lg p-4 text-sm space-y-3">
@@ -526,33 +553,6 @@ export function IntegrationFormModal({
                     </div>
                   </div>
                 )}
-
-                <div>
-                  <label className="block text-sm font-medium text-white mb-2">
-                    {t('integrations.form.webhook.secret')}
-                  </label>
-                  <input
-                    {...form.register('secret')}
-                    type="password"
-                    placeholder={t('integrations.form.webhook.secretPlaceholder')}
-                    className="w-full px-3 py-2 bg-elevated border border-border rounded-lg text-white placeholder:text-secondary focus:outline-none focus:ring-2 focus:ring-accent/50"
-                  />
-                  <p className="text-xs text-muted mt-1">
-                    {t('integrations.form.webhook.secretHelp')}
-                  </p>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-white mb-2">
-                    {t('integrations.form.webhook.description')}
-                  </label>
-                  <input
-                    {...form.register('description')}
-                    type="text"
-                    placeholder={t('integrations.form.webhook.descriptionPlaceholder')}
-                    className="w-full px-3 py-2 bg-elevated border border-border rounded-lg text-white placeholder:text-secondary focus:outline-none focus:ring-2 focus:ring-accent/50"
-                  />
-                </div>
               </>
             )}
 

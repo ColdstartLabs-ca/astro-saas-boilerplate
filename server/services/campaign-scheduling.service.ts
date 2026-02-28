@@ -20,6 +20,7 @@ import {
   calculateNextRunAt,
   DEFAULT_SCHEDULE_TIMEZONE,
   DEFAULT_SCHEDULE_HOUR,
+  SCHEDULE_FREQUENCIES,
 } from '@shared/config/scheduling.config';
 import { testModeCampaigns } from './campaign-lifecycle.service';
 
@@ -367,6 +368,37 @@ export class CampaignSchedulingService {
       // Update keywords to 'queued' status (after successful article creation and credit deduction)
       const keywordIds = keywords.map(k => k.id);
       await supabaseAdmin.from('keywords').update({ status: 'queued' }).in('id', keywordIds);
+
+      // Assign scheduled_publish_at dates to newly queued articles
+      try {
+        const frequency = campaign.schedule_frequency as ScheduleFrequency;
+        const frequencyConfig = SCHEDULE_FREQUENCIES[frequency];
+        const intervalMs = frequencyConfig
+          ? frequencyConfig.intervalHours * 60 * 60 * 1000
+          : 24 * 60 * 60 * 1000;
+
+        const { data: newArticles } = await supabaseAdmin
+          .from('articles')
+          .select('id')
+          .eq('campaign_id', campaignId)
+          .eq('status', 'queued')
+          .in('primary_keyword', keywordTexts)
+          .order('created_at', { ascending: true });
+
+        if (newArticles && newArticles.length > 0) {
+          const baseDate = new Date();
+          for (let i = 0; i < newArticles.length; i++) {
+            const scheduledAt = new Date(baseDate.getTime() + i * intervalMs);
+            await supabaseAdmin
+              .from('articles')
+              .update({ scheduled_publish_at: scheduledAt.toISOString() })
+              .eq('id', newArticles[i].id);
+          }
+        }
+      } catch (err) {
+        console.warn('[ScheduledBatch] Failed to assign scheduled_publish_at:', err);
+        // Non-fatal — articles will still be created, just without scheduled dates
+      }
 
       // BUG M24: Sequential processing risks exceeding Cloudflare's 10ms CPU limit for large batches.
       // Each iteration is predominantly network I/O (AI API calls, DB queries) so CPU time stays low.

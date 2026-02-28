@@ -406,6 +406,24 @@ export const test = base.extend({
       });
     });
 
+    // Mock Supabase RPC calls (e.g. get_user_data called by fetchUserData in DashboardLayout)
+    await page.route(/https:\/\/.*\.supabase\.co\/rest\/v1\/rpc\/.*/, async route => {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          profile: {
+            id: 'test-user-id',
+            email: 'test@example.com',
+            role: 'user',
+            subscription_credits_balance: 1000,
+            purchased_credits_balance: 0,
+          },
+          subscription: null,
+        }),
+      });
+    });
+
     await use(page);
   },
 });

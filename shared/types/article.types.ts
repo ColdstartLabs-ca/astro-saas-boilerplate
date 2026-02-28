@@ -51,6 +51,7 @@ export interface IArticle {
   generation_time_ms: number | null;
   generated_at: string | null;
   published_at: string | null;
+  scheduled_publish_at: string | null;
   created_at: string;
   updated_at: string;
   // Image generation fields

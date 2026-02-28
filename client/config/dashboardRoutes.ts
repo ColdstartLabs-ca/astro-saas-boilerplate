@@ -17,7 +17,7 @@ import {
   FileText,
   // Search,      // KeywordsPage — activate when implemented
   // CheckCircle2, // OptimizationPage — activate when implemented
-  // Calendar as CalendarIcon, // CalendarPage — activate when implemented
+  Calendar as CalendarIcon,
   // Link2,       // BacklinksPage — activate when implemented
   BarChart2,
   CreditCard,
@@ -36,7 +36,7 @@ const ArticlesPage = lazy(() => import('@client/components/pages/ArticlesPageCli
 // Activate when implemented:
 // const _KeywordsPage = lazy(() => import('@client/components/pages/KeywordsPageClient'));
 // const _OptimizationPage = lazy(() => import('@client/components/pages/OptimizationPageClient'));
-// const _CalendarPage = lazy(() => import('@client/components/pages/CalendarPageClient'));
+const CalendarPage = lazy(() => import('@client/components/pages/CalendarPageClient'));
 // const _BacklinksPage = lazy(() => import('@client/components/pages/BacklinksPageClient'));
 const AnalyticsPage = lazy(() => import('@client/components/pages/AnalyticsPageClient'));
 const OpportunitiesPage = lazy(() => import('@client/components/pages/OpportunitiesPageClient'));
@@ -175,14 +175,15 @@ export const DASHBOARD_ROUTES: readonly IDashboardRoute[] = [
   //   enabled: false,
   //   group: 'primary',
   // },
-  // {
-  //   path: '/dashboard/calendar',
-  //   labelKey: 'sidebar.calendar',
-  //   icon: CalendarIcon,
-  //   component: CalendarPage,
-  //   enabled: false,
-  //   group: 'primary',
-  // },
+  {
+    path: '/dashboard/calendar',
+    labelKey: 'sidebar.calendar',
+    icon: CalendarIcon,
+    component: CalendarPage,
+    enabled: true,
+    requiresProject: true,
+    group: 'primary',
+  },
   // {
   //   path: '/dashboard/backlinks',
   //   labelKey: 'sidebar.backlinks',

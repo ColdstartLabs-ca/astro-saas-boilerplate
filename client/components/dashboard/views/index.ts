@@ -2,7 +2,7 @@ export { OverviewView } from './OverviewView';
 export { CampaignsView } from './CampaignsView';
 export { KeywordsView } from './_disabled/KeywordsView';
 export { OptimizationView } from './_disabled/OptimizationView';
-export { CalendarView } from './_disabled/CalendarView';
+export { CalendarView } from './CalendarView';
 export { BacklinkExchangeView } from './_disabled/BacklinkExchangeView';
 export { SettingsView } from './SettingsView';
 export { WebsiteOnboarding } from './WebsiteOnboarding';
