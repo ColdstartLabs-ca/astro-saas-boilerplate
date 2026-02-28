@@ -225,6 +225,7 @@ export function IntegrationFormModal({
   const handleTypeSelect = (type: IntegrationType) => {
     setSelectedType(type);
     form.setValue('type', type);
+    setShowWebhookHelp(type === 'webhook');
     setStep(2);
   };
 
