@@ -17,8 +17,12 @@ export function PricingPreviewSection({ className = '' }: IProps): JSX.Element {
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center mb-16">
-          <h2 className="text-3xl md:text-5xl font-bold text-white mb-6">Simple, Transparent Pricing</h2>
-          <p className="text-lg text-slate-400">No per-word charges. No seat limits. No surprise fees.</p>
+          <h2 className="text-3xl md:text-5xl font-bold text-white mb-6">
+            Simple, Transparent Pricing
+          </h2>
+          <p className="text-lg text-slate-400">
+            No per-word charges. No seat limits. No surprise fees.
+          </p>
         </div>
 
         <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto items-start">
@@ -32,11 +36,11 @@ export function PricingPreviewSection({ className = '' }: IProps): JSX.Element {
             </div>
             <ul className="space-y-4 mb-8 flex-1">
               {[
-                "30 articles/mo",
-                "1 site included",
-                "WordPress integration",
-                "Humanizer Engine",
-                "Standard support"
+                '30 articles/mo',
+                '1 site included',
+                'WordPress integration',
+                'Humanizer Engine',
+                'Standard support',
               ].map((item, i) => (
                 <li key={i} className="flex items-center text-slate-300">
                   <Check className="h-4 w-4 text-brand-500 mr-3" />
@@ -74,13 +78,13 @@ export function PricingPreviewSection({ className = '' }: IProps): JSX.Element {
               {/* Features List */}
               <ul className="space-y-4 mb-8 flex-1">
                 {[
-                  "150 articles/mo",
-                  "3 sites included",
-                  "All integrations (Shopify, Webflow)",
-                  "Humanizer Engine",
-                  "GSC Integration",
-                  "Pre-publication QA",
-                  "Priority support"
+                  '100 articles/mo',
+                  '3 sites included',
+                  'All integrations (Shopify, Webflow)',
+                  'Humanizer Engine',
+                  'GSC Integration',
+                  'Pre-publication QA',
+                  'Priority support',
                 ].map((item, i) => (
                   <li key={i} className="flex items-center text-white font-medium">
                     <div className="bg-brand-500/20 p-0.5 rounded-full mr-3 shrink-0">
@@ -109,13 +113,13 @@ export function PricingPreviewSection({ className = '' }: IProps): JSX.Element {
             </div>
             <ul className="space-y-4 mb-8 flex-1">
               {[
-                "Unlimited articles",
-                "Unlimited sites",
-                "White-label reports",
-                "API Access",
-                "Dedicated Account Manager",
-                "Custom webhooks",
-                "24/7 Priority support"
+                '500 articles/mo',
+                'Unlimited sites',
+                'White-label reports (coming soon)',
+                'API Access',
+                'Dedicated Account Manager',
+                'Custom webhooks',
+                '24/7 Priority support',
               ].map((item, i) => (
                 <li key={i} className="flex items-center text-slate-300">
                   <Check className="h-4 w-4 text-brand-500 mr-3" />

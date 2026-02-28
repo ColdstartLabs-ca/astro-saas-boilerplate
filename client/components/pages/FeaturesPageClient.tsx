@@ -64,13 +64,13 @@ const featureSections: IFeatureSection[] = [
     badge: 'Publishing',
     title: 'One-Click CMS Publishing',
     description:
-      'Connect your WordPress site and publish articles directly from AutopilotRank — no copy-pasting, no manual uploads. Full autopilot mode publishes approved content automatically. Webflow integration is coming soon.',
+      'Connect your CMS and publish articles directly from AutopilotRank — no copy-pasting, no manual uploads. Full autopilot mode publishes approved content automatically.',
     bullets: [
       'Native WordPress integration via REST API with Application Passwords',
+      'Webflow, Shopify, Ghost, and Notion via webhook adapter',
       'Publish as draft or live post — your choice',
       'Full autopilot mode: auto-publish after QA checks pass',
       'Review mode: queue articles for approval before they go live',
-      'Webflow support coming soon',
     ],
     screenshotAlt: 'One-click WordPress publish button on article review screen',
     learnMoreSlug: 'auto-publishing',

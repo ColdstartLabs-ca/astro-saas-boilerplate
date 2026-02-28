@@ -24,11 +24,12 @@ export function SolutionSection({ className = '' }: IProps): JSX.Element {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center mb-20">
           <h2 className="text-3xl md:text-5xl font-bold text-white mb-6">
-            Set It Up Once. Get Quality SEO Content Forever. <br />
-            <span className="text-brand-500">No Manual Work.</span>
+            One Platform. Full Pipeline. <br />
+            <span className="text-brand-500">Zero Manual Work.</span>
           </h2>
           <p className="text-slate-400 max-w-2xl mx-auto text-lg">
-            Stop stitching together 5 different tools. We handle the entire lifecycle.
+            From keyword to published article — research, generate, optimize, and publish in one
+            automated pipeline. Stop paying for 4 separate tools.
           </p>
         </div>
 
@@ -83,11 +84,11 @@ export function SolutionSection({ className = '' }: IProps): JSX.Element {
             },
             {
               title: 'Publish-Ready Quality',
-              desc: 'Our Humanizer engine makes AI content undetectable. 95%+ pass rate on AI detection tools. Zero to minimal editing required.',
+              desc: 'Our Humanizer engine rewrites AI-typical patterns into natural prose. High pass rates on major AI detection tools. Minimal editing required.',
             },
             {
-              title: 'All-In-One',
-              desc: 'Keyword research. AI writing with multiple models. SEO scoring. CMS publishing. GSC integration. One platform, not four separate subscriptions.',
+              title: 'Full Pipeline, One Platform',
+              desc: 'Keyword input → AI generation → SEO optimization → CMS publishing. One subscription replaces Surfer, Jasper, a separate publisher, and your manual tracking spreadsheet.',
             },
             {
               title: 'Works With Your Stack',

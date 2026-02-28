@@ -497,14 +497,17 @@ export function HeroSection(): JSX.Element {
           className={`text-5xl md:text-7xl lg:text-8xl font-black tracking-tighter text-white mb-6 leading-[1.1] transition-all duration-700 transform ${isVisible ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0'}`}
         >
           Scale Your Organic Traffic <br className="hidden md:block" />
-          <span className="bg-gradient-to-r from-brand-400 via-purple-400 to-brand-600 bg-clip-text text-transparent drop-shadow-sm">on Autopilot</span>
+          <span className="bg-gradient-to-r from-brand-400 via-purple-400 to-brand-600 bg-clip-text text-transparent drop-shadow-sm">
+            on Autopilot
+          </span>
         </h1>
 
         {/* Subheadline */}
         <p
           className={`max-w-2xl mx-auto text-lg md:text-xl text-slate-300 font-light mb-10 leading-relaxed transition-all duration-700 delay-100 transform ${isVisible ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0'}`}
         >
-          AI content that ranks and reads human. Set it, forget it, watch traffic grow.
+          From keyword to published article — one automated pipeline. Set it, forget it, watch
+          traffic grow.
         </p>
 
         {/* CTAs */}
@@ -536,9 +539,7 @@ export function HeroSection(): JSX.Element {
         <div
           className={`flex items-center justify-center mb-16 transition-all duration-700 delay-400 transform ${isVisible ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0'}`}
         >
-          <button
-            className="text-sm text-slate-400 hover:text-white transition-colors flex items-center gap-2 group"
-          >
+          <button className="text-sm text-slate-400 hover:text-white transition-colors flex items-center gap-2 group">
             <div className="w-8 h-8 rounded-full bg-slate-800/80 border border-slate-700 flex items-center justify-center group-hover:bg-brand-500/20 group-hover:border-brand-500/50 transition-colors">
               <PlayCircle className="w-4 h-4 text-slate-300 group-hover:text-brand-400 transition-colors" />
             </div>
