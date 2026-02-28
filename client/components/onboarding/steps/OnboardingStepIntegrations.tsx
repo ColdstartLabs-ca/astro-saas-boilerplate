@@ -1,6 +1,6 @@
 /**
  * OnboardingStepIntegrations Component
- * Step 4 of onboarding: Content preferences and CMS integration setup
+ * Step 5 of onboarding: CMS integration setup
  * Optional step - can be skipped
  */
 
@@ -25,15 +25,10 @@ import {
   Clock,
 } from 'lucide-react';
 import { DashboardButton } from '@client/components/dashboard/ui/DashboardButton';
-import {
-  ContentPreferencesSection,
-  CONTENT_PREFERENCES_DEFAULTS,
-} from './ContentPreferencesSection';
 import { useOnboardingStore } from '@client/store/onboardingStore';
 import { useIntegrations } from '@client/hooks/useIntegrations';
 import { apiFetch } from '@client/utils/api-client';
 import type { IntegrationType } from '@shared/types/integration.types';
-import type { IContentPreferences } from '@shared/types/project.types';
 
 // =============================================================================
 // Props
@@ -293,13 +288,7 @@ export function OnboardingStepIntegrations({
   const [showWebhookHelp, setShowWebhookHelp] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Content preferences state (local, not in onboarding store)
-  const [contentPreferences, setContentPreferences] = useState<IContentPreferences>(
-    CONTENT_PREFERENCES_DEFAULTS
-  );
-  const [isSavingPreferences, setIsSavingPreferences] = useState(false);
-
-  const { campaignId, projectId, setHasIntegration } = useOnboardingStore();
+  const { campaignId, setHasIntegration } = useOnboardingStore();
   const { createIntegration } = useIntegrations();
 
   const selectedOption = INTEGRATION_OPTIONS.find(o => o.type === selectedType);
@@ -314,33 +303,6 @@ export function OnboardingStepIntegrations({
     setError(null);
   }, []);
 
-  /**
-   * Save content preferences to project via PATCH /api/projects/:projectId
-   */
-  const saveContentPreferences = useCallback(async (): Promise<boolean> => {
-    if (!projectId) {
-      console.warn('No project ID available, skipping content preferences save');
-      return true; // Continue anyway - preferences are optional
-    }
-
-    setIsSavingPreferences(true);
-    try {
-      await apiFetch(`/api/projects/${projectId}`, {
-        method: 'PATCH',
-        body: JSON.stringify({
-          content_preferences: contentPreferences,
-        }),
-      });
-      return true;
-    } catch (err) {
-      console.error('Failed to save content preferences:', err);
-      // Don't block the flow if preferences fail to save
-      return true;
-    } finally {
-      setIsSavingPreferences(false);
-    }
-  }, [projectId, contentPreferences]);
-
   const handleSubmit = useCallback(async () => {
     if (!selectedType || !canSubmit) return;
 
@@ -348,9 +310,6 @@ export function OnboardingStepIntegrations({
     setError(null);
 
     try {
-      // Save content preferences first
-      await saveContentPreferences();
-
       // Build the integration input based on type
       let input;
       if (selectedType === 'wordpress') {
@@ -417,43 +376,18 @@ export function OnboardingStepIntegrations({
     campaignId,
     createIntegration,
     setHasIntegration,
-    saveContentPreferences,
     onComplete,
   ]);
 
-  const handleSkip = useCallback(async () => {
+  const handleSkip = useCallback(() => {
     setIsSkipping(true);
-    setError(null);
-    try {
-      await saveContentPreferences();
-      onSkip();
-    } catch (err) {
-      console.error('Failed to skip step:', err);
-      setError(err instanceof Error ? err.message : 'Failed to skip this step. Please try again.');
-    } finally {
-      setIsSkipping(false);
-    }
-  }, [onSkip, saveContentPreferences]);
+    onSkip();
+  }, [onSkip]);
 
-  const isLoading = isSubmitting || isSkipping || isSavingPreferences;
+  const isLoading = isSubmitting || isSkipping;
 
   return (
     <div className="space-y-4">
-      {/* Content Preferences Section - always shown at top */}
-      <div className="bg-surface border border-border rounded-xl p-5">
-        <ContentPreferencesSection value={contentPreferences} onChange={setContentPreferences} />
-      </div>
-
-      {/* Divider */}
-      <div className="relative">
-        <div className="absolute inset-0 flex items-center">
-          <div className="w-full border-t border-border"></div>
-        </div>
-        <div className="relative flex justify-center">
-          <span className="bg-main px-3 text-xs text-muted uppercase tracking-wider">Optional</span>
-        </div>
-      </div>
-
       {/* Benefits Section - shown before type selection */}
       {!selectedType && (
         <div className="bg-surface border border-border rounded-xl p-5 space-y-4">

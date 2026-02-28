@@ -74,6 +74,9 @@ export function OnboardingStepComplete({
   const isKeywordsComplete = completedSteps.has(OnboardingStep.KEYWORDS_UPLOAD);
   const isGscComplete = completedSteps.has(OnboardingStep.GSC_CONNECTION);
   const isGscSkipped = skippedSteps.has(OnboardingStep.GSC_CONNECTION) || !isGscComplete;
+  const isPreferencesComplete = completedSteps.has(OnboardingStep.PREFERENCES);
+  const isPreferencesSkipped =
+    skippedSteps.has(OnboardingStep.PREFERENCES) || !isPreferencesComplete;
   const isIntegrationsComplete = completedSteps.has(OnboardingStep.INTEGRATIONS);
   const isIntegrationsSkipped =
     skippedSteps.has(OnboardingStep.INTEGRATIONS) || !isIntegrationsComplete;
@@ -107,6 +110,12 @@ export function OnboardingStepComplete({
           isSkipped={false}
         />
         <SummaryItem
+          label="Content Preferences"
+          value={isPreferencesComplete ? 'Saved' : isPreferencesSkipped ? 'Defaults' : 'Pending'}
+          isCompleted={isPreferencesComplete}
+          isSkipped={isPreferencesSkipped}
+        />
+        <SummaryItem
           label="Integration"
           value={
             isIntegrationsComplete ? 'Connected' : isIntegrationsSkipped ? 'Skipped' : 'Pending'
@@ -117,7 +126,7 @@ export function OnboardingStepComplete({
       </div>
 
       {/* Skipped Steps Note */}
-      {(isGscSkipped || isIntegrationsSkipped) && (
+      {(isGscSkipped || isPreferencesSkipped || isIntegrationsSkipped) && (
         <div className="bg-amber-500/5 border border-amber-500/20 rounded-lg p-4">
           <p className="text-xs text-secondary">
             <strong className="text-amber-400">Reminder:</strong> You skipped some optional steps.

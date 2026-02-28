@@ -12,8 +12,9 @@ export enum OnboardingStep {
   PROJECT_CREATION = 1,
   GSC_CONNECTION = 2,
   KEYWORDS_UPLOAD = 3,
-  INTEGRATIONS = 4,
-  COMPLETION = 5,
+  PREFERENCES = 4,
+  INTEGRATIONS = 5,
+  COMPLETION = 6,
 }
 
 /**

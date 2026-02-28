@@ -1,7 +1,7 @@
 /**
  * OnboardingWizard Component
  * Main wizard container that orchestrates the multi-step onboarding flow.
- * Steps 1–5: Project, GSC, Keywords, Integration, Complete.
+ * Steps 1–6: Project, GSC, Keywords, Preferences, Integration, Complete.
  *
  * The wizard is always ephemeral — it always starts at step 1 and uses
  * local React state for navigation. No DB progress is tracked.
@@ -10,12 +10,13 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
-import { FolderPlus, Search, FileText, Plug, Rocket } from 'lucide-react';
+import { FolderPlus, Search, FileText, SlidersHorizontal, Plug, Rocket } from 'lucide-react';
 import { Modal } from '@client/components/modal/Modal';
 import { OnboardingStepperProgress } from './OnboardingStepperProgress';
 import { OnboardingStepProject } from './steps/OnboardingStepProject';
 import { OnboardingStepGSC } from './steps/OnboardingStepGSC';
 import { OnboardingStepKeywords } from './steps/OnboardingStepKeywords';
+import { OnboardingStepPreferences } from './steps/OnboardingStepPreferences';
 import { OnboardingStepIntegrations } from './steps/OnboardingStepIntegrations';
 import { OnboardingStepComplete } from './steps/OnboardingStepComplete';
 import { useOnboardingStore } from '@client/store/onboardingStore';
@@ -93,6 +94,11 @@ export function OnboardingWizard({ isOpen, onClose }: IOnboardingWizardProps): J
       case OnboardingStep.KEYWORDS_UPLOAD:
         return <OnboardingStepKeywords onComplete={handleStepComplete} />;
 
+      case OnboardingStep.PREFERENCES:
+        return (
+          <OnboardingStepPreferences onComplete={handleStepComplete} onSkip={handleStepSkip} />
+        );
+
       case OnboardingStep.INTEGRATIONS:
         return (
           <OnboardingStepIntegrations onComplete={handleStepComplete} onSkip={handleStepSkip} />
@@ -126,6 +132,11 @@ export function OnboardingWizard({ isOpen, onClose }: IOnboardingWizardProps): J
         bg: 'bg-accent/10',
         color: 'text-accent',
       },
+      [OnboardingStep.PREFERENCES]: {
+        Icon: SlidersHorizontal,
+        bg: 'bg-purple-500/10',
+        color: 'text-purple-400',
+      },
       [OnboardingStep.INTEGRATIONS]: { Icon: Plug, bg: 'bg-primary/10', color: 'text-primary' },
       [OnboardingStep.COMPLETION]: {
         Icon: Rocket,
@@ -151,6 +162,8 @@ export function OnboardingWizard({ isOpen, onClose }: IOnboardingWizardProps): J
         return 'Connect Google Search Console';
       case OnboardingStep.KEYWORDS_UPLOAD:
         return 'Add Your Keywords';
+      case OnboardingStep.PREFERENCES:
+        return 'Content Preferences';
       case OnboardingStep.INTEGRATIONS:
         return 'Connect Your CMS';
       case OnboardingStep.COMPLETION:
@@ -168,8 +181,10 @@ export function OnboardingWizard({ isOpen, onClose }: IOnboardingWizardProps): J
         return 'Link your Google Search Console account to discover keyword opportunities from your actual search data.';
       case OnboardingStep.KEYWORDS_UPLOAD:
         return "Enter the keywords you want to target. We'll create your first campaign with these keywords.";
+      case OnboardingStep.PREFERENCES:
+        return 'Set defaults for your generated articles. You can customize these anytime.';
       case OnboardingStep.INTEGRATIONS:
-        return 'Set content preferences and connect your CMS.';
+        return 'Connect your CMS to auto-publish articles directly to your site.';
       case OnboardingStep.COMPLETION:
         return "Your project is set up. Here's a summary of what was configured.";
       default:
