@@ -23,12 +23,17 @@ import {
   Zap,
   RefreshCw,
   Clock,
+  Copy,
+  Check,
+  Send,
 } from 'lucide-react';
 import { DashboardButton } from '@client/components/dashboard/ui/DashboardButton';
 import { useOnboardingStore } from '@client/store/onboardingStore';
 import { useIntegrations } from '@client/hooks/useIntegrations';
+import { useOnboardingProgress } from '@client/hooks/useOnboardingProgress';
 import { apiFetch } from '@client/utils/api-client';
 import type { IntegrationType } from '@shared/types/integration.types';
+import { OnboardingStep } from '@shared/types/onboarding.types';
 
 // =============================================================================
 // Props
@@ -230,42 +235,139 @@ const INTEGRATION_OPTIONS: IIntegrationOption[] = [
 // Sub-Components
 // =============================================================================
 
+const WEBHOOK_INSTRUCTIONS = `Build a webhook endpoint that receives published articles from AutopilotRank.
+
+## Request
+
+Method: POST
+Content-Type: application/json
+User-Agent: AutopilotRank-Webhook/1.0
+X-Signature-256: sha256=<hex-encoded HMAC-SHA256 signature> (only present when a secret key is configured)
+Timeout: 30 seconds — your endpoint must respond within this window.
+
+## Payload
+
+{
+  "event": "article.published",
+  "test": false,
+  "timestamp": "2024-01-15T10:30:00Z",
+  "article": {
+    "id": "uuid",
+    "title": "Article Title",
+    "content": "Full article in Markdown",
+    "content_html": "<p>Full article in HTML</p>",
+    "slug": "article-slug",
+    "meta_description": "SEO meta description",
+    "primary_keyword": "target keyword",
+    "word_count": 1200,
+    "seo_score": 85,
+    "images": [
+      { "position": 1, "url": "https://..." }
+    ]
+  },
+  "campaign": { "id": "uuid", "name": "Campaign Name" },
+  "project": { "id": "uuid", "name": "Project Name", "domain": "example.com" }
+}
+
+Notes:
+- "test" is true for test/connection-check payloads — skip processing these in production.
+- "campaign" and "project" can be null.
+- "images" is an array of completed article images (may be empty).
+- "content" is Markdown; "content_html" is the rendered HTML version.
+
+## Requirements
+
+1. Accept POST requests at your endpoint URL
+2. Parse the JSON body and extract the article data
+3. Save or publish the article to your CMS or database
+4. Return a 2xx status code to confirm receipt
+5. (Optional) Verify the X-Signature-256 header: compute HMAC-SHA256 of the raw request body using your secret key, then compare with the value after the "sha256=" prefix`;
+
 function WebhookHelpPanel(): JSX.Element {
+  const [copied, setCopied] = useState(false);
+
+  const handleCopy = useCallback(async () => {
+    await navigator.clipboard.writeText(WEBHOOK_INSTRUCTIONS);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  }, []);
+
   return (
     <div className="bg-surface border border-border rounded-lg p-4 text-sm space-y-3">
-      <h4 className="font-medium text-white flex items-center gap-2">
-        <Webhook className="w-4 h-4 text-accent" />
-        How Webhooks Work
-      </h4>
+      <div className="flex items-center justify-between">
+        <h4 className="font-medium text-white flex items-center gap-2">
+          <Webhook className="w-4 h-4 text-accent" />
+          How Webhooks Work
+        </h4>
+        <button
+          type="button"
+          onClick={handleCopy}
+          className="flex items-center gap-1.5 text-xs text-accent hover:text-accent-hover transition-colors px-2 py-1 rounded border border-accent/20 hover:border-accent/40 bg-accent/5"
+        >
+          {copied ? (
+            <>
+              <Check className="w-3 h-3" />
+              Copied!
+            </>
+          ) : (
+            <>
+              <Copy className="w-3 h-3" />
+              Copy instructions
+            </>
+          )}
+        </button>
+      </div>
+      <div className="bg-accent/5 border border-accent/10 rounded px-3 py-2">
+        <p className="text-xs text-secondary">
+          Paste into <span className="text-white font-medium">Claude Code</span>,{' '}
+          <span className="text-white font-medium">Codex</span>,{' '}
+          <span className="text-white font-medium">Gemini CLI</span>, or code it manually.
+        </p>
+      </div>
       <div className="text-secondary space-y-2">
         <p>
-          When an article is published, we send a POST request to your endpoint with the article
+          When an article is published, we send a{' '}
+          <code className="text-accent">POST</code> request to your endpoint with the full article
           data.
         </p>
         <ol className="list-decimal list-inside space-y-1 text-xs">
           <li>Create an HTTP endpoint that accepts POST requests</li>
           <li>Return a 2xx status code to confirm receipt</li>
-          <li>Optionally add a secret to verify payloads via HMAC-SHA256</li>
+          <li>
+            Optionally verify the <code className="text-accent">X-Signature-256</code> header
+            (HMAC-SHA256)
+          </li>
         </ol>
         <div className="mt-3 p-3 bg-main rounded border border-border/50">
           <p className="text-xs font-medium text-white mb-2">Payload Format:</p>
           <pre className="text-xs text-muted overflow-x-auto">{`{
   "event": "article.published",
+  "test": false,
   "timestamp": "2024-01-15T10:30:00Z",
   "article": {
+    "id": "uuid",
     "title": "Article Title",
-    "content": "Markdown content...",
-    "content_html": "<p>HTML content...</p>",
+    "content": "Full article in Markdown",
+    "content_html": "<p>Full article in HTML</p>",
     "slug": "article-slug",
-    "primary_keyword": "target keyword"
+    "meta_description": "SEO meta description",
+    "primary_keyword": "target keyword",
+    "word_count": 1200,
+    "seo_score": 85,
+    "images": [{ "position": 1, "url": "https://..." }]
   },
   "campaign": { "id": "uuid", "name": "..." },
-  "project": { "id": "uuid", "name": "..." }
+  "project": { "id": "uuid", "name": "...", "domain": "..." }
 }`}</pre>
         </div>
         <p className="text-xs text-muted">
-          The <code className="text-accent">X-Signature-256</code> header contains an HMAC-SHA256
-          signature when a secret is configured.
+          When <code className="text-accent">&quot;test&quot;: true</code>, skip processing &mdash;
+          it&apos;s a connection check.{' '}
+          <code className="text-accent">campaign</code> and{' '}
+          <code className="text-accent">project</code> can be{' '}
+          <code className="text-accent">null</code>. The{' '}
+          <code className="text-accent">X-Signature-256</code> header value starts with{' '}
+          <code className="text-accent">sha256=</code> followed by the hex-encoded HMAC.
         </p>
       </div>
     </div>
@@ -287,11 +389,14 @@ export function OnboardingStepIntegrations({
   const [showSkipConfirm, setShowSkipConfirm] = useState(false);
   const [showWebhookHelp, setShowWebhookHelp] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isTesting, setIsTesting] = useState(false);
+  const [testResult, setTestResult] = useState<'success' | 'error' | null>(null);
   // BUG M1: ref-based guard to prevent double-click from firing multiple submits
   const submittingRef = useRef(false);
 
-  const { campaignId, setHasIntegration } = useOnboardingStore();
+  const { campaignId, setHasIntegration, markStepSkipped } = useOnboardingStore();
   const { createIntegration } = useIntegrations();
+  const { updateProgress } = useOnboardingProgress();
 
   const selectedOption = INTEGRATION_OPTIONS.find(o => o.type === selectedType);
 
@@ -303,7 +408,40 @@ export function OnboardingStepIntegrations({
   const handleFieldChange = useCallback((fieldName: string, value: string) => {
     setFormData(prev => ({ ...prev, [fieldName]: value }));
     setError(null);
+    setTestResult(null);
   }, []);
+
+  const canTestWebhook = selectedType === 'webhook' && formData.url?.trim().length > 0;
+
+  const handleTestWebhook = useCallback(async () => {
+    if (!canTestWebhook || isTesting) return;
+    setIsTesting(true);
+    setTestResult(null);
+    setError(null);
+
+    try {
+      const res = await apiFetch<{ success: boolean; result?: { error?: string } }>(
+        '/api/integrations/validate',
+        {
+          method: 'POST',
+          body: JSON.stringify({
+            type: 'webhook',
+            url: formData.url,
+            secret: formData.secret || undefined,
+          }),
+        }
+      );
+      setTestResult(res.success ? 'success' : 'error');
+      if (!res.success) {
+        setError(res.result?.error || 'Test failed — your endpoint did not return a 2xx status.');
+      }
+    } catch (err) {
+      setTestResult('error');
+      setError(err instanceof Error ? err.message : 'Test failed — could not reach your endpoint.');
+    } finally {
+      setIsTesting(false);
+    }
+  }, [canTestWebhook, isTesting, formData.url, formData.secret]);
 
   const handleSubmit = useCallback(async () => {
     if (!selectedType || !canSubmit) return;
@@ -387,10 +525,16 @@ export function OnboardingStepIntegrations({
 
   // BUG L4 note: isSkipping is intentionally never reset — the component unmounts
   // immediately after onSkip() is called (wizard advances to next step).
-  const handleSkip = useCallback(() => {
+  const handleSkip = useCallback(async () => {
     setIsSkipping(true);
+    markStepSkipped(OnboardingStep.INTEGRATIONS);
+    await updateProgress({
+      currentStep: OnboardingStep.INTEGRATIONS,
+      completedSteps: [],
+      skippedSteps: [OnboardingStep.INTEGRATIONS],
+    });
     onSkip();
-  }, [onSkip]);
+  }, [markStepSkipped, updateProgress, onSkip]);
 
   const isLoading = isSubmitting || isSkipping;
 
@@ -517,7 +661,7 @@ export function OnboardingStepIntegrations({
                 className="text-xs text-accent hover:text-accent-hover flex items-center gap-1 transition-colors"
               >
                 <HelpCircle className="w-3 h-3" />
-                {showWebhookHelp ? 'Hide details' : 'How webhooks work'}
+                {showWebhookHelp ? 'Hide details' : 'How to build your webhook endpoint'}
               </button>
             )}
           </div>
@@ -562,6 +706,14 @@ export function OnboardingStepIntegrations({
             </div>
           ))}
 
+          {/* Test Result */}
+          {testResult === 'success' && (
+            <div className="bg-success/10 border border-success/30 rounded-lg p-4 flex items-center gap-2">
+              <CheckCircle2 className="w-4 h-4 text-success flex-shrink-0" />
+              <p className="text-sm text-success">Test payload delivered successfully.</p>
+            </div>
+          )}
+
           {/* Error Message */}
           {error && (
             <div className="bg-error/10 border border-error/30 rounded-lg p-4">
@@ -569,25 +721,50 @@ export function OnboardingStepIntegrations({
             </div>
           )}
 
-          {/* Submit Button */}
-          <DashboardButton
-            type="button"
-            onClick={handleSubmit}
-            className="w-full shadow-lg shadow-accent/20"
-            disabled={isLoading || !canSubmit}
-          >
-            {isSubmitting ? (
-              <>
-                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                Connecting...
-              </>
-            ) : (
-              <>
-                <Plug className="w-4 h-4 mr-2" />
-                Connect {selectedOption.name}
-              </>
+          {/* Action Buttons */}
+          <div className="flex gap-3">
+            {/* Test Webhook Button — only for webhooks */}
+            {selectedType === 'webhook' && (
+              <button
+                type="button"
+                onClick={handleTestWebhook}
+                disabled={isLoading || isTesting || !canTestWebhook}
+                className="flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium border border-border rounded-lg text-secondary hover:text-white hover:border-accent/50 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {isTesting ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    Testing...
+                  </>
+                ) : (
+                  <>
+                    <Send className="w-4 h-4" />
+                    Send test
+                  </>
+                )}
+              </button>
             )}
-          </DashboardButton>
+
+            {/* Submit Button */}
+            <DashboardButton
+              type="button"
+              onClick={handleSubmit}
+              className="flex-1 shadow-lg shadow-accent/20"
+              disabled={isLoading || !canSubmit}
+            >
+              {isSubmitting ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Connecting...
+                </>
+              ) : (
+                <>
+                  <Plug className="w-4 h-4 mr-2" />
+                  Connect {selectedOption.name}
+                </>
+              )}
+            </DashboardButton>
+          </div>
         </div>
       )}
 

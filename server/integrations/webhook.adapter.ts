@@ -25,6 +25,7 @@ import type {
  */
 interface IWebhookPayload {
   event: 'article.published';
+  test: boolean;
   timestamp: string;
   article: {
     id: string;
@@ -177,6 +178,7 @@ export class WebhookAdapter implements ICMSAdapter {
       // Send test payload
       const testPayload: IWebhookPayload = {
         event: 'article.published',
+        test: true,
         timestamp: new Date().toISOString(),
         article: {
           id: 'test-00000000-0000-0000-0000-000000000000',
@@ -278,6 +280,7 @@ export class WebhookAdapter implements ICMSAdapter {
       // Build webhook payload
       const payload: IWebhookPayload = {
         event: 'article.published',
+        test: false,
         timestamp: new Date().toISOString(),
         article: {
           id: article.id,

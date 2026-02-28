@@ -208,6 +208,7 @@ export function OnboardingWizard({ isOpen, onClose }: IOnboardingWizardProps): J
       subtitle={getStepSubtitle()}
       size="xl"
       showCloseButton={true}
+      preventClose
       footer={
         showBackButton ? (
           <button

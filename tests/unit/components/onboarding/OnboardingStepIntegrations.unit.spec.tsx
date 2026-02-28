@@ -1,6 +1,6 @@
 /**
  * OnboardingStepIntegrations Component Tests
- * Tests for Step 4: Content preferences and CMS integration setup
+ * Tests for Step 5: CMS integration setup
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
@@ -29,6 +29,9 @@ vi.mock('lucide-react', () => {
     Zap: icon,
     RefreshCw: icon,
     Clock: icon,
+    Copy: icon,
+    Check: icon,
+    Send: icon,
     Palette: icon,
     Image: icon,
     FileText: icon,
@@ -65,16 +68,6 @@ vi.mock('@client/store/onboardingStore', () => ({
   }),
 }));
 
-// Mock useOnboardingProgress
-let mockProgressState = {
-  updateProgress: vi.fn().mockResolvedValue({}),
-  isUpdating: false,
-};
-
-vi.mock('@client/hooks/useOnboardingProgress', () => ({
-  useOnboardingProgress: () => mockProgressState,
-}));
-
 // Mock useIntegrations
 let mockIntegrationState = {
   createIntegration: vi.fn().mockResolvedValue({ id: 'integration-123' }),
@@ -104,36 +97,14 @@ vi.mock('@client/components/dashboard/ui/DashboardButton', () => ({
   ),
 }));
 
-// Mock ContentPreferencesSection
-vi.mock('@client/components/onboarding/steps/ContentPreferencesSection', () => ({
-  ContentPreferencesSection: ({
-    value,
-    onChange,
-  }: {
-    value: Record<string, unknown>;
-    onChange: (prefs: Record<string, unknown>) => void;
-  }) => (
-    <div data-testid="content-preferences-section">
-      <h3>Content Preferences</h3>
-      <p>Article Style: {value.articleStyle as string}</p>
-      <p>Internal Links: {value.internalLinksCount as number}</p>
-      <p>Brand Color: {value.brandColor as string}</p>
-      <p>Image Style: {value.imageStyle as string}</p>
-      <button
-        data-testid="change-article-style"
-        onClick={() => onChange({ ...value, articleStyle: 'how-to' })}
-      >
-        Change Article Style
-      </button>
-    </div>
-  ),
-  CONTENT_PREFERENCES_DEFAULTS: {
-    articleStyle: 'informative',
-    internalLinksCount: 2,
-    brandColor: '#4F46E5',
-    imageStyle: 'cinematic',
-    globalInstructions: '',
-  },
+// Mock useOnboardingProgress
+let mockProgressState = {
+  updateProgress: vi.fn().mockResolvedValue({}),
+  isUpdating: false,
+};
+
+vi.mock('@client/hooks/useOnboardingProgress', () => ({
+  useOnboardingProgress: () => mockProgressState,
 }));
 
 describe('OnboardingStepIntegrations', () => {
@@ -155,115 +126,26 @@ describe('OnboardingStepIntegrations', () => {
       markStepComplete: vi.fn(),
       markStepSkipped: vi.fn(),
     };
+    mockIntegrationState = {
+      createIntegration: vi.fn().mockResolvedValue({ id: 'integration-123' }),
+    };
     mockProgressState = {
       updateProgress: vi.fn().mockResolvedValue({}),
       isUpdating: false,
-    };
-    mockIntegrationState = {
-      createIntegration: vi.fn().mockResolvedValue({ id: 'integration-123' }),
     };
     mockApiFetch.mockReset();
     mockApiFetch.mockResolvedValue({ data: { integrations: [] } });
   });
 
-  // =============================================================================
-  // Content Preferences Section Tests
-  // =============================================================================
-
-  it('should render content preferences section at the top', () => {
-    const { getByTestId } = render(
-      <OnboardingStepIntegrations onComplete={mockOnComplete} onSkip={mockOnSkip} />
-    );
-
-    expect(getByTestId('content-preferences-section')).toBeDefined();
-  });
-
-  it('should have correct default values for content preferences', () => {
-    const { getByText } = render(
-      <OnboardingStepIntegrations onComplete={mockOnComplete} onSkip={mockOnSkip} />
-    );
-
-    expect(getByText('Article Style: informative')).toBeDefined();
-    expect(getByText('Internal Links: 2')).toBeDefined();
-    expect(getByText('Brand Color: #4F46E5')).toBeDefined();
-    expect(getByText('Image Style: cinematic')).toBeDefined();
-  });
-
-  it('should save content preferences on skip', async () => {
-    const { getByText } = render(
-      <OnboardingStepIntegrations onComplete={mockOnComplete} onSkip={mockOnSkip} />
-    );
-
-    // Click "Skip for now" then "Skip Anyway"
-    fireEvent.click(getByText('Skip for now'));
-    fireEvent.click(getByText('Skip Anyway'));
-
-    await waitFor(() => {
-      // Should call PATCH to save content preferences
-      expect(mockApiFetch).toHaveBeenCalledWith(
-        '/api/projects/project-123',
-        expect.objectContaining({
-          method: 'PATCH',
-        })
-      );
-      expect(mockStoreState.markStepSkipped).toHaveBeenCalledWith(OnboardingStep.INTEGRATIONS);
-      expect(mockOnSkip).toHaveBeenCalled();
-    });
-  });
-
-  it('should save content preferences on integration submit', async () => {
-    const { getByText, container } = render(
-      <OnboardingStepIntegrations onComplete={mockOnComplete} onSkip={mockOnSkip} />
-    );
-
-    // Select WordPress
-    fireEvent.click(getByText('WordPress'));
-
-    // Fill form
-    const inputs = container.querySelectorAll('input');
-    fireEvent.change(inputs[0], { target: { value: 'My WP Site' } }); // name
-    fireEvent.change(inputs[1], { target: { value: 'https://mysite.com' } }); // siteUrl
-    fireEvent.change(inputs[2], { target: { value: 'admin' } }); // username
-    fireEvent.change(inputs[3], { target: { value: 'app-password-123' } }); // appPassword
-
-    // Submit
-    const submitButton = container.querySelector('[data-testid="dashboard-button"]')!;
-    fireEvent.click(submitButton);
-
-    await waitFor(() => {
-      // Should call PATCH to save content preferences first
-      expect(mockApiFetch).toHaveBeenCalledWith(
-        '/api/projects/project-123',
-        expect.objectContaining({
-          method: 'PATCH',
-        })
-      );
-      expect(mockIntegrationState.createIntegration).toHaveBeenCalled();
-      expect(mockOnComplete).toHaveBeenCalled();
-    });
-  });
-
-  it('should still render CMS integration below preferences', () => {
-    const { getByText } = render(
-      <OnboardingStepIntegrations onComplete={mockOnComplete} onSkip={mockOnSkip} />
-    );
-
-    expect(getByText('WordPress')).toBeDefined();
-    expect(getByText('Webhook')).toBeDefined();
-  });
-
-  // =============================================================================
-  // Existing Integration Tests
-  // =============================================================================
-
   it('should render the integrations step header', () => {
-    const { getByText } = render(
+    const { getByText, queryByText } = render(
       <OnboardingStepIntegrations onComplete={mockOnComplete} onSkip={mockOnSkip} />
     );
 
     expect(getByText('WordPress')).toBeDefined();
     expect(getByText('Webhook')).toBeDefined();
     expect(getByText('Auto-publish articles directly to your WordPress site')).toBeDefined();
+    expect(queryByText('Content Preferences')).toBeNull();
   });
 
   it('should show integration type cards', () => {
@@ -339,22 +221,6 @@ describe('OnboardingStepIntegrations', () => {
     expect(container.textContent).toContain('Are you sure?');
     expect(getByText('Skip Anyway')).toBeDefined();
     expect(getByText('Go Back')).toBeDefined();
-  });
-
-  it('should handle skip after confirmation', async () => {
-    const { getByText } = render(
-      <OnboardingStepIntegrations onComplete={mockOnComplete} onSkip={mockOnSkip} />
-    );
-
-    // Click "Skip for now" then "Skip Anyway"
-    fireEvent.click(getByText('Skip for now'));
-    fireEvent.click(getByText('Skip Anyway'));
-
-    await waitFor(() => {
-      expect(mockStoreState.markStepSkipped).toHaveBeenCalledWith(OnboardingStep.INTEGRATIONS);
-      expect(mockProgressState.updateProgress).toHaveBeenCalled();
-      expect(mockOnSkip).toHaveBeenCalled();
-    });
   });
 
   it('should submit WordPress integration', async () => {
@@ -492,7 +358,7 @@ describe('OnboardingStepIntegrations', () => {
 
     fireEvent.click(getByText('Webhook'));
 
-    expect(getByText('How webhooks work')).toBeDefined();
+    expect(getByText('How to build your webhook endpoint')).toBeDefined();
   });
 
   it('should toggle webhook help panel', () => {
@@ -506,9 +372,10 @@ describe('OnboardingStepIntegrations', () => {
     expect(queryByText('How Webhooks Work')).toBeNull();
 
     // Click to show
-    fireEvent.click(getByText('How webhooks work'));
+    fireEvent.click(getByText('How to build your webhook endpoint'));
     expect(getByText('How Webhooks Work')).toBeDefined();
     expect(getByText('Payload Format:')).toBeDefined();
+    expect(getByText('Copy instructions')).toBeDefined();
 
     // Click to hide
     fireEvent.click(getByText('Hide details'));
@@ -547,5 +414,21 @@ describe('OnboardingStepIntegrations', () => {
     fireEvent.click(getByText('WordPress'));
 
     expect(queryByText('Why Connect a CMS?')).toBeNull();
+  });
+
+  it('should handle skip after confirmation', async () => {
+    const { getByText } = render(
+      <OnboardingStepIntegrations onComplete={mockOnComplete} onSkip={mockOnSkip} />
+    );
+
+    // Click "Skip for now" then "Skip Anyway"
+    fireEvent.click(getByText('Skip for now'));
+    fireEvent.click(getByText('Skip Anyway'));
+
+    await waitFor(() => {
+      expect(mockStoreState.markStepSkipped).toHaveBeenCalledWith(OnboardingStep.INTEGRATIONS);
+      expect(mockProgressState.updateProgress).toHaveBeenCalled();
+      expect(mockOnSkip).toHaveBeenCalled();
+    });
   });
 });

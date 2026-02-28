@@ -25,6 +25,10 @@ export interface IOnboardingState {
   hasGscConnection: boolean;
   /** Whether at least one integration was configured in step 4 */
   hasIntegration: boolean;
+  /** Set of completed step numbers */
+  completedSteps: Set<number>;
+  /** Set of skipped step numbers */
+  skippedSteps: Set<number>;
 
   // Actions
   setProjectId: (id: string | null) => void;
@@ -32,6 +36,8 @@ export interface IOnboardingState {
   setKeywordCount: (count: number) => void;
   setHasGscConnection: (value: boolean) => void;
   setHasIntegration: (value: boolean) => void;
+  markStepComplete: (step: number) => void;
+  markStepSkipped: (step: number) => void;
 
   /** Reset all inter-step data (call when wizard closes or resets) */
   reset: () => void;
@@ -47,6 +53,8 @@ const initialState = {
   keywordCount: 0,
   hasGscConnection: false,
   hasIntegration: false,
+  completedSteps: new Set<number>(),
+  skippedSteps: new Set<number>(),
 };
 
 export const useOnboardingStore = create<IOnboardingState>(set => ({
@@ -57,6 +65,10 @@ export const useOnboardingStore = create<IOnboardingState>(set => ({
   setKeywordCount: count => set({ keywordCount: Math.max(0, count) }),
   setHasGscConnection: value => set({ hasGscConnection: value }),
   setHasIntegration: value => set({ hasIntegration: value }),
+  markStepComplete: step =>
+    set(state => ({ completedSteps: new Set([...state.completedSteps, step]) })),
+  markStepSkipped: step =>
+    set(state => ({ skippedSteps: new Set([...state.skippedSteps, step]) })),
 
   reset: () => set({ ...initialState }),
 }));

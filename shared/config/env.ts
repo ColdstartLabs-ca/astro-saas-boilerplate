@@ -250,6 +250,14 @@ const serverEnvSchema = z.object({
   // IndexNow key for instant URL submission to search engines
   // Generate with: tsx scripts/create-indexnow-keyfile.ts --generate
   INDEXNOW_KEY: z.string().default(''),
+
+  // ==========================================
+  // INBOUND WEBHOOKS
+  // ==========================================
+  // Shared secret for verifying inbound webhook signatures (X-Signature-256 header).
+  // Must match the secret configured in the sending AutopilotRank integration.
+  // Generate with: openssl rand -hex 32
+  INBOUND_WEBHOOK_SECRET: z.string().default(''),
 });
 
 export type IServerEnv = z.infer<typeof serverEnvSchema>;
@@ -359,6 +367,9 @@ function loadServerEnv(): IServerEnv {
     GSC_STATE_SECRET: metaEnv.GSC_STATE_SECRET || processEnv.GSC_STATE_SECRET || '',
     // IndexNow
     INDEXNOW_KEY: metaEnv.INDEXNOW_KEY || processEnv.INDEXNOW_KEY || '',
+    // Inbound Webhooks
+    INBOUND_WEBHOOK_SECRET:
+      metaEnv.INBOUND_WEBHOOK_SECRET || processEnv.INBOUND_WEBHOOK_SECRET || '',
   };
 
   return serverEnvSchema.parse(env);
