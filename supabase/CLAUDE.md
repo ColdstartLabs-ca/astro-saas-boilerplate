@@ -32,6 +32,10 @@ Key tables and their purposes:
 - **Local Dev**: Use `supabase start` and `supabase stop`.
 - **Types**: Generate types with `supabase gen types typescript --local > src/types/supabase.ts`.
 
+## Golden Rule
+
+**Every schema change is a migration** — never alter the database directly.
+
 ## Migration Rules
 - All migrations must be reversible
 - Use descriptive migration names with timestamps

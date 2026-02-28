@@ -233,6 +233,38 @@ export interface IStartCampaignInput {
 }
 
 /**
+ * A keyword that is already covered by existing published content
+ */
+export interface IKeywordCoverage {
+  /** The keyword that was filtered out */
+  keyword: string;
+  /** URL of the existing page that covers this keyword */
+  coveredByUrl: string;
+  /** Title of the existing page (may be null if sitemap had no title) */
+  coveredByTitle: string | null;
+  /** LLM reasoning for why this keyword is already covered */
+  reason: string;
+}
+
+/**
+ * A cross-campaign keyword cannibalization warning (non-blocking)
+ */
+export interface ICannibalizationWarning {
+  /** The newly-added keyword that has potential overlap */
+  newKeyword: string;
+  /** The existing keyword it overlaps with */
+  existingKeyword: string;
+  /** Name of the campaign containing the existing keyword */
+  existingCampaignName: string;
+  /** ID of the campaign containing the existing keyword */
+  existingCampaignId: string;
+  /** Cosine similarity score (0-1) */
+  similarity: number;
+  /** Human-readable similarity percentage (0-100) */
+  similarityPercent: number;
+}
+
+/**
  * Response for adding keywords operation
  */
 export interface IAddKeywordsResponse {
@@ -240,6 +272,14 @@ export interface IAddKeywordsResponse {
   added: number;
   /** Number of duplicate keywords skipped */
   duplicates: number;
+  /** Keywords filtered out because they're already covered by published content */
+  alreadyCovered?: IKeywordCoverage[];
+  /** Cross-campaign overlap warnings (non-blocking — keywords still added) */
+  cannibalizationWarnings?: ICannibalizationWarning[];
+  /** Alternative keywords from GSC (only present when all keywords were covered) */
+  suggestedKeywords?: string[];
+  /** Whether the cannibalization check ran (false if services unavailable) */
+  cannibalizationChecked?: boolean;
 }
 
 /**

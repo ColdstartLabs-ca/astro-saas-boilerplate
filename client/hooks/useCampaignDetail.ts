@@ -18,6 +18,7 @@ import type {
   IUpdateCampaignInput,
   ICampaignArticleStats,
   ICampaignCreditStats,
+  IAddKeywordsResponse,
 } from '@shared/types/campaign.types';
 import type { IArticle } from '@shared/types/article.types';
 import { apiFetch } from '@client/utils/api-client';
@@ -65,12 +66,9 @@ async function fetchCampaignArticles(campaignId: string): Promise<IArticle[]> {
 async function addKeywords(
   campaignId: string,
   keywords: string[]
-): Promise<{
-  added: number;
-  duplicates: number;
-}> {
+): Promise<IAddKeywordsResponse> {
   const data = await apiFetch<{
-    data: { added: number; duplicates: number };
+    data: IAddKeywordsResponse;
   }>(`/api/campaigns/${campaignId}/keywords`, {
     method: 'POST',
     body: JSON.stringify({ keywords }),
@@ -168,7 +166,7 @@ interface IUseCampaignDetailReturn {
   error: Error | null;
 
   // Actions
-  addKeywords: (keywords: string[]) => Promise<{ added: number; duplicates: number }>;
+  addKeywords: (keywords: string[]) => Promise<IAddKeywordsResponse>;
   removeKeyword: (keywordId: string) => Promise<void>;
   updateCampaign: (input: IUpdateCampaignInput) => Promise<ICampaign>;
   startCampaign: () => Promise<{ queued: number; creditsRequired: number }>;
@@ -266,7 +264,7 @@ export function useCampaignDetail(campaignId: string | null | undefined): IUseCa
 
   // Wrapped mutation functions with error handling
   const handleAddKeywords = useMutationWithToast(addKeywordsMutation, {
-    successMessage: (data: { added: number; duplicates: number }) =>
+    successMessage: (data: IAddKeywordsResponse) =>
       t('campaigns.keywords.added', { added: data.added, duplicates: data.duplicates }),
     errorMessage: t('campaigns.keywords.error'),
     loggerContext: 'Failed to add keywords',

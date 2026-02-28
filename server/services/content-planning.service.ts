@@ -8,8 +8,9 @@
 
 import { supabaseAdmin } from '@server/supabase/supabaseAdmin';
 import { CampaignNotFoundError } from '@shared/types/campaign.types';
-import type { ScheduleFrequency } from '@shared/types/campaign.types';
+import type { ScheduleFrequency, IKeywordCoverage } from '@shared/types/campaign.types';
 import type { IPlanContentResponse } from '@shared/types/calendar.types';
+import { keywordCannibalizationService } from './keyword-cannibalization.service';
 import {
   calculateNextRunAt,
   DEFAULT_SCHEDULE_TIMEZONE,
@@ -65,6 +66,36 @@ export class ContentPlanningService {
       return { planned: 0, startDate: null, endDate: null, message: 'No pending keywords' };
     }
 
+    // Step 3b: Re-check sitemap coverage (catches new content published since keywords were added)
+    let keywordsToPlan = keywords;
+    const skippedAsCovered: IKeywordCoverage[] = [];
+
+    if (campaign.project_id) {
+      try {
+        const coverageResult = await keywordCannibalizationService.checkSitemapCoverage(
+          campaign.project_id,
+          keywords.map(k => k.keyword)
+        );
+        skippedAsCovered.push(...coverageResult.covered);
+        // Filter to only plan uncovered keywords
+        const uncoveredSet = new Set(coverageResult.uncovered.map(k => k.toLowerCase().trim()));
+        keywordsToPlan = keywords.filter(k => uncoveredSet.has(k.keyword.toLowerCase().trim()));
+      } catch (error) {
+        console.warn('[ContentPlanningService] Sitemap coverage check failed:', error);
+        // Fail-open: plan all keywords
+      }
+    }
+
+    if (keywordsToPlan.length === 0) {
+      return {
+        planned: 0,
+        startDate: null,
+        endDate: null,
+        message: 'All keywords already covered by published content',
+        skippedAsCovered,
+      };
+    }
+
     // Step 4: Delete existing planned articles for this campaign
     const { error: deleteError } = await supabaseAdmin
       .from('articles')
@@ -88,13 +119,13 @@ export class ContentPlanningService {
     const tomorrow = new Date();
     tomorrow.setDate(tomorrow.getDate() + 1);
 
-    const scheduledDates: string[] = keywords.map((_, index) => {
+    const scheduledDates: string[] = keywordsToPlan.map((_, index) => {
       const baseDate = new Date(tomorrow.getTime() + index * intervalMs);
       return calculateNextRunAt(frequency, scheduleTimezone, scheduleHour, baseDate);
     });
 
     // Step 6: Insert planned article stubs
-    const articlesToInsert = keywords.map((keyword, index) => ({
+    const articlesToInsert = keywordsToPlan.map((keyword, index) => ({
       campaign_id: campaignId,
       user_id: userId,
       project_id: campaign.project_id ?? null,
@@ -117,9 +148,10 @@ export class ContentPlanningService {
     const endDate = scheduledDates[scheduledDates.length - 1] ?? null;
 
     return {
-      planned: keywords.length,
+      planned: keywordsToPlan.length,
       startDate,
       endDate,
+      skippedAsCovered: skippedAsCovered.length > 0 ? skippedAsCovered : undefined,
     };
   }
 }

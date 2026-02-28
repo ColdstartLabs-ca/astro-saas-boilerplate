@@ -22,6 +22,7 @@ import {
   CampaignIntegrationsSection,
 } from './campaign-detail';
 import type { IArticle, IArticleWithCampaign } from '@shared/types/article.types';
+import type { IAddKeywordsResponse } from '@shared/types/campaign.types';
 
 interface ICampaignDetailViewProps {
   campaignId: string;
@@ -110,9 +111,9 @@ export function CampaignDetailView({
     }
   };
 
-  // Handle add keywords - called by AddKeywordsModal
-  const handleAddKeywords = async (keywords: string[]): Promise<void> => {
-    await addKeywords(keywords);
+  // Handle add keywords - called by AddKeywordsModal; returns full result for UI display
+  const handleAddKeywords = async (keywords: string[]): Promise<IAddKeywordsResponse> => {
+    return addKeywords(keywords);
   };
 
   // Handle pause/resume campaign.

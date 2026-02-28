@@ -6,10 +6,16 @@
  */
 
 import { supabaseAdmin } from '@server/supabase/supabaseAdmin';
-import { type IKeyword, CampaignNotFoundError } from '@shared/types/campaign.types';
+import {
+  type IKeyword,
+  type IKeywordCoverage,
+  type ICannibalizationWarning,
+  CampaignNotFoundError,
+} from '@shared/types/campaign.types';
 import { serverEnv } from '@shared/config/env';
 import { addKeywordsWithCampaignSchema } from '@shared/validation/campaign.schema';
 import { testModeCampaigns } from './campaign-lifecycle.service';
+import { keywordCannibalizationService } from './keyword-cannibalization.service';
 
 // =============================================================================
 // Campaign Keyword Service Class
@@ -26,6 +32,10 @@ export class CampaignKeywordService {
   ): Promise<{
     added: number;
     duplicates: number;
+    alreadyCovered: IKeywordCoverage[];
+    cannibalizationWarnings: ICannibalizationWarning[];
+    suggestedKeywords?: string[];
+    cannibalizationChecked: boolean;
   }> {
     // Validate
     addKeywordsWithCampaignSchema.parse({ campaignId, keywords });
@@ -66,13 +76,17 @@ export class CampaignKeywordService {
       return {
         added: uniqueNew.length,
         duplicates: duplicates.length,
+        alreadyCovered: [],
+        cannibalizationWarnings: [],
+        suggestedKeywords: undefined,
+        cannibalizationChecked: false,
       };
     }
 
     // Verify campaign ownership using direct query
     const { data: campaign } = await supabaseAdmin
       .from('campaigns')
-      .select('id')
+      .select('id, project_id')
       .eq('id', campaignId)
       .eq('user_id', userId)
       .single();
@@ -106,8 +120,38 @@ export class CampaignKeywordService {
       }
     }
 
-    // Batch insert unique keywords
-    const keywordRows = this.buildKeywordRows(campaignId, uniqueNew);
+    // Cannibalization check — Layer 1 (LLM sitemap) + Layer 2 (embeddings) + GSC fallback
+    let cannibalizationResult = {
+      alreadyCovered: [] as IKeywordCoverage[],
+      uncovered: uniqueNew,
+      warnings: [] as ICannibalizationWarning[],
+      suggestedKeywords: undefined as string[] | undefined,
+      checked: false,
+    };
+
+    if (campaign.project_id && uniqueNew.length > 0) {
+      try {
+        const result = await keywordCannibalizationService.checkCannibalization(
+          campaign.project_id,
+          campaignId,
+          uniqueNew,
+          userId
+        );
+        cannibalizationResult = {
+          alreadyCovered: result.alreadyCovered,
+          uncovered: result.uncovered,
+          warnings: result.warnings,
+          suggestedKeywords: result.suggestedKeywords,
+          checked: result.checked,
+        };
+      } catch (error) {
+        console.warn('[CampaignKeywordService] Cannibalization check failed:', error);
+        // Fail-open: insert all uniqueNew keywords
+      }
+    }
+
+    // Batch insert uncovered keywords only (covered ones are filtered out)
+    const keywordRows = this.buildKeywordRows(campaignId, cannibalizationResult.uncovered);
 
     if (keywordRows.length > 0) {
       const { error } = await supabaseAdmin.from('keywords').insert(keywordRows);
@@ -117,9 +161,22 @@ export class CampaignKeywordService {
       }
     }
 
+    // Fire-and-forget: store embeddings for inserted keywords
+    if (cannibalizationResult.uncovered.length > 0) {
+      void keywordCannibalizationService
+        .storeKeywordEmbeddings(cannibalizationResult.uncovered, campaignId)
+        .catch(err =>
+          console.warn('[CampaignKeywordService] Failed to store embeddings:', err)
+        );
+    }
+
     return {
-      added: uniqueNew.length,
+      added: cannibalizationResult.uncovered.length,
       duplicates: duplicates.length,
+      alreadyCovered: cannibalizationResult.alreadyCovered,
+      cannibalizationWarnings: cannibalizationResult.warnings,
+      suggestedKeywords: cannibalizationResult.suggestedKeywords,
+      cannibalizationChecked: cannibalizationResult.checked,
     };
   }
 

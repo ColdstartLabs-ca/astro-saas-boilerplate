@@ -8,6 +8,17 @@ All project documentation including guides, technical specs, PRDs, and managemen
 
 - Feel free to use mermaid diagrams in markdown for visual explanations
 - Keep documentation up-to-date with code changes
+- **No auto-generated .md files** unless explicitly requested.
+
+## Key Paths
+
+- PRDs: `docs/PRDs/` → move to `done/` when complete
+- Roadmap: `docs/management/ROADMAP.md`
+- Env: `.env.client` (public) | `.env.api` (secrets)
+
+## Stack
+
+Astro 5 (SSR + Islands), React 18, React Hook Form, Zod, Zustand, Supabase, Stripe, Cloudflare Pages, Baselime
 
 ## Structure
 

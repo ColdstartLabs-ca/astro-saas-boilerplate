@@ -30,10 +30,15 @@ ALTER TABLE public.articles
     ));
 
 -- =============================================================================
--- Step 2: Update create_article_with_credits RPC to accept 'planned'
+-- Step 2: Recreate create_article_with_credits RPC
+--         - Must DROP first: return type changed from BIGINT→UUID in prior fix migration
+--         - Adds 'planned' to valid statuses
+--         - Preserves: UUID transaction_id, trusted_credit_operation flag
 -- =============================================================================
 
-CREATE OR REPLACE FUNCTION create_article_with_credits(
+DROP FUNCTION IF EXISTS create_article_with_credits(UUID, UUID, UUID, TEXT, INTEGER, TEXT, TEXT);
+
+CREATE FUNCTION create_article_with_credits(
     p_user_id UUID,
     p_campaign_id UUID,
     p_project_id UUID,
@@ -44,7 +49,7 @@ CREATE OR REPLACE FUNCTION create_article_with_credits(
 )
 RETURNS TABLE(
     article_id UUID,
-    transaction_id BIGINT,
+    transaction_id UUID,
     new_subscription_balance INTEGER,
     new_purchased_balance INTEGER,
     new_total_balance INTEGER
@@ -59,9 +64,11 @@ DECLARE
     from_subscription INTEGER;
     from_purchased INTEGER;
     v_article_id UUID;
-    v_transaction_id BIGINT;
+    v_transaction_id UUID;
     v_description TEXT;
 BEGIN
+    PERFORM set_config('app.trusted_credit_operation', 'true', true);
+
     -- Validate amount
     IF p_credits_needed <= 0 THEN
         RAISE EXCEPTION 'Credits needed must be positive: %', p_credits_needed;
@@ -159,21 +166,26 @@ COMMENT ON FUNCTION create_article_with_credits IS
 'Atomically creates an article and deducts credits in a single transaction. Returns article ID, transaction ID, and updated balances. Prevents orphaned articles and partial credit states.';
 
 -- =============================================================================
--- Step 3: Update create_articles_with_credits RPC to accept 'planned'
+-- Step 3: Recreate create_articles_with_credits RPC
+--         - Must DROP first: return type changed from BIGINT→UUID in prior fix migration
+--         - Adds 'planned' to valid statuses
+--         - Preserves: UUID transaction_id, trusted_credit_operation flag, array_agg pattern
 -- =============================================================================
 
-CREATE OR REPLACE FUNCTION create_articles_with_credits(
+DROP FUNCTION IF EXISTS create_articles_with_credits(UUID, UUID, UUID, TEXT[], INTEGER, TEXT, TEXT);
+
+CREATE FUNCTION create_articles_with_credits(
     p_user_id UUID,
     p_campaign_id UUID,
     p_project_id UUID,
-    p_keywords TEXT[], -- Array of keywords
+    p_keywords TEXT[],
     p_credits_per_article INTEGER DEFAULT 1,
     p_status TEXT DEFAULT 'queued',
     p_image_preset TEXT DEFAULT NULL
 )
 RETURNS TABLE(
     article_ids UUID[],
-    transaction_id BIGINT,
+    transaction_id UUID,
     total_credits_used INTEGER,
     new_subscription_balance INTEGER,
     new_purchased_balance INTEGER,
@@ -190,10 +202,11 @@ DECLARE
     from_purchased INTEGER;
     v_total_credits INTEGER;
     v_article_ids UUID[];
-    v_transaction_id BIGINT;
+    v_transaction_id UUID;
     v_description TEXT;
-    v_article RECORD;
 BEGIN
+    PERFORM set_config('app.trusted_credit_operation', 'true', true);
+
     -- Validate inputs
     IF p_keywords IS NULL OR array_length(p_keywords, 1) IS NULL OR array_length(p_keywords, 1) = 0 THEN
         RAISE EXCEPTION 'Keywords array cannot be empty';
@@ -231,25 +244,28 @@ BEGIN
     from_subscription := LEAST(current_subscription, v_total_credits);
     from_purchased := v_total_credits - from_subscription;
 
-    -- Create all article records in one operation
-    INSERT INTO articles (
-        user_id,
-        campaign_id,
-        project_id,
-        primary_keyword,
-        status,
-        credits_used,
-        image_preset
+    -- Create all article records in one operation (array_agg for multi-row RETURNING)
+    WITH inserted AS (
+        INSERT INTO articles (
+            user_id,
+            campaign_id,
+            project_id,
+            primary_keyword,
+            status,
+            credits_used,
+            image_preset
+        )
+        SELECT
+            p_user_id,
+            p_campaign_id,
+            p_project_id,
+            unnest(p_keywords),
+            p_status,
+            p_credits_per_article,
+            p_image_preset
+        RETURNING id
     )
-    SELECT
-        p_user_id,
-        p_campaign_id,
-        p_project_id,
-        unnest(p_keywords),
-        p_status,
-        p_credits_per_article,
-        p_image_preset
-    RETURNING id INTO v_article_ids;
+    SELECT array_agg(id) INTO v_article_ids FROM inserted;
 
     -- Update balances atomically
     UPDATE profiles

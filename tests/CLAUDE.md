@@ -161,6 +161,10 @@ test('login flow with enhanced page object', async ({ page }) => {
 - `tests/helpers/test-context.ts` - Centralized test resource management
 - `tests/pages/BasePage.ts` - Enhanced base page with common UI patterns
 
+## Golden Rule
+
+**Test behavior, not implementation** — tests should survive refactors.
+
 ## Updated Testing Standards
 
 - ✅ **Use TestContext** for all user lifecycle management and cleanup

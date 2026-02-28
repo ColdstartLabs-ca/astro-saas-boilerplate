@@ -16,8 +16,16 @@ vi.mock('@server/supabase/supabaseAdmin', () => ({
   },
 }));
 
+// Mock keyword cannibalization service
+vi.mock('@server/services/keyword-cannibalization.service', () => ({
+  keywordCannibalizationService: {
+    checkSitemapCoverage: vi.fn(),
+  },
+}));
+
 // Import after mocking
 import { supabaseAdmin } from '@server/supabase/supabaseAdmin';
+import { keywordCannibalizationService } from '@server/services/keyword-cannibalization.service';
 
 // =============================================================================
 // Helpers
@@ -106,6 +114,10 @@ describe('ContentPlanningService', () => {
   beforeEach(() => {
     service = new ContentPlanningService();
     vi.clearAllMocks();
+    // Default: coverage check returns all keywords as uncovered (no filtering)
+    vi.mocked(keywordCannibalizationService.checkSitemapCoverage).mockImplementation(
+      (_projectId, keywords) => Promise.resolve({ covered: [], uncovered: keywords })
+    );
   });
 
   describe('planContent', () => {
@@ -376,6 +388,209 @@ describe('ContentPlanningService', () => {
 
       // Scheduled date must be in the future (after now)
       expect(scheduledDate.getTime()).toBeGreaterThan(now.getTime());
+    });
+  });
+
+  // ===========================================================================
+  // Sitemap coverage check (Step 3b)
+  // ===========================================================================
+
+  describe('sitemap coverage check', () => {
+    it('should skip covered keywords at plan time', async () => {
+      const keywords = [
+        makeKeyword('kw-1', 'best seo tips'),
+        makeKeyword('kw-2', 'keyword research guide'),
+        makeKeyword('kw-3', 'link building'),
+      ];
+
+      const fromMock = vi.fn();
+      const insertMock = vi.fn().mockResolvedValue({ error: null });
+
+      fromMock.mockReturnValueOnce(mockCampaignQuery({ data: makeCampaign(), error: null }));
+      fromMock.mockReturnValueOnce(mockKeywordsQuery({ data: keywords, error: null }));
+      fromMock.mockReturnValueOnce(mockDeleteQuery({ error: null }));
+      fromMock.mockReturnValueOnce({ insert: insertMock });
+
+      vi.mocked(supabaseAdmin.from).mockImplementation(fromMock as never);
+
+      // 2 covered, 1 uncovered
+      vi.mocked(keywordCannibalizationService.checkSitemapCoverage).mockResolvedValueOnce({
+        covered: [
+          {
+            keyword: 'best seo tips',
+            coveredByUrl: 'https://example.com/seo-tips',
+            coveredByTitle: 'SEO Tips Guide',
+            reason: 'Same topic',
+          },
+          {
+            keyword: 'keyword research guide',
+            coveredByUrl: 'https://example.com/keyword-research',
+            coveredByTitle: 'Keyword Research 101',
+            reason: 'Identical intent',
+          },
+        ],
+        uncovered: ['link building'],
+      });
+
+      const result = await service.planContent(CAMPAIGN_ID, USER_ID);
+
+      // Only 1 article stub created for the uncovered keyword
+      expect(result.planned).toBe(1);
+      expect(insertMock).toHaveBeenCalledOnce();
+      const insertedArticles = insertMock.mock.calls[0][0] as Array<Record<string, unknown>>;
+      expect(insertedArticles).toHaveLength(1);
+      expect(insertedArticles[0].primary_keyword).toBe('link building');
+    });
+
+    it('should include skippedAsCovered in response', async () => {
+      const keywords = [
+        makeKeyword('kw-1', 'best seo tips'),
+        makeKeyword('kw-2', 'keyword research guide'),
+        makeKeyword('kw-3', 'link building'),
+      ];
+
+      const fromMock = vi.fn();
+      const insertMock = vi.fn().mockResolvedValue({ error: null });
+
+      fromMock.mockReturnValueOnce(mockCampaignQuery({ data: makeCampaign(), error: null }));
+      fromMock.mockReturnValueOnce(mockKeywordsQuery({ data: keywords, error: null }));
+      fromMock.mockReturnValueOnce(mockDeleteQuery({ error: null }));
+      fromMock.mockReturnValueOnce({ insert: insertMock });
+
+      vi.mocked(supabaseAdmin.from).mockImplementation(fromMock as never);
+
+      const coveredEntries = [
+        {
+          keyword: 'best seo tips',
+          coveredByUrl: 'https://example.com/seo-tips',
+          coveredByTitle: 'SEO Tips Guide',
+          reason: 'Same topic',
+        },
+        {
+          keyword: 'keyword research guide',
+          coveredByUrl: 'https://example.com/keyword-research',
+          coveredByTitle: 'Keyword Research 101',
+          reason: 'Identical intent',
+        },
+      ];
+
+      vi.mocked(keywordCannibalizationService.checkSitemapCoverage).mockResolvedValueOnce({
+        covered: coveredEntries,
+        uncovered: ['link building'],
+      });
+
+      const result = await service.planContent(CAMPAIGN_ID, USER_ID);
+
+      expect(result.skippedAsCovered).toBeDefined();
+      expect(result.skippedAsCovered).toHaveLength(2);
+      expect(result.skippedAsCovered![0].keyword).toBe('best seo tips');
+      expect(result.skippedAsCovered![0].coveredByUrl).toBe('https://example.com/seo-tips');
+      expect(result.skippedAsCovered![1].keyword).toBe('keyword research guide');
+    });
+
+    it('should plan all keywords when coverage check fails', async () => {
+      const keywords = [
+        makeKeyword('kw-1', 'best seo tips'),
+        makeKeyword('kw-2', 'link building'),
+      ];
+
+      const fromMock = vi.fn();
+      const insertMock = vi.fn().mockResolvedValue({ error: null });
+
+      fromMock.mockReturnValueOnce(mockCampaignQuery({ data: makeCampaign(), error: null }));
+      fromMock.mockReturnValueOnce(mockKeywordsQuery({ data: keywords, error: null }));
+      fromMock.mockReturnValueOnce(mockDeleteQuery({ error: null }));
+      fromMock.mockReturnValueOnce({ insert: insertMock });
+
+      vi.mocked(supabaseAdmin.from).mockImplementation(fromMock as never);
+
+      // Coverage check throws
+      vi.mocked(keywordCannibalizationService.checkSitemapCoverage).mockRejectedValueOnce(
+        new Error('LLM unavailable')
+      );
+
+      // Should not throw — fail-open
+      const result = await service.planContent(CAMPAIGN_ID, USER_ID);
+
+      expect(result.planned).toBe(2);
+      expect(result.skippedAsCovered).toBeUndefined();
+
+      const insertedArticles = insertMock.mock.calls[0][0] as Array<Record<string, unknown>>;
+      expect(insertedArticles).toHaveLength(2);
+    });
+
+    it('should plan all keywords when no project_id', async () => {
+      const keywords = [
+        makeKeyword('kw-1', 'best seo tips'),
+        makeKeyword('kw-2', 'link building'),
+      ];
+
+      const fromMock = vi.fn();
+      const insertMock = vi.fn().mockResolvedValue({ error: null });
+
+      // Campaign with no project_id
+      fromMock.mockReturnValueOnce(
+        mockCampaignQuery({ data: makeCampaign({ project_id: null }), error: null })
+      );
+      fromMock.mockReturnValueOnce(mockKeywordsQuery({ data: keywords, error: null }));
+      fromMock.mockReturnValueOnce(mockDeleteQuery({ error: null }));
+      fromMock.mockReturnValueOnce({ insert: insertMock });
+
+      vi.mocked(supabaseAdmin.from).mockImplementation(fromMock as never);
+
+      const result = await service.planContent(CAMPAIGN_ID, USER_ID);
+
+      expect(result.planned).toBe(2);
+      // Coverage service should NOT be called when there is no project_id
+      expect(keywordCannibalizationService.checkSitemapCoverage).not.toHaveBeenCalled();
+      expect(result.skippedAsCovered).toBeUndefined();
+    });
+
+    it('should return message when all keywords covered', async () => {
+      const keywords = [
+        makeKeyword('kw-1', 'best seo tips'),
+        makeKeyword('kw-2', 'link building'),
+      ];
+
+      const fromMock = vi.fn();
+
+      fromMock.mockReturnValueOnce(mockCampaignQuery({ data: makeCampaign(), error: null }));
+      fromMock.mockReturnValueOnce(mockKeywordsQuery({ data: keywords, error: null }));
+
+      vi.mocked(supabaseAdmin.from).mockImplementation(fromMock as never);
+
+      // All keywords covered
+      vi.mocked(keywordCannibalizationService.checkSitemapCoverage).mockResolvedValueOnce({
+        covered: [
+          {
+            keyword: 'best seo tips',
+            coveredByUrl: 'https://example.com/seo-tips',
+            coveredByTitle: 'SEO Tips',
+            reason: 'Same intent',
+          },
+          {
+            keyword: 'link building',
+            coveredByUrl: 'https://example.com/links',
+            coveredByTitle: 'Link Building Guide',
+            reason: 'Exact match',
+          },
+        ],
+        uncovered: [],
+      });
+
+      const result = await service.planContent(CAMPAIGN_ID, USER_ID);
+
+      expect(result.planned).toBe(0);
+      expect(result.startDate).toBeNull();
+      expect(result.endDate).toBeNull();
+      expect(result.message).toBe('All keywords already covered by published content');
+      expect(result.skippedAsCovered).toHaveLength(2);
+      expect(result.skippedAsCovered![0].keyword).toBe('best seo tips');
+      expect(result.skippedAsCovered![1].keyword).toBe('link building');
+
+      // No delete or insert should occur when all keywords are covered
+      // (only 2 from() calls: campaign + keywords)
+      expect(fromMock).toHaveBeenCalledTimes(2);
     });
   });
 });

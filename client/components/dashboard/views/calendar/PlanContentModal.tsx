@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect } from 'react';
-import { X, CheckCircle, Loader2, CalendarDays } from 'lucide-react';
+import { X, CheckCircle, Loader2, CalendarDays, AlertTriangle, ExternalLink } from 'lucide-react';
 import type { IPlanContentResponse } from '@shared/types/calendar.types';
 import { useContentPlanning } from '@client/hooks/useContentPlanning';
 import { DashboardButton } from '../../ui/DashboardButton';
@@ -134,6 +134,42 @@ export function PlanContentModal({
               )}
               {result.message && <p className="text-secondary text-sm mt-2">{result.message}</p>}
             </div>
+
+            {/* Skipped as covered banner */}
+            {(result.skippedAsCovered?.length ?? 0) > 0 && (
+              <div
+                className="w-full rounded-lg border border-warning/30 bg-warning/5 p-4 space-y-2 text-left"
+                data-testid="skipped-as-covered-banner"
+              >
+                <div className="flex items-center gap-2">
+                  <AlertTriangle className="w-4 h-4 text-warning flex-shrink-0" />
+                  <p className="text-xs font-semibold text-warning">
+                    {result.skippedAsCovered!.length} keyword
+                    {result.skippedAsCovered!.length !== 1 ? 's' : ''} skipped — already covered by
+                    your published content
+                  </p>
+                </div>
+                <ul className="space-y-2 ml-6">
+                  {result.skippedAsCovered!.map(item => (
+                    <li key={item.keyword} className="space-y-0.5">
+                      <p className="text-xs font-medium text-secondary">{item.keyword}</p>
+                      <a
+                        href={item.coveredByUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center gap-1 text-xs text-muted hover:text-accent-hover"
+                      >
+                        <ExternalLink className="w-3 h-3 flex-shrink-0" />
+                        <span className="truncate">
+                          {item.coveredByTitle ?? item.coveredByUrl}
+                        </span>
+                      </a>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
             <div className="flex gap-3 w-full mt-2">
               <DashboardButton variant="outline" onClick={handleClose} className="flex-1">
                 Close

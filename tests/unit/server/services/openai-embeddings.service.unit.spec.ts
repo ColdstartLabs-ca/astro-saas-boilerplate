@@ -130,6 +130,67 @@ describe('OpenAIEmbeddingsService', () => {
     });
   });
 
+  describe('generateBatchEmbeddings', () => {
+    it('should return embeddings in input order', async () => {
+      // Mock OpenAI returning items out of order (index 1 before index 0)
+      mockFetch.mockResolvedValue({
+        ok: true,
+        json: async () => ({
+          data: [
+            { object: 'embedding', embedding: [0.9, 0.8, 0.7], index: 1 },
+            { object: 'embedding', embedding: [0.1, 0.2, 0.3], index: 0 },
+          ],
+          model: 'text-embedding-3-small',
+          usage: { prompt_tokens: 10, total_tokens: 10 },
+        }),
+      });
+
+      const result = await service.generateBatchEmbeddings(['first text', 'second text']);
+
+      // index 0 → [0.1,0.2,0.3], index 1 → [0.9,0.8,0.7]
+      expect(result).toHaveLength(2);
+      expect(result[0]).toEqual([0.1, 0.2, 0.3]);
+      expect(result[1]).toEqual([0.9, 0.8, 0.7]);
+    });
+
+    it('should return empty array for empty input', async () => {
+      const result = await service.generateBatchEmbeddings([]);
+
+      expect(result).toEqual([]);
+      expect(mockFetch).not.toHaveBeenCalled();
+    });
+
+    it('should throw when not configured', async () => {
+      const unconfiguredService = new OpenAIEmbeddingsService();
+      vi.spyOn(unconfiguredService, 'isConfigured').mockReturnValue(false);
+
+      await expect(unconfiguredService.generateBatchEmbeddings(['test'])).rejects.toThrow(
+        'not configured'
+      );
+    });
+
+    it('should make single API call for batch', async () => {
+      // Build a mock response for 10 inputs
+      const inputs = Array.from({ length: 10 }, (_, i) => `text ${i}`);
+      mockFetch.mockResolvedValue({
+        ok: true,
+        json: async () => ({
+          data: inputs.map((_, i) => ({
+            object: 'embedding',
+            embedding: [i * 0.1, i * 0.2],
+            index: i,
+          })),
+          model: 'text-embedding-3-small',
+          usage: { prompt_tokens: 50, total_tokens: 50 },
+        }),
+      });
+
+      await service.generateBatchEmbeddings(inputs);
+
+      expect(mockFetch).toHaveBeenCalledTimes(1);
+    });
+  });
+
   describe('calculateCosineSimilarity', () => {
     it('should return 1 for identical vectors', () => {
       const vectorA = [1, 2, 3];

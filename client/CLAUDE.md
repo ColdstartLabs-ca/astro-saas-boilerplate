@@ -33,6 +33,12 @@ Client-side React components, hooks, and utilities that run in the browser.
 - Client-side utility functions
 - Helpers for API calls, data formatting, etc.
 
+## Conventions
+
+- Interfaces: Prefix with `I` (e.g., `IUser`)
+- Dates: dayjs
+- Logging: `client/utils/logger.ts`
+
 ## Key Rules
 
 - All TypeScript files (`.ts`, `.tsx`)
@@ -42,6 +48,9 @@ Client-side React components, hooks, and utilities that run in the browser.
 - Implement proper error boundaries
 - Use React Query for server state management
 - Use Zustand sparingly for global client state
+- **UX**: Don't make users think — clarity beats cleverness every time.
+- **State**: Use zustand to avoid prop drilling when state is shared across multiple components.
+- When React files violate SRP, DRY, or KISS, use `/react-refactoring` for systematic refactoring patterns.
 
 ## Styling Rules
 

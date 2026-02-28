@@ -20,6 +20,18 @@ export interface IPlannedArticleGenerationResult {
   skippedInsufficientCredits: number;
 }
 
+interface IPromotePlannedArticleParams {
+  articleId: string;
+  userId: string;
+  creditsNeeded: number;
+  description: string;
+}
+
+type PromotePlannedArticleResult =
+  | { status: 'promoted' }
+  | { status: 'already_promoted' }
+  | { status: 'insufficient_credits' };
+
 // Minimal shape of a planned article row needed for processing
 interface IPlannedArticle {
   id: string;
@@ -37,8 +49,8 @@ export class PlannedArticleGenerationService {
    *
    * For each article:
    * 1. Determine credit cost from campaign settings (fallback: 1 credit)
-   * 2. Check user credit balance
-   * 3. If sufficient: transition article to 'queued', deduct credits, trigger generation
+   * 2. Atomically claim article + deduct credits + write ledger transaction via RPC
+   * 3. Trigger article generation
    * 4. If insufficient: skip and count as skipped
    *
    * @returns Processing result summary
@@ -78,86 +90,25 @@ export class PlannedArticleGenerationService {
       try {
         // Determine credit cost: use campaign's ai_model + image_preset if available
         const creditCost = await this.resolveCreditCost(article);
-
-        // Check user credit balance
-        const { data: profile, error: profileError } = await supabaseAdmin
-          .from('profiles')
-          .select('subscription_credits_balance, purchased_credits_balance')
-          .eq('id', article.user_id)
-          .single();
-
-        if (profileError || !profile) {
-          console.warn(
-            `[PlannedArticleGeneration] Could not fetch profile for user ${article.user_id}, skipping article ${article.id}`
-          );
-          result.skippedInsufficientCredits++;
-          continue;
-        }
-
-        const totalBalance =
-          (profile.subscription_credits_balance ?? 0) + (profile.purchased_credits_balance ?? 0);
-
-        if (totalBalance < creditCost) {
-          console.warn(
-            `[PlannedArticleGeneration] Insufficient credits for user ${article.user_id}: ` +
-              `balance=${totalBalance}, required=${creditCost}, skipping article ${article.id}`
-          );
-          result.skippedInsufficientCredits++;
-          continue;
-        }
-
-        // Transition article to queued and record credit cost
-        const { error: updateError } = await supabaseAdmin
-          .from('articles')
-          .update({ status: 'queued', credits_used: creditCost })
-          .eq('id', article.id);
-
-        if (updateError) {
-          console.error(
-            `[PlannedArticleGeneration] Failed to update article ${article.id} to queued:`,
-            updateError
-          );
-          continue;
-        }
-
-        // Deduct credits: subscription balance first (FIFO), then purchased
-        const fromSubscription = Math.min(profile.subscription_credits_balance ?? 0, creditCost);
-        const fromPurchased = creditCost - fromSubscription;
-
-        const { error: creditDeductError } = await supabaseAdmin
-          .from('profiles')
-          .update({
-            subscription_credits_balance:
-              (profile.subscription_credits_balance ?? 0) - fromSubscription,
-            purchased_credits_balance: (profile.purchased_credits_balance ?? 0) - fromPurchased,
-          })
-          .eq('id', article.user_id);
-
-        if (creditDeductError) {
-          // Roll back article status update on credit failure
-          console.error(
-            `[PlannedArticleGeneration] Failed to deduct credits for user ${article.user_id}:`,
-            creditDeductError
-          );
-          await supabaseAdmin
-            .from('articles')
-            .update({ status: 'planned', credits_used: 0 })
-            .eq('id', article.id);
-          continue;
-        }
-
-        // Log credit transaction
         const description =
           `Planned article auto-generation: ${article.primary_keyword}` +
           (article.image_preset ? ` with ${article.image_preset} images` : '');
-
-        await supabaseAdmin.from('credit_transactions').insert({
-          user_id: article.user_id,
-          amount: -creditCost,
-          type: 'usage',
-          reference_id: article.id,
+        const promotion = await this.promotePlannedArticleWithCredits({
+          articleId: article.id,
+          userId: article.user_id,
+          creditsNeeded: creditCost,
           description,
         });
+
+        if (promotion.status === 'insufficient_credits') {
+          result.skippedInsufficientCredits++;
+          continue;
+        }
+
+        if (promotion.status === 'already_promoted') {
+          // Concurrent cron/manual run already claimed this planned article.
+          continue;
+        }
 
         // Resolve the model to use for generation
         const model = await this.resolveGenerationModel(article);
@@ -245,65 +196,20 @@ export class PlannedArticleGenerationService {
 
     const plannedArticle: IPlannedArticle = article as IPlannedArticle;
     const creditCost = await this.resolveCreditCost(plannedArticle);
-
-    // Check user credit balance
-    const { data: profile, error: profileError } = await supabaseAdmin
-      .from('profiles')
-      .select('subscription_credits_balance, purchased_credits_balance')
-      .eq('id', userId)
-      .single();
-
-    if (profileError || !profile) {
-      throw new Error('Could not fetch user profile');
-    }
-
-    const totalBalance =
-      (profile.subscription_credits_balance ?? 0) + (profile.purchased_credits_balance ?? 0);
-
-    if (totalBalance < creditCost) {
-      throw new Error(`Insufficient credits: balance=${totalBalance}, required=${creditCost}`);
-    }
-
-    // Transition article to queued
-    const { error: updateError } = await supabaseAdmin
-      .from('articles')
-      .update({ status: 'queued', credits_used: creditCost })
-      .eq('id', articleId);
-
-    if (updateError) {
-      throw new Error(`Failed to update article status: ${updateError.message}`);
-    }
-
-    // Deduct credits: subscription balance first (FIFO), then purchased
-    const fromSubscription = Math.min(profile.subscription_credits_balance ?? 0, creditCost);
-    const fromPurchased = creditCost - fromSubscription;
-
-    const { error: creditDeductError } = await supabaseAdmin
-      .from('profiles')
-      .update({
-        subscription_credits_balance:
-          (profile.subscription_credits_balance ?? 0) - fromSubscription,
-        purchased_credits_balance: (profile.purchased_credits_balance ?? 0) - fromPurchased,
-      })
-      .eq('id', userId);
-
-    if (creditDeductError) {
-      // Roll back article status on credit failure
-      await supabaseAdmin
-        .from('articles')
-        .update({ status: 'planned', credits_used: 0 })
-        .eq('id', articleId);
-      throw new Error(`Failed to deduct credits: ${creditDeductError.message}`);
-    }
-
-    // Log credit transaction
-    await supabaseAdmin.from('credit_transactions').insert({
-      user_id: userId,
-      amount: -creditCost,
-      type: 'usage',
-      reference_id: articleId,
+    const promotion = await this.promotePlannedArticleWithCredits({
+      articleId,
+      userId,
+      creditsNeeded: creditCost,
       description: `Manual generation: ${plannedArticle.primary_keyword}`,
     });
+
+    if (promotion.status === 'insufficient_credits') {
+      throw new Error('Insufficient credits');
+    }
+
+    if (promotion.status === 'already_promoted') {
+      throw new Error('Article is not in planned status (current: queued)');
+    }
 
     // Trigger generation
     const model = await this.resolveGenerationModel(plannedArticle);
@@ -340,6 +246,38 @@ export class PlannedArticleGenerationService {
     }
 
     return 'pro';
+  }
+
+  /**
+   * Atomically claim a planned article and deduct credits in a single DB transaction.
+   * This prevents double charges and duplicate generation under concurrent cron/manual triggers.
+   */
+  private async promotePlannedArticleWithCredits(
+    params: IPromotePlannedArticleParams
+  ): Promise<PromotePlannedArticleResult> {
+    const { articleId, userId, creditsNeeded, description } = params;
+
+    const { data, error } = await supabaseAdmin.rpc('promote_planned_article_with_credits', {
+      p_article_id: articleId,
+      p_user_id: userId,
+      p_credits_needed: creditsNeeded,
+      p_description: description,
+    });
+
+    if (error) {
+      const errorMessage = error.message || 'Unknown error';
+      if (errorMessage.toLowerCase().includes('insufficient credits')) {
+        return { status: 'insufficient_credits' };
+      }
+      throw new Error(`Failed to promote planned article: ${errorMessage}`);
+    }
+
+    const rows = Array.isArray(data) ? data : data ? [data] : [];
+    if (rows.length === 0) {
+      return { status: 'already_promoted' };
+    }
+
+    return { status: 'promoted' };
   }
 }
 

@@ -1,4 +1,5 @@
 import type { ArticleStatus } from './article.types';
+import type { IKeywordCoverage } from './campaign.types';
 
 export interface ICalendarArticle {
   id: string;
@@ -31,4 +32,6 @@ export interface IPlanContentResponse {
   startDate: string | null;
   endDate: string | null;
   message?: string;
+  /** Keywords skipped because they're now covered by published content */
+  skippedAsCovered?: IKeywordCoverage[];
 }

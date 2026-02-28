@@ -982,6 +982,101 @@ class InMemorySupabaseAdmin {
       };
     }
 
+    if (functionName === 'promote_planned_article_with_credits') {
+      const articleId = params.p_article_id as string;
+      const userId = params.p_user_id as string;
+      const creditsNeeded = Number(params.p_credits_needed ?? 0);
+      const description =
+        typeof params.p_description === 'string' && params.p_description.trim().length > 0
+          ? params.p_description.trim()
+          : 'Planned article generation';
+
+      if (creditsNeeded <= 0) {
+        return {
+          data: null,
+          error: postgrestError('Credits needed must be positive', 'P0001'),
+          count: null,
+        };
+      }
+
+      const articles = store.get('articles');
+      const article = articles.find(
+        row => row.id === articleId && row.user_id === userId && row.status === 'planned'
+      );
+
+      // Match SQL function behavior: empty set means already claimed / not planned / not owned.
+      if (!article) {
+        return {
+          data: [],
+          error: null,
+          count: null,
+        };
+      }
+
+      const profiles = store.get('profiles');
+      const profile = profiles.find(row => row.id === userId);
+      if (!profile) {
+        return {
+          data: null,
+          error: postgrestError('User not found', 'P0001'),
+          count: null,
+        };
+      }
+
+      const subCredits = Number(profile.subscription_credits_balance ?? 0);
+      const purchCredits = Number(profile.purchased_credits_balance ?? 0);
+      const totalBalance = subCredits + purchCredits;
+
+      if (totalBalance < creditsNeeded) {
+        return {
+          data: null,
+          error: postgrestError('Insufficient credits', 'P0001'),
+          count: null,
+        };
+      }
+
+      const now = nowIso();
+      const fromSubscription = Math.min(subCredits, creditsNeeded);
+      const fromPurchased = creditsNeeded - fromSubscription;
+      const newSubCredits = subCredits - fromSubscription;
+      const newPurchCredits = purchCredits - fromPurchased;
+      const transactionId = generateId();
+
+      article.status = 'queued';
+      article.credits_used = creditsNeeded;
+      article.updated_at = now;
+
+      profile.subscription_credits_balance = newSubCredits;
+      profile.purchased_credits_balance = newPurchCredits;
+      profile.updated_at = now;
+
+      store.get('credit_transactions').push({
+        id: transactionId,
+        user_id: userId,
+        amount: -creditsNeeded,
+        type: 'usage',
+        reference_id: articleId,
+        description,
+        created_at: now,
+      });
+
+      store.persistToDisk();
+
+      return {
+        data: [
+          {
+            article_id: articleId,
+            transaction_id: transactionId,
+            new_subscription_balance: newSubCredits,
+            new_purchased_balance: newPurchCredits,
+            new_total_balance: newSubCredits + newPurchCredits,
+          },
+        ],
+        error: null,
+        count: null,
+      };
+    }
+
     if (functionName === 'consume_credits_v2') {
       const userId = params.target_user_id as string;
       const amount = Number(params.amount ?? 0);

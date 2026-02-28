@@ -262,6 +262,51 @@ export class OpenAIEmbeddingsService {
   }
 
   /**
+   * Generate embeddings for multiple texts in a single API call.
+   * Results are returned in the same order as the input texts.
+   *
+   * @param texts - Array of texts to embed
+   * @returns Array of embedding vectors, one per input text (same order)
+   * @throws Error if API call fails
+   */
+  async generateBatchEmbeddings(texts: string[]): Promise<number[][]> {
+    if (!this.isConfigured()) {
+      throw new Error('OpenAI API key not configured');
+    }
+    if (texts.length === 0) {
+      return [];
+    }
+
+    const trimmedTexts = texts.map(t => t.trim()).filter(t => t.length > 0);
+    if (trimmedTexts.length === 0) {
+      return [];
+    }
+
+    const response = await fetch('https://api.openai.com/v1/embeddings', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${this.apiKey}`,
+      },
+      body: JSON.stringify({
+        model: this.model,
+        input: trimmedTexts,
+        encoding_format: 'float',
+      }),
+    });
+
+    if (!response.ok) {
+      const error = await response.text();
+      throw new Error(`OpenAI batch embeddings failed: ${response.status} ${error}`);
+    }
+
+    const data = (await response.json()) as IOpenAIEmbeddingResponse;
+    // Sort by index to guarantee order matches input (OpenAI may return out of order)
+    const sorted = [...data.data].sort((a, b) => a.index - b.index);
+    return sorted.map(item => item.embedding);
+  }
+
+  /**
    * Generate an embedding and format it for PostgreSQL vector column
    * PostgreSQL vector format: "[0.1,0.2,0.3,...]"
    *

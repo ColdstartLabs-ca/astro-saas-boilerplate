@@ -18,6 +18,7 @@ import {
   type IUpdateCampaignInput,
   type ICampaignArticleStats,
   type ICampaignCreditStats,
+  type IAddKeywordsResponse,
   CampaignNotFoundError,
   CampaignAlreadyActiveError,
   InsufficientCreditsError,
@@ -120,10 +121,7 @@ export class CampaignService {
     campaignId: string,
     userId: string,
     keywords: string[]
-  ): Promise<{
-    added: number;
-    duplicates: number;
-  }> {
+  ): Promise<IAddKeywordsResponse> {
     return campaignKeywordService.addKeywords(campaignId, userId, keywords);
   }
 

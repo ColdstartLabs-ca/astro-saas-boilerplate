@@ -20,7 +20,9 @@ crons = [
   # Full reconciliation - daily at 3:05 AM UTC
   "5 3 * * *",
   # Planned article generation - every 5 minutes (offset by 2 minutes)
-  "2/5 * * * *"
+  "2/5 * * * *",
+  # Scheduled article publishing - every 5 minutes (offset by 1 minute)
+  "1/5 * * * *"
 ]
 
 # Environment Variables (non-sensitive defaults)

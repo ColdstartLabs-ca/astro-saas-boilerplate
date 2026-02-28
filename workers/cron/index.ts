@@ -60,6 +60,9 @@ export default {
     } else if (cronPattern === '2/5 * * * *') {
       endpoint = '/api/cron/generate-planned-articles';
       jobName = 'Planned Article Generation';
+    } else if (cronPattern === '1/5 * * * *') {
+      endpoint = '/api/cron/publish-scheduled-articles';
+      jobName = 'Scheduled Article Publishing';
     } else {
       console.error(`[CRON] Unknown cron pattern: ${cronPattern}`);
       return;

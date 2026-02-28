@@ -14,13 +14,10 @@ step_deploy() {
 
     log_success "Main application deployed"
 
-    # Cron worker (separate deployment - non-blocking, requires Workers:Edit token permission)
+    # Cron worker (separate deployment - blocking for production safety)
     if [[ -d "workers/cron" ]]; then
         log_info "Deploying cron worker..."
-        if npx wrangler deploy --config workers/cron/wrangler.toml 2>&1; then
-            log_success "Cron worker deployed"
-        else
-            log_warn "Cron worker deploy skipped (token may lack Workers:Edit permission - deploy manually)"
-        fi
+        npx wrangler deploy --config workers/cron/wrangler.toml
+        log_success "Cron worker deployed"
     fi
 }

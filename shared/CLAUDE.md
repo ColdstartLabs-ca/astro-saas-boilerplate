@@ -34,6 +34,11 @@ Code and types that are shared between client and server environments.
 - Default settings
 - Environment-specific constants
 
+## Conventions
+
+- Interfaces: Prefix with `I` (e.g., `IUser`)
+- No browser-specific or Node.js-specific APIs
+
 ## Key Rules
 
 - All code must work in both client and server environments

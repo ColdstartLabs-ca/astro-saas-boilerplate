@@ -97,4 +97,15 @@ step_secrets() {
     upload_secret_alias "PUBLIC_SUPABASE_URL" "PUBLIC_SUPABASE_URL" ""
     upload_secret_alias "PUBLIC_SUPABASE_ANON_KEY" "PUBLIC_SUPABASE_ANON_KEY" ""
     upload_secret_alias "PUBLIC_BASE_URL" "PUBLIC_BASE_URL" ""
+
+    # Upload CRON_SECRET to the standalone cron Worker (separate from the Pages project)
+    # Workers have their own secret store — wrangler pages secret put does NOT reach them
+    if [[ -d "$PROJECT_ROOT/workers/cron" && -n "${CRON_SECRET:-}" ]]; then
+        local cron_worker_name
+        cron_worker_name=$(grep '^name' "$PROJECT_ROOT/workers/cron/wrangler.toml" | head -1 | awk -F'"' '{print $2}')
+        if [[ -n "$cron_worker_name" ]]; then
+            echo "$CRON_SECRET" | npx wrangler secret put CRON_SECRET --name "$cron_worker_name" 2>/dev/null
+            log_success "CRON_SECRET → cron worker ($cron_worker_name)"
+        fi
+    fi
 }
