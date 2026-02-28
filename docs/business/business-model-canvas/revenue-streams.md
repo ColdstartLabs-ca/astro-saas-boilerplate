@@ -84,14 +84,14 @@ The core revenue driver - recurring subscriptions for platform access.
 
 - 100 articles/mo = 3x Outrank's output at the SAME price
 - The "sweet spot" for SMBs and content sites scaling organic traffic
-- Unlocks: GSC integration, advanced humanizer, 3 CMS sites, scheduled publishing
+- Unlocks: GSC integration, advanced humanizer, unlimited projects, scheduled publishing
 - Anchors against Outrank/RankYak/Byword directly on their $99 price point
 - Margin: ~85% ($0.15/article cost × 100 = $15 cost)
 
 **Agency Tier ($249/mo — "The Scaling Machine")**:
 
 - 500 articles/mo = supports 5-10 client sites
-- White-label, team accounts (up to 5), API access, unlimited CMS sites
+- White-label, team accounts (up to 5), API access, unlimited projects
 - Positioned well below custom agency pricing but well above per-article tools
 - Margin: ~70% ($0.15/article cost × 500 = $75 cost)
 

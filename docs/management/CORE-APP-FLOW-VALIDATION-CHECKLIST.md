@@ -72,9 +72,7 @@
 - [x] Create project → appears in project list → `projects` row created — **automated** `tests/api/projects-campaigns.api.spec.ts`
 - [x] Edit project name/settings → changes saved — **automated** `tests/api/projects-campaigns.api.spec.ts`
 - [x] Delete project → associated campaigns and articles cascade-deleted — **automated** `tests/api/projects-campaigns.api.spec.ts`
-- [x] Free / Starter users blocked from creating more than 1 project — **automated** `tests/api/projects-campaigns.api.spec.ts` (Project Limits by Subscription Tier)
-- [x] Growth users can create up to 3 projects — **automated** `tests/api/projects-campaigns.api.spec.ts` (Project Limits by Subscription Tier)
-- [x] Agency users can create unlimited projects — **automated** `tests/api/projects-campaigns.api.spec.ts` (Project Limits by Subscription Tier)
+- [x] All users (Trial, Starter, Growth, Agency) can create unlimited projects — **automated** `tests/api/projects-campaigns.api.spec.ts` (Unlimited Projects)
 
 ### 3.2 Campaigns
 

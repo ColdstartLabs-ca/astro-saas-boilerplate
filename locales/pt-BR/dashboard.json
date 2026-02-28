@@ -306,7 +306,7 @@
       "nameTooLong": "O nome do projeto deve ter 100 caracteres ou menos",
       "invalidUrl": "Por favor, digite uma URL válida",
       "industryTooLong": "A indústria deve ter 50 caracteres ou menos",
-      "limitExceeded": "Você atingiu seu limite de projetos. Seu plano permite {maxProjects} projeto(s). Por favor, faça upgrade para criar mais.",
+      "limitExceeded": "Não foi possível criar o projeto. Tente novamente ou entre em contato com o suporte.",
       "createFailed": "Falha ao criar projeto. Por favor, tente novamente.",
       "updateFailed": "Falha ao atualizar projeto. Por favor, tente novamente.",
       "deleteFailed": "Falha ao excluir projeto. Por favor, tente novamente.",

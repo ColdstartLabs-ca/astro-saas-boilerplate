@@ -137,40 +137,6 @@ export interface IUpdateProjectInput {
 }
 
 /**
- * Project limit configuration by subscription tier
- */
-export interface IProjectLimits {
-  /** Maximum number of projects (null = unlimited) */
-  maxProjects: number | null;
-  /** Subscription tier name */
-  tier: string;
-}
-
-/**
- * Error thrown when user exceeds their project limit
- */
-export class ProjectLimitError extends Error {
-  public readonly currentCount: number;
-  public readonly maxProjects: number | null;
-  public readonly subscriptionTier: SubscriptionTier | null;
-
-  constructor(
-    currentCount: number,
-    maxProjects: number | null,
-    subscriptionTier: SubscriptionTier | null
-  ) {
-    const maxDisplay = maxProjects === null ? 'unlimited' : maxProjects;
-    super(
-      `Project limit exceeded. You have ${currentCount} project(s) and your plan allows ${maxDisplay}. Please upgrade your subscription or delete existing projects.`
-    );
-    this.name = 'ProjectLimitError';
-    this.currentCount = currentCount;
-    this.maxProjects = maxProjects;
-    this.subscriptionTier = subscriptionTier;
-  }
-}
-
-/**
  * API response for single project
  */
 export interface IProjectResponse {

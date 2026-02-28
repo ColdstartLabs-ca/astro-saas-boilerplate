@@ -226,7 +226,6 @@ export function withAuthAndBody<T extends z.ZodType>(
  * - CampaignNotFoundError → 404 NOT_FOUND
  * - NoPendingKeywordsError → 400 VALIDATION_ERROR
  * - InsufficientCreditsError → 402 INSUFFICIENT_CREDITS
- * - ProjectLimitError → 403 FORBIDDEN
  * - IntegrationNotFoundError → 404 NOT_FOUND
  * - OnboardingNotFoundError → 404 NOT_FOUND
  * - OnboardingStepError → 400 VALIDATION_ERROR
@@ -254,8 +253,6 @@ export function handleApiError(error: unknown, context?: string): Response {
         return errorResponse('VALIDATION_ERROR', error.message, 400);
       case 'InsufficientCreditsError':
         return errorResponse('INSUFFICIENT_CREDITS', error.message, 402);
-      case 'ProjectLimitError':
-        return errorResponse('FORBIDDEN', error.message, 403);
       case 'OpportunityNotFoundError':
         return errorResponse('NOT_FOUND', error.message, 404);
       case 'GscConnectionError':

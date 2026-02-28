@@ -169,7 +169,7 @@
       "period": "per month",
       "description": "For solopreneurs",
       "articles": "30 articles/mo",
-      "sites": "1 site",
+      "sites": "Unlimited projects",
       "integrations": "WordPress",
       "cta": "Get Started"
     },
@@ -180,7 +180,7 @@
       "description": "For SMBs & content sites",
       "badge": "Most Popular",
       "articles": "100 articles/mo",
-      "sites": "3 sites",
+      "sites": "Unlimited projects",
       "integrations": "All integrations",
       "cta": "Get Started"
     },
@@ -190,7 +190,7 @@
       "period": "per month",
       "description": "For agencies",
       "articles": "500 articles/mo",
-      "sites": "Unlimited sites",
+      "sites": "Unlimited projects",
       "integrations": "White-label",
       "cta": "Contact Sales"
     },

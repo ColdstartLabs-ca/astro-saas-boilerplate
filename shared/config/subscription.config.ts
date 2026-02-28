@@ -51,7 +51,7 @@ export const SUBSCRIPTION_CONFIG: ISubscriptionConfig = {
       displayOrder: 0,
       enabled: false, // Free tier is handled via freeUser config
       batchLimit: 1,
-      maxProjects: 1, // Free users get 1 project
+      maxProjects: null, // All tiers: unlimited projects
     },
     {
       key: 'starter',
@@ -82,7 +82,7 @@ export const SUBSCRIPTION_CONFIG: ISubscriptionConfig = {
         'Credits roll over (up to 90)',
         'Multi-model AI (GPT-4, Claude, Gemini)',
         'Humanizer engine',
-        '1 WordPress site',
+        'Unlimited projects',
         'SEO scoring & AI detection',
         'Email support',
       ],
@@ -91,7 +91,7 @@ export const SUBSCRIPTION_CONFIG: ISubscriptionConfig = {
       displayOrder: 1,
       enabled: true,
       batchLimit: 5,
-      maxProjects: 1, // Starter: 1 WordPress site
+      maxProjects: null, // All tiers: unlimited projects
     },
     {
       key: 'growth',
@@ -122,7 +122,7 @@ export const SUBSCRIPTION_CONFIG: ISubscriptionConfig = {
         'Credits roll over (up to 300)',
         'Everything in Starter',
         'GSC integration',
-        '3 CMS sites',
+        'Unlimited projects',
         'Advanced humanizer',
         'Scheduled publishing',
         'Priority support',
@@ -132,7 +132,7 @@ export const SUBSCRIPTION_CONFIG: ISubscriptionConfig = {
       displayOrder: 2,
       enabled: true,
       batchLimit: 25,
-      maxProjects: 3, // Growth: 3 CMS sites
+      maxProjects: null, // All tiers: unlimited projects
     },
     {
       key: 'agency',
@@ -161,7 +161,7 @@ export const SUBSCRIPTION_CONFIG: ISubscriptionConfig = {
       features: [
         '500 articles per month',
         'Everything in Growth',
-        'Unlimited CMS sites',
+        'Unlimited projects',
         'White-label reports (coming soon)',
         'Team accounts (up to 5)',
         'API access',
@@ -172,7 +172,7 @@ export const SUBSCRIPTION_CONFIG: ISubscriptionConfig = {
       displayOrder: 3,
       enabled: true,
       batchLimit: 100,
-      maxProjects: null, // Agency: unlimited projects
+      maxProjects: null, // All tiers: unlimited projects
     },
   ],
 

@@ -3,7 +3,7 @@
  * Server-side business logic for project CRUD operations
  *
  * Handles:
- * - Project creation with plan limit validation
+ * - Project creation with input validation
  * - Project retrieval with ownership enforcement
  * - Project updates and deletion
  * - Project counting for onboarding detection
@@ -14,9 +14,7 @@ import {
   type IProject,
   type ICreateProjectInput,
   type IUpdateProjectInput,
-  ProjectLimitError,
 } from '@shared/types/project.types';
-import { getSubscriptionConfig } from '@shared/config/subscription.config';
 import { z } from 'zod';
 
 // =============================================================================
@@ -51,10 +49,17 @@ const createProjectSchema = z.object({
       frequency: z.enum(['daily', '3x_week', 'weekly']).optional(),
       targetWordCount: z.number().int().positive().optional(),
       // Article preferences (Phase 3)
-      articleStyle: z.enum(['informative', 'how-to', 'listicle', 'opinion', 'tutorial', 'review', 'comparison']).optional(),
+      articleStyle: z
+        .enum(['informative', 'how-to', 'listicle', 'opinion', 'tutorial', 'review', 'comparison'])
+        .optional(),
       internalLinksCount: z.number().int().min(0).max(5).optional(),
-      brandColor: z.string().regex(/^#[0-9A-Fa-f]{6}$/).optional(),
-      imageStyle: z.enum(['brand-text', 'watercolor', 'cinematic', 'illustration', 'sketch']).optional(),
+      brandColor: z
+        .string()
+        .regex(/^#[0-9A-Fa-f]{6}$/)
+        .optional(),
+      imageStyle: z
+        .enum(['brand-text', 'watercolor', 'cinematic', 'illustration', 'sketch'])
+        .optional(),
       globalInstructions: z.string().max(1000).optional(),
     })
     .optional(),
@@ -86,10 +91,17 @@ const updateProjectSchema = z.object({
       frequency: z.enum(['daily', '3x_week', 'weekly']).optional(),
       targetWordCount: z.number().int().positive().optional(),
       // Article preferences (Phase 3)
-      articleStyle: z.enum(['informative', 'how-to', 'listicle', 'opinion', 'tutorial', 'review', 'comparison']).optional(),
+      articleStyle: z
+        .enum(['informative', 'how-to', 'listicle', 'opinion', 'tutorial', 'review', 'comparison'])
+        .optional(),
       internalLinksCount: z.number().int().min(0).max(5).optional(),
-      brandColor: z.string().regex(/^#[0-9A-Fa-f]{6}$/).optional(),
-      imageStyle: z.enum(['brand-text', 'watercolor', 'cinematic', 'illustration', 'sketch']).optional(),
+      brandColor: z
+        .string()
+        .regex(/^#[0-9A-Fa-f]{6}$/)
+        .optional(),
+      imageStyle: z
+        .enum(['brand-text', 'watercolor', 'cinematic', 'illustration', 'sketch'])
+        .optional(),
       globalInstructions: z.string().max(1000).optional(),
     })
     .optional(),
@@ -106,25 +118,6 @@ const updateProjectSchema = z.object({
     .optional()
     .or(z.literal('')),
 });
-
-// =============================================================================
-// Project Limits Helper
-// =============================================================================
-
-/**
- * Get the maximum number of projects allowed for a subscription tier
- */
-function getMaxProjectsForTier(subscriptionTier: string | null | undefined): number | null {
-  const config = getSubscriptionConfig();
-  const plan = config.plans.find(p => p.key === subscriptionTier);
-
-  // Free users (no subscription) get 1 project
-  if (!plan) {
-    return 1;
-  }
-
-  return plan.maxProjects ?? null;
-}
 
 // =============================================================================
 // Project Service Class
@@ -171,29 +164,11 @@ export class ProjectService {
   }
 
   /**
-   * Create a new project with validation and plan limit enforcement
+   * Create a new project with input validation
    */
   async create(userId: string, input: ICreateProjectInput): Promise<IProject> {
     // Validate input
     const validated = createProjectSchema.parse(input);
-
-    // Check project limit
-    const currentCount = await this.countByUser(userId);
-
-    // Fetch user profile to get subscription tier
-    const { data: profile } = await supabaseAdmin
-      .from('profiles')
-      .select('subscription_tier')
-      .eq('id', userId)
-      .single();
-
-    const subscriptionTier = profile?.subscription_tier ?? null;
-    const maxProjects = getMaxProjectsForTier(subscriptionTier);
-
-    // Check if limit exceeded (null = unlimited)
-    if (maxProjects !== null && currentCount >= maxProjects) {
-      throw new ProjectLimitError(currentCount, maxProjects, subscriptionTier);
-    }
 
     // Create project
     const { data, error } = await supabaseAdmin
@@ -293,7 +268,7 @@ export class ProjectService {
 
   /**
    * Count the number of projects for a user
-   * Used for onboarding detection and limit enforcement
+   * Used for onboarding detection
    */
   async countByUser(userId: string): Promise<number> {
     const { count, error } = await supabaseAdmin

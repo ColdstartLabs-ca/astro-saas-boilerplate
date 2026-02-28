@@ -268,11 +268,11 @@ Keywords → Content → Optimize → Publish → Track
 
 **Pricing Cards (3-tier):**
 
-| Plan        | Price   | Best For             | Key Features                                                    |
-| ----------- | ------- | -------------------- | --------------------------------------------------------------- |
-| **Starter** | $49/mo  | Solopreneurs         | 30 articles/mo, 1 site, WordPress                               |
-| **Growth**  | $99/mo  | SMBs & Content Sites | 100 articles/mo, 3 sites, All integrations                      |
-| **Agency**  | $249/mo | Agencies             | 500 articles/mo, Unlimited sites, White-label, Priority support |
+| Plan        | Price   | Best For             | Key Features                                                       |
+| ----------- | ------- | -------------------- | ------------------------------------------------------------------ |
+| **Starter** | $49/mo  | Solopreneurs         | 30 articles/mo, Unlimited projects, WordPress                      |
+| **Growth**  | $99/mo  | SMBs & Content Sites | 100 articles/mo, Unlimited projects, All integrations              |
+| **Agency**  | $249/mo | Agencies             | 500 articles/mo, Unlimited projects, White-label, Priority support |
 
 **All plans include:**
 

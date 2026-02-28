@@ -5,7 +5,6 @@
 
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { ProjectService } from '../project.service';
-import { ProjectLimitError } from '@shared/types/project.types';
 import type {
   IProject,
   ICreateProjectInput,
@@ -113,29 +112,7 @@ describe('ProjectService', () => {
         },
       };
 
-      // Mock count for limit check
-      mockSupabaseAdmin.from.mockReturnValueOnce({
-        select: vi.fn(() => ({
-          eq: vi.fn(() => ({
-            count: 0,
-            error: null,
-          })),
-        })),
-      });
-
-      // Mock profile fetch
-      mockSupabaseAdmin.from.mockReturnValueOnce({
-        select: vi.fn(() => ({
-          eq: vi.fn(() => ({
-            single: vi.fn(() => ({
-              data: { subscription_tier: null },
-              error: null,
-            })),
-          })),
-        })),
-      });
-
-      // Mock insert - need to return an object with insert property
+      // Mock insert
       const mockSingle = vi.fn(() => ({
         data: { ...mockProject, name: input.name },
         error: null,
@@ -165,37 +142,6 @@ describe('ProjectService', () => {
       } as unknown as ICreateProjectInput;
 
       await expect(projectService.create(mockUserId, input)).rejects.toThrow();
-    });
-
-    it('should throw ProjectLimitError when plan limit exceeded', async () => {
-      const input: ICreateProjectInput = {
-        name: 'New Project',
-        domain: 'https://example.com',
-      };
-
-      // Mock count returns 1 (already at limit for free tier)
-      mockSupabaseAdmin.from.mockReturnValueOnce({
-        select: vi.fn(() => ({
-          eq: vi.fn(() => ({
-            count: 1,
-            error: null,
-          })),
-        })),
-      });
-
-      // Mock profile fetch
-      mockSupabaseAdmin.from.mockReturnValueOnce({
-        select: vi.fn(() => ({
-          eq: vi.fn(() => ({
-            single: vi.fn(() => ({
-              data: { subscription_tier: null },
-              error: null,
-            })),
-          })),
-        })),
-      });
-
-      await expect(projectService.create(mockUserId, input)).rejects.toThrow(ProjectLimitError);
     });
   });
 

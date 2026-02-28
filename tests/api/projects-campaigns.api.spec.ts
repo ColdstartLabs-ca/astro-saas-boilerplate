@@ -161,179 +161,78 @@ test.describe('API: Projects (§3.1)', () => {
 });
 
 // =============================================================================
-// Project Limits by Subscription Tier (§3.1)
+// Unlimited Projects for All Tiers (§3.1)
 // =============================================================================
 
-test.describe('API: Project Limits by Subscription Tier (§3.1)', () => {
+test.describe('API: Unlimited Projects for All Tiers (§3.1)', () => {
   /**
-   * Project limits by tier (from subscription.config.ts):
-   * - Free: 1 project max
-   * - Starter: 1 project max
-   * - Growth: 3 projects max
-   * - Agency: unlimited
+   * Project limits have been removed — all tiers now have maxProjects: null (unlimited).
+   * These tests verify that no tier is blocked from creating multiple projects.
    */
 
-  test.describe('Free tier (1 project max)', () => {
-    let freeUser: Awaited<ReturnType<typeof ctx.createUser>>;
+  test('should allow free tier to create multiple projects', async ({ request }) => {
+    const freeUser = await ctx.createUser({ subscription: 'free', credits: 3 });
+    const api = new ApiClient(request).withAuth(freeUser.token);
 
-    test.beforeEach(async () => {
-      freeUser = await ctx.createUser({ subscription: 'free', credits: 3 });
-    });
-
-    test('should allow creating 1 project for free tier', async ({ request }) => {
-      const api = new ApiClient(request).withAuth(freeUser.token);
-      const response = await api.post('/api/projects', { name: 'First Project' });
+    // Create 3 projects - all should succeed with no limit blocking
+    for (let i = 1; i <= 3; i++) {
+      const response = await api.post('/api/projects', { name: `Free Project ${i}` });
       response.expectStatus(201).expectSuccess();
       const data = await response.getData();
-      expect(data.project.id).toBeDefined();
-      expect(data.project.name).toBe('First Project');
-    });
-
-    test('should block 2nd project creation for free tier with FORBIDDEN error', async ({
-      request,
-    }) => {
-      const api = new ApiClient(request).withAuth(freeUser.token);
-
-      // Create first project - should succeed
-      const first = await api.post('/api/projects', { name: 'First Project' });
-      first.expectStatus(201).expectSuccess();
-
-      // Attempt to create second project - should fail with 403 FORBIDDEN
-      const second = await api.post('/api/projects', { name: 'Second Project' });
-      second.expectStatus(403);
-      await second.expectErrorCode('FORBIDDEN');
-      await second.expectErrorMessage('Project limit exceeded');
-    });
+      expect((data as { project: { id: string; name: string } }).project.id).toBeDefined();
+      expect((data as { project: { name: string } }).project.name).toBe(`Free Project ${i}`);
+    }
   });
 
-  test.describe('Starter tier (1 project max)', () => {
-    let starterUser: Awaited<ReturnType<typeof ctx.createUser>>;
-
-    test.beforeEach(async () => {
-      starterUser = await ctx.createUser({
-        subscription: 'active',
-        tier: 'starter',
-        credits: 30,
-      });
+  test('should allow starter tier to create multiple projects', async ({ request }) => {
+    const starterUser = await ctx.createUser({
+      subscription: 'active',
+      tier: 'starter',
+      credits: 30,
     });
+    const api = new ApiClient(request).withAuth(starterUser.token);
 
-    test('should allow creating 1 project for starter tier', async ({ request }) => {
-      const api = new ApiClient(request).withAuth(starterUser.token);
-      const response = await api.post('/api/projects', { name: 'Starter Project' });
+    // Create 3 projects - all should succeed with no limit blocking
+    for (let i = 1; i <= 3; i++) {
+      const response = await api.post('/api/projects', { name: `Starter Project ${i}` });
       response.expectStatus(201).expectSuccess();
       const data = await response.getData();
-      expect(data.project.name).toBe('Starter Project');
-    });
-
-    test('should block 2nd project creation for starter tier with FORBIDDEN error', async ({
-      request,
-    }) => {
-      const api = new ApiClient(request).withAuth(starterUser.token);
-
-      // Create first project - should succeed
-      const first = await api.post('/api/projects', { name: 'First Starter Project' });
-      first.expectStatus(201).expectSuccess();
-
-      // Attempt to create second project - should fail with 403 FORBIDDEN
-      const second = await api.post('/api/projects', { name: 'Second Starter Project' });
-      second.expectStatus(403);
-      await second.expectErrorCode('FORBIDDEN');
-      await second.expectErrorMessage('Project limit exceeded');
-    });
+      expect((data as { project: { name: string } }).project.name).toBe(`Starter Project ${i}`);
+    }
   });
 
-  test.describe('Growth tier (3 projects max)', () => {
-    let growthUser: Awaited<ReturnType<typeof ctx.createUser>>;
-
-    test.beforeEach(async () => {
-      growthUser = await ctx.createUser({
-        subscription: 'active',
-        tier: 'growth',
-        credits: 100,
-      });
+  test('should allow growth tier to create multiple projects', async ({ request }) => {
+    const growthUser = await ctx.createUser({
+      subscription: 'active',
+      tier: 'growth',
+      credits: 100,
     });
+    const api = new ApiClient(request).withAuth(growthUser.token);
 
-    test('should allow creating 3 projects for growth tier', async ({ request }) => {
-      const api = new ApiClient(request).withAuth(growthUser.token);
-
-      // Create 3 projects - all should succeed
-      for (let i = 1; i <= 3; i++) {
-        const response = await api.post('/api/projects', { name: `Growth Project ${i}` });
-        response.expectStatus(201).expectSuccess();
-        const data = await response.getData();
-        expect(data.project.name).toBe(`Growth Project ${i}`);
-      }
-
-      // Verify all 3 projects exist
-      const list = await api.get('/api/projects');
-      list.expectStatus(200).expectSuccess();
-      const listData = await list.getData();
-      expect(listData.projects.length).toBe(3);
-    });
-
-    test('should block 4th project creation for growth tier with FORBIDDEN error', async ({
-      request,
-    }) => {
-      const api = new ApiClient(request).withAuth(growthUser.token);
-
-      // Create 3 projects - all should succeed
-      for (let i = 1; i <= 3; i++) {
-        const response = await api.post('/api/projects', { name: `Growth Project ${i}` });
-        response.expectStatus(201).expectSuccess();
-      }
-
-      // Attempt to create 4th project - should fail with 403 FORBIDDEN
-      const fourth = await api.post('/api/projects', { name: 'Fourth Growth Project' });
-      fourth.expectStatus(403);
-      await fourth.expectErrorCode('FORBIDDEN');
-      await fourth.expectErrorMessage('Project limit exceeded');
-    });
+    // Create 5 projects - all should succeed (previously capped at 3)
+    for (let i = 1; i <= 5; i++) {
+      const response = await api.post('/api/projects', { name: `Growth Project ${i}` });
+      response.expectStatus(201).expectSuccess();
+      const data = await response.getData();
+      expect((data as { project: { name: string } }).project.name).toBe(`Growth Project ${i}`);
+    }
   });
 
-  test.describe('Agency tier (unlimited projects)', () => {
-    let agencyUser: Awaited<ReturnType<typeof ctx.createUser>>;
-
-    test.beforeEach(async () => {
-      agencyUser = await ctx.createUser({
-        subscription: 'active',
-        tier: 'agency',
-        credits: 500,
-      });
+  test('should allow agency tier to create many projects', async ({ request }) => {
+    const agencyUser = await ctx.createUser({
+      subscription: 'active',
+      tier: 'agency',
+      credits: 500,
     });
+    const api = new ApiClient(request).withAuth(agencyUser.token);
 
-    test('should allow creating 5 projects for agency tier (unlimited)', async ({ request }) => {
-      const api = new ApiClient(request).withAuth(agencyUser.token);
-
-      // Create 5 projects - all should succeed
-      for (let i = 1; i <= 5; i++) {
-        const response = await api.post('/api/projects', { name: `Agency Project ${i}` });
-        response.expectStatus(201).expectSuccess();
-        const data = await response.getData();
-        expect(data.project.name).toBe(`Agency Project ${i}`);
-      }
-
-      // Verify all 5 projects exist
-      const list = await api.get('/api/projects');
-      list.expectStatus(200).expectSuccess();
-      const listData = await list.getData();
-      expect(listData.projects.length).toBe(5);
-    });
-
-    test('should allow creating many projects for agency tier', async ({ request }) => {
-      const api = new ApiClient(request).withAuth(agencyUser.token);
-
-      // Create 10 projects to verify unlimited - all should succeed
-      for (let i = 1; i <= 10; i++) {
-        const response = await api.post('/api/projects', { name: `Agency Site ${i}` });
-        response.expectStatus(201).expectSuccess();
-      }
-
-      // Verify all 10 projects exist
-      const list = await api.get('/api/projects');
-      list.expectStatus(200).expectSuccess();
-      const listData = await list.getData();
-      expect(listData.projects.length).toBe(10);
-    });
+    // Create 10 projects - all should succeed
+    for (let i = 1; i <= 10; i++) {
+      const response = await api.post('/api/projects', { name: `Agency Project ${i}` });
+      response.expectStatus(201).expectSuccess();
+      const data = await response.getData();
+      expect((data as { project: { name: string } }).project.name).toBe(`Agency Project ${i}`);
+    }
   });
 });
 
@@ -354,7 +253,7 @@ test.describe('API: Campaigns (§3.2)', () => {
       // In test mode, create a real project via API so it exists in the mock DB
       const api = new ApiClient(request).withAuth(user.token);
       const projectRes = await api.post('/api/projects', { name: 'Campaign Test Project' });
-      const projectData = await projectRes.getData() as { project: { id: string } };
+      const projectData = (await projectRes.getData()) as { project: { id: string } };
       projectId = projectData.project.id;
     }
   });
@@ -378,7 +277,7 @@ test.describe('API: Campaigns (§3.2)', () => {
       const api = new ApiClient(request).withAuth(user.token);
       const response = await api.get(`/api/campaigns?projectId=${projectId}`);
       response.expectStatus(200).expectSuccess();
-      const data = await response.getData() as any;
+      const data = (await response.getData()) as any;
       expect(Array.isArray(data.campaigns)).toBe(true);
     });
   });
@@ -405,7 +304,7 @@ test.describe('API: Campaigns (§3.2)', () => {
         projectId,
       });
       response.expectStatus(201).expectSuccess();
-      const data = await response.getData() as any;
+      const data = (await response.getData()) as any;
       expect(data.campaign.id).toBeDefined();
       expect(data.campaign.name).toBe('My Campaign');
       expect(data.campaign.project_id).toBe(projectId);
@@ -432,7 +331,7 @@ test.describe('API: Campaigns (§3.2)', () => {
       // Create
       const created = await api.post('/api/campaigns', { name: 'CRUD Test', projectId });
       created.expectStatus(201);
-      const { campaign } = await created.getData() as any;
+      const { campaign } = (await created.getData()) as any;
 
       // Read
       const fetched = await api.get(`/api/campaigns/${campaign.id}`);
@@ -441,7 +340,7 @@ test.describe('API: Campaigns (§3.2)', () => {
       // Update
       const patched = await api.patch(`/api/campaigns/${campaign.id}`, { name: 'Updated Name' });
       patched.expectStatus(200).expectSuccess();
-      const patchedData = await patched.getData() as any;
+      const patchedData = (await patched.getData()) as any;
       expect(patchedData.campaign.name).toBe('Updated Name');
 
       // Delete
@@ -517,13 +416,13 @@ test.describe('API: Keywords (§3.3)', () => {
       keywords: ['best seo tools', 'keyword research tips'],
     });
     added.expectStatus(200).expectSuccess();
-    const addedData = await added.getData() as any;
+    const addedData = (await added.getData()) as any;
     expect(addedData.added).toBe(2);
 
     // List keywords
     const list = await api.get(`/api/campaigns/${campaignId}/keywords`);
     list.expectStatus(200).expectSuccess();
-    const listData = await list.getData() as any;
+    const listData = (await list.getData()) as any;
     expect(Array.isArray(listData.keywords)).toBe(true);
     expect(listData.keywords.length).toBeGreaterThanOrEqual(2);
   });
@@ -542,7 +441,7 @@ test.describe('API: Keywords (§3.3)', () => {
       keywords: ['delete me keyword'],
     });
     added.expectStatus(200);
-    const addedData = await added.getData() as any;
+    const addedData = (await added.getData()) as any;
     const keywordId = addedData.keywords?.[0]?.id ?? addedData.added;
 
     if (typeof keywordId === 'string') {

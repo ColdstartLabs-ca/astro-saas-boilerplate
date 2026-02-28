@@ -242,13 +242,13 @@ This document outlines how AutopilotRank acquires, retains, and grows relationsh
 
 ### Expansion Triggers
 
-| Signal                    | Opportunity          | Action                |
-| ------------------------- | -------------------- | --------------------- |
-| Article limit hit (80%+)  | Upgrade to next tier | In-app prompt + email |
+| Signal                    | Opportunity            | Action                |
+| ------------------------- | ---------------------- | --------------------- |
+| Article limit hit (80%+)  | Upgrade to next tier   | In-app prompt + email |
 | Multiple team members     | Agency/Enterprise tier | CSM outreach          |
-| API usage detected        | Enterprise plan      | Feature unlock offer  |
-| Agency reselling          | Partner program      | Invitation to join    |
-| Competitor features asked | Roadmap alignment    | Beta access           |
+| API usage detected        | Enterprise plan        | Feature unlock offer  |
+| Agency reselling          | Partner program        | Invitation to join    |
+| Competitor features asked | Roadmap alignment      | Beta access           |
 
 ### Upgrade Paths
 
@@ -262,7 +262,7 @@ This document outlines how AutopilotRank acquires, retains, and grows relationsh
 
 - Trigger: Article limit consistently hit (80%+)
 - Offer: "3x the articles for 2x the price"
-- Emphasis: GSC integration, advanced humanizer, 3 CMS sites
+- Emphasis: GSC integration, advanced humanizer, higher batch limits
 
 **From Growth to Agency**:
 
@@ -459,12 +459,12 @@ This document outlines how AutopilotRank acquires, retains, and grows relationsh
 
 ### Satisfaction Metrics
 
-| Metric                       | Target    | Frequency  |
-| ---------------------------- | --------- | ---------- |
-| NPS (Net Promoter Score)     | 50+       | Quarterly  |
-| CSAT (Customer Satisfaction) | 4.5/5     | Per ticket |
-| Response time (Growth/Agency)| <24 hours | Ongoing    |
-| Response time (Enterprise)   | <4 hours  | Ongoing    |
+| Metric                        | Target    | Frequency  |
+| ----------------------------- | --------- | ---------- |
+| NPS (Net Promoter Score)      | 50+       | Quarterly  |
+| CSAT (Customer Satisfaction)  | 4.5/5     | Per ticket |
+| Response time (Growth/Agency) | <24 hours | Ongoing    |
+| Response time (Enterprise)    | <4 hours  | Ongoing    |
 
 ### Advocacy Metrics
 
