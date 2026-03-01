@@ -11,7 +11,6 @@
 
 'use client';
 
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useMemo, useCallback, useEffect } from 'react';
 import type {
   IProject,
@@ -22,7 +21,7 @@ import { useUserStore } from '@client/store/userStore';
 import { useProjectStore } from '@client/store/projectStore';
 import { apiFetch } from '@client/utils/api-client';
 import { getTranslations } from '@src/i18n/utils';
-import { useMutationWithToast } from './useMutationWithToast';
+import { useCRUD } from './useCRUD';
 import { useLogger } from '@client/utils/logger';
 
 // =============================================================================
@@ -59,7 +58,13 @@ async function createProject(input: ICreateProjectInput): Promise<IProject> {
 /**
  * Update an existing project
  */
-async function updateProject(projectId: string, input: IUpdateProjectInput): Promise<IProject> {
+async function updateProject({
+  projectId,
+  input,
+}: {
+  projectId: string;
+  input: IUpdateProjectInput;
+}): Promise<IProject> {
   const data = await apiFetch<{ data: { project: IProject } }>(`/api/projects/${projectId}`, {
     method: 'PUT',
     body: JSON.stringify(input),
@@ -76,6 +81,12 @@ async function deleteProject(projectId: string): Promise<{ success: boolean }> {
   });
   return { success: true };
 }
+
+// =============================================================================
+// Types for useCRUD
+// =============================================================================
+
+type ProjectUpdateInput = { projectId: string; input: IUpdateProjectInput };
 
 // =============================================================================
 // Hook
@@ -100,22 +111,59 @@ interface IUseProjectsReturn {
 
 export function useProjects(): IUseProjectsReturn {
   const logger = useLogger('useProjects');
-  const queryClient = useQueryClient();
   const { user } = useUserStore();
   const { activeProjectId, setActiveProjectId: setActiveProjectStore } = useProjectStore();
   const t = useMemo(() => getTranslations('dashboard'), []);
 
-  // Fetch projects query - scoped by user ID to prevent cross-account stale data
-  const {
-    data: projects = [],
-    isLoading,
-    error,
-  } = useQuery({
+  // Use the generic CRUD hook
+  const crud = useCRUD<IProject, ICreateProjectInput, ProjectUpdateInput, string>({
     queryKey: ['projects', user?.id],
-    queryFn: fetchProjects,
-    enabled: !!user, // Only fetch if authenticated
+    fetchFn: fetchProjects,
+    createFn: createProject,
+    updateFn: updateProject,
+    deleteFn: deleteProject,
+    enabled: !!user,
     staleTime: 1000 * 60 * 5, // 5 minutes
+    toastMessages: {
+      create: {
+        success: t('projects.success.created'),
+        error: t('projects.errors.createFailed'),
+      },
+      update: {
+        success: t('projects.success.updated'),
+        error: t('projects.errors.updateFailed'),
+      },
+      delete: {
+        success: t('projects.success.deleted'),
+        error: t('projects.errors.deleteFailed'),
+      },
+    },
+    loggerContexts: {
+      create: 'Failed to create project',
+      update: (vars: ProjectUpdateInput) => ({
+        message: 'Failed to update project',
+        context: { projectId: vars.projectId },
+      }),
+      delete: (projectId: string) => ({
+        message: 'Failed to delete project',
+        context: { projectId },
+      }),
+    },
+    onBeforeDeleteInvalidate: (qc, deletedProjectId) => {
+      // Remove stale campaigns cache for deleted project (prevents 500 errors)
+      qc.removeQueries({ queryKey: ['campaigns', deletedProjectId] });
+    },
+    onDeleteSuccess: deletedProjectId => {
+      // If deleted project was active, clear active project
+      if (activeProjectId === deletedProjectId) {
+        setActiveProjectStore(null);
+      }
+    },
   });
+
+  const projects = crud.items;
+  const isLoading = crud.isLoading;
+  const error = crud.error;
 
   // Derive active project from projects list and activeProjectId
   const activeProject = useMemo(() => {
@@ -135,39 +183,6 @@ export function useProjects(): IUseProjectsReturn {
     }
   }, [activeProjectId, activeProject, projects, isLoading, setActiveProjectStore]);
 
-  // Create project mutation
-  const createMutation = useMutation({
-    mutationFn: createProject,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['projects', user?.id] });
-      // Auto-select newly created project
-      // (Note: we can't access the new project here directly, but the query will update)
-    },
-  });
-
-  // Update project mutation
-  const updateMutation = useMutation({
-    mutationFn: ({ projectId, input }: { projectId: string; input: IUpdateProjectInput }) =>
-      updateProject(projectId, input),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['projects', user?.id] });
-    },
-  });
-
-  // Delete project mutation
-  const deleteMutation = useMutation({
-    mutationFn: deleteProject,
-    onSuccess: (_, deletedProjectId) => {
-      // Remove stale campaigns cache for deleted project (prevents 500 errors)
-      queryClient.removeQueries({ queryKey: ['campaigns', deletedProjectId] });
-      queryClient.invalidateQueries({ queryKey: ['projects', user?.id] });
-      // If deleted project was active, clear active project
-      if (activeProjectId === deletedProjectId) {
-        setActiveProjectStore(null);
-      }
-    },
-  });
-
   // Set active project action
   const setActiveProject = useCallback(
     (projectId: string | null) => {
@@ -177,43 +192,12 @@ export function useProjects(): IUseProjectsReturn {
     [setActiveProjectStore, logger]
   );
 
-  // Wrapped mutation functions with error handling
-  const handleCreateProject = useMutationWithToast(createMutation, {
-    successMessage: t('projects.success.created'),
-    errorMessage: t('projects.errors.createFailed'),
-    loggerContext: 'Failed to create project',
-  });
-
-  const updateProjectWithToast = useMutationWithToast(updateMutation, {
-    successMessage: t('projects.success.updated'),
-    errorMessage: t('projects.errors.updateFailed'),
-    loggerContext: (variables: { projectId: string; input: IUpdateProjectInput }) => ({
-      message: 'Failed to update project',
-      context: { projectId: variables.projectId },
-    }),
-  });
-
+  // Wrap update to match the original API (separate projectId and input params)
   const handleUpdateProject = useCallback(
     async (projectId: string, input: IUpdateProjectInput): Promise<IProject> => {
-      return updateProjectWithToast({ projectId, input });
+      return crud.update({ projectId, input });
     },
-    [updateProjectWithToast]
-  );
-
-  const deleteProjectWithToast = useMutationWithToast(deleteMutation, {
-    successMessage: t('projects.success.deleted'),
-    errorMessage: t('projects.errors.deleteFailed'),
-    loggerContext: (projectId: string) => ({
-      message: 'Failed to delete project',
-      context: { projectId },
-    }),
-  });
-
-  const handleDeleteProject = useCallback(
-    async (projectId: string): Promise<void> => {
-      await deleteProjectWithToast(projectId);
-    },
-    [deleteProjectWithToast]
+    [crud]
   );
 
   return {
@@ -227,9 +211,9 @@ export function useProjects(): IUseProjectsReturn {
 
     // Actions
     setActiveProject,
-    createProject: handleCreateProject,
+    createProject: crud.create,
     updateProject: handleUpdateProject,
-    deleteProject: handleDeleteProject,
-    refetch: () => queryClient.invalidateQueries({ queryKey: ['projects', user?.id] }),
+    deleteProject: crud.remove,
+    refetch: crud.refetch,
   };
 }

@@ -11,7 +11,7 @@
 
 'use client';
 
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation } from '@tanstack/react-query';
 import { useCallback, useMemo } from 'react';
 import type {
   IIntegrationWithCampaigns,
@@ -21,7 +21,7 @@ import type {
 } from '@shared/types/integration.types';
 import { apiFetch } from '@client/utils/api-client';
 import { getTranslations } from '@src/i18n/utils';
-import { useMutationWithToast } from './useMutationWithToast';
+import { useCRUD } from './useCRUD';
 
 // =============================================================================
 // API Functions
@@ -98,6 +98,12 @@ async function testIntegration(integrationId: string): Promise<ITestConnectionRe
 }
 
 // =============================================================================
+// Types for useCRUD
+// =============================================================================
+
+type IntegrationUpdateInput = IUpdateIntegrationInput & { integrationId: string };
+
+// =============================================================================
 // Hook
 // =============================================================================
 
@@ -118,41 +124,45 @@ interface IUseIntegrationsReturn {
 }
 
 export function useIntegrations(): IUseIntegrationsReturn {
-  const queryClient = useQueryClient();
   const t = useMemo(() => getTranslations('dashboard'), []);
 
-  // Fetch integrations query
-  const {
-    data: integrations = [],
-    isLoading,
-    error,
-  } = useQuery({
+  // Use the generic CRUD hook
+  const crud = useCRUD<
+    IIntegrationWithCampaigns,
+    ICreateIntegrationInput,
+    IntegrationUpdateInput,
+    string
+  >({
     queryKey: ['integrations'],
-    queryFn: fetchIntegrations,
+    fetchFn: fetchIntegrations,
+    createFn: createIntegration,
+    updateFn: updateIntegration,
+    deleteFn: deleteIntegration,
     staleTime: 1000 * 60, // 1 minute - integrations don't change often
-  });
-
-  // Create integration mutation
-  const createMutation = useMutation({
-    mutationFn: createIntegration,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['integrations'] });
+    toastMessages: {
+      create: {
+        success: t('integrations.form.success'),
+        error: t('integrations.form.error'),
+      },
+      update: {
+        success: t('integrations.form.updateSuccess'),
+        error: t('integrations.form.error'),
+      },
+      delete: {
+        success: t('integrations.deleteSuccess'),
+        error: t('integrations.deleteError'),
+      },
     },
-  });
-
-  // Update integration mutation
-  const updateMutation = useMutation({
-    mutationFn: updateIntegration,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['integrations'] });
-    },
-  });
-
-  // Delete integration mutation
-  const deleteMutation = useMutation({
-    mutationFn: deleteIntegration,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['integrations'] });
+    loggerContexts: {
+      create: 'Failed to create integration',
+      update: (input: IntegrationUpdateInput) => ({
+        message: 'Failed to update integration',
+        context: { integrationId: input.integrationId },
+      }),
+      delete: (integrationId: string) => ({
+        message: 'Failed to delete integration',
+        context: { integrationId },
+      }),
     },
   });
 
@@ -160,38 +170,6 @@ export function useIntegrations(): IUseIntegrationsReturn {
   const testMutation = useMutation({
     mutationFn: testIntegration,
   });
-
-  // Wrapped mutation functions with error handling
-  const handleCreateIntegration = useMutationWithToast(createMutation, {
-    successMessage: t('integrations.form.success'),
-    errorMessage: t('integrations.form.error'),
-    loggerContext: 'Failed to create integration',
-  });
-
-  const handleUpdateIntegration = useMutationWithToast(updateMutation, {
-    successMessage: t('integrations.form.updateSuccess'),
-    errorMessage: t('integrations.form.error'),
-    loggerContext: (input: IUpdateIntegrationInput & { integrationId: string }) => ({
-      message: 'Failed to update integration',
-      context: { integrationId: input.integrationId },
-    }),
-  });
-
-  const deleteIntegrationWithToast = useMutationWithToast(deleteMutation, {
-    successMessage: t('integrations.deleteSuccess'),
-    errorMessage: t('integrations.deleteError'),
-    loggerContext: (integrationId: string) => ({
-      message: 'Failed to delete integration',
-      context: { integrationId },
-    }),
-  });
-
-  const handleDeleteIntegration = useCallback(
-    async (integrationId: string): Promise<void> => {
-      await deleteIntegrationWithToast(integrationId);
-    },
-    [deleteIntegrationWithToast]
-  );
 
   const handleTestIntegration = useCallback(
     async (integrationId: string): Promise<ITestConnectionResult> => {
@@ -203,15 +181,15 @@ export function useIntegrations(): IUseIntegrationsReturn {
 
   return {
     // Data
-    integrations,
-    isLoading,
-    error,
+    integrations: crud.items,
+    isLoading: crud.isLoading,
+    error: crud.error,
 
     // Actions
-    createIntegration: handleCreateIntegration,
-    updateIntegration: handleUpdateIntegration,
-    deleteIntegration: handleDeleteIntegration,
+    createIntegration: crud.create,
+    updateIntegration: crud.update,
+    deleteIntegration: crud.remove,
     testIntegration: handleTestIntegration,
-    refetch: () => queryClient.invalidateQueries({ queryKey: ['integrations'] }),
+    refetch: crud.refetch,
   };
 }

@@ -1,7 +1,8 @@
 'use client';
 
-import { useCallback, useState } from 'react';
+import { useCallback } from 'react';
 import { useApiRequest } from '@client/hooks/useApiRequest';
+import { useAsyncAction } from '@client/hooks/useAsyncAction';
 
 interface IArticleActionsOptions {
   onSuccess?: () => void; // call to refetch calendar data
@@ -29,78 +30,82 @@ interface IUseArticleActionsResult {
   error: string | null;
 }
 
-export function useArticleActions({ onSuccess }: IArticleActionsOptions = {}): IUseArticleActionsResult {
-  const [isRescheduling, setIsRescheduling] = useState(false);
-  const [isPublishing, setIsPublishing] = useState(false);
-  const [isFixingQA, setIsFixingQA] = useState(false);
-  const [isSyncingToBlog, setIsSyncingToBlog] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+export function useArticleActions({
+  onSuccess,
+}: IArticleActionsOptions = {}): IUseArticleActionsResult {
   const { request } = useApiRequest();
 
-  const reschedule = useCallback(async (articleId: string, newDate: string) => {
-    setIsRescheduling(true);
-    setError(null);
-    try {
+  // Define async functions for each action
+  const rescheduleFn = useCallback(
+    async (articleId: string, newDate: string): Promise<void> => {
       await request(`/api/articles/${articleId}/schedule`, {
         method: 'PATCH',
         body: { scheduled_publish_at: newDate },
       });
-      onSuccess?.();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to reschedule');
-      throw err; // re-throw so caller can revert optimistic update
-    } finally {
-      setIsRescheduling(false);
-    }
-  }, [onSuccess, request]);
+    },
+    [request]
+  );
 
-  const publishNow = useCallback(async (articleId: string): Promise<IPublishNowResult | null> => {
-    setIsPublishing(true);
-    setError(null);
-    try {
-      const data = await request<IPublishNowResult>(`/api/articles/${articleId}/publish-now`, {
+  const publishNowFn = useCallback(
+    async (articleId: string): Promise<IPublishNowResult | null> => {
+      return request<IPublishNowResult>(`/api/articles/${articleId}/publish-now`, {
         method: 'POST',
       });
-      onSuccess?.();
-      return data;
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to publish');
-      throw err;
-    } finally {
-      setIsPublishing(false);
-    }
-  }, [onSuccess, request]);
+    },
+    [request]
+  );
 
-  const fixQAIssues = useCallback(async (articleId: string): Promise<void> => {
-    setIsFixingQA(true);
-    setError(null);
-    try {
+  const fixQAIssuesFn = useCallback(
+    async (articleId: string): Promise<void> => {
       await request(`/api/articles/${articleId}/fix-qa`, { method: 'POST' });
-      onSuccess?.();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to fix QA issues');
-      throw err;
-    } finally {
-      setIsFixingQA(false);
-    }
-  }, [onSuccess, request]);
+    },
+    [request]
+  );
 
-  const syncToBlog = useCallback(async (articleId: string): Promise<ISyncToBlogResult | null> => {
-    setIsSyncingToBlog(true);
-    setError(null);
-    try {
-      const data = await request<ISyncToBlogResult>(`/api/articles/${articleId}/sync-to-blog`, {
+  const syncToBlogFn = useCallback(
+    async (articleId: string): Promise<ISyncToBlogResult | null> => {
+      return request<ISyncToBlogResult>(`/api/articles/${articleId}/sync-to-blog`, {
         method: 'POST',
       });
-      onSuccess?.();
-      return data;
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to sync to blog');
-      throw err;
-    } finally {
-      setIsSyncingToBlog(false);
-    }
-  }, [onSuccess, request]);
+    },
+    [request]
+  );
 
-  return { reschedule, publishNow, fixQAIssues, syncToBlog, isRescheduling, isPublishing, isFixingQA, isSyncingToBlog, error };
+  // Create async action hooks for each action
+  const rescheduleAction = useAsyncAction<[string, string], void>(rescheduleFn, {
+    onSuccess: () => onSuccess?.(),
+    errorMessage: 'Failed to reschedule',
+  });
+
+  const publishNowAction = useAsyncAction<[string], IPublishNowResult | null>(publishNowFn, {
+    onSuccess: () => onSuccess?.(),
+    errorMessage: 'Failed to publish',
+  });
+
+  const fixQAIssuesAction = useAsyncAction<[string], void>(fixQAIssuesFn, {
+    onSuccess: () => onSuccess?.(),
+    errorMessage: 'Failed to fix QA issues',
+  });
+
+  const syncToBlogAction = useAsyncAction<[string], ISyncToBlogResult | null>(syncToBlogFn, {
+    onSuccess: () => onSuccess?.(),
+    errorMessage: 'Failed to sync to blog',
+  });
+
+  return {
+    reschedule: rescheduleAction.run,
+    publishNow: publishNowAction.run,
+    fixQAIssues: fixQAIssuesAction.run,
+    syncToBlog: syncToBlogAction.run,
+    isRescheduling: rescheduleAction.isLoading,
+    isPublishing: publishNowAction.isLoading,
+    isFixingQA: fixQAIssuesAction.isLoading,
+    isSyncingToBlog: syncToBlogAction.isLoading,
+    // Use the first action's error (they all share the same error pattern)
+    error:
+      rescheduleAction.error ||
+      publishNowAction.error ||
+      fixQAIssuesAction.error ||
+      syncToBlogAction.error,
+  };
 }

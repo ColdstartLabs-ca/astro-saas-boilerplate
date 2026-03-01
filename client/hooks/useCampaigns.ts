@@ -10,12 +10,11 @@
 
 'use client';
 
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { useCallback, useMemo } from 'react';
+import { useMemo } from 'react';
 import type { ICampaignWithStats, ICreateCampaignInput } from '@shared/types/campaign.types';
 import { apiFetch } from '@client/utils/api-client';
 import { getTranslations } from '@src/i18n/utils';
-import { useMutationWithToast } from './useMutationWithToast';
+import { useCRUD } from './useCRUD';
 
 // =============================================================================
 // API Functions
@@ -54,6 +53,13 @@ async function deleteCampaign(campaignId: string): Promise<{ success: boolean }>
 }
 
 // =============================================================================
+// Types for useCRUD
+// =============================================================================
+
+// No update function for campaigns, so we use never for TUpdate
+type CampaignUpdateInput = never;
+
+// =============================================================================
 // Hook
 // =============================================================================
 
@@ -70,69 +76,44 @@ interface IUseCampaignsReturn {
 }
 
 export function useCampaigns(projectId: string | null | undefined): IUseCampaignsReturn {
-  const queryClient = useQueryClient();
   const t = useMemo(() => getTranslations('dashboard'), []);
 
-  // Fetch campaigns query
-  const {
-    data: campaigns = [],
-    isLoading,
-    error,
-  } = useQuery({
+  // Use the generic CRUD hook
+  const crud = useCRUD<ICampaignWithStats, ICreateCampaignInput, CampaignUpdateInput, string>({
     queryKey: ['campaigns', projectId],
-    queryFn: () => (projectId ? fetchCampaigns(projectId) : Promise.resolve([])),
+    fetchFn: () => (projectId ? fetchCampaigns(projectId) : Promise.resolve([])),
+    createFn: createCampaign,
+    deleteFn: deleteCampaign,
     enabled: !!projectId,
     staleTime: 1000 * 30, // 30 seconds - campaigns change more frequently
-  });
-
-  // Create campaign mutation
-  const createMutation = useMutation({
-    mutationFn: createCampaign,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['campaigns', projectId] });
+    toastMessages: {
+      create: {
+        success: t('campaigns.success.created'),
+        error: t('campaigns.create.error'),
+      },
+      delete: {
+        success: t('campaigns.delete.success'),
+        error: t('campaigns.delete.error'),
+      },
+    },
+    loggerContexts: {
+      create: 'Failed to create campaign',
+      delete: (campaignId: string) => ({
+        message: 'Failed to delete campaign',
+        context: { campaignId },
+      }),
     },
   });
-
-  // Delete campaign mutation
-  const deleteMutation = useMutation({
-    mutationFn: deleteCampaign,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['campaigns', projectId] });
-    },
-  });
-
-  // Wrapped mutation functions with error handling
-  const handleCreateCampaign = useMutationWithToast(createMutation, {
-    successMessage: t('campaigns.success.created'),
-    errorMessage: t('campaigns.create.error'),
-    loggerContext: 'Failed to create campaign',
-  });
-
-  const deleteCampaignWithToast = useMutationWithToast(deleteMutation, {
-    successMessage: t('campaigns.delete.success'),
-    errorMessage: t('campaigns.delete.error'),
-    loggerContext: (campaignId: string) => ({
-      message: 'Failed to delete campaign',
-      context: { campaignId },
-    }),
-  });
-
-  const handleDeleteCampaign = useCallback(
-    async (campaignId: string): Promise<void> => {
-      await deleteCampaignWithToast(campaignId);
-    },
-    [deleteCampaignWithToast]
-  );
 
   return {
     // Data
-    campaigns,
-    isLoading,
-    error,
+    campaigns: crud.items,
+    isLoading: crud.isLoading,
+    error: crud.error,
 
     // Actions
-    createCampaign: handleCreateCampaign,
-    deleteCampaign: handleDeleteCampaign,
-    refetch: () => queryClient.invalidateQueries({ queryKey: ['campaigns', projectId] }),
+    createCampaign: crud.create,
+    deleteCampaign: crud.remove,
+    refetch: crud.refetch,
   };
 }

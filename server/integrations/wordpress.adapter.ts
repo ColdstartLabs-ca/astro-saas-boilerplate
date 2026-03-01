@@ -7,21 +7,8 @@
  * API Reference: https://developer.wordpress.org/rest-api/reference/posts/
  */
 
-import { marked } from 'marked';
-import type {
-  ICMSAdapter,
-  IPublishContext,
-  ITestConnectionResult,
-  IPublishResult,
-} from './adapter.interface';
-
-// RequestInit type definition for fetch API (simplified to avoid DOM dependency issues in ESLint)
-interface IRequestInit {
-  method?: string;
-  headers?: Record<string, string> | { get(name: string): string | null };
-  body?: string | FormData | Blob | ArrayBuffer | null;
-  signal?: AbortSignal | null;
-}
+import { BaseAdapter, type IRequestInit } from './adapters/base.adapter';
+import type { IPublishContext, ITestConnectionResult, IPublishResult } from './adapter.interface';
 import type {
   IWordPressConfig,
   IWordPressCredentials,
@@ -59,29 +46,13 @@ interface IWordPressErrorResponse {
  * Publishes articles as draft posts to WordPress sites.
  * Converts markdown content to HTML before sending.
  */
-export class WordPressAdapter implements ICMSAdapter {
+export class WordPressAdapter extends BaseAdapter {
   readonly type = 'wordpress' as const;
 
   /**
    * WordPress REST API endpoint path
    */
   private static readonly API_PATH = '/wp-json/wp/v2/posts';
-
-  /**
-   * HTTP timeout in milliseconds
-   */
-  private static readonly TIMEOUT_MS = 30000;
-
-  /**
-   * Convert markdown to HTML using marked library
-   * This is Cloudflare Workers compatible
-   */
-  private markdownToHtml(markdown: string): string {
-    if (!markdown) return '';
-    // Marked may return a Promise in some versions, handle that
-    const result = marked(markdown);
-    return typeof result === 'string' ? result : String(result);
-  }
 
   /**
    * Build Basic Auth header from credentials
@@ -105,8 +76,7 @@ export class WordPressAdapter implements ICMSAdapter {
     const url = new URL(endpoint, siteUrl.replace(/\/$/, ''));
     const authHeader = this.buildAuthHeader(username, appPassword);
 
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), WordPressAdapter.TIMEOUT_MS);
+    const { controller, cleanup } = this.createTimeoutController();
 
     try {
       // Cast to any to avoid ESLint 'RequestInit is not defined' error
@@ -123,7 +93,7 @@ export class WordPressAdapter implements ICMSAdapter {
       };
       const response = await fetch(url.toString(), fetchOptions);
 
-      clearTimeout(timeoutId);
+      cleanup();
 
       if (!response.ok) {
         const errorData = (await response.json().catch(() => ({}))) as IWordPressErrorResponse;
@@ -134,7 +104,7 @@ export class WordPressAdapter implements ICMSAdapter {
 
       return (await response.json()) as T;
     } catch (error) {
-      clearTimeout(timeoutId);
+      cleanup();
       throw error;
     }
   }
@@ -178,17 +148,9 @@ export class WordPressAdapter implements ICMSAdapter {
         `${WordPressAdapter.API_PATH}?per_page=1`
       );
 
-      return {
-        success: true,
-        timestamp: new Date().toISOString(),
-      };
+      return this.createTestConnectionSuccess();
     } catch (error) {
-      const message = error instanceof Error ? error.message : String(error);
-      return {
-        success: false,
-        timestamp: new Date().toISOString(),
-        error: message,
-      };
+      return this.createTestConnectionError(error);
     }
   }
 
@@ -218,7 +180,7 @@ export class WordPressAdapter implements ICMSAdapter {
       }
 
       // Convert markdown to HTML
-      const htmlContent = this.markdownToHtml(article.content);
+      const htmlContent = this.convertMarkdownToHtml(article.content);
 
       // Build WordPress post payload
       const postPayload = {
@@ -246,17 +208,9 @@ export class WordPressAdapter implements ICMSAdapter {
         }
       );
 
-      return {
-        success: true,
-        externalId: String(response.id),
-        externalUrl: response.link,
-      };
+      return this.createPublishSuccess(String(response.id), response.link);
     } catch (error) {
-      const message = error instanceof Error ? error.message : String(error);
-      return {
-        success: false,
-        error: message,
-      };
+      return this.createPublishError(error);
     }
   }
 }

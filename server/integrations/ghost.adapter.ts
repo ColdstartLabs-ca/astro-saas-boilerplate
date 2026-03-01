@@ -7,21 +7,8 @@
  * API Reference: https://ghost.org/docs/admin-api/
  */
 
-import type {
-  ICMSAdapter,
-  IPublishContext,
-  ITestConnectionResult,
-  IPublishResult,
-} from './adapter.interface';
-
-// RequestInit type definition for fetch API (simplified to avoid DOM dependency issues in ESLint)
-
-interface IRequestInit {
-  method?: string;
-  headers?: Record<string, string> | { get(name: string): string | null };
-  body?: string | FormData | Blob | ArrayBuffer | null;
-  signal?: AbortSignal | null;
-}
+import { BaseAdapter, type IRequestInit, IntegrationError } from './adapters/base.adapter';
+import type { IPublishContext, ITestConnectionResult, IPublishResult } from './adapter.interface';
 import type {
   IGhostConfig,
   IGhostCredentials,
@@ -77,7 +64,7 @@ interface IGhostErrorResponse {
  * Publishes articles as draft posts to Ghost blogs.
  * Ghost accepts raw HTML directly - no content conversion needed.
  */
-export class GhostAdapter implements ICMSAdapter {
+export class GhostAdapter extends BaseAdapter {
   readonly type = 'ghost' as const;
 
   /**
@@ -85,11 +72,6 @@ export class GhostAdapter implements ICMSAdapter {
    */
   private static readonly API_SITE_PATH = '/ghost/api/admin/site/';
   private static readonly API_POSTS_PATH = '/ghost/api/admin/posts/';
-
-  /**
-   * HTTP timeout in milliseconds
-   */
-  private static readonly TIMEOUT_MS = 30000;
 
   /**
    * JWT token expiry time in seconds (5 minutes)
@@ -178,7 +160,7 @@ export class GhostAdapter implements ICMSAdapter {
     const [id, secret] = apiKey.split(':');
 
     if (!id || !secret) {
-      throw new Error('Invalid API key format. Expected "id:secret"');
+      throw new IntegrationError('Invalid API key format. Expected "id:secret"');
     }
 
     // Decode hex secret to bytes
@@ -272,8 +254,7 @@ export class GhostAdapter implements ICMSAdapter {
     // Generate JWT token
     const token = await this.generateJWTAsync(apiKey);
 
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), GhostAdapter.TIMEOUT_MS);
+    const { controller, cleanup } = this.createTimeoutController();
 
     try {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -290,18 +271,18 @@ export class GhostAdapter implements ICMSAdapter {
 
       const response = await fetch(url.toString(), fetchOptions);
 
-      clearTimeout(timeoutId);
+      cleanup();
 
       if (!response.ok) {
         const errorData = (await response.json().catch(() => ({}))) as IGhostErrorResponse;
         const errorMessage =
           errorData.errors?.[0]?.message || `HTTP ${response.status}: ${response.statusText}`;
-        throw new Error(`Ghost API error: ${errorMessage}`);
+        throw new IntegrationError(`Ghost API error: ${errorMessage}`, undefined, response.status);
       }
 
       return (await response.json()) as T;
     } catch (error) {
-      clearTimeout(timeoutId);
+      cleanup();
       throw error;
     }
   }
@@ -437,7 +418,7 @@ export class GhostAdapter implements ICMSAdapter {
 
       // Convert markdown to HTML (Ghost expects HTML)
       // Ghost Admin API accepts HTML directly in the `html` field
-      const htmlContent = await this.markdownToHtml(article.content);
+      const htmlContent = await this.convertMarkdownToHtmlAsync(article.content);
 
       // Build tags from article keywords/categories if available
       const tags = this.buildTags(article);
@@ -482,25 +463,17 @@ export class GhostAdapter implements ICMSAdapter {
         };
       }
 
-      return {
-        success: true,
-        externalId: post.id,
-        externalUrl: post.url,
-      };
+      return this.createPublishSuccess(post.id, post.url);
     } catch (error) {
-      const message = error instanceof Error ? error.message : String(error);
-      return {
-        success: false,
-        error: message,
-      };
+      return this.createPublishError(error);
     }
   }
 
   /**
-   * Convert markdown to HTML using marked library
-   * This is Cloudflare Workers compatible
+   * Convert markdown to HTML asynchronously
+   * Ghost adapter needs async version for compatibility
    */
-  private async markdownToHtml(markdown: string): Promise<string> {
+  private async convertMarkdownToHtmlAsync(markdown: string): Promise<string> {
     if (!markdown) return '';
 
     // Dynamic import to avoid issues in test environments
