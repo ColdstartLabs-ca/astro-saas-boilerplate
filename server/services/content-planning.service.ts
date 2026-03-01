@@ -28,15 +28,21 @@ export class ContentPlanningService {
    * pending keywords, spaced according to the campaign's schedule frequency.
    *
    * - Validates campaign ownership
-   * - Deletes any existing planned articles for the campaign
-   * - Inserts new planned articles for each pending keyword with calculated dates
+   * - replace mode: deletes existing planned articles, reschedules all pending keywords
+   * - merge mode: keeps existing articles, only schedules keywords not yet planned
+   * - Inserts new planned articles with calculated dates
    *
    * @param campaignId - The campaign ID to plan content for
    * @param userId - The user ID making the request (must own the campaign)
+   * @param mode - 'replace' (default) or 'merge'
    * @returns Object with count of planned articles and date range
    * @throws CampaignNotFoundError if campaign not found or not owned by user
    */
-  async planContent(campaignId: string, userId: string): Promise<IPlanContentResponse> {
+  async planContent(
+    campaignId: string,
+    userId: string,
+    mode: 'replace' | 'merge' = 'replace'
+  ): Promise<IPlanContentResponse> {
     // Step 1: Fetch campaign with ownership check
     const { data: campaign, error: campaignError } = await supabaseAdmin
       .from('campaigns')
@@ -96,15 +102,49 @@ export class ContentPlanningService {
       };
     }
 
-    // Step 4: Delete existing planned articles for this campaign
-    const { error: deleteError } = await supabaseAdmin
-      .from('articles')
-      .delete()
-      .eq('campaign_id', campaignId)
-      .eq('status', 'planned');
+    // Step 4: Handle existing articles based on mode
+    if (mode === 'merge') {
+      // Merge: keep existing articles, only schedule keywords not already planned
+      const { data: existingArticles, error: existingError } = await supabaseAdmin
+        .from('articles')
+        .select('primary_keyword')
+        .eq('campaign_id', campaignId)
+        .neq('status', 'failed');
 
-    if (deleteError) {
-      throw new Error(`Failed to delete existing planned articles: ${deleteError.message}`);
+      if (existingError) {
+        throw new Error(`Failed to fetch existing articles: ${existingError.message}`);
+      }
+
+      const existingKeywords = new Set(
+        (existingArticles ?? [])
+          .map((a: { primary_keyword: string | null }) => a.primary_keyword?.toLowerCase().trim())
+          .filter(Boolean)
+      );
+
+      keywordsToPlan = keywordsToPlan.filter(
+        k => !existingKeywords.has(k.keyword.toLowerCase().trim())
+      );
+
+      if (keywordsToPlan.length === 0) {
+        return {
+          planned: 0,
+          startDate: null,
+          endDate: null,
+          message: 'All keywords already have articles scheduled',
+          skippedAsCovered: skippedAsCovered.length > 0 ? skippedAsCovered : undefined,
+        };
+      }
+    } else {
+      // Replace: delete all existing planned articles and start fresh
+      const { error: deleteError } = await supabaseAdmin
+        .from('articles')
+        .delete()
+        .eq('campaign_id', campaignId)
+        .eq('status', 'planned');
+
+      if (deleteError) {
+        throw new Error(`Failed to delete existing planned articles: ${deleteError.message}`);
+      }
     }
 
     // Step 5: Calculate scheduled dates for each keyword

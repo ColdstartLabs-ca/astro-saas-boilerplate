@@ -13,9 +13,10 @@ const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12
  * POST /api/campaigns/:campaignId/plan-content
  * Create planned article stubs from a campaign's pending keywords.
  *
- * Distributes keywords across future dates using the campaign's schedule_frequency.
- * Deletes any previously planned articles before re-planning.
- * Planned articles have status='planned', no content, and no credits spent.
+ * Body (optional):
+ * - mode: 'replace' (default) | 'merge'
+ *   - replace: deletes existing planned articles and reschedules all pending keywords
+ *   - merge: keeps existing articles, only schedules keywords not yet planned
  *
  * Returns:
  * - 200: { planned: number, startDate: string | null, endDate: string | null, message?: string }
@@ -24,15 +25,23 @@ const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12
  * - 404: Campaign not found or not owned by user
  * - 500: Internal server error
  */
-export const POST = withAuth(async (userId, { params }) => {
-  const campaignId = params.campaignId as string;
+export const POST = withAuth(async (userId, context) => {
+  const campaignId = context.params.campaignId as string;
 
   if (!UUID_REGEX.test(campaignId)) {
     return errorResponse('VALIDATION_ERROR', 'Invalid campaign ID format', 400);
   }
 
+  let mode: 'replace' | 'merge' = 'replace';
   try {
-    const result = await contentPlanningService.planContent(campaignId, userId);
+    const body = await context.request.json();
+    if (body?.mode === 'merge') mode = 'merge';
+  } catch {
+    // No body or invalid JSON — default to replace
+  }
+
+  try {
+    const result = await contentPlanningService.planContent(campaignId, userId, mode);
     return jsonResponse(result);
   } catch (err) {
     if (err instanceof CampaignNotFoundError) {

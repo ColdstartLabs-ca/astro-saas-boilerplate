@@ -1,9 +1,9 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { X, CheckCircle, Loader2, CalendarDays, AlertTriangle, ExternalLink } from 'lucide-react';
 import type { IPlanContentResponse } from '@shared/types/calendar.types';
-import { useContentPlanning } from '@client/hooks/useContentPlanning';
+import { useContentPlanning, type PlanContentMode } from '@client/hooks/useContentPlanning';
 import { DashboardButton } from '../../ui/DashboardButton';
 
 interface IPlanContentModalProps {
@@ -17,7 +17,7 @@ interface IPlanContentModalProps {
 
 /**
  * Shared modal for planning content for a campaign.
- * Shows 4 states: idle, planning (spinner), success, empty, and error.
+ * Shows 5 states: idle (with mode selection), planning (spinner), success, empty, and error.
  *
  * @example
  * ```tsx
@@ -40,11 +40,12 @@ export function PlanContentModal({
   autoTrigger = false,
 }: IPlanContentModalProps): JSX.Element | null {
   const { planContent, isPlanning, result, error, reset } = useContentPlanning();
+  const [mode, setMode] = useState<PlanContentMode>('replace');
 
-  // Auto-trigger planning on mount when requested
+  // Auto-trigger planning on mount when requested (always replace in auto mode)
   useEffect(() => {
     if (isOpen && autoTrigger) {
-      planContent(campaignId);
+      planContent(campaignId, 'replace');
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen, autoTrigger, campaignId]);
@@ -52,6 +53,7 @@ export function PlanContentModal({
   const handleClose = () => {
     if (result) onSuccess?.(result);
     reset();
+    setMode('replace');
     onClose();
   };
 
@@ -61,7 +63,7 @@ export function PlanContentModal({
   };
 
   const handleRetry = () => {
-    planContent(campaignId);
+    planContent(campaignId, mode);
   };
 
   if (!isOpen) return null;
@@ -98,9 +100,11 @@ export function PlanContentModal({
         <div className="mb-6">
           <div className="flex items-center gap-2 mb-1">
             <CalendarDays className="w-5 h-5 text-accent" />
-            <h3 className="text-lg font-bold text-white">Plan Content Calendar</h3>
+            <h3 className="text-lg font-bold text-white">Plan Content</h3>
           </div>
-          {campaignName && <p className="text-sm text-muted ml-7">{campaignName}</p>}
+          {campaignName && (
+            <p className="text-sm font-medium text-secondary ml-7">{campaignName}</p>
+          )}
         </div>
 
         {/* State: Planning */}
@@ -223,22 +227,70 @@ export function PlanContentModal({
 
         {/* State: Idle (no request yet, autoTrigger=false) */}
         {!isPlanning && !hasSuccess && !error && (
-          <div className="flex flex-col items-center gap-4 py-4" data-testid="idle-state">
-            <div className="flex items-center justify-center w-14 h-14 rounded-full bg-accent/10 border border-accent/20">
-              <CalendarDays className="w-7 h-7 text-accent" />
+          <div className="flex flex-col gap-4" data-testid="idle-state">
+            {/* Mode selection */}
+            <div className="space-y-2">
+              <button
+                type="button"
+                onClick={() => setMode('replace')}
+                className={`w-full text-left rounded-lg border p-3 transition-colors ${
+                  mode === 'replace'
+                    ? 'border-accent bg-accent/10'
+                    : 'border-border bg-surface-light hover:border-muted'
+                }`}
+                data-testid="mode-replace"
+              >
+                <div className="flex items-start gap-3">
+                  <span
+                    className={`mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full border ${
+                      mode === 'replace' ? 'border-accent' : 'border-muted'
+                    }`}
+                  >
+                    {mode === 'replace' && <span className="h-2 w-2 rounded-full bg-accent" />}
+                  </span>
+                  <div>
+                    <p className="text-sm font-medium text-white">Replace existing plan</p>
+                    <p className="text-xs text-muted mt-0.5">
+                      Removes previously planned articles and reschedules all pending keywords.
+                    </p>
+                  </div>
+                </div>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setMode('merge')}
+                className={`w-full text-left rounded-lg border p-3 transition-colors ${
+                  mode === 'merge'
+                    ? 'border-accent bg-accent/10'
+                    : 'border-border bg-surface-light hover:border-muted'
+                }`}
+                data-testid="mode-merge"
+              >
+                <div className="flex items-start gap-3">
+                  <span
+                    className={`mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full border ${
+                      mode === 'merge' ? 'border-accent' : 'border-muted'
+                    }`}
+                  >
+                    {mode === 'merge' && <span className="h-2 w-2 rounded-full bg-accent" />}
+                  </span>
+                  <div>
+                    <p className="text-sm font-medium text-white">Add new keywords only</p>
+                    <p className="text-xs text-muted mt-0.5">
+                      Keeps existing planned articles and only schedules keywords not yet planned.
+                    </p>
+                  </div>
+                </div>
+              </button>
             </div>
-            <div className="text-center">
-              <p className="text-white font-semibold">Ready to plan your content calendar</p>
-              <p className="text-muted text-sm mt-1">
-                We&apos;ll schedule your pending keywords across upcoming dates.
-              </p>
-            </div>
+
             <div className="flex gap-3 w-full">
               <DashboardButton variant="outline" onClick={handleClose} className="flex-1">
                 Cancel
               </DashboardButton>
               <DashboardButton
-                onClick={() => planContent(campaignId)}
+                onClick={() => planContent(campaignId, mode)}
                 className="flex-1"
                 data-testid="start-planning-button"
               >
