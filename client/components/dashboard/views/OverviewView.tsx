@@ -7,6 +7,7 @@ import { ProjectList } from '@client/components/projects/ProjectList';
 import { OnboardingWizard } from '@client/components/onboarding/OnboardingWizard';
 import { OnboardingSetupBanner } from '@client/components/onboarding/OnboardingSetupBanner';
 import { CreditsDisplay } from '@client/components/stripe/CreditsDisplay';
+import { useIntegrations } from '@client/hooks/useIntegrations';
 import { useProjects } from '@client/hooks/useProjects';
 import { useSubscription, useUserStore } from '@client/store/userStore';
 import { cn } from '@client/utils/cn';
@@ -35,12 +36,25 @@ import { useEffect, useMemo, useState } from 'react';
 
 const AUTO_OPENED_ONBOARDING_SESSION_KEY = 'hasAutoOpenedOnboarding';
 
+const INTEGRATION_LABELS: Record<string, string> = {
+  wordpress: 'WordPress',
+  webhook: 'Webhook',
+  webflow: 'Webflow',
+  shopify: 'Shopify',
+  wix: 'Wix',
+  notion: 'Notion',
+  ghost: 'Ghost',
+  slack: 'Slack',
+  other: 'Other',
+};
+
 export function OverviewView(): JSX.Element {
   const t = useMemo(() => getTranslations('dashboard'), []);
   const logger = useLogger('OverviewView');
   const { user } = useUserStore();
   const subscription = useSubscription();
   const { projects, activeProject, isLoading, deleteProject, updateProject } = useProjects();
+  const { integrations } = useIntegrations();
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [hasAutoOpenedOnboarding, setHasAutoOpenedOnboarding] = useState(() => {
     if (typeof window === 'undefined') return false;
@@ -50,6 +64,12 @@ export function OverviewView(): JSX.Element {
   const [isDeleting, setIsDeleting] = useState(false);
   const [projectToEdit, setProjectToEdit] = useState<IProject | null>(null);
   const [isEditing, setIsEditing] = useState(false);
+
+  const platformLabel = useMemo(() => {
+    const active = integrations.find((i) => i.status === 'active');
+    const type = active?.type ?? activeProject?.cms_type;
+    return type ? (INTEGRATION_LABELS[type] ?? type) : 'Not set';
+  }, [integrations, activeProject]);
 
   const planDisplayName = getPlanDisplayName({
     subscriptionTier: user?.profile?.subscription_tier,
@@ -286,8 +306,8 @@ export function OverviewView(): JSX.Element {
                         <div className="text-[10px] text-secondary uppercase tracking-wider font-bold mb-0.5">
                           Platform
                         </div>
-                        <div className="text-sm text-white font-medium capitalize flex items-center gap-1.5">
-                          {activeProject.cms_type}
+                        <div className="text-sm text-white font-medium flex items-center gap-1.5">
+                          {platformLabel}
                         </div>
                       </div>
                       <div>

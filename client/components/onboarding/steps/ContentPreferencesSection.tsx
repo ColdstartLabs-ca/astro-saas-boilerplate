@@ -16,7 +16,7 @@ import { useCallback, useEffect } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { Palette, Image, FileText, Link2 } from 'lucide-react';
+import { Calendar, Palette, Image, FileText, Link2 } from 'lucide-react';
 import type { IContentPreferences } from '@shared/types/project.types';
 
 // =============================================================================
@@ -31,6 +31,12 @@ export const ARTICLE_STYLES = [
   { value: 'tutorial', label: 'Tutorial' },
   { value: 'review', label: 'Review' },
   { value: 'comparison', label: 'Comparison' },
+] as const;
+
+export const FREQUENCY_OPTIONS = [
+  { value: 'daily', label: 'Daily' },
+  { value: '3x_week', label: '3× per week' },
+  { value: 'weekly', label: 'Weekly' },
 ] as const;
 
 export const INTERNAL_LINKS_OPTIONS = [
@@ -50,6 +56,7 @@ export const IMAGE_STYLES = [
 ] as const;
 
 const DEFAULT_VALUES: IContentPreferences = {
+  frequency: 'daily',
   articleStyle: 'informative',
   internalLinksCount: 2,
   brandColor: '#4F46E5',
@@ -62,6 +69,7 @@ const DEFAULT_VALUES: IContentPreferences = {
 // =============================================================================
 
 const contentPreferencesFormSchema = z.object({
+  frequency: z.enum(['daily', '3x_week', 'weekly']),
   articleStyle: z.enum(['informative', 'how-to', 'listicle', 'opinion', 'tutorial', 'review', 'comparison']),
   internalLinksCount: z.number().int().min(0).max(5),
   brandColor: z.string().regex(/^#[0-9A-Fa-f]{6}$/, 'Must be a valid hex color'),
@@ -97,6 +105,7 @@ export function ContentPreferencesSection({
   } = useForm<IFormValues>({
     resolver: zodResolver(contentPreferencesFormSchema),
     defaultValues: {
+      frequency: value.frequency ?? DEFAULT_VALUES.frequency!,
       articleStyle: value.articleStyle ?? DEFAULT_VALUES.articleStyle!,
       internalLinksCount: value.internalLinksCount ?? DEFAULT_VALUES.internalLinksCount!,
       brandColor: value.brandColor ?? DEFAULT_VALUES.brandColor!,
@@ -111,6 +120,7 @@ export function ContentPreferencesSection({
   const handleChange = useCallback(
     (updatedValues: IFormValues) => {
       onChange({
+        frequency: updatedValues.frequency,
         articleStyle: updatedValues.articleStyle,
         internalLinksCount: updatedValues.internalLinksCount,
         brandColor: updatedValues.brandColor,
@@ -137,6 +147,38 @@ export function ContentPreferencesSection({
         <p className="text-xs text-muted mt-1">
           Set defaults for your generated content. You can customize these later.
         </p>
+      </div>
+
+      {/* Publishing Frequency */}
+      <div className="space-y-1.5">
+        <label
+          htmlFor="frequency"
+          className="flex items-center gap-2 text-sm font-medium text-white"
+        >
+          <Calendar className="w-4 h-4 text-muted" />
+          Publishing Frequency
+        </label>
+        <Controller
+          name="frequency"
+          control={control}
+          render={({ field }) => (
+            <select
+              {...field}
+              id="frequency"
+              className="w-full bg-main border border-border rounded-lg px-3 py-2.5 text-white text-sm focus:ring-1 focus:ring-accent outline-none transition-all cursor-pointer"
+              onChange={(e) => {
+                field.onChange(e);
+                handleChange({ ...formValues, frequency: e.target.value as IFormValues['frequency'] });
+              }}
+            >
+              {FREQUENCY_OPTIONS.map((opt) => (
+                <option key={opt.value} value={opt.value}>
+                  {opt.label}
+                </option>
+              ))}
+            </select>
+          )}
+        />
       </div>
 
       {/* Row 1: Article Style + Internal Links */}

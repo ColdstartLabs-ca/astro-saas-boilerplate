@@ -186,7 +186,7 @@ export class ProjectService {
         domain: normalizeDomain(validated.domain),
         industry: validated.industry || null,
         cms_type: validated.cms_type || 'wordpress',
-        content_preferences: validated.content_preferences || {},
+        content_preferences: { frequency: 'daily', ...validated.content_preferences },
         status: 'active',
         // Outrank feature parity fields
         language: validated.language ?? 'en',

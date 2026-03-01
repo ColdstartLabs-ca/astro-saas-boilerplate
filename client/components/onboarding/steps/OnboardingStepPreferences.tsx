@@ -42,6 +42,27 @@ export function OnboardingStepPreferences({
 
   const { projectId } = useOnboardingStore();
 
+  const savePreferences = useCallback(
+    async (prefs: IContentPreferences) => {
+      if (!projectId) return;
+      await apiFetch(`/api/projects/${projectId}`, {
+        method: 'PATCH',
+        body: JSON.stringify({ content_preferences: prefs }),
+      });
+    },
+    [projectId]
+  );
+
+  const handleSkip = useCallback(async () => {
+    // Save defaults so frequency is persisted even when preferences step is skipped
+    try {
+      await savePreferences(CONTENT_PREFERENCES_DEFAULTS);
+    } catch {
+      // Non-blocking — defaults are already set at project creation, skip anyway
+    }
+    onSkip();
+  }, [savePreferences, onSkip]);
+
   const handleSaveAndContinue = useCallback(async () => {
     // BUG M3 fix: guard against null projectId — cannot save without a project
     if (!projectId) {
@@ -96,7 +117,7 @@ export function OnboardingStepPreferences({
 
       <button
         type="button"
-        onClick={onSkip}
+        onClick={handleSkip}
         disabled={isSaving}
         className="w-full py-2.5 text-sm text-muted hover:text-secondary transition-colors flex items-center justify-center gap-2"
       >
