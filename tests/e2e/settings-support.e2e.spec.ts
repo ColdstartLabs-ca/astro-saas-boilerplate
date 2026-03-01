@@ -31,7 +31,7 @@ class SettingsPage extends BasePage {
   get productUpdatesToggle() {
     return this.page
       .locator('label')
-      .filter({ hasText: /Product Updates/ })
+      .filter({ hasText: /product updates/i })
       .locator('button');
   }
 
@@ -298,7 +298,7 @@ test.describe('Settings Tab Layout E2E Tests', () => {
     await expect(articlesTab).toBeVisible();
 
     // Articles section content should be visible (Language & Country heading)
-    await expect(page.getByText(/language.*country/i)).toBeVisible();
+    await expect(page.getByRole('heading', { name: /language.*country/i })).toBeVisible();
   });
 
   test('should switch between Articles and Account tabs', async ({ page }) => {
@@ -327,7 +327,7 @@ test.describe('Settings Tab Layout E2E Tests', () => {
     await articlesTab.click();
 
     // Articles content should be visible again
-    await expect(page.getByText(/language.*country/i)).toBeVisible();
+    await expect(page.getByRole('heading', { name: /language.*country/i })).toBeVisible();
   });
 
   test('should show empty state when no project selected', async ({ page }) => {
@@ -400,8 +400,8 @@ test.describe('Settings Tab Layout E2E Tests', () => {
     await settingsPage.waitForPageLoad();
 
     // Project name should be visible in the project context header (not sidebar)
-    // Use more specific selector to avoid matching sidebar project selector
-    await expect(page.locator('.bg-surface-light').getByText('Test Project')).toBeVisible();
+    // Use main content area to avoid matching sidebar project selector
+    await expect(page.getByRole('main').getByText('Test Project').first()).toBeVisible();
 
     // Language dropdown should have correct value
     const languageSelect = page.locator('#language');
