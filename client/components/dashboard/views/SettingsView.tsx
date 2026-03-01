@@ -1,11 +1,12 @@
 'use client';
 
 import { useState } from 'react';
-import { UserCircle, CreditCard, Globe, BellRing, Key, User, Check, Database } from 'lucide-react';
+import { UserCircle, CreditCard, Globe, BellRing, Key, User, Check, Database, FileText } from 'lucide-react';
 import { DashboardButton } from '../ui/DashboardButton';
 import { InternalTabs } from '../ui/InternalTabs';
 import { ApiKeysSection } from '@client/components/settings/ApiKeysSection';
 import { RssFeedSection } from '@client/components/settings/RssFeedSection';
+import { ContentPreferencesSettings } from '@client/components/settings/ContentPreferencesSettings';
 
 export function SettingsView(): JSX.Element {
   const [activeTab, setActiveTab] = useState('profile');
@@ -16,6 +17,7 @@ export function SettingsView(): JSX.Element {
      { id: 'integrations', label: 'Integrations', icon: <Globe className="w-4 h-4"/> },
      { id: 'notifications', label: 'Notifications', icon: <BellRing className="w-4 h-4"/> },
      { id: 'api', label: 'API & Team', icon: <Key className="w-4 h-4"/> },
+     { id: 'content', label: 'Content', icon: <FileText className="w-4 h-4"/> },
   ];
 
   return (
@@ -189,6 +191,12 @@ export function SettingsView(): JSX.Element {
                     <div className="pt-8 border-t border-border">
                         <RssFeedSection />
                     </div>
+                </div>
+            )}
+
+            {activeTab === 'content' && (
+                <div className="p-8 animate-fadeIn">
+                    <ContentPreferencesSettings />
                 </div>
             )}
         </div>

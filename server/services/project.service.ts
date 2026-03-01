@@ -68,6 +68,7 @@ const createProjectSchema = z.object({
         .enum(['brand-text', 'watercolor', 'cinematic', 'illustration', 'sketch'])
         .optional(),
       globalInstructions: z.string().max(1000).optional(),
+      autoApprove: z.boolean().optional(),
     })
     .optional(),
   // Outrank feature parity fields
@@ -110,6 +111,7 @@ const updateProjectSchema = z.object({
         .enum(['brand-text', 'watercolor', 'cinematic', 'illustration', 'sketch'])
         .optional(),
       globalInstructions: z.string().max(1000).optional(),
+      autoApprove: z.boolean().optional(),
     })
     .optional(),
   status: z.enum(['active', 'inactive', 'error']).optional(),

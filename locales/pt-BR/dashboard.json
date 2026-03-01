@@ -125,7 +125,21 @@
     "productUpdates": "Atualizações do produto",
     "productUpdatesDescription": "Notícias sobre atualizações de produto e recursos",
     "marketingEmails": "Emails de marketing",
-    "marketingEmailsDescription": "Promoções e ofertas especiais"
+    "marketingEmailsDescription": "Promoções e ofertas especiais",
+    "lowCreditAlerts": "Alertas de Créditos Baixos",
+    "lowCreditAlertsDescription": "Seja notificado quando seus créditos estiverem acabando",
+    "articles": "Artigos",
+    "articlesSubtitle": "Preferências de geração de conteúdo",
+    "language": "Idioma",
+    "country": "País",
+    "languagePlaceholder": "Selecione o idioma...",
+    "countryPlaceholder": "Selecione o país...",
+    "noProject": "Nenhum projeto selecionado",
+    "noProjectDescription": "Selecione um projeto para editar suas configurações de artigos",
+    "saving": "Salvando...",
+    "saveChanges": "Salvar Alterações",
+    "projectContext": "Projeto",
+    "domain": "Domínio"
   },
   "support": {
     "title": "Ajuda e Suporte",
@@ -268,7 +282,10 @@
         "targetWordCountPlaceholder": "ex: 1000",
         "wordCountHelp": "Comprimento médio para artigos gerados",
         "confirmationNote": "Você pode alterar estas configurações a qualquer momento",
-        "completeSetup": "Concluir Configuração"
+        "completeSetup": "Concluir Configuração",
+        "autoApprove": "Aprovação Automática de Artigos",
+        "autoApproveLabel": "Aprovar e publicar automaticamente",
+        "autoApproveDescription": "Os artigos são aprovados e publicados automaticamente nas suas integrações conectadas, sem revisão manual. Desative para revisar cada artigo antes de publicar."
       },
       "buttons": {
         "cancel": "Cancelar",

@@ -53,12 +53,17 @@ export function ArticleTableRow({
   onOpenDetail,
   getStatusBadge,
 }: IArticleTableRowProps): JSX.Element {
-  // Extract first image from markdown content (if embedded)
+  // Get featured image URL from article_images (position 1 = hero) or fallback to markdown
   const thumbnailUrl = useMemo(() => {
+    const featured = article.article_images
+      ?.filter(img => img.status === 'completed' && img.image_url)
+      .sort((a, b) => a.position - b.position)[0];
+    if (featured?.image_url) return featured.image_url;
+    // Fallback: extract first image from markdown content
     if (!article.content) return null;
     const imgMatch = article.content.match(/!\[.*?\]\((https?:\/\/[^)]+)\)/);
     return imgMatch ? imgMatch[1] : null;
-  }, [article.content]);
+  }, [article.article_images, article.content]);
 
   return (
     <div

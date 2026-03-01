@@ -12,6 +12,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { FolderPlus, Search, FileText, SlidersHorizontal, Plug, Rocket } from 'lucide-react';
 import { Modal } from '@client/components/modal/Modal';
+import { ConfirmDialog } from '@client/components/ui/ConfirmDialog';
 import { OnboardingStepperProgress } from './OnboardingStepperProgress';
 import { OnboardingStepProject } from './steps/OnboardingStepProject';
 import { OnboardingStepGSC } from './steps/OnboardingStepGSC';
@@ -41,6 +42,7 @@ export function OnboardingWizard({ isOpen, onClose }: IOnboardingWizardProps): J
   const [currentStep, setCurrentStep] = useState<number>(OnboardingStep.PROJECT_CREATION);
   const [completedSteps, setCompletedSteps] = useState<Set<number>>(new Set());
   const [skippedSteps, setSkippedSteps] = useState<Set<number>>(new Set());
+  const [showBackConfirm, setShowBackConfirm] = useState(false);
 
   const { reset } = useOnboardingStore();
 
@@ -72,16 +74,17 @@ export function OnboardingWizard({ isOpen, onClose }: IOnboardingWizardProps): J
     }
   }, [currentStep]);
 
-  // Go back one step — BUG M2 fix: confirm before losing unsaved data
+  // Go back one step — confirm before losing unsaved data
   const handleBack = useCallback(() => {
+    setShowBackConfirm(true);
+  }, []);
+
+  const confirmGoBack = useCallback(() => {
     const prevStep = currentStep - 1;
     if (prevStep >= OnboardingStep.PROJECT_CREATION) {
-      const confirmed = window.confirm(
-        'Going back will lose any unsaved changes on this step. Continue?'
-      );
-      if (!confirmed) return;
       setCurrentStep(prevStep);
     }
+    setShowBackConfirm(false);
   }, [currentStep]);
 
   if (!isOpen) return null;
@@ -230,6 +233,17 @@ export function OnboardingWizard({ isOpen, onClose }: IOnboardingWizardProps): J
 
       {/* Step Content */}
       <div>{renderStep()}</div>
+
+      {/* Back Confirmation Dialog */}
+      <ConfirmDialog
+        isOpen={showBackConfirm}
+        onClose={() => setShowBackConfirm(false)}
+        onConfirm={confirmGoBack}
+        title="Go Back?"
+        message="Going back will lose any unsaved changes on this step. Continue?"
+        variant="warning"
+        labels={{ confirm: 'Go Back', cancel: 'Stay Here' }}
+      />
     </Modal>
   );
 }

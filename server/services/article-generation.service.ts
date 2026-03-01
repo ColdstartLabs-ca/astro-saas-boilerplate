@@ -291,10 +291,46 @@ export class ArticleGenerationService {
           (imagePreset ? ` with ${successfulImageCount} images` : '')
       );
 
+      // Step 6.4: Auto-approve if project setting enabled
+      // If autoApprove is set, transition draft/qa_passed → approved → published.
+      // qa_failed articles are NEVER auto-approved.
+      let autoApproved = false;
+      if ((finalStatus === 'qa_passed' || finalStatus === 'draft') && input.projectId) {
+        const shouldAutoApprove = await this.shouldAutoApprove(input.projectId);
+        if (shouldAutoApprove) {
+          autoApproved = true;
+          await this.supabase
+            .from('articles')
+            .update({ status: 'approved' })
+            .eq('id', articleId);
+          try {
+            // eslint-disable-next-line no-restricted-syntax
+            const { deliveryService } = await import('@server/services/delivery.service');
+            const result = await deliveryService.deliverArticle(articleId);
+            if (result.successful > 0) {
+              await this.supabase
+                .from('articles')
+                .update({
+                  status: 'published',
+                  published_at: new Date().toISOString(),
+                })
+                .eq('id', articleId);
+            }
+          } catch (deliveryError) {
+            console.error(
+              `[ArticleGeneration] Auto-approve delivery failed for article ${articleId}:`,
+              deliveryError
+            );
+            // Keep as approved even if delivery fails
+          }
+        }
+      }
+
       // Step 6.5: Trigger auto-delivery if campaign has auto_publish enabled
       // Only deliver articles that passed QA or are in draft status (QA disabled/unavailable).
       // Never auto-deliver qa_failed articles — those need human review first.
-      if (finalStatus === 'qa_passed' || finalStatus === 'draft') {
+      // Skip if already handled by auto-approve (Step 6.4).
+      if (!autoApproved && (finalStatus === 'qa_passed' || finalStatus === 'draft')) {
         try {
           await this.triggerAutoDeliveryIfNeeded(articleId, input.campaignId);
         } catch (deliveryError) {
@@ -303,7 +339,7 @@ export class ArticleGenerationService {
             deliveryError
           );
         }
-      } else {
+      } else if (!autoApproved) {
         console.log(
           `[ArticleGeneration] Skipping auto-delivery for article ${articleId} (status=${finalStatus})`
         );
@@ -718,6 +754,19 @@ export class ArticleGenerationService {
 
     // Log structured failure metrics
     await this.logFailureMetrics(articleId, parsedError);
+  }
+
+  /**
+   * Check if the project has auto-approve enabled.
+   * Returns true only when content_preferences.autoApprove === true.
+   */
+  private async shouldAutoApprove(projectId: string): Promise<boolean> {
+    const { data } = await this.supabase
+      .from('projects')
+      .select('content_preferences')
+      .eq('id', projectId)
+      .single();
+    return data?.content_preferences?.autoApprove === true;
   }
 
   /**

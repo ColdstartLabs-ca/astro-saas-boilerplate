@@ -1142,6 +1142,22 @@ test.describe('Calendar View Integration (Phase 7)', () => {
       });
     });
 
+    // Mock article status polling — returns 'draft' so the component detects success and closes
+    await page.route(`**/api/articles/${mockPlannedArticle.id}`, async route => {
+      if (route.request().method() === 'GET') {
+        await route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify({
+            success: true,
+            data: { article: { ...mockPlannedArticle, status: 'draft' } },
+          }),
+        });
+      } else {
+        await route.fallback();
+      }
+    });
+
     const isReady = await gotoCalendar(page);
     if (!isReady) {
       test.skip(true, 'Redirected to onboarding — auth mock not working');

@@ -125,7 +125,21 @@
     "productUpdates": "Product updates",
     "productUpdatesDescription": "News about product and feature updates",
     "marketingEmails": "Marketing emails",
-    "marketingEmailsDescription": "Promotions and special offers"
+    "marketingEmailsDescription": "Promotions and special offers",
+    "lowCreditAlerts": "Low Credit Alerts",
+    "lowCreditAlertsDescription": "Get notified when your credits are running low",
+    "articles": "Articles",
+    "articlesSubtitle": "Content generation preferences",
+    "language": "Language",
+    "country": "Country",
+    "languagePlaceholder": "Select language...",
+    "countryPlaceholder": "Select country...",
+    "noProject": "No project selected",
+    "noProjectDescription": "Select a project to edit its article settings",
+    "saving": "Saving...",
+    "saveChanges": "Save Changes",
+    "projectContext": "Project",
+    "domain": "Domain"
   },
   "support": {
     "title": "Help & Support",
@@ -268,7 +282,10 @@
         "targetWordCountPlaceholder": "e.g., 1000",
         "wordCountHelp": "Average length for generated articles",
         "confirmationNote": "You can change these settings anytime",
-        "completeSetup": "Complete Setup"
+        "completeSetup": "Complete Setup",
+        "autoApprove": "Auto-Approve Articles",
+        "autoApproveLabel": "Auto-approve & publish",
+        "autoApproveDescription": "Articles are automatically approved and published to your connected integrations without manual review. Disable this to review each article before publishing."
       },
       "buttons": {
         "cancel": "Cancel",

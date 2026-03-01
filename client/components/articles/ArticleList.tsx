@@ -187,7 +187,7 @@ export function ArticleList({ statusFilter: propStatusFilter }: IArticleListProp
   // Empty state
   if (articles.length === 0) {
     return (
-      <div className="space-y-0">
+      <div data-testid="articles-empty-state" className="space-y-0">
         {/* Search + Filters header even on empty */}
         <div className="bg-surface border border-border rounded-xl overflow-hidden">
           <div className="px-5 py-4 border-b border-border">

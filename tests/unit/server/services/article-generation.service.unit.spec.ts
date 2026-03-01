@@ -164,6 +164,19 @@ vi.mock('@server/services/image-storage.service', () => ({
   persistArticleImages: vi.fn(),
 }));
 
+vi.mock('@server/services/email.service', () => ({
+  getEmailService: vi.fn(() => ({
+    sendArticleCompleteNotification: vi.fn().mockResolvedValue(undefined),
+  })),
+}));
+
+vi.mock('@server/services/delivery.service', () => ({
+  deliveryService: {
+    shouldAutoDeliver: vi.fn().mockResolvedValue(false),
+    deliverArticle: vi.fn().mockResolvedValue({ successful: 0, failed: 0 }),
+  },
+}));
+
 describe('ArticleGenerationService', () => {
   let service: ArticleGenerationService;
   const mockUserId = 'user-123';
@@ -657,6 +670,293 @@ Some content follows.`;
 
       expect(preset).toBeNull();
       expect(imageGenerationService.generateImagesForArticle).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('shouldAutoApprove', () => {
+    it('should return true when project content_preferences.autoApprove is true', async () => {
+      const { supabaseAdmin } = await import('@server/supabase/supabaseAdmin');
+
+      const mockChain = {
+        select: vi.fn().mockReturnValue({
+          eq: vi.fn().mockReturnValue({
+            single: vi
+              .fn()
+              .mockResolvedValue({
+                data: { content_preferences: { autoApprove: true } },
+                error: null,
+              }),
+          }),
+        }),
+      };
+      (supabaseAdmin.from as unknown as ReturnType<typeof vi.fn>).mockReturnValue(mockChain);
+
+      const result = await (service as any).shouldAutoApprove('project-123');
+
+      expect(result).toBe(true);
+    });
+
+    it('should return false when project content_preferences.autoApprove is false', async () => {
+      const { supabaseAdmin } = await import('@server/supabase/supabaseAdmin');
+
+      const mockChain = {
+        select: vi.fn().mockReturnValue({
+          eq: vi.fn().mockReturnValue({
+            single: vi
+              .fn()
+              .mockResolvedValue({
+                data: { content_preferences: { autoApprove: false } },
+                error: null,
+              }),
+          }),
+        }),
+      };
+      (supabaseAdmin.from as unknown as ReturnType<typeof vi.fn>).mockReturnValue(mockChain);
+
+      const result = await (service as any).shouldAutoApprove('project-123');
+
+      expect(result).toBe(false);
+    });
+
+    it('should return false when project content_preferences.autoApprove is missing', async () => {
+      const { supabaseAdmin } = await import('@server/supabase/supabaseAdmin');
+
+      const mockChain = {
+        select: vi.fn().mockReturnValue({
+          eq: vi.fn().mockReturnValue({
+            single: vi
+              .fn()
+              .mockResolvedValue({ data: { content_preferences: {} }, error: null }),
+          }),
+        }),
+      };
+      (supabaseAdmin.from as unknown as ReturnType<typeof vi.fn>).mockReturnValue(mockChain);
+
+      const result = await (service as any).shouldAutoApprove('project-123');
+
+      expect(result).toBe(false);
+    });
+
+    it('should return false when project data is null', async () => {
+      const { supabaseAdmin } = await import('@server/supabase/supabaseAdmin');
+
+      const mockChain = {
+        select: vi.fn().mockReturnValue({
+          eq: vi.fn().mockReturnValue({
+            single: vi.fn().mockResolvedValue({ data: null, error: null }),
+          }),
+        }),
+      };
+      (supabaseAdmin.from as unknown as ReturnType<typeof vi.fn>).mockReturnValue(mockChain);
+
+      const result = await (service as any).shouldAutoApprove('project-123');
+
+      expect(result).toBe(false);
+    });
+  });
+
+  describe('auto-approve flow', () => {
+    /**
+     * Build a minimal supabase mock for generateArticle tests.
+     * The `qaConfig` param controls what the project-qa_config query returns,
+     * and `autoApprove` controls the content_preferences value.
+     */
+    function buildSupabaseMock(
+      supabaseAdmin: { from: ReturnType<typeof vi.fn> },
+      options: { autoApprove: boolean }
+    ) {
+      const mockChain = {
+        update: vi.fn().mockReturnValue({
+          eq: vi.fn().mockReturnValue({
+            eq: vi.fn().mockResolvedValue({ error: null }),
+          }),
+        }),
+        select: vi.fn().mockImplementation((cols: string) => {
+          if (cols === 'content_preferences') {
+            return {
+              eq: vi.fn().mockReturnValue({
+                single: vi.fn().mockResolvedValue({
+                  data: {
+                    content_preferences: { autoApprove: options.autoApprove },
+                  },
+                  error: null,
+                }),
+              }),
+            };
+          }
+          // Default: qa_config / attempt_count queries
+          return {
+            eq: vi.fn().mockReturnValue({
+              eq: vi.fn().mockReturnValue({
+                single: vi.fn().mockResolvedValue({ data: { attempt_count: 1 }, error: null }),
+              }),
+              single: vi.fn().mockResolvedValue({ data: { qa_config: null }, error: null }),
+            }),
+          };
+        }),
+        insert: vi.fn().mockResolvedValue({ error: null }),
+      };
+      (supabaseAdmin.from as unknown as ReturnType<typeof vi.fn>).mockImplementation(
+        () => mockChain
+      );
+      return mockChain;
+    }
+
+    it('should auto-approve and publish article when project autoApprove is enabled', async () => {
+      const { supabaseAdmin } = await import('@server/supabase/supabaseAdmin');
+      const { deliveryService } = await import('@server/services/delivery.service');
+
+      // Mock delivery to return 1 successful delivery
+      (deliveryService.deliverArticle as ReturnType<typeof vi.fn>).mockResolvedValue({
+        successful: 1,
+        failed: 0,
+      });
+
+      mockChatCompletionWithRetry
+        .mockResolvedValueOnce({
+          content: JSON.stringify({
+            title: 'Auto-Approve Test',
+            metaDescription: 'A test article',
+            slug: 'auto-approve-test',
+            sections: [],
+          }),
+          usage: { totalTokens: 100 },
+          finishReason: 'stop',
+        })
+        .mockResolvedValueOnce({
+          content: 'Test article content without image markers',
+          usage: { totalTokens: 200 },
+          finishReason: 'stop',
+        });
+
+      buildSupabaseMock(supabaseAdmin as unknown as { from: ReturnType<typeof vi.fn> }, {
+        autoApprove: true,
+      });
+
+      const input: IGenerateArticleInput = {
+        keyword: 'auto approve test',
+        model: 'balanced',
+        tone: 'professional',
+        targetWordCount: 1000,
+        projectId: 'project-auto-approve',
+        campaignId: 'campaign-123',
+      };
+
+      await service.generateArticle(mockArticleId, mockUserId, input);
+
+      // deliverArticle should have been called (auto-approve path)
+      expect(deliveryService.deliverArticle).toHaveBeenCalledWith(mockArticleId);
+    });
+
+    it('should NOT auto-approve qa_failed articles even when autoApprove is enabled', async () => {
+      const { qaService } = await import('@server/services/qa.service');
+      const { deliveryService } = await import('@server/services/delivery.service');
+
+      // Force QA to fail
+      (qaService.runQAChecks as ReturnType<typeof vi.fn>).mockResolvedValue({
+        passed: false,
+        failureReason: 'AI likelihood too high',
+        results: {
+          plagiarism: { passed: true, similarityScore: 0, flaggedPhrases: [] },
+          factConsistency: { passed: true, score: 1, inconsistencyCount: 0 },
+          readability: { passed: true, fleschKincaidGrade: 8, fleschReadingEase: 65 },
+          aiLikelihood: { passed: false, aiScore: 0.95, confidence: 'high' },
+        },
+      });
+
+      mockChatCompletionWithRetry
+        .mockResolvedValueOnce({
+          content: JSON.stringify({
+            title: 'QA Failed Test',
+            metaDescription: 'A test article',
+            slug: 'qa-failed-test',
+            sections: [],
+          }),
+          usage: { totalTokens: 100 },
+          finishReason: 'stop',
+        })
+        .mockResolvedValueOnce({
+          content: 'Test article content',
+          usage: { totalTokens: 200 },
+          finishReason: 'stop',
+        });
+
+      const { supabaseAdmin } = await import('@server/supabase/supabaseAdmin');
+      buildSupabaseMock(supabaseAdmin as unknown as { from: ReturnType<typeof vi.fn> }, {
+        autoApprove: true,
+      });
+
+      const input: IGenerateArticleInput = {
+        keyword: 'qa failed test',
+        model: 'balanced',
+        tone: 'professional',
+        targetWordCount: 1000,
+        projectId: 'project-auto-approve',
+        campaignId: 'campaign-123',
+      };
+
+      await service.generateArticle(mockArticleId, mockUserId, input);
+
+      // deliverArticle should NOT have been called for qa_failed articles
+      expect(deliveryService.deliverArticle).not.toHaveBeenCalled();
+    });
+
+    it('should skip auto-approve and use normal auto-delivery when autoApprove is disabled', async () => {
+      const { supabaseAdmin } = await import('@server/supabase/supabaseAdmin');
+      const { deliveryService } = await import('@server/services/delivery.service');
+
+      // Make sure QA passes
+      const { qaService } = await import('@server/services/qa.service');
+      (qaService.runQAChecks as ReturnType<typeof vi.fn>).mockResolvedValue({
+        passed: true,
+        failureReason: undefined,
+        results: {
+          plagiarism: { passed: true, similarityScore: 0, flaggedPhrases: [] },
+          factConsistency: { passed: true, score: 1, inconsistencyCount: 0 },
+          readability: { passed: true, fleschKincaidGrade: 8, fleschReadingEase: 65 },
+          aiLikelihood: { passed: true, aiScore: 0.2, confidence: 'low' },
+        },
+      });
+
+      // Auto-delivery also disabled (shouldAutoDeliver returns false)
+      (deliveryService.shouldAutoDeliver as ReturnType<typeof vi.fn>).mockResolvedValue(false);
+
+      mockChatCompletionWithRetry
+        .mockResolvedValueOnce({
+          content: JSON.stringify({
+            title: 'No Auto-Approve Test',
+            metaDescription: 'A test article',
+            slug: 'no-auto-approve-test',
+            sections: [],
+          }),
+          usage: { totalTokens: 100 },
+          finishReason: 'stop',
+        })
+        .mockResolvedValueOnce({
+          content: 'Test article content',
+          usage: { totalTokens: 200 },
+          finishReason: 'stop',
+        });
+
+      buildSupabaseMock(supabaseAdmin as unknown as { from: ReturnType<typeof vi.fn> }, {
+        autoApprove: false,
+      });
+
+      const input: IGenerateArticleInput = {
+        keyword: 'no auto approve test',
+        model: 'balanced',
+        tone: 'professional',
+        targetWordCount: 1000,
+        projectId: 'project-no-auto-approve',
+        campaignId: 'campaign-123',
+      };
+
+      await service.generateArticle(mockArticleId, mockUserId, input);
+
+      // deliverArticle should NOT have been called (auto-delivery disabled)
+      expect(deliveryService.deliverArticle).not.toHaveBeenCalled();
+      // But shouldAutoDeliver SHOULD have been called (normal path)
+      expect(deliveryService.shouldAutoDeliver).toHaveBeenCalled();
     });
   });
 });

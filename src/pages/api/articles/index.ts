@@ -65,6 +65,12 @@ export const GET = withAuth(async (userId, { url }) => {
       campaigns (
         id,
         name
+      ),
+      article_images (
+        id,
+        position,
+        image_url,
+        status
       )
     `,
       { count: 'exact' }

@@ -317,6 +317,33 @@ async function mockWebsiteCrawl(page: import('@playwright/test').Page) {
 }
 
 /**
+ * Mock the plan-content endpoint (called by PlanContentModal when campaignId is set).
+ * Returns a successful response with 1 planned article.
+ * Must be called BEFORE goto().
+ */
+async function mockPlanContent(page: import('@playwright/test').Page) {
+  await page.route('**/api/campaigns/*/plan-content', async route => {
+    if (route.request().method() === 'POST') {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          success: true,
+          data: {
+            planned: 1,
+            startDate: '2026-03-01',
+            endDate: '2026-03-01',
+            message: 'Content planned successfully.',
+          },
+        }),
+      });
+    } else {
+      await route.fallback();
+    }
+  });
+}
+
+/**
  * Register all mocks needed for onboarding wizard tests.
  */
 async function setupOnboardingMocks(page: import('@playwright/test').Page) {
@@ -327,6 +354,7 @@ async function setupOnboardingMocks(page: import('@playwright/test').Page) {
   await mockOnboardingComplete(page);
   await mockGscConnectionCheck(page);
   await mockWebsiteCrawl(page);
+  await mockPlanContent(page);
 }
 
 // =============================================================================
@@ -1258,6 +1286,13 @@ test.describe('Onboarding Wizard E2E Tests', () => {
       // Click "Go to Dashboard" button
       await onboardingPage.clickGoToDashboard();
 
+      // PlanContentModal opens automatically (campaignId set from step 3).
+      // Wait for the modal to show success state, then close it to dismiss the wizard.
+      const planModal = onboardingPage.page.locator('[data-testid="plan-content-modal"]');
+      const closePlanBtn = planModal.getByRole('button', { name: /^close$/i });
+      await expect(closePlanBtn).toBeVisible({ timeout: 8000 });
+      await closePlanBtn.click();
+
       // Wizard should close
       await onboardingPage.assertWizardClosed();
     });
@@ -1295,6 +1330,13 @@ test.describe('Onboarding Wizard E2E Tests', () => {
 
       // Click "Go to Dashboard" button
       await onboardingPage.clickGoToDashboard();
+
+      // PlanContentModal opens automatically (campaignId set from step 3).
+      // Wait for the modal to show success state, then close it to dismiss the wizard.
+      const planModal2 = onboardingPage.page.locator('[data-testid="plan-content-modal"]');
+      const closePlanBtn2 = planModal2.getByRole('button', { name: /^close$/i });
+      await expect(closePlanBtn2).toBeVisible({ timeout: 8000 });
+      await closePlanBtn2.click();
 
       // Wizard modal should close
       await onboardingPage.assertWizardClosed();
@@ -1491,6 +1533,13 @@ test.describe('Onboarding Wizard E2E Tests', () => {
       // Click Go to Dashboard to complete
       await onboardingPage.clickGoToDashboard();
 
+      // PlanContentModal opens automatically (campaignId set from step 3).
+      // Wait for the modal to show success state, then close it to dismiss the wizard.
+      const planModal3 = onboardingPage.page.locator('[data-testid="plan-content-modal"]');
+      const closePlanBtn3 = planModal3.getByRole('button', { name: /^close$/i });
+      await expect(closePlanBtn3).toBeVisible({ timeout: 8000 });
+      await closePlanBtn3.click();
+
       // Wizard should close
       await onboardingPage.assertWizardClosed();
     });
@@ -1627,6 +1676,13 @@ test.describe('Onboarding Wizard E2E Tests', () => {
 
       // Click Go to Dashboard
       await onboardingPage.clickGoToDashboard();
+
+      // PlanContentModal opens automatically (campaignId set from step 3).
+      // Wait for the modal to show success state, then close it to dismiss the wizard.
+      const planModal4 = onboardingPage.page.locator('[data-testid="plan-content-modal"]');
+      const closePlanBtn4 = planModal4.getByRole('button', { name: /^close$/i });
+      await expect(closePlanBtn4).toBeVisible({ timeout: 8000 });
+      await closePlanBtn4.click();
 
       // Wizard should be closed
       await onboardingPage.assertWizardClosed();

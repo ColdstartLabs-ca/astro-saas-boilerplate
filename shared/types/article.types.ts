@@ -152,6 +152,14 @@ export interface IArticleWithCampaign extends IArticle {
     id: string;
     name: string;
   } | null;
+  /** Article images (joined, for thumbnails in list; prompt included in detail) */
+  article_images?: Array<{
+    id: string;
+    position: number;
+    image_url: string | null;
+    prompt?: string;
+    status: string;
+  }>;
 }
 
 /**

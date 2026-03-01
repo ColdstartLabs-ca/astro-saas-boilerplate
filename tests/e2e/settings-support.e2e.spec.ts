@@ -252,23 +252,167 @@ test.describe('Settings Page E2E Tests', () => {
     });
   });
 
-  test('should display settings page with all sections', async () => {
+  test('should display settings page with all sections', async ({ page }) => {
     await settingsPage.gotoSettings();
     await settingsPage.waitForPageLoad();
 
     await settingsPage.assertPageVisible();
+
+    // Profile and notifications are under the Account tab — navigate there first
+    const accountTab = page.getByRole('button', { name: /profile/i });
+    await accountTab.click();
+
     await settingsPage.assertProfileSectionVisible();
     await settingsPage.assertNotificationsSectionVisible();
   });
 
-  test('should toggle email preferences', async () => {
+  test('should toggle email preferences', async ({ page }) => {
     await settingsPage.gotoSettings();
     await settingsPage.waitForPageLoad();
+
+    // Notifications are under the Account tab — navigate there first
+    const accountTab = page.getByRole('button', { name: /profile/i });
+    await accountTab.click();
 
     await expect(settingsPage.loadingState).not.toBeVisible();
 
     await settingsPage.productUpdatesToggle.click();
     await expect(settingsPage.productUpdatesToggle).toBeVisible();
+  });
+});
+
+test.describe('Settings Tab Layout E2E Tests', () => {
+  test('should show Articles tab by default', async ({ page }) => {
+    const settingsPage = new SettingsPage(page);
+    await mockEmailPreferences(page, {
+      product_updates: true,
+      marketing_emails: false,
+      low_credit_alerts: true,
+    });
+
+    await settingsPage.gotoSettings();
+    await settingsPage.waitForPageLoad();
+
+    // Articles tab should be visible and active by default
+    const articlesTab = page.getByRole('button', { name: /articles/i });
+    await expect(articlesTab).toBeVisible();
+
+    // Articles section content should be visible (Language & Country heading)
+    await expect(page.getByText(/language.*country/i)).toBeVisible();
+  });
+
+  test('should switch between Articles and Account tabs', async ({ page }) => {
+    const settingsPage = new SettingsPage(page);
+    await mockEmailPreferences(page, {
+      product_updates: true,
+      marketing_emails: false,
+      low_credit_alerts: true,
+    });
+
+    await settingsPage.gotoSettings();
+    await settingsPage.waitForPageLoad();
+
+    // Start on Articles tab
+    const articlesTab = page.getByRole('button', { name: /articles/i });
+    const accountTab = page.getByRole('button', { name: /profile/i });
+
+    // Click Account tab
+    await accountTab.click();
+
+    // Profile section should now be visible
+    await expect(settingsPage.profileHeading).toBeVisible();
+    await expect(settingsPage.notificationsSection).toBeVisible();
+
+    // Click back to Articles tab
+    await articlesTab.click();
+
+    // Articles content should be visible again
+    await expect(page.getByText(/language.*country/i)).toBeVisible();
+  });
+
+  test('should show empty state when no project selected', async ({ page }) => {
+    const settingsPage = new SettingsPage(page);
+    await mockEmailPreferences(page, {
+      product_updates: true,
+      marketing_emails: false,
+      low_credit_alerts: true,
+    });
+
+    // Mock no active project
+    await page.route('**/api/projects', async route => {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          success: true,
+          data: { projects: [] },
+        }),
+      });
+    });
+
+    await settingsPage.gotoSettings();
+    await settingsPage.waitForPageLoad();
+
+    // Empty state should be visible (use heading role to avoid matching sidebar)
+    await expect(page.getByRole('heading', { name: /no project selected/i })).toBeVisible();
+    await expect(page.getByText(/select a project to edit/i)).toBeVisible();
+  });
+
+  test('should display current project content preferences', async ({ page }) => {
+    const settingsPage = new SettingsPage(page);
+    await mockEmailPreferences(page, {
+      product_updates: true,
+      marketing_emails: false,
+      low_credit_alerts: true,
+    });
+
+    // Mock active project with content preferences
+    await page.route('**/api/projects', async route => {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          success: true,
+          data: {
+            projects: [
+              {
+                id: 'test-project-id',
+                name: 'Test Project',
+                domain: 'https://example.com',
+                language: 'en',
+                country: 'US',
+                content_preferences: {
+                  frequency: 'daily',
+                  articleStyle: 'informative',
+                  internalLinksCount: 2,
+                  brandColor: '#4F46E5',
+                  imageStyle: 'cinematic',
+                  globalInstructions: 'Test instructions',
+                },
+              },
+            ],
+          },
+        }),
+      });
+    });
+
+    await settingsPage.gotoSettings();
+    await settingsPage.waitForPageLoad();
+
+    // Project name should be visible in the project context header (not sidebar)
+    // Use more specific selector to avoid matching sidebar project selector
+    await expect(page.locator('.bg-surface-light').getByText('Test Project')).toBeVisible();
+
+    // Language dropdown should have correct value
+    const languageSelect = page.locator('#language');
+    await expect(languageSelect).toHaveValue('en');
+
+    // Country dropdown should have correct value
+    const countrySelect = page.locator('#country');
+    await expect(countrySelect).toHaveValue('US');
+
+    // Content preferences form should be visible
+    await expect(page.getByText(/content preferences/i)).toBeVisible();
   });
 });
 

@@ -25,6 +25,7 @@ export default [
       'astro.config.mjs', // Astro config file
       'src/middleware.ts', // Astro middleware
       'UI_TEMPLATE/**', // Template files - not part of main codebase
+      '.claude/**', // Claude worktrees and agent files
     ],
   },
   {

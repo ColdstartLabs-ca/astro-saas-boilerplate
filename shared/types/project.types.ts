@@ -40,6 +40,8 @@ export interface IContentPreferences {
   imageStyle?: ImageStyle;
   /** Global instructions for content generation (max 1000 chars) */
   globalInstructions?: string;
+  /** Auto-approve and publish articles without manual review */
+  autoApprove?: boolean;
 }
 
 /**

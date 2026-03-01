@@ -1,5 +1,7 @@
 'use client';
 
+/* global RequestInit, BodyInit */
+
 import { useCallback } from 'react';
 import { getAccessToken } from '@client/utils/api-client';
 

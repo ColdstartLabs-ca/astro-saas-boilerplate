@@ -99,15 +99,7 @@ interface IArticleDetailModalProps {
   onUpdate?: (updatedArticle: IArticleWithCampaign) => void;
 }
 
-interface IArticleWithImages extends IArticleWithCampaign {
-  article_images?: Array<{
-    id: string;
-    position: number;
-    image_url: string | null;
-    prompt: string;
-    status: string;
-  }>;
-}
+type IArticleWithImages = IArticleWithCampaign;
 
 export function ArticleDetailModal({
   article,
@@ -492,7 +484,7 @@ export function ArticleDetailModal({
                           <>
                             <GalleryImage
                               src={img.image_url}
-                              alt={img.prompt.substring(0, 80)}
+                              alt={img.prompt?.substring(0, 80) ?? ''}
                               className="w-full h-36 object-cover"
                             />
                             <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
@@ -506,7 +498,7 @@ export function ArticleDetailModal({
                               </a>
                             </div>
                             <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                              <p className="text-[10px] text-white/80 truncate">{img.prompt}</p>
+                              {img.prompt && <p className="text-[10px] text-white/80 truncate">{img.prompt}</p>}
                             </div>
                           </>
                         ) : img.status === 'failed' ? (
