@@ -16,7 +16,7 @@ import { useCallback, useEffect } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { Calendar, Palette, Image, FileText, Link2 } from 'lucide-react';
+import { Calendar, Palette, Image, FileText, Link2, Zap } from 'lucide-react';
 import type { IContentPreferences } from '@shared/types/project.types';
 
 // =============================================================================
@@ -62,6 +62,7 @@ const DEFAULT_VALUES: IContentPreferences = {
   brandColor: '#4F46E5',
   imageStyle: 'cinematic',
   globalInstructions: '',
+  autoApprove: false,
 };
 
 // =============================================================================
@@ -75,6 +76,7 @@ const contentPreferencesFormSchema = z.object({
   brandColor: z.string().regex(/^#[0-9A-Fa-f]{6}$/, 'Must be a valid hex color'),
   imageStyle: z.enum(['brand-text', 'watercolor', 'cinematic', 'illustration', 'sketch']),
   globalInstructions: z.string().max(1000).optional(),
+  autoApprove: z.boolean().optional(),
 });
 
 type IFormValues = z.infer<typeof contentPreferencesFormSchema>;
@@ -111,31 +113,37 @@ export function ContentPreferencesSection({
       brandColor: value.brandColor ?? DEFAULT_VALUES.brandColor!,
       imageStyle: value.imageStyle ?? DEFAULT_VALUES.imageStyle!,
       globalInstructions: value.globalInstructions ?? '',
+      autoApprove: value.autoApprove ?? false,
     },
     mode: 'onChange',
   });
 
-  // Watch for changes and propagate to parent
-  const formValues = watch();
+  // Stable mapper — doesn't re-create on every render
   const handleChange = useCallback(
-    (updatedValues: IFormValues) => {
+    (updatedValues: Partial<IFormValues>) => {
       onChange({
-        frequency: updatedValues.frequency,
-        articleStyle: updatedValues.articleStyle,
-        internalLinksCount: updatedValues.internalLinksCount,
-        brandColor: updatedValues.brandColor,
-        imageStyle: updatedValues.imageStyle,
+        frequency: updatedValues.frequency ?? DEFAULT_VALUES.frequency!,
+        articleStyle: updatedValues.articleStyle ?? DEFAULT_VALUES.articleStyle!,
+        internalLinksCount: updatedValues.internalLinksCount ?? DEFAULT_VALUES.internalLinksCount!,
+        brandColor: updatedValues.brandColor ?? DEFAULT_VALUES.brandColor!,
+        imageStyle: updatedValues.imageStyle ?? DEFAULT_VALUES.imageStyle!,
         globalInstructions: updatedValues.globalInstructions || undefined,
+        autoApprove: updatedValues.autoApprove ?? false,
       });
     },
     [onChange]
   );
 
-  // BUG C4 fix: useEffect (not useCallback) to propagate form changes to parent.
-  // useCallback only returns a memoised function — it never executes the body.
+  // Subscribe to form changes — fires only on actual value changes, not on every render.
+  // Using watch() as a useEffect dependency causes an infinite loop because watch()
+  // returns a new object reference on every render.
   useEffect(() => {
-    handleChange(formValues);
-  }, [formValues, handleChange]);
+    const { unsubscribe } = watch((value) => handleChange(value));
+    return () => unsubscribe();
+  }, [watch, handleChange]);
+
+  // Keep a snapshot for char count display and inline onChange spreads
+  const formValues = watch();
 
   return (
     <div className="space-y-5">
@@ -368,6 +376,54 @@ export function ContentPreferencesSection({
             {formValues.globalInstructions?.length ?? 0}/1000
           </p>
         </div>
+      </div>
+
+      {/* Article Approval */}
+      <div className="space-y-3 pt-2 border-t border-border">
+        <div>
+          <h4 className="text-sm font-semibold text-white uppercase tracking-wider flex items-center gap-2">
+            <Zap className="w-4 h-4 text-accent" />
+            Article Approval
+          </h4>
+        </div>
+        <Controller
+          name="autoApprove"
+          control={control}
+          render={({ field }) => (
+            <div className="space-y-2">
+              <label className="flex items-start gap-3 cursor-pointer">
+                <div className="relative mt-0.5 flex-shrink-0">
+                  <input
+                    type="checkbox"
+                    checked={field.value ?? false}
+                    onChange={(e) => {
+                      field.onChange(e.target.checked);
+                      handleChange({ ...formValues, autoApprove: e.target.checked });
+                    }}
+                    className="sr-only peer"
+                    id="auto-approve"
+                    data-testid="auto-approve-toggle"
+                  />
+                  <div className="w-11 h-6 bg-surface-light peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-accent"></div>
+                </div>
+                <div>
+                  <span className="text-sm font-medium text-white">Auto-approve &amp; publish</span>
+                  <p className="text-xs text-muted mt-0.5">
+                    Articles are automatically approved and published to your connected integrations without manual review. Disable this to review each article before publishing.
+                  </p>
+                </div>
+              </label>
+              {(field.value ?? false) && (
+                <div className="flex items-center gap-2 p-3 bg-warning/10 border border-warning/30 rounded-lg">
+                  <Zap className="w-4 h-4 text-warning flex-shrink-0" />
+                  <p className="text-xs text-warning">
+                    Articles will go live on your website immediately after generation.
+                  </p>
+                </div>
+              )}
+            </div>
+          )}
+        />
       </div>
     </div>
   );
