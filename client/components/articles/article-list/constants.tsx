@@ -5,6 +5,7 @@ import type { ArticleStatus } from '@shared/types/article.types';
 
 export const ARTICLE_STATUSES: readonly (ArticleStatus | 'approved' | 'rejected' | 'all')[] = [
   'all',
+  'planned',
   'queued',
   'generating',
   'draft',
@@ -16,6 +17,7 @@ export const ARTICLE_STATUSES: readonly (ArticleStatus | 'approved' | 'rejected'
 ] as const;
 
 export const STATUS_CONFIG: Record<string, { bg: string; text: string; dot: string }> = {
+  planned: { bg: 'bg-amber-500/8', text: 'text-amber-400', dot: 'bg-amber-400' },
   draft: { bg: 'bg-blue-500/8', text: 'text-blue-400', dot: 'bg-blue-400' },
   generating: { bg: 'bg-amber-500/8', text: 'text-amber-400', dot: 'bg-amber-400' },
   queued: { bg: 'bg-surface-light', text: 'text-muted', dot: 'bg-muted' },

@@ -2,11 +2,11 @@
  * ArticleList Component
  *
  * Displays a list of articles with campaign info, status, and image thumbnails.
- * Includes filtering by campaign, status, and date range.
+ * Includes filtering by campaign, status, search, and date range + pagination.
  */
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useCallback, useRef, useEffect } from 'react';
 import {
   FileText,
   Loader2,
@@ -17,6 +17,9 @@ import {
   XCircle,
   CheckSquare,
   Square,
+  Search,
+  ChevronLeft,
+  ChevronRight,
 } from 'lucide-react';
 import { useArticles } from '@client/hooks/useArticles';
 import { useProjects } from '@client/hooks/useProjects';
@@ -33,6 +36,8 @@ import {
   parseDateFromInput,
   getStatusBadge,
 } from './article-list';
+
+const ITEMS_PER_PAGE = 20;
 
 interface IArticleListProps {
   statusFilter?: string;
@@ -53,20 +58,64 @@ export function ArticleList({ statusFilter: propStatusFilter }: IArticleListProp
     setIsFilterOpen,
   } = useArticleFilters({ propStatusFilter });
 
-  // Article selection state (not in bulk actions hook since we need to pass it around)
+  // Pagination
+  const [page, setPage] = useState(1);
+
+  // Reset page when filters change
+  const prevFiltersRef = useRef(filters);
+  useEffect(() => {
+    const prev = prevFiltersRef.current;
+    if (
+      prev.campaignId !== filters.campaignId ||
+      prev.status !== filters.status ||
+      prev.search !== filters.search ||
+      prev.dateFrom !== filters.dateFrom ||
+      prev.dateTo !== filters.dateTo
+    ) {
+      setPage(1);
+    }
+    prevFiltersRef.current = filters;
+  }, [filters]);
+
+  // Search debounce
+  const [searchInput, setSearchInput] = useState(filters.search);
+  const searchTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const handleSearchChange = useCallback(
+    (value: string) => {
+      setSearchInput(value);
+      if (searchTimerRef.current) clearTimeout(searchTimerRef.current);
+      searchTimerRef.current = setTimeout(() => {
+        handleFilterChange('search', value);
+      }, 300);
+    },
+    [handleFilterChange]
+  );
+
+  // Cleanup
+  useEffect(() => {
+    return () => {
+      if (searchTimerRef.current) clearTimeout(searchTimerRef.current);
+    };
+  }, []);
+
+  // Article selection state
   const [selectedArticleIds, setSelectedArticleIds] = useState<Set<string>>(new Set());
   const [selectedArticle, setSelectedArticle] = useState<IArticleWithCampaign | null>(null);
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
   const [bulkRejectReason, setBulkRejectReason] = useState('');
 
   // Articles query
-  const { articles, isLoading, error, refetch } = useArticles({
+  const { articles, total, totalPages, isLoading, error, refetch } = useArticles({
     projectId: activeProject?.id,
     campaignId: filters.campaignId || undefined,
     status:
       filters.status && filters.status !== 'all' ? (filters.status as ArticleStatus) : undefined,
+    search: filters.search || undefined,
     dateFrom: filters.dateFrom ? parseDateFromInput(filters.dateFrom) : undefined,
     dateTo: filters.dateTo ? parseDateFromInput(filters.dateTo) : undefined,
+    limit: ITEMS_PER_PAGE,
+    page,
     enabled: !!activeProject,
   });
 
@@ -110,6 +159,12 @@ export function ArticleList({ statusFilter: propStatusFilter }: IArticleListProp
     },
   });
 
+  // Pagination helpers
+  const handlePageChange = useCallback((newPage: number) => {
+    setPage(newPage);
+    setSelectedArticleIds(new Set());
+  }, []);
+
   // Loading state
   if (isLoading) {
     return (
@@ -132,19 +187,74 @@ export function ArticleList({ statusFilter: propStatusFilter }: IArticleListProp
   // Empty state
   if (articles.length === 0) {
     return (
-      <div
-        data-testid="articles-empty-state"
-        className="bg-surface border border-border rounded-xl p-12 text-center"
-      >
-        <div className="inline-flex items-center justify-center w-14 h-14 rounded-full bg-surface-light mb-4">
-          <FileText className="w-7 h-7 text-muted" />
+      <div className="space-y-0">
+        {/* Search + Filters header even on empty */}
+        <div className="bg-surface border border-border rounded-xl overflow-hidden">
+          <div className="px-5 py-4 border-b border-border">
+            <div className="flex items-center gap-3">
+              <h2 className="text-base font-semibold text-text-primary">{_t('articles.recent')}</h2>
+              <div className="flex-1 max-w-xs">
+                <div className="relative">
+                  <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted" />
+                  <input
+                    type="text"
+                    value={searchInput}
+                    onChange={e => handleSearchChange(e.target.value)}
+                    placeholder="Search articles..."
+                    className="w-full bg-main border border-border rounded-lg pl-8 pr-3 py-1.5 text-sm text-white placeholder:text-muted/60 focus:ring-1 focus:ring-accent outline-none"
+                  />
+                  {searchInput && (
+                    <button
+                      onClick={() => handleSearchChange('')}
+                      className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted hover:text-white"
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                  )}
+                </div>
+              </div>
+              <button
+                onClick={() => setIsFilterOpen(!isFilterOpen)}
+                className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg border transition-all ${
+                  hasActiveFilters
+                    ? 'text-accent border-accent/30 bg-accent/5'
+                    : 'text-muted border-border bg-surface-light/50 hover:text-white hover:border-accent/30'
+                }`}
+              >
+                <Filter className="w-3.5 h-3.5" />
+                Filters
+                {hasActiveFilters && <span className="w-1.5 h-1.5 bg-accent rounded-full" />}
+                <ChevronDown
+                  className={`w-3.5 h-3.5 transition-transform ${isFilterOpen ? 'rotate-180' : ''}`}
+                />
+              </button>
+            </div>
+
+            {/* Filter Panel */}
+            {isFilterOpen && (
+              <FilterPanel
+                filters={filters}
+                campaigns={campaigns}
+                handleFilterChange={handleFilterChange}
+                clearFilters={clearFilters}
+                hasActiveFilters={hasActiveFilters}
+                _t={_t}
+              />
+            )}
+          </div>
+
+          <div className="p-12 text-center">
+            <div className="inline-flex items-center justify-center w-14 h-14 rounded-full bg-surface-light mb-4">
+              <FileText className="w-7 h-7 text-muted" />
+            </div>
+            <h3 className="text-base font-semibold text-text-primary mb-1">No articles yet</h3>
+            <p className="text-muted text-sm max-w-xs mx-auto">
+              {hasActiveFilters || searchInput
+                ? 'No articles match your current filters'
+                : 'Generate your first article to see it here'}
+            </p>
+          </div>
         </div>
-        <h3 className="text-base font-semibold text-text-primary mb-1">No articles yet</h3>
-        <p className="text-muted text-sm max-w-xs mx-auto">
-          {hasActiveFilters
-            ? 'No articles match your current filters'
-            : 'Generate your first article to see it here'}
-        </p>
       </div>
     );
   }
@@ -190,19 +300,37 @@ export function ArticleList({ statusFilter: propStatusFilter }: IArticleListProp
         </div>
       )}
 
-      {/* Header with Filters */}
+      {/* Header with Search + Filters */}
       <div className="bg-surface border border-border rounded-xl overflow-hidden">
         <div className="px-5 py-4 border-b border-border">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <h2 className="text-base font-semibold text-text-primary">{_t('articles.recent')}</h2>
-              <span className="text-xs text-muted font-mono bg-surface-light px-2 py-0.5 rounded">
-                {articles.length}
-              </span>
+          <div className="flex items-center gap-3">
+            <h2 className="text-base font-semibold text-text-primary">{_t('articles.recent')}</h2>
+            <span className="text-xs text-muted font-mono bg-surface-light px-2 py-0.5 rounded">
+              {total}
+            </span>
+            <div className="flex-1 max-w-xs ml-2">
+              <div className="relative">
+                <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted" />
+                <input
+                  type="text"
+                  value={searchInput}
+                  onChange={e => handleSearchChange(e.target.value)}
+                  placeholder="Search articles..."
+                  className="w-full bg-main border border-border rounded-lg pl-8 pr-3 py-1.5 text-sm text-white placeholder:text-muted/60 focus:ring-1 focus:ring-accent outline-none"
+                />
+                {searchInput && (
+                  <button
+                    onClick={() => handleSearchChange('')}
+                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted hover:text-white"
+                  >
+                    <X className="w-3 h-3" />
+                  </button>
+                )}
+              </div>
             </div>
             <button
               onClick={() => setIsFilterOpen(!isFilterOpen)}
-              className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg border transition-all ${
+              className={`ml-auto flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg border transition-all ${
                 hasActiveFilters
                   ? 'text-accent border-accent/30 bg-accent/5'
                   : 'text-muted border-border bg-surface-light/50 hover:text-white hover:border-accent/30'
@@ -219,74 +347,14 @@ export function ArticleList({ statusFilter: propStatusFilter }: IArticleListProp
 
           {/* Filter Panel */}
           {isFilterOpen && (
-            <div className="grid grid-cols-3 gap-3 pt-4 mt-4 border-t border-border animate-fadeIn">
-              <div>
-                <label className="block text-[10px] font-semibold text-muted uppercase tracking-wider mb-1.5">
-                  Campaign
-                </label>
-                <select
-                  value={filters.campaignId}
-                  onChange={e => handleFilterChange('campaignId', e.target.value)}
-                  className="w-full bg-main border border-border rounded-lg px-3 py-2 text-sm text-white focus:ring-1 focus:ring-accent outline-none"
-                >
-                  <option value="">All Campaigns</option>
-                  {campaigns.map(campaign => (
-                    <option key={campaign.id} value={campaign.id}>
-                      {campaign.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-[10px] font-semibold text-muted uppercase tracking-wider mb-1.5">
-                  Status
-                </label>
-                <select
-                  value={filters.status}
-                  onChange={e => handleFilterChange('status', e.target.value)}
-                  className="w-full bg-main border border-border rounded-lg px-3 py-2 text-sm text-white focus:ring-1 focus:ring-accent outline-none"
-                >
-                  {ARTICLE_STATUSES.map(status => (
-                    <option key={status} value={status}>
-                      {_t(`articles.status.${status}`)}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-[10px] font-semibold text-muted uppercase tracking-wider mb-1.5">
-                  Date Range
-                </label>
-                <div className="grid grid-cols-2 gap-2">
-                  <input
-                    type="date"
-                    value={filters.dateFrom}
-                    onChange={e => handleFilterChange('dateFrom', e.target.value)}
-                    className="w-full bg-main border border-border rounded-lg px-2 py-2 text-white text-xs focus:ring-1 focus:ring-accent outline-none"
-                  />
-                  <input
-                    type="date"
-                    value={filters.dateTo}
-                    onChange={e => handleFilterChange('dateTo', e.target.value)}
-                    className="w-full bg-main border border-border rounded-lg px-2 py-2 text-white text-xs focus:ring-1 focus:ring-accent outline-none"
-                  />
-                </div>
-              </div>
-
-              {hasActiveFilters && (
-                <div className="col-span-3">
-                  <button
-                    onClick={clearFilters}
-                    className="flex items-center gap-1.5 text-xs text-muted hover:text-white transition-colors"
-                  >
-                    <X className="w-3.5 h-3.5" />
-                    Clear all filters
-                  </button>
-                </div>
-              )}
-            </div>
+            <FilterPanel
+              filters={filters}
+              campaigns={campaigns}
+              handleFilterChange={handleFilterChange}
+              clearFilters={clearFilters}
+              hasActiveFilters={hasActiveFilters}
+              _t={_t}
+            />
           )}
 
           {/* Active Filters Tags */}
@@ -308,6 +376,20 @@ export function ArticleList({ statusFilter: propStatusFilter }: IArticleListProp
                   {_t(`articles.status.${filters.status}`)}
                   <button
                     onClick={() => handleFilterChange('status', '')}
+                    className="hover:text-white ml-0.5"
+                  >
+                    <X className="w-2.5 h-2.5" />
+                  </button>
+                </span>
+              )}
+              {filters.search && (
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-accent/8 text-accent rounded text-[10px] font-medium border border-accent/15">
+                  Search: {filters.search}
+                  <button
+                    onClick={() => {
+                      handleSearchChange('');
+                      handleFilterChange('search', '');
+                    }}
                     className="hover:text-white ml-0.5"
                   >
                     <X className="w-2.5 h-2.5" />
@@ -414,6 +496,53 @@ export function ArticleList({ statusFilter: propStatusFilter }: IArticleListProp
             />
           ))}
         </div>
+
+        {/* Pagination */}
+        {totalPages > 1 && (
+          <div className="px-5 py-3 border-t border-border flex items-center justify-between">
+            <p className="text-xs text-muted">
+              Showing {(page - 1) * ITEMS_PER_PAGE + 1}–{Math.min(page * ITEMS_PER_PAGE, total)} of{' '}
+              {total}
+            </p>
+            <div className="flex items-center gap-1">
+              <button
+                onClick={() => handlePageChange(page - 1)}
+                disabled={page <= 1}
+                className="p-1.5 rounded-lg text-muted hover:text-white hover:bg-surface-light disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                aria-label="Previous page"
+              >
+                <ChevronLeft className="w-4 h-4" />
+              </button>
+              {generatePageNumbers(page, totalPages).map((p, i) =>
+                p === '...' ? (
+                  <span key={`ellipsis-${i}`} className="px-1 text-xs text-muted">
+                    ...
+                  </span>
+                ) : (
+                  <button
+                    key={p}
+                    onClick={() => handlePageChange(p as number)}
+                    className={`min-w-[28px] h-7 rounded-lg text-xs font-medium transition-colors ${
+                      page === p
+                        ? 'bg-accent text-white'
+                        : 'text-muted hover:text-white hover:bg-surface-light'
+                    }`}
+                  >
+                    {p}
+                  </button>
+                )
+              )}
+              <button
+                onClick={() => handlePageChange(page + 1)}
+                disabled={page >= totalPages}
+                className="p-1.5 rounded-lg text-muted hover:text-white hover:bg-surface-light disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                aria-label="Next page"
+              >
+                <ChevronRight className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Article Detail Modal */}
@@ -483,4 +612,127 @@ export function ArticleList({ statusFilter: propStatusFilter }: IArticleListProp
       )}
     </div>
   );
+}
+
+// =============================================================================
+// Sub-components
+// =============================================================================
+
+interface IFilterPanelProps {
+  filters: { campaignId: string; status: string; dateFrom: string; dateTo: string };
+  campaigns: { id: string; name: string }[];
+  handleFilterChange: (key: keyof import('./article-list').IArticleFilters, value: string) => void;
+  clearFilters: () => void;
+  hasActiveFilters: boolean;
+  _t: (key: string) => string;
+}
+
+function FilterPanel({
+  filters,
+  campaigns,
+  handleFilterChange,
+  clearFilters,
+  hasActiveFilters,
+  _t,
+}: IFilterPanelProps): JSX.Element {
+  return (
+    <div className="grid grid-cols-3 gap-3 pt-4 mt-4 border-t border-border animate-fadeIn">
+      <div>
+        <label className="block text-[10px] font-semibold text-muted uppercase tracking-wider mb-1.5">
+          Campaign
+        </label>
+        <select
+          value={filters.campaignId}
+          onChange={e => handleFilterChange('campaignId', e.target.value)}
+          className="w-full bg-main border border-border rounded-lg px-3 py-2 text-sm text-white focus:ring-1 focus:ring-accent outline-none"
+        >
+          <option value="">All Campaigns</option>
+          {campaigns.map(campaign => (
+            <option key={campaign.id} value={campaign.id}>
+              {campaign.name}
+            </option>
+          ))}
+        </select>
+      </div>
+
+      <div>
+        <label className="block text-[10px] font-semibold text-muted uppercase tracking-wider mb-1.5">
+          Status
+        </label>
+        <select
+          value={filters.status}
+          onChange={e => handleFilterChange('status', e.target.value)}
+          className="w-full bg-main border border-border rounded-lg px-3 py-2 text-sm text-white focus:ring-1 focus:ring-accent outline-none"
+        >
+          {ARTICLE_STATUSES.map(status => (
+            <option key={status} value={status}>
+              {_t(`articles.status.${status}`)}
+            </option>
+          ))}
+        </select>
+      </div>
+
+      <div>
+        <label className="block text-[10px] font-semibold text-muted uppercase tracking-wider mb-1.5">
+          Date Range
+        </label>
+        <div className="grid grid-cols-2 gap-2">
+          <input
+            type="date"
+            value={filters.dateFrom}
+            onChange={e => handleFilterChange('dateFrom', e.target.value)}
+            className="w-full bg-main border border-border rounded-lg px-2 py-2 text-white text-xs focus:ring-1 focus:ring-accent outline-none"
+          />
+          <input
+            type="date"
+            value={filters.dateTo}
+            onChange={e => handleFilterChange('dateTo', e.target.value)}
+            className="w-full bg-main border border-border rounded-lg px-2 py-2 text-white text-xs focus:ring-1 focus:ring-accent outline-none"
+          />
+        </div>
+      </div>
+
+      {hasActiveFilters && (
+        <div className="col-span-3">
+          <button
+            onClick={clearFilters}
+            className="flex items-center gap-1.5 text-xs text-muted hover:text-white transition-colors"
+          >
+            <X className="w-3.5 h-3.5" />
+            Clear all filters
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/**
+ * Generate page number array with ellipsis for pagination
+ */
+function generatePageNumbers(current: number, total: number): (number | '...')[] {
+  if (total <= 7) {
+    return Array.from({ length: total }, (_, i) => i + 1);
+  }
+
+  const pages: (number | '...')[] = [1];
+
+  if (current > 3) {
+    pages.push('...');
+  }
+
+  const start = Math.max(2, current - 1);
+  const end = Math.min(total - 1, current + 1);
+
+  for (let i = start; i <= end; i++) {
+    pages.push(i);
+  }
+
+  if (current < total - 2) {
+    pages.push('...');
+  }
+
+  pages.push(total);
+
+  return pages;
 }

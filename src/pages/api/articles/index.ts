@@ -10,12 +10,30 @@ import { z } from 'zod';
 import { calculateOverallSEOScore } from '@shared/utils/seo';
 import type { IArticle } from '@shared/types/article.types';
 
+// Status priority: closer to published = higher priority (lower number = first)
+const STATUS_PRIORITY: Record<string, number> = {
+  published: 0,
+  approved: 1,
+  qa_passed: 2,
+  reviewed: 3,
+  draft: 4,
+  generating: 5,
+  queued: 6,
+  failed: 7,
+  failed_quality: 7,
+  failed_timeout: 7,
+  qa_failed: 7,
+  rejected: 8,
+  planned: 9,
+};
+
 // Query params schema
 const listQuerySchema = z.object({
   projectId: z.string().uuid().optional(),
   campaignId: z.string().uuid().optional(),
   status: z
     .enum([
+      'planned',
       'queued',
       'generating',
       'draft',
@@ -26,6 +44,7 @@ const listQuerySchema = z.object({
       'failed',
     ])
     .optional(),
+  search: z.string().max(200).optional(),
   dateFrom: z.string().datetime().optional(),
   dateTo: z.string().datetime().optional(),
   limit: z.coerce.number().int().min(1).max(100).optional().default(20),
@@ -37,7 +56,7 @@ export const GET = withAuth(async (userId, { url }) => {
   const queryParams = Object.fromEntries(url.searchParams.entries());
   const query = listQuerySchema.parse(queryParams);
 
-  // Build query - include campaign information
+  // Build query — fetch ALL matching rows (no .range()) so we can sort by status priority in JS
   let dbQuery = supabaseAdmin
     .from('articles')
     .select(
@@ -50,9 +69,7 @@ export const GET = withAuth(async (userId, { url }) => {
     `,
       { count: 'exact' }
     )
-    .eq('user_id', userId)
-    .order('created_at', { ascending: false })
-    .range(query.offset, query.offset + query.limit - 1);
+    .eq('user_id', userId);
 
   // Apply optional filters
   if (query.projectId) {
@@ -63,6 +80,11 @@ export const GET = withAuth(async (userId, { url }) => {
   }
   if (query.status) {
     dbQuery = dbQuery.eq('status', query.status);
+  }
+  if (query.search) {
+    dbQuery = dbQuery.or(
+      `title.ilike.%${query.search}%,primary_keyword.ilike.%${query.search}%`
+    );
   }
   if (query.dateFrom) {
     dbQuery = dbQuery.gte('created_at', query.dateFrom);
@@ -77,8 +99,19 @@ export const GET = withAuth(async (userId, { url }) => {
     throw error;
   }
 
+  // Sort by status priority (closer to published first), then by created_at DESC within same priority
+  const sorted = (articles ?? []).sort((a: IArticle, b: IArticle) => {
+    const aPriority = STATUS_PRIORITY[a.status] ?? 9;
+    const bPriority = STATUS_PRIORITY[b.status] ?? 9;
+    if (aPriority !== bPriority) return aPriority - bPriority;
+    return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+  });
+
+  // Apply pagination in JS after sorting
+  const page = sorted.slice(query.offset, query.offset + query.limit);
+
   // Calculate SEO score on-the-fly for articles that don't have one
-  const articlesWithScore = (articles ?? []).map((article: IArticle) => {
+  const articlesWithScore = page.map((article: IArticle) => {
     if (article.seo_score === null && article.content && article.title) {
       const seoResult = calculateOverallSEOScore({
         title: article.title,
@@ -94,7 +127,7 @@ export const GET = withAuth(async (userId, { url }) => {
 
   const response: IArticlesListResponse = {
     articles: articlesWithScore as IArticlesListResponse['articles'],
-    total: count ?? 0,
+    total: count ?? sorted.length,
   };
 
   return jsonResponse(response);

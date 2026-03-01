@@ -11,6 +11,7 @@ import type { Dispatch, SetStateAction } from 'react';
 export interface IArticleFilters {
   campaignId: string;
   status: string;
+  search: string;
   dateFrom: string;
   dateTo: string;
 }
@@ -35,12 +36,13 @@ export interface IUseArticleFiltersReturn {
  */
 function getUrlFilters(propStatusFilter?: string): IArticleFilters {
   if (typeof window === 'undefined') {
-    return { campaignId: '', status: propStatusFilter || '', dateFrom: '', dateTo: '' };
+    return { campaignId: '', status: propStatusFilter || '', search: '', dateFrom: '', dateTo: '' };
   }
   const params = new URLSearchParams(window.location.search);
   return {
     campaignId: params.get('campaignId') || '',
     status: params.get('status') || propStatusFilter || '',
+    search: params.get('search') || '',
     dateFrom: params.get('dateFrom') || '',
     dateTo: params.get('dateTo') || '',
   };
@@ -54,6 +56,7 @@ function updateUrlFilters(newFilters: IArticleFilters): void {
   const params = new URLSearchParams();
   if (newFilters.campaignId) params.set('campaignId', newFilters.campaignId);
   if (newFilters.status && newFilters.status !== 'all') params.set('status', newFilters.status);
+  if (newFilters.search) params.set('search', newFilters.search);
   if (newFilters.dateFrom) params.set('dateFrom', newFilters.dateFrom);
   if (newFilters.dateTo) params.set('dateTo', newFilters.dateTo);
 
@@ -85,6 +88,7 @@ export function useArticleFilters(
     const clearedFilters: IArticleFilters = {
       campaignId: '',
       status: propStatusFilter || '',
+      search: '',
       dateFrom: '',
       dateTo: '',
     };
@@ -93,7 +97,7 @@ export function useArticleFilters(
   }, [propStatusFilter]);
 
   const hasActiveFilters = useMemo(() => {
-    return !!(filters.campaignId || filters.status || filters.dateFrom || filters.dateTo);
+    return !!(filters.campaignId || filters.status || filters.search || filters.dateFrom || filters.dateTo);
   }, [filters]);
 
   // Handle browser back/forward navigation
