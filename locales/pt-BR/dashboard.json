@@ -374,6 +374,7 @@
     },
     "status": {
       "all": "Todos os Status",
+      "planned": "Planejado",
       "queued": "Na Fila",
       "generating": "Gerando",
       "draft": "Rascunho",

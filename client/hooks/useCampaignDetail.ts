@@ -54,7 +54,7 @@ async function fetchCampaignDetail(campaignId: string): Promise<{
  */
 async function fetchCampaignArticles(campaignId: string): Promise<IArticle[]> {
   const data = await apiFetch<{ data: { articles: IArticle[] } }>(
-    `/api/articles?campaignId=${campaignId}`,
+    `/api/articles?campaignId=${campaignId}&limit=100`,
     { method: 'GET' }
   );
   return data.data.articles ?? [];

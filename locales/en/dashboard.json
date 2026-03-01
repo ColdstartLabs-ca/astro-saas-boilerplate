@@ -374,6 +374,7 @@
     },
     "status": {
       "all": "All Statuses",
+      "planned": "Planned",
       "queued": "Queued",
       "generating": "Generating",
       "draft": "Draft",
