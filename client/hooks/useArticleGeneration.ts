@@ -2,85 +2,30 @@
  * useArticleGeneration Hook
  * React hook for article generation with polling
  *
- * Features:
- * - Generate article via API
- * - Poll for status updates
- * - Return generated article when complete
+ * Delegates status polling to useArticlePoller so the ['article', id] cache
+ * is shared with all other views (campaign list, calendar, etc.).
  */
 
 'use client';
 
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useEffect } from 'react';
 import type { IArticle, IGenerateArticleInput } from '@shared/types/article.types';
-import { createClient } from '@shared/utils/supabase/client';
+import { apiFetch } from '@client/utils/api-client';
+import { useArticlePoller, isArticleInProgress } from './useArticlePoller';
 
 // =============================================================================
 // API Functions
 // =============================================================================
 
-/**
- * Get the current user's access token for API requests
- */
-async function getAccessToken(): Promise<string | null> {
-  const supabase = createClient();
-  const {
-    data: { session },
-  } = await supabase.auth.getSession();
-  return session?.access_token ?? null;
-}
-
-/**
- * Build auth headers for API requests
- */
-async function getAuthHeaders(): Promise<Record<string, string>> {
-  const accessToken = await getAccessToken();
-  const headers: Record<string, string> = { 'Content-Type': 'application/json' };
-  if (accessToken) {
-    headers.Authorization = `Bearer ${accessToken}`;
-  }
-  return headers;
-}
-
-/**
- * Generate an article from a keyword
- */
 async function generateArticle(
   input: IGenerateArticleInput
 ): Promise<{ articleId: string; status: 'generating' }> {
-  const headers = await getAuthHeaders();
-  const response = await fetch('/api/articles/generate', {
-    method: 'POST',
-    headers,
-    body: JSON.stringify(input),
-  });
-
-  if (!response.ok) {
-    const error = await response.json().catch(() => ({ error: 'Unknown error' }));
-    throw new Error(error.error?.message || error.error || 'Failed to generate article');
-  }
-
-  const data = await response.json();
+  const data = await apiFetch<{ data: { articleId: string; status: 'generating' } }>(
+    '/api/articles/generate',
+    { method: 'POST', body: JSON.stringify(input) }
+  );
   return data.data;
-}
-
-/**
- * Fetch article details by ID
- */
-async function fetchArticle(articleId: string): Promise<IArticle> {
-  const headers = await getAuthHeaders();
-  const response = await fetch(`/api/articles/${articleId}`, {
-    method: 'GET',
-    headers,
-  });
-
-  if (!response.ok) {
-    const error = await response.json().catch(() => ({ error: 'Unknown error' }));
-    throw new Error(error.error?.message || error.error || 'Failed to fetch article');
-  }
-
-  const data = await response.json();
-  return data.data.article;
 }
 
 // =============================================================================
@@ -88,12 +33,9 @@ async function fetchArticle(articleId: string): Promise<IArticle> {
 // =============================================================================
 
 interface IUseArticleGenerationReturn {
-  // Data
   article: IArticle | null;
   isGenerating: boolean;
   error: string | null;
-
-  // Actions
   generate: (input: IGenerateArticleInput) => Promise<{ articleId: string }>;
   reset: () => void;
 }
@@ -104,40 +46,19 @@ export function useArticleGeneration(
 ): IUseArticleGenerationReturn {
   const queryClient = useQueryClient();
 
-  // Poll for article status
-  const {
-    data: article,
-    isLoading: isPolling,
-    error: pollError,
-    refetch: _refetch,
-  } = useQuery({
-    queryKey: ['article', articleId],
-    queryFn: () =>
-      articleId ? fetchArticle(articleId) : Promise.reject(new Error('No article ID')),
-    enabled: !!articleId,
-    refetchInterval: query => {
-      // Poll every 3 seconds while generating
-      const data = query.state.data;
-      if (data?.status === 'generating') {
-        return 3000;
-      }
-      // Stop polling when not generating
-      return false;
-    },
-    refetchIntervalInBackground: true, // Keep polling in background
-    staleTime: 0, // Always refetch when needed
-  });
+  // Delegate polling to the shared poller — uses ['article', id] cache key
+  const { articles } = useArticlePoller(articleId ? [articleId] : []);
+  const article = articles[0] ?? null;
 
   // Generate article mutation
   const generateMutation = useMutation({
     mutationFn: generateArticle,
     onSuccess: result => {
-      // Set the articleId so polling starts automatically
       setArticleId?.(result.articleId);
     },
   });
 
-  // Reset query when articleId becomes null
+  // Clean up query cache when articleId is cleared
   useEffect(() => {
     if (!articleId) {
       queryClient.removeQueries({ queryKey: ['article'] });
@@ -154,10 +75,15 @@ export function useArticleGeneration(
     generateMutation.reset();
   };
 
+  const isGenerating =
+    generateMutation.isPending ||
+    (!!article && isArticleInProgress(article.status)) ||
+    (!!articleId && !article); // still loading first response
+
   return {
-    article: article ?? null,
-    isGenerating: isPolling || article?.status === 'generating' || generateMutation.isPending,
-    error: pollError?.message ?? generateMutation.error?.message ?? null,
+    article,
+    isGenerating,
+    error: generateMutation.error?.message ?? null,
     generate: handleGenerate,
     reset: handleReset,
   };

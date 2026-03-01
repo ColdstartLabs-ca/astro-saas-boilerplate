@@ -21,6 +21,7 @@ import { X, Loader2, Zap } from 'lucide-react';
 import { useProjects } from '@client/hooks/useProjects';
 import { useCampaigns } from '@client/hooks/useCampaigns';
 import { useArticleGeneration } from '@client/hooks/useArticleGeneration';
+import { isArticleSuccess } from '@client/hooks/useArticlePoller';
 import { useAvailableModels } from '@client/hooks/useAvailableModels';
 import { useUserStore } from '@client/store/userStore';
 import { DashboardButton } from '@client/components/dashboard/ui/DashboardButton';
@@ -62,6 +63,7 @@ const WORD_COUNT_OPTIONS = [
   { value: 3000, label: '~3000 words' },
 ] as const;
 
+
 // =============================================================================
 // Props
 // =============================================================================
@@ -87,7 +89,7 @@ export function QuickGenerateModal({
   const { imagePresets, isLoading: _modelsLoading } = useAvailableModels();
   const { user } = useUserStore();
   const [articleId, setArticleId] = useState<string | null>(null);
-  const [showImageSettings, setShowImageSettings] = useState(false);
+  const [showImageSettings, setShowImageSettings] = useState(true);
   const { article, isGenerating, error, generate, reset } = useArticleGeneration(
     articleId,
     setArticleId
@@ -116,9 +118,16 @@ export function QuickGenerateModal({
   const watchedTone = watch('tone');
   const _watchedCampaignId = watch('campaignId');
 
+  // Auto-select first image preset when modal opens and presets become available
+  useEffect(() => {
+    if (showImageSettings && imagePresets.length > 0 && !watchedImagePreset) {
+      setValue('imagePreset', imagePresets[0].key);
+    }
+  }, [imagePresets, showImageSettings, watchedImagePreset, setValue]);
+
   // Notify parent of successful generation (don't auto-close)
   useEffect(() => {
-    if (article && article.status === 'draft') {
+    if (article && isArticleSuccess(article.status)) {
       if (onGenerateComplete) {
         onGenerateComplete(article);
       }
@@ -232,7 +241,7 @@ export function QuickGenerateModal({
   }
 
   // Success state - show article preview
-  if (article && article.status === 'draft') {
+  if (article && isArticleSuccess(article.status)) {
     return (
       <div
         className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm animate-fadeIn p-4"

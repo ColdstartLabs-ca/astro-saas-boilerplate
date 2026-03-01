@@ -7,6 +7,11 @@ import { getCampaignColorPalette, getCalendarStatusConfig } from '@client/utils/
 import { useApiRequest } from '@client/hooks/useApiRequest';
 import { DashboardButton } from '../../ui/DashboardButton';
 import type { ArticleStatus } from '@shared/types/article.types';
+import {
+  useArticlePoller,
+  isArticleSuccess,
+  ARTICLE_SUCCESS_STATUSES,
+} from '@client/hooks/useArticlePoller';
 
 interface IArticleDetailModalProps {
   article: ICalendarArticle;
@@ -19,20 +24,18 @@ interface IArticleDetailModalProps {
 }
 
 const PUBLISHABLE_STATUSES = ['draft', 'reviewed', 'approved', 'qa_passed'];
-const SUCCESS_STATUSES: ArticleStatus[] = ['draft', 'qa_passed', 'reviewed', 'approved'];
 const FAILURE_STATUSES: ArticleStatus[] = ['failed', 'failed_quality', 'qa_failed', 'failed_timeout'];
-const POLL_INTERVAL_MS = 3000;
 const POLL_TIMEOUT_MS = 120000;
 
 type GenerationState =
   | { phase: 'idle' }
   | { phase: 'queuing' }
-  | { phase: 'polling'; status: ArticleStatus }
+  | { phase: 'polling' }
   | { phase: 'success' }
   | { phase: 'failed'; message: string }
   | { phase: 'timeout' };
 
-function getPollingStatusLabel(status: ArticleStatus): string {
+function getPollingStatusLabel(status: ArticleStatus | undefined): string {
   if (status === 'queued') return 'Queued for generation...';
   if (status === 'generating') return 'Generating article...';
   return 'Processing...';
@@ -57,63 +60,44 @@ export function ArticleDetailModal({
   const [isDeleting, setIsDeleting] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
+  const [pollingArticleId, setPollingArticleId] = useState<string | null>(null);
   const { request } = useApiRequest();
+  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const pollIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const pollTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  const stopPolling = useCallback(() => {
-    if (pollIntervalRef.current !== null) {
-      clearInterval(pollIntervalRef.current);
-      pollIntervalRef.current = null;
-    }
-    if (pollTimeoutRef.current !== null) {
-      clearTimeout(pollTimeoutRef.current);
-      pollTimeoutRef.current = null;
-    }
-  }, []);
-
-  useEffect(() => {
-    return () => {
-      stopPolling();
-    };
-  }, [stopPolling]);
-
-  const startPolling = useCallback(
-    (articleId: string) => {
-      pollIntervalRef.current = setInterval(async () => {
-        try {
-          const data = await request<{ article: { status: ArticleStatus } }>(
-            `/api/articles/${articleId}`
-          );
-          const status = data?.article?.status;
-          if (!status) return;
-
-          if (SUCCESS_STATUSES.includes(status)) {
-            stopPolling();
-            setGenerationState({ phase: 'success' });
-            onSuccess?.();
-            setTimeout(() => {
-              onClose();
-            }, 2000);
-          } else if (FAILURE_STATUSES.includes(status)) {
-            stopPolling();
-            setGenerationState({ phase: 'failed', message: 'Article generation failed.' });
-          } else {
-            setGenerationState({ phase: 'polling', status });
-          }
-        } catch {
-          // Polling errors are transient — keep polling
+  // Use the shared poller — same ['article', id] cache key as every other view
+  const { articles: polledArticles } = useArticlePoller(
+    pollingArticleId ? [pollingArticleId] : [],
+    {
+      onComplete: polledArticle => {
+        if (timeoutRef.current) {
+          clearTimeout(timeoutRef.current);
+          timeoutRef.current = null;
         }
-      }, POLL_INTERVAL_MS);
-
-      pollTimeoutRef.current = setTimeout(() => {
-        stopPolling();
-        setGenerationState({ phase: 'timeout' });
-      }, POLL_TIMEOUT_MS);
-    },
-    [request, stopPolling, onSuccess, onClose]
+        setPollingArticleId(null);
+        if (isArticleSuccess(polledArticle.status)) {
+          setGenerationState({ phase: 'success' });
+          onSuccess?.();
+          setTimeout(() => onClose(), 2000);
+        } else {
+          setGenerationState({ phase: 'failed', message: 'Article generation failed.' });
+        }
+      },
+    }
   );
+
+  const polledArticle = polledArticles[0];
+
+  // Timeout: if article hasn't finished within POLL_TIMEOUT_MS, give up
+  useEffect(() => {
+    if (!pollingArticleId) return;
+    timeoutRef.current = setTimeout(() => {
+      setPollingArticleId(null);
+      setGenerationState({ phase: 'timeout' });
+    }, POLL_TIMEOUT_MS);
+    return () => {
+      if (timeoutRef.current) clearTimeout(timeoutRef.current);
+    };
+  }, [pollingArticleId]);
 
   const statusConfig = getCalendarStatusConfig(article.status);
   const campaignColors = getCampaignColorPalette(article.campaignId);
@@ -139,16 +123,27 @@ export function ArticleDetailModal({
     setGenerationState({ phase: 'queuing' });
     setActionError(null);
     try {
-      await request(`/api/articles/${article.id}/generate-now`, {
-        method: 'POST',
-      });
-      setGenerationState({ phase: 'polling', status: 'queued' });
-      startPolling(article.id);
+      await request(`/api/articles/${article.id}/generate-now`, { method: 'POST' });
+      setGenerationState({ phase: 'polling' });
+      setPollingArticleId(article.id);
     } catch (err) {
       setGenerationState({ phase: 'idle' });
       setActionError(err instanceof Error ? err.message : 'Failed to queue article for generation');
     }
-  }, [article.id, request, startPolling]);
+  }, [article.id, request]);
+
+  const handleRegenerate = useCallback(async () => {
+    setGenerationState({ phase: 'queuing' });
+    setActionError(null);
+    try {
+      await request(`/api/articles/${article.id}/regenerate`, { method: 'POST' });
+      setGenerationState({ phase: 'polling' });
+      setPollingArticleId(article.id);
+    } catch (err) {
+      setGenerationState({ phase: 'idle' });
+      setActionError(err instanceof Error ? err.message : 'Failed to queue article for regeneration');
+    }
+  }, [article.id, request]);
 
   const handleDeletePlan = useCallback(async () => {
     if (!deleteConfirm) {
@@ -158,9 +153,7 @@ export function ArticleDetailModal({
     setIsDeleting(true);
     setActionError(null);
     try {
-      await request(`/api/articles/${article.id}`, {
-        method: 'DELETE',
-      });
+      await request(`/api/articles/${article.id}`, { method: 'DELETE' });
       onSuccess?.();
       onClose();
     } catch (err) {
@@ -230,7 +223,7 @@ export function ArticleDetailModal({
         {generationState.phase === 'polling' && (
           <div className="mb-5 p-3 bg-accent/10 border border-accent/20 rounded-lg flex items-center gap-2">
             <Loader2 className="w-4 h-4 text-accent animate-spin flex-shrink-0" />
-            <p className="text-xs text-accent">{getPollingStatusLabel(generationState.status)}</p>
+            <p className="text-xs text-accent">{getPollingStatusLabel(polledArticle?.status)}</p>
           </div>
         )}
 
@@ -328,6 +321,22 @@ export function ArticleDetailModal({
           </div>
         )}
 
+        {/* Regenerate button for failed articles */}
+        {FAILURE_STATUSES.includes(article.status as ArticleStatus) &&
+          !isGenerating &&
+          generationState.phase === 'idle' && (
+            <div className="mb-4">
+              <DashboardButton
+                className="w-full"
+                onClick={handleRegenerate}
+                data-testid="regenerate-button"
+              >
+                <Play className="w-4 h-4 mr-2" />
+                Regenerate Article
+              </DashboardButton>
+            </div>
+          )}
+
         {/* Close button for terminal failure states */}
         {(generationState.phase === 'failed' || generationState.phase === 'timeout') && (
           <div className="mb-4">
@@ -374,3 +383,6 @@ export function ArticleDetailModal({
     </div>
   );
 }
+
+// Re-export so callers don't need to import from two places
+export { ARTICLE_SUCCESS_STATUSES };

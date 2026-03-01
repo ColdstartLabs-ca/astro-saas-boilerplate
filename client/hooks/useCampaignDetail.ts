@@ -12,6 +12,7 @@
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useCallback, useMemo } from 'react';
+import { useArticlePoller, isArticleInProgress } from './useArticlePoller';
 import type {
   ICampaign,
   IKeyword,
@@ -211,16 +212,38 @@ export function useCampaignDetail(campaignId: string | null | undefined): IUseCa
   const articleStats = detailData?.articleStats ?? null;
   const creditStats = detailData?.creditStats ?? null;
 
-  // Fetch articles query (separate for polling)
-  // We use a separate query to enable polling based on campaign status
+  // Fetch articles list (one-time + re-fetched whenever articles complete via poller)
   const campaignStatus = campaign?.status ?? null;
-  const { data: articles = [] } = useQuery({
+  const { data: articlesList = [] } = useQuery({
     queryKey: ['campaign-articles', campaignId],
     queryFn: () => (campaignId ? fetchCampaignArticles(campaignId) : Promise.resolve([])),
     enabled: !!campaignId,
-    staleTime: 1000 * 5, // 5 seconds
-    refetchInterval: campaignStatus === 'active' ? 5000 : false, // Poll every 5s when active
+    staleTime: 1000 * 5,
+    // Still poll the list when campaign is active so new articles kicked off by the
+    // scheduler also appear. The article poller handles real-time in-progress updates.
+    refetchInterval: campaignStatus === 'active' ? 5000 : false,
+    refetchIntervalInBackground: true,
   });
+
+  // Poll each in-progress article individually using the shared ['article', id] cache.
+  // When any article completes, invalidate both the list and the campaign detail so
+  // stats (generating/draft/published counts) refresh automatically.
+  const inProgressIds = articlesList
+    .filter(a => isArticleInProgress(a.status))
+    .map(a => a.id);
+
+  const { articles: polledArticles } = useArticlePoller(inProgressIds, {
+    pollInterval: 3000,
+    invalidateOnComplete: [
+      ['campaign-articles', campaignId],
+      ['campaign-detail', campaignId],
+    ],
+  });
+
+  // Merge: for articles currently being polled, prefer the fresh poller data so
+  // the UI reflects status changes before the list query re-fetches.
+  const polledById = new Map(polledArticles.map(a => [a.id, a]));
+  const articles = articlesList.map(a => polledById.get(a.id) ?? a);
 
   // Add keywords mutation
   const addKeywordsMutation = useMutation({
