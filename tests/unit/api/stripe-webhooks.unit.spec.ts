@@ -11,9 +11,46 @@ import {
   getPlanByPriceId,
   calculateBalanceWithExpiration,
 } from '@shared/config/subscription.utils';
+import type { IWebhookVerificationResult } from '../../../server/webhooks/stripe/services/webhook-verification.service';
 
-// Mock webhook secret that can be changed per test
-let mockWebhookSecret = 'whsec_test_secret';
+// Track whether verification should fail and with what error
+let mockVerificationError: Error | null = null;
+let mockVerificationResult: IWebhookVerificationResult | null = null;
+
+// Mock WebhookVerificationService - this is the key fix
+vi.mock('@server/webhooks/stripe/services/webhook-verification.service', () => ({
+  WebhookVerificationService: {
+    verifyWebhook: vi.fn(async (request: Request) => {
+      if (mockVerificationError) {
+        throw mockVerificationError;
+      }
+      if (mockVerificationResult) {
+        return mockVerificationResult;
+      }
+      // Default behavior: check for stripe-signature header
+      const signature = request.headers.get('stripe-signature');
+      if (!signature) {
+        throw new Error('Missing stripe-signature header');
+      }
+      // Parse body and return default event
+      const body = await request.text();
+      try {
+        const event = JSON.parse(body);
+        // Ensure event has an id for idempotency checks
+        return {
+          event: {
+            ...event,
+            id: event.id || `evt_test_${Date.now()}_${Math.random().toString(36).slice(2)}`,
+            livemode: false,
+          },
+          isTestMode: true,
+        };
+      } catch {
+        throw new Error('Invalid webhook body');
+      }
+    }),
+  },
+}));
 
 // Mock dependencies
 vi.mock('@server/stripe', () => ({
@@ -25,9 +62,7 @@ vi.mock('@server/stripe', () => ({
       retrieve: vi.fn(),
     },
   },
-  get STRIPE_WEBHOOK_SECRET() {
-    return mockWebhookSecret;
-  },
+  STRIPE_WEBHOOK_SECRET: 'whsec_real_test_secret_not_placeholder',
 }));
 
 vi.mock('@shared/config/stripe', () => ({
@@ -108,7 +143,18 @@ const getWebhookEventsMock = () => ({
       single: vi.fn(() => Promise.resolve({ data: null })), // Event doesn't exist, allow through
     })),
   })),
-  insert: vi.fn(() => Promise.resolve({ error: null })), // Claim succeeds
+  // IdempotencyService.checkAndClaimEvent does: insert({...}).select('status').maybeSingle()
+  // We need to return data with status for the insert to succeed
+  insert: vi.fn(() => ({
+    select: vi.fn(() => ({
+      maybeSingle: vi.fn(() =>
+        Promise.resolve({
+          data: { status: 'processing' },
+          error: null,
+        })
+      ),
+    })),
+  })),
   update: vi.fn(() => ({
     eq: vi.fn(() => Promise.resolve({ error: null })), // Update succeeds
   })),
@@ -160,12 +206,14 @@ describe('Stripe Webhook Handler', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    // Reset mock env and webhook secret to test defaults
+    // Reset mock env to test defaults
     mockEnv = {
       STRIPE_SECRET_KEY: 'sk_test_dummy_key',
       ENV: 'test',
     };
-    mockWebhookSecret = 'whsec_test_secret';
+    // Reset verification mocks to default behavior
+    mockVerificationError = null;
+    mockVerificationResult = null;
     consoleSpy = {
       log: vi.spyOn(console, 'log').mockImplementation(() => {}),
       error: vi.spyOn(console, 'error').mockImplementation(() => {}),
@@ -253,11 +301,12 @@ describe('Stripe Webhook Handler', () => {
       // Arrange - set env to production
       mockEnv.STRIPE_SECRET_KEY = 'sk_live_real_key';
       mockEnv.ENV = 'production';
-      mockWebhookSecret = 'whsec_prod_real_secret';
 
       const event = {
+        id: 'evt_test_123',
         type: 'test.event',
         data: { object: { id: 'evt_test_123' } },
+        livemode: true,
       };
 
       const request = new Request('http://localhost/api/webhooks/stripe', {
@@ -270,18 +319,16 @@ describe('Stripe Webhook Handler', () => {
       });
 
       // Mock successful signature verification
-      vi.mocked(stripe.webhooks.constructEventAsync).mockResolvedValue(event as never);
+      mockVerificationResult = {
+        event: event as never,
+        isTestMode: false,
+      };
 
       // Act
       // Astro APIRoutes expect context object with { request }
       const response = await POST({ request });
 
       // Assert
-      expect(stripe.webhooks.constructEventAsync).toHaveBeenCalledWith(
-        JSON.stringify(event),
-        'valid_signature',
-        'whsec_prod_real_secret'
-      );
       expect(response.status).toBe(200);
     });
 
@@ -289,7 +336,6 @@ describe('Stripe Webhook Handler', () => {
       // Arrange - set env to production
       mockEnv.STRIPE_SECRET_KEY = 'sk_live_real_key';
       mockEnv.ENV = 'production';
-      mockWebhookSecret = 'whsec_prod_real_secret';
 
       const request = new Request('http://localhost/api/webhooks/stripe', {
         method: 'POST',
@@ -301,9 +347,7 @@ describe('Stripe Webhook Handler', () => {
       });
 
       // Mock failed signature verification
-      vi.mocked(stripe.webhooks.constructEventAsync).mockRejectedValue(
-        new Error('Invalid signature')
-      );
+      mockVerificationError = new Error('Webhook signature verification failed: Invalid signature');
 
       // Act
       // Astro APIRoutes expect context object with { request }
@@ -855,7 +899,7 @@ describe('Stripe Webhook Handler', () => {
   });
 
   describe('invoice event handlers', () => {
-    test('should handle invoice.payment_succeeded and add credits in test mode', async () => {
+    test('should handle invoice.paid and add credits in test mode', async () => {
       // Arrange
       const mockPlan = {
         key: 'growth',
@@ -911,8 +955,11 @@ describe('Stripe Webhook Handler', () => {
         },
       };
 
+      // BUG H12 FIX: Use 'invoice.paid' instead of 'invoice.payment_succeeded'
+      // Stripe fires both events for the same payment with different event IDs,
+      // so only 'invoice.paid' is handled to prevent double credit allocation.
       const event = {
-        type: 'invoice.payment_succeeded',
+        type: 'invoice.paid',
         data: { object: invoiceData },
       };
 

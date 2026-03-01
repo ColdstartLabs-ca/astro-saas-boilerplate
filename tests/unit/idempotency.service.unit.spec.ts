@@ -35,30 +35,18 @@ describe('IdempotencyService - Unit Tests', () => {
 
     it('should claim new event successfully', async () => {
       const mockMaybeSingle = vi.fn().mockResolvedValue({
-        data: null,
+        data: { status: 'processing' },
         error: null,
       });
+
       const mockInsert = vi.fn().mockReturnValue({
         select: vi.fn().mockReturnValue({
-          single: vi.fn().mockResolvedValue({
-            data: { id: 'new-record' },
-            error: null,
-          }),
+          maybeSingle: mockMaybeSingle,
         }),
       });
 
-      mockFrom.mockImplementation((table: string) => {
-        if (table === 'webhook_events') {
-          return {
-            select: vi.fn().mockReturnValue({
-              eq: vi.fn().mockReturnValue({
-                maybeSingle: mockMaybeSingle,
-              }),
-            }),
-            insert: mockInsert,
-          };
-        }
-        return {};
+      mockFrom.mockReturnValue({
+        insert: mockInsert,
       });
 
       const result = await IdempotencyService.checkAndClaimEvent(eventId, eventType, payload);
@@ -77,48 +65,44 @@ describe('IdempotencyService - Unit Tests', () => {
     });
 
     it('should return existing event when already exists', async () => {
+      // ON CONFLICT DO NOTHING returns no data when event already exists
       const mockMaybeSingle = vi.fn().mockResolvedValue({
-        data: { status: 'completed' as WebhookEventStatus },
+        data: null, // No data returned means event already existed
         error: null,
       });
 
-      mockFrom.mockReturnValue({
+      const mockInsert = vi.fn().mockReturnValue({
         select: vi.fn().mockReturnValue({
-          eq: vi.fn().mockReturnValue({
-            maybeSingle: mockMaybeSingle,
-          }),
+          maybeSingle: mockMaybeSingle,
         }),
-        insert: vi.fn(),
+      });
+
+      mockFrom.mockReturnValue({
+        insert: mockInsert,
       });
 
       const result = await IdempotencyService.checkAndClaimEvent(eventId, eventType, payload);
 
       expect(result.isNew).toBe(false);
-      expect(result.existingStatus).toBe('completed');
+      expect(result.existingStatus).toBe('processing');
       expect(mockFrom).toHaveBeenCalledWith('webhook_events');
     });
 
     it('should handle concurrent request claiming event first', async () => {
+      // Unique constraint violation - concurrent request got there first
       const mockMaybeSingle = vi.fn().mockResolvedValue({
         data: null,
-        error: null,
-      });
-      const mockInsert = vi.fn().mockResolvedValue({
         error: { code: '23505', message: 'Unique constraint violation' },
       });
 
-      mockFrom.mockImplementation((table: string) => {
-        if (table === 'webhook_events') {
-          return {
-            select: vi.fn().mockReturnValue({
-              eq: vi.fn().mockReturnValue({
-                maybeSingle: mockMaybeSingle,
-              }),
-            }),
-            insert: mockInsert,
-          };
-        }
-        return {};
+      const mockInsert = vi.fn().mockReturnValue({
+        select: vi.fn().mockReturnValue({
+          maybeSingle: mockMaybeSingle,
+        }),
+      });
+
+      mockFrom.mockReturnValue({
+        insert: mockInsert,
       });
 
       const result = await IdempotencyService.checkAndClaimEvent(eventId, eventType, payload);
@@ -128,85 +112,64 @@ describe('IdempotencyService - Unit Tests', () => {
     });
 
     it('should propagate database errors other than unique constraint', async () => {
+      const dbError = new Error('Database connection failed');
       const mockMaybeSingle = vi.fn().mockResolvedValue({
         data: null,
-        error: null,
-      });
-      const dbError = new Error('Database connection failed');
-      const mockInsert = vi.fn().mockResolvedValue({
-        error: dbError,
+        error: { code: 'PGRST301', message: 'Database connection failed' },
       });
 
-      mockFrom.mockImplementation((table: string) => {
-        if (table === 'webhook_events') {
-          return {
-            select: vi.fn().mockReturnValue({
-              eq: vi.fn().mockReturnValue({
-                maybeSingle: mockMaybeSingle,
-              }),
-            }),
-            insert: mockInsert,
-          };
-        }
-        return {};
+      const mockInsert = vi.fn().mockReturnValue({
+        select: vi.fn().mockReturnValue({
+          maybeSingle: mockMaybeSingle,
+        }),
+      });
+
+      mockFrom.mockReturnValue({
+        insert: mockInsert,
       });
 
       await expect(
         IdempotencyService.checkAndClaimEvent(eventId, eventType, payload)
-      ).rejects.toThrow(dbError);
+      ).rejects.toThrow();
     });
 
     it('should handle all event statuses correctly', async () => {
-      const statuses: WebhookEventStatus[] = ['processing', 'completed', 'failed', 'unrecoverable'];
-
-      for (const status of statuses) {
-        const mockMaybeSingle = vi.fn().mockResolvedValue({
-          data: { status },
-          error: null,
-        });
-
-        mockFrom.mockReturnValue({
-          select: vi.fn().mockReturnValue({
-            eq: vi.fn().mockReturnValue({
-              maybeSingle: mockMaybeSingle,
-            }),
-          }),
-          insert: vi.fn(),
-        });
-
-        const result = await IdempotencyService.checkAndClaimEvent(eventId, eventType, payload);
-
-        expect(result.isNew).toBe(false);
-        expect(result.existingStatus).toBe(status);
-      }
-    });
-
-    it('should store payload as Record<string, unknown>', async () => {
+      // ON CONFLICT DO NOTHING returns null data when event exists
       const mockMaybeSingle = vi.fn().mockResolvedValue({
         data: null,
         error: null,
       });
+
       const mockInsert = vi.fn().mockReturnValue({
         select: vi.fn().mockReturnValue({
-          single: vi.fn().mockResolvedValue({
-            data: { id: 'new-record' },
-            error: null,
-          }),
+          maybeSingle: mockMaybeSingle,
         }),
       });
 
-      mockFrom.mockImplementation((table: string) => {
-        if (table === 'webhook_events') {
-          return {
-            select: vi.fn().mockReturnValue({
-              eq: vi.fn().mockReturnValue({
-                maybeSingle: mockMaybeSingle,
-              }),
-            }),
-            insert: mockInsert,
-          };
-        }
-        return {};
+      mockFrom.mockReturnValue({
+        insert: mockInsert,
+      });
+
+      const result = await IdempotencyService.checkAndClaimEvent(eventId, eventType, payload);
+
+      expect(result.isNew).toBe(false);
+      expect(result.existingStatus).toBe('processing');
+    });
+
+    it('should store payload as Record<string, unknown>', async () => {
+      const mockMaybeSingle = vi.fn().mockResolvedValue({
+        data: { status: 'processing' },
+        error: null,
+      });
+
+      const mockInsert = vi.fn().mockReturnValue({
+        select: vi.fn().mockReturnValue({
+          maybeSingle: mockMaybeSingle,
+        }),
+      });
+
+      mockFrom.mockReturnValue({
+        insert: mockInsert,
       });
 
       const testPayload = {
@@ -448,28 +411,17 @@ describe('IdempotencyService - Unit Tests', () => {
         },
       };
 
-      const mockMaybeSingle = vi.fn().mockResolvedValue({ data: null, error: null });
+      const mockMaybeSingle = vi
+        .fn()
+        .mockResolvedValue({ data: { status: 'processing' }, error: null });
       const mockInsert = vi.fn().mockReturnValue({
         select: vi.fn().mockReturnValue({
-          single: vi.fn().mockResolvedValue({
-            data: { id: 'record' },
-            error: null,
-          }),
+          maybeSingle: mockMaybeSingle,
         }),
       });
 
-      mockFrom.mockImplementation((table: string) => {
-        if (table === 'webhook_events') {
-          return {
-            select: vi.fn().mockReturnValue({
-              eq: vi.fn().mockReturnValue({
-                maybeSingle: mockMaybeSingle,
-              }),
-            }),
-            insert: mockInsert,
-          };
-        }
-        return {};
+      mockFrom.mockReturnValue({
+        insert: mockInsert,
       });
 
       const result = await IdempotencyService.checkAndClaimEvent(eventId, eventType, payload);
@@ -487,28 +439,17 @@ describe('IdempotencyService - Unit Tests', () => {
       const eventType = 'test.event';
       const payload = null;
 
-      const mockMaybeSingle = vi.fn().mockResolvedValue({ data: null, error: null });
+      const mockMaybeSingle = vi
+        .fn()
+        .mockResolvedValue({ data: { status: 'processing' }, error: null });
       const mockInsert = vi.fn().mockReturnValue({
         select: vi.fn().mockReturnValue({
-          single: vi.fn().mockResolvedValue({
-            data: { id: 'record' },
-            error: null,
-          }),
+          maybeSingle: mockMaybeSingle,
         }),
       });
 
-      mockFrom.mockImplementation((table: string) => {
-        if (table === 'webhook_events') {
-          return {
-            select: vi.fn().mockReturnValue({
-              eq: vi.fn().mockReturnValue({
-                maybeSingle: mockMaybeSingle,
-              }),
-            }),
-            insert: mockInsert,
-          };
-        }
-        return {};
+      mockFrom.mockReturnValue({
+        insert: mockInsert,
       });
 
       const result = await IdempotencyService.checkAndClaimEvent(eventId, eventType, payload);
@@ -526,28 +467,17 @@ describe('IdempotencyService - Unit Tests', () => {
       const eventType = 'test.event';
       const payload = {};
 
-      const mockMaybeSingle = vi.fn().mockResolvedValue({ data: null, error: null });
+      const mockMaybeSingle = vi
+        .fn()
+        .mockResolvedValue({ data: { status: 'processing' }, error: null });
       const mockInsert = vi.fn().mockReturnValue({
         select: vi.fn().mockReturnValue({
-          single: vi.fn().mockResolvedValue({
-            data: { id: 'record' },
-            error: null,
-          }),
+          maybeSingle: mockMaybeSingle,
         }),
       });
 
-      mockFrom.mockImplementation((table: string) => {
-        if (table === 'webhook_events') {
-          return {
-            select: vi.fn().mockReturnValue({
-              eq: vi.fn().mockReturnValue({
-                maybeSingle: mockMaybeSingle,
-              }),
-            }),
-            insert: mockInsert,
-          };
-        }
-        return {};
+      mockFrom.mockReturnValue({
+        insert: mockInsert,
       });
 
       const result = await IdempotencyService.checkAndClaimEvent(eventId, eventType, payload);
@@ -564,25 +494,16 @@ describe('IdempotencyService - Unit Tests', () => {
       const eventId = 'evt_concurrent';
       const eventType = 'test.event';
 
-      // First call finds no existing event
+      // ON CONFLICT DO NOTHING returns null data when event exists
       const mockMaybeSingle = vi.fn().mockResolvedValue({ data: null, error: null });
-      // But insert fails due to unique constraint (concurrent request)
-      const mockInsert = vi.fn().mockResolvedValue({
-        error: { code: '23505', message: 'Unique violation' },
+      const mockInsert = vi.fn().mockReturnValue({
+        select: vi.fn().mockReturnValue({
+          maybeSingle: mockMaybeSingle,
+        }),
       });
 
-      mockFrom.mockImplementation((table: string) => {
-        if (table === 'webhook_events') {
-          return {
-            select: vi.fn().mockReturnValue({
-              eq: vi.fn().mockReturnValue({
-                maybeSingle: mockMaybeSingle,
-              }),
-            }),
-            insert: mockInsert,
-          };
-        }
-        return {};
+      mockFrom.mockReturnValue({
+        insert: mockInsert,
       });
 
       const result = await IdempotencyService.checkAndClaimEvent(eventId, eventType, {});
@@ -594,28 +515,17 @@ describe('IdempotencyService - Unit Tests', () => {
 
   describe('Type Safety and Structure', () => {
     it('should return IIdempotencyResult with isNew true for new events', async () => {
-      const mockMaybeSingle = vi.fn().mockResolvedValue({ data: null, error: null });
+      const mockMaybeSingle = vi
+        .fn()
+        .mockResolvedValue({ data: { status: 'processing' }, error: null });
       const mockInsert = vi.fn().mockReturnValue({
         select: vi.fn().mockReturnValue({
-          single: vi.fn().mockResolvedValue({
-            data: { id: 'record' },
-            error: null,
-          }),
+          maybeSingle: mockMaybeSingle,
         }),
       });
 
-      mockFrom.mockImplementation((table: string) => {
-        if (table === 'webhook_events') {
-          return {
-            select: vi.fn().mockReturnValue({
-              eq: vi.fn().mockReturnValue({
-                maybeSingle: mockMaybeSingle,
-              }),
-            }),
-            insert: mockInsert,
-          };
-        }
-        return {};
+      mockFrom.mockReturnValue({
+        insert: mockInsert,
       });
 
       const result: IIdempotencyResult = await IdempotencyService.checkAndClaimEvent(
@@ -629,18 +539,16 @@ describe('IdempotencyService - Unit Tests', () => {
     });
 
     it('should return IIdempotencyResult with isNew false for existing events', async () => {
-      const mockMaybeSingle = vi.fn().mockResolvedValue({
-        data: { status: 'completed' as WebhookEventStatus },
-        error: null,
+      // ON CONFLICT DO NOTHING returns null data when event exists
+      const mockMaybeSingle = vi.fn().mockResolvedValue({ data: null, error: null });
+      const mockInsert = vi.fn().mockReturnValue({
+        select: vi.fn().mockReturnValue({
+          maybeSingle: mockMaybeSingle,
+        }),
       });
 
       mockFrom.mockReturnValue({
-        select: vi.fn().mockReturnValue({
-          eq: vi.fn().mockReturnValue({
-            maybeSingle: mockMaybeSingle,
-          }),
-        }),
-        insert: vi.fn(),
+        insert: mockInsert,
       });
 
       const result: IIdempotencyResult = await IdempotencyService.checkAndClaimEvent(
@@ -652,7 +560,7 @@ describe('IdempotencyService - Unit Tests', () => {
       expect(result).toHaveProperty('isNew');
       expect(result).toHaveProperty('existingStatus');
       expect(result.isNew).toBe(false);
-      expect(result.existingStatus).toBe('completed');
+      expect(result.existingStatus).toBe('processing');
     });
 
     it('should validate all valid event statuses', () => {
@@ -714,28 +622,17 @@ describe('IdempotencyService - Unit Tests', () => {
     });
 
     it('should handle all valid WebhookEventStatus values', async () => {
-      const mockMaybeSingle = vi.fn().mockResolvedValue({ data: null, error: null });
+      const mockMaybeSingle = vi
+        .fn()
+        .mockResolvedValue({ data: { status: 'processing' }, error: null });
       const mockInsert = vi.fn().mockReturnValue({
         select: vi.fn().mockReturnValue({
-          single: vi.fn().mockResolvedValue({
-            data: { id: 'record' },
-            error: null,
-          }),
+          maybeSingle: mockMaybeSingle,
         }),
       });
 
-      mockFrom.mockImplementation((table: string) => {
-        if (table === 'webhook_events') {
-          return {
-            select: vi.fn().mockReturnValue({
-              eq: vi.fn().mockReturnValue({
-                maybeSingle: mockMaybeSingle,
-              }),
-            }),
-            insert: mockInsert,
-          };
-        }
-        return {};
+      mockFrom.mockReturnValue({
+        insert: mockInsert,
       });
 
       const result = await IdempotencyService.checkAndClaimEvent('evt_test', 'test.event', {});
@@ -745,24 +642,16 @@ describe('IdempotencyService - Unit Tests', () => {
     });
 
     it('should handle database error propagation in checkAndClaimEvent', async () => {
-      const mockMaybeSingle = vi.fn().mockResolvedValue({ data: null, error: null });
       const dbError = { code: 'PGRST301', message: 'Database error' };
-      const mockInsert = vi.fn().mockResolvedValue({
-        error: dbError,
+      const mockMaybeSingle = vi.fn().mockResolvedValue({ data: null, error: dbError });
+      const mockInsert = vi.fn().mockReturnValue({
+        select: vi.fn().mockReturnValue({
+          maybeSingle: mockMaybeSingle,
+        }),
       });
 
-      mockFrom.mockImplementation((table: string) => {
-        if (table === 'webhook_events') {
-          return {
-            select: vi.fn().mockReturnValue({
-              eq: vi.fn().mockReturnValue({
-                maybeSingle: mockMaybeSingle,
-              }),
-            }),
-            insert: mockInsert,
-          };
-        }
-        return {};
+      mockFrom.mockReturnValue({
+        insert: mockInsert,
       });
 
       await expect(
@@ -788,28 +677,17 @@ describe('IdempotencyService - Unit Tests', () => {
 
   describe('Integration Behavior', () => {
     it('should use correct table name for webhook events', async () => {
-      const mockMaybeSingle = vi.fn().mockResolvedValue({ data: null, error: null });
+      const mockMaybeSingle = vi
+        .fn()
+        .mockResolvedValue({ data: { status: 'processing' }, error: null });
       const mockInsert = vi.fn().mockReturnValue({
         select: vi.fn().mockReturnValue({
-          single: vi.fn().mockResolvedValue({
-            data: { id: 'record' },
-            error: null,
-          }),
+          maybeSingle: mockMaybeSingle,
         }),
       });
 
-      mockFrom.mockImplementation((table: string) => {
-        if (table === 'webhook_events') {
-          return {
-            select: vi.fn().mockReturnValue({
-              eq: vi.fn().mockReturnValue({
-                maybeSingle: mockMaybeSingle,
-              }),
-            }),
-            insert: mockInsert,
-          };
-        }
-        return { select: vi.fn(), insert: vi.fn() };
+      mockFrom.mockReturnValue({
+        insert: mockInsert,
       });
 
       await IdempotencyService.checkAndClaimEvent('evt_test', 'test.event', {});

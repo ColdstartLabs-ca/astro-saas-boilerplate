@@ -5,17 +5,24 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, fireEvent, waitFor } from '@testing-library/react';
-import { ContentPreferencesSection, CONTENT_PREFERENCES_DEFAULTS } from '@client/components/onboarding/steps/ContentPreferencesSection';
+import {
+  ContentPreferencesSection,
+  CONTENT_PREFERENCES_DEFAULTS,
+} from '@client/components/onboarding/steps/ContentPreferencesSection';
 import type { IContentPreferences } from '@shared/types/project.types';
 
 // Mock lucide-react icons
 vi.mock('lucide-react', () => {
-  const icon = ({ className }: { className?: string }) => <span className={className} />;
+  const icon = ({ className }: { className?: string }) => (
+    <span className={className} data-testid="mock-icon" />
+  );
   return {
     Palette: icon,
     Image: icon,
     FileText: icon,
     Link2: icon,
+    Calendar: icon,
+    Zap: icon,
   };
 });
 
@@ -180,7 +187,9 @@ describe('ContentPreferencesSection', () => {
       <ContentPreferencesSection value={CONTENT_PREFERENCES_DEFAULTS} onChange={mockOnChange} />
     );
 
-    const textarea = getByPlaceholderText(/Additional instructions for the AI writer/) as HTMLTextAreaElement;
+    const textarea = getByPlaceholderText(
+      /Additional instructions for the AI writer/
+    ) as HTMLTextAreaElement;
     expect(textarea.maxLength).toBe(1000);
   });
 
