@@ -18,7 +18,7 @@ import {
   CampaignNotFoundError,
 } from '@shared/types/campaign.types';
 import { isAvailableImagePreset } from '@shared/config/image-models.config';
-import { isAvailableWriterPreset } from '@shared/config/ai-models.config';
+import { isAvailableWriterPreset, DEFAULT_WRITER_PRESET } from '@shared/config/ai-models.config';
 import { calculateArticleCreditCost } from '@shared/constants';
 import { serverEnv } from '@shared/config/env';
 import { AppError } from '@shared/utils/errors';
@@ -338,7 +338,7 @@ export class CampaignLifecycleService {
         project_id: validated.projectId,
         name: validated.name,
         status: 'draft',
-        ai_model: validated.model || 'budget',
+        ai_model: validated.model || DEFAULT_WRITER_PRESET,
         tone: validated.tone || 'professional',
         target_word_count: validated.targetWordCount || 1500,
         settings: {},
@@ -376,7 +376,7 @@ export class CampaignLifecycleService {
         project_id: validated.projectId,
         name: validated.name,
         status: 'draft',
-        ai_model: validated.model || 'budget',
+        ai_model: validated.model || DEFAULT_WRITER_PRESET,
         tone: validated.tone || 'professional',
         target_word_count: validated.targetWordCount || 1500,
         settings: {},
@@ -413,7 +413,7 @@ export class CampaignLifecycleService {
         project_id: validated.projectId,
         name: validated.name,
         status: 'draft',
-        ai_model: validated.model || 'budget',
+        ai_model: validated.model || DEFAULT_WRITER_PRESET,
         tone: validated.tone || 'professional',
         target_word_count: validated.targetWordCount || 1500,
         settings: {},
@@ -556,7 +556,8 @@ export class CampaignLifecycleService {
       if (validated.globalInstructions !== undefined)
         campaign.global_instructions = validated.globalInstructions;
       if (validated.autoPublish !== undefined) campaign.auto_publish = validated.autoPublish;
-      if (validated.includeYoutube !== undefined) campaign.include_youtube = validated.includeYoutube;
+      if (validated.includeYoutube !== undefined)
+        campaign.include_youtube = validated.includeYoutube;
       if (validated.includeCta !== undefined) campaign.include_cta = validated.includeCta;
       if (validated.includeInfographics !== undefined)
         campaign.include_infographics = validated.includeInfographics;

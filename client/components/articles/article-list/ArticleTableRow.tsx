@@ -5,7 +5,7 @@
  */
 'use client';
 
-import { useMemo, useState, useCallback } from 'react';
+import React, { useMemo, useState, useCallback } from 'react';
 import {
   FileText,
   ExternalLink,
@@ -19,7 +19,10 @@ import {
 import { getSEOScoreColor, getSEOScoreBorderColor } from '@shared/utils/seo';
 import { dashboardNavigate } from '@client/utils/dashboardNavigation';
 import type { IArticleWithCampaign } from '@shared/types/article.types';
-import { useArticleBlogStatus, useInvalidateArticleBlogStatus } from '@client/hooks/useArticleBlogStatus';
+import {
+  useArticleBlogStatus,
+  useInvalidateArticleBlogStatus,
+} from '@client/hooks/useArticleBlogStatus';
 import { useArticleActions } from '@client/hooks/useArticleActions';
 import { useToastStore } from '@client/store/toastStore';
 
@@ -247,8 +250,9 @@ export function ArticleTableRow({
             Visit
           </a>
         )}
-        {isPublished && !isBlogStatusLoading && (
-          blogStatus?.synced ? (
+        {isPublished &&
+          !isBlogStatusLoading &&
+          (blogStatus?.synced ? (
             <a
               href={`/blog/${blogStatus.slug}`}
               target="_blank"
@@ -271,8 +275,7 @@ export function ArticleTableRow({
               <RefreshCw className={`w-3 h-3 ${isSyncingToBlog ? 'animate-spin' : ''}`} />
               {isSyncingToBlog ? '...' : 'Sync'}
             </button>
-          )
-        )}
+          ))}
       </div>
     </div>
   );

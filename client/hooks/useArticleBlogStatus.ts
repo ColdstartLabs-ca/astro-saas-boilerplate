@@ -1,6 +1,6 @@
 'use client';
 
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useQueryClient, type UseQueryResult } from '@tanstack/react-query';
 import { useApiRequest } from '@client/hooks/useApiRequest';
 
 interface IBlogStatusResponse {
@@ -8,7 +8,10 @@ interface IBlogStatusResponse {
   slug: string | null;
 }
 
-export function useArticleBlogStatus(articleId: string, enabled: boolean) {
+export function useArticleBlogStatus(
+  articleId: string,
+  enabled: boolean
+): UseQueryResult<IBlogStatusResponse, Error> {
   const { request } = useApiRequest();
 
   return useQuery({
@@ -24,9 +27,9 @@ export function useArticleBlogStatus(articleId: string, enabled: boolean) {
 /**
  * Invalidate blog status cache for an article (call after syncing)
  */
-export function useInvalidateArticleBlogStatus() {
+export function useInvalidateArticleBlogStatus(): (articleId: string) => Promise<void> {
   const queryClient = useQueryClient();
-  return (articleId: string) => {
-    queryClient.invalidateQueries({ queryKey: ['article-blog-status', articleId] });
+  return async (articleId: string) => {
+    await queryClient.invalidateQueries({ queryKey: ['article-blog-status', articleId] });
   };
 }

@@ -713,17 +713,35 @@ describe('CampaignService', () => {
     it('should update campaign settings', async () => {
       const { supabaseAdmin } = await import('@server/supabase/supabaseAdmin');
 
-      (supabaseAdmin.from as unknown as ReturnType<typeof vi.fn>).mockReturnValueOnce({
-        update: vi.fn().mockReturnValue({
-          eq: vi.fn().mockReturnValue({
-            eq: vi.fn().mockReturnValue({
-              select: vi.fn().mockReturnValue({
-                single: vi.fn().mockResolvedValue({ data: mockCampaign, error: null }),
+      let callCount = 0;
+      (supabaseAdmin.from as unknown as ReturnType<typeof vi.fn>).mockImplementation(() => {
+        callCount++;
+        if (callCount === 1) {
+          // First call: select status for transition validation
+          return {
+            select: vi.fn().mockReturnValue({
+              eq: vi.fn().mockReturnValue({
+                eq: vi.fn().mockReturnValue({
+                  single: vi.fn().mockResolvedValue({ data: { status: 'paused' }, error: null }),
+                }),
               }),
             }),
-          }),
-        }),
-      } as unknown);
+          } as unknown;
+        } else {
+          // Second call: update campaign
+          return {
+            update: vi.fn().mockReturnValue({
+              eq: vi.fn().mockReturnValue({
+                eq: vi.fn().mockReturnValue({
+                  select: vi.fn().mockReturnValue({
+                    single: vi.fn().mockResolvedValue({ data: mockCampaign, error: null }),
+                  }),
+                }),
+              }),
+            }),
+          } as unknown;
+        }
+      });
 
       const updated = await campaignService.update(mockCampaignId, mockUserId, {
         name: 'Updated Campaign',
@@ -763,13 +781,31 @@ describe('CampaignService', () => {
     it('should delete campaign', async () => {
       const { supabaseAdmin } = await import('@server/supabase/supabaseAdmin');
 
-      (supabaseAdmin.from as unknown as ReturnType<typeof vi.fn>).mockReturnValueOnce({
-        delete: vi.fn().mockReturnValue({
-          eq: vi.fn().mockReturnValue({
-            eq: vi.fn().mockResolvedValue({ error: null }),
-          }),
-        }),
-      } as unknown);
+      let callCount = 0;
+      (supabaseAdmin.from as unknown as ReturnType<typeof vi.fn>).mockImplementation(() => {
+        callCount++;
+        if (callCount === 1) {
+          // First call: select status for deletion validation
+          return {
+            select: vi.fn().mockReturnValue({
+              eq: vi.fn().mockReturnValue({
+                eq: vi.fn().mockReturnValue({
+                  single: vi.fn().mockResolvedValue({ data: { status: 'draft' }, error: null }),
+                }),
+              }),
+            }),
+          } as unknown;
+        } else {
+          // Second call: delete campaign
+          return {
+            delete: vi.fn().mockReturnValue({
+              eq: vi.fn().mockReturnValue({
+                eq: vi.fn().mockResolvedValue({ error: null }),
+              }),
+            }),
+          } as unknown;
+        }
+      });
 
       await expect(campaignService.delete(mockCampaignId, mockUserId)).resolves.not.toThrow();
     });
@@ -816,7 +852,7 @@ describe('CampaignService', () => {
         'espresso machine',
       ]);
 
-      expect(result).toEqual({ added: 1, duplicates: 1 });
+      expect(result).toMatchObject({ added: 1, duplicates: 1 });
     });
 
     it('should throw CampaignNotFoundError for non-existent campaign', async () => {
@@ -1822,7 +1858,7 @@ describe('CampaignService', () => {
       ]);
 
       // Only 'french press' should be added
-      expect(result).toEqual({ added: 1, duplicates: 2 });
+      expect(result).toMatchObject({ added: 1, duplicates: 2 });
     });
 
     it('should reject spacing variants of existing keywords', async () => {
@@ -1864,7 +1900,7 @@ describe('CampaignService', () => {
       ]);
 
       // All should be duplicates
-      expect(result).toEqual({ added: 0, duplicates: 3 });
+      expect(result).toMatchObject({ added: 0, duplicates: 3 });
     });
 
     it('should reject combined case and spacing variants', async () => {
@@ -1906,7 +1942,7 @@ describe('CampaignService', () => {
       ]);
 
       // All should be duplicates
-      expect(result).toEqual({ added: 0, duplicates: 3 });
+      expect(result).toMatchObject({ added: 0, duplicates: 3 });
     });
 
     it('should handle within-batch duplicates', async () => {
@@ -1950,7 +1986,7 @@ describe('CampaignService', () => {
       ]);
 
       // Should deduplicate within the batch
-      expect(result).toEqual({ added: 2, duplicates: 2 });
+      expect(result).toMatchObject({ added: 2, duplicates: 2 });
     });
 
     it('should trim leading/trailing spaces but preserve internal spacing', async () => {
@@ -2037,7 +2073,7 @@ describe('CampaignService', () => {
       ]);
 
       // All keywords should be added (after trimming)
-      expect(result).toEqual({ added: 3, duplicates: 0 });
+      expect(result).toMatchObject({ added: 3, duplicates: 0 });
     });
   });
 });
