@@ -3,6 +3,7 @@
 import { adminFetch } from '@/client/utils/admin-api-client';
 import type { IAdminUserDetail } from '@/shared/types/admin.types';
 import { useTranslations } from '@client/hooks/useTranslations';
+import { useToastStore } from '@client/store/toastStore';
 import dayjs from 'dayjs';
 import { ArrowLeft, Coins } from 'lucide-react';
 
@@ -14,6 +15,7 @@ interface IAdminUserDetailPageProps {
 
 export default function AdminUserDetailPage({ userId }: IAdminUserDetailPageProps): JSX.Element {
   const t = useTranslations('admin.userDetail');
+  const { showToast } = useToastStore();
 
   const [user, setUser] = useState<IAdminUserDetail | null>(null);
   const [loading, setLoading] = useState(true);
@@ -63,7 +65,10 @@ export default function AdminUserDetailPage({ userId }: IAdminUserDetailPageProp
       }
     } catch (err) {
       console.error('Failed to update role:', err);
-      alert(err instanceof Error ? err.message : t('errors.failedToUpdateRole'));
+      showToast({
+        message: err instanceof Error ? err.message : t('errors.failedToUpdateRole'),
+        type: 'error',
+      });
     } finally {
       setSaving(false);
     }

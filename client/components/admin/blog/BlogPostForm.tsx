@@ -3,6 +3,7 @@
 import { adminFetch } from '@client/utils/admin-api-client';
 import type { IDbBlogPost, IBlogCategory, IBlogMedia } from '@shared/types/blog.types';
 import { generateSlug } from '@shared/utils/string';
+import { useToastStore } from '@client/store/toastStore';
 import { Image as ImageIcon, X, Loader2, Upload } from 'lucide-react';
 import { dashboardNavigate } from '@client/utils/dashboardNavigation';
 import { useCallback, useEffect, useState, type ChangeEvent } from 'react';
@@ -35,6 +36,7 @@ interface IBlogPostFormProps {
 export function BlogPostForm({ post, onSuccess }: IBlogPostFormProps): JSX.Element {
   // Use dashboard navigation instead of Next.js router
   const isEditing = !!post;
+  const { showToast } = useToastStore();
 
   const [categories, setCategories] = useState<IBlogCategory[]>([]);
   const [media, setMedia] = useState<IBlogMedia[]>([]);
@@ -143,7 +145,10 @@ export function BlogPostForm({ post, onSuccess }: IBlogPostFormProps): JSX.Eleme
       setShowMediaPicker(false);
     } catch (err) {
       console.error('Failed to upload media:', err);
-      alert('Failed to upload image');
+      showToast({
+        message: 'Failed to upload image',
+        type: 'error',
+      });
     }
   };
 

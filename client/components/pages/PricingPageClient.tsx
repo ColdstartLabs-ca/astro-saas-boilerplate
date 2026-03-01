@@ -17,10 +17,12 @@ import {
 } from '@shared/config/stripe';
 import { ArrowRight, Calendar, Loader2, X } from 'lucide-react';
 import { getTranslations } from '@src/i18n/utils';
+import { useToastStore } from '@client/store/toastStore';
 import { useEffect, useMemo, useState } from 'react';
 
 export default function PricingPageClient(): JSX.Element {
   const t = useMemo(() => getTranslations('pricing'), []);
+  const { showToast } = useToastStore();
   const pricesConfigured = isStripePricesConfigured();
   const [profile, setProfile] = useState<IUserProfile | null>(null);
   const [subscription, setSubscription] = useState<ISubscription | null>(null);
@@ -65,7 +67,10 @@ export default function PricingPageClient(): JSX.Element {
       setSubscription(subData);
     } catch (error) {
       console.error('Failed to cancel scheduled change:', error);
-      alert(error instanceof Error ? error.message : 'Failed to cancel scheduled change');
+      showToast({
+        message: error instanceof Error ? error.message : 'Failed to cancel scheduled change',
+        type: 'error',
+      });
     } finally {
       setCancelingSchedule(false);
     }

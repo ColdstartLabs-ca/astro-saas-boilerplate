@@ -2,6 +2,8 @@
 
 import { adminFetch } from '@client/utils/admin-api-client';
 import type { IDbBlogPost, IBlogCategory, BlogPostSource } from '@shared/types/blog.types';
+import { ConfirmDialog } from '@client/components/ui/ConfirmDialog';
+import { useToastStore } from '@client/store/toastStore';
 import dayjs from 'dayjs';
 import {
   ChevronLeft,
@@ -48,6 +50,7 @@ function SourceBadge({ source }: { source: BlogPostSource }): JSX.Element {
 }
 
 export function PostsList(): JSX.Element {
+  const { showToast } = useToastStore();
   const [posts, setPosts] = useState<IDbBlogPost[]>([]);
   const [categories, setCategories] = useState<IBlogCategory[]>([]);
   const [loading, setLoading] = useState(true);
@@ -58,6 +61,8 @@ export function PostsList(): JSX.Element {
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
   const [refreshKey, setRefreshKey] = useState(0);
+  const [deleteConfirm, setDeleteConfirm] = useState<IDbBlogPost | null>(null);
+  const [deleting, setDeleting] = useState(false);
   const limit = 20;
 
   const fetchData = useCallback(async () => {
@@ -98,17 +103,21 @@ export function PostsList(): JSX.Element {
     fetchData();
   }, [fetchData, refreshKey]);
 
-  const handleDeletePost = async (postId: string) => {
-    if (!confirm('Are you sure you want to delete this post? This action cannot be undone.')) {
-      return;
-    }
-
+  const handleDeletePost = async () => {
+    if (!deleteConfirm) return;
+    setDeleting(true);
     try {
-      await adminFetch(`/api/admin/blog/posts/${postId}`, { method: 'DELETE' });
+      await adminFetch(`/api/admin/blog/posts/${deleteConfirm.id}`, { method: 'DELETE' });
       setRefreshKey(k => k + 1);
+      setDeleteConfirm(null);
     } catch (err) {
       console.error('Failed to delete post:', err);
-      alert('Failed to delete post');
+      showToast({
+        message: 'Failed to delete post',
+        type: 'error',
+      });
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -275,7 +284,7 @@ export function PostsList(): JSX.Element {
                         <Edit className="h-4 w-4" />
                       </button>
                       <button
-                        onClick={() => handleDeletePost(post.id)}
+                        onClick={() => setDeleteConfirm(post)}
                         className="p-2 rounded hover:bg-error/10 text-muted-foreground hover:text-error transition-colors"
                         title="Delete"
                       >
@@ -317,6 +326,18 @@ export function PostsList(): JSX.Element {
           </div>
         )}
       </div>
+
+      {/* Delete Confirmation Dialog */}
+      <ConfirmDialog
+        isOpen={deleteConfirm !== null}
+        onClose={() => setDeleteConfirm(null)}
+        onConfirm={handleDeletePost}
+        title="Delete Post"
+        message="Are you sure you want to delete this post? This action cannot be undone."
+        variant="danger"
+        labels={{ confirm: 'Delete', confirming: 'Deleting...' }}
+        isConfirming={deleting}
+      />
     </div>
   );
 }

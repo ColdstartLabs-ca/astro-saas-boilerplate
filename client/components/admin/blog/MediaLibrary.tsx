@@ -2,6 +2,7 @@
 
 import { adminFetch } from '@client/utils/admin-api-client';
 import type { IBlogMedia, IBlogMediaListResponse } from '@shared/types/blog.types';
+import { useToastStore } from '@client/store/toastStore';
 import {
   Search,
   Upload,
@@ -24,6 +25,7 @@ interface IMediaLibraryProps {
 }
 
 export function MediaLibrary({ onSelect, selectionMode = false }: IMediaLibraryProps): JSX.Element {
+  const { showToast } = useToastStore();
   const [media, setMedia] = useState<IBlogMedia[]>([]);
   const [allTags, setAllTags] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
@@ -96,7 +98,10 @@ export function MediaLibrary({ onSelect, selectionMode = false }: IMediaLibraryP
 
     const file = files[0];
     if (!file.type.startsWith('image/')) {
-      alert('Please select an image file');
+      showToast({
+        message: 'Please select an image file',
+        type: 'error',
+      });
       return;
     }
 
@@ -124,7 +129,10 @@ export function MediaLibrary({ onSelect, selectionMode = false }: IMediaLibraryP
       fetchMedia(searchQuery, selectedTags);
     } catch (err) {
       console.error('Failed to upload media:', err);
-      alert(err instanceof Error ? err.message : 'Failed to upload image');
+      showToast({
+        message: err instanceof Error ? err.message : 'Failed to upload image',
+        type: 'error',
+      });
     } finally {
       setUploading(false);
       if (fileInputRef.current) {
@@ -180,7 +188,10 @@ export function MediaLibrary({ onSelect, selectionMode = false }: IMediaLibraryP
       fetchMedia(searchQuery, selectedTags);
     } catch (err) {
       console.error('Failed to update media:', err);
-      alert(err instanceof Error ? err.message : 'Failed to update media');
+      showToast({
+        message: err instanceof Error ? err.message : 'Failed to update media',
+        type: 'error',
+      });
     } finally {
       setSaving(false);
     }
@@ -199,7 +210,10 @@ export function MediaLibrary({ onSelect, selectionMode = false }: IMediaLibraryP
       fetchMedia(searchQuery, selectedTags);
     } catch (err) {
       console.error('Failed to delete media:', err);
-      alert(err instanceof Error ? err.message : 'Failed to delete media');
+      showToast({
+        message: err instanceof Error ? err.message : 'Failed to delete media',
+        type: 'error',
+      });
     } finally {
       setDeleting(false);
     }
