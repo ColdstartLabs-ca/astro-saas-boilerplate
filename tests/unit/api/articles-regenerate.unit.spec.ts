@@ -9,7 +9,7 @@
  * - Concurrent regenerate attempts handling
  */
 
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, vi, beforeAll } from 'vitest';
 
 // Get the file path directly using path.resolve to handle bracketed directory
 import path from 'path';
@@ -24,30 +24,25 @@ const regenerateModulePath = path.resolve(
   '../../../src/pages/api/articles/[articleId]/regenerate.ts'
 );
 
+// All regenerable statuses from the actual implementation
+const REGENERATABLE_STATUSES = [
+  'failed',
+  'failed_quality',
+  'failed_timeout',
+  'qa_failed',
+  'rejected',
+];
+
 // Mock dependencies first before importing the module under test
 const mockFrom = vi.fn();
 const mockSelect = vi.fn();
 const mockUpdate = vi.fn();
 const mockEq = vi.fn();
-const mockUpdateEq = vi.fn(); // Separate eq mock for update chain
 const mockIn = vi.fn();
 const mockSingle = vi.fn();
 const mockRpc = vi.fn();
 const mockFireAndForget = vi.fn();
 const mockGenerateArticle = vi.fn();
-
-// Set up from() mock to return different objects based on context
-let fromCallCount = 0;
-const createFromResult = (isUpdate: boolean = false) => {
-  if (isUpdate) {
-    return {
-      update: mockUpdate,
-    };
-  }
-  return {
-    select: mockSelect,
-  };
-};
 
 vi.mock('@server/supabase/supabaseAdmin', () => ({
   supabaseAdmin: {
@@ -87,51 +82,41 @@ describe('POST /api/articles/[articleId]/regenerate', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    fromCallCount = 0;
 
-    // Setup from() to return different objects based on call count and table
-    mockFrom.mockImplementation((table: string) => {
-      fromCallCount++;
-      // First from() call is for articles select
-      if (fromCallCount === 1 && table === 'articles') {
-        return { select: mockSelect };
-      }
-      // Second from() call is for user_credits select
-      if (fromCallCount === 2 && table === 'user_credits') {
-        return { select: mockSelect };
-      }
-      // Third from() call is for articles update
-      if (fromCallCount === 3 && table === 'articles') {
-        return { update: mockUpdate };
-      }
-      // Default fallback for select
-      return { select: mockSelect };
+    // Setup from() to return an object with BOTH select and update methods
+    // This allows the same mock to be used for both select and update queries
+    mockFrom.mockReturnValue({
+      select: mockSelect,
+      update: mockUpdate,
     });
 
-    // Setup select().eq() result
+    // Setup select().eq().eq().single() chain
+    // The select query uses: .select(...).eq('id', articleId).eq('user_id', userId).single()
+    // So mockEq must return an object with both eq() and single() methods
     mockSelect.mockReturnValue({
       eq: mockEq,
     });
 
-    // Setup eq() to support both single and double eq() calls for select queries
-    mockEq.mockReturnValue({
+    // Create a self-referential mock for eq() that supports chaining
+    // eq() returns an object with eq() (for chaining) and single()
+    const createEqResult = () => ({
       eq: mockEq,
       single: mockSingle,
+      in: mockIn, // Also include in() for update chain
     });
-
-    // Setup update().eq().in().select().single() chain
-    mockUpdate.mockReturnValue({
-      eq: mockUpdateEq, // Use separate mock for update eq chain
-    });
-    mockUpdateEq.mockReturnValue({
-      in: mockIn,
-    });
-    mockIn.mockReturnValue({
+    mockEq.mockImplementation(() => createEqResult());
+    mockIn.mockImplementation(() => ({
       select: () => ({
         single: mockSingle,
       }),
+    }));
+
+    // Setup update().eq().in().select().single() chain
+    mockUpdate.mockReturnValue({
+      eq: mockEq,
     });
 
+    // Default: RPC calls succeed (consume_credits_v2, refund_credits_v2)
     mockRpc.mockResolvedValue({ data: null, error: null });
     mockFireAndForget.mockImplementation(() => {});
   });
@@ -156,10 +141,10 @@ describe('POST /api/articles/[articleId]/regenerate', () => {
   describe('Status Precondition Validation', () => {
     it('should allow regeneration for failed articles', async () => {
       const mockArticle = createMockArticle({ status: 'failed' });
+      // Only 2 mockSingle calls: article fetch + update result
       mockSingle
-        .mockResolvedValueOnce({ data: mockArticle, error: null }) // Article
-        .mockResolvedValueOnce({ data: { total_credits_balance: 10 }, error: null }) // Credits
-        .mockResolvedValueOnce({ data: { id: 'article-123' }, error: null }); // Update
+        .mockResolvedValueOnce({ data: mockArticle, error: null }) // Article fetch
+        .mockResolvedValueOnce({ data: { id: 'article-123' }, error: null }); // Update result
 
       const result = await POST('user-123', {
         params: { articleId: 'article-123' },
@@ -175,7 +160,38 @@ describe('POST /api/articles/[articleId]/regenerate', () => {
       const mockArticle = createMockArticle({ status: 'failed_quality' });
       mockSingle
         .mockResolvedValueOnce({ data: mockArticle, error: null })
-        .mockResolvedValueOnce({ data: { total_credits_balance: 10 }, error: null })
+        .mockResolvedValueOnce({ data: { id: 'article-123' }, error: null });
+
+      const result = await POST('user-123', {
+        params: { articleId: 'article-123' },
+        locals: {},
+      });
+
+      expect(result.status).toBe(202);
+      const json = await result.json();
+      expect(json.success).toBe(true);
+    });
+
+    it('should allow regeneration for failed_timeout articles', async () => {
+      const mockArticle = createMockArticle({ status: 'failed_timeout' });
+      mockSingle
+        .mockResolvedValueOnce({ data: mockArticle, error: null })
+        .mockResolvedValueOnce({ data: { id: 'article-123' }, error: null });
+
+      const result = await POST('user-123', {
+        params: { articleId: 'article-123' },
+        locals: {},
+      });
+
+      expect(result.status).toBe(202);
+      const json = await result.json();
+      expect(json.success).toBe(true);
+    });
+
+    it('should allow regeneration for qa_failed articles', async () => {
+      const mockArticle = createMockArticle({ status: 'qa_failed' });
+      mockSingle
+        .mockResolvedValueOnce({ data: mockArticle, error: null })
         .mockResolvedValueOnce({ data: { id: 'article-123' }, error: null });
 
       const result = await POST('user-123', {
@@ -192,7 +208,6 @@ describe('POST /api/articles/[articleId]/regenerate', () => {
       const mockArticle = createMockArticle({ status: 'rejected' });
       mockSingle
         .mockResolvedValueOnce({ data: mockArticle, error: null })
-        .mockResolvedValueOnce({ data: { total_credits_balance: 10 }, error: null })
         .mockResolvedValueOnce({ data: { id: 'article-123' }, error: null });
 
       const result = await POST('user-123', {
@@ -283,7 +298,6 @@ describe('POST /api/articles/[articleId]/regenerate', () => {
       });
       mockSingle
         .mockResolvedValueOnce({ data: mockArticle, error: null })
-        .mockResolvedValueOnce({ data: { total_credits_balance: 10 }, error: null })
         .mockResolvedValueOnce({ data: { id: 'article-123' }, error: null });
 
       await POST('user-123', {
@@ -314,7 +328,6 @@ describe('POST /api/articles/[articleId]/regenerate', () => {
       });
       mockSingle
         .mockResolvedValueOnce({ data: mockArticle, error: null })
-        .mockResolvedValueOnce({ data: { total_credits_balance: 10 }, error: null })
         .mockResolvedValueOnce({ data: { id: 'article-123' }, error: null });
 
       await POST('user-123', {
@@ -345,7 +358,6 @@ describe('POST /api/articles/[articleId]/regenerate', () => {
       });
       mockSingle
         .mockResolvedValueOnce({ data: mockArticle, error: null })
-        .mockResolvedValueOnce({ data: { total_credits_balance: 10 }, error: null })
         .mockResolvedValueOnce({ data: { id: 'article-123' }, error: null });
 
       await POST('user-123', {
@@ -376,7 +388,6 @@ describe('POST /api/articles/[articleId]/regenerate', () => {
       });
       mockSingle
         .mockResolvedValueOnce({ data: mockArticle, error: null })
-        .mockResolvedValueOnce({ data: { total_credits_balance: 10 }, error: null })
         .mockResolvedValueOnce({ data: { id: 'article-123' }, error: null });
 
       await POST('user-123', {
@@ -407,7 +418,6 @@ describe('POST /api/articles/[articleId]/regenerate', () => {
       });
       mockSingle
         .mockResolvedValueOnce({ data: mockArticle, error: null })
-        .mockResolvedValueOnce({ data: { total_credits_balance: 10 }, error: null })
         .mockResolvedValueOnce({ data: { id: 'article-123' }, error: null });
 
       await POST('user-123', {
@@ -430,7 +440,6 @@ describe('POST /api/articles/[articleId]/regenerate', () => {
       const mockArticle = createMockArticle({ status: 'failed' });
       mockSingle
         .mockResolvedValueOnce({ data: mockArticle, error: null })
-        .mockResolvedValueOnce({ data: { total_credits_balance: 10 }, error: null })
         .mockResolvedValueOnce({ data: { id: 'article-123' }, error: null });
 
       await POST('user-123', {
@@ -441,15 +450,14 @@ describe('POST /api/articles/[articleId]/regenerate', () => {
       // Verify update was called
       expect(mockUpdate).toHaveBeenCalled();
 
-      // Verify that .in() was called with retryable statuses (for conditional update)
-      expect(mockIn).toHaveBeenCalledWith('status', ['failed', 'failed_quality', 'rejected']);
+      // Verify that .in() was called with all retryable statuses (for conditional update)
+      expect(mockIn).toHaveBeenCalledWith('status', REGENERATABLE_STATUSES);
     });
 
     it('should return 409 Conflict when conditional update affects 0 rows (race condition)', async () => {
       const mockArticle = createMockArticle({ status: 'failed' });
       mockSingle
         .mockResolvedValueOnce({ data: mockArticle, error: null })
-        .mockResolvedValueOnce({ data: { total_credits_balance: 10 }, error: null })
         // Simulate no rows updated (another request already changed the status)
         .mockResolvedValueOnce({ data: null, error: { code: 'PGRST116' } });
 
@@ -465,11 +473,10 @@ describe('POST /api/articles/[articleId]/regenerate', () => {
       expect(json.error.message).toContain('already in progress');
     });
 
-    it('should not deduct credits when conditional update fails', async () => {
+    it('should refund credits when conditional update fails after deduction', async () => {
       const mockArticle = createMockArticle({ status: 'failed' });
       mockSingle
         .mockResolvedValueOnce({ data: mockArticle, error: null })
-        .mockResolvedValueOnce({ data: { total_credits_balance: 10 }, error: null })
         // Simulate no rows updated
         .mockResolvedValueOnce({ data: null, error: { code: 'PGRST116' } });
 
@@ -478,8 +485,16 @@ describe('POST /api/articles/[articleId]/regenerate', () => {
         locals: {},
       });
 
-      // Verify credits were NOT deducted
-      expect(mockRpc).not.toHaveBeenCalled();
+      // Verify consume_credits_v2 was called first
+      expect(mockRpc).toHaveBeenCalledWith('consume_credits_v2', expect.any(Object));
+
+      // Verify refund_credits_v2 was called after the update failed
+      expect(mockRpc).toHaveBeenCalledWith('refund_credits_v2', {
+        target_user_id: 'user-123',
+        amount: 1,
+        job_id: 'article-123',
+        p_description: expect.stringContaining('Refund for failed regeneration lock'),
+      });
     });
   });
 
@@ -491,9 +506,6 @@ describe('POST /api/articles/[articleId]/regenerate', () => {
       // 2. Both pass validation, conditional update blocks second (409)
 
       const mockArticle = createMockArticle({ status: 'failed' });
-
-      // Set up mocks to simulate scenario where first request succeeds,
-      // second request fails because article is already regenerating
 
       // Reset and configure mocks specifically for this test
       vi.clearAllMocks();
@@ -507,27 +519,21 @@ describe('POST /api/articles/[articleId]/regenerate', () => {
         if (localCallCount === 1) {
           return { data: mockArticle, error: null };
         }
-        // Request 1 checks credits
-        if (localCallCount === 2) {
-          return { data: { total_credits_balance: 10 }, error: null };
-        }
         // Request 1 update succeeds
-        if (localCallCount === 3) {
+        if (localCallCount === 2) {
           return { data: { id: 'article-123' }, error: null };
         }
         // Request 2 reads article as generating (after Request 1's update)
-        if (localCallCount === 4) {
+        if (localCallCount === 3) {
           return { data: { ...mockArticle, status: 'generating' }, error: null };
         }
 
         return { data: null, error: null };
       });
 
-      mockFrom.mockImplementation(table => {
-        if (table === 'articles') {
-          return { select: mockSelect, update: mockUpdate };
-        }
-        return { select: mockSelect };
+      mockFrom.mockReturnValue({
+        select: mockSelect,
+        update: mockUpdate,
       });
 
       mockSelect.mockReturnValue({
@@ -538,9 +544,9 @@ describe('POST /api/articles/[articleId]/regenerate', () => {
         single: mockSingle,
       });
       mockUpdate.mockReturnValue({
-        eq: mockUpdateEq,
+        eq: mockEq,
       });
-      mockUpdateEq.mockReturnValue({
+      mockEq.mockReturnValue({
         in: mockIn,
       });
       mockIn.mockReturnValue({
@@ -569,6 +575,7 @@ describe('POST /api/articles/[articleId]/regenerate', () => {
 
       // Only one credit deduction should occur
       expect(mockRpc).toHaveBeenCalledTimes(1);
+      expect(mockRpc).toHaveBeenCalledWith('consume_credits_v2', expect.any(Object));
     });
   });
 
@@ -620,12 +627,13 @@ describe('POST /api/articles/[articleId]/regenerate', () => {
         status: 'failed',
         campaigns: {
           ...createMockArticle().campaigns,
-          image_preset: 'pro', // Costs 2 credits total
+          image_preset: 'pro', // Costs 2 credits total (1 base + 1 for pro)
         },
       });
-      mockSingle
-        .mockResolvedValueOnce({ data: mockArticle, error: null })
-        .mockResolvedValueOnce({ data: { total_credits_balance: 1 }, error: null });
+      mockSingle.mockResolvedValueOnce({ data: mockArticle, error: null });
+
+      // Mock consume_credits_v2 to return an error (insufficient credits)
+      mockRpc.mockResolvedValueOnce({ data: null, error: { message: 'Insufficient credits' } });
 
       const result = await POST('user-123', {
         params: { articleId: 'article-123' },
@@ -656,7 +664,6 @@ describe('POST /api/articles/[articleId]/regenerate', () => {
       });
       mockSingle
         .mockResolvedValueOnce({ data: mockArticle, error: null })
-        .mockResolvedValueOnce({ data: { total_credits_balance: 10 }, error: null })
         .mockResolvedValueOnce({ data: { id: 'article-123' }, error: null });
       mockGenerateArticle.mockResolvedValue(undefined);
 
@@ -691,7 +698,6 @@ describe('POST /api/articles/[articleId]/regenerate', () => {
       });
       mockSingle
         .mockResolvedValueOnce({ data: mockArticle, error: null })
-        .mockResolvedValueOnce({ data: { total_credits_balance: 10 }, error: null })
         .mockResolvedValueOnce({ data: { id: 'article-123' }, error: null });
 
       await POST('user-123', {
@@ -700,12 +706,12 @@ describe('POST /api/articles/[articleId]/regenerate', () => {
       });
 
       // Verify update was called with generation_error: null and credits_used
-      // Note: 'gpt-4' is not a valid preset key (budget/balanced/pro/ultra), so it falls back to 1
+      // Note: null image_preset means 0 image cost, so total is 1 (base cost)
       expect(mockUpdate).toHaveBeenCalledWith(
         {
           status: 'generating',
           generation_error: null,
-          credits_used: 1, // fallback cost for invalid preset 'gpt-4' + no images
+          credits_used: 1, // 1 base cost + 0 for null image preset
         },
         { count: 'exact' }
       );

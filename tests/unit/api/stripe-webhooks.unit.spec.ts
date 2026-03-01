@@ -1138,7 +1138,7 @@ describe('Stripe Webhook Handler', () => {
       );
     });
 
-    test('should skip invoice.payment_succeeded without subscription', async () => {
+    test('should skip invoice.paid without subscription', async () => {
       // Arrange
       const invoiceData = {
         id: 'in_test_no_sub_123',
@@ -1148,8 +1148,9 @@ describe('Stripe Webhook Handler', () => {
         status: 'paid',
       };
 
+      // BUG H12 FIX: Use 'invoice.paid' instead of 'invoice.payment_succeeded'
       const event = {
-        type: 'invoice.payment_succeeded',
+        type: 'invoice.paid',
         data: { object: invoiceData },
       };
 

@@ -32,6 +32,7 @@ vi.mock('lucide-react', () => {
     Plug: makeIcon('Plug'),
     Webhook: makeIcon('Webhook'),
     Rocket: makeIcon('Rocket'),
+    SlidersHorizontal: makeIcon('SlidersHorizontal'),
   };
 });
 
@@ -124,6 +125,27 @@ vi.mock('@client/components/onboarding/steps/OnboardingStepKeywords', () => ({
   ),
 }));
 
+// Mock OnboardingStepPreferences
+vi.mock('@client/components/onboarding/steps/OnboardingStepPreferences', () => ({
+  OnboardingStepPreferences: ({
+    onComplete,
+    onSkip,
+  }: {
+    onComplete: () => void;
+    onSkip: () => void;
+  }) => (
+    <div data-testid="step-preferences">
+      <span>Preferences Step</span>
+      <button data-testid="preferences-complete" onClick={onComplete}>
+        Complete Preferences
+      </button>
+      <button data-testid="preferences-skip" onClick={onSkip}>
+        Skip Preferences
+      </button>
+    </div>
+  ),
+}));
+
 // Mock OnboardingStepIntegrations
 vi.mock('@client/components/onboarding/steps/OnboardingStepIntegrations', () => ({
   OnboardingStepIntegrations: ({
@@ -165,6 +187,37 @@ vi.mock('@client/components/onboarding/steps/OnboardingStepComplete', () => ({
       </button>
     </div>
   ),
+}));
+
+// Mock ConfirmDialog
+vi.mock('@client/components/ui/ConfirmDialog', () => ({
+  ConfirmDialog: ({
+    isOpen,
+    onClose,
+    onConfirm,
+    title,
+    message,
+  }: {
+    isOpen: boolean;
+    onClose: () => void;
+    onConfirm: () => void;
+    title: string;
+    message?: string;
+  }) => {
+    if (!isOpen) return null;
+    return (
+      <div data-testid="confirm-dialog" role="alertdialog">
+        <div data-testid="confirm-title">{title}</div>
+        {message && <div data-testid="confirm-message">{message}</div>}
+        <button data-testid="confirm-cancel" onClick={onClose}>
+          Cancel
+        </button>
+        <button data-testid="confirm-confirm" onClick={onConfirm}>
+          Confirm
+        </button>
+      </div>
+    );
+  },
 }));
 
 // Mock onboardingStore — new simplified version (inter-step data only)
@@ -245,6 +298,9 @@ describe('OnboardingWizard', () => {
       await waitFor(() => expect(getByTestId('step-keywords')).toBeTruthy());
 
       fireEvent.click(getByTestId('keywords-complete'));
+      await waitFor(() => expect(getByTestId('step-preferences')).toBeTruthy());
+
+      fireEvent.click(getByTestId('preferences-skip'));
       await waitFor(() => expect(getByTestId('step-integrations')).toBeTruthy());
 
       fireEvent.click(getByTestId('integrations-skip'));
@@ -287,15 +343,19 @@ describe('OnboardingWizard', () => {
 
       // Complete step 3
       fireEvent.click(getByTestId('keywords-complete'));
-      await waitFor(() => expect(getByTestId('step-integrations')).toBeTruthy());
+      await waitFor(() => expect(getByTestId('step-preferences')).toBeTruthy());
 
       // Skip step 4
+      fireEvent.click(getByTestId('preferences-skip'));
+      await waitFor(() => expect(getByTestId('step-integrations')).toBeTruthy());
+
+      // Skip step 5
       fireEvent.click(getByTestId('integrations-skip'));
       await waitFor(() => expect(getByTestId('step-complete')).toBeTruthy());
 
-      // Step 5 should receive 2 completed (steps 1, 3) and 2 skipped (steps 2, 4)
+      // Step 6 should receive 2 completed (steps 1, 3) and 3 skipped (steps 2, 4, 5)
       expect(getByTestId('completed-count').textContent).toBe('2');
-      expect(getByTestId('skipped-count').textContent).toBe('2');
+      expect(getByTestId('skipped-count').textContent).toBe('3');
     });
   });
 
@@ -340,15 +400,17 @@ describe('OnboardingWizard', () => {
       expect(mockOnClose).toHaveBeenCalled();
     });
 
-    it('should call onClose when "Go to Dashboard" is clicked on step 5', async () => {
+    it('should call onClose when "Go to Dashboard" is clicked on step 6', async () => {
       const { getByTestId } = render(<OnboardingWizard isOpen={true} onClose={mockOnClose} />);
 
-      // Navigate to step 5
+      // Navigate to step 6 (Complete)
       fireEvent.click(getByTestId('project-complete'));
       await waitFor(() => expect(getByTestId('step-gsc')).toBeTruthy());
       fireEvent.click(getByTestId('gsc-skip'));
       await waitFor(() => expect(getByTestId('step-keywords')).toBeTruthy());
       fireEvent.click(getByTestId('keywords-complete'));
+      await waitFor(() => expect(getByTestId('step-preferences')).toBeTruthy());
+      fireEvent.click(getByTestId('preferences-skip'));
       await waitFor(() => expect(getByTestId('step-integrations')).toBeTruthy());
       fireEvent.click(getByTestId('integrations-skip'));
       await waitFor(() => expect(getByTestId('step-complete')).toBeTruthy());
