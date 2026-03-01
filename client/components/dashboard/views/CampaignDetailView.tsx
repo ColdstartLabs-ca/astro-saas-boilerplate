@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useMemo } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { Loader2, Zap } from 'lucide-react';
 import { ConfirmDialog } from '@client/components/ui/ConfirmDialog';
 import { useCampaignDetail } from '@client/hooks/useCampaignDetail';
@@ -34,6 +35,7 @@ export function CampaignDetailView({
   onBackToList,
 }: ICampaignDetailViewProps): JSX.Element {
   const t = useTranslations('dashboard');
+  const queryClient = useQueryClient();
   const { writerPresets, imagePresets } = useAvailableModels();
   const [isAddKeywordsModalOpen, setIsAddKeywordsModalOpen] = useState(false);
   const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
@@ -157,6 +159,13 @@ export function CampaignDetailView({
 
   // Handle closing article detail modal
   const handleCloseArticleModal = () => {
+    setSelectedArticle(null);
+  };
+
+  // Handle article updates from the modal — refresh campaign data
+  const handleArticleUpdate = () => {
+    queryClient.invalidateQueries({ queryKey: ['campaign-articles', campaignId] });
+    queryClient.invalidateQueries({ queryKey: ['campaign-detail', campaignId] });
     setSelectedArticle(null);
   };
 
@@ -313,6 +322,7 @@ export function CampaignDetailView({
         }
         isOpen={!!selectedArticle}
         onClose={handleCloseArticleModal}
+        onUpdate={handleArticleUpdate}
       />
     </div>
   );

@@ -7,6 +7,7 @@
 'use client';
 
 import React, { useState, useCallback, useEffect, useRef } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import {
   X,
   Loader2,
@@ -24,6 +25,8 @@ import MDEditor from '@uiw/react-md-editor';
 import '@uiw/react-md-editor/markdown-editor.css';
 import type { IArticleWithCampaign } from '@shared/types/article.types';
 import { DashboardButton } from '@client/components/dashboard/ui/DashboardButton';
+import { ConfirmDialog } from '@client/components/ui/ConfirmDialog';
+import { useToastStore } from '@client/store/toastStore';
 import { createClient } from '@shared/utils/supabase/client';
 import { AIDetectionScore } from './AIDetectionScore';
 import { SEOScoreDisplay } from './SEOScoreDisplay';
@@ -109,6 +112,8 @@ export function ArticleDetailModal({
   onUpdate,
 }: IArticleDetailModalProps): JSX.Element | null {
   const t = useTranslations('dashboard');
+  const queryClient = useQueryClient();
+  const { showToast } = useToastStore();
   const [isEditing, setIsEditing] = useState(false);
   const [editedContent, setEditedContent] = useState('');
   const [isSaving, setIsSaving] = useState(false);
@@ -119,11 +124,23 @@ export function ArticleDetailModal({
   const [isRejecting, setIsRejecting] = useState(false);
   const [rejectionReason, setRejectionReason] = useState('');
   const [showRejectDialog, setShowRejectDialog] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [showRegenerateConfirm, setShowRegenerateConfirm] = useState(false);
+  const [showUnsavedChangesConfirm, setShowUnsavedChangesConfirm] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [currentArticle, setCurrentArticle] = useState<IArticleWithImages | null>(
     article as IArticleWithImages | null
   );
   const articleId = isOpen ? (currentArticle?.id ?? null) : null;
+
+  // Invalidate campaign-level caches so lists & stats refresh after any mutation
+  const invalidateCampaignCache = useCallback(() => {
+    const campaignId = currentArticle?.campaigns?.id;
+    if (!campaignId) return;
+    queryClient.invalidateQueries({ queryKey: ['campaign-articles', campaignId] });
+    queryClient.invalidateQueries({ queryKey: ['campaign-detail', campaignId] });
+  }, [currentArticle?.campaigns?.id, queryClient]);
+
   const {
     deliveries,
     isLoading: deliveriesLoading,
@@ -219,7 +236,7 @@ export function ArticleDetailModal({
   }, [currentArticle, editedContent, onUpdate]);
 
   const handleDelete = useCallback(async () => {
-    if (!currentArticle || !confirm('Are you sure you want to delete this article?')) return;
+    if (!currentArticle) return;
 
     setIsDeleting(true);
     setError(null);
@@ -238,21 +255,20 @@ export function ArticleDetailModal({
         throw new Error(data.error?.message || 'Failed to delete article');
       }
 
+      invalidateCampaignCache();
       onClose();
       onUpdate?.(currentArticle);
+      showToast({ message: 'Article deleted', type: 'success' });
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to delete');
     } finally {
       setIsDeleting(false);
+      setShowDeleteConfirm(false);
     }
-  }, [currentArticle, onClose, onUpdate]);
+  }, [currentArticle, onClose, onUpdate, invalidateCampaignCache, showToast]);
 
   const handleRegenerate = useCallback(async () => {
-    if (
-      !currentArticle ||
-      !confirm('Regenerate this article? This will use credits based on your current settings.')
-    )
-      return;
+    if (!currentArticle) return;
 
     setIsRegenerating(true);
     setError(null);
@@ -272,14 +288,17 @@ export function ArticleDetailModal({
         throw new Error(data.error?.message || 'Failed to regenerate article');
       }
 
+      invalidateCampaignCache();
       onClose();
       onUpdate?.(currentArticle);
+      showToast({ message: 'Article queued for regeneration', type: 'success' });
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to regenerate');
     } finally {
       setIsRegenerating(false);
+      setShowRegenerateConfirm(false);
     }
-  }, [currentArticle, onClose, onUpdate]);
+  }, [currentArticle, onClose, onUpdate, invalidateCampaignCache, showToast]);
 
   const handleGenerateNow = useCallback(async () => {
     if (!currentArticle) return;
@@ -301,14 +320,16 @@ export function ArticleDetailModal({
         throw new Error(data.error?.message || 'Failed to queue article for generation');
       }
 
+      invalidateCampaignCache();
       onClose();
       onUpdate?.(currentArticle);
+      showToast({ message: 'Article queued for generation', type: 'success' });
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to generate');
     } finally {
       setIsGeneratingNow(false);
     }
-  }, [currentArticle, onClose, onUpdate]);
+  }, [currentArticle, onClose, onUpdate, invalidateCampaignCache, showToast]);
 
   const handleApprove = useCallback(async () => {
     if (!currentArticle) return;
@@ -563,10 +584,7 @@ export function ArticleDetailModal({
                 variant="ghost"
                 onClick={() => {
                   if (isEditing && hasUnsavedChanges(currentArticle.content || '', editedContent)) {
-                    if (confirm(t('articles.detailModal.unsavedChangesWarning'))) {
-                      setIsEditing(false);
-                      setEditedContent(currentArticle.content || '');
-                    }
+                    setShowUnsavedChangesConfirm(true);
                   } else {
                     setIsEditing(!isEditing);
                   }
@@ -638,7 +656,7 @@ export function ArticleDetailModal({
               <DashboardButton
                 data-testid="regenerate-button"
                 variant="outline"
-                onClick={handleRegenerate}
+                onClick={() => setShowRegenerateConfirm(true)}
                 disabled={isSaving || isDeleting || isRegenerating}
               >
                 <RotateCcw className="w-4 h-4 mr-2" />
@@ -651,11 +669,7 @@ export function ArticleDetailModal({
             {/* Delete button */}
             <DashboardButton
               variant="ghost"
-              onClick={() => {
-                if (confirm(t('articles.detailModal.deleteConfirm'))) {
-                  handleDelete();
-                }
-              }}
+              onClick={() => setShowDeleteConfirm(true)}
               disabled={isSaving || isDeleting || isRegenerating || isApproving || isRejecting || isGeneratingNow}
               className="text-red-400 hover:text-red-300"
             >
@@ -701,6 +715,45 @@ export function ArticleDetailModal({
           )}
         </div>
       </div>
+
+      {/* Delete Confirmation */}
+      <ConfirmDialog
+        isOpen={showDeleteConfirm}
+        onClose={() => setShowDeleteConfirm(false)}
+        onConfirm={handleDelete}
+        title="Delete Article"
+        message="This will permanently delete this article and all its content."
+        variant="danger"
+        labels={{ confirm: 'Delete', confirming: 'Deleting...' }}
+        isConfirming={isDeleting}
+      />
+
+      {/* Regenerate Confirmation */}
+      <ConfirmDialog
+        isOpen={showRegenerateConfirm}
+        onClose={() => setShowRegenerateConfirm(false)}
+        onConfirm={handleRegenerate}
+        title="Regenerate Article"
+        message="This will regenerate the article using credits based on your current campaign settings. The existing content will be replaced."
+        variant="warning"
+        labels={{ confirm: 'Regenerate', confirming: 'Queuing...' }}
+        isConfirming={isRegenerating}
+      />
+
+      {/* Unsaved Changes Confirmation */}
+      <ConfirmDialog
+        isOpen={showUnsavedChangesConfirm}
+        onClose={() => setShowUnsavedChangesConfirm(false)}
+        onConfirm={() => {
+          setIsEditing(false);
+          setEditedContent(currentArticle?.content || '');
+          setShowUnsavedChangesConfirm(false);
+        }}
+        title="Discard Changes"
+        message="You have unsaved changes. Are you sure you want to discard them?"
+        variant="warning"
+        labels={{ confirm: 'Discard', cancel: 'Keep Editing' }}
+      />
 
       {/* Rejection Confirmation Dialog */}
       {showRejectDialog && (
