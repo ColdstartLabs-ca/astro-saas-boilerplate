@@ -54,6 +54,17 @@ export const LANGUAGE_OPTIONS = LANGUAGES.map(code => {
     pl: 'Polish',
     cs: 'Czech',
     tr: 'Turkish',
+    id: 'Indonesian',
+    vi: 'Vietnamese',
+    th: 'Thai',
+    uk: 'Ukrainian',
+    ro: 'Romanian',
+    hu: 'Hungarian',
+    el: 'Greek',
+    he: 'Hebrew',
+    ms: 'Malay',
+    sk: 'Slovak',
+    bg: 'Bulgarian',
   };
   return { value: code, label: `${labels[code] ?? code} (${code})` };
 });
@@ -89,6 +100,28 @@ export const COUNTRY_OPTIONS = COUNTRIES.map(code => {
     AR: 'Argentina',
     CL: 'Chile',
     CO: 'Colombia',
+    ID: 'Indonesia',
+    MY: 'Malaysia',
+    SG: 'Singapore',
+    TH: 'Thailand',
+    VN: 'Vietnam',
+    PH: 'Philippines',
+    UA: 'Ukraine',
+    RO: 'Romania',
+    HU: 'Hungary',
+    GR: 'Greece',
+    IL: 'Israel',
+    SA: 'Saudi Arabia',
+    AE: 'United Arab Emirates',
+    ZA: 'South Africa',
+    NZ: 'New Zealand',
+    IE: 'Ireland',
+    CH: 'Switzerland',
+    AT: 'Austria',
+    BE: 'Belgium',
+    HK: 'Hong Kong',
+    TW: 'Taiwan',
+    NG: 'Nigeria',
   };
   return { value: code, label: `${labels[code] ?? code} (${code})` };
 });
@@ -219,9 +252,7 @@ export type IEnhancedProjectFormData = z.infer<typeof enhancedProjectSchema>;
 // Types
 // =============================================================================
 
-export type IUpdateOnboardingProgressSchemaInput = z.infer<
-  typeof updateOnboardingProgressSchema
->;
+export type IUpdateOnboardingProgressSchemaInput = z.infer<typeof updateOnboardingProgressSchema>;
 export type ICompleteStepSchemaInput = z.infer<typeof completeStepSchema>;
 export type ISkipStepSchemaInput = z.infer<typeof skipStepSchema>;
 export type IOnboardingKeywordSuggestionsQuerySchemaInput = z.infer<

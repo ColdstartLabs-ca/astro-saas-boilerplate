@@ -39,62 +39,95 @@ export const FREQUENCIES = ['daily', '3x_week', 'weekly'] as const;
 export type Frequency = (typeof FREQUENCIES)[number];
 
 /**
- * ISO 639-1 language codes (common subset)
+ * ISO 639-1 language codes
  */
 export const LANGUAGES = [
-  'en',
-  'es',
-  'fr',
-  'de',
-  'it',
-  'pt',
-  'nl',
-  'ja',
-  'ko',
-  'zh',
-  'ar',
-  'ru',
-  'hi',
-  'sv',
-  'da',
-  'no',
-  'fi',
-  'pl',
-  'cs',
-  'tr',
+  'en', // English
+  'es', // Spanish
+  'fr', // French
+  'de', // German
+  'it', // Italian
+  'pt', // Portuguese
+  'nl', // Dutch
+  'ja', // Japanese
+  'ko', // Korean
+  'zh', // Chinese
+  'ar', // Arabic
+  'ru', // Russian
+  'hi', // Hindi
+  'sv', // Swedish
+  'da', // Danish
+  'no', // Norwegian
+  'fi', // Finnish
+  'pl', // Polish
+  'cs', // Czech
+  'tr', // Turkish
+  'id', // Indonesian
+  'vi', // Vietnamese
+  'th', // Thai
+  'uk', // Ukrainian
+  'ro', // Romanian
+  'hu', // Hungarian
+  'el', // Greek
+  'he', // Hebrew
+  'ms', // Malay
+  'sk', // Slovak
+  'bg', // Bulgarian
 ] as const;
 export type Language = (typeof LANGUAGES)[number];
 
 /**
- * ISO 3166-1 alpha-2 country codes (common subset)
+ * ISO 3166-1 alpha-2 country codes
  */
 export const COUNTRIES = [
-  'US',
-  'GB',
-  'CA',
-  'AU',
-  'DE',
-  'FR',
-  'ES',
-  'IT',
-  'PT',
-  'BR',
-  'NL',
-  'JP',
-  'KR',
-  'CN',
-  'IN',
-  'SE',
-  'DK',
-  'NO',
-  'FI',
-  'PL',
-  'CZ',
-  'TR',
-  'MX',
-  'AR',
-  'CL',
-  'CO',
+  'US', // United States
+  'GB', // United Kingdom
+  'CA', // Canada
+  'AU', // Australia
+  'DE', // Germany
+  'FR', // France
+  'ES', // Spain
+  'IT', // Italy
+  'PT', // Portugal
+  'BR', // Brazil
+  'NL', // Netherlands
+  'JP', // Japan
+  'KR', // South Korea
+  'CN', // China
+  'IN', // India
+  'SE', // Sweden
+  'DK', // Denmark
+  'NO', // Norway
+  'FI', // Finland
+  'PL', // Poland
+  'CZ', // Czech Republic
+  'TR', // Turkey
+  'MX', // Mexico
+  'AR', // Argentina
+  'CL', // Chile
+  'CO', // Colombia
+  'ID', // Indonesia
+  'MY', // Malaysia
+  'SG', // Singapore
+  'TH', // Thailand
+  'VN', // Vietnam
+  'PH', // Philippines
+  'UA', // Ukraine
+  'RO', // Romania
+  'HU', // Hungary
+  'GR', // Greece
+  'IL', // Israel
+  'SA', // Saudi Arabia
+  'AE', // United Arab Emirates
+  'ZA', // South Africa
+  'NZ', // New Zealand
+  'IE', // Ireland
+  'CH', // Switzerland
+  'AT', // Austria
+  'BE', // Belgium
+  'HK', // Hong Kong
+  'TW', // Taiwan
+  'NG', // Nigeria
 ] as const;
 export type Country = (typeof COUNTRIES)[number];
 
