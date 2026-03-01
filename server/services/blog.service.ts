@@ -146,6 +146,22 @@ export function dbPostToMeta(dbPost: IDbBlogPost): IBlogPostMeta {
 }
 
 /**
+ * Result of syncing an article to blog_posts
+ */
+export interface ISyncArticleToBlogResult {
+  slug: string;
+  isNew: boolean;
+}
+
+/**
+ * Blog sync status for an article
+ */
+export interface IArticleBlogStatus {
+  synced: boolean;
+  slug: string | null;
+}
+
+/**
  * Blog Service Class
  */
 export class BlogService {
@@ -625,6 +641,178 @@ export class BlogService {
     if (dbError) {
       throw new Error(`Failed to delete media: ${dbError.message}`);
     }
+  }
+
+  /**
+   * Check if an article already has a blog_posts entry (by slug)
+   */
+  async getBlogStatusForArticle(
+    articleId: string,
+    userId: string
+  ): Promise<IArticleBlogStatus> {
+    const { data: article } = await supabaseAdmin
+      .from('articles')
+      .select('id, slug, title, primary_keyword')
+      .eq('id', articleId)
+      .eq('user_id', userId)
+      .maybeSingle();
+
+    if (!article) {
+      return { synced: false, slug: null };
+    }
+
+    const slug = article.slug || generateSlug(article.title || article.primary_keyword);
+
+    const { data: blogPost } = await supabaseAdmin
+      .from('blog_posts')
+      .select('id')
+      .eq('slug', slug)
+      .eq('status', 'published')
+      .maybeSingle();
+
+    return { synced: !!blogPost, slug };
+  }
+
+  /**
+   * Sync an article directly to blog_posts (upsert by slug).
+   * Works for already-published articles that missed the webhook flow.
+   */
+  async syncArticleToBlog(
+    articleId: string,
+    userId: string
+  ): Promise<ISyncArticleToBlogResult> {
+    // Fetch full article with images
+    const { data: article, error: articleError } = await supabaseAdmin
+      .from('articles')
+      .select(
+        'id, title, content, slug, meta_description, primary_keyword, word_count, seo_score, campaign_id, user_id, project_id, article_images(position, image_url, status)'
+      )
+      .eq('id', articleId)
+      .eq('user_id', userId)
+      .single();
+
+    if (articleError || !article) {
+      throw new Error('Article not found');
+    }
+
+    if (!article.content) {
+      throw new Error('Article has no content to sync');
+    }
+
+    // Resolve project name via campaign
+    let authorName = 'AutopilotRank';
+    if (article.campaign_id) {
+      const { data: campaign } = await supabaseAdmin
+        .from('campaigns')
+        .select('project_id, projects(id, name)')
+        .eq('id', article.campaign_id)
+        .single();
+
+      type ProjectInfo = { id: string; name: string };
+      const rawProject = campaign?.projects as unknown;
+      const project: ProjectInfo | null =
+        Array.isArray(rawProject) && rawProject.length > 0
+          ? (rawProject[0] as ProjectInfo)
+          : rawProject && typeof rawProject === 'object'
+            ? (rawProject as ProjectInfo)
+            : null;
+
+      if (project?.name) {
+        authorName = project.name;
+      }
+    }
+
+    const slug = article.slug || generateSlug(article.title || article.primary_keyword);
+    const title = article.title || article.primary_keyword;
+    const content = article.content;
+    const contentHtml = renderMarkdownToHtml(content);
+    const readingTime = calculateReadingTime(content);
+    const description = article.meta_description || '';
+
+    // Check if entry already exists
+    const { data: existing } = await supabaseAdmin
+      .from('blog_posts')
+      .select('id')
+      .eq('slug', slug)
+      .maybeSingle();
+
+    const { error: upsertError } = await supabaseAdmin
+      .from('blog_posts')
+      .upsert(
+        {
+          title,
+          slug,
+          description,
+          content,
+          content_html: contentHtml,
+          author: authorName,
+          status: 'published' as const,
+          reading_time: readingTime,
+          meta_description: description,
+          published_at: new Date().toISOString(),
+        },
+        { onConflict: 'slug' }
+      );
+
+    if (upsertError) {
+      throw new Error(`Failed to sync article to blog: ${upsertError.message}`);
+    }
+
+    // Upsert tags and cover image
+    const { data: blogPost } = await supabaseAdmin
+      .from('blog_posts')
+      .select('id')
+      .eq('slug', slug)
+      .single();
+
+    if (blogPost) {
+      await supabaseAdmin.from('blog_post_tags').delete().eq('post_id', blogPost.id);
+      await supabaseAdmin
+        .from('blog_post_tags')
+        .insert([{ post_id: blogPost.id, tag: article.primary_keyword }]);
+
+      // Link cover image: upsert a blog_media record for the external URL
+      const sortedImages = (article.article_images || [])
+        .filter((img: { status: string }) => img.status !== 'deleted')
+        .sort((a: { position: number }, b: { position: number }) => a.position - b.position);
+      const coverImageUrl = sortedImages[0]?.image_url ?? null;
+
+      if (coverImageUrl) {
+        const filename = coverImageUrl.split('/').pop()?.split('?')[0] || 'cover-image';
+
+        const { data: existingMedia } = await supabaseAdmin
+          .from('blog_media')
+          .select('id')
+          .eq('public_url', coverImageUrl)
+          .maybeSingle();
+
+        let mediaId = existingMedia?.id;
+
+        if (!mediaId) {
+          const { data: newMedia } = await supabaseAdmin
+            .from('blog_media')
+            .insert({
+              filename,
+              storage_path: `external/${filename}`,
+              public_url: coverImageUrl,
+              alt_text: title,
+            })
+            .select('id')
+            .single();
+
+          mediaId = newMedia?.id;
+        }
+
+        if (mediaId) {
+          await supabaseAdmin
+            .from('blog_posts')
+            .update({ cover_image_id: mediaId })
+            .eq('id', blogPost.id);
+        }
+      }
+    }
+
+    return { slug, isNew: !existing };
   }
 
   /**

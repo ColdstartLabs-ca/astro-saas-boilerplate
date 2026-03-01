@@ -5,7 +5,7 @@
  */
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useCallback } from 'react';
 import {
   FileText,
   ExternalLink,
@@ -13,10 +13,15 @@ import {
   Square,
   Image as ImageIcon,
   ImageOff,
+  RefreshCw,
+  Globe,
 } from 'lucide-react';
 import { getSEOScoreColor, getSEOScoreBorderColor } from '@shared/utils/seo';
 import { dashboardNavigate } from '@client/utils/dashboardNavigation';
 import type { IArticleWithCampaign } from '@shared/types/article.types';
+import { useArticleBlogStatus, useInvalidateArticleBlogStatus } from '@client/hooks/useArticleBlogStatus';
+import { useArticleActions } from '@client/hooks/useArticleActions';
+import { useToastStore } from '@client/store/toastStore';
 
 interface IArticleTableRowProps {
   article: IArticleWithCampaign;
@@ -53,6 +58,32 @@ export function ArticleTableRow({
   onOpenDetail,
   getStatusBadge,
 }: IArticleTableRowProps): JSX.Element {
+  const { showToast } = useToastStore();
+  const invalidateBlogStatus = useInvalidateArticleBlogStatus();
+  const isPublished = article.status === 'published';
+
+  const { data: blogStatus, isLoading: isBlogStatusLoading } = useArticleBlogStatus(
+    article.id,
+    isPublished
+  );
+
+  const { syncToBlog, isSyncingToBlog } = useArticleActions({
+    onSuccess: () => invalidateBlogStatus(article.id),
+  });
+
+  const handleSyncToBlog = useCallback(
+    async (e: React.MouseEvent) => {
+      e.stopPropagation();
+      try {
+        await syncToBlog(article.id);
+        showToast({ type: 'success', message: 'Article synced to blog' });
+      } catch {
+        showToast({ type: 'error', message: 'Failed to sync article to blog' });
+      }
+    },
+    [article.id, syncToBlog, showToast]
+  );
+
   // Get featured image URL from article_images (position 1 = hero) or fallback to markdown
   const thumbnailUrl = useMemo(() => {
     const featured = article.article_images
@@ -215,6 +246,32 @@ export function ArticleTableRow({
             <ExternalLink className="w-3 h-3" />
             Visit
           </a>
+        )}
+        {isPublished && !isBlogStatusLoading && (
+          blogStatus?.synced ? (
+            <a
+              href={`/blog/${blogStatus.slug}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-medium bg-success/10 text-success hover:bg-success/20 transition-colors flex-shrink-0"
+              onClick={e => e.stopPropagation()}
+              title="View on blog"
+            >
+              <Globe className="w-3 h-3" />
+              Blog
+            </a>
+          ) : (
+            <button
+              type="button"
+              disabled={isSyncingToBlog}
+              onClick={handleSyncToBlog}
+              className="inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-medium bg-muted/10 text-muted hover:bg-muted/20 hover:text-text-primary transition-colors flex-shrink-0 disabled:opacity-50 disabled:cursor-not-allowed"
+              title="Sync article to blog"
+            >
+              <RefreshCw className={`w-3 h-3 ${isSyncingToBlog ? 'animate-spin' : ''}`} />
+              {isSyncingToBlog ? '...' : 'Sync'}
+            </button>
+          )
         )}
       </div>
     </div>

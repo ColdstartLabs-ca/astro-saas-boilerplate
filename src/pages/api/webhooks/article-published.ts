@@ -263,6 +263,41 @@ async function upsertBlogPost(payload: IInboundArticlePayload): Promise<void> {
     await supabaseAdmin
       .from('blog_post_tags')
       .insert(tags.map(tag => ({ post_id: blogPost.id, tag })));
+
+    // Link cover image: upsert a blog_media record for the external URL
+    if (coverImageUrl) {
+      const filename = coverImageUrl.split('/').pop()?.split('?')[0] || 'cover-image';
+
+      const { data: existingMedia } = await supabaseAdmin
+        .from('blog_media')
+        .select('id')
+        .eq('public_url', coverImageUrl)
+        .maybeSingle();
+
+      let mediaId = existingMedia?.id;
+
+      if (!mediaId) {
+        const { data: newMedia } = await supabaseAdmin
+          .from('blog_media')
+          .insert({
+            filename,
+            storage_path: `external/${filename}`,
+            public_url: coverImageUrl,
+            alt_text: title,
+          })
+          .select('id')
+          .single();
+
+        mediaId = newMedia?.id;
+      }
+
+      if (mediaId) {
+        await supabaseAdmin
+          .from('blog_posts')
+          .update({ cover_image_id: mediaId })
+          .eq('id', blogPost.id);
+      }
+    }
   }
 
   console.log('[WebhookReceiver] Blog post upserted', {

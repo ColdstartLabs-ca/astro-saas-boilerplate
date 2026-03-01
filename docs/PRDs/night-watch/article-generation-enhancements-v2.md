@@ -1,9 +1,9 @@
 # PRD: Article Generation Enhancements v2 — Research, Enrichment & Trust
 
 **Complexity: 9 → HIGH mode**
-**Status:** Draft
+**Status:** Draft — Not Started (0%)
 **Author:** Claude
-**Date:** 2026-02-10
+**Date:** 2026-02-10 (Updated: 2026-02-28)
 **Primary Goal:** SEO Performance
 **Branch:** `feat/article-enhancements-v2`
 
@@ -24,10 +24,9 @@
 - `shared/config/env.ts` — Zod-validated env loading (serverEnv/clientEnv)
 - `shared/config/ai-models.config.ts` — writer preset registry
 - `shared/config/image-models.config.ts` — image preset registry
-- `shared/config/credits.config.ts` — credit cost structure
 - `shared/types/article.types.ts` — IArticle, IGenerateArticleInput, IArticleOutline
-- `shared/types/campaign.types.ts` — ICampaign, ICreateCampaignInput
-- `client/components/dashboard/views/NewCampaignModal.tsx` — 2-step campaign creation UI
+- `shared/types/campaign.types.ts` — ICampaign, ICreateCampaignInput (includes Outrank parity fields)
+- `client/components/dashboard/views/NewCampaignModal.tsx` — multi-step campaign creation UI
 - `client/components/articles/ArticleList.tsx` — article table with status, SEO, word count columns
 - `supabase/migrations/20260205100100_create_campaigns_table.sql` — campaigns schema
 - `supabase/migrations/20260205100200_create_articles_table.sql` — articles schema
@@ -50,15 +49,41 @@ Outline → Full Article → Quality Gate → Images → Metadata/Fingerprint �
 - [x] `[IMAGE:n]` marker pattern for in-content media placement
 - [x] Article status state machine with valid transitions
 - [x] ModelSelect component for tier-based option selection
+- [x] **Outrank feature parity fields on campaigns:**
+  - `article_style` (informative, how-to, listicle, opinion, tutorial)
+  - `internal_links_count` (number of links to include)
+  - `include_youtube` (boolean flag — NOT YET WIRED TO PIPELINE)
+  - `include_cta`, `include_infographics`, `include_emojis` (flags)
+  - `auto_publish` (boolean for automatic publishing)
+  - `image_style` (brand_text, watercolor, cinematic, illustration, sketch)
+  - `global_instructions` (custom LLM instructions)
 
 **What Doesn't Exist Yet:**
 
-- [ ] Real-time social context for article research (X/Twitter, trends)
-- [ ] Video embedding in articles
-- [ ] Internal linking between articles
-- [ ] Citation/source verification system
-- [ ] Campaign-level feature toggle UI
-- [ ] Research data display in campaign/article UI
+- [ ] **Research Layer:**
+  - [ ] `XSearchService` — Grok API client for X/Twitter search
+  - [ ] `GoogleTrendsService` — SerpAPI client for Google Trends
+  - [ ] `ResearchService` — orchestrator combining research sources
+  - [ ] `research_context` JSONB column on articles
+  - [ ] Research context injection into outline prompts
+- [ ] **Content Enrichment:**
+  - [ ] `YouTubeSearchService` — YouTube Data API v3 client
+  - [ ] `[VIDEO:n]` marker pattern and embed rendering
+  - [ ] `youtube_videos` JSONB column on articles
+  - [ ] `InternalLinkingService` — embedding-based link insertion
+  - [ ] `internal_links` JSONB column on articles
+- [ ] **Trust Layer:**
+  - [ ] `FactVerificationService` — claim extraction + source matching
+  - [ ] `citations` JSONB column on articles
+  - [ ] `article_citations` table
+  - [ ] Citation footnote rendering in article preview
+- [ ] **Environment Variables:**
+  - [ ] `GROK_API_KEY`, `SERPAPI_KEY`, `YOUTUBE_API_KEY`, `NEWSAPI_KEY`
+- [ ] **UI Components:**
+  - [ ] Enrichment toggle section in NewCampaignModal
+  - [ ] Research context display in article detail
+  - [ ] Internal links section in article detail
+  - [ ] Citations column in ArticleList
 
 ---
 
@@ -374,9 +399,10 @@ sequenceDiagram
     enableCitations?: boolean; // default: false
   }
   ```
+  **IMPORTANT:** All enrichment options default to `false` (disabled). Users must explicitly opt-in.
 - [ ] Add enrichment toggle section to NewCampaignModal Step 2:
   - "Research & Enrichment" collapsible section below tone selection
-  - Toggle switches for each feature with description text
+  - Toggle switches for each feature with description text (all OFF by default)
   - Group: "Research" (X Search, Google Trends) and "Content" (YouTube, Internal Links, Citations)
   - Credits impact note: "These features don't use extra credits" (except citations: +1)
   - Store in `settings.enrichment` on campaign creation
@@ -668,7 +694,20 @@ All are optional — features degrade gracefully when keys are not configured.
 
 ## 9. Acceptance Criteria
 
-- [ ] All phases complete with passing automated checkpoints
+### Phase 1: Research Layer (0/3 sub-phases complete)
+- [ ] Phase 1a: X Search Service + Research Orchestrator
+- [ ] Phase 1b: Google Trends Service + Pipeline Integration
+- [ ] Phase 1c: Database Migration + Campaign UI Toggles
+
+### Phase 2: Content Enrichment (0/2 sub-phases complete)
+- [ ] Phase 2a: YouTube Video Search + Embed Service
+- [ ] Phase 2b: Internal Linking Engine
+
+### Phase 3: Trust Layer (0/2 sub-phases complete)
+- [ ] Phase 3a: Fact Verification Service
+- [ ] Phase 3b: Citations Database + UI Display
+
+### Final Verification
 - [ ] All unit tests pass (`yarn test`)
 - [ ] `yarn verify` passes
 - [ ] Each feature independently toggleable via campaign settings

@@ -12,13 +12,20 @@ interface IPublishNowResult {
   successful: number;
 }
 
+interface ISyncToBlogResult {
+  slug: string;
+  isNew: boolean;
+}
+
 interface IUseArticleActionsResult {
   reschedule: (articleId: string, newDate: string) => Promise<void>;
   publishNow: (articleId: string) => Promise<IPublishNowResult | null>;
   fixQAIssues: (articleId: string) => Promise<void>;
+  syncToBlog: (articleId: string) => Promise<ISyncToBlogResult | null>;
   isRescheduling: boolean;
   isPublishing: boolean;
   isFixingQA: boolean;
+  isSyncingToBlog: boolean;
   error: string | null;
 }
 
@@ -26,6 +33,7 @@ export function useArticleActions({ onSuccess }: IArticleActionsOptions = {}): I
   const [isRescheduling, setIsRescheduling] = useState(false);
   const [isPublishing, setIsPublishing] = useState(false);
   const [isFixingQA, setIsFixingQA] = useState(false);
+  const [isSyncingToBlog, setIsSyncingToBlog] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const { request } = useApiRequest();
 
@@ -77,5 +85,22 @@ export function useArticleActions({ onSuccess }: IArticleActionsOptions = {}): I
     }
   }, [onSuccess, request]);
 
-  return { reschedule, publishNow, fixQAIssues, isRescheduling, isPublishing, isFixingQA, error };
+  const syncToBlog = useCallback(async (articleId: string): Promise<ISyncToBlogResult | null> => {
+    setIsSyncingToBlog(true);
+    setError(null);
+    try {
+      const data = await request<ISyncToBlogResult>(`/api/articles/${articleId}/sync-to-blog`, {
+        method: 'POST',
+      });
+      onSuccess?.();
+      return data;
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to sync to blog');
+      throw err;
+    } finally {
+      setIsSyncingToBlog(false);
+    }
+  }, [onSuccess, request]);
+
+  return { reschedule, publishNow, fixQAIssues, syncToBlog, isRescheduling, isPublishing, isFixingQA, isSyncingToBlog, error };
 }
