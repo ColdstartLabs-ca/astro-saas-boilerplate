@@ -1,20 +1,11 @@
 ---
 import Layout from '../../layouts/Layout.astro';
 import { clientEnv } from '@shared/config/env';
-import { getPostBySlug, getAllPosts } from '@server/blog';
+import { getPostBySlugAsync } from '@server/blog';
 import { ReadingProgress } from '@client/components/blog/ReadingProgress';
 
-export const prerender = true;
-
-export function getStaticPaths() {
-  const posts = getAllPosts();
-  return posts.map(post => ({
-    params: { slug: post.slug },
-  }));
-}
-
 const { slug } = Astro.params;
-const post = getPostBySlug(slug);
+const post = await getPostBySlugAsync(slug!);
 
 if (!post) {
   return Astro.redirect('/404');

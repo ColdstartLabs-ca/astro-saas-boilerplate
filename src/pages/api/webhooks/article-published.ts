@@ -15,6 +15,8 @@ import type { APIRoute } from 'astro';
 import { z } from 'zod';
 import { serverEnv } from '@shared/config/env';
 import { supabaseAdmin } from '@server/supabase/supabaseAdmin';
+import { calculateReadingTime, generateSlug } from '@shared/utils/string';
+import { renderMarkdownToHtml } from '@server/services/blog.service';
 
 // =============================================================================
 // Payload Validation Schema
@@ -184,11 +186,89 @@ async function processArticle(payload: IInboundArticlePayload): Promise<void> {
       .eq('status', 'delivering');
   }
 
+  // Create/update a blog_posts entry so the article appears on /blog
+  await upsertBlogPost(payload);
+
   console.log('[WebhookReceiver] Article marked as published', {
     articleId: article.id,
     previousStatus: existing.status,
     publishedAt,
     campaignId: campaign?.id ?? null,
+  });
+}
+
+/**
+ * Create or update a blog_posts row so the article is visible on /blog.
+ * Uses the article slug for deduplication (unique constraint on blog_posts.slug).
+ * Idempotent: repeated calls with the same slug update the existing row.
+ */
+async function upsertBlogPost(payload: IInboundArticlePayload): Promise<void> {
+  const { article, project } = payload;
+  const publishedAt = payload.timestamp;
+
+  const slug = article.slug || generateSlug(article.title || article.primary_keyword);
+  const title = article.title || article.primary_keyword;
+  const content = article.content;
+  const contentHtml = article.content_html || renderMarkdownToHtml(content);
+  const readingTime = calculateReadingTime(content);
+  const description = article.meta_description || '';
+  const author = project?.name || 'AutopilotRank';
+
+  // Find cover image URL from article images (first one, if any)
+  const coverImageUrl = article.images.length > 0
+    ? article.images.sort((a, b) => a.position - b.position)[0].url
+    : null;
+
+  const { error } = await supabaseAdmin
+    .from('blog_posts')
+    .upsert(
+      {
+        title,
+        slug,
+        description,
+        content,
+        content_html: contentHtml,
+        author,
+        status: 'published' as const,
+        reading_time: readingTime,
+        meta_description: description,
+        published_at: publishedAt,
+      },
+      { onConflict: 'slug' }
+    );
+
+  if (error) {
+    // Log but don't throw — the article was already marked published successfully.
+    // A blog_posts failure shouldn't roll back the article status update.
+    console.error('[WebhookReceiver] Failed to upsert blog_posts entry:', error.message, { slug });
+    return;
+  }
+
+  // Insert tags (keyword as tag)
+  const { data: blogPost } = await supabaseAdmin
+    .from('blog_posts')
+    .select('id')
+    .eq('slug', slug)
+    .single();
+
+  if (blogPost) {
+    const tags = [article.primary_keyword];
+
+    // Delete existing tags first (idempotent)
+    await supabaseAdmin
+      .from('blog_post_tags')
+      .delete()
+      .eq('post_id', blogPost.id);
+
+    await supabaseAdmin
+      .from('blog_post_tags')
+      .insert(tags.map(tag => ({ post_id: blogPost.id, tag })));
+  }
+
+  console.log('[WebhookReceiver] Blog post upserted', {
+    slug,
+    title,
+    coverImageUrl,
   });
 }
 
