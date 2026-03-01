@@ -165,18 +165,23 @@ export class PlannedArticleGenerationService {
   }
 
   /**
-   * Generate a single planned article immediately, deducting credits.
-   * Used by the "Generate Now" manual action from the calendar detail modal.
+   * Promote a planned article to queued status and deduct credits.
+   * Does NOT trigger generation — the caller is responsible for that.
+   * Used by the "Generate Now" API route so it can return immediately
+   * and fire generation in the background.
    *
-   * @param articleId - The article to generate
+   * @param articleId - The article to promote
    * @param userId - Must match the article's user_id (ownership check)
    * @throws Error if article not found, not owned by user, not in planned status, or insufficient credits
    */
-  async generateSingleArticle(
+  async promoteArticle(
     articleId: string,
     userId: string
-  ): Promise<{ queued: true; creditsDeducted: number }> {
-    // Fetch article with ownership check
+  ): Promise<{
+    creditsDeducted: number;
+    article: IPlannedArticle;
+    model: string;
+  }> {
     const { data: article, error: fetchError } = await supabaseAdmin
       .from('articles')
       .select(
@@ -211,8 +216,28 @@ export class PlannedArticleGenerationService {
       throw new Error('Article is not in planned status (current: queued)');
     }
 
-    // Trigger generation
     const model = await this.resolveGenerationModel(plannedArticle);
+
+    return { creditsDeducted: creditCost, article: plannedArticle, model };
+  }
+
+  /**
+   * Generate a single planned article immediately, deducting credits.
+   * Used by the "Generate Now" manual action from the calendar detail modal.
+   *
+   * @param articleId - The article to generate
+   * @param userId - Must match the article's user_id (ownership check)
+   * @throws Error if article not found, not owned by user, not in planned status, or insufficient credits
+   */
+  async generateSingleArticle(
+    articleId: string,
+    userId: string
+  ): Promise<{ queued: true; creditsDeducted: number }> {
+    const { creditsDeducted, article: plannedArticle, model } = await this.promoteArticle(
+      articleId,
+      userId
+    );
+
     await articleGenerationService.generateArticle(articleId, userId, {
       keyword: plannedArticle.primary_keyword,
       projectId: plannedArticle.project_id ?? '',
@@ -221,7 +246,7 @@ export class PlannedArticleGenerationService {
       imagePreset: plannedArticle.image_preset ?? undefined,
     });
 
-    return { queued: true, creditsDeducted: creditCost };
+    return { queued: true, creditsDeducted };
   }
 
   /**

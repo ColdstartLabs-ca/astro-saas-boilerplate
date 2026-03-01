@@ -187,19 +187,32 @@ export const DashboardSidebar: React.FC<IDashboardSidebarProps> = ({ isOpen, onC
         <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
           {primaryItems
             .filter(item => !item.requiresProject || hasProject)
-            .map(item => (
-              <SidebarItem
-                key={item.path}
-                route={item}
-                pathname={pathname}
-                onNavigate={handleNavigation}
-                t={t}
-                showBadge={getShowBadge(item.path)}
-              />
-            ))}
+            .map((item, index, filtered) => {
+              const prevItem = filtered[index - 1];
+              const showSectionHeader = item.section && item.section !== prevItem?.section;
+              return (
+                <React.Fragment key={item.path}>
+                  {showSectionHeader && (
+                    <p className="px-3 pt-3 pb-1 text-[10px] font-semibold uppercase tracking-widest text-muted">
+                      {t(item.section!)}
+                    </p>
+                  )}
+                  <SidebarItem
+                    route={item}
+                    pathname={pathname}
+                    onNavigate={handleNavigation}
+                    t={t}
+                    showBadge={getShowBadge(item.path)}
+                  />
+                </React.Fragment>
+              );
+            })}
 
-          {/* Separator */}
+          {/* Separator + Account section */}
           <div className="border-t border-border my-2" />
+          <p className="px-3 pt-1 pb-1 text-[10px] font-semibold uppercase tracking-widest text-muted">
+            {t('sidebar.section.account')}
+          </p>
 
           {/* Secondary Navigation */}
           {[...secondaryItems, ...adminItems].map(item => (

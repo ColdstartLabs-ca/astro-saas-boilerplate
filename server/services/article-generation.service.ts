@@ -313,17 +313,13 @@ export class ArticleGenerationService {
       // Only send for successful articles (qa_passed or draft)
       if (finalStatus === 'qa_passed' || finalStatus === 'draft') {
         try {
-          // Fetch user profile for email and display name
-          const { data: userProfile, error: profileError } = await this.supabase
-            .from('profiles')
-            .select('email, display_name')
-            .eq('id', userId)
-            .single();
+          const authUser = await supabaseAdmin.auth.admin.getUserById(userId);
+          const userEmail = authUser.data.user?.email ?? null;
+          const userName = authUser.data.user?.user_metadata?.full_name ?? 'there';
 
-          if (profileError || !userProfile?.email) {
+          if (!userEmail) {
             console.error(
-              `[ArticleGeneration] Could not fetch user profile for article complete email:`,
-              profileError
+              `[ArticleGeneration] Could not fetch user email for article complete email`
             );
           } else {
             // Get campaign name for the email
@@ -336,8 +332,8 @@ export class ArticleGenerationService {
             const emailService = getEmailService();
             await emailService.sendArticleCompleteNotification({
               userId,
-              email: userProfile.email,
-              userName: userProfile.display_name || 'there',
+              email: userEmail,
+              userName,
               articleTitle: outline.data.title,
               keyword: input.keyword,
               campaignName: campaign?.name,

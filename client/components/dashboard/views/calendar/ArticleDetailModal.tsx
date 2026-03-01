@@ -1,11 +1,12 @@
 'use client';
 
-import React, { useState, useCallback } from 'react';
-import { X, Calendar, Zap, Play, Trash2, Info } from 'lucide-react';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
+import { X, Calendar, Zap, Play, Trash2, Info, CheckCircle, AlertCircle, Loader2 } from 'lucide-react';
 import type { ICalendarArticle } from '@shared/types/calendar.types';
 import { getCampaignColorPalette, getCalendarStatusConfig } from '@client/utils/calendarHelpers';
 import { useApiRequest } from '@client/hooks/useApiRequest';
 import { DashboardButton } from '../../ui/DashboardButton';
+import type { ArticleStatus } from '@shared/types/article.types';
 
 interface IArticleDetailModalProps {
   article: ICalendarArticle;
@@ -18,6 +19,24 @@ interface IArticleDetailModalProps {
 }
 
 const PUBLISHABLE_STATUSES = ['draft', 'reviewed', 'approved', 'qa_passed'];
+const SUCCESS_STATUSES: ArticleStatus[] = ['draft', 'qa_passed', 'reviewed', 'approved'];
+const FAILURE_STATUSES: ArticleStatus[] = ['failed', 'failed_quality', 'qa_failed', 'failed_timeout'];
+const POLL_INTERVAL_MS = 3000;
+const POLL_TIMEOUT_MS = 120000;
+
+type GenerationState =
+  | { phase: 'idle' }
+  | { phase: 'queuing' }
+  | { phase: 'polling'; status: ArticleStatus }
+  | { phase: 'success' }
+  | { phase: 'failed'; message: string }
+  | { phase: 'timeout' };
+
+function getPollingStatusLabel(status: ArticleStatus): string {
+  if (status === 'queued') return 'Queued for generation...';
+  if (status === 'generating') return 'Generating article...';
+  return 'Processing...';
+}
 
 export function ArticleDetailModal({
   article,
@@ -34,11 +53,67 @@ export function ArticleDetailModal({
       : new Date().toISOString().split('T')[0]
   );
   const [publishConfirm, setPublishConfirm] = useState(false);
-  const [isGenerating, setIsGenerating] = useState(false);
+  const [generationState, setGenerationState] = useState<GenerationState>({ phase: 'idle' });
   const [isDeleting, setIsDeleting] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
   const { request } = useApiRequest();
+
+  const pollIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const pollTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const stopPolling = useCallback(() => {
+    if (pollIntervalRef.current !== null) {
+      clearInterval(pollIntervalRef.current);
+      pollIntervalRef.current = null;
+    }
+    if (pollTimeoutRef.current !== null) {
+      clearTimeout(pollTimeoutRef.current);
+      pollTimeoutRef.current = null;
+    }
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      stopPolling();
+    };
+  }, [stopPolling]);
+
+  const startPolling = useCallback(
+    (articleId: string) => {
+      pollIntervalRef.current = setInterval(async () => {
+        try {
+          const data = await request<{ article: { status: ArticleStatus } }>(
+            `/api/articles/${articleId}`
+          );
+          const status = data?.article?.status;
+          if (!status) return;
+
+          if (SUCCESS_STATUSES.includes(status)) {
+            stopPolling();
+            setGenerationState({ phase: 'success' });
+            onSuccess?.();
+            setTimeout(() => {
+              onClose();
+            }, 2000);
+          } else if (FAILURE_STATUSES.includes(status)) {
+            stopPolling();
+            setGenerationState({ phase: 'failed', message: 'Article generation failed.' });
+          } else {
+            setGenerationState({ phase: 'polling', status });
+          }
+        } catch {
+          // Polling errors are transient — keep polling
+        }
+      }, POLL_INTERVAL_MS);
+
+      pollTimeoutRef.current = setTimeout(() => {
+        stopPolling();
+        setGenerationState({ phase: 'timeout' });
+      }, POLL_TIMEOUT_MS);
+    },
+    [request, stopPolling, onSuccess, onClose]
+  );
 
   const statusConfig = getCalendarStatusConfig(article.status);
   const campaignColors = getCampaignColorPalette(article.campaignId);
@@ -46,7 +121,6 @@ export function ArticleDetailModal({
   const isPlanned = article.status === 'planned';
 
   const handleReschedule = async () => {
-    // Construct ISO datetime from the date input (use 09:00 AM as default time)
     const isoDate = `${newDate}T09:00:00.000Z`;
     await onReschedule(article.id, isoDate);
     onClose();
@@ -62,20 +136,19 @@ export function ArticleDetailModal({
   };
 
   const handleGenerateNow = useCallback(async () => {
-    setIsGenerating(true);
+    setGenerationState({ phase: 'queuing' });
     setActionError(null);
     try {
       await request(`/api/articles/${article.id}/generate-now`, {
         method: 'POST',
       });
-      onSuccess?.();
-      onClose();
+      setGenerationState({ phase: 'polling', status: 'queued' });
+      startPolling(article.id);
     } catch (err) {
+      setGenerationState({ phase: 'idle' });
       setActionError(err instanceof Error ? err.message : 'Failed to queue article for generation');
-    } finally {
-      setIsGenerating(false);
     }
-  }, [article.id, onSuccess, onClose, request]);
+  }, [article.id, request, startPolling]);
 
   const handleDeletePlan = useCallback(async () => {
     if (!deleteConfirm) {
@@ -96,6 +169,9 @@ export function ArticleDetailModal({
       setIsDeleting(false);
     }
   }, [article.id, deleteConfirm, onSuccess, onClose, request]);
+
+  const isGenerating =
+    generationState.phase === 'queuing' || generationState.phase === 'polling';
 
   return (
     <div
@@ -130,7 +206,7 @@ export function ArticleDetailModal({
         </div>
 
         {/* Planned article info banner */}
-        {isPlanned && (
+        {isPlanned && generationState.phase === 'idle' && (
           <div
             className="mb-5 p-3 bg-amber-900/20 border border-amber-500/20 rounded-lg flex gap-2"
             data-testid="planned-article-banner"
@@ -140,6 +216,42 @@ export function ArticleDetailModal({
               This article is planned but not yet generated. It will auto-generate 3 days before its
               publish date.
             </p>
+          </div>
+        )}
+
+        {/* Generation status indicator */}
+        {generationState.phase === 'queuing' && (
+          <div className="mb-5 p-3 bg-accent/10 border border-accent/20 rounded-lg flex items-center gap-2">
+            <Loader2 className="w-4 h-4 text-accent animate-spin flex-shrink-0" />
+            <p className="text-xs text-accent">Queuing for generation...</p>
+          </div>
+        )}
+
+        {generationState.phase === 'polling' && (
+          <div className="mb-5 p-3 bg-accent/10 border border-accent/20 rounded-lg flex items-center gap-2">
+            <Loader2 className="w-4 h-4 text-accent animate-spin flex-shrink-0" />
+            <p className="text-xs text-accent">{getPollingStatusLabel(generationState.status)}</p>
+          </div>
+        )}
+
+        {generationState.phase === 'success' && (
+          <div className="mb-5 p-3 bg-green-900/20 border border-green-500/20 rounded-lg flex items-center gap-2">
+            <CheckCircle className="w-4 h-4 text-green-400 flex-shrink-0" />
+            <p className="text-xs text-green-300">Article generated successfully. Closing...</p>
+          </div>
+        )}
+
+        {generationState.phase === 'failed' && (
+          <div className="mb-5 p-3 bg-error/10 border border-error/20 rounded-lg flex items-center gap-2">
+            <AlertCircle className="w-4 h-4 text-error flex-shrink-0" />
+            <p className="text-xs text-error">{generationState.message}</p>
+          </div>
+        )}
+
+        {generationState.phase === 'timeout' && (
+          <div className="mb-5 p-3 bg-warning/10 border border-warning/20 rounded-lg flex items-center gap-2">
+            <AlertCircle className="w-4 h-4 text-warning flex-shrink-0" />
+            <p className="text-xs text-warning">Generation timed out. Check back later.</p>
           </div>
         )}
 
@@ -160,7 +272,7 @@ export function ArticleDetailModal({
         </div>
 
         {/* Reschedule */}
-        {article.status !== 'published' && (
+        {article.status !== 'published' && !isGenerating && generationState.phase !== 'success' && (
           <div className="mb-5">
             <label className="block text-sm font-medium text-secondary mb-2">
               <Calendar className="w-4 h-4 inline mr-1.5" />
@@ -187,7 +299,7 @@ export function ArticleDetailModal({
         )}
 
         {/* Planned article actions */}
-        {isPlanned && (
+        {isPlanned && !isGenerating && generationState.phase === 'idle' && (
           <div className="mb-4 flex flex-col gap-2">
             <DashboardButton
               className="w-full"
@@ -196,7 +308,7 @@ export function ArticleDetailModal({
               data-testid="generate-now-button"
             >
               <Play className="w-4 h-4 mr-2" />
-              {isGenerating ? 'Queuing...' : 'Generate Now'}
+              Generate Now
             </DashboardButton>
             <DashboardButton
               variant="outline"
@@ -213,6 +325,15 @@ export function ArticleDetailModal({
                 Click again to confirm deletion of this planned article
               </p>
             )}
+          </div>
+        )}
+
+        {/* Close button for terminal failure states */}
+        {(generationState.phase === 'failed' || generationState.phase === 'timeout') && (
+          <div className="mb-4">
+            <DashboardButton variant="outline" className="w-full" onClick={onClose}>
+              Close
+            </DashboardButton>
           </div>
         )}
 

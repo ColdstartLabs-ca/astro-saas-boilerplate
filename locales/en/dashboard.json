@@ -25,7 +25,12 @@
     "plan": "Plan",
     "activeProject": "Active Project",
     "manageProjects": "Manage Projects",
-    "noProjectSelected": "No project selected"
+    "noProjectSelected": "No project selected",
+    "section": {
+      "content": "Content",
+      "insights": "Insights",
+      "account": "Account"
+    }
   },
   "header": {
     "newCampaign": "New Campaign",

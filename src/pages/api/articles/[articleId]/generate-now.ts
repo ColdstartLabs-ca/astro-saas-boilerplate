@@ -6,27 +6,43 @@
  * Only works for articles in 'planned' status.
  */
 
-import { withAuth, jsonResponse, errorResponse, handleApiError } from '@pages/api/_utils';
+import { withAuth, jsonResponse, errorResponse, handleApiError, fireAndForget } from '@pages/api/_utils';
 import { plannedArticleGenerationService } from '@server/services/planned-article-generation.service';
+import { articleGenerationService } from '@server/services/article-generation.service';
 
 /**
  * POST /api/articles/:articleId/generate-now
  *
- * Transitions a planned article to queued and triggers generation immediately,
+ * Transitions a planned article to queued and fires generation in the background,
  * deducting credits from the user's balance (subscription first, then purchased).
  *
  * Returns:
- * - 200: { queued: true, creditsDeducted: number }
+ * - 200: { queued: true }
  * - 400: Article not in planned status
  * - 402: Insufficient credits
  * - 404: Article not found or not owned by user
  */
-export const POST = withAuth(async (userId, { params }) => {
+export const POST = withAuth(async (userId, { params, locals }) => {
   const articleId = params.articleId as string;
 
   try {
-    const result = await plannedArticleGenerationService.generateSingleArticle(articleId, userId);
-    return jsonResponse(result);
+    const { creditsDeducted, article, model } = await plannedArticleGenerationService.promoteArticle(
+      articleId,
+      userId
+    );
+
+    fireAndForget(
+      locals,
+      articleGenerationService.generateArticle(articleId, userId, {
+        keyword: article.primary_keyword,
+        projectId: article.project_id ?? '',
+        campaignId: article.campaign_id ?? '',
+        model,
+        imagePreset: article.image_preset ?? undefined,
+      })
+    );
+
+    return jsonResponse({ queued: true, creditsDeducted });
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Unknown error';
 

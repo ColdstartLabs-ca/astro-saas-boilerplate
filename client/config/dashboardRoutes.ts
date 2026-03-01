@@ -93,6 +93,8 @@ export interface IDashboardRoute {
   guard?: RouteGuard;
   /** Sidebar grouping */
   group: RouteGroup;
+  /** Optional sidebar section label (renders a header above the first item in a section) */
+  section?: string;
   /** Optional custom layout wrapper (for admin routes) */
   layout?: ComponentType<{ children: React.ReactNode }>;
   /** Optional child routes (for dynamic routes like /users/:id) */
@@ -112,6 +114,8 @@ export const DASHBOARD_ROUTES: readonly IDashboardRoute[] = [
     enabled: true,
     group: 'primary',
   },
+
+  // Content section
   {
     path: '/dashboard/campaigns',
     labelKey: 'sidebar.campaigns',
@@ -120,6 +124,7 @@ export const DASHBOARD_ROUTES: readonly IDashboardRoute[] = [
     enabled: true,
     requiresProject: true,
     group: 'primary',
+    section: 'sidebar.section.content',
     children: [
       {
         path: '/dashboard/campaigns/:campaignId',
@@ -132,19 +137,10 @@ export const DASHBOARD_ROUTES: readonly IDashboardRoute[] = [
     ],
   },
   {
-    path: '/dashboard/integrations',
-    labelKey: 'sidebar.integrations',
-    icon: Plug,
-    component: IntegrationsPage,
-    enabled: true,
-    requiresProject: true,
-    group: 'primary',
-  },
-  {
-    path: '/dashboard/opportunities',
-    labelKey: 'sidebar.opportunities',
-    icon: Lightbulb,
-    component: OpportunitiesPage,
+    path: '/dashboard/calendar',
+    labelKey: 'sidebar.calendar',
+    icon: CalendarIcon,
+    component: CalendarPage,
     enabled: true,
     requiresProject: true,
     group: 'primary',
@@ -175,14 +171,17 @@ export const DASHBOARD_ROUTES: readonly IDashboardRoute[] = [
   //   enabled: false,
   //   group: 'primary',
   // },
+
+  // Insights section
   {
-    path: '/dashboard/calendar',
-    labelKey: 'sidebar.calendar',
-    icon: CalendarIcon,
-    component: CalendarPage,
+    path: '/dashboard/opportunities',
+    labelKey: 'sidebar.opportunities',
+    icon: Lightbulb,
+    component: OpportunitiesPage,
     enabled: true,
     requiresProject: true,
     group: 'primary',
+    section: 'sidebar.section.insights',
   },
   // {
   //   path: '/dashboard/backlinks',
@@ -202,7 +201,16 @@ export const DASHBOARD_ROUTES: readonly IDashboardRoute[] = [
     group: 'primary',
   },
 
-  // Secondary navigation (account management)
+  // Secondary navigation (account management + one-time setup)
+  {
+    path: '/dashboard/integrations',
+    labelKey: 'sidebar.integrations',
+    icon: Plug,
+    component: IntegrationsPage,
+    enabled: true,
+    requiresProject: true,
+    group: 'secondary',
+  },
   {
     path: '/dashboard/billing',
     labelKey: 'sidebar.billing',

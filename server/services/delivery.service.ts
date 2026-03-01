@@ -68,7 +68,7 @@ export class DeliveryService {
     const { data: article, error: articleError } = await supabaseAdmin
       .from('articles')
       .select(
-        'id, title, content, slug, meta_description, primary_keyword, word_count, seo_score, featured_image_url, campaign_id, user_id, project_id, article_images(position, image_url, status)'
+        'id, title, content, slug, meta_description, primary_keyword, word_count, seo_score, campaign_id, user_id, project_id, article_images(position, image_url, status)'
       )
       .eq('id', articleId)
       .single();
