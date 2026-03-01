@@ -1,7 +1,7 @@
 #!/bin/bash
 
 step_verify() {
-    log_step 6 "Verifying"
+    log_step 7 "Verifying"
 
     local url="https://$DOMAIN_NAME"
 

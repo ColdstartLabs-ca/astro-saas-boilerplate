@@ -26,6 +26,7 @@ import {
   Copy,
   Check,
   Send,
+  Sparkles,
 } from 'lucide-react';
 import { DashboardButton } from '@client/components/dashboard/ui/DashboardButton';
 import { useOnboardingStore } from '@client/store/onboardingStore';
@@ -391,6 +392,8 @@ export function OnboardingStepIntegrations({
   const [error, setError] = useState<string | null>(null);
   const [isTesting, setIsTesting] = useState(false);
   const [testResult, setTestResult] = useState<'success' | 'error' | null>(null);
+  const [secretGenerated, setSecretGenerated] = useState(false);
+  const [secretCopied, setSecretCopied] = useState(false);
   // BUG M1: ref-based guard to prevent double-click from firing multiple submits
   const submittingRef = useRef(false);
 
@@ -409,6 +412,20 @@ export function OnboardingStepIntegrations({
     setFormData(prev => ({ ...prev, [fieldName]: value }));
     setError(null);
     setTestResult(null);
+  }, []);
+
+  const handleGenerateSecret = useCallback(() => {
+    const bytes = new Uint8Array(32);
+    crypto.getRandomValues(bytes);
+    const secret = Array.from(bytes)
+      .map(b => b.toString(16).padStart(2, '0'))
+      .join('');
+    setFormData(prev => ({ ...prev, secret }));
+    setSecretGenerated(true);
+    void navigator.clipboard.writeText(secret).then(() => {
+      setSecretCopied(true);
+      setTimeout(() => setSecretCopied(false), 2000);
+    });
   }, []);
 
   const canTestWebhook = selectedType === 'webhook' && formData.url?.trim().length > 0;
@@ -678,18 +695,46 @@ export function OnboardingStepIntegrations({
               >
                 {field.label} {field.required && <span className="text-error">*</span>}
               </label>
-              <input
-                id={`integration-${field.name}`}
-                type={field.type}
-                placeholder={field.placeholder}
-                value={formData[field.name] || ''}
-                onChange={e => handleFieldChange(field.name, e.target.value)}
-                disabled={isLoading}
-                className="w-full bg-main border border-border rounded-lg px-4 py-2.5 text-white placeholder:text-muted focus:ring-1 focus:ring-accent outline-none transition-all"
-              />
+              <div className="flex gap-2">
+                <input
+                  id={`integration-${field.name}`}
+                  type={field.name === 'secret' && secretGenerated ? 'text' : field.type}
+                  placeholder={field.placeholder}
+                  value={formData[field.name] || ''}
+                  onChange={e => handleFieldChange(field.name, e.target.value)}
+                  disabled={isLoading}
+                  className={`bg-main border border-border rounded-lg px-4 py-2.5 text-white placeholder:text-muted focus:ring-1 focus:ring-accent outline-none transition-all ${field.name === 'secret' ? 'flex-1 font-mono text-sm' : 'w-full'}`}
+                />
+                {field.name === 'secret' && (
+                  <button
+                    type="button"
+                    onClick={handleGenerateSecret}
+                    disabled={isLoading}
+                    className={`flex items-center gap-1.5 px-3 py-2 border rounded-lg text-sm font-medium whitespace-nowrap transition-colors disabled:opacity-50 ${
+                      secretCopied
+                        ? 'bg-success/10 border-success/30 text-success'
+                        : 'bg-accent/10 border-accent/30 text-accent hover:bg-accent/20'
+                    }`}
+                    title="Generate a secure random secret and copy to clipboard"
+                  >
+                    {secretCopied ? (
+                      <Check className="w-3.5 h-3.5" />
+                    ) : (
+                      <Sparkles className="w-3.5 h-3.5" />
+                    )}
+                    {secretCopied ? 'Copied!' : 'Generate'}
+                  </button>
+                )}
+              </div>
               {(field.helpText || field.helpUrl) && (
                 <div className="flex items-center justify-between">
-                  {field.helpText && <p className="text-xs text-muted">{field.helpText}</p>}
+                  {field.helpText && (
+                    <p className="text-xs text-muted">
+                      {field.name === 'secret' && secretGenerated
+                        ? "Copied — paste this into your server's INBOUND_WEBHOOK_SECRET env var."
+                        : field.helpText}
+                    </p>
+                  )}
                   {field.helpUrl && (
                     <a
                       href={field.helpUrl}

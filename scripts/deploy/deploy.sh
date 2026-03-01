@@ -9,12 +9,14 @@ export SKIP_SECRETS="false"
 export SKIP_TESTS="false"
 export SKIP_I18N="false"
 export SKIP_SEO="false"
+export SKIP_MIGRATIONS="false"
 for arg in "$@"; do
     case $arg in
         --skip-secrets) SKIP_SECRETS="true" ;;
         --skip-tests) SKIP_TESTS="true" ;;
         --skip-i18n) SKIP_I18N="true" ;;
         --skip-seo) SKIP_SEO="true" ;;
+        --skip-migrations) SKIP_MIGRATIONS="true" ;;
     esac
 done
 
@@ -98,6 +100,7 @@ fi
 
 source "$SCRIPT_DIR/steps/01-preflight.sh" && step_preflight
 source "$SCRIPT_DIR/steps/02-build.sh" && step_build
+source "$SCRIPT_DIR/steps/03-migrations.sh" && step_migrations
 source "$SCRIPT_DIR/steps/03-deploy.sh" && step_deploy
 source "$SCRIPT_DIR/steps/04-configure.sh" && step_configure
 source "$SCRIPT_DIR/steps/05-secrets.sh" && step_secrets

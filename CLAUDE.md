@@ -1,21 +1,12 @@
 # AutopilotRank
 
+SaaS platform for AI-powered SEO content generation. Users create projects, run keyword campaigns, and generate/publish articles to their CMS (WordPress, Ghost, Shopify, Webflow, Notion, Wix, webhooks) — on autopilot. Credit-based billing via Stripe with tiered subscriptions.
+
 Check `.claude/skills/` for relevant patterns.
 
 ## Tech Stack
 
-- **Framework**: Astro 5 (SSR) + React 18 islands (`@astrojs/react`)
-- **Language**: TypeScript 5.5 (strict)
-- **Deployment**: Cloudflare Pages + Workers (cron in `workers/cron/`)
-- **Database**: Supabase (Postgres) — no ORM, raw client queries. RLS on all tables.
-- **Auth**: Supabase Auth (Google/Facebook/Azure OAuth + email/password)
-- **Payments**: Stripe
-- **State**: Zustand (global client), TanStack React Query (server state)
-- **Styling**: Tailwind CSS 3 — use semantic tokens (`main`, `surface`, `accent`, etc.), never hardcode colors
-- **Validation**: Zod schemas in `shared/validation/`
-- **DI**: tsyringe (server-side)
-- **AI**: OpenRouter (text), OpenAI (embeddings), Replicate (images)
-- **Email**: Resend/Brevo/SendPulse + React Email templates
+Astro 5 SSR + React 18 islands · TypeScript 5.5 strict · Cloudflare Pages + Workers (10ms CPU limit) · Supabase Postgres (no ORM, raw queries, RLS on all tables) · Supabase Auth · Stripe · Zustand + TanStack Query · Tailwind 3 (semantic tokens, never hardcode colors) · Zod · tsyringe DI · OpenRouter/OpenAI/Replicate for AI
 
 ## Project Structure
 
@@ -30,21 +21,19 @@ supabase/migrations/# SQL migrations (YYYYMMDDHHMMSS_name.sql)
 tests/              # unit (Vitest), api/e2e/integration (Playwright)
 emails/             # React Email templates
 content/            # Blog MDX content
+locales/            # i18n translations (en, pt-BR)
 ```
+
+**Path aliases**: `@client`, `@server`, `@shared`, `@src`, `@lib` (see `tsconfig.json`)
 
 ## Key Files
 
 - `shared/config/env.ts` — `clientEnv` / `serverEnv` (all env access goes here)
 - `shared/config/subscription.config.ts` — plans, prices, credits, Stripe IDs
-- `shared/config/credits.config.ts` — credit costs
 - `shared/config/security.ts` — CSP, public API routes, CORS
 - `src/pages/api/_utils.ts` — `withAuth`, `withAuthAndBody`, `jsonResponse`, `fireAndForget`
-- `shared/types/` — all domain interfaces (`IArticle`, `ICampaign`, `IProject`, etc.)
-
-## API Conventions
-
-- Response envelope: `{ success: boolean, data: T }` or `{ success: false, error: { code, message } }`
-- Auth: `getAuthenticatedUser(req)` from `server/middleware/getAuthenticatedUser.ts`
+- `shared/types/` — domain interfaces (`IArticle`, `ICampaign`, `IProject`, etc.)
+- API response envelope: `{ success, data }` or `{ success: false, error: { code, message } }`
 
 ## Testing
 
@@ -55,13 +44,13 @@ content/            # Blog MDX content
 ## Base Principles
 
 - SOLID, SRP, KISS, DRY, YAGNI — no over-engineering.
-- **Environment Variables**: NEVER use `process.env` directly. Use `clientEnv` or `serverEnv` from `@shared/config/env`.
+- NEVER use `process.env` directly — use `clientEnv` / `serverEnv` from `@shared/config/env`.
 
 ## Production Safety
 
-- **Money + state changes must be atomic**: Any flow that mutates status and credits/ledger together must use one DB transaction or RPC. Never split claim, deduction, and ledger writes across separate best-effort updates.
-- **Cron handlers must be idempotent/claim-based**: Claim the record atomically before any external side effect (publish, webhook, delivery).
-- **Deploy must fail closed**: If dependent services fail, deployment must fail — never silently continue.
+- Credits/status mutations → single DB transaction or RPC (never split).
+- Cron handlers → claim atomically before any side effect.
+- Deploys → fail closed if dependencies fail.
 
 ## Workflow
 

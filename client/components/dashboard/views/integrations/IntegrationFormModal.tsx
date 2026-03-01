@@ -29,11 +29,13 @@ import type {
 } from '@shared/types/integration.types';
 import {
   ArrowLeft,
+  Check,
   CheckCircle2,
   Globe,
   HelpCircle,
   Loader2,
   Plug,
+  Sparkles,
   Webhook,
   XCircle,
 } from 'lucide-react';
@@ -174,6 +176,8 @@ export function IntegrationFormModal({
   const [isTesting, setIsTesting] = useState(false);
   const [testResult, setTestResult] = useState<{ success: boolean; message?: string } | null>(null);
   const [showWebhookHelp, setShowWebhookHelp] = useState(false);
+  const [secretCopied, setSecretCopied] = useState(false);
+  const [secretGenerated, setSecretGenerated] = useState(false);
 
   // Form setup - use edit schema (optional appPassword) in edit mode
   const isEditMode = mode === 'edit';
@@ -219,6 +223,8 @@ export function IntegrationFormModal({
       }
       setTestResult(null);
       setShowWebhookHelp(false);
+      setSecretGenerated(false);
+      setSecretCopied(false);
     }
   }, [isOpen, mode, integration, form]);
 
@@ -232,6 +238,20 @@ export function IntegrationFormModal({
   const handleBack = () => {
     setStep(1);
     setTestResult(null);
+  };
+
+  const handleGenerateSecret = () => {
+    const bytes = new Uint8Array(32);
+    crypto.getRandomValues(bytes);
+    const secret = Array.from(bytes)
+      .map(b => b.toString(16).padStart(2, '0'))
+      .join('');
+    form.setValue('secret', secret, { shouldValidate: true });
+    setSecretGenerated(true);
+    void navigator.clipboard.writeText(secret).then(() => {
+      setSecretCopied(true);
+      setTimeout(() => setSecretCopied(false), 2000);
+    });
   };
 
   const handleTestConnection = async () => {
@@ -487,14 +507,35 @@ export function IntegrationFormModal({
                   <label className="block text-sm font-medium text-white mb-2">
                     {t('integrations.form.webhook.secret')}
                   </label>
-                  <input
-                    {...form.register('secret')}
-                    type="password"
-                    placeholder={t('integrations.form.webhook.secretPlaceholder')}
-                    className="w-full px-3 py-2 bg-elevated border border-border rounded-lg text-white placeholder:text-secondary focus:outline-none focus:ring-2 focus:ring-accent/50"
-                  />
+                  <div className="flex gap-2">
+                    <input
+                      {...form.register('secret')}
+                      type={secretGenerated ? 'text' : 'password'}
+                      placeholder={t('integrations.form.webhook.secretPlaceholder')}
+                      className="flex-1 px-3 py-2 bg-elevated border border-border rounded-lg text-white placeholder:text-secondary focus:outline-none focus:ring-2 focus:ring-accent/50 font-mono text-sm"
+                    />
+                    <button
+                      type="button"
+                      onClick={handleGenerateSecret}
+                      className={`flex items-center gap-1.5 px-3 py-2 border rounded-lg text-sm font-medium whitespace-nowrap transition-colors ${
+                        secretCopied
+                          ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400'
+                          : 'bg-accent/10 border-accent/30 text-accent hover:bg-accent/20'
+                      }`}
+                      title="Generate a secure random secret and copy to clipboard"
+                    >
+                      {secretCopied ? (
+                        <Check className="w-3.5 h-3.5" />
+                      ) : (
+                        <Sparkles className="w-3.5 h-3.5" />
+                      )}
+                      {secretCopied ? 'Copied!' : 'Generate'}
+                    </button>
+                  </div>
                   <p className="text-xs text-muted mt-1">
-                    {t('integrations.form.webhook.secretHelp')}
+                    {secretGenerated
+                      ? "Paste INBOUND_WEBHOOK_SECRET into your server's env vars."
+                      : t('integrations.form.webhook.secretHelp')}
                   </p>
                 </div>
 

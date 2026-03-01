@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import type { ICalendarArticle, ICalendarArticlesResponse } from '@shared/types/calendar.types';
 import { getCampaignColorPalette } from '@client/utils/calendarHelpers';
+import { useApiRequest } from '@client/hooks/useApiRequest';
 
 interface IUseCalendarArticlesOptions {
   dateFrom: string; // ISO date string YYYY-MM-DD
@@ -23,6 +24,7 @@ export function useCalendarArticles({ dateFrom, dateTo }: IUseCalendarArticlesOp
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [refreshKey, setRefreshKey] = useState(0);
+  const { request } = useApiRequest();
 
   const refetch = useCallback(() => setRefreshKey(k => k + 1), []);
 
@@ -31,15 +33,11 @@ export function useCalendarArticles({ dateFrom, dateTo }: IUseCalendarArticlesOp
     setIsLoading(true);
     setError(null);
 
-    const url = `/api/calendar/articles?dateFrom=${dateFrom}&dateTo=${dateTo}`;
-    fetch(url, { credentials: 'include' })
-      .then(res => {
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        return res.json() as Promise<{ success: boolean; data?: ICalendarArticlesResponse; error?: unknown }>;
-      })
-      .then(body => {
+    const loadArticles = async () => {
+      try {
+        const url = `/api/calendar/articles?dateFrom=${dateFrom}&dateTo=${dateTo}`;
+        const data = await request<ICalendarArticlesResponse>(url, { method: 'GET' });
         if (!cancelled) {
-          const data = body.data ?? (body as unknown as ICalendarArticlesResponse);
           // Enrich articles with campaignColor derived from campaignId
           const enriched = (data.articles ?? []).map(a => ({
             ...a,
@@ -48,16 +46,19 @@ export function useCalendarArticles({ dateFrom, dateTo }: IUseCalendarArticlesOp
           setArticles(enriched);
           setTotal(data.total ?? enriched.length);
         }
-      })
-      .catch(err => {
-        if (!cancelled) setError(err instanceof Error ? err.message : 'Failed to load calendar data');
-      })
-      .finally(() => {
+      } catch (err) {
+        if (!cancelled) {
+          setError(err instanceof Error ? err.message : 'Failed to load calendar data');
+        }
+      } finally {
         if (!cancelled) setIsLoading(false);
-      });
+      }
+    };
+
+    void loadArticles();
 
     return () => { cancelled = true; };
-  }, [dateFrom, dateTo, refreshKey]);
+  }, [dateFrom, dateTo, refreshKey, request]);
 
   return { articles, total, isLoading, error, refetch };
 }

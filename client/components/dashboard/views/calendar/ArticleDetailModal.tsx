@@ -4,6 +4,7 @@ import React, { useState, useCallback } from 'react';
 import { X, Calendar, Zap, Play, Trash2, Info } from 'lucide-react';
 import type { ICalendarArticle } from '@shared/types/calendar.types';
 import { getCampaignColorPalette, getCalendarStatusConfig } from '@client/utils/calendarHelpers';
+import { useApiRequest } from '@client/hooks/useApiRequest';
 import { DashboardButton } from '../../ui/DashboardButton';
 
 interface IArticleDetailModalProps {
@@ -37,6 +38,7 @@ export function ArticleDetailModal({
   const [isDeleting, setIsDeleting] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
+  const { request } = useApiRequest();
 
   const statusConfig = getCalendarStatusConfig(article.status);
   const campaignColors = getCampaignColorPalette(article.campaignId);
@@ -63,16 +65,9 @@ export function ArticleDetailModal({
     setIsGenerating(true);
     setActionError(null);
     try {
-      const res = await fetch(`/api/articles/${article.id}/generate-now`, {
+      await request(`/api/articles/${article.id}/generate-now`, {
         method: 'POST',
-        credentials: 'include',
       });
-      if (!res.ok) {
-        const body = await res.json().catch(() => ({}));
-        throw new Error(
-          (body as { error?: { message?: string } })?.error?.message ?? `HTTP ${res.status}`
-        );
-      }
       onSuccess?.();
       onClose();
     } catch (err) {
@@ -80,7 +75,7 @@ export function ArticleDetailModal({
     } finally {
       setIsGenerating(false);
     }
-  }, [article.id, onSuccess, onClose]);
+  }, [article.id, onSuccess, onClose, request]);
 
   const handleDeletePlan = useCallback(async () => {
     if (!deleteConfirm) {
@@ -90,16 +85,9 @@ export function ArticleDetailModal({
     setIsDeleting(true);
     setActionError(null);
     try {
-      const res = await fetch(`/api/articles/${article.id}`, {
+      await request(`/api/articles/${article.id}`, {
         method: 'DELETE',
-        credentials: 'include',
       });
-      if (!res.ok) {
-        const body = await res.json().catch(() => ({}));
-        throw new Error(
-          (body as { error?: { message?: string } })?.error?.message ?? `HTTP ${res.status}`
-        );
-      }
       onSuccess?.();
       onClose();
     } catch (err) {
@@ -107,7 +95,7 @@ export function ArticleDetailModal({
     } finally {
       setIsDeleting(false);
     }
-  }, [article.id, deleteConfirm, onSuccess, onClose]);
+  }, [article.id, deleteConfirm, onSuccess, onClose, request]);
 
   return (
     <div

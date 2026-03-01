@@ -6,7 +6,7 @@ YELLOW='\033[1;33m'
 CYAN='\033[0;36m'
 NC='\033[0m'
 
-log_step()    { echo -e "\n${CYAN}[$1/6]${NC} $2"; }
+log_step()    { echo -e "\n${CYAN}[$1/7]${NC} $2"; }
 log_info()    { echo -e "  ${CYAN}→${NC} $1"; }
 log_success() { echo -e "  ${GREEN}✓${NC} $1"; }
 log_warn()    { echo -e "  ${YELLOW}⚠${NC} $1"; }

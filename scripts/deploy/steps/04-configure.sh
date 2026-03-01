@@ -1,7 +1,7 @@
 #!/bin/bash
 
 step_configure() {
-    log_step 4 "Configuring SSL"
+    log_step 5 "Configuring SSL"
 
     # Routes are configured via wrangler.json automatically on deploy
     log_info "Routes configured via wrangler.json"

@@ -1,7 +1,7 @@
 #!/bin/bash
 
 step_secrets() {
-    log_step 5 "Uploading secrets"
+    log_step 6 "Uploading secrets"
 
     local project="${WORKER_NAME:-autopilotrank}"
     local skip_secrets="${SKIP_SECRETS:-false}"

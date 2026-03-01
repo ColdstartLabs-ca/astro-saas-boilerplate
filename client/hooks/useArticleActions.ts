@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useState } from 'react';
+import { useApiRequest } from '@client/hooks/useApiRequest';
 
 interface IArticleActionsOptions {
   onSuccess?: () => void; // call to refetch calendar data
@@ -23,21 +24,16 @@ export function useArticleActions({ onSuccess }: IArticleActionsOptions = {}): I
   const [isRescheduling, setIsRescheduling] = useState(false);
   const [isPublishing, setIsPublishing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const { request } = useApiRequest();
 
   const reschedule = useCallback(async (articleId: string, newDate: string) => {
     setIsRescheduling(true);
     setError(null);
     try {
-      const res = await fetch(`/api/articles/${articleId}/schedule`, {
+      await request(`/api/articles/${articleId}/schedule`, {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({ scheduled_publish_at: newDate }),
+        body: { scheduled_publish_at: newDate },
       });
-      if (!res.ok) {
-        const body = await res.json().catch(() => ({}));
-        throw new Error((body as { error?: { message?: string } })?.error?.message ?? `HTTP ${res.status}`);
-      }
       onSuccess?.();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to reschedule');
@@ -45,22 +41,15 @@ export function useArticleActions({ onSuccess }: IArticleActionsOptions = {}): I
     } finally {
       setIsRescheduling(false);
     }
-  }, [onSuccess]);
+  }, [onSuccess, request]);
 
   const publishNow = useCallback(async (articleId: string): Promise<IPublishNowResult | null> => {
     setIsPublishing(true);
     setError(null);
     try {
-      const res = await fetch(`/api/articles/${articleId}/publish-now`, {
+      const data = await request<IPublishNowResult>(`/api/articles/${articleId}/publish-now`, {
         method: 'POST',
-        credentials: 'include',
       });
-      if (!res.ok) {
-        const body = await res.json().catch(() => ({}));
-        throw new Error((body as { error?: { message?: string } })?.error?.message ?? `HTTP ${res.status}`);
-      }
-      const body = await res.json();
-      const data = (body as { data?: IPublishNowResult }).data ?? (body as IPublishNowResult);
       onSuccess?.();
       return data;
     } catch (err) {
@@ -69,7 +58,7 @@ export function useArticleActions({ onSuccess }: IArticleActionsOptions = {}): I
     } finally {
       setIsPublishing(false);
     }
-  }, [onSuccess]);
+  }, [onSuccess, request]);
 
   return { reschedule, publishNow, isRescheduling, isPublishing, error };
 }

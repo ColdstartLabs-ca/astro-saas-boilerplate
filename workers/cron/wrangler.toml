@@ -6,6 +6,9 @@ main = "index.ts"
 compatibility_date = "2025-03-02"
 compatibility_flags = ["nodejs_compat"]
 
+[observability]
+enabled = true
+
 # Cron Triggers
 [triggers]
 crons = [

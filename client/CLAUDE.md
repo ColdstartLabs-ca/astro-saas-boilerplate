@@ -51,6 +51,8 @@ Client-side React components, hooks, and utilities that run in the browser.
 - **UX**: Don't make users think — clarity beats cleverness every time.
 - **State**: Use zustand to avoid prop drilling when state is shared across multiple components.
 - When React files violate SRP, DRY, or KISS, use `/react-refactoring` for systematic refactoring patterns.
+- **API requests**: Use [`useApiRequest`](/home/joao/projects/autopilotrank.com/client/hooks/useApiRequest.ts) for client `fetch` calls. It centralizes auth header injection, JSON body handling, envelope unwrapping, and error normalization.
+- **Auth toggle**: For public endpoints, call `request(url, { authenticated: false })`; keep `authenticated: true` (default) for protected routes.
 
 ## Styling Rules
 

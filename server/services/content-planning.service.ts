@@ -115,12 +115,11 @@ export class ContentPlanningService {
     const frequencyConfig = SCHEDULE_FREQUENCIES[frequency];
     const intervalMs = frequencyConfig.intervalHours * 60 * 60 * 1000;
 
-    // Start from tomorrow at the configured hour in the configured timezone
-    const tomorrow = new Date();
-    tomorrow.setDate(tomorrow.getDate() + 1);
+    // Start from now — calculateNextRunAt will advance past the current hour if needed
+    const now = new Date();
 
     const scheduledDates: string[] = keywordsToPlan.map((_, index) => {
-      const baseDate = new Date(tomorrow.getTime() + index * intervalMs);
+      const baseDate = new Date(now.getTime() + index * intervalMs);
       return calculateNextRunAt(frequency, scheduleTimezone, scheduleHour, baseDate);
     });
 

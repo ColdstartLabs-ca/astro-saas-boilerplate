@@ -1,7 +1,7 @@
 #!/bin/bash
 
 step_deploy() {
-    log_step 3 "Deploying"
+    log_step 4 "Deploying"
 
     cd "$PROJECT_ROOT"
 
