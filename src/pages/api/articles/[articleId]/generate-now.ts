@@ -26,10 +26,11 @@ export const POST = withAuth(async (userId, { params, locals }) => {
   const articleId = params.articleId as string;
 
   try {
-    const { creditsDeducted, article, model } = await plannedArticleGenerationService.promoteArticle(
-      articleId,
-      userId
-    );
+    const { creditsDeducted, article, model, imagePreset } =
+      await plannedArticleGenerationService.promoteArticle(
+        articleId,
+        userId
+      );
 
     fireAndForget(
       locals,
@@ -38,7 +39,7 @@ export const POST = withAuth(async (userId, { params, locals }) => {
         projectId: article.project_id ?? '',
         campaignId: article.campaign_id ?? '',
         model,
-        imagePreset: article.image_preset ?? undefined,
+        imagePreset: imagePreset ?? undefined,
       })
     );
 

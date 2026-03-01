@@ -415,6 +415,37 @@ export class ArticleGenerationService {
 
     const systemPrompt = getOutlinePrompt(input.keyword, tone, targetWordCount, gscContext);
 
+    const outlineJsonSchema = {
+      type: 'json_schema' as const,
+      json_schema: {
+        name: 'article_outline',
+        strict: true,
+        schema: {
+          type: 'object',
+          properties: {
+            title: { type: 'string' },
+            metaDescription: { type: 'string' },
+            slug: { type: 'string' },
+            sections: {
+              type: 'array',
+              items: {
+                type: 'object',
+                properties: {
+                  heading: { type: 'string' },
+                  subheadings: { type: 'array', items: { type: 'string' } },
+                  keyPoints: { type: 'array', items: { type: 'string' } },
+                },
+                required: ['heading', 'subheadings', 'keyPoints'],
+                additionalProperties: false,
+              },
+            },
+          },
+          required: ['title', 'metaDescription', 'slug', 'sections'],
+          additionalProperties: false,
+        },
+      },
+    };
+
     try {
       const result = await this.openRouter.chatCompletionWithRetry({
         model,
@@ -422,16 +453,28 @@ export class ArticleGenerationService {
           { role: 'system', content: systemPrompt },
           { role: 'user', content: input.keyword },
         ],
-        responseFormat: { type: 'json_object' },
+        responseFormat: outlineJsonSchema,
         temperature: 0.7,
-        maxTokens: 2000,
+        maxTokens: 4000,
       });
 
-      const outline = JSON.parse(result.content) as IArticleOutline;
+      if (result.finishReason === 'length') {
+        console.warn(
+          `[ArticleGeneration] Outline response truncated (finish_reason=length). ` +
+            `tokens=${result.usage.totalTokens} prompt_approx=${result.usage.promptTokens} ` +
+            `completion_approx=${result.usage.completionTokens}. ` +
+            `Raw content (first 300): ${result.content.substring(0, 300)}`
+        );
+        throw new Error('Outline response truncated by token limit (finish_reason=length)');
+      }
+
+      const outline = this.parseOutlineJson(result.content);
       return { data: outline, usage: result.usage };
-    } catch (_error) {
-      // Retry with stricter prompt if JSON parsing fails
-      console.log('[ArticleGeneration] Outline generation failed, retrying with stricter prompt');
+    } catch (firstError) {
+      // Retry with stricter (shorter) prompt — keeps the same generous token budget
+      console.log(
+        `[ArticleGeneration] Outline generation failed (${firstError instanceof Error ? firstError.message : firstError}), retrying with stricter prompt`
+      );
 
       const retryResult = await this.openRouter.chatCompletionWithRetry({
         model,
@@ -439,13 +482,41 @@ export class ArticleGenerationService {
           { role: 'system', content: getOutlineRetryPrompt(input.keyword) },
           { role: 'user', content: input.keyword },
         ],
-        responseFormat: { type: 'json_object' },
+        responseFormat: outlineJsonSchema,
         temperature: 0.5,
-        maxTokens: 1500,
+        maxTokens: 4000,
       });
 
-      const outline = JSON.parse(retryResult.content) as IArticleOutline;
+      if (retryResult.finishReason === 'length') {
+        console.error(
+          `[ArticleGeneration] Outline RETRY also truncated (finish_reason=length). ` +
+            `tokens=${retryResult.usage.totalTokens}. ` +
+            `Raw content (first 300): ${retryResult.content.substring(0, 300)}`
+        );
+        throw new Error('Outline retry also truncated by token limit (finish_reason=length)');
+      }
+
+      const outline = this.parseOutlineJson(retryResult.content);
       return { data: outline, usage: retryResult.usage };
+    }
+  }
+
+  /**
+   * Parse outline JSON from a model response, stripping markdown code fences if present.
+   * Logs the raw content on failure to help diagnose model output issues.
+   */
+  private parseOutlineJson(raw: string): IArticleOutline {
+    // Strip markdown code fences: ```json\n...\n``` or ```\n...\n```
+    const stripped = raw.replace(/^```(?:json)?\s*\n?/i, '').replace(/\n?```\s*$/i, '').trim();
+    try {
+      return JSON.parse(stripped) as IArticleOutline;
+    } catch (err) {
+      console.error(
+        `[ArticleGeneration] JSON parse failed for outline. ` +
+          `Error: ${err instanceof Error ? err.message : err}. ` +
+          `Raw content (first 500 chars): ${raw.substring(0, 500)}`
+      );
+      throw err;
     }
   }
 
@@ -483,7 +554,7 @@ export class ArticleGenerationService {
       ],
       responseFormat: { type: 'text' },
       temperature: isRetry ? 0.6 : 0.8, // Lower temperature for more consistent output on retry
-      maxTokens: isRetry ? 6000 : 4000, // Higher max tokens for retry to allow longer completion
+      maxTokens: isRetry ? 16000 : 12000, // Generous limits: ~9k-12k words + prompt overhead
     });
 
     return { content: result.content, usage: result.usage, finishReason: result.finishReason };
@@ -669,17 +740,24 @@ export class ArticleGenerationService {
 
     // Refund exact amount that was charged (read from credits_used column)
     // This prevents credit loss or minting if charge/refund formulas diverge
-    await this.supabase.rpc('add_purchased_credits', {
-      p_user_id: userId,
-      p_amount: creditsToRefund,
-      p_reference_id: articleId,
-      p_description: `Refund: generation failed - ${formattedErrorMessage}`,
+    const { error: refundError } = await this.supabase.rpc('add_purchased_credits', {
+      target_user_id: userId,
+      amount: creditsToRefund,
+      ref_id: articleId,
+      description: `Refund: generation failed - ${formattedErrorMessage}`,
     });
 
-    console.log(
-      `[ArticleGeneration] ${creditsToRefund} credits refunded for failed article ${articleId}` +
-        ` [stage=${parsedError.stage}, provider=${parsedError.provider}, retryable=${parsedError.isRetryable}]`
-    );
+    if (refundError) {
+      console.error(
+        `[ArticleGeneration] CRITICAL: Failed to refund ${creditsToRefund} credits for article ${articleId}:`,
+        refundError
+      );
+    } else {
+      console.log(
+        `[ArticleGeneration] ${creditsToRefund} credits refunded for failed article ${articleId}` +
+          ` [stage=${parsedError.stage}, provider=${parsedError.provider}, retryable=${parsedError.isRetryable}]`
+      );
+    }
 
     // Log structured failure metrics for monitoring
     await this.logFailureMetrics(articleId, parsedError);
@@ -741,16 +819,23 @@ export class ArticleGenerationService {
 
     // Refund exact amount that was charged (read from credits_used column)
     // This prevents credit loss or minting if charge/refund formulas diverge
-    await this.supabase.rpc('add_purchased_credits', {
-      p_user_id: userId,
-      p_amount: creditsToRefund,
-      p_reference_id: articleId,
-      p_description: `Refund: quality gate failed after retry - ${qualityResult.failureReason}`,
+    const { error: refundError } = await this.supabase.rpc('add_purchased_credits', {
+      target_user_id: userId,
+      amount: creditsToRefund,
+      ref_id: articleId,
+      description: `Refund: quality gate failed after retry - ${qualityResult.failureReason}`,
     });
 
-    console.log(
-      `[ArticleGeneration] ${creditsToRefund} credits refunded for quality gate failure on article ${articleId}`
-    );
+    if (refundError) {
+      console.error(
+        `[ArticleGeneration] CRITICAL: Failed to refund ${creditsToRefund} credits for quality gate failure on article ${articleId}:`,
+        refundError
+      );
+    } else {
+      console.log(
+        `[ArticleGeneration] ${creditsToRefund} credits refunded for quality gate failure on article ${articleId}`
+      );
+    }
 
     // Log structured failure metrics
     await this.logFailureMetrics(articleId, parsedError);

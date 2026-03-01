@@ -56,7 +56,17 @@ export interface IChatCompletionParams {
   /** Sampling temperature (0-2, optional) */
   temperature?: number;
   /** Response format (optional) */
-  responseFormat?: { type: 'json_object' } | { type: 'text' };
+  responseFormat?:
+    | { type: 'json_object' }
+    | { type: 'text' }
+    | {
+        type: 'json_schema';
+        json_schema: {
+          name: string;
+          strict: boolean;
+          schema: Record<string, unknown>;
+        };
+      };
 }
 
 /**
@@ -228,10 +238,20 @@ export class OpenRouterService {
 
     const content = data.choices[0].message.content;
 
+    const finishReason = data.choices[0].finish_reason;
     console.log(
-      '[OpenRouter] Chat completion response received, tokens used:',
-      data.usage?.total_tokens || 'N/A'
+      `[OpenRouter] Chat completion response received: finish_reason=${finishReason} ` +
+        `tokens=total:${data.usage?.total_tokens ?? 'N/A'} ` +
+        `prompt:${data.usage?.prompt_tokens ?? 'N/A'} ` +
+        `completion:${data.usage?.completion_tokens ?? 'N/A'}`
     );
+
+    if (finishReason === 'length') {
+      console.warn(
+        `[OpenRouter] Response truncated by max_tokens limit. ` +
+          `completion_tokens=${data.usage?.completion_tokens ?? 'N/A'}`
+      );
+    }
 
     return {
       content,
@@ -241,7 +261,7 @@ export class OpenRouterService {
         completionTokens: data.usage?.completion_tokens || 0,
         totalTokens: data.usage?.total_tokens || 0,
       },
-      finishReason: data.choices[0].finish_reason,
+      finishReason,
     };
   }
 

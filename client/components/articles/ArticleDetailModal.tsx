@@ -17,6 +17,7 @@ import {
   Check,
   Image as ImageIcon,
   AlertCircle,
+  Zap,
 } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import MDEditor from '@uiw/react-md-editor';
@@ -113,6 +114,7 @@ export function ArticleDetailModal({
   const [isSaving, setIsSaving] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [isRegenerating, setIsRegenerating] = useState(false);
+  const [isGeneratingNow, setIsGeneratingNow] = useState(false);
   const [isApproving, setIsApproving] = useState(false);
   const [isRejecting, setIsRejecting] = useState(false);
   const [rejectionReason, setRejectionReason] = useState('');
@@ -276,6 +278,35 @@ export function ArticleDetailModal({
       setError(err instanceof Error ? err.message : 'Failed to regenerate');
     } finally {
       setIsRegenerating(false);
+    }
+  }, [currentArticle, onClose, onUpdate]);
+
+  const handleGenerateNow = useCallback(async () => {
+    if (!currentArticle) return;
+
+    setIsGeneratingNow(true);
+    setError(null);
+
+    try {
+      const accessToken = await getAccessToken();
+      const response = await fetch(`/api/articles/${currentArticle.id}/generate-now`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.error?.message || 'Failed to queue article for generation');
+      }
+
+      onClose();
+      onUpdate?.(currentArticle);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to generate');
+    } finally {
+      setIsGeneratingNow(false);
     }
   }, [currentArticle, onClose, onUpdate]);
 
@@ -578,6 +609,28 @@ export function ArticleDetailModal({
                 </>
               )}
 
+            {/* Generate Now button (for planned articles) */}
+            {!isEditing && currentArticle.status === 'planned' && (
+              <DashboardButton
+                data-testid="generate-now-button"
+                variant="primary"
+                onClick={handleGenerateNow}
+                disabled={isGeneratingNow}
+              >
+                {isGeneratingNow ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    {t('articles.detailModal.generatingNow')}
+                  </>
+                ) : (
+                  <>
+                    <Zap className="w-4 h-4 mr-2" />
+                    {t('articles.detailModal.generateNow')}
+                  </>
+                )}
+              </DashboardButton>
+            )}
+
             {/* Regenerate button (for retryable failure states) */}
             {!isEditing &&
               (currentArticle.status === 'failed' ||
@@ -603,7 +656,7 @@ export function ArticleDetailModal({
                   handleDelete();
                 }
               }}
-              disabled={isSaving || isDeleting || isRegenerating || isApproving || isRejecting}
+              disabled={isSaving || isDeleting || isRegenerating || isApproving || isRejecting || isGeneratingNow}
               className="text-red-400 hover:text-red-300"
             >
               <Trash2 className="w-4 h-4 mr-2" />
@@ -700,7 +753,7 @@ const STATUS_STYLES: Record<string, string> = {
   draft: 'bg-blue-500/10 text-blue-400 border-blue-500/20',
   qa_passed: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
   qa_failed: 'bg-orange-500/10 text-orange-400 border-orange-500/20',
-  generating: 'bg-amber-500/10 text-amber-400 border-amber-500/20',
+  generating: 'bg-sky-500/10 text-sky-400 border-sky-500/20',
   queued: 'bg-surface-light text-muted border-border',
   reviewed: 'bg-purple-500/10 text-purple-400 border-purple-500/20',
   approved: 'bg-green-500/10 text-green-400 border-green-500/20',

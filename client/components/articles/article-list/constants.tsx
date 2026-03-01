@@ -19,7 +19,7 @@ export const ARTICLE_STATUSES: readonly (ArticleStatus | 'approved' | 'rejected'
 export const STATUS_CONFIG: Record<string, { bg: string; text: string; dot: string }> = {
   planned: { bg: 'bg-amber-500/8', text: 'text-amber-400', dot: 'bg-amber-400' },
   draft: { bg: 'bg-blue-500/8', text: 'text-blue-400', dot: 'bg-blue-400' },
-  generating: { bg: 'bg-amber-500/8', text: 'text-amber-400', dot: 'bg-amber-400' },
+  generating: { bg: 'bg-sky-500/8', text: 'text-sky-400', dot: 'bg-sky-400' },
   queued: { bg: 'bg-surface-light', text: 'text-muted', dot: 'bg-muted' },
   reviewed: { bg: 'bg-purple-500/8', text: 'text-purple-400', dot: 'bg-purple-400' },
   approved: { bg: 'bg-green-500/8', text: 'text-green-400', dot: 'bg-green-400' },

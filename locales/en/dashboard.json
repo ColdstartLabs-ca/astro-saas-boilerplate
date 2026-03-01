@@ -409,6 +409,8 @@
       "saving": "Saving...",
       "delete": "Delete",
       "deleting": "Deleting...",
+      "generateNow": "Generate Now",
+      "generatingNow": "Generating...",
       "regenerate": "Regenerate",
       "regenerating": "Regenerating...",
       "viewLive": "View Live",

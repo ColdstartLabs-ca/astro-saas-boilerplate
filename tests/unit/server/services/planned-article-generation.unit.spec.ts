@@ -79,6 +79,23 @@ function mockSingleArticleQuery(article: unknown, error: unknown = null) {
   };
 }
 
+type FromTableMock =
+  | ReturnType<typeof mockPlannedArticlesQuery>
+  | ReturnType<typeof mockCampaignQuery>
+  | ReturnType<typeof mockSingleArticleQuery>;
+
+function mockFromByTable(tables: Record<string, FromTableMock>) {
+  const fromMock = vi.fn((table: string) => {
+    const mock = tables[table];
+    if (!mock) {
+      throw new Error(`Unexpected table in test: ${table}`);
+    }
+    return mock as never;
+  });
+  vi.mocked(supabaseAdmin.from).mockImplementation(fromMock as never);
+  return fromMock;
+}
+
 describe('PlannedArticleGenerationService', () => {
   let service: PlannedArticleGenerationService;
 
@@ -89,7 +106,7 @@ describe('PlannedArticleGenerationService', () => {
 
   describe('processPlannedArticles', () => {
     it('returns zero counts when no planned articles are due', async () => {
-      vi.mocked(supabaseAdmin.from).mockReturnValue(mockPlannedArticlesQuery([]) as never);
+      mockFromByTable({ articles: mockPlannedArticlesQuery([]) });
 
       const result = await service.processPlannedArticles();
 
@@ -98,9 +115,7 @@ describe('PlannedArticleGenerationService', () => {
     });
 
     it('throws when planned articles query fails', async () => {
-      vi.mocked(supabaseAdmin.from).mockReturnValue(
-        mockPlannedArticlesQuery(null, { message: 'Connection timeout' }) as never
-      );
+      mockFromByTable({ articles: mockPlannedArticlesQuery(null, { message: 'Connection timeout' }) });
 
       await expect(service.processPlannedArticles()).rejects.toThrow(
         'Failed to fetch planned articles: Connection timeout'
@@ -109,7 +124,10 @@ describe('PlannedArticleGenerationService', () => {
 
     it('promotes and generates when RPC promotion succeeds', async () => {
       const article = makePlannedArticle({ ai_model_used: 'pro' });
-      vi.mocked(supabaseAdmin.from).mockReturnValue(mockPlannedArticlesQuery([article]) as never);
+      mockFromByTable({
+        articles: mockPlannedArticlesQuery([article]),
+        campaigns: mockCampaignQuery({ ai_model: 'pro', image_preset: null }),
+      });
       vi.mocked(supabaseAdmin.rpc).mockResolvedValue({ data: [{ article_id: ARTICLE_ID }], error: null } as never);
       vi.mocked(articleGenerationService.generateArticle).mockResolvedValue(undefined);
 
@@ -136,7 +154,10 @@ describe('PlannedArticleGenerationService', () => {
 
     it('counts insufficient credits as skipped', async () => {
       const article = makePlannedArticle();
-      vi.mocked(supabaseAdmin.from).mockReturnValue(mockPlannedArticlesQuery([article]) as never);
+      mockFromByTable({
+        articles: mockPlannedArticlesQuery([article]),
+        campaigns: mockCampaignQuery({ ai_model: 'pro', image_preset: null }),
+      });
       vi.mocked(supabaseAdmin.rpc).mockResolvedValue({
         data: null,
         error: { message: 'Insufficient credits. Required: 2, Available: 0' },
@@ -150,7 +171,10 @@ describe('PlannedArticleGenerationService', () => {
 
     it('skips silently when article was already promoted by another worker', async () => {
       const article = makePlannedArticle();
-      vi.mocked(supabaseAdmin.from).mockReturnValue(mockPlannedArticlesQuery([article]) as never);
+      mockFromByTable({
+        articles: mockPlannedArticlesQuery([article]),
+        campaigns: mockCampaignQuery({ ai_model: 'pro', image_preset: null }),
+      });
       vi.mocked(supabaseAdmin.rpc).mockResolvedValue({ data: [], error: null } as never);
 
       const result = await service.processPlannedArticles();
@@ -161,14 +185,10 @@ describe('PlannedArticleGenerationService', () => {
 
     it('resolves campaign model when ai_model_used is missing', async () => {
       const article = makePlannedArticle({ ai_model_used: null, image_preset: 'balanced' });
-      const fromMock = vi.fn();
-      fromMock.mockReturnValueOnce(mockPlannedArticlesQuery([article]) as never);
-      fromMock.mockReturnValueOnce(
-        mockCampaignQuery({ ai_model: 'balanced', image_preset: 'balanced' }) as never
-      );
-      fromMock.mockReturnValueOnce(mockCampaignQuery({ ai_model: 'balanced' }) as never);
-
-      vi.mocked(supabaseAdmin.from).mockImplementation(fromMock as never);
+      mockFromByTable({
+        articles: mockPlannedArticlesQuery([article]),
+        campaigns: mockCampaignQuery({ ai_model: 'balanced', image_preset: 'balanced' }),
+      });
       vi.mocked(supabaseAdmin.rpc).mockResolvedValue({ data: [{ article_id: ARTICLE_ID }], error: null } as never);
       vi.mocked(articleGenerationService.generateArticle).mockResolvedValue(undefined);
 
@@ -181,13 +201,41 @@ describe('PlannedArticleGenerationService', () => {
       );
     });
 
+    it('uses campaign image preset when planned article has none', async () => {
+      const article = makePlannedArticle({ ai_model_used: null, image_preset: null });
+      mockFromByTable({
+        articles: mockPlannedArticlesQuery([article]),
+        campaigns: mockCampaignQuery({ ai_model: 'balanced', image_preset: 'balanced' }),
+      });
+      vi.mocked(supabaseAdmin.rpc).mockResolvedValue({ data: [{ article_id: ARTICLE_ID }], error: null } as never);
+      vi.mocked(articleGenerationService.generateArticle).mockResolvedValue(undefined);
+
+      await service.processPlannedArticles();
+
+      expect(supabaseAdmin.rpc).toHaveBeenCalledWith('promote_planned_article_with_credits', {
+        p_article_id: ARTICLE_ID,
+        p_user_id: USER_ID,
+        p_credits_needed: 2,
+        p_description: 'Planned article auto-generation: best seo tips with balanced images',
+      });
+      expect(articleGenerationService.generateArticle).toHaveBeenCalledWith(
+        ARTICLE_ID,
+        USER_ID,
+        expect.objectContaining({
+          model: 'balanced',
+          imagePreset: 'balanced',
+        })
+      );
+    });
+
     it('continues processing other articles when one promotion fails unexpectedly', async () => {
       const article1 = makePlannedArticle({ id: 'article-1', primary_keyword: 'kw1' });
       const article2 = makePlannedArticle({ id: 'article-2', primary_keyword: 'kw2' });
 
-      vi.mocked(supabaseAdmin.from).mockReturnValue(
-        mockPlannedArticlesQuery([article1, article2]) as never
-      );
+      mockFromByTable({
+        articles: mockPlannedArticlesQuery([article1, article2]),
+        campaigns: mockCampaignQuery({ ai_model: 'pro', image_preset: null }),
+      });
 
       vi.mocked(supabaseAdmin.rpc)
         .mockResolvedValueOnce({ data: null, error: { message: 'DB unavailable' } } as never)
@@ -204,9 +252,7 @@ describe('PlannedArticleGenerationService', () => {
 
   describe('generateSingleArticle', () => {
     it('throws when article is not found or not owned', async () => {
-      vi.mocked(supabaseAdmin.from).mockReturnValue(
-        mockSingleArticleQuery(null, { message: 'Not found' }) as never
-      );
+      mockFromByTable({ articles: mockSingleArticleQuery(null, { message: 'Not found' }) });
 
       await expect(service.generateSingleArticle(ARTICLE_ID, USER_ID)).rejects.toThrow(
         'Article not found or access denied'
@@ -215,7 +261,7 @@ describe('PlannedArticleGenerationService', () => {
 
     it('throws when article is not in planned status', async () => {
       const article = makePlannedArticle({ status: 'queued' });
-      vi.mocked(supabaseAdmin.from).mockReturnValue(mockSingleArticleQuery(article) as never);
+      mockFromByTable({ articles: mockSingleArticleQuery(article) });
 
       await expect(service.generateSingleArticle(ARTICLE_ID, USER_ID)).rejects.toThrow(
         'Article is not in planned status (current: queued)'
@@ -224,7 +270,10 @@ describe('PlannedArticleGenerationService', () => {
 
     it('throws when RPC reports insufficient credits', async () => {
       const article = makePlannedArticle({ status: 'planned', ai_model_used: 'pro' });
-      vi.mocked(supabaseAdmin.from).mockReturnValue(mockSingleArticleQuery(article) as never);
+      mockFromByTable({
+        articles: mockSingleArticleQuery(article),
+        campaigns: mockCampaignQuery({ ai_model: 'pro', image_preset: null }),
+      });
       vi.mocked(supabaseAdmin.rpc).mockResolvedValue({
         data: null,
         error: { message: 'Insufficient credits. Required: 2, Available: 0' },
@@ -237,7 +286,10 @@ describe('PlannedArticleGenerationService', () => {
 
     it('throws when article was already promoted by another process', async () => {
       const article = makePlannedArticle({ status: 'planned', ai_model_used: 'pro' });
-      vi.mocked(supabaseAdmin.from).mockReturnValue(mockSingleArticleQuery(article) as never);
+      mockFromByTable({
+        articles: mockSingleArticleQuery(article),
+        campaigns: mockCampaignQuery({ ai_model: 'pro', image_preset: null }),
+      });
       vi.mocked(supabaseAdmin.rpc).mockResolvedValue({ data: [], error: null } as never);
 
       await expect(service.generateSingleArticle(ARTICLE_ID, USER_ID)).rejects.toThrow(
@@ -247,7 +299,10 @@ describe('PlannedArticleGenerationService', () => {
 
     it('promotes and generates article successfully', async () => {
       const article = makePlannedArticle({ status: 'planned', ai_model_used: 'pro' });
-      vi.mocked(supabaseAdmin.from).mockReturnValue(mockSingleArticleQuery(article) as never);
+      mockFromByTable({
+        articles: mockSingleArticleQuery(article),
+        campaigns: mockCampaignQuery({ ai_model: 'pro', image_preset: null }),
+      });
       vi.mocked(supabaseAdmin.rpc).mockResolvedValue({ data: [{ article_id: ARTICLE_ID }], error: null } as never);
       vi.mocked(articleGenerationService.generateArticle).mockResolvedValue(undefined);
 
@@ -264,6 +319,28 @@ describe('PlannedArticleGenerationService', () => {
         ARTICLE_ID,
         USER_ID,
         expect.objectContaining({ keyword: 'best seo tips', model: 'pro' })
+      );
+    });
+
+    it('falls back to campaign image preset when article image preset is missing', async () => {
+      const article = makePlannedArticle({ status: 'planned', ai_model_used: null, image_preset: null });
+      mockFromByTable({
+        articles: mockSingleArticleQuery(article),
+        campaigns: mockCampaignQuery({ ai_model: 'balanced', image_preset: 'balanced' }),
+      });
+      vi.mocked(supabaseAdmin.rpc).mockResolvedValue({ data: [{ article_id: ARTICLE_ID }], error: null } as never);
+      vi.mocked(articleGenerationService.generateArticle).mockResolvedValue(undefined);
+
+      const result = await service.generateSingleArticle(ARTICLE_ID, USER_ID);
+
+      expect(result).toEqual({ queued: true, creditsDeducted: 2 });
+      expect(articleGenerationService.generateArticle).toHaveBeenCalledWith(
+        ARTICLE_ID,
+        USER_ID,
+        expect.objectContaining({
+          model: 'balanced',
+          imagePreset: 'balanced',
+        })
       );
     });
   });

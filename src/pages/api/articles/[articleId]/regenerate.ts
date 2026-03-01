@@ -15,7 +15,13 @@ import { calculateArticleCreditCost } from '@shared/config/credits.config';
 import type { IGenerateArticleInput, ArticleStatus } from '@shared/types/article.types';
 
 // Valid statuses for regeneration
-const REGENERATABLE_STATUSES: ArticleStatus[] = ['failed', 'failed_quality', 'rejected'];
+const REGENERATABLE_STATUSES: ArticleStatus[] = [
+  'failed',
+  'failed_quality',
+  'failed_timeout',
+  'qa_failed',
+  'rejected',
+];
 
 export const POST = withAuth(async (userId, { params, locals }) => {
   const { articleId } = params;
@@ -64,7 +70,7 @@ export const POST = withAuth(async (userId, { params, locals }) => {
   if (!REGENERATABLE_STATUSES.includes(article.status as ArticleStatus)) {
     return errorResponse(
       'VALIDATION_ERROR',
-      `Article cannot be regenerated. Current status: ${article.status}. Only failed, failed_quality, or rejected articles can be regenerated.`,
+      `Article cannot be regenerated. Current status: ${article.status}. Only failed, failed_quality, failed_timeout, qa_failed, or rejected articles can be regenerated.`,
       400
     );
   }

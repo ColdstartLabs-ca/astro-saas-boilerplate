@@ -425,11 +425,14 @@ export class OnboardingPage extends BasePage {
   }
 
   /**
-   * Clicks back button (accepts the window.confirm dialog that appears)
+   * Clicks back button and confirms the React ConfirmDialog that appears
    */
   async clickBack(): Promise<void> {
-    this.page.once('dialog', dialog => void dialog.accept());
     await this.backButton.click();
+    // The wizard shows a React ConfirmDialog — click "Go Back" to confirm
+    const goBackButton = this.page.getByRole('button', { name: /go back/i });
+    await expect(goBackButton).toBeVisible({ timeout: 3000 });
+    await goBackButton.click();
   }
 
   /**

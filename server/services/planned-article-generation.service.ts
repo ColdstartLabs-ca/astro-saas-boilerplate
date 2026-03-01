@@ -43,6 +43,16 @@ interface IPlannedArticle {
   image_preset: string | null;
 }
 
+interface ICampaignGenerationSettings {
+  ai_model: string | null;
+  image_preset: string | null;
+}
+
+interface IResolvedGenerationSettings {
+  model: string;
+  imagePreset: string | null;
+}
+
 export class PlannedArticleGenerationService {
   /**
    * Process planned articles that are due for generation within the lead time window.
@@ -88,11 +98,12 @@ export class PlannedArticleGenerationService {
 
     for (const article of articles as IPlannedArticle[]) {
       try {
-        // Determine credit cost: use campaign's ai_model + image_preset if available
-        const creditCost = await this.resolveCreditCost(article);
+        const campaignSettings = await this.fetchCampaignGenerationSettings(article.campaign_id);
+        const generationSettings = this.resolveGenerationSettings(article, campaignSettings);
+        const creditCost = this.resolveCreditCost(article, campaignSettings);
         const description =
           `Planned article auto-generation: ${article.primary_keyword}` +
-          (article.image_preset ? ` with ${article.image_preset} images` : '');
+          (generationSettings.imagePreset ? ` with ${generationSettings.imagePreset} images` : '');
         const promotion = await this.promotePlannedArticleWithCredits({
           articleId: article.id,
           userId: article.user_id,
@@ -110,16 +121,13 @@ export class PlannedArticleGenerationService {
           continue;
         }
 
-        // Resolve the model to use for generation
-        const model = await this.resolveGenerationModel(article);
-
         // Trigger article generation (synchronous within cron — cron IS the background process)
         await articleGenerationService.generateArticle(article.id, article.user_id, {
           keyword: article.primary_keyword,
           projectId: article.project_id ?? '',
           campaignId: article.campaign_id ?? '',
-          model,
-          imagePreset: article.image_preset ?? undefined,
+          model: generationSettings.model,
+          imagePreset: generationSettings.imagePreset ?? undefined,
         });
 
         result.queued++;
@@ -141,27 +149,19 @@ export class PlannedArticleGenerationService {
    * Resolve credit cost for an article.
    * Prefers campaign ai_model + image_preset settings; falls back to 1 credit.
    */
-  private async resolveCreditCost(article: IPlannedArticle): Promise<number> {
-    // If article already has a model stored, use it directly
-    if (article.ai_model_used) {
-      return calculateArticleCreditCost(article.ai_model_used, article.image_preset);
+  private resolveCreditCost(
+    article: IPlannedArticle,
+    campaignSettings: ICampaignGenerationSettings | null
+  ): number {
+    const writerPreset = article.ai_model_used ?? campaignSettings?.ai_model ?? null;
+    const imagePreset = article.image_preset ?? campaignSettings?.image_preset ?? null;
+
+    // If nothing is configured, preserve historical minimum cost fallback.
+    if (!writerPreset && !imagePreset) {
+      return 1;
     }
 
-    // Otherwise look up campaign settings
-    if (article.campaign_id) {
-      const { data: campaign } = await supabaseAdmin
-        .from('campaigns')
-        .select('ai_model, image_preset')
-        .eq('id', article.campaign_id)
-        .single();
-
-      if (campaign) {
-        return calculateArticleCreditCost(campaign.ai_model, campaign.image_preset);
-      }
-    }
-
-    // Default to minimum cost (1 credit)
-    return 1;
+    return calculateArticleCreditCost(writerPreset, imagePreset);
   }
 
   /**
@@ -181,6 +181,7 @@ export class PlannedArticleGenerationService {
     creditsDeducted: number;
     article: IPlannedArticle;
     model: string;
+    imagePreset: string | null;
   }> {
     const { data: article, error: fetchError } = await supabaseAdmin
       .from('articles')
@@ -200,7 +201,8 @@ export class PlannedArticleGenerationService {
     }
 
     const plannedArticle: IPlannedArticle = article as IPlannedArticle;
-    const creditCost = await this.resolveCreditCost(plannedArticle);
+    const campaignSettings = await this.fetchCampaignGenerationSettings(plannedArticle.campaign_id);
+    const creditCost = this.resolveCreditCost(plannedArticle, campaignSettings);
     const promotion = await this.promotePlannedArticleWithCredits({
       articleId,
       userId,
@@ -216,9 +218,14 @@ export class PlannedArticleGenerationService {
       throw new Error('Article is not in planned status (current: queued)');
     }
 
-    const model = await this.resolveGenerationModel(plannedArticle);
+    const generationSettings = this.resolveGenerationSettings(plannedArticle, campaignSettings);
 
-    return { creditsDeducted: creditCost, article: plannedArticle, model };
+    return {
+      creditsDeducted: creditCost,
+      article: plannedArticle,
+      model: generationSettings.model,
+      imagePreset: generationSettings.imagePreset,
+    };
   }
 
   /**
@@ -233,7 +240,7 @@ export class PlannedArticleGenerationService {
     articleId: string,
     userId: string
   ): Promise<{ queued: true; creditsDeducted: number }> {
-    const { creditsDeducted, article: plannedArticle, model } = await this.promoteArticle(
+    const { creditsDeducted, article: plannedArticle, model, imagePreset } = await this.promoteArticle(
       articleId,
       userId
     );
@@ -243,34 +250,36 @@ export class PlannedArticleGenerationService {
       projectId: plannedArticle.project_id ?? '',
       campaignId: plannedArticle.campaign_id ?? '',
       model,
-      imagePreset: plannedArticle.image_preset ?? undefined,
+      imagePreset: imagePreset ?? undefined,
     });
 
     return { queued: true, creditsDeducted };
   }
 
-  /**
-   * Resolve the AI model to use for generation.
-   * Uses article's stored model, then campaign model, then falls back to 'pro'.
-   */
-  private async resolveGenerationModel(article: IPlannedArticle): Promise<string> {
-    if (article.ai_model_used) {
-      return article.ai_model_used;
+  private resolveGenerationSettings(
+    article: IPlannedArticle,
+    campaignSettings: ICampaignGenerationSettings | null
+  ): IResolvedGenerationSettings {
+    return {
+      model: article.ai_model_used ?? campaignSettings?.ai_model ?? 'balanced',
+      imagePreset: article.image_preset ?? campaignSettings?.image_preset ?? null,
+    };
+  }
+
+  private async fetchCampaignGenerationSettings(
+    campaignId: string | null
+  ): Promise<ICampaignGenerationSettings | null> {
+    if (!campaignId) {
+      return null;
     }
 
-    if (article.campaign_id) {
-      const { data: campaign } = await supabaseAdmin
-        .from('campaigns')
-        .select('ai_model')
-        .eq('id', article.campaign_id)
-        .single();
+    const { data: campaign } = await supabaseAdmin
+      .from('campaigns')
+      .select('ai_model, image_preset')
+      .eq('id', campaignId)
+      .single();
 
-      if (campaign?.ai_model) {
-        return campaign.ai_model;
-      }
-    }
-
-    return 'pro';
+    return campaign ?? null;
   }
 
   /**
