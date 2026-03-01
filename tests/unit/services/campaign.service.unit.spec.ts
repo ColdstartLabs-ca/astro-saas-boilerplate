@@ -146,10 +146,10 @@ describe('CampaignService', () => {
             }),
           } as unknown;
         } else {
-          // Third call: get completed keywords count
+          // Third call: get generated articles count
           return {
             select: vi.fn().mockReturnValue({
-              eq: vi.fn().mockReturnValue({
+              in: vi.fn().mockReturnValue({
                 in: vi.fn().mockResolvedValue({
                   data: [],
                   error: null,
@@ -168,7 +168,7 @@ describe('CampaignService', () => {
         name: 'Test Campaign',
         keyword_count: 5,
         article_count: 2,
-        completed_count: 0, // No generated keywords
+        completed_count: 0, // No generated articles
       });
     });
 
@@ -190,7 +190,7 @@ describe('CampaignService', () => {
       );
     });
 
-    it('should calculate completed_count from generated keywords', async () => {
+    it('should calculate completed_count from generated articles', async () => {
       const { supabaseAdmin } = await import('@server/supabase/supabaseAdmin');
 
       let callCount = 0;
@@ -228,10 +228,10 @@ describe('CampaignService', () => {
             }),
           } as unknown;
         } else {
-          // Get completed keywords count
+          // Get generated articles count
           return {
             select: vi.fn().mockReturnValue({
-              eq: vi.fn().mockReturnValue({
+              in: vi.fn().mockReturnValue({
                 in: vi.fn().mockResolvedValue({
                   data: [
                     { campaign_id: mockCampaignId },
@@ -249,10 +249,10 @@ describe('CampaignService', () => {
       const campaigns = await campaignService.listByProject(mockUserId, mockProjectId);
 
       expect(campaigns).toHaveLength(1);
-      expect(campaigns[0].completed_count).toBe(3); // 3 generated keywords
+      expect(campaigns[0].completed_count).toBe(3); // 3 generated articles
     });
 
-    it('should return completed_count of 0 when no generated keywords exist', async () => {
+    it('should return completed_count of 0 when no generated articles exist', async () => {
       const { supabaseAdmin } = await import('@server/supabase/supabaseAdmin');
 
       let callCount = 0;
@@ -282,10 +282,10 @@ describe('CampaignService', () => {
             }),
           } as unknown;
         } else {
-          // No generated keywords
+          // No generated articles
           return {
             select: vi.fn().mockReturnValue({
-              eq: vi.fn().mockReturnValue({
+              in: vi.fn().mockReturnValue({
                 in: vi.fn().mockResolvedValue({
                   data: [],
                   error: null,

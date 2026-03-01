@@ -15,14 +15,17 @@ interface IPublishNowResult {
 interface IUseArticleActionsResult {
   reschedule: (articleId: string, newDate: string) => Promise<void>;
   publishNow: (articleId: string) => Promise<IPublishNowResult | null>;
+  fixQAIssues: (articleId: string) => Promise<void>;
   isRescheduling: boolean;
   isPublishing: boolean;
+  isFixingQA: boolean;
   error: string | null;
 }
 
 export function useArticleActions({ onSuccess }: IArticleActionsOptions = {}): IUseArticleActionsResult {
   const [isRescheduling, setIsRescheduling] = useState(false);
   const [isPublishing, setIsPublishing] = useState(false);
+  const [isFixingQA, setIsFixingQA] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const { request } = useApiRequest();
 
@@ -60,5 +63,19 @@ export function useArticleActions({ onSuccess }: IArticleActionsOptions = {}): I
     }
   }, [onSuccess, request]);
 
-  return { reschedule, publishNow, isRescheduling, isPublishing, error };
+  const fixQAIssues = useCallback(async (articleId: string): Promise<void> => {
+    setIsFixingQA(true);
+    setError(null);
+    try {
+      await request(`/api/articles/${articleId}/fix-qa`, { method: 'POST' });
+      onSuccess?.();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to fix QA issues');
+      throw err;
+    } finally {
+      setIsFixingQA(false);
+    }
+  }, [onSuccess, request]);
+
+  return { reschedule, publishNow, fixQAIssues, isRescheduling, isPublishing, isFixingQA, error };
 }

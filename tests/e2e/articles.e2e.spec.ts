@@ -557,11 +557,15 @@ test.describe('Articles E2E Tests', () => {
       await articlesPage.waitForLoadingComplete();
       await articlesPage.openArticleDetail(0);
 
-      // Set up dialog handler before clicking
-      page.once('dialog', dialog => dialog.accept());
-
-      // Click regenerate button (this triggers the confirm dialog)
+      // Click regenerate button (this shows the ConfirmDialog)
       await articlesPage.regenerateButton.click();
+
+      // Wait for ConfirmDialog and click confirm
+      const confirmButton = page.locator('[data-testid="confirm-dialog-confirm"]');
+      await confirmButton.waitFor({ state: 'visible', timeout: 5000 });
+
+      // Click confirm and immediately check for loading state
+      await confirmButton.click();
 
       // After the confirm dialog is accepted, the button should show loading state
       // The button shows "Regenerating..." text while the API call is in progress
@@ -596,11 +600,15 @@ test.describe('Articles E2E Tests', () => {
       await articlesPage.waitForLoadingComplete();
       await articlesPage.openArticleDetail(0);
 
-      // Set up dialog handler before clicking
-      page.once('dialog', dialog => dialog.accept());
-
-      // Click regenerate button (this triggers the confirm dialog)
+      // Click regenerate button (this shows the ConfirmDialog)
       await articlesPage.regenerateButton.click();
+
+      // Wait for ConfirmDialog and click confirm
+      const confirmButton = page.locator('[data-testid="confirm-dialog-confirm"]');
+      await confirmButton.waitFor({ state: 'visible', timeout: 5000 });
+
+      // Click confirm and immediately check for disabled state
+      await confirmButton.click();
 
       // After the confirm dialog is accepted, the button should be disabled during regeneration
       await expect(articlesPage.regenerateButton).toBeDisabled({ timeout: 1000 });

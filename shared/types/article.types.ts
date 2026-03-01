@@ -232,26 +232,28 @@ export interface IQAResult {
   failureReason?: string;
   /** Timestamp of check */
   checkedAt: string;
-  /** Individual check results */
-  plagiarism: {
-    passed: boolean;
-    similarityScore: number;
-    flaggedPhrases: number;
-  };
-  factConsistency: {
-    passed: boolean;
-    score: number;
-    inconsistencyCount: number;
-  };
-  readability: {
-    passed: boolean;
-    fleschKincaidGrade: number;
-    fleschReadingEase: number;
-  };
-  aiLikelihood: {
-    passed: boolean;
-    aiScore: number;
-    confidence: 'low' | 'medium' | 'high';
+  /** Individual check results (nested under results to match IQACheckResult storage format) */
+  results: {
+    plagiarism: {
+      passed: boolean;
+      similarityScore: number;
+      flaggedPhrases: number | { phrase: string; start: number; end: number }[];
+    };
+    factConsistency: {
+      passed: boolean;
+      score: number;
+      inconsistencyCount: number;
+    };
+    readability: {
+      passed: boolean;
+      fleschKincaidGrade: number;
+      fleschReadingEase: number;
+    };
+    aiLikelihood: {
+      passed: boolean;
+      aiScore: number;
+      confidence: 'low' | 'medium' | 'high';
+    };
   };
 }
 

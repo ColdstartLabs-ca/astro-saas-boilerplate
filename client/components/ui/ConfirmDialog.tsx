@@ -224,6 +224,7 @@ export function ConfirmDialog({
             {finalLabels.cancel}
           </button>
           <button
+            data-testid="confirm-dialog-confirm"
             onClick={handleConfirm}
             disabled={!canConfirm || isConfirming}
             className={`flex-1 py-2.5 text-sm font-medium rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${style.buttonClass}`}

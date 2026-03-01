@@ -817,6 +817,165 @@ Even more content...`;
     });
   });
 
+  describe('QA auto-retry with feedback (E11)', () => {
+    const mockInput: IGenerateArticleInput = {
+      keyword: 'test keyword',
+      projectId: 'test-project-id',
+      targetWordCount: 1000,
+    };
+
+    const failedQAResult = {
+      passed: false,
+      failureReason: 'AI likelihood: 90% exceeds threshold',
+      checkedAt: new Date().toISOString(),
+      results: {
+        plagiarism: {
+          passed: true,
+          similarityScore: 0,
+          flaggedPhrases: [],
+          consecutiveMatches: 0,
+        },
+        factConsistency: {
+          passed: true,
+          score: 1,
+          inconsistencyCount: 0,
+          flaggedStatements: [],
+        },
+        readability: {
+          passed: true,
+          fleschKincaidGrade: 8,
+          fleschReadingEase: 65,
+          avgSentenceLength: 12,
+          avgSyllablesPerWord: 1.4,
+          sentenceCount: 30,
+          wordCount: 700,
+        },
+        aiLikelihood: {
+          passed: false,
+          aiScore: 0.9,
+          confidence: 'high' as const,
+          detectedPatterns: ['Generic transitions: 5 occurrences', 'Repetitive sentence structure'],
+        },
+      },
+    };
+
+    it('should retry generation with QA findings when QA fails, and pass on retry', async () => {
+      mockCheckQualityGates.mockCheckQualityGates.mockReturnValue({
+        passed: true,
+        details: {
+          wordCountCheck: { passed: true, actual: 700, target: 1000, percentage: 70 },
+          headingCheck: { passed: true, h2Count: 3, required: 3 },
+          metadataCheck: { passed: true, hasTitle: true, hasMetaDescription: true, hasSlug: true },
+          completionCheck: { passed: true, finishReason: 'stop' },
+        },
+      });
+
+      const { qaService } = await import('../qa.service');
+      // First QA check: fail → triggers retry
+      (qaService.runQAChecks as any).mockResolvedValueOnce(failedQAResult);
+      // Second QA check (after retry): pass
+      (qaService.runQAChecks as any).mockResolvedValueOnce({
+        passed: true,
+        failureReason: undefined,
+        checkedAt: new Date().toISOString(),
+        results: {
+          plagiarism: { passed: true, similarityScore: 0, flaggedPhrases: [], consecutiveMatches: 0 },
+          factConsistency: { passed: true, score: 1, inconsistencyCount: 0, flaggedStatements: [] },
+          readability: {
+            passed: true,
+            fleschKincaidGrade: 8,
+            fleschReadingEase: 65,
+            avgSentenceLength: 12,
+            avgSyllablesPerWord: 1.4,
+            sentenceCount: 30,
+            wordCount: 700,
+          },
+          aiLikelihood: { passed: true, aiScore: 0.3, confidence: 'low', detectedPatterns: [] },
+        },
+      });
+
+      // Outline + article + QA retry
+      mockOpenRouter.chatCompletionWithRetry
+        .mockResolvedValueOnce({
+          content: JSON.stringify(mockOutline),
+          usage: { promptTokens: 100, completionTokens: 200, totalTokens: 300 },
+          model: 'openai/gpt-4o',
+          finishReason: 'stop',
+        })
+        .mockResolvedValueOnce({
+          content: mockArticleContent,
+          usage: { promptTokens: 50, completionTokens: 400, totalTokens: 450 },
+          model: 'openai/gpt-4o',
+          finishReason: 'stop',
+        })
+        .mockResolvedValueOnce({
+          content: mockArticleContent,
+          usage: { promptTokens: 50, completionTokens: 450, totalTokens: 500 },
+          model: 'openai/gpt-4o',
+          finishReason: 'stop',
+        });
+
+      await service.generateArticle('article-qa-retry-pass', 'user-1', mockInput);
+
+      // 3 calls: outline + article + QA retry
+      expect(mockOpenRouter.chatCompletionWithRetry).toHaveBeenCalledTimes(3);
+      // 2 QA checks: original + retry
+      expect(qaService.runQAChecks).toHaveBeenCalledTimes(2);
+    });
+
+    it('should publish as draft after exhausting all QA retries (max 2 retries = 3 checks)', async () => {
+      mockCheckQualityGates.mockCheckQualityGates.mockReturnValue({
+        passed: true,
+        details: {
+          wordCountCheck: { passed: true, actual: 700, target: 1000, percentage: 70 },
+          headingCheck: { passed: true, h2Count: 3, required: 3 },
+          metadataCheck: { passed: true, hasTitle: true, hasMetaDescription: true, hasSlug: true },
+          completionCheck: { passed: true, finishReason: 'stop' },
+        },
+      });
+
+      const { qaService } = await import('../qa.service');
+      // All 3 QA checks fail
+      (qaService.runQAChecks as any).mockResolvedValueOnce(failedQAResult);
+      (qaService.runQAChecks as any).mockResolvedValueOnce(failedQAResult);
+      (qaService.runQAChecks as any).mockResolvedValueOnce(failedQAResult);
+
+      // outline + initial article + retry 1 + retry 2
+      mockOpenRouter.chatCompletionWithRetry
+        .mockResolvedValueOnce({
+          content: JSON.stringify(mockOutline),
+          usage: { promptTokens: 100, completionTokens: 200, totalTokens: 300 },
+          model: 'openai/gpt-4o',
+          finishReason: 'stop',
+        })
+        .mockResolvedValueOnce({
+          content: mockArticleContent,
+          usage: { promptTokens: 50, completionTokens: 400, totalTokens: 450 },
+          model: 'openai/gpt-4o',
+          finishReason: 'stop',
+        })
+        .mockResolvedValueOnce({
+          content: mockArticleContent,
+          usage: { promptTokens: 50, completionTokens: 400, totalTokens: 450 },
+          model: 'openai/gpt-4o',
+          finishReason: 'stop',
+        })
+        .mockResolvedValueOnce({
+          content: mockArticleContent,
+          usage: { promptTokens: 50, completionTokens: 400, totalTokens: 450 },
+          model: 'openai/gpt-4o',
+          finishReason: 'stop',
+        });
+
+      await service.generateArticle('article-qa-retry-fail', 'user-1', mockInput);
+
+      // 4 calls: outline + initial + retry 1 + retry 2
+      expect(mockOpenRouter.chatCompletionWithRetry).toHaveBeenCalledTimes(4);
+      // 3 QA checks: initial + retry 1 + retry 2
+      expect(qaService.runQAChecks).toHaveBeenCalledTimes(3);
+    });
+  });
+
   describe('Auto-delivery gating by article status', () => {
     const mockInput: IGenerateArticleInput = {
       keyword: 'test keyword',
@@ -922,8 +1081,8 @@ Even more content...`;
       expect(mockShouldAutoDeliver).toHaveBeenCalledWith('test-campaign-id');
     });
 
-    it('should NOT trigger auto-delivery when article fails QA (qa_failed)', async () => {
-      // Quality gate passes but QA fails
+    it('should trigger auto-delivery as draft after exhausting all QA retries', async () => {
+      // Quality gate passes but QA pipeline fails all 3 attempts
       mockCheckQualityGates.mockCheckQualityGates.mockReturnValue({
         passed: true,
         details: {
@@ -934,19 +1093,43 @@ Even more content...`;
         },
       });
 
-      // QA service returns failure
-      const { qaService } = await import('../qa.service');
-      (qaService.runQAChecks as any).mockResolvedValueOnce({
+      const failedQAResult = {
         passed: false,
         failureReason: 'High AI detection score',
+        checkedAt: new Date().toISOString(),
         results: {
-          plagiarism: { passed: true, similarityScore: 0, flaggedPhrases: [] },
-          factConsistency: { passed: true, score: 1, inconsistencyCount: 0 },
-          readability: { passed: true, fleschKincaidGrade: 8, fleschReadingEase: 65 },
-          aiLikelihood: { passed: false, aiScore: 0.9, confidence: 'high' },
+          plagiarism: {
+            passed: true,
+            similarityScore: 0,
+            flaggedPhrases: [],
+            consecutiveMatches: 0,
+          },
+          factConsistency: { passed: true, score: 1, inconsistencyCount: 0, flaggedStatements: [] },
+          readability: {
+            passed: true,
+            fleschKincaidGrade: 8,
+            fleschReadingEase: 65,
+            avgSentenceLength: 12,
+            avgSyllablesPerWord: 1.4,
+            sentenceCount: 30,
+            wordCount: 700,
+          },
+          aiLikelihood: {
+            passed: false,
+            aiScore: 0.9,
+            confidence: 'high' as const,
+            detectedPatterns: ['Generic transitions: 5 occurrences'],
+          },
         },
-      });
+      };
 
+      // QA service fails all 3 attempts (initial + 2 retries)
+      const { qaService } = await import('../qa.service');
+      (qaService.runQAChecks as any).mockResolvedValueOnce(failedQAResult);
+      (qaService.runQAChecks as any).mockResolvedValueOnce(failedQAResult);
+      (qaService.runQAChecks as any).mockResolvedValueOnce(failedQAResult);
+
+      // outline + initial article + retry 1 + retry 2
       mockOpenRouter.chatCompletionWithRetry
         .mockResolvedValueOnce({
           content: JSON.stringify(mockOutline),
@@ -959,13 +1142,24 @@ Even more content...`;
           usage: { promptTokens: 50, completionTokens: 400, totalTokens: 450 },
           model: 'openai/gpt-4o',
           finishReason: 'stop',
+        })
+        .mockResolvedValueOnce({
+          content: mockArticleContent,
+          usage: { promptTokens: 50, completionTokens: 400, totalTokens: 450 },
+          model: 'openai/gpt-4o',
+          finishReason: 'stop',
+        })
+        .mockResolvedValueOnce({
+          content: mockArticleContent,
+          usage: { promptTokens: 50, completionTokens: 400, totalTokens: 450 },
+          model: 'openai/gpt-4o',
+          finishReason: 'stop',
         });
 
       await service.generateArticle('article-qa-fail', 'user-1', mockInput);
 
-      // Auto-delivery should NOT have been called
-      expect(mockShouldAutoDeliver).not.toHaveBeenCalled();
-      expect(mockDeliverArticle).not.toHaveBeenCalled();
+      // After exhausting retries, article is published as draft → auto-delivery runs
+      expect(mockShouldAutoDeliver).toHaveBeenCalledWith('test-campaign-id');
     });
 
     it('should NOT trigger auto-delivery for quality gate failures (failed_quality)', async () => {

@@ -104,20 +104,36 @@ export class CampaignLifecycleService {
     // Get campaign IDs
     const campaignIds = (data as ICampaign[]).map(c => c.id);
 
-    // Fetch completed keyword counts for all campaigns in one query
+    // Fetch generated article counts for all campaigns in one query.
+    // We count articles (not keywords) so that calendar-generated and manually-triggered
+    // articles are included, not just those from the batch campaign start flow.
+    // "Generated" means the article reached draft or beyond (excluding planning/in-progress/hard-failure states).
+    const GENERATED_ARTICLE_STATUSES = [
+      'draft',
+      'qa_checking',
+      'qa_failed',
+      'qa_passed',
+      'reviewed',
+      'approved',
+      'rejected',
+      'published',
+      'failed_quality',
+    ] as const;
     let completedCounts: Record<string, number> = {};
     if (campaignIds.length > 0) {
-      const { data: completedKeywords } = await supabaseAdmin
-        .from('keywords')
+      const { data: completedArticles } = await supabaseAdmin
+        .from('articles')
         .select('campaign_id')
-        .eq('status', 'generated')
+        .in('status', GENERATED_ARTICLE_STATUSES as unknown as string[])
         .in('campaign_id', campaignIds);
 
-      if (completedKeywords) {
-        // Count generated keywords per campaign
-        completedCounts = completedKeywords.reduce(
-          (acc, kw) => {
-            acc[kw.campaign_id] = (acc[kw.campaign_id] || 0) + 1;
+      if (completedArticles) {
+        // Count generated articles per campaign
+        completedCounts = completedArticles.reduce(
+          (acc, article) => {
+            if (article.campaign_id) {
+              acc[article.campaign_id] = (acc[article.campaign_id] || 0) + 1;
+            }
             return acc;
           },
           {} as Record<string, number>

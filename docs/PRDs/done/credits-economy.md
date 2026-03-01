@@ -3,14 +3,14 @@
 **Complexity: 4 → MEDIUM mode**
 (Touches ~6 config files, external API integration research, business logic changes)
 
-**Status:** Draft
-**Date:** 2026-02-10
+**Status:** Done
+**Date:** 2026-02-10 (updated 2026-02-28 — ultra writer changed from Opus 4.6 to Sonnet 4.6)
 
 ---
 
 ## 1. Context
 
-**Problem:** The current credit system charges a flat 1 credit per article regardless of which AI model the user selects. With the new model lineup (Gemini Flash Lite to Claude Opus 4.6 for writing, Flux Schnell to Flux 2 Max for images), the cost spread is **~60x for writers** and **~23x for images**. If a user on the cheapest plan exclusively uses "ultra" models, we hemorrhage money. We need per-model credit costs that guarantee profitability on every single generation, no matter what.
+**Problem:** The current credit system charges a flat 1 credit per article regardless of which AI model the user selects. With the new model lineup (Gemini Flash Lite to Claude Opus 4.6 for writing, Flux Schnell to Flux 2 Max for images), the cost spread is **~37x for writers** and **~23x for images**. If a user on the cheapest plan exclusively uses "ultra" models, we hemorrhage money. We need per-model credit costs that guarantee profitability on every single generation, no matter what.
 
 **Files Analyzed:**
 
@@ -28,7 +28,7 @@
 - Image generation: 0 extra credits (budget/balanced), +1 credit (pro/ultra)
 - Writer presets: budget=0, balanced=0, auto=0, ultra=+1
 - All plans assume ~$0.15 avg cost per article for margin calculations
-- No distinction between a $0.003 Gemini Flash Lite call and a $0.16 Claude Opus 4.6 call
+- No distinction between a $0.003 Gemini Flash Lite call and a $0.13 Claude Sonnet 4.6 call
 
 ---
 
@@ -50,16 +50,16 @@ Worst case (retries, quality gates): ~3,000 input + ~8,000 output tokens.
 | **Gemini 2.5 Flash Lite** | `google/gemini-2.5-flash-lite`  | $0.10               | $0.40                | **$0.0026**            | **$0.0035**          |
 | **Gemini 3 Flash**        | `google/gemini-3-flash-preview` | $0.50               | $3.00                | **$0.019**             | **$0.025**           |
 | **Gemini 3 Pro**          | `google/gemini-3-pro-preview`   | $2.00 (starting at) | $12.00 (starting at) | **$0.076**             | **$0.10**            |
-| **Claude Opus 4.6**       | `anthropic/claude-opus-4.6`     | $5.00               | $25.00               | **$0.16**              | **$0.215**           |
+| **Claude Sonnet 4.6**     | `anthropic/claude-sonnet-4-6`   | $3.00               | $15.00               | **$0.096**             | **$0.129**           |
 
 > **Calculation breakdown (each model, worst case = 3K in + 8K out):**
 >
 > - Flash Lite: 3K × $0.10/M + 8K × $0.40/M = $0.0003 + $0.0032 = $0.0035
 > - Flash 3: 3K × $0.50/M + 8K × $3.00/M = $0.0015 + $0.024 = $0.0255
 > - Pro 3: 3K × $2.00/M + 8K × $12.00/M = $0.006 + $0.096 = $0.102
-> - Opus 4.6: 3K × $5.00/M + 8K × $25.00/M = $0.015 + $0.20 = $0.215
+> - Sonnet 4.6: 3K × $3.00/M + 8K × $15.00/M = $0.009 + $0.12 = $0.129
 
-**Sources:** [OpenRouter Gemini 2.5 Flash Lite](https://openrouter.ai/google/gemini-2.5-flash-lite), [OpenRouter Gemini 3 Flash](https://openrouter.ai/google/gemini-3-flash-preview), [OpenRouter Gemini 3 Pro](https://openrouter.ai/google/gemini-3-pro-preview), [OpenRouter Claude Opus 4.6](https://openrouter.ai/anthropic/claude-opus-4.6)
+**Sources:** [OpenRouter Gemini 2.5 Flash Lite](https://openrouter.ai/google/gemini-2.5-flash-lite), [OpenRouter Gemini 3 Flash](https://openrouter.ai/google/gemini-3-flash-preview), [OpenRouter Gemini 3 Pro](https://openrouter.ai/google/gemini-3-pro-preview), [OpenRouter Claude Sonnet 4.6](https://openrouter.ai/anthropic/claude-sonnet-4-6)
 
 ### 2.2 Image Models (Replicate) — VERIFIED Feb 2026
 
@@ -94,8 +94,8 @@ Our images are 16:9 aspect ratio at ~1MP (e.g., 1333×750). Both fees apply addi
 | Balanced writer + Balanced image | $0.025      | $0.075          | **$0.10**      |
 | Pro writer + Pro image           | $0.10       | $0.165          | **$0.265**     |
 | Pro writer + Ultra image         | $0.10       | $0.21           | **$0.31**      |
-| Ultra writer + Pro image         | $0.215      | $0.165          | **$0.38**      |
-| **Ultra writer + Ultra image**   | **$0.215**  | **$0.21**       | **$0.425**     |
+| Ultra writer + Pro image         | $0.129      | $0.165          | **$0.294**     |
+| **Ultra writer + Ultra image**   | **$0.129**  | **$0.21**       | **$0.339**     |
 
 ---
 
@@ -132,7 +132,7 @@ Our images are 16:9 aspect ratio at ~1MP (e.g., 1333×750). Both fees apply addi
 | **Budget**   | Gemini 2.5 Flash Lite | $0.0035              | **1**   | $0.498       | 99.3%               | 142x           |
 | **Balanced** | Gemini 3 Flash        | $0.025               | **1**   | $0.498       | 95.0%               | 20x            |
 | **Pro**      | Gemini 3 Pro          | $0.10                | **2**   | $0.996       | 90.0%               | 10x            |
-| **Ultra**    | Claude Opus 4.6       | $0.215               | **3**   | $1.494       | 85.6%               | 7x             |
+| **Ultra**    | Claude Sonnet 4.6     | $0.129               | **3**   | $1.494       | 91.4%               | 11.6x          |
 
 #### Image Credits (additive, on top of writer credits)
 
@@ -166,21 +166,21 @@ Our images are 16:9 aspect ratio at ~1MP (e.g., 1333×750). Both fees apply addi
 
 - Credits per article: 3 (writer) + 2 (image) = **5 credits**
 - Max articles: 500 / 5 = **100 articles**
-- Cost per article: $0.215 + $0.21 = **$0.425**
-- Total cost: 100 × $0.425 = **$42.50**
+- Cost per article: $0.129 + $0.21 = **$0.339**
+- Total cost: 100 × $0.339 = **$33.90**
 - Revenue: **$249**
-- **Margin: 82.9%** ✅
-- Multiplier: 5.86x ✅
+- **Margin: 86.4%** ✅
+- Multiplier: 7.3x ✅
 
 **Scenario 2: Agency — ALL Ultra writer + Pro images (highest per-article cost)**
 
 - Credits per article: 3 + 1 = **4 credits**
 - Max articles: 500 / 4 = **125 articles**
-- Cost per article: $0.215 + $0.165 = **$0.38**
-- Total cost: 125 × $0.38 = **$47.50**
+- Cost per article: $0.129 + $0.165 = **$0.294**
+- Total cost: 125 × $0.294 = **$36.75**
 - Revenue: **$249**
-- **Margin: 80.9%** ✅
-- Multiplier: 5.24x ✅
+- **Margin: 85.2%** ✅
+- Multiplier: 6.8x ✅
 
 **Scenario 3: Agency — ALL Budget writer + Budget images (max volume)**
 
@@ -195,35 +195,35 @@ Our images are 16:9 aspect ratio at ~1MP (e.g., 1333×750). Both fees apply addi
 
 - Credits per article: **5**
 - Max articles: 50 / 5 = **10 articles**
-- Cost: 10 × $0.425 = **$4.25**
+- Cost: 10 × $0.339 = **$3.39**
 - Revenue: **$34.99**
-- **Margin: 87.9%** ✅
+- **Margin: 90.3%** ✅
 
 **Scenario 5: Large Pack — ALL Ultra writer + Pro images**
 
 - Credits per article: **4**
 - Max articles: 50 / 4 = **12 articles**
-- Cost: 12 × $0.38 = **$4.56**
+- Cost: 12 × $0.294 = **$3.53**
 - Revenue: **$34.99**
-- **Margin: 87.0%** ✅
+- **Margin: 89.9%** ✅
 
 **Scenario 6: Starter ($49, 30 credits) — ALL Ultra + Ultra**
 
 - Credits per article: **5**
 - Max articles: 30 / 5 = **6 articles**
-- Cost: 6 × $0.425 = **$2.55**
+- Cost: 6 × $0.339 = **$2.03**
 - Revenue: **$49**
-- **Margin: 94.8%** ✅
+- **Margin: 95.9%** ✅
 
-| Scenario                   | Plan                    | Models | Articles | Our Cost | Revenue   | Margin |
-| -------------------------- | ----------------------- | ------ | -------- | -------- | --------- | ------ |
-| Worst total spend          | Agency, Ultra+Ultra     | 100    | $42.50   | $249     | **82.9%** |
-| Worst per-article          | Agency, Ultra+Pro       | 125    | $47.50   | $249     | **80.9%** |
+| Scenario                   | Plan                    | Models | Articles | Our Cost | Revenue   | Margin    |
+| -------------------------- | ----------------------- | ------ | -------- | -------- | --------- | --------- |
+| Worst total spend          | Agency, Ultra+Ultra     | 100    | $33.90   | $249     | **86.4%** |
+| Worst per-article          | Agency, Ultra+Pro       | 125    | $36.75   | $249     | **85.2%** |
 | Max volume                 | Agency, Budget+Budget   | 500    | $6.50    | $249     | **97.4%** |
-| Cheapest plan, worst model | Starter, Ultra+Ultra    | 6      | $2.55    | $49      | **94.8%** |
-| Cheapest pack, worst model | Large Pack, Ultra+Ultra | 10     | $4.25    | $34.99   | **87.9%** |
+| Cheapest plan, worst model | Starter, Ultra+Ultra    | 6      | $2.03    | $49      | **95.9%** |
+| Cheapest pack, worst model | Large Pack, Ultra+Ultra | 10     | $3.39    | $34.99   | **90.3%** |
 
-**Verdict: Profitable in EVERY scenario. Minimum margin is ~81% (Agency + Ultra writer + Pro images). We never go broke.**
+**Verdict: Profitable in EVERY scenario. Minimum margin is ~85% (Agency + Ultra writer + Pro images). We never go broke.**
 
 ### 3.5 Comparison: Current vs Proposed
 
@@ -258,7 +258,7 @@ The tightest margin in the system is **Pro images (Flux 2 Pro) at 1 credit addon
 - Rename preset: `auto` → `pro` (new key, new model)
 - Update `WriterPresetKey`: `'budget' | 'balanced' | 'pro' | 'ultra'`
 - Update credit costs: budget=0, balanced=0, **pro=1** (new), **ultra=2** (was 1)
-- Update ultra default model: `anthropic/claude-sonnet-4-5` → `anthropic/claude-opus-4.6`
+- Update ultra env override: `anthropic/claude-sonnet-4-5` → `anthropic/claude-sonnet-4-6`
 - Update default models to match new env
 
 **`shared/config/image-models.config.ts`:**
@@ -325,10 +325,10 @@ Wherever both writer and image presets are selected together (NewCampaignModal, 
 
 | Metric                                      | Value                     |
 | ------------------------------------------- | ------------------------- |
-| Min margin (worst combo, worst plan)        | **~81%**                  |
-| Max cost per article (Ultra + Ultra images) | **$0.425**                |
-| Max cost per article (Ultra + Pro images)   | **$0.38**                 |
-| Ultra writer (Opus 4.6) cost alone          | **$0.215**                |
+| Min margin (worst combo, worst plan)        | **~85%**                  |
+| Max cost per article (Ultra + Ultra images) | **$0.339**                |
+| Max cost per article (Ultra + Pro images)   | **$0.294**                |
+| Ultra writer (Sonnet 4.6) cost alone        | **$0.129**                |
 | Ultra images (Flux 2 Max ×3) cost alone     | **$0.21**                 |
 | Min revenue per credit (Agency)             | **$0.498**                |
 | Budget articles per Agency plan             | **500**                   |

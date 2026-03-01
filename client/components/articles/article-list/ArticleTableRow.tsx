@@ -202,17 +202,18 @@ export function ArticleTableRow({
       </div>
 
       {/* Actions Column */}
-      <div className="col-span-1 flex justify-end">
+      <div className="col-span-1 flex justify-end gap-1">
         {article.published_url && (
           <a
             href={article.published_url}
             target="_blank"
             rel="noopener noreferrer"
-            className="text-accent hover:text-accent-light flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity"
+            className="inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-medium bg-accent/10 text-accent hover:bg-accent/20 transition-colors flex-shrink-0"
             onClick={e => e.stopPropagation()}
-            title="View published article"
+            title={`Visit published article: ${article.published_url}`}
           >
-            <ExternalLink className="w-4 h-4" />
+            <ExternalLink className="w-3 h-3" />
+            Visit
           </a>
         )}
       </div>

@@ -21,7 +21,10 @@ import {
   getArticlePrompt,
   getOutlineRetryPrompt,
   getArticleRetryPrompt,
+  getArticleQARetryPrompt,
+  getQAFixPrompt,
 } from './prompts/article-prompts';
+import type { IQAResult } from '@shared/types/article.types';
 import { calculateOverallSEOScore } from '@shared/utils/seo';
 import type {
   ArticleStatus,
@@ -164,11 +167,12 @@ export class ArticleGenerationService {
       }
 
       // Step 3: Generate images if preset is provided
+      let imageResults: IImageResult[] = [];
       let finalContent = articleResult.content;
       let successfulImageCount = 0;
 
       if (imagePreset) {
-        const imageResults = await this.generateImagesForArticle(
+        imageResults = await this.generateImagesForArticle(
           articleResult.content,
           input.keyword,
           imagePreset
@@ -188,33 +192,9 @@ export class ArticleGenerationService {
         finalContent = this.stripImageMarkers(articleResult.content);
       }
 
-      // Step 5: Extract metadata
-      const wordCount = this.countWords(finalContent);
-      const generationTimeMs = Date.now() - startTime;
-
-      // Step 5.5: Calculate SEO score
-      const seoResult = calculateOverallSEOScore({
-        title: outline.data.title,
-        content: finalContent,
-        meta_description: outline.data.metaDescription,
-        primary_keyword: input.keyword,
-        word_count: wordCount,
-      });
-
-      // Step 5.6: Generate topic fingerprint for semantic deduplication (E10)
-      let topicFingerprint: string | null = null;
-      if (openaiEmbeddingsService.isConfigured()) {
-        try {
-          topicFingerprint = await openaiEmbeddingsService.generateEmbeddingForDB(input.keyword);
-          console.log(`[ArticleGeneration] Topic fingerprint generated for article ${articleId}`);
-        } catch (error) {
-          // Don't fail generation if embedding generation fails
-          console.warn(`[ArticleGeneration] Failed to generate topic fingerprint:`, error);
-          topicFingerprint = null;
-        }
-      }
-
-      // Step 5.7: Run QA pipeline checks (E11)
+      // Step 5: Run QA pipeline checks with up to MAX_QA_RETRIES retries (E11).
+      // After exhausting retries, publish as draft so a human can review — never block forever.
+      const MAX_QA_RETRIES = 2; // 1 initial check + 2 retries = 3 total QA checks
       let qaResults: IQACheckResult | null = null;
       let finalStatus: ArticleStatus = 'draft';
       let qaResultsForDb: IQACheckResult | null = null;
@@ -230,15 +210,52 @@ export class ArticleGenerationService {
 
       try {
         qaResults = await qaService.runQAChecks(finalContent, outline.data, qaConfig);
+
+        // Retry loop: up to MAX_QA_RETRIES additional attempts when QA fails
+        for (let qaAttempt = 1; qaAttempt <= MAX_QA_RETRIES && !qaResults.passed; qaAttempt++) {
+          console.log(
+            `[ArticleGeneration] Article ${articleId} failed QA check (attempt ${qaAttempt}/${MAX_QA_RETRIES}): ${qaResults.failureReason}. Retrying with feedback...`
+          );
+
+          const qaFeedback = this.buildQAFeedback(qaResults);
+          const qaRetryResult = await this.generateFullArticle(
+            outline.data,
+            input,
+            imagePreset,
+            false,
+            qaFeedback
+          );
+          totalTokens += qaRetryResult.usage.totalTokens;
+
+          // Re-apply already-generated images to the new content
+          const qaRetryContent = imagePreset
+            ? this.replaceImageMarkers(qaRetryResult.content, imageResults)
+            : this.stripImageMarkers(qaRetryResult.content);
+
+          // Always advance to latest content (best-effort for final publish)
+          finalContent = qaRetryContent;
+
+          qaResults = await qaService.runQAChecks(qaRetryContent, outline.data, qaConfig);
+
+          if (qaResults.passed) {
+            console.log(
+              `[ArticleGeneration] Article ${articleId} passed QA on retry ${qaAttempt}`
+            );
+          }
+        }
+
+        const safeFlaggedPhrases = Array.isArray(qaResults.results?.plagiarism?.flaggedPhrases)
+          ? qaResults.results.plagiarism.flaggedPhrases
+          : [];
+
         qaResultsForDb = {
           ...qaResults,
-          // Remove full flagged phrases for storage (keep counts only)
           results: {
             ...qaResults.results,
             plagiarism: {
               ...qaResults.results.plagiarism,
-              flaggedPhrases: qaResults.results.plagiarism.flaggedPhrases.map(p => ({
-                phrase: p.phrase.substring(0, 50), // Truncate for storage
+              flaggedPhrases: safeFlaggedPhrases.map(p => ({
+                phrase: p.phrase.substring(0, 50),
                 start: p.start,
                 end: p.end,
               })),
@@ -246,20 +263,46 @@ export class ArticleGenerationService {
           },
         };
 
-        // Determine final status based on QA results
         if (qaResults.passed) {
           finalStatus = 'qa_passed';
-          console.log(`[ArticleGeneration] Article ${articleId} passed QA checks`);
+          console.log(`[ArticleGeneration] Article ${articleId} passed QA`);
         } else {
-          finalStatus = 'qa_failed';
+          // Exhausted all retries — publish as draft so a human can review; never block forever.
+          finalStatus = 'draft';
           console.warn(
-            `[ArticleGeneration] Article ${articleId} failed QA checks: ${qaResults.failureReason}`
+            `[ArticleGeneration] Article ${articleId} still failed QA after ${MAX_QA_RETRIES} retries ` +
+              `(${qaResults.failureReason}). Publishing as draft for manual review.`
           );
         }
       } catch (error) {
         console.error(`[ArticleGeneration] QA checks failed for article ${articleId}:`, error);
-        // Continue without QA if checks fail - don't block generation
+        // QA pipeline error — publish as draft so the article isn't blocked permanently.
         finalStatus = 'draft';
+      }
+
+      // Step 5.5: Extract metadata from final content (after QA retries may have updated it)
+      const wordCount = this.countWords(finalContent);
+      const generationTimeMs = Date.now() - startTime;
+
+      // Step 5.6: Calculate SEO score from final content
+      const seoResult = calculateOverallSEOScore({
+        title: outline.data.title,
+        content: finalContent,
+        meta_description: outline.data.metaDescription,
+        primary_keyword: input.keyword,
+        word_count: wordCount,
+      });
+
+      // Step 5.7: Generate topic fingerprint for semantic deduplication (E10)
+      let topicFingerprint: string | null = null;
+      if (openaiEmbeddingsService.isConfigured()) {
+        try {
+          topicFingerprint = await openaiEmbeddingsService.generateEmbeddingForDB(input.keyword);
+          console.log(`[ArticleGeneration] Topic fingerprint generated for article ${articleId}`);
+        } catch (error) {
+          console.warn(`[ArticleGeneration] Failed to generate topic fingerprint:`, error);
+          topicFingerprint = null;
+        }
       }
 
       // Step 6: Save result
@@ -293,7 +336,6 @@ export class ArticleGenerationService {
 
       // Step 6.4: Auto-approve if project setting enabled
       // If autoApprove is set, transition draft/qa_passed → approved → published.
-      // qa_failed articles are NEVER auto-approved.
       let autoApproved = false;
       if ((finalStatus === 'qa_passed' || finalStatus === 'draft') && input.projectId) {
         const shouldAutoApprove = await this.shouldAutoApprove(input.projectId);
@@ -327,8 +369,7 @@ export class ArticleGenerationService {
       }
 
       // Step 6.5: Trigger auto-delivery if campaign has auto_publish enabled
-      // Only deliver articles that passed QA or are in draft status (QA disabled/unavailable).
-      // Never auto-deliver qa_failed articles — those need human review first.
+      // Deliver qa_passed articles and draft articles (QA-exhausted or QA-disabled).
       // Skip if already handled by auto-approve (Step 6.4).
       if (!autoApproved && (finalStatus === 'qa_passed' || finalStatus === 'draft')) {
         try {
@@ -522,24 +563,39 @@ export class ArticleGenerationService {
 
   /**
    * Generate the full article from an outline.
+   *
+   * @param qaFindings - Optional QA failure findings from a previous attempt.
+   *   When provided, uses the QA-guided retry prompt so the AI knows what to fix.
    */
   private async generateFullArticle(
     outline: IArticleOutline,
     input: IGenerateArticleInput,
     imagePreset: ImagePresetKey | null | undefined,
-    isRetry: boolean = false
+    isRetry: boolean = false,
+    qaFindings?: string
   ): Promise<{ content: string; usage: { totalTokens: number }; finishReason: string }> {
     const tone = input.tone || 'professional';
     const targetWordCount = input.targetWordCount || 1500;
-    const model = resolveWriterModel(input.model || 'auto', serverEnv.AVAILABLE_WRITER_PRESETS);
+    // QA retries always use the 'balanced' model to keep cost predictable,
+    // regardless of the user's selected writer preset.
+    const model = qaFindings
+      ? resolveWriterModel('balanced', serverEnv.AVAILABLE_WRITER_PRESETS)
+      : resolveWriterModel(input.model || 'auto', serverEnv.AVAILABLE_WRITER_PRESETS);
 
     // Calculate image count based on word count
     const imageCount = imagePreset ? getImageCountForWordCount(targetWordCount) : 0;
 
-    // Use stricter prompt for retry
-    const systemPrompt = isRetry
-      ? getArticleRetryPrompt(outline, tone, targetWordCount, imageCount)
-      : getArticlePrompt(outline, tone, targetWordCount, imageCount);
+    // Select prompt: QA-guided retry > quality-gate retry > standard
+    const systemPrompt = qaFindings
+      ? getArticleQARetryPrompt(outline, tone, targetWordCount, imageCount, qaFindings)
+      : isRetry
+        ? getArticleRetryPrompt(outline, tone, targetWordCount, imageCount)
+        : getArticlePrompt(outline, tone, targetWordCount, imageCount);
+
+    const attemptLabel = qaFindings ? 'qa-retry' : isRetry ? 'quality-retry' : 'initial';
+    console.log(
+      `[ArticleGeneration] generateFullArticle attempt=${attemptLabel} model=${model} targetWords=${targetWordCount} imageCount=${imageCount}`
+    );
 
     const result = await this.openRouter.chatCompletionWithRetry({
       model,
@@ -547,15 +603,19 @@ export class ArticleGenerationService {
         { role: 'system', content: systemPrompt },
         {
           role: 'user',
-          content: isRetry
+          content: qaFindings || isRetry
             ? 'Write the COMPLETE article now. DO NOT STOP until finished.'
             : 'Write the article now.',
         },
       ],
       responseFormat: { type: 'text' },
-      temperature: isRetry ? 0.6 : 0.8, // Lower temperature for more consistent output on retry
-      maxTokens: isRetry ? 16000 : 12000, // Generous limits: ~9k-12k words + prompt overhead
+      temperature: qaFindings || isRetry ? 0.6 : 0.8,
+      maxTokens: qaFindings || isRetry ? 16000 : 12000,
     });
+
+    console.log(
+      `[ArticleGeneration] generateFullArticle done: attempt=${attemptLabel} finishReason=${result.finishReason} tokens=total:${result.usage.totalTokens} prompt:${result.usage.promptTokens} completion:${result.usage.completionTokens} contentLength=${result.content.length}`
+    );
 
     return { content: result.content, usage: result.usage, finishReason: result.finishReason };
   }
@@ -586,6 +646,238 @@ export class ArticleGenerationService {
 
     // Step 2: Generate images via ImageGenerationService
     return await imageGenerationService.generateImagesForArticle(markers, presetKey, keyword);
+  }
+
+  /**
+   * Format QA check results into actionable feedback for the retry prompt.
+   * Produces a bullet-list of what failed and how to fix it.
+   */
+  private buildQAFeedback(qaResults: IQACheckResult): string {
+    const lines: string[] = [];
+    const aiLikelihood = qaResults.results?.aiLikelihood;
+    const readability = qaResults.results?.readability;
+    const plagiarism = qaResults.results?.plagiarism;
+    const factConsistency = qaResults.results?.factConsistency;
+
+    if (aiLikelihood && !aiLikelihood.passed) {
+      const aiScore = typeof aiLikelihood.aiScore === 'number' ? aiLikelihood.aiScore : 1;
+      const detectedPatterns = Array.isArray(aiLikelihood.detectedPatterns)
+        ? aiLikelihood.detectedPatterns
+        : [];
+      lines.push(
+        `- AI Detection: Content scored ${Math.round(aiScore * 100)}% AI likelihood (threshold: 80%).` +
+          (detectedPatterns.length > 0 ? ` Detected: ${detectedPatterns.join(', ')}.` : '') +
+          ' Fix: Vary sentence length, avoid generic transitions (furthermore, moreover, additionally), use contractions, add concrete examples and a personal voice.'
+      );
+    }
+
+    if (readability && !readability.passed) {
+      const fleschKincaidGrade =
+        typeof readability.fleschKincaidGrade === 'number' ? readability.fleschKincaidGrade : 18;
+      const fleschReadingEase =
+        typeof readability.fleschReadingEase === 'number' ? readability.fleschReadingEase : 0;
+      lines.push(
+        `- Readability: Grade level ${fleschKincaidGrade.toFixed(1)} (max: 12), reading ease ${fleschReadingEase.toFixed(1)} (min: 30).` +
+          ' Fix: Shorten sentences, use simpler vocabulary, prefer active voice, and break up long paragraphs.'
+      );
+    }
+
+    if (plagiarism && !plagiarism.passed) {
+      const similarityScore =
+        typeof plagiarism.similarityScore === 'number' ? plagiarism.similarityScore : 1;
+      const consecutiveMatches =
+        typeof plagiarism.consecutiveMatches === 'number' ? plagiarism.consecutiveMatches : 0;
+      lines.push(
+        `- Originality: Similarity score ${Math.round(similarityScore * 100)}% (threshold: 15%), ${consecutiveMatches} repeated phrase groups detected.` +
+          ' Fix: Rephrase repeated sections, avoid generic filler phrases, and express ideas in a unique way.'
+      );
+    }
+
+    if (factConsistency && !factConsistency.passed) {
+      const flaggedStatements = Array.isArray(factConsistency.flaggedStatements)
+        ? factConsistency.flaggedStatements
+        : [];
+      lines.push(
+        `- Consistency: ${flaggedStatements.length} inconsistencies found.` +
+          (flaggedStatements.length > 0 ? ` Issues: ${flaggedStatements.slice(0, 3).join('; ')}.` : '') +
+          ' Fix: Ensure all outline sections and headings appear in the content, and that the title keyword is used.'
+      );
+    }
+
+    if (lines.length === 0) {
+      return (
+        '- QA checks reported failure with incomplete diagnostics.' +
+        ' Fix: improve originality, readability, factual consistency, and natural writing style.'
+      );
+    }
+
+    return lines.join('\n');
+  }
+
+  /**
+   * Build QA feedback string from the stored IQAResult (DB format).
+   * Used by fixArticleQAIssues which reads from the articles table.
+   */
+  private buildQAFeedbackFromStored(qa: IQAResult): string {
+    const lines: string[] = [];
+    const r = qa.results;
+
+    if (r?.aiLikelihood && !r.aiLikelihood.passed) {
+      lines.push(
+        `- AI Detection: Content scored ${Math.round(r.aiLikelihood.aiScore * 100)}% AI likelihood (threshold: 80%).` +
+          ' Fix: Vary sentence length, avoid generic transitions (furthermore, moreover, additionally), use contractions, add concrete examples and a personal voice.'
+      );
+    }
+
+    if (r?.readability && !r.readability.passed) {
+      lines.push(
+        `- Readability: Grade level ${r.readability.fleschKincaidGrade.toFixed(1)} (max: 12), reading ease ${r.readability.fleschReadingEase.toFixed(1)} (min: 30).` +
+          ' Fix: Shorten sentences, use simpler vocabulary, prefer active voice, and break up long paragraphs.'
+      );
+    }
+
+    if (r?.plagiarism && !r.plagiarism.passed) {
+      const phraseCount = Array.isArray(r.plagiarism.flaggedPhrases)
+        ? r.plagiarism.flaggedPhrases.length
+        : r.plagiarism.flaggedPhrases;
+      lines.push(
+        `- Originality: Similarity score ${Math.round(r.plagiarism.similarityScore * 100)}% (threshold: 15%), ${phraseCount} repeated phrase groups detected.` +
+          ' Fix: Rephrase repeated sections, avoid generic filler phrases, and express ideas in a unique way.'
+      );
+    }
+
+    if (r?.factConsistency && !r.factConsistency.passed) {
+      lines.push(
+        `- Consistency: ${r.factConsistency.inconsistencyCount} inconsistencies found.` +
+          ' Fix: Ensure all outline sections and headings appear in the content, and that the title keyword is used.'
+      );
+    }
+
+    if (lines.length === 0) {
+      return (
+        '- QA checks reported failure with incomplete diagnostics.' +
+        ' Fix: improve originality, readability, factual consistency, and natural writing style.'
+      );
+    }
+
+    return lines.join('\n');
+  }
+
+  /**
+   * Fix QA issues in an existing qa_failed article using targeted AI edits.
+   *
+   * Unlike full regeneration, this method:
+   * - Takes the existing content and applies targeted fixes to QA failures
+   * - Does NOT charge credits (lightweight targeted edit)
+   * - Preserves article structure, headings, and facts
+   * - Re-runs QA checks and updates the article status accordingly
+   */
+  async fixArticleQAIssues(articleId: string, userId: string): Promise<void> {
+    const { data: article } = await this.supabase
+      .from('articles')
+      .select('id, content, title, primary_keyword, meta_description, outline, qa_results, campaigns(id, project_id, ai_model)')
+      .eq('id', articleId)
+      .eq('user_id', userId)
+      .single();
+
+    if (!article || !article.content || !article.qa_results) {
+      await this.supabase
+        .from('articles')
+        .update({ status: 'qa_failed', generation_error: 'Cannot fix: missing content or QA results' })
+        .eq('id', articleId);
+      return;
+    }
+
+    try {
+      // Build targeted QA feedback from stored results
+      const qaFeedback = this.buildQAFeedbackFromStored(article.qa_results as IQAResult);
+
+      // Use balanced model for cost efficiency
+      const model = resolveWriterModel('balanced', serverEnv.AVAILABLE_WRITER_PRESETS);
+      const systemPrompt = getQAFixPrompt(article.content, qaFeedback);
+
+      const result = await this.openRouter.chatCompletionWithRetry({
+        model,
+        messages: [
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: 'Apply the fixes now. Return only the revised article in markdown.' },
+        ],
+        responseFormat: { type: 'text' },
+        temperature: 0.5,
+        maxTokens: 12000,
+      });
+
+      const fixedContent = result.content;
+
+      // Get project QA config (if any)
+      const campaign = (article.campaigns as unknown) as { id: string; project_id: string | null; ai_model: string | null } | null;
+      let qaConfig: IQAConfig | undefined;
+      if (campaign?.project_id) {
+        const { data: project } = await this.supabase
+          .from('projects')
+          .select('qa_config')
+          .eq('id', campaign.project_id)
+          .single();
+        qaConfig = (project?.qa_config as IQAConfig) || undefined;
+      }
+
+      // Re-run QA on fixed content
+      const qaResults = await qaService.runQAChecks(
+        fixedContent,
+        (article.outline as IArticleOutline) ?? { title: article.title ?? '', sections: [], primaryKeyword: article.primary_keyword, metaDescription: article.meta_description ?? '' },
+        qaConfig
+      );
+
+      // Prepare DB-safe QA results (cap flaggedPhrases array)
+      const safeFlaggedPhrases = Array.isArray(qaResults.results?.plagiarism?.flaggedPhrases)
+        ? qaResults.results.plagiarism.flaggedPhrases
+        : [];
+      const qaResultsForDb = {
+        ...qaResults,
+        results: {
+          ...qaResults.results,
+          plagiarism: {
+            ...qaResults.results.plagiarism,
+            flaggedPhrases: safeFlaggedPhrases.map(p => ({
+              phrase: p.phrase.substring(0, 50),
+              start: p.start,
+              end: p.end,
+            })),
+          },
+        },
+      };
+
+      // Recalculate SEO score
+      const wordCount = this.countWords(fixedContent);
+      const seoResult = calculateOverallSEOScore({
+        title: article.title,
+        content: fixedContent,
+        meta_description: article.meta_description,
+        primary_keyword: article.primary_keyword,
+        word_count: wordCount,
+      });
+
+      await this.supabase
+        .from('articles')
+        .update({
+          status: qaResults.passed ? 'qa_passed' : 'qa_failed',
+          content: fixedContent,
+          word_count: wordCount,
+          qa_results: qaResultsForDb,
+          seo_score: seoResult.overallScore,
+          generation_error: null,
+        })
+        .eq('id', articleId);
+    } catch (error) {
+      console.error(`[ArticleGeneration] QA fix failed for article ${articleId}:`, error);
+      await this.supabase
+        .from('articles')
+        .update({
+          status: 'qa_failed',
+          generation_error: `QA fix failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        })
+        .eq('id', articleId);
+    }
   }
 
   /**

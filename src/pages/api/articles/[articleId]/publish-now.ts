@@ -46,17 +46,42 @@ export const POST = withAuth(async (userId, { params }) => {
   // Deliver to integrations
   const result = await deliveryService.deliverArticle(articleId);
 
-  // Set published_at if not already set
-  const publishedAt = article.published_at ?? new Date().toISOString();
-  if (!article.published_at) {
-    await supabaseAdmin
-      .from('articles')
-      .update({ published_at: publishedAt })
-      .eq('id', articleId);
+  // Publishing requires at least one enabled integration.
+  if (result.total === 0) {
+    return errorResponse(
+      'NO_INTEGRATIONS',
+      'No enabled integrations configured for this campaign',
+      400,
+      {
+        total: result.total,
+        successful: result.successful,
+        failed: result.failed,
+      }
+    );
   }
+
+  // If all delivery attempts failed, keep article state unchanged.
+  if (result.successful === 0) {
+    return errorResponse('DELIVERY_FAILED', 'Failed to publish article to any integration', 502, {
+      total: result.total,
+      successful: result.successful,
+      failed: result.failed,
+    });
+  }
+
+  // At least one integration succeeded: mark article as published.
+  const publishedAt = article.published_at ?? new Date().toISOString();
+  await supabaseAdmin
+    .from('articles')
+    .update({
+      status: 'published',
+      published_at: publishedAt,
+    })
+    .eq('id', articleId);
 
   return jsonResponse({
     success: true,
+    status: 'published',
     published_at: publishedAt,
     total: result.total,
     successful: result.successful,

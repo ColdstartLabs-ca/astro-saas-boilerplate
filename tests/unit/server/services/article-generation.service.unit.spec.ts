@@ -68,7 +68,7 @@ vi.mock('@shared/config/ai-models.config', () => ({
     balanced: { key: 'balanced', defaultModel: 'openai/gpt-4o', tier: 'balanced', creditCost: 1 },
     pro: {
       key: 'pro',
-      defaultModel: 'anthropic/claude-sonnet-4-5',
+      defaultModel: 'anthropic/claude-sonnet-4-6',
       tier: 'balanced',
       creditCost: 2,
     },
@@ -84,10 +84,10 @@ vi.mock('@shared/config/ai-models.config', () => ({
     const defaults: Record<string, string> = {
       budget: 'openai/gpt-4o-mini',
       balanced: 'openai/gpt-4o',
-      pro: 'anthropic/claude-sonnet-4-5',
+      pro: 'anthropic/claude-sonnet-4-6',
       ultra: 'anthropic/claude-opus-4-6',
     };
-    return defaults[presetKey] || 'anthropic/claude-sonnet-4-5';
+    return defaults[presetKey] || 'anthropic/claude-sonnet-4-6';
   },
   getWriterPresetCreditCost: (presetKey: string | null | undefined) => {
     const costs: Record<string, number> = {

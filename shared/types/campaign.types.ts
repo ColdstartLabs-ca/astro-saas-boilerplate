@@ -114,7 +114,7 @@ export interface ICampaignWithStats extends ICampaign {
   keyword_count: number;
   /** Total number of articles generated */
   article_count: number;
-  /** Number of keywords with 'generated' status */
+  /** Number of articles successfully generated for this campaign (draft or beyond) */
   completed_count: number;
 }
 

@@ -150,6 +150,96 @@ Output ONLY the JSON.`;
 }
 
 /**
+ * Generate an article retry prompt that includes QA failure findings.
+ * Used when the initial article fails QA pipeline checks (plagiarism, readability, AI detection).
+ *
+ * @param outline - The generated outline
+ * @param tone - Desired tone of the article
+ * @param targetWordCount - Target word count
+ * @param imageCount - Number of images to include (optional, defaults to 0)
+ * @param qaFindings - Human-readable summary of what QA checks failed and how to fix them
+ * @returns System prompt for QA-guided article generation retry
+ */
+export function getArticleQARetryPrompt(
+  outline: IArticleOutline,
+  tone: string = 'professional',
+  targetWordCount: number = 1500,
+  imageCount: number = 0,
+  qaFindings: string
+): string {
+  const writingGuidelines = buildWritingGuidelinesPrompt();
+
+  return `You are an expert SEO content writer. A previous version of this article failed quality checks. Rewrite it to fix the specific issues listed below.
+
+${writingGuidelines}
+
+QUALITY ISSUES TO FIX:
+${qaFindings}
+
+Article Requirements:
+- Write in ${tone} tone
+- Target approximately ${targetWordCount} words
+- Use the EXACT headings from the outline as H2/H3 markdown headers (sentence case)
+- Include the primary keyword naturally 3-5 times throughout the article
+- Write engaging introductions and conclusions for each section
+- Use short paragraphs (2-3 sentences) for better readability
+- Include transition sentences between sections
+- Write in markdown format with proper headers, bullet points, and emphasis
+- Do NOT include the title as an H1 (it's handled separately)
+- Make sure the content is valuable and informative, not filler${
+    imageCount > 0
+      ? `
+
+IMAGE PLACEMENT:
+You MUST include exactly ${imageCount} image markers in the article, placed where a visual would naturally enhance the content.
+Use this exact format: [IMAGE:1], [IMAGE:2], [IMAGE:3] (numbered sequentially).
+
+Rules:
+- Place [IMAGE:1] after the introduction (this becomes the featured/hero image)
+- Place [IMAGE:2] and [IMAGE:3] between sections, where a visual break helps readability
+- Never place two markers next to each other
+- Never place a marker inside a list, table, or code block
+- Each marker should be on its own line, with a blank line before and after`
+      : ''
+  }
+
+Outline to follow:
+${JSON.stringify(outline, null, 2)}
+
+Write an improved article that addresses ALL the quality issues listed above. Begin with the introduction section (no H1 title).`;
+}
+
+/**
+ * Generate a targeted QA fix prompt that edits existing content in-place.
+ * Unlike the full QA retry prompt (which rewrites from an outline), this
+ * prompt takes the existing article and applies targeted fixes to the
+ * specific failing checks. Preserves structure and facts.
+ *
+ * @param existingContent - Current article markdown content
+ * @param qaFindings - QA failure descriptions with actionable fix instructions
+ */
+export function getQAFixPrompt(existingContent: string, qaFindings: string): string {
+  return `You are an expert SEO editor. The following article failed quality checks. Edit it to fix the specific issues listed, while preserving the article's structure, headings, key facts, and overall meaning.
+
+QUALITY ISSUES TO FIX:
+${qaFindings}
+
+EDITING RULES:
+- Keep ALL H2/H3 headings exactly as they are
+- Preserve all factual content, data, and key points
+- Do NOT add or remove major sections
+- Fix readability: shorten long sentences, simplify vocabulary, prefer active voice
+- Fix AI patterns: vary sentence length, add contractions, use concrete examples, add personal voice
+- Fix originality: rephrase generic filler phrases ("it is important to", "plays a crucial role", etc.) in a unique way
+- Keep all markdown formatting (headers, bold, lists)
+- Do NOT include an H1 title (it is rendered separately)
+- Return ONLY the revised article in markdown format with no preamble or explanation
+
+ARTICLE TO FIX:
+${existingContent}`;
+}
+
+/**
  * Generate a stricter article generation prompt for quality gate retry.
  *
  * @param outline - The generated outline

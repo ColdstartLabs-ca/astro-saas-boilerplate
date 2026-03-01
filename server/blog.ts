@@ -125,7 +125,9 @@ function getMdxPostsMeta(): IBlogPostMeta[] {
  * Synchronous version: returns only MDX posts
  */
 export function getAllPosts(): IBlogPostMeta[] {
-  return getMdxPostsMeta();
+  return getMdxPostsMeta().sort(
+    (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
+  );
 }
 
 /**
@@ -141,7 +143,9 @@ export async function getAllPostsAsync(): Promise<IBlogPostMeta[]> {
     return mergePostSources(mdxPosts, dbPosts);
   } catch (error) {
     console.warn('Failed to fetch DB posts, falling back to MDX-only:', error);
-    return getMdxPostsMeta();
+    return getMdxPostsMeta().sort(
+      (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
+    );
   }
 }
 

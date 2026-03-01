@@ -18,11 +18,11 @@ export interface IPresetEnvEntry {
  * Parse a preset env value into entries.
  *
  * @example
- * parsePresetEnvRaw("budget(openai/gpt-4o-mini),balanced,ultra(anthropic/claude-sonnet-4-5)")
+ * parsePresetEnvRaw("budget(openai/gpt-4o-mini),balanced,ultra(anthropic/claude-sonnet-4-6)")
  * // → [
  * //   { key: "budget", model: "openai/gpt-4o-mini" },
  * //   { key: "balanced", model: null },
- * //   { key: "ultra", model: "anthropic/claude-sonnet-4-5" },
+ * //   { key: "ultra", model: "anthropic/claude-sonnet-4-6" },
  * // ]
  */
 export function parsePresetEnvRaw(envValue: string): IPresetEnvEntry[] {

@@ -52,7 +52,7 @@ describe('ai-models.config (writer presets)', () => {
     it('should map correct default models', () => {
       expect(WRITER_PRESETS.budget.defaultModel).toBe('openai/gpt-4o-mini');
       expect(WRITER_PRESETS.balanced.defaultModel).toBe('openai/gpt-4o');
-      expect(WRITER_PRESETS.pro.defaultModel).toBe('anthropic/claude-sonnet-4-5');
+      expect(WRITER_PRESETS.pro.defaultModel).toBe('anthropic/claude-sonnet-4-6');
       expect(WRITER_PRESETS.ultra.defaultModel).toBe('anthropic/claude-opus-4-6');
     });
   });
@@ -206,7 +206,7 @@ describe('ai-models.config (writer presets)', () => {
     it('should resolve preset key to default model', () => {
       expect(resolveWriterModel('budget', '')).toBe('openai/gpt-4o-mini');
       expect(resolveWriterModel('balanced', '')).toBe('openai/gpt-4o');
-      expect(resolveWriterModel('pro', '')).toBe('anthropic/claude-sonnet-4-5');
+      expect(resolveWriterModel('pro', '')).toBe('anthropic/claude-sonnet-4-6');
       expect(resolveWriterModel('ultra', '')).toBe('anthropic/claude-opus-4-6');
     });
 
@@ -218,7 +218,7 @@ describe('ai-models.config (writer presets)', () => {
 
     it('should fallback to default preset model for unknown key', () => {
       const result = resolveWriterModel('nonexistent', '');
-      expect(result).toBe('anthropic/claude-sonnet-4-5');
+      expect(result).toBe('anthropic/claude-sonnet-4-6');
     });
   });
 
@@ -251,7 +251,7 @@ describe('ai-models.config (writer presets)', () => {
     });
 
     it('DEFAULT_MODEL should be the default preset model', () => {
-      expect(DEFAULT_MODEL).toBe('anthropic/claude-sonnet-4-5');
+      expect(DEFAULT_MODEL).toBe('anthropic/claude-sonnet-4-6');
     });
 
     it('isValidModel should accept both model IDs and preset keys', () => {

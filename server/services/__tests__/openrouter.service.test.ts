@@ -26,7 +26,7 @@ vi.mock('@shared/config/ai-models.config', () => ({
   AI_MODELS: {
     'openai/gpt-4o': { name: 'GPT-4o', provider: 'OpenAI', tier: 'all' },
     'openai/gpt-4o-mini': { name: 'GPT-4o Mini', provider: 'OpenAI', tier: 'all' },
-    'anthropic/claude-sonnet-4-5': {
+    'anthropic/claude-sonnet-4-6': {
       name: 'Claude Sonnet 4.5',
       provider: 'Anthropic',
       tier: 'all',
@@ -43,7 +43,7 @@ vi.mock('@shared/config/ai-models.config', () => ({
     [
       'openai/gpt-4o',
       'openai/gpt-4o-mini',
-      'anthropic/claude-sonnet-4-5',
+      'anthropic/claude-sonnet-4-6',
       'google/gemini-2.0-flash',
       'google/gemini-2.0-flash-exp:free',
       'openrouter/auto',

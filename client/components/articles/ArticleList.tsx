@@ -476,7 +476,7 @@ export function ArticleList({ statusFilter: propStatusFilter }: IArticleListProp
             <div className="col-span-1 text-right">Words</div>
             <div className="col-span-1 text-center">Images</div>
             <div className="col-span-1 text-right">Date</div>
-            <div className="col-span-1"></div>
+            <div className="col-span-1 text-right">Actions</div>
           </div>
         )}
 

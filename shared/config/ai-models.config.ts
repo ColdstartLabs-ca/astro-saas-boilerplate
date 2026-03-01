@@ -49,7 +49,7 @@ export const WRITER_PRESETS: Record<WriterPresetKey, IWriterPreset> = {
     key: 'pro',
     displayName: 'Pro',
     description: 'Professional-grade AI writing',
-    defaultModel: 'anthropic/claude-sonnet-4-5',
+    defaultModel: 'anthropic/claude-sonnet-4-6',
     tier: 'balanced',
     creditCost: WRITER_CREDIT_COSTS.pro,
   },

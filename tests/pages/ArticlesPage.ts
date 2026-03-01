@@ -466,22 +466,32 @@ export class ArticlesPage extends BasePage {
   }
 
   /**
+   * Gets the confirm dialog confirm button
+   * Used for ConfirmDialog component (not browser dialogs)
+   */
+  get confirmDialogButton(): Locator {
+    return this.page.locator('[data-testid="confirm-dialog-confirm"]');
+  }
+
+  /**
    * Clicks the regenerate button
    * Note: Does NOT wait for loading to complete - allows tests to check intermediate states
    */
   async clickRegenerate(): Promise<void> {
-    // Set up dialog handler BEFORE clicking (confirm appears synchronously)
-    this.page.once('dialog', dialog => dialog.accept());
     await this.regenerateButton.click();
+    // Wait for and click the confirm dialog button
+    await this.confirmDialogButton.waitFor({ state: 'visible', timeout: 5000 });
+    await this.confirmDialogButton.click();
   }
 
   /**
    * Clicks regenerate and waits for completion (modal closes on success)
    */
   async clickRegenerateAndWait(): Promise<void> {
-    // Set up dialog handler BEFORE clicking
-    this.page.once('dialog', dialog => dialog.accept());
     await this.regenerateButton.click();
+    // Wait for and click the confirm dialog button
+    await this.confirmDialogButton.waitFor({ state: 'visible', timeout: 5000 });
+    await this.confirmDialogButton.click();
     // Wait for modal to close on success
     await this.waitForDetailPanelToClose();
   }

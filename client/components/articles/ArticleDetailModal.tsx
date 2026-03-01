@@ -19,6 +19,7 @@ import {
   Image as ImageIcon,
   AlertCircle,
   Zap,
+  Wrench,
 } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import MDEditor from '@uiw/react-md-editor';
@@ -33,6 +34,7 @@ import { SEOScoreDisplay } from './SEOScoreDisplay';
 import { DeliveryStatusCard } from '@client/components/dashboard/views/articles/DeliveryStatusCard';
 import { useArticleDeliveries } from '@client/hooks/useArticleDeliveries';
 import { useTranslations } from '@client/hooks/useTranslations';
+import { useArticleActions } from '@client/hooks/useArticleActions';
 import { ImageOff } from 'lucide-react';
 
 function MarkdownImage(props: React.ImgHTMLAttributes<HTMLImageElement>) {
@@ -147,6 +149,22 @@ export function ArticleDetailModal({
     retryingId,
     retryDelivery,
   } = useArticleDeliveries(articleId);
+
+  const { fixQAIssues, isFixingQA } = useArticleActions();
+
+  const handleFixQAIssues = useCallback(async () => {
+    if (!currentArticle) return;
+    setError(null);
+    try {
+      await fixQAIssues(currentArticle.id);
+      invalidateCampaignCache();
+      onClose();
+      onUpdate?.(currentArticle);
+      showToast({ message: 'Fixing QA issues — article will update shortly', type: 'success' });
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to fix QA issues');
+    }
+  }, [currentArticle, fixQAIssues, invalidateCampaignCache, onClose, onUpdate, showToast]);
 
   // Track previous article id to avoid unnecessary re-fetches
   const prevArticleIdRef = useRef<string | null>(null);
@@ -483,6 +501,70 @@ export function ArticleDetailModal({
             </div>
           ) : (
             <div className="prose prose-invert max-w-none text-sm">
+              {/* QA failure banner — article content is still shown below */}
+              {currentArticle.status === 'qa_failed' && currentArticle.qa_results && (
+                <div className="not-prose mb-4 bg-orange-500/10 border border-orange-500/30 rounded-lg p-4">
+                  <div className="flex items-start gap-2">
+                    <AlertCircle className="w-4 h-4 text-orange-400 mt-0.5 shrink-0" />
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center justify-between gap-4 mb-2">
+                        <p className="text-sm font-medium text-orange-400">
+                          QA checks failed — fix automatically or review and approve manually
+                        </p>
+                        <button
+                          type="button"
+                          onClick={handleFixQAIssues}
+                          disabled={isFixingQA}
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-orange-500 hover:bg-orange-400 text-white transition-colors flex-shrink-0 disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          {isFixingQA ? (
+                            <Loader2 className="w-3 h-3 animate-spin" />
+                          ) : (
+                            <Wrench className="w-3 h-3" />
+                          )}
+                          {isFixingQA ? 'Fixing…' : 'Fix Issues'}
+                        </button>
+                      </div>
+                      <div className="flex flex-wrap gap-2 text-xs">
+                        {[
+                          {
+                            label: 'Plagiarism',
+                            passed: currentArticle.qa_results.results.plagiarism.passed,
+                            detail: `${Math.round(currentArticle.qa_results.results.plagiarism.similarityScore * 100)}% similarity`,
+                          },
+                          {
+                            label: 'Fact Consistency',
+                            passed: currentArticle.qa_results.results.factConsistency.passed,
+                            detail: `${Math.round(currentArticle.qa_results.results.factConsistency.score * 100)}% score`,
+                          },
+                          {
+                            label: 'Readability',
+                            passed: currentArticle.qa_results.results.readability.passed,
+                            detail: `Grade ${currentArticle.qa_results.results.readability.fleschKincaidGrade.toFixed(1)}`,
+                          },
+                          {
+                            label: 'AI Detection',
+                            passed: currentArticle.qa_results.results.aiLikelihood.passed,
+                            detail: `${Math.round(currentArticle.qa_results.results.aiLikelihood.aiScore * 100)}% AI score`,
+                          },
+                        ].map(({ label, passed, detail }) => (
+                          <span
+                            key={label}
+                            className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full border ${
+                              passed
+                                ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
+                                : 'bg-red-500/10 text-red-400 border-red-500/20'
+                            }`}
+                          >
+                            {passed ? '✓' : '✗'} {label}: {detail}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
               {currentArticle.content ? (
                 <ReactMarkdown components={{ img: MarkdownImage }}>
                   {currentArticle.content}
@@ -596,10 +678,12 @@ export function ArticleDetailModal({
               </DashboardButton>
             )}
 
-            {/* Approve/Reject buttons - show for reviewable articles */}
+            {/* Approve/Reject buttons - show for reviewable articles.
+                qa_failed is included so users can manually override QA failures. */}
             {!isEditing &&
               (currentArticle.status === 'draft' ||
                 currentArticle.status === 'qa_passed' ||
+                currentArticle.status === 'qa_failed' ||
                 currentArticle.status === 'reviewed') && (
                 <>
                   <DashboardButton
@@ -626,6 +710,23 @@ export function ArticleDetailModal({
                   </DashboardButton>
                 </>
               )}
+
+            {/* Fix Issues button (for qa_failed articles) */}
+            {!isEditing && currentArticle.status === 'qa_failed' && currentArticle.qa_results && (
+              <DashboardButton
+                variant="outline"
+                onClick={handleFixQAIssues}
+                disabled={isFixingQA || isApproving || isRejecting}
+                className="text-orange-400 border-orange-400/30 hover:bg-orange-400/10"
+              >
+                {isFixingQA ? (
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                ) : (
+                  <Wrench className="w-4 h-4 mr-2" />
+                )}
+                {isFixingQA ? 'Fixing Issues…' : 'Fix Issues'}
+              </DashboardButton>
+            )}
 
             {/* Generate Now button (for planned articles) */}
             {!isEditing && currentArticle.status === 'planned' && (

@@ -14,29 +14,42 @@ These costs increase as customer usage grows but should decrease as a percentage
 
 #### 1.1 AI Model Usage (Largest Variable Cost)
 
-**Providers**: OpenAI, Anthropic, Google, Open Source
+**Providers**: Google (Gemini via OpenRouter), Anthropic (Claude via OpenRouter), Black Forest Labs (Flux via Replicate)
 
-| Cost Component        | Current Rate       | Volume               | Monthly Cost          |
-| --------------------- | ------------------ | -------------------- | --------------------- |
-| **GPT-4 Generation**  | $0.01-0.10/article | Scale with customers | $0.01-0.10 × articles |
-| **Claude Generation** | $0.02-0.08/article | Backup/variety       | Included above        |
-| **Image Generation**  | $0.01-0.05/image   | 1-2 per article      | +$0.01-0.10/article   |
-| **Total per Article** | $0.03-0.20         |                      |                       |
+**Writer Models (OpenRouter) — as of Feb 2026:**
+
+| Preset       | Model                    | Input $/M | Output $/M | Cost/Article (worst) |
+| ------------ | ------------------------ | --------- | ---------- | -------------------- |
+| **Budget**   | Gemini 2.5 Flash Lite    | $0.10     | $0.40      | **$0.004**           |
+| **Balanced** | Gemini 3 Flash Preview   | $0.50     | $3.00      | **$0.025**           |
+| **Pro**      | Gemini 3 Pro Preview     | $2.00     | $12.00     | **$0.10**            |
+| **Ultra**    | Claude Sonnet 4.6        | $3.00     | $15.00     | **$0.129**           |
+
+**Image Models (Replicate) — 2-3 images per article:**
+
+| Preset       | Model        | Cost/Image | Cost/3 Images |
+| ------------ | ------------ | ---------- | ------------- |
+| **Budget**   | Flux Schnell | $0.003     | **$0.009**    |
+| **Balanced** | Flux 2 Dev   | $0.025     | **$0.075**    |
+| **Pro**      | Flux 2 Pro   | $0.055     | **$0.165**    |
+| **Ultra**    | Flux 2 Max   | $0.07      | **$0.21**     |
+
+**Total per article: $0.013 (Budget+Budget) to $0.339 (Ultra+Ultra)**
 
 **Assumptions**:
 
 - 500 customers × 100 articles/month = 50,000 articles
-- At $0.10/article average = $5,000/month
+- At $0.10/article average (most users on budget/balanced) = $5,000/month
 - At 5,000 customers × 100 articles = 500,000 articles
 - At $0.10/article = $50,000/month
 
 **Optimization Strategies**:
 
-- Route simple content to cheaper models (Gemini, Llama)
-- Cache and reuse common patterns
+- Default presets route to cost-effective Gemini models ($0.004-$0.025/article)
+- Premium models (Sonnet 4.6) reserved for Ultra tier at higher credit cost
+- Monitor OpenRouter/Replicate pricing; trigger credit cost adjustment if margins drop below 3x
 - Negotiate volume discounts at scale
-- Fine-tune smaller models for specific use cases
-- Target: Reduce to $0.05/article by Year 3
+- Target: Maintain $0.05/article blended average
 
 #### 1.2 Infrastructure Costs
 
@@ -299,14 +312,15 @@ _Includes payroll taxes, benefits, equity (~25-30% overhead)_
 
 **Variable Costs Only**:
 
-| Cost Component          | Cost per Article |
-| ----------------------- | ---------------- |
-| **AI Model Usage**      | $0.03-0.20       |
-| **Infrastructure**      | $0.01-0.05       |
-| **Support Allocation**  | $0.02-0.10       |
-| **Total Variable Cost** | **$0.06-0.35**   |
+| Cost Component          | Cost per Article   |
+| ----------------------- | ------------------ |
+| **AI Writer**           | $0.004-0.129       |
+| **AI Images (×3)**      | $0.009-0.21        |
+| **Infrastructure**      | $0.01-0.05         |
+| **Support Allocation**  | $0.02-0.10         |
+| **Total Variable Cost** | **$0.04-0.49**     |
 
-**At Target Efficiency**: $0.10-0.15 per article
+**Blended average (most users on budget/balanced)**: $0.08-0.12 per article
 
 ### 5.2 Cost Per Customer (CAC)
 
@@ -336,14 +350,14 @@ _Includes payroll taxes, benefits, equity (~25-30% overhead)_
 
 **Revenue**: $49/month for Starter plan (30 articles)
 
-**Variable Costs**:
+**Variable Costs** (assuming balanced writer + balanced images avg):
 
-- AI generation: $4.50 (30 × $0.15)
+- AI generation: $3.00 (30 × $0.10 blended avg)
 - Infrastructure: $1
 - Support allocation: $1
-- **Total COGS**: $6.50
+- **Total COGS**: $5.00
 
-**Gross Margin**: ($49 - $6.50) / $49 = **87%**
+**Gross Margin**: ($49 - $5.00) / $49 = **90%**
 
 **Target**: 85%+ gross margin at scale
 
@@ -391,16 +405,18 @@ _Includes payroll taxes, benefits, equity (~25-30% overhead)_
 
 **Current State**:
 
-- GPT-4 for everything: $0.10/article
+- Tiered presets: Gemini Flash Lite ($0.004) → Sonnet 4.6 ($0.129)
+- Default preset (budget) already routes to cheapest models
+- Blended avg ~$0.08-0.12/article including images
 
 **Optimization Path**:
 
-1. **Route Simple Content** to Gemini/Llama: $0.02/article
-2. **Cache Common Patterns** and reuse: 20-30% reduction
-3. **Fine-Tune Models** for specific tasks: 40% cost reduction
-4. **Volume Discounts** from providers: 10-20% reduction
+1. **Most users default to budget/balanced** — already $0.01-0.10/article
+2. **Monitor model pricing** — Gemini/Replicate prices trend downward
+3. **Volume discounts** from OpenRouter/Replicate at scale: 10-20% reduction
+4. **Cache common patterns** and reuse: 20-30% reduction
 
-**Target**: $0.05/article by Year 3 (50% reduction)
+**Target**: Maintain $0.05/article blended average as usage scales
 
 ### 7.2 Infrastructure Optimization
 
@@ -447,17 +463,18 @@ _Includes payroll taxes, benefits, equity (~25-30% overhead)_
 
 ### 8.1 AI Price Increases
 
-**Risk**: OpenAI, Anthropic raise prices
+**Risk**: Google, Anthropic, or Replicate raise prices
 
-**Probability**: Medium (20-30%)
+**Probability**: Low-Medium (15-25% — prices have been trending down)
 
-**Impact**: High (20-40% COGS increase)
+**Impact**: Medium (10-30% COGS increase on affected tier)
 
 **Mitigation**:
 
-- Multi-model strategy (already implemented)
-- Self-hosted open-source models as backup
-- Pass-through to customers if necessary (last resort)
+- Multi-model, multi-provider strategy (Google, Anthropic, Replicate)
+- Env-based model overrides allow instant swap to cheaper alternatives
+- Credit cost adjustment triggers defined (e.g., bump image credits if Flux 2 Pro exceeds $0.08/image)
+- 85%+ margins at worst case provide large buffer before any price pass-through
 - Negotiate volume contracts at scale
 
 ### 8.2 Infrastructure Cost Overruns
