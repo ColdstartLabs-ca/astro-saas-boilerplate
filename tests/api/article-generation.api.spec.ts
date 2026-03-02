@@ -749,20 +749,15 @@ test.describe('API: Article Regeneration (§4.5)', () => {
 
     test('should return 202 for rejected article with sufficient credits', async ({ request }) => {
       const api = new ApiClient(request).withAuth(user.token);
-      const { projectId, campaignId } = await createProjectAndCampaign(request, user.token);
+      const { campaignId } = await createProjectAndCampaign(request, user.token);
 
-      const genRes = await api.post('/api/articles/generate', {
-        keyword: 'regen rejected article',
-        projectId,
+      // Create a rejected article directly — avoids race with background generation
+      // (with OpenRouter mocked, generation succeeds and goes to 'draft' asynchronously)
+      const { id: articleId } = await ctx.createArticle({
+        userId: user.id,
         campaignId,
-      });
-      const { articleId } = await genRes.getData();
-
-      // Move to draft then rejected
-      await api.patch(`/api/articles/${articleId}`, { status: 'draft' });
-      await api.patch(`/api/articles/${articleId}`, {
+        keyword: 'regen rejected article',
         status: 'rejected',
-        rejection_reason: 'Content quality issues',
       });
 
       // Regenerate rejected article

@@ -542,12 +542,10 @@ describe('POST /api/articles/[articleId]/regenerate', () => {
       mockEq.mockReturnValue({
         eq: mockEq,
         single: mockSingle,
+        in: mockIn,
       });
       mockUpdate.mockReturnValue({
         eq: mockEq,
-      });
-      mockEq.mockReturnValue({
-        in: mockIn,
       });
       mockIn.mockReturnValue({
         select: () => ({

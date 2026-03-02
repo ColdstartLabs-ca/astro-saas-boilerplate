@@ -12,6 +12,7 @@ vi.mock('@shared/config/env', () => ({
     BASE_URL: 'https://test.example.com',
     APP_NAME: 'TestApp',
   },
+  isTest: () => false,
 }));
 
 import { OpenRouterService } from '@server/services/openrouter.service';
@@ -159,9 +160,9 @@ describe('OpenRouterService', () => {
       };
       mockFetch.mockResolvedValue(mockResponse);
 
-      await expect(
-        service.analyzeImage('data:image/jpeg;base64,test', 'Analyze')
-      ).rejects.toThrow('OpenRouter API error: 429 - Rate limit exceeded');
+      await expect(service.analyzeImage('data:image/jpeg;base64,test', 'Analyze')).rejects.toThrow(
+        'OpenRouter API error: 429 - Rate limit exceeded'
+      );
     });
 
     it('should handle empty response gracefully', async () => {
@@ -173,9 +174,9 @@ describe('OpenRouterService', () => {
       };
       mockFetch.mockResolvedValue(mockResponse);
 
-      await expect(
-        service.analyzeImage('data:image/jpeg;base64,test', 'Analyze')
-      ).rejects.toThrow('OpenRouter returned empty or invalid response');
+      await expect(service.analyzeImage('data:image/jpeg;base64,test', 'Analyze')).rejects.toThrow(
+        'OpenRouter returned empty or invalid response'
+      );
     });
 
     it('should handle malformed JSON response', async () => {
@@ -187,9 +188,9 @@ describe('OpenRouterService', () => {
       };
       mockFetch.mockResolvedValue(mockResponse);
 
-      await expect(
-        service.analyzeImage('data:image/jpeg;base64,test', 'Analyze')
-      ).rejects.toThrow('OpenRouter API error: 500 - Internal Server Error');
+      await expect(service.analyzeImage('data:image/jpeg;base64,test', 'Analyze')).rejects.toThrow(
+        'OpenRouter API error: 500 - Internal Server Error'
+      );
     });
   });
 });
@@ -215,8 +216,6 @@ describe('OpenRouterService - isConfigured check', () => {
     const service = new OpenRouterService();
 
     // This will fail due to network error, not missing key (since key is mocked)
-    await expect(
-      service.analyzeImage('data:image/jpeg;base64,test', 'Analyze')
-    ).rejects.toThrow();
+    await expect(service.analyzeImage('data:image/jpeg;base64,test', 'Analyze')).rejects.toThrow();
   });
 });

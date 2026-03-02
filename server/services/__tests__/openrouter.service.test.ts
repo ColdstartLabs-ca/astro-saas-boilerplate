@@ -19,6 +19,7 @@ vi.mock('@shared/config/env', () => ({
     BASE_URL: 'http://localhost:4321',
     APP_NAME: 'TestApp',
   },
+  isTest: () => false,
 }));
 
 // Mock AI models config
