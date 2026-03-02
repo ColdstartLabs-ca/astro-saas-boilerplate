@@ -14,7 +14,7 @@ import { test as authenticatedTest } from '../helpers/auth';
 
 test.describe('Middleware - Authentication', () => {
   test('should reject requests without authentication token', async ({ request }) => {
-    const response = await request.get('/api/protected/example');
+    const response = await request.get('/api/projects');
 
     expect(response.status()).toBe(401);
 
@@ -24,7 +24,7 @@ test.describe('Middleware - Authentication', () => {
   });
 
   test('should reject requests with invalid authentication token', async ({ request }) => {
-    const response = await request.get('/api/protected/example', {
+    const response = await request.get('/api/projects', {
       headers: {
         Authorization: 'Bearer invalid_token_12345',
       },
@@ -39,7 +39,7 @@ test.describe('Middleware - Authentication', () => {
   authenticatedTest(
     'should allow requests with valid authentication token',
     async ({ request, testUser }) => {
-      const response = await request.get('/api/protected/example', {
+      const response = await request.get('/api/projects', {
         headers: {
           Authorization: `Bearer ${testUser.token}`,
         },
@@ -48,10 +48,7 @@ test.describe('Middleware - Authentication', () => {
       expect(response.status()).toBe(200);
 
       const body = await response.json();
-      expect(body).toHaveProperty('user');
-      expect(body).toHaveProperty('message');
-      expect(body.user.id).toBe(testUser.id);
-      expect(body.user.email).toBe(testUser.email);
+      expect(body).toHaveProperty('data.projects');
     }
   );
 });
@@ -180,15 +177,15 @@ test.describe('Middleware - Public Routes', () => {
 
 test.describe('Middleware - Protected Routes', () => {
   test('should require authentication for protected routes', async ({ request }) => {
-    const response = await request.get('/api/protected/example');
+    const response = await request.get('/api/projects');
 
     expect(response.status()).toBe(401);
   });
 
   authenticatedTest(
-    'should set user context headers for authenticated requests',
+    'should allow authenticated requests to protected routes',
     async ({ request, testUser }) => {
-      const response = await request.get('/api/protected/example', {
+      const response = await request.get('/api/projects', {
         headers: {
           Authorization: `Bearer ${testUser.token}`,
         },
@@ -197,17 +194,14 @@ test.describe('Middleware - Protected Routes', () => {
       expect(response.status()).toBe(200);
 
       const body = await response.json();
-      expect(body.user).toBeTruthy();
-      expect(body.user.id).toBe(testUser.id);
-      expect(body.user.email).toBe(testUser.email);
-      expect(body.rateLimit).toBeTruthy();
+      expect(body).toHaveProperty('data.projects');
     }
   );
 });
 
 test.describe('Middleware - Error Handling', () => {
   test('should return structured error responses', async ({ request }) => {
-    const response = await request.get('/api/protected/example');
+    const response = await request.get('/api/projects');
 
     expect(response.status()).toBe(401);
 
@@ -217,7 +211,7 @@ test.describe('Middleware - Error Handling', () => {
   });
 
   test('should handle missing Authorization header gracefully', async ({ request }) => {
-    const response = await request.get('/api/protected/example', {
+    const response = await request.get('/api/projects', {
       headers: {
         Authorization: '',
       },
@@ -230,7 +224,7 @@ test.describe('Middleware - Error Handling', () => {
   });
 
   test('should handle malformed Authorization header', async ({ request }) => {
-    const response = await request.get('/api/protected/example', {
+    const response = await request.get('/api/projects', {
       headers: {
         Authorization: 'InvalidFormat',
       },

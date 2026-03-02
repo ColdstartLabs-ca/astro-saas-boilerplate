@@ -76,7 +76,7 @@ test.describe('Authentication Flow Integration', () => {
 
       // Test token usage
       const authenticatedApi = api.withAuth(session.access_token);
-      const protectedResponse = await authenticatedApi.get('/api/protected/example');
+      const protectedResponse = await authenticatedApi.get('/api/projects');
 
       expect(protectedResponse.ok).toBeTruthy();
     });
@@ -174,7 +174,7 @@ test.describe('Authentication Flow Integration', () => {
       const testUser = await ctx.createUser();
       const authenticatedApi = api.withAuth(testUser.token);
 
-      const protectedRoutes = ['/api/protected/example', '/api/health'];
+      const protectedRoutes = ['/api/projects', '/api/health'];
 
       for (const route of protectedRoutes) {
         const response = await authenticatedApi.get(route);
@@ -184,7 +184,7 @@ test.describe('Authentication Flow Integration', () => {
 
     test('should block access to protected routes without authentication', async ({ request }) => {
       const api = new ApiClient(request);
-      const protectedRoutes = ['/api/protected/example'];
+      const protectedRoutes = ['/api/projects'];
 
       for (const route of protectedRoutes) {
         const response = await api.get(route);
