@@ -702,7 +702,7 @@ describe('CampaignService', () => {
       await campaignService.create(mockUserId, input);
 
       expect(insertCall).toMatchObject({
-        ai_model: 'pro',
+        ai_model: 'balanced',
         tone: 'professional',
         target_word_count: 1500,
       });

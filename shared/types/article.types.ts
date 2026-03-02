@@ -107,6 +107,12 @@ export interface IGenerateArticleInput {
   skipSemanticDedup?: boolean;
   /** GSC context for GSC-aware article generation (optional) */
   gscContext?: IGscArticleContext;
+  /** Enable YouTube video embedding enrichment */
+  enableYoutube?: boolean;
+  /** Enable citation enrichment with fact verification (+1 credit) */
+  enableCitations?: boolean;
+  /** Enable internal linking to related articles in the same project */
+  enableInternalLinks?: boolean;
 }
 
 /**
@@ -159,6 +165,13 @@ export interface IArticleWithCampaign extends IArticle {
     image_url: string | null;
     prompt?: string;
     status: string;
+  }>;
+  /** Latest delivery records (joined) */
+  integration_deliveries?: Array<{
+    id: string;
+    status: string;
+    external_url: string | null;
+    delivered_at: string | null;
   }>;
 }
 

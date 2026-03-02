@@ -131,3 +131,16 @@ export const CREDIT_WARNING_PERCENTAGE = 0.2;
  * Example: 0.20 means send alert when credits < 20% of plan allocation.
  */
 export const LOW_CREDIT_EMAIL_THRESHOLD_PERCENT = 0.2;
+
+// =============================================================================
+// Enrichment Credit Costs (ADDON costs per article)
+// =============================================================================
+
+/**
+ * Credit costs for optional article enrichment features.
+ * These are ADDON costs added on top of the base article cost.
+ */
+export const ENRICHMENT_CREDIT_COSTS = {
+  /** Citation enrichment: web search + LLM fact verification */
+  CITATION_ENRICHMENT: 1,
+} as const;

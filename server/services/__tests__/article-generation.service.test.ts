@@ -486,15 +486,15 @@ AI content is here to stay.`,
       expect(supabaseAdmin.rpc).toHaveBeenCalledWith(
         'add_purchased_credits',
         expect.objectContaining({
-          p_user_id: 'user-123',
-          p_amount: 2, // Refund matches the charged amount stored in credits_used
-          p_reference_id: 'article-fail-single-refund',
+          target_user_id: 'user-123',
+          amount: 2, // Refund matches the charged amount stored in credits_used
+          ref_id: 'article-fail-single-refund',
         })
       );
 
       // Verify description indicates generation failure
       const refundCall = (supabaseAdmin.rpc as any).mock.calls[0];
-      expect(refundCall[1].p_description).toContain('generation failed');
+      expect(refundCall[1].description).toContain('generation failed');
     });
   });
 
@@ -683,7 +683,7 @@ Too short.`;
       expect(supabaseAdmin.rpc).toHaveBeenCalledWith(
         'add_purchased_credits',
         expect.objectContaining({
-          p_description: expect.stringContaining('quality gate failed'),
+          description: expect.stringContaining('quality gate failed'),
         })
       );
     });

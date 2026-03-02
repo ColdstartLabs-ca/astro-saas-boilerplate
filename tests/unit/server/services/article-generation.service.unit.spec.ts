@@ -848,11 +848,12 @@ Some content follows.`;
       expect(deliveryService.deliverArticle).toHaveBeenCalledWith(mockArticleId);
     });
 
-    it('should NOT auto-approve qa_failed articles even when autoApprove is enabled', async () => {
+    it('should auto-approve draft articles (QA exhausted) when autoApprove is enabled', async () => {
       const { qaService } = await import('@server/services/qa.service');
       const { deliveryService } = await import('@server/services/delivery.service');
 
-      // Force QA to fail
+      // Force QA to always fail — after exhausting retries, article is published as 'draft'
+      // Draft status IS auto-approved when autoApprove=true (changed from old qa_failed behavior)
       (qaService.runQAChecks as ReturnType<typeof vi.fn>).mockResolvedValue({
         passed: false,
         failureReason: 'AI likelihood too high',
@@ -864,22 +865,27 @@ Some content follows.`;
         },
       });
 
+      // Provide outline, content, and 2 QA retry completions (MAX_QA_RETRIES = 2)
+      const outlineResponse = {
+        content: JSON.stringify({
+          title: 'QA Failed Test',
+          metaDescription: 'A test article',
+          slug: 'qa-failed-test',
+          sections: [],
+        }),
+        usage: { totalTokens: 100 },
+        finishReason: 'stop',
+      };
+      const contentResponse = {
+        content: 'Test article content',
+        usage: { totalTokens: 200 },
+        finishReason: 'stop',
+      };
       mockChatCompletionWithRetry
-        .mockResolvedValueOnce({
-          content: JSON.stringify({
-            title: 'QA Failed Test',
-            metaDescription: 'A test article',
-            slug: 'qa-failed-test',
-            sections: [],
-          }),
-          usage: { totalTokens: 100 },
-          finishReason: 'stop',
-        })
-        .mockResolvedValueOnce({
-          content: 'Test article content',
-          usage: { totalTokens: 200 },
-          finishReason: 'stop',
-        });
+        .mockResolvedValueOnce(outlineResponse) // outline
+        .mockResolvedValueOnce(contentResponse) // initial content
+        .mockResolvedValueOnce(contentResponse) // QA retry 1
+        .mockResolvedValueOnce(contentResponse); // QA retry 2
 
       const { supabaseAdmin } = await import('@server/supabase/supabaseAdmin');
       buildSupabaseMock(supabaseAdmin as unknown as { from: ReturnType<typeof vi.fn> }, {
@@ -897,8 +903,8 @@ Some content follows.`;
 
       await service.generateArticle(mockArticleId, mockUserId, input);
 
-      // deliverArticle should NOT have been called for qa_failed articles
-      expect(deliveryService.deliverArticle).not.toHaveBeenCalled();
+      // After QA exhaustion, article is published as 'draft' and IS auto-approved
+      expect(deliveryService.deliverArticle).toHaveBeenCalled();
     });
 
     it('should skip auto-approve and use normal auto-delivery when autoApprove is disabled', async () => {

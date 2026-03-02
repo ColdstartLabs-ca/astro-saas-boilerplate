@@ -93,6 +93,12 @@ vi.mock('lucide-react', () => ({
   ToggleRight: ({ className }: { className: string }) => (
     <div data-testid="toggle-right" className={className} />
   ),
+  Pencil: ({ className }: { className: string }) => (
+    <div data-testid="pencil" className={className} />
+  ),
+  RefreshCw: ({ className }: { className: string }) => (
+    <div data-testid="refresh-cw" className={className} />
+  ),
 }));
 
 // Mock ArticleDetailModal
@@ -436,7 +442,7 @@ describe('CampaignDetailView', () => {
     expect(screen.getByText('Published')).toBeInTheDocument();
   });
 
-  it('should render keyword table with status badges', () => {
+  it('should render keyword table with status badges', async () => {
     vi.mocked(useCampaignDetail).mockReturnValue({
       campaign: mockCampaign,
       keywords: mockKeywords,
@@ -461,6 +467,11 @@ describe('CampaignDetailView', () => {
       wrapper: createWrapper(),
     });
 
+    // Switch to Articles tab to see the article table
+    const articlesTab = screen.getByRole('button', { name: /Articles/i });
+    await userEvent.click(articlesTab);
+
+    // Now the article keywords should be visible
     expect(screen.getByText('best coffee maker')).toBeInTheDocument();
     expect(screen.getByText('espresso machine reviews')).toBeInTheDocument();
 
@@ -555,6 +566,10 @@ describe('CampaignDetailView', () => {
     render(<CampaignDetailView campaignId={mockCampaignId} onBackToList={mockOnBackToList} />, {
       wrapper: createWrapper(),
     });
+
+    // Switch to Articles tab first to access the search input
+    const articlesTab = screen.getByRole('button', { name: /Articles/i });
+    await userEvent.click(articlesTab);
 
     const searchInput = screen.getByPlaceholderText('Search keywords...');
     await userEvent.type(searchInput, 'espresso');
@@ -767,10 +782,16 @@ describe('CampaignDetailView', () => {
       expect(screen.getByText('Image Preset')).toBeInTheDocument();
 
       // Custom ModelSelect shows selected model name in the trigger
-      // The campaign has ai_model: 'openrouter/auto' which maps to 'Auto (Best Match)'
+      // The campaign has ai_model: 'auto' which maps to 'Auto (Best Match)'
       expect(screen.getByText('Auto (Best Match)')).toBeInTheDocument();
+
+      // For Image Preset, find the trigger button specifically within the Image Preset section
       // The campaign has image_preset: 'budget' which maps to 'Budget'
-      expect(screen.getByText('Budget')).toBeInTheDocument();
+      const imagePresetLabel = screen.getByText('Image Preset');
+      const imagePresetSection = imagePresetLabel.parentElement;
+      // Find the button within this section that contains "Budget"
+      const imagePresetTrigger = imagePresetSection?.querySelector('button');
+      expect(imagePresetTrigger).toHaveTextContent('Budget');
     });
 
     it('should update campaign model/preset on save', async () => {
@@ -826,26 +847,36 @@ describe('CampaignDetailView', () => {
       const gpt4oOption = await screen.findByText('GPT-4o');
       await userEvent.click(gpt4oOption.closest('button')!);
 
-      // Open the image preset dropdown and select Balanced
-      // Use getAllByText since "Budget" may appear as both trigger label and tier header
-      const budgetElements = screen.getAllByText('Budget');
-      const imageTrigger = budgetElements[0].closest('button');
+      // Open the image preset dropdown
+      // Find the Image Preset section and its trigger button
+      const imagePresetLabel = screen.getByText('Image Preset');
+      const imagePresetSection = imagePresetLabel.parentElement;
+      const imageTrigger = imagePresetSection?.querySelector('button');
       if (imageTrigger) {
         await userEvent.click(imageTrigger);
       }
-      // Find the Balanced option button (not the tier header div)
+
+      // Wait for dropdown to open and find the Balanced option button
+      // The dropdown shows tier headers and options - we need to find the button with "Balanced" text
       await waitFor(() => {
-        const balancedElements = screen.getAllByText('Balanced');
-        const balancedButton = balancedElements.find(el => el.closest('button[type="button"]'));
+        const allButtons = screen.getAllByRole('button');
+        const balancedButton = allButtons.find(
+          btn => btn.textContent?.includes('Balanced') && btn.querySelector('[data-testid="check"]') === null
+        );
         expect(balancedButton).toBeTruthy();
-        return balancedButton;
       });
-      const balancedElements = screen.getAllByText('Balanced');
-      const balancedButton = balancedElements.find(el => el.closest('button[type="button"]'))!;
-      await userEvent.click(balancedButton.closest('button')!);
+
+      // Find and click the Balanced option (not the tier header)
+      const allButtons = screen.getAllByRole('button');
+      const balancedOption = allButtons.find(
+        btn => btn.textContent?.trim() === 'Balanced' || btn.querySelector('.text-sm.font-medium')?.textContent === 'Balanced'
+      );
+      if (balancedOption) {
+        await userEvent.click(balancedOption);
+      }
 
       // Click save
-      const saveButton = screen.getByRole('button', { name: /Save/i });
+      const saveButton = screen.getByRole('button', { name: /Save Changes/i });
       await userEvent.click(saveButton);
 
       await waitFor(() => {

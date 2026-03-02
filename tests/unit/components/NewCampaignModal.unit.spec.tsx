@@ -261,7 +261,7 @@ describe('NewCampaignModal', () => {
     expect(textarea).toBeInTheDocument();
   });
 
-  it('should disable submit when insufficient credits', async () => {
+  it('should disable submit when insufficient credits and schedule is off', async () => {
     vi.mocked(userStoreModule).useUserStore = () => ({
       user: {
         profile: {
@@ -303,8 +303,16 @@ describe('NewCampaignModal', () => {
       expect(screen.getByText('Step 3 of 3')).toBeInTheDocument();
     });
 
-    const createButton = screen.getByRole('button', { name: /Create Campaign/i });
-    expect(createButton).toBeDisabled();
+    // Disable the schedule toggle to test immediate mode with insufficient credits
+    // In immediate mode, the button should be disabled when credits are insufficient.
+    // The schedule toggle disables the schedule, revealing "Create Campaign" button.
+    const scheduleToggle = screen.getByRole('checkbox');
+    fireEvent.click(scheduleToggle);
+
+    await waitFor(() => {
+      const createButton = screen.getByRole('button', { name: /Create Campaign/i });
+      expect(createButton).toBeDisabled();
+    });
   });
 
   it('should call createCampaign on submit', async () => {
@@ -343,20 +351,26 @@ describe('NewCampaignModal', () => {
       expect(screen.getByText('Step 3 of 3')).toBeInTheDocument();
     });
 
-    // Submit
-    const createButton = screen.getByRole('button', { name: /Create Campaign/i });
-    fireEvent.click(createButton);
+    // Submit — scheduleEnabled is true by default, so button says "Start Schedule"
+    const startScheduleButton = screen.getByRole('button', { name: /Start Schedule/i });
+    fireEvent.click(startScheduleButton);
 
     await waitFor(() => {
-      expect(mockOnSubmit).toHaveBeenCalledWith({
-        name: 'Test Campaign',
-        projectId: mockProjectId,
-        keywords: ['test keyword'],
-        model: 'balanced',
-        tone: 'professional',
-        targetWordCount: 1500,
-        imagePreset: 'balanced', // Default value from form
-      });
+      expect(mockOnSubmit).toHaveBeenCalledWith(
+        expect.objectContaining({
+          name: 'Test Campaign',
+          projectId: mockProjectId,
+          keywords: ['test keyword'],
+          model: 'balanced',
+          tone: 'professional',
+          targetWordCount: 1500,
+          imagePreset: 'balanced',
+          scheduleFrequency: expect.any(String),
+          scheduleBatchSize: expect.any(Number),
+          scheduleTimezone: expect.any(String),
+          scheduleHour: expect.any(Number),
+        })
+      );
     });
   });
 

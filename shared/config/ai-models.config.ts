@@ -70,7 +70,7 @@ const WRITER_DEFAULTS = new Map<string, string>(
   WRITER_PRESET_KEYS.map(k => [k, WRITER_PRESETS[k].defaultModel])
 );
 
-export const DEFAULT_WRITER_PRESET: WriterPresetKey = 'pro';
+export const DEFAULT_WRITER_PRESET: WriterPresetKey = 'balanced';
 
 // =============================================================================
 // Public API

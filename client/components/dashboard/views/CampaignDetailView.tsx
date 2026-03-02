@@ -22,8 +22,17 @@ import {
   ArticleQueueTable,
   CampaignIntegrationsSection,
 } from './campaign-detail';
-import type { IArticle, IArticleWithCampaign } from '@shared/types/article.types';
+import type { IArticleWithCampaign } from '@shared/types/article.types';
 import type { IAddKeywordsResponse } from '@shared/types/campaign.types';
+
+type CampaignTab = 'overview' | 'articles' | 'integrations';
+
+const WRITER_DISPLAY_NAME: Record<string, string> = {
+  budget: 'Budget',
+  balanced: 'Balanced',
+  pro: 'Pro',
+  ultra: 'Ultra',
+};
 
 interface ICampaignDetailViewProps {
   campaignId: string;
@@ -37,11 +46,12 @@ export function CampaignDetailView({
   const t = useTranslations('dashboard');
   const queryClient = useQueryClient();
   const { writerPresets, imagePresets } = useAvailableModels();
+  const [activeTab, setActiveTab] = useState<CampaignTab>('overview');
   const [isAddKeywordsModalOpen, setIsAddKeywordsModalOpen] = useState(false);
   const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
-  const [selectedArticle, setSelectedArticle] = useState<IArticle | null>(null);
+  const [selectedArticle, setSelectedArticle] = useState<IArticleWithCampaign | null>(null);
 
   const {
     campaign,
@@ -51,6 +61,7 @@ export function CampaignDetailView({
     creditStats,
     isLoading,
     addKeywords,
+    deliverArticle,
     startCampaign,
     updateCampaign,
     startSchedule,
@@ -153,7 +164,7 @@ export function CampaignDetailView({
   };
 
   // Handle clicking on an article row
-  const handleArticleClick = (article: IArticle) => {
+  const handleArticleClick = (article: IArticleWithCampaign) => {
     setSelectedArticle(article);
   };
 
@@ -207,17 +218,55 @@ export function CampaignDetailView({
       {/* Stats Grid */}
       <CampaignStatsGrid stats={stats} />
 
-      {/* Campaign Metadata Section */}
-      <CampaignMetadata campaign={campaign} keywords={keywords} t={t} />
+      {/* Tab Bar */}
+      <div className="flex gap-1 border-b border-border mb-4">
+        {(
+          [
+            { id: 'overview', label: 'Overview' },
+            { id: 'articles', label: 'Articles', badge: articles.length || undefined },
+            { id: 'integrations', label: 'Integrations' },
+          ] as Array<{ id: CampaignTab; label: string; badge?: number }>
+        ).map(tab => (
+          <button
+            key={tab.id}
+            type="button"
+            onClick={() => setActiveTab(tab.id)}
+            className={`flex items-center gap-2 px-4 py-2 text-sm font-medium border-b-2 -mb-px transition-colors ${
+              activeTab === tab.id
+                ? 'border-accent text-white'
+                : 'border-transparent text-secondary hover:text-white'
+            }`}
+          >
+            {tab.label}
+            {tab.badge !== undefined && (
+              <span className="text-xs bg-surface-light text-muted px-1.5 py-0.5 rounded-full">
+                {tab.badge}
+              </span>
+            )}
+          </button>
+        ))}
+      </div>
 
-      {/* Credit Usage Section */}
-      {creditStats && <CampaignCreditUsage creditStats={creditStats} keywords={keywords} t={t} />}
+      {/* Tab Content */}
+      {activeTab === 'overview' && (
+        <div className="space-y-6 pb-8">
+          <CampaignMetadata campaign={campaign} keywords={keywords} onOpenSettings={() => setIsSettingsModalOpen(true)} t={t} />
+          {creditStats && <CampaignCreditUsage creditStats={creditStats} keywords={keywords} t={t} />}
+        </div>
+      )}
 
-      {/* Integrations Section */}
-      <CampaignIntegrationsSection campaignId={campaignId} t={t} />
+      {activeTab === 'articles' && (
+        <ArticleQueueTable
+          articles={articles}
+          onArticleClick={handleArticleClick}
+          onDeliver={deliverArticle}
+          t={t}
+        />
+      )}
 
-      {/* Article Queue Table */}
-      <ArticleQueueTable articles={articles} onArticleClick={handleArticleClick} t={t} />
+      {activeTab === 'integrations' && (
+        <CampaignIntegrationsSection campaignId={campaignId} t={t} />
+      )}
 
       {/* Add Keywords Modal */}
       <AddKeywordsModal
@@ -241,13 +290,15 @@ export function CampaignDetailView({
             <p className="text-xs font-medium text-blue-200">Credit cost per article:</p>
             <div className="space-y-1.5">
               <div className="flex items-center justify-between text-xs">
-                <span className="text-blue-100/80">Writer ({campaign?.ai_model || 'budget'})</span>
+                <span className="text-blue-100/80">
+                  Writer ({WRITER_DISPLAY_NAME[campaign?.ai_model ?? ''] ?? campaign?.ai_model ?? 'Balanced'})
+                </span>
                 <span className="font-semibold text-white">{writerCost} credit</span>
               </div>
               {imageCost > 0 ? (
                 <div className="flex items-center justify-between text-xs">
                   <span className="text-blue-100/80">
-                    Images ({campaign?.image_preset || 'balanced'})
+                    Images ({WRITER_DISPLAY_NAME[campaign?.image_preset ?? ''] ?? campaign?.image_preset ?? 'Balanced'})
                   </span>
                   <span className="font-semibold text-white">
                     +{imageCost} credit{imageCost > 1 ? 's' : ''}

@@ -848,6 +848,19 @@ describe('CampaignSchedulingService - processScheduledBatch (BUG H7)', () => {
       })),
     });
 
+    // Call 4b: articles select for scheduled_publish_at assignment
+    mockSupabaseAdmin.from.mockReturnValueOnce({
+      select: vi.fn(() => ({
+        eq: vi.fn(() => ({
+          eq: vi.fn(() => ({
+            in: vi.fn(() => ({
+              order: vi.fn(() => ({ data: [], error: null })),
+            })),
+          })),
+        })),
+      })),
+    });
+
     // Call 5: update keyword status to 'generating'
     mockSupabaseAdmin.from.mockReturnValueOnce({
       update: vi.fn(() => ({

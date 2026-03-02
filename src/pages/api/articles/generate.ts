@@ -28,6 +28,7 @@ import { normalizeKeyword } from '@shared/utils/keyword';
 import {
   SUBSCRIPTION_CREDITS,
   LOW_CREDIT_EMAIL_THRESHOLD_PERCENT,
+  ENRICHMENT_CREDIT_COSTS,
   type SubscriptionTier,
 } from '@shared/constants/credit-costs.constants';
 
@@ -45,6 +46,9 @@ const generateSchema = z.object({
     .refine(val => !val || isValidImagePreset(val), { message: 'Invalid image preset' }),
   forceRegenerate: z.boolean().optional().default(false),
   skipSemanticDedup: z.boolean().optional().default(false),
+  enableCitations: z.boolean().optional().default(false),
+  enableYoutube: z.boolean().optional().default(false),
+  enableInternalLinks: z.boolean().optional().default(false),
 });
 
 export const POST = withAuthAndBody(generateSchema, async (userId, input, { locals }) => {
@@ -81,9 +85,14 @@ export const POST = withAuthAndBody(generateSchema, async (userId, input, { loca
   // This ensures the billed model matches the actual generation model
   const resolvedModel = input.model || campaign.ai_model || 'pro';
 
-  // Calculate total credits needed (writer preset base cost + optional image cost)
+  // Calculate total credits needed (writer preset base cost + optional image cost + enrichment addons)
   // Use the resolved model to ensure billing matches actual generation
-  const totalCreditsNeeded = calculateArticleCreditCost(resolvedModel, input.imagePreset);
+  let totalCreditsNeeded = calculateArticleCreditCost(resolvedModel, input.imagePreset);
+
+  // Add citation enrichment credit cost if enabled (+1 credit for API calls + LLM verification)
+  if (input.enableCitations) {
+    totalCreditsNeeded += ENRICHMENT_CREDIT_COSTS.CITATION_ENRICHMENT;
+  }
 
   // Check for existing article with the same normalized keyword in this campaign
   // This prevents duplicate article generation for the same topic.

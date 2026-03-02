@@ -67,10 +67,10 @@ export function NewCampaignModal({
     defaultValues: {
       name: '',
       keywords: '',
-      model: 'budget',
+      model: 'balanced',
       tone: 'professional',
       targetWordCount: 1500,
-      imagePreset: 'budget',
+      imagePreset: 'balanced',
       scheduleEnabled: true,
       scheduleFrequency: 'daily',
       scheduleBatchSize: 3,

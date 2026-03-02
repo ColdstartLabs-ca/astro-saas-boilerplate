@@ -71,6 +71,12 @@ export const GET = withAuth(async (userId, { url }) => {
         position,
         image_url,
         status
+      ),
+      integration_deliveries (
+        id,
+        status,
+        external_url,
+        delivered_at
       )
     `,
       { count: 'exact' }

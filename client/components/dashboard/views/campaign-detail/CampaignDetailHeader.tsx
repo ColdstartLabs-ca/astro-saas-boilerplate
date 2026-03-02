@@ -12,6 +12,21 @@ import {
   AlertTriangle,
   CreditCard,
 } from 'lucide-react';
+import type { ModelTier } from '@shared/types/models.types';
+
+const WRITER_DISPLAY: Record<string, { name: string; tier: ModelTier }> = {
+  budget: { name: 'Budget', tier: 'budget' },
+  balanced: { name: 'Balanced', tier: 'balanced' },
+  pro: { name: 'Pro', tier: 'pro' },
+  ultra: { name: 'Ultra', tier: 'ultra' },
+};
+
+const TIER_DOT: Record<string, string> = {
+  budget: 'bg-green-400',
+  balanced: 'bg-blue-400',
+  pro: 'bg-purple-400',
+  ultra: 'bg-amber-400',
+};
 import { DashboardButton } from '../../ui/DashboardButton';
 import { getCampaignStatusStyles } from '@client/utils/statusStyles';
 import type { ICampaign } from '@shared/types/campaign.types';
@@ -153,8 +168,15 @@ export function CampaignDetailHeader({
             </span>
           </h2>
           <div className="flex items-center gap-4 mt-2 text-sm text-secondary">
-            <span className="flex items-center">
-              <Cpu className="w-3 h-3 mr-1.5" /> {t('campaigns.card.model')}: {campaign.ai_model}
+            <span className="flex items-center gap-1.5">
+              <Cpu className="w-3 h-3" />
+              {t('campaigns.card.model')}:{' '}
+              {WRITER_DISPLAY[campaign.ai_model]?.name ?? campaign.ai_model}
+              {WRITER_DISPLAY[campaign.ai_model] && (
+                <span
+                  className={`w-2 h-2 rounded-full ${TIER_DOT[WRITER_DISPLAY[campaign.ai_model].tier] ?? 'bg-blue-400'}`}
+                />
+              )}
             </span>
             <span className="flex items-center">
               <Layers className="w-3 h-3 mr-1.5" /> {stats.draft + stats.published} /{' '}
@@ -230,7 +252,7 @@ export function CampaignDetailHeader({
 
           {/* Settings */}
           <DashboardButton variant="ghost" size="sm" onClick={onOpenSettings}>
-            <Settings className="w-4 h-4" />
+            <Settings className="w-4 h-4 mr-1.5" /> Settings
           </DashboardButton>
         </div>
       </div>

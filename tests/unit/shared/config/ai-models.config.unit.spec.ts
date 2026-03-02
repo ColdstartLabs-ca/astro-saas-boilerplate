@@ -70,8 +70,8 @@ describe('ai-models.config (writer presets)', () => {
   });
 
   describe('DEFAULT_WRITER_PRESET', () => {
-    it('should be set to pro', () => {
-      expect(DEFAULT_WRITER_PRESET).toBe('pro');
+    it('should be set to balanced', () => {
+      expect(DEFAULT_WRITER_PRESET).toBe('balanced');
     });
 
     it('should be a valid preset key', () => {
@@ -218,7 +218,7 @@ describe('ai-models.config (writer presets)', () => {
 
     it('should fallback to default preset model for unknown key', () => {
       const result = resolveWriterModel('nonexistent', '');
-      expect(result).toBe('anthropic/claude-sonnet-4-6');
+      expect(result).toBe('openai/gpt-4o');
     });
   });
 
@@ -251,7 +251,7 @@ describe('ai-models.config (writer presets)', () => {
     });
 
     it('DEFAULT_MODEL should be the default preset model', () => {
-      expect(DEFAULT_MODEL).toBe('anthropic/claude-sonnet-4-6');
+      expect(DEFAULT_MODEL).toBe('openai/gpt-4o');
     });
 
     it('isValidModel should accept both model IDs and preset keys', () => {

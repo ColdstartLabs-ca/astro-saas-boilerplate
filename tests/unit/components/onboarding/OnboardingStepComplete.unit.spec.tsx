@@ -61,6 +61,7 @@ const allCompletedSteps = new Set([
   OnboardingStep.PROJECT_CREATION,
   OnboardingStep.GSC_CONNECTION,
   OnboardingStep.KEYWORDS_UPLOAD,
+  OnboardingStep.PREFERENCES,
   OnboardingStep.INTEGRATIONS,
 ]);
 

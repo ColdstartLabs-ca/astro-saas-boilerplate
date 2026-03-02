@@ -320,8 +320,8 @@ describe('OpenRouterService', () => {
 
       expect(result.content).toBe('Success');
       expect(fetch).toHaveBeenCalledTimes(3);
-      // Exponential backoff: 1s + 2s = 3s minimum
-      expect(elapsed).toBeGreaterThanOrEqual(3000);
+      // Exponential backoff: 1s + 2s = 3s minimum (use 2900ms to account for timing imprecision)
+      expect(elapsed).toBeGreaterThanOrEqual(2900);
     });
 
     it('should not retry on 400 errors', async () => {

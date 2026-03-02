@@ -35,7 +35,7 @@ vi.mock('@server/webhooks/stripe/services/webhook-verification.service', () => (
         return {
           event: {
             id: 'evt_test',
-            type: 'invoice.payment_succeeded',
+            type: 'invoice.paid',
             data: { object: {} },
           },
           isTestMode: true,
@@ -401,7 +401,7 @@ describe('Bug Fix: Billing Credit Renewal on invoice.payment_succeeded', () => {
 
     const event = {
       id: `evt_test_${invoiceId}`,
-      type: 'invoice.payment_succeeded',
+      type: 'invoice.paid',
       data: { object: invoiceData },
     };
 
@@ -505,7 +505,7 @@ describe('Bug Fix: Billing Credit Renewal on invoice.payment_succeeded', () => {
 
     const event = {
       id: `evt_test_${invoiceId}`,
-      type: 'invoice.payment_succeeded',
+      type: 'invoice.paid',
       data: { object: invoiceData },
     };
 
@@ -606,7 +606,7 @@ describe('Bug Fix: Billing Credit Renewal on invoice.payment_succeeded', () => {
 
     const event = {
       id: `evt_test_${invoiceId}`,
-      type: 'invoice.payment_succeeded',
+      type: 'invoice.paid',
       data: { object: invoiceData },
     };
 
@@ -694,7 +694,7 @@ describe('Bug Fix: Billing Credit Renewal on invoice.payment_succeeded', () => {
 
     const event = {
       id: `evt_test_${invoiceId}`,
-      type: 'invoice.payment_succeeded',
+      type: 'invoice.paid',
       data: { object: invoiceData },
     };
 
@@ -750,7 +750,7 @@ describe('Bug Fix: Billing Credit Renewal on invoice.payment_succeeded', () => {
 
     const event = {
       id: `evt_test_${invoiceId}`,
-      type: 'invoice.payment_succeeded',
+      type: 'invoice.paid',
       data: { object: invoiceData },
     };
 

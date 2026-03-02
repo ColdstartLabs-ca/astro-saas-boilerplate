@@ -5,45 +5,57 @@ import {
   Loader2,
   Edit2,
   ExternalLink,
+  Send,
 } from 'lucide-react';
 import { getArticleStatusStyles } from '@client/utils/statusStyles';
 import dayjs from 'dayjs';
-import type { IArticle } from '@shared/types/article.types';
+import type { IArticleWithCampaign } from '@shared/types/article.types';
 
 interface IArticleQueueTableProps {
-  articles: IArticle[];
-  onArticleClick: (article: IArticle) => void;
+  articles: IArticleWithCampaign[];
+  onArticleClick: (article: IArticleWithCampaign) => void;
+  onDeliver?: (articleId: string) => Promise<void>;
   t: (key: string) => string;
+}
+
+const DELIVERY_STATUS_STYLE: Record<string, string> = {
+  delivered: 'text-green-400',
+  delivering: 'text-amber-400',
+  failed: 'text-red-400',
+  pending: 'text-muted',
+};
+
+function getLatestDelivery(article: IArticleWithCampaign) {
+  const deliveries = article.integration_deliveries;
+  if (!deliveries || deliveries.length === 0) return null;
+  return deliveries.reduce((latest, d) =>
+    new Date(d.delivered_at ?? d.id) > new Date(latest.delivered_at ?? latest.id) ? d : latest
+  );
 }
 
 export function ArticleQueueTable({
   articles,
   onArticleClick,
+  onDeliver,
   t,
 }: IArticleQueueTableProps): JSX.Element {
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [deliveringId, setDeliveringId] = useState<string | null>(null);
 
-  // Filter articles by search query and status
   const filteredArticles = useMemo(() => {
     let result = articles;
-
-    // Filter by search query
     if (searchQuery) {
       result = result.filter(a =>
         a.primary_keyword.toLowerCase().includes(searchQuery.toLowerCase())
       );
     }
-
-    // Filter by status
     if (statusFilter !== 'all') {
       result = result.filter(a => a.status === statusFilter);
     }
-
     return result;
   }, [articles, searchQuery, statusFilter]);
 
-  // Sort articles: generating first, then queued, then by status
   const sortedArticles = useMemo(() => {
     return [...filteredArticles].sort((a, b) => {
       const statusOrder: Record<string, number> = {
@@ -59,6 +71,16 @@ export function ArticleQueueTable({
       return aOrder - bOrder;
     });
   }, [filteredArticles]);
+
+  const handleDeliver = async (articleId: string) => {
+    if (!onDeliver) return;
+    setDeliveringId(articleId);
+    try {
+      await onDeliver(articleId);
+    } finally {
+      setDeliveringId(null);
+    }
+  };
 
   return (
     <div className="bg-surface border border-border rounded-xl overflow-hidden flex-1 flex flex-col">
@@ -100,6 +122,7 @@ export function ArticleQueueTable({
               <th className="px-6 py-3">Keyword</th>
               <th className="px-6 py-3">Status</th>
               <th className="px-6 py-3">{t('campaigns.detail.wordCount')}</th>
+              <th className="px-6 py-3">Delivered</th>
               <th className="px-6 py-3 text-right">{t('campaigns.detail.generated')}</th>
               <th className="px-6 py-3 text-right">{t('campaigns.detail.actions')}</th>
             </tr>
@@ -107,62 +130,102 @@ export function ArticleQueueTable({
           <tbody className="divide-y divide-border">
             {sortedArticles.length === 0 ? (
               <tr>
-                <td colSpan={5} className="px-6 py-12 text-center text-muted">
+                <td colSpan={6} className="px-6 py-12 text-center text-muted">
                   {t('campaigns.detail.noArticles')}
                 </td>
               </tr>
             ) : (
-              sortedArticles.map(article => (
-                <tr
-                  key={article.id}
-                  className="hover:bg-surface-light/30 transition-colors group"
-                >
-                  <td className="px-6 py-3">
-                    <button
-                      type="button"
-                      onClick={() => onArticleClick(article)}
-                      className="font-medium text-secondary hover:text-white transition-colors text-left"
-                    >
-                      {article.primary_keyword}
-                    </button>
-                  </td>
-                  <td className="px-6 py-3">
-                    <span
-                      className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium border uppercase tracking-wide ${getArticleStatusStyles(article.status)}`}
-                    >
-                      {article.status === 'generating' && (
-                        <Loader2 className="w-3 h-3 mr-1 animate-spin" />
-                      )}
-                      {article.status}
-                    </span>
-                  </td>
-                  <td className="px-6 py-3 text-muted font-mono text-xs">
-                    {article.word_count ? article.word_count.toLocaleString() : '-'}
-                  </td>
-                  <td className="px-6 py-3 text-right text-muted text-xs">
-                    {article.generated_at ? dayjs(article.generated_at).format('MMM D') : '-'}
-                  </td>
-                  <td className="px-6 py-3 text-right">
-                    <div className="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                      {(article.status === 'draft' || article.status === 'reviewed') && (
-                        <button className="p-1.5 hover:bg-surface-light rounded text-secondary hover:text-white">
-                          <Edit2 className="w-3.5 h-3.5" />
-                        </button>
-                      )}
-                      {article.status === 'published' && article.published_url && (
-                        <a
-                          href={article.published_url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="p-1.5 hover:bg-surface-light rounded text-secondary hover:text-white"
+              sortedArticles.map(article => {
+                const delivery = getLatestDelivery(article);
+                const viewUrl = article.published_url ?? delivery?.external_url ?? null;
+                return (
+                  <tr
+                    key={article.id}
+                    className="hover:bg-surface-light/30 transition-colors group"
+                  >
+                    <td className="px-6 py-3">
+                      <button
+                        type="button"
+                        onClick={() => onArticleClick(article)}
+                        className="font-medium text-secondary hover:text-white transition-colors text-left"
+                      >
+                        {article.primary_keyword}
+                      </button>
+                    </td>
+                    <td className="px-6 py-3">
+                      <span
+                        className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium border uppercase tracking-wide ${getArticleStatusStyles(article.status)}`}
+                      >
+                        {article.status === 'generating' && (
+                          <Loader2 className="w-3 h-3 mr-1 animate-spin" />
+                        )}
+                        {article.status}
+                      </span>
+                    </td>
+                    <td className="px-6 py-3 text-muted font-mono text-xs">
+                      {article.word_count ? article.word_count.toLocaleString() : '-'}
+                    </td>
+                    <td className="px-6 py-3">
+                      {delivery ? (
+                        <span
+                          className={`text-xs ${DELIVERY_STATUS_STYLE[delivery.status] ?? 'text-muted'}`}
                         >
-                          <ExternalLink className="w-3.5 h-3.5" />
-                        </a>
+                          {delivery.status === 'delivered' && delivery.delivered_at
+                            ? dayjs(delivery.delivered_at).format('MMM D, HH:mm')
+                            : delivery.status}
+                        </span>
+                      ) : (
+                        <span className="text-xs text-muted">—</span>
                       )}
-                    </div>
-                  </td>
-                </tr>
-              ))
+                    </td>
+                    <td className="px-6 py-3 text-right text-muted text-xs">
+                      {article.generated_at ? dayjs(article.generated_at).format('MMM D') : '-'}
+                    </td>
+                    <td className="px-6 py-3 text-right">
+                      <div className="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                        {(article.status === 'draft' ||
+                          article.status === 'reviewed' ||
+                          article.status === 'published') && (
+                          <button
+                            type="button"
+                            onClick={() => onArticleClick(article)}
+                            title="Edit article"
+                            className="p-1.5 hover:bg-surface-light rounded text-secondary hover:text-white"
+                          >
+                            <Edit2 className="w-3.5 h-3.5" />
+                          </button>
+                        )}
+                        {viewUrl && (
+                          <a
+                            href={viewUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            title="View published article"
+                            className="p-1.5 hover:bg-surface-light rounded text-secondary hover:text-white"
+                          >
+                            <ExternalLink className="w-3.5 h-3.5" />
+                          </a>
+                        )}
+                        {onDeliver && article.status === 'published' && (
+                          <button
+                            type="button"
+                            onClick={() => handleDeliver(article.id)}
+                            disabled={deliveringId === article.id}
+                            title="Re-submit to blog"
+                            className="p-1.5 hover:bg-surface-light rounded text-secondary hover:text-accent disabled:opacity-40"
+                          >
+                            {deliveringId === article.id ? (
+                              <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                            ) : (
+                              <Send className="w-3.5 h-3.5" />
+                            )}
+                          </button>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })
             )}
           </tbody>
         </table>

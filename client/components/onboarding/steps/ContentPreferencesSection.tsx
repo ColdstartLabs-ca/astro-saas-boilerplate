@@ -62,7 +62,7 @@ const DEFAULT_VALUES: IContentPreferences = {
   brandColor: '#4F46E5',
   imageStyle: 'cinematic',
   globalInstructions: '',
-  autoApprove: false,
+  autoApprove: true,
 };
 
 // =============================================================================
@@ -113,7 +113,7 @@ export function ContentPreferencesSection({
       brandColor: value.brandColor ?? DEFAULT_VALUES.brandColor!,
       imageStyle: value.imageStyle ?? DEFAULT_VALUES.imageStyle!,
       globalInstructions: value.globalInstructions ?? '',
-      autoApprove: value.autoApprove ?? false,
+      autoApprove: value.autoApprove ?? true,
     },
     mode: 'onChange',
   });
@@ -128,7 +128,7 @@ export function ContentPreferencesSection({
         brandColor: updatedValues.brandColor ?? DEFAULT_VALUES.brandColor!,
         imageStyle: updatedValues.imageStyle ?? DEFAULT_VALUES.imageStyle!,
         globalInstructions: updatedValues.globalInstructions || undefined,
-        autoApprove: updatedValues.autoApprove ?? false,
+        autoApprove: updatedValues.autoApprove ?? true,
       });
     },
     [onChange]
@@ -395,7 +395,7 @@ export function ContentPreferencesSection({
                 <div className="relative mt-0.5 flex-shrink-0">
                   <input
                     type="checkbox"
-                    checked={field.value ?? false}
+                    checked={field.value ?? true}
                     onChange={(e) => {
                       field.onChange(e.target.checked);
                       handleChange({ ...formValues, autoApprove: e.target.checked });
@@ -413,7 +413,7 @@ export function ContentPreferencesSection({
                   </p>
                 </div>
               </label>
-              {(field.value ?? false) && (
+              {(field.value ?? true) && (
                 <div className="flex items-center gap-2 p-3 bg-warning/10 border border-warning/30 rounded-lg">
                   <Zap className="w-4 h-4 text-warning flex-shrink-0" />
                   <p className="text-xs text-warning">

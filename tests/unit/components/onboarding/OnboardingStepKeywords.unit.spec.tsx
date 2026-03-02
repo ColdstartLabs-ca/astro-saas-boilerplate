@@ -224,8 +224,6 @@ describe('OnboardingStepKeywords', () => {
 
     await waitFor(() => {
       expect(mockStoreState.setKeywordCount).toHaveBeenCalledWith(1);
-      expect(mockStoreState.markStepComplete).toHaveBeenCalledWith(OnboardingStep.KEYWORDS_UPLOAD);
-      expect(mockProgressState.updateProgress).toHaveBeenCalled();
       expect(mockOnComplete).toHaveBeenCalled();
     });
   });

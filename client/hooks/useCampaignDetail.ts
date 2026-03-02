@@ -21,7 +21,7 @@ import type {
   ICampaignCreditStats,
   IAddKeywordsResponse,
 } from '@shared/types/campaign.types';
-import type { IArticle } from '@shared/types/article.types';
+import type { IArticleWithCampaign } from '@shared/types/article.types';
 import { apiFetch } from '@client/utils/api-client';
 import { getTranslations } from '@src/i18n/utils';
 import { useMutationWithToast } from './useMutationWithToast';
@@ -53,8 +53,8 @@ async function fetchCampaignDetail(campaignId: string): Promise<{
 /**
  * Fetch campaign articles
  */
-async function fetchCampaignArticles(campaignId: string): Promise<IArticle[]> {
-  const data = await apiFetch<{ data: { articles: IArticle[] } }>(
+async function fetchCampaignArticles(campaignId: string): Promise<IArticleWithCampaign[]> {
+  const data = await apiFetch<{ data: { articles: IArticleWithCampaign[] } }>(
     `/api/articles?campaignId=${campaignId}&limit=100`,
     { method: 'GET' }
   );
@@ -99,6 +99,16 @@ async function updateCampaign(campaignId: string, input: IUpdateCampaignInput): 
     body: JSON.stringify(input),
   });
   return data.data.campaign;
+}
+
+/**
+ * Re-deliver article to integrations
+ */
+async function deliverArticle(articleId: string): Promise<void> {
+  await apiFetch(`/api/articles/${articleId}/deliver`, {
+    method: 'POST',
+    body: JSON.stringify({ retry: false }),
+  });
 }
 
 /**
@@ -160,7 +170,7 @@ interface IUseCampaignDetailReturn {
   // Data
   campaign: ICampaign | null;
   keywords: IKeyword[];
-  articles: IArticle[];
+  articles: IArticleWithCampaign[];
   articleStats: ICampaignArticleStats | null;
   creditStats: ICampaignCreditStats | null;
   isLoading: boolean;
@@ -169,6 +179,7 @@ interface IUseCampaignDetailReturn {
   // Actions
   addKeywords: (keywords: string[]) => Promise<IAddKeywordsResponse>;
   removeKeyword: (keywordId: string) => Promise<void>;
+  deliverArticle: (articleId: string) => Promise<void>;
   updateCampaign: (input: IUpdateCampaignInput) => Promise<ICampaign>;
   startCampaign: () => Promise<{ queued: number; creditsRequired: number }>;
   startSchedule: () => Promise<void>;
@@ -243,7 +254,7 @@ export function useCampaignDetail(campaignId: string | null | undefined): IUseCa
   // Merge: for articles currently being polled, prefer the fresh poller data so
   // the UI reflects status changes before the list query re-fetches.
   const polledById = new Map(polledArticles.map(a => [a.id, a]));
-  const articles = articlesList.map(a => polledById.get(a.id) ?? a);
+  const articles = articlesList.map(a => (polledById.get(a.id) ?? a) as IArticleWithCampaign);
 
   // Add keywords mutation
   const addKeywordsMutation = useMutation({
@@ -265,11 +276,34 @@ export function useCampaignDetail(campaignId: string | null | undefined): IUseCa
     },
   });
 
+  // Deliver article mutation
+  const deliverArticleMutationBase = useMutation({
+    mutationFn: (articleId: string) => deliverArticle(articleId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['campaign-articles', campaignId] });
+    },
+  });
+  const handleDeliverArticle = useMutationWithToast(deliverArticleMutationBase, {
+    successMessage: 'Article re-submitted to blog.',
+    errorMessage: 'Failed to deliver article.',
+    loggerContext: 'Failed to deliver article',
+  });
+
   // Update campaign mutation
   const updateCampaignMutation = useMutation({
     mutationFn: (input: IUpdateCampaignInput) =>
       campaignId ? updateCampaign(campaignId, input) : Promise.reject(new Error('No campaign ID')),
-    onSuccess: () => {
+    onSuccess: (updatedCampaign: ICampaign) => {
+      // Immediately update the cached campaign data so the UI reflects the saved
+      // values without waiting for the background refetch to complete.
+      queryClient.setQueryData<{
+        campaign: ICampaign;
+        keywords: IKeyword[];
+        articleStats: ICampaignArticleStats;
+        creditStats: ICampaignCreditStats;
+      } | null>(['campaign-detail', campaignId], prev =>
+        prev ? { ...prev, campaign: updatedCampaign } : prev
+      );
       queryClient.invalidateQueries({ queryKey: ['campaign-detail', campaignId] });
       queryClient.invalidateQueries({ queryKey: ['campaigns'] });
     },
@@ -408,6 +442,7 @@ export function useCampaignDetail(campaignId: string | null | undefined): IUseCa
     // Actions
     addKeywords: handleAddKeywords,
     removeKeyword: handleRemoveKeyword,
+    deliverArticle: handleDeliverArticle,
     updateCampaign: handleUpdateCampaign,
     startCampaign: handleStartCampaign,
     startSchedule: handleStartSchedule,

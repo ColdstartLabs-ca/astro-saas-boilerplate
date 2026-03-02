@@ -56,6 +56,9 @@ vi.mock('@server/supabase/supabaseAdmin', () => ({
               ),
             })),
           })),
+          update: vi.fn(() => ({
+            eq: vi.fn(() => Promise.resolve({ error: null })),
+          })),
         };
       }
       if (table === 'blog_post_tags') {
@@ -66,7 +69,21 @@ vi.mock('@server/supabase/supabaseAdmin', () => ({
           insert: vi.fn(() => Promise.resolve({ error: null })),
         };
       }
-      // integration_deliveries
+      if (table === 'blog_media') {
+        return {
+          select: vi.fn(() => ({
+            eq: vi.fn(() => ({
+              maybeSingle: vi.fn(() => Promise.resolve({ data: null, error: null })),
+            })),
+          })),
+          insert: vi.fn(() => ({
+            select: vi.fn(() => ({
+              single: vi.fn(() => Promise.resolve({ data: { id: 'media-id-1' }, error: null })),
+            })),
+          })),
+        };
+      }
+      // integration_deliveries and other tables
       return {
         update: vi.fn(() => ({
           eq: vi.fn(() => ({

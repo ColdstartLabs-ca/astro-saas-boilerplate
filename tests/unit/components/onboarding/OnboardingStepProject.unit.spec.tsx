@@ -257,9 +257,6 @@ describe('OnboardingStepProject', () => {
       await waitFor(() => {
         expect(mockStoreState.setProjectId).toHaveBeenCalledWith('project-123');
         expect(mockProjectStoreState.setActiveProjectId).toHaveBeenCalledWith('project-123');
-        expect(mockStoreState.markStepComplete).toHaveBeenCalledWith(
-          OnboardingStep.PROJECT_CREATION
-        );
       });
     });
 

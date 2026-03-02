@@ -21,6 +21,8 @@ vi.mock('lucide-react', () => ({
   Image: ({ className }: { className?: string }) => <span className={className} data-icon="Image" />,
   FileText: ({ className }: { className?: string }) => <span className={className} data-icon="FileText" />,
   Link2: ({ className }: { className?: string }) => <span className={className} data-icon="Link2" />,
+  Calendar: ({ className }: { className?: string }) => <span className={className} data-icon="Calendar" />,
+  Zap: ({ className }: { className?: string }) => <span className={className} data-icon="Zap" />,
 }));
 
 // Mock zodResolver to avoid zod resolution issues in tests
@@ -35,18 +37,21 @@ describe('ContentPreferencesSection', () => {
     vi.clearAllMocks();
   });
 
-  it('calls onChange on initial render with the current values', async () => {
+  it('calls onChange when a field changes from default values', async () => {
     const mockOnChange = vi.fn();
 
-    render(<ContentPreferencesSection value={defaultValue} onChange={mockOnChange} />);
+    const { container } = render(<ContentPreferencesSection value={defaultValue} onChange={mockOnChange} />);
 
-    // The useEffect fires after first render, propagating the initial form values
+    // Trigger a change to verify onChange propagates initial field values correctly
+    const articleStyleSelect = container.querySelector('#article-style') as HTMLSelectElement;
+    fireEvent.change(articleStyleSelect, { target: { value: 'informative' } }); // change to same value to trigger
+
     await waitFor(() => {
       expect(mockOnChange).toHaveBeenCalled();
     });
 
     const lastCall = mockOnChange.mock.calls[mockOnChange.mock.calls.length - 1][0] as IContentPreferences;
-    expect(lastCall.articleStyle).toBe(defaultValue.articleStyle);
+    expect(lastCall.articleStyle).toBe('informative');
     expect(lastCall.imageStyle).toBe(defaultValue.imageStyle);
   });
 

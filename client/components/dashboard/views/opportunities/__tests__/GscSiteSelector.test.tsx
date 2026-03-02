@@ -32,24 +32,8 @@ vi.mock('@client/hooks/useTranslations', () => ({
   useTranslations: () => (key: string) => mockTranslations[key] || key,
 }));
 
-// Mock DashboardButton
-vi.mock('../../../ui/DashboardButton', () => ({
-  DashboardButton: ({
-    children,
-    onClick,
-    disabled,
-    ..._rest
-  }: {
-    children: React.ReactNode;
-    onClick?: () => void;
-    disabled?: boolean;
-    [key: string]: unknown;
-  }) => (
-    <button onClick={onClick} disabled={disabled} data-testid="confirm-btn">
-      {children}
-    </button>
-  ),
-}));
+// Note: GscSiteSelector no longer uses DashboardButton (confirm button was removed in KISS refactor).
+// The component now calls onSelectSite directly on dropdown change.
 
 describe('GscSiteSelector', () => {
   const defaultSites: IGscSite[] = [
@@ -92,39 +76,34 @@ describe('GscSiteSelector', () => {
   });
 
   describe('Selection', () => {
-    it('should show confirm button when a site is selected and differs from current', () => {
-      const { container } = render(<GscSiteSelector {...defaultProps} />);
+    it('should call onSelectSite immediately when a site is selected', () => {
+      const onSelectSite = vi.fn();
+      const { container } = render(<GscSiteSelector {...defaultProps} onSelectSite={onSelectSite} />);
 
       const select = container.querySelector('select')!;
       fireEvent.change(select, { target: { value: 'https://example.com/' } });
 
-      const confirmBtn = container.querySelector('[data-testid="confirm-btn"]');
-      expect(confirmBtn).toBeTruthy();
-      expect(confirmBtn?.textContent).toContain('Confirm');
+      expect(onSelectSite).toHaveBeenCalledWith('https://example.com/');
     });
 
-    it('should call onSelectSite when confirm button is clicked', () => {
+    it('should call onSelectSite with the selected value', () => {
       const onSelectSite = vi.fn();
       const { container } = render(
         <GscSiteSelector {...defaultProps} onSelectSite={onSelectSite} />
       );
 
       const select = container.querySelector('select')!;
-      fireEvent.change(select, { target: { value: 'https://example.com/' } });
+      fireEvent.change(select, { target: { value: 'https://blog.example.com/' } });
 
-      const confirmBtn = container.querySelector('[data-testid="confirm-btn"]');
-      fireEvent.click(confirmBtn!);
-
-      expect(onSelectSite).toHaveBeenCalledWith('https://example.com/');
+      expect(onSelectSite).toHaveBeenCalledWith('https://blog.example.com/');
     });
 
-    it('should not show confirm button when selected site matches current', () => {
+    it('should show selected site preview when selectedSiteUrl is set', () => {
       const { container } = render(
         <GscSiteSelector {...defaultProps} selectedSiteUrl="https://example.com/" />
       );
 
-      const confirmBtn = container.querySelector('[data-testid="confirm-btn"]');
-      expect(confirmBtn).toBeNull();
+      expect(container.textContent).toContain('https://example.com/');
     });
   });
 

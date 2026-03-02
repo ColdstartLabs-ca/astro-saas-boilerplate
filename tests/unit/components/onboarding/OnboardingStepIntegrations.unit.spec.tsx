@@ -36,6 +36,7 @@ vi.mock('lucide-react', () => {
     Image: icon,
     FileText: icon,
     Link2: icon,
+    Sparkles: icon,
   };
 });
 

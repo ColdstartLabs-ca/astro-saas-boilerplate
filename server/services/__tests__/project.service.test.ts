@@ -211,6 +211,14 @@ describe('ProjectService', () => {
 
   describe('delete', () => {
     it('should delete project on happy path', async () => {
+      // First call: getById (select.eq.eq.single)
+      const mockGetByIdSingle = vi.fn(() => ({ data: mockProject, error: null }));
+      const mockGetByIdEq2 = vi.fn(() => ({ single: mockGetByIdSingle }));
+      const mockGetByIdEq1 = vi.fn(() => ({ eq: mockGetByIdEq2 }));
+      const mockGetByIdSelect = vi.fn(() => ({ eq: mockGetByIdEq1 }));
+      mockSupabaseAdmin.from.mockReturnValueOnce({ select: mockGetByIdSelect });
+
+      // Second call: delete (delete.eq.eq)
       const mockEq2 = vi.fn(() => ({ error: null }));
       const mockEq1 = vi.fn(() => ({ eq: mockEq2 }));
       const mockDelete = vi.fn(() => ({ eq: mockEq1 }));
@@ -220,6 +228,14 @@ describe('ProjectService', () => {
     });
 
     it('should handle delete error gracefully', async () => {
+      // First call: getById (select.eq.eq.single)
+      const mockGetByIdSingle = vi.fn(() => ({ data: mockProject, error: null }));
+      const mockGetByIdEq2 = vi.fn(() => ({ single: mockGetByIdSingle }));
+      const mockGetByIdEq1 = vi.fn(() => ({ eq: mockGetByIdEq2 }));
+      const mockGetByIdSelect = vi.fn(() => ({ eq: mockGetByIdEq1 }));
+      mockSupabaseAdmin.from.mockReturnValueOnce({ select: mockGetByIdSelect });
+
+      // Second call: delete (delete.eq.eq)
       const mockEq2 = vi.fn(() => ({ error: { message: 'Database error' } }));
       const mockEq1 = vi.fn(() => ({ eq: mockEq2 }));
       const mockDelete = vi.fn(() => ({ eq: mockEq1 }));
@@ -231,6 +247,14 @@ describe('ProjectService', () => {
     });
 
     it('should only delete user-owned projects via WHERE clause', async () => {
+      // First call: getById (select.eq.eq.single)
+      const mockGetByIdSingle = vi.fn(() => ({ data: mockProject, error: null }));
+      const mockGetByIdEq2 = vi.fn(() => ({ single: mockGetByIdSingle }));
+      const mockGetByIdEq1 = vi.fn(() => ({ eq: mockGetByIdEq2 }));
+      const mockGetByIdSelect = vi.fn(() => ({ eq: mockGetByIdEq1 }));
+      mockSupabaseAdmin.from.mockReturnValueOnce({ select: mockGetByIdSelect });
+
+      // Second call: delete (delete.eq.eq)
       const mockEq2 = vi.fn(() => ({ error: null }));
       const mockEq1 = vi.fn(() => ({ eq: mockEq2 }));
       const mockDelete = vi.fn(() => ({ eq: mockEq1 }));
@@ -238,7 +262,7 @@ describe('ProjectService', () => {
 
       await projectService.delete(mockProjectId, mockUserId);
 
-      // Verify both ID and user_id are used in WHERE clause
+      // Verify both ID and user_id are used in WHERE clause for the delete
       expect(mockDelete).toHaveBeenCalled();
       expect(mockEq1).toHaveBeenCalledWith('id', mockProjectId);
       expect(mockEq2).toHaveBeenCalledWith('user_id', mockUserId);

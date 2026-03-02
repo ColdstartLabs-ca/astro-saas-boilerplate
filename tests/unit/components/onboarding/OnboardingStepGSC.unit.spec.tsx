@@ -254,7 +254,7 @@ describe('OnboardingStepGSC', () => {
       expect(container.textContent).toContain('Go Back');
     });
 
-    it('should mark step as skipped when Skip Anyway is clicked', async () => {
+    it('should call onSkip when Skip Anyway is clicked', async () => {
       (apiFetch as ReturnType<typeof vi.fn>).mockResolvedValueOnce({ data: { connection: null } });
 
       const { container } = render(
@@ -277,7 +277,7 @@ describe('OnboardingStepGSC', () => {
       if (skipAnywayButton) fireEvent.click(skipAnywayButton);
 
       await waitFor(() => {
-        expect(mockStoreState.markStepSkipped).toHaveBeenCalledWith(OnboardingStep.GSC_CONNECTION);
+        expect(mockOnSkip).toHaveBeenCalled();
       });
     });
 
