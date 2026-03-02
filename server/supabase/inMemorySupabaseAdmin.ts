@@ -53,6 +53,15 @@ class InMemoryStore {
   private readonly filePath: string;
   private tables = new Map<string, Row[]>();
   private readonly defaults: string[];
+  /** IDs explicitly deleted from this store instance — prevents re-adding from file on merge */
+  private deletedIds = new Map<string, Set<string>>();
+
+  trackDeleted(table: string, id: string): void {
+    if (!this.deletedIds.has(table)) {
+      this.deletedIds.set(table, new Set());
+    }
+    this.deletedIds.get(table)!.add(id);
+  }
 
   constructor() {
     this.filePath = DB_PATH;
@@ -126,6 +135,8 @@ class InMemoryStore {
           Array.isArray(value) ? value.filter(isRecord).map(item => clone(item)) : []
         );
       }
+      // Full hydrate is authoritative — clear deleted tracking
+      this.deletedIds.clear();
     } catch {
       // Fallback to current in-memory state if file is corrupted or unavailable.
     }
@@ -133,14 +144,49 @@ class InMemoryStore {
 
   persistToDisk(): void {
     const dir = path.dirname(this.filePath);
-    const payload: Record<string, Row[]> = {};
-
-    for (const [table, rows] of this.tables.entries()) {
-      payload[table] = rows.map(row => clone(row));
-    }
 
     try {
       fs.mkdirSync(dir, { recursive: true });
+
+      // Read current file state and merge: preserve rows that exist only in the file
+      // (written by test helpers between the last hydrate and this persist) unless
+      // they were explicitly deleted from this store instance.
+      let fileState: Record<string, Row[]> = {};
+      try {
+        if (fs.existsSync(this.filePath)) {
+          const raw = fs.readFileSync(this.filePath, 'utf8');
+          if (raw.trim()) {
+            const parsed = JSON.parse(raw) as Record<string, unknown>;
+            for (const table of this.defaults) {
+              const value = parsed[table];
+              fileState[table] = Array.isArray(value) ? value.filter(isRecord) : [];
+            }
+          }
+        }
+      } catch {
+        // Ignore read errors — proceed with memory-only state
+      }
+
+      const payload: Record<string, Row[]> = {};
+      for (const table of this.defaults) {
+        const memRows = this.tables.get(table) ?? [];
+        const memIds = new Set(memRows.map(r => r.id as string).filter(Boolean));
+        const deleted = this.deletedIds.get(table) ?? new Set<string>();
+
+        // Include rows from memory
+        const merged: Row[] = memRows.map(r => clone(r));
+
+        // Add file-only rows that weren't explicitly deleted
+        for (const fileRow of fileState[table] ?? []) {
+          const fileId = fileRow.id as string | undefined;
+          if (fileId && !memIds.has(fileId) && !deleted.has(fileId)) {
+            merged.push(clone(fileRow));
+          }
+        }
+
+        payload[table] = merged;
+      }
+
       fs.writeFileSync(this.filePath, JSON.stringify(payload), 'utf8');
     } catch {
       // File persistence is best-effort in test mode.
@@ -607,6 +653,11 @@ class InMemoryQueryBuilder implements PromiseLike<QueryResult<unknown>> {
     for (const row of table) {
       if (this.matchesFilters(row)) {
         removedRows.push(row);
+        // Track explicitly deleted IDs to prevent re-adding from file on next persistToDisk merge
+        const rowId = row.id as string | undefined;
+        if (rowId) {
+          store.trackDeleted(this.tableName, rowId);
+        }
       } else {
         keptRows.push(row);
       }

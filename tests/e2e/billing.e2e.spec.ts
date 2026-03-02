@@ -346,7 +346,7 @@ test.describe('Billing E2E Tests', () => {
       await expect(starterCard).toContainText('per month');
 
       // Check Starter tier features
-      await expect(starterCard).toContainText('30 articles per month');
+      await expect(starterCard).toContainText('30 credits/month');
       await expect(starterCard).toContainText('Credits roll over (up to 90)');
       await expect(starterCard).toContainText('Multi-model AI');
       await expect(starterCard).toContainText('Humanizer engine');

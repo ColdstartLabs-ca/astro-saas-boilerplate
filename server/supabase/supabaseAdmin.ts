@@ -8,8 +8,6 @@ import { clientEnv, serverEnv } from '@shared/config/env';
 let _client: SupabaseClient | null = null;
 let _cachedServiceRoleKey = '';
 let _isTestRuntime: boolean | null = null;
-let _inMemoryClientPromise: Promise<SupabaseClient> | null = null;
-let _inMemoryClientError: Error | null = null;
 
 function isTestRuntime(): boolean {
   if (_isTestRuntime !== null) return _isTestRuntime;
@@ -20,31 +18,17 @@ function isTestRuntime(): boolean {
   return _isTestRuntime;
 }
 
-// Start loading the in-memory client asynchronously
-// Returns the promise so callers can await if needed
-function startLoadingInMemoryClient(): void {
-  if (_inMemoryClientPromise) return; // Already loading or loaded
-
-  // Dynamic import is required here to avoid bundling node:fs in production
+// In test mode, load the in-memory client synchronously at module load time
+// using top-level await. This ensures the client is ready before any requests
+// come in. Top-level await is supported in Node.js ESM.
+if (isTestRuntime() && !_client) {
+  // Dynamic import with top-level await to load synchronously
+  // This will block module evaluation until the import completes
+  // We use dynamic import to avoid bundling node:fs in production (Cloudflare Workers)
   // eslint-disable-next-line no-restricted-syntax
-  _inMemoryClientPromise = import('./inMemorySupabaseAdmin')
-    .then(mod => {
-      const client = mod.inMemorySupabaseAdmin as SupabaseClient;
-      _client = client;
-      _cachedServiceRoleKey = 'in-memory-test-mode';
-      return client;
-    })
-    .catch(err => {
-      console.error('[supabaseAdmin] Failed to load in-memory client:', err);
-      _inMemoryClientError = err;
-      _inMemoryClientPromise = null; // Allow retry
-      throw err;
-    });
-}
-
-// Trigger loading at module level in test mode
-if (isTestRuntime()) {
-  startLoadingInMemoryClient();
+  const mod = await import('./inMemorySupabaseAdmin.js');
+  _client = mod.inMemorySupabaseAdmin as SupabaseClient;
+  _cachedServiceRoleKey = 'in-memory-test-mode';
 }
 
 function getClient(): SupabaseClient {
@@ -65,27 +49,9 @@ function getClient(): SupabaseClient {
   if (!_client) {
     // Use in-memory Supabase for Playwright tests (no real DB connection)
     if (isTestRuntime()) {
-      // If we have a client, return it
-      if (_client) {
-        return _client;
-      }
-
-      // If there was an error, throw it
-      if (_inMemoryClientError) {
-        throw new Error(
-          `In-memory Supabase client failed to load: ${_inMemoryClientError.message}`
-        );
-      }
-
-      // Start loading if not already
-      if (!_inMemoryClientPromise) {
-        startLoadingInMemoryClient();
-      }
-
-      // The client is still loading asynchronously
-      // In the test environment with warmup requests, subsequent requests should find it ready
+      // This should not happen since we load synchronously at module level
       throw new Error(
-        'In-memory Supabase client is loading. The warmup request should complete shortly.'
+        'In-memory Supabase client not loaded. This indicates a problem with test initialization.'
       );
     }
 
@@ -110,7 +76,6 @@ function getClient(): SupabaseClient {
 /** Call this in test setup BEFORE using supabaseAdmin, passing inMemorySupabaseAdmin. */
 export function _overrideSupabaseAdminForTests(client: SupabaseClient): void {
   _client = client;
-  _inMemoryClientPromise = Promise.resolve(client);
   _cachedServiceRoleKey = 'in-memory-test-mode';
 }
 

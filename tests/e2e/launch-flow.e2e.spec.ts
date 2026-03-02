@@ -261,9 +261,7 @@ async function registerCampaignsMocks(page: Page, state: StatefulMockState): Pro
       }
       const newCampaign = makeCampaign({
         name: (body.name as string | undefined) ?? 'New Campaign',
-        keyword_count: Array.isArray(body.keywords)
-          ? (body.keywords as string[]).length
-          : 1,
+        keyword_count: Array.isArray(body.keywords) ? (body.keywords as string[]).length : 1,
       });
       state.addCampaign(newCampaign);
       await route.fulfill({
@@ -481,7 +479,20 @@ test.describe('Launch Flow: Happy Path', () => {
 
     // 4. Approve the article
     await articlesPage.assertApproveButtonVisible();
+
+    // Set up BEFORE clicking to reliably capture the PATCH response (race-condition prevention)
+    const approveResponsePromise = page
+      .waitForResponse(
+        res =>
+          res.url().match(/\/api\/articles\/[^/]+$/) !== null && res.request().method() === 'PATCH',
+        { timeout: 10000 }
+      )
+      .catch(() => null);
+
     await articlesPage.clickApprove();
+
+    // Wait for the PATCH response to ensure the mock handler has run and state is updated
+    await approveResponsePromise;
     await articlesPage.waitForLoadingComplete();
 
     // 5. Verify status updated in mock state
@@ -548,7 +559,10 @@ test.describe('Launch Flow: Happy Path', () => {
     const hasStartButton = await startButton.isVisible({ timeout: 3000 }).catch(() => false);
 
     if (!hasStartButton) {
-      test.skip(true, 'Start campaign button not visible — campaign may already be running or page not loaded');
+      test.skip(
+        true,
+        'Start campaign button not visible — campaign may already be running or page not loaded'
+      );
       return;
     }
 
@@ -851,7 +865,7 @@ test.describe('Launch Flow: Multi-keyword Campaign', () => {
         // Use CAMPAIGN_ID if available, otherwise use the first non-empty option
         const optionToSelect = availableOptions.includes(CAMPAIGN_ID)
           ? CAMPAIGN_ID
-          : availableOptions.find(v => v !== '') ?? '';
+          : (availableOptions.find(v => v !== '') ?? '');
 
         if (optionToSelect) {
           await campaignFilter.selectOption(optionToSelect);
@@ -967,7 +981,20 @@ test.describe('Launch Flow: Edge Cases — No Integrations', () => {
 
     // Approve the article (delivery will fail — no integrations — article stays 'approved')
     await articlesPage.assertApproveButtonVisible();
+
+    // Set up BEFORE clicking to reliably capture the PATCH response (race-condition prevention)
+    const approveResponsePromise = page
+      .waitForResponse(
+        res =>
+          res.url().match(/\/api\/articles\/[^/]+$/) !== null && res.request().method() === 'PATCH',
+        { timeout: 10000 }
+      )
+      .catch(() => null);
+
     await articlesPage.clickApprove();
+
+    // Wait for the PATCH response to ensure the mock handler has run and state is updated
+    await approveResponsePromise;
     await articlesPage.waitForLoadingComplete();
 
     // Article should be 'approved' (not 'published') — delivery failed due to no integrations
@@ -1028,7 +1055,20 @@ test.describe('Launch Flow: Edge Cases — Status Badge Update', () => {
 
     // Approve the article
     await articlesPage.assertApproveButtonVisible();
+
+    // Set up BEFORE clicking to reliably capture the PATCH response (race-condition prevention)
+    const approveResponsePromise = page
+      .waitForResponse(
+        res =>
+          res.url().match(/\/api\/articles\/[^/]+$/) !== null && res.request().method() === 'PATCH',
+        { timeout: 10000 }
+      )
+      .catch(() => null);
+
     await articlesPage.clickApprove();
+
+    // Wait for the PATCH response to ensure the mock handler has run and state is updated
+    await approveResponsePromise;
     await articlesPage.waitForLoadingComplete();
 
     // Verify state updated
