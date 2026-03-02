@@ -903,7 +903,7 @@ const mockPlannedArticle = {
   id: 'planned-article-1',
   title: null,
   primaryKeyword: 'planned keyword',
-  scheduledPublishAt: '2026-02-28T09:00:00.000Z',
+  scheduledPublishAt: '2026-03-15T09:00:00.000Z',
   status: 'planned',
   campaignId: MOCK_CAMPAIGN_A.id,
   campaignName: MOCK_CAMPAIGN_A.name,
