@@ -173,7 +173,7 @@ export function CampaignKeywordsTab({
                     {dayjs(kw.created_at).format('MMM D')}
                   </td>
                   <td className="px-6 py-3 text-right">
-                    <div className="flex justify-end opacity-0 group-hover:opacity-100 transition-opacity">
+                    <div className="flex justify-end">
                       <button
                         type="button"
                         onClick={() => handleDelete(kw.id)}
