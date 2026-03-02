@@ -35,7 +35,7 @@ export const PLAN_FIXTURES = {
     batchLimit: 5,
     description: 'Perfect for getting started with SEO content',
     features: [
-      '30 articles per month',
+      '30 credits/month (1–5 per article)',
       'Credits roll over (up to 90)',
       'Multi-model AI (GPT-4, Claude, Gemini)',
       'Humanizer engine',
@@ -60,7 +60,7 @@ export const PLAN_FIXTURES = {
     description: 'For growing content teams',
     recommended: true,
     features: [
-      '100 articles per month',
+      '100 credits/month (1–5 per article)',
       'Credits roll over (up to 300)',
       'Everything in Starter',
       'GSC integration',
@@ -86,7 +86,7 @@ export const PLAN_FIXTURES = {
     description: 'For agencies and large teams',
     recommended: false,
     features: [
-      '500 articles per month',
+      '500 credits/month (1–5 per article)',
       'Everything in Growth',
       'Unlimited CMS sites',
       'White-label reports (coming soon)',

@@ -51,11 +51,11 @@
       },
       "subscriptionPlans": {
         "question": "Quais planos de assinatura estão disponíveis?",
-        "answer": "Oferecemos três planos: Starter (US$49/mês, 30 artigos), Growth (US$99/mês, 100 artigos), e Agency (US$249/mês, 500 artigos). Todos os planos incluem IA multi-modelo (GPT-4, Claude, Gemini), nosso motor Humanizer, e pontuação SEO."
+        "answer": "Oferecemos três planos: Starter (US$49/mês, 30 créditos), Growth (US$99/mês, 100 créditos), e Agency (US$249/mês, 500 créditos). Todos os planos incluem IA multi-modelo (GPT-4, Claude, Gemini), nosso motor Humanizer, e pontuação SEO."
       },
       "creditPacks": {
         "question": "Posso comprar créditos extras?",
-        "answer": "Sim! Pacotes de créditos estão disponíveis para compra única: 10 artigos por US$9,99, 25 artigos por US$19,99 (melhor valor), ou 50 artigos por US$34,99. Créditos de pacotes nunca expiram."
+        "answer": "Sim! Pacotes de créditos estão disponíveis para compra única: 10 créditos por US$9,99, 25 créditos por US$19,99 (melhor valor), ou 50 créditos por US$34,99. Créditos de pacotes nunca expiram."
       },
       "rollover": {
         "question": "Créditos não utilizados acumulam?",

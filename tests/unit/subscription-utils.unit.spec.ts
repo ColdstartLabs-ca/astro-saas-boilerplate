@@ -282,7 +282,7 @@ describe('buildHomepageTiers', () => {
     const tiers = buildHomepageTiers();
     const starterTier = tiers.find(t => t.name === 'Starter');
 
-    expect(starterTier?.features).toContain('30 articles per month'); // Changed from 100 to 30
+    expect(starterTier?.features).toContain('30 credits/month (1–5 per article)'); // Updated from articles to credits
     expect(starterTier?.features).toContain('Credits roll over (up to 90)'); // Changed from 300 to 90
     expect(starterTier?.features).toContain('Email support');
   });

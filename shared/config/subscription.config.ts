@@ -78,7 +78,7 @@ export const SUBSCRIPTION_CONFIG: ISubscriptionConfig = {
         warningDaysBefore: 0,
       },
       features: [
-        '30 articles per month',
+        '30 credits/month (1–5 per article)',
         'Credits roll over (up to 90)',
         'Multi-model AI (GPT-4, Claude, Gemini)',
         'Humanizer engine',
@@ -118,7 +118,7 @@ export const SUBSCRIPTION_CONFIG: ISubscriptionConfig = {
         warningDaysBefore: 0,
       },
       features: [
-        '100 articles per month',
+        '100 credits/month (1–5 per article)',
         'Credits roll over (up to 300)',
         'Everything in Starter',
         'GSC integration',
@@ -159,7 +159,7 @@ export const SUBSCRIPTION_CONFIG: ISubscriptionConfig = {
         warningDaysBefore: 0,
       },
       features: [
-        '500 articles per month',
+        '500 credits/month (1–5 per article)',
         'Everything in Growth',
         'Unlimited projects',
         'White-label reports (coming soon)',

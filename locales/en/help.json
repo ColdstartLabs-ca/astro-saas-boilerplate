@@ -51,11 +51,11 @@
       },
       "subscriptionPlans": {
         "question": "What subscription plans are available?",
-        "answer": "We offer three plans: Starter ($49/mo, 30 articles), Growth ($99/mo, 100 articles), and Agency ($249/mo, 500 articles). All plans include multi-model AI (GPT-4, Claude, Gemini), our Humanizer engine, and SEO scoring."
+        "answer": "We offer three plans: Starter ($49/mo, 30 credits), Growth ($99/mo, 100 credits), and Agency ($249/mo, 500 credits). All plans include multi-model AI (GPT-4, Claude, Gemini), our Humanizer engine, and SEO scoring."
       },
       "creditPacks": {
         "question": "Can I buy extra credits?",
-        "answer": "Yes! Credit packs are available for one-time purchase: 10 articles for $9.99, 25 articles for $19.99 (best value), or 50 articles for $34.99. Credits from packs never expire."
+        "answer": "Yes! Credit packs are available for one-time purchase: 10 credits for $9.99, 25 credits for $19.99 (best value), or 50 credits for $34.99. Credits from packs never expire."
       },
       "rollover": {
         "question": "Do unused credits roll over?",

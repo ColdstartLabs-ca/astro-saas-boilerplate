@@ -168,7 +168,7 @@
       "price": "$49",
       "period": "per month",
       "description": "For solopreneurs",
-      "articles": "30 articles/mo",
+      "articles": "30 credits/mo",
       "sites": "Unlimited projects",
       "integrations": "WordPress",
       "cta": "Get Started"
@@ -179,7 +179,7 @@
       "period": "per month",
       "description": "For SMBs & content sites",
       "badge": "Most Popular",
-      "articles": "100 articles/mo",
+      "articles": "100 credits/mo",
       "sites": "Unlimited projects",
       "integrations": "All integrations",
       "cta": "Get Started"
@@ -189,7 +189,7 @@
       "price": "$249",
       "period": "per month",
       "description": "For agencies",
-      "articles": "500 articles/mo",
+      "articles": "500 credits/mo",
       "sites": "Unlimited projects",
       "integrations": "White-label",
       "cta": "Contact Sales"
