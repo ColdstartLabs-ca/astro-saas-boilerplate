@@ -49,11 +49,7 @@ describe('ImageGenerationService', () => {
     ];
 
     it('should return empty array for no markers', async () => {
-      const result = await imageGenerationService.generateImagesForArticle(
-        [],
-        'budget',
-        'coffee'
-      );
+      const result = await imageGenerationService.generateImagesForArticle([], 'budget', 'coffee');
 
       expect(result).toEqual([]);
     });
@@ -139,7 +135,7 @@ describe('ImageGenerationService', () => {
       expect(result[0]).toMatchObject({
         position: 1,
         imageUrl: 'https://replicate.delivery/image1.jpg',
-        model: 'black-forest-labs/flux-schnell',
+        model: 'prunaai/z-image-turbo',
         presetKey: 'budget',
         status: 'completed',
       });

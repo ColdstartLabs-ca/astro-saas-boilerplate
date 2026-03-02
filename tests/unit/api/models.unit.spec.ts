@@ -113,7 +113,7 @@ describe('GET /api/models', () => {
       displayName: 'Budget',
       description: 'Fast, good-quality images',
       bestFor: 'Quick drafts, blog posts',
-      replicateModel: 'black-forest-labs/flux-schnell',
+      replicateModel: 'prunaai/z-image-turbo',
       creditCost: 0,
       aspectRatio: '16:9',
     });

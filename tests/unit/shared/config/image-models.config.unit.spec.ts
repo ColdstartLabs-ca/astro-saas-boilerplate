@@ -25,12 +25,7 @@ describe('image-models.config', () => {
     });
 
     it('should include all expected preset keys', () => {
-      const expectedKeys: ImagePresetKey[] = [
-        'budget',
-        'balanced',
-        'pro',
-        'ultra',
-      ];
+      const expectedKeys: ImagePresetKey[] = ['budget', 'balanced', 'pro', 'ultra'];
       expectedKeys.forEach(key => {
         expect(IMAGE_PRESETS[key]).toBeDefined();
       });
@@ -94,7 +89,7 @@ describe('image-models.config', () => {
       const preset = getImagePreset('budget');
       expect(preset.key).toBe('budget');
       expect(preset.displayName).toBe('Budget');
-      expect(preset.replicateModel).toBe('black-forest-labs/flux-schnell');
+      expect(preset.replicateModel).toBe('prunaai/z-image-turbo');
     });
 
     it('should throw for invalid key', () => {

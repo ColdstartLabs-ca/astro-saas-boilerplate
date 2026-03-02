@@ -5,7 +5,7 @@
  * Each preset key (budget, balanced, pro, ultra) maps to a default Replicate model
  * that can be overridden via AVAILABLE_IMAGE_PRESETS env var.
  *
- * Env format: "budget(black-forest-labs/flux-schnell),balanced,pro(black-forest-labs/flux-1.1-pro)"
+ * Env format: "budget(prunaai/z-image-turbo),balanced,pro(black-forest-labs/flux-1.1-pro)"
  */
 
 import type { ModelTier } from '@shared/types/models.types';
@@ -41,7 +41,7 @@ export const IMAGE_PRESETS: Record<ImagePresetKey, IImagePreset> = {
     displayName: 'Budget',
     description: 'Fast, good-quality images',
     bestFor: 'Quick drafts, blog posts',
-    replicateModel: 'black-forest-labs/flux-schnell',
+    replicateModel: 'prunaai/z-image-turbo',
     defaultParams: {
       aspect_ratio: '16:9',
       output_format: 'webp',
