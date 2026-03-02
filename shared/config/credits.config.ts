@@ -52,14 +52,14 @@ export const CREDIT_COSTS = {
   DEFAULT_TRIAL_CREDITS: 0,
 
   // Credit pack amounts (article packs)
-  SMALL_PACK_CREDITS: 10, // 10 articles
-  MEDIUM_PACK_CREDITS: 25, // 25 articles
-  LARGE_PACK_CREDITS: 50, // 50 articles
+  SMALL_PACK_CREDITS: 10, // 10 credits
+  MEDIUM_PACK_CREDITS: 25, // 25 credits
+  LARGE_PACK_CREDITS: 50, // 50 credits
 
   // Subscription credit amounts (articles per month)
-  STARTER_MONTHLY_CREDITS: 30, // Starter plan: 30 articles/mo
-  GROWTH_MONTHLY_CREDITS: 100, // Growth plan: 100 articles/mo
-  AGENCY_MONTHLY_CREDITS: 500, // Agency plan: 500 articles/mo
+  STARTER_MONTHLY_CREDITS: 30, // Starter plan: 30 credits/mo
+  GROWTH_MONTHLY_CREDITS: 100, // Growth plan: 100 credits/mo
+  AGENCY_MONTHLY_CREDITS: 500, // Agency plan: 500 credits/mo
 
   // Warning thresholds
   LOW_CREDIT_WARNING_THRESHOLD: 2, // Warn at 2 articles remaining

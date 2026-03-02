@@ -36,7 +36,7 @@ export function PricingPreviewSection({ className = '' }: IProps): JSX.Element {
             </div>
             <ul className="space-y-4 mb-8 flex-1">
               {[
-                '30 articles/mo',
+                '30 credits/mo',
                 '1 site included',
                 'WordPress integration',
                 'Humanizer Engine',
@@ -78,7 +78,7 @@ export function PricingPreviewSection({ className = '' }: IProps): JSX.Element {
               {/* Features List */}
               <ul className="space-y-4 mb-8 flex-1">
                 {[
-                  '100 articles/mo',
+                  '100 credits/mo',
                   '3 sites included',
                   'All integrations (Shopify, Webflow)',
                   'Humanizer Engine',
@@ -113,7 +113,7 @@ export function PricingPreviewSection({ className = '' }: IProps): JSX.Element {
             </div>
             <ul className="space-y-4 mb-8 flex-1">
               {[
-                '500 articles/mo',
+                '500 credits/mo',
                 'Unlimited sites',
                 'White-label reports (coming soon)',
                 'API Access',
