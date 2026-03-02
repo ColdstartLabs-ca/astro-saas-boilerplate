@@ -2,8 +2,8 @@
 
 > AI SEO Content Automation Platform - "One platform. Full pipeline. Keyword in, published article out."
 
-**Last Updated:** 2026-02-27
-**Launch Target:** Early March 2026
+**Last Updated:** 2026-03-01
+**Launch Target:** Early March 2026 🚀
 
 ---
 
@@ -30,6 +30,18 @@
 - [x] Testing: E2E pruning (291 passing), API test expansion, CI workflow
 - [x] Brand: Complete AutopilotRank rebrand (removed all boilerplate/MIU references)
 - [x] Outrank PRD Series: 6 PRDs created, PRD 1 (schema) implemented
+
+**Recent Progress (Mar 2026):**
+
+- [x] Content calendar system: replace/merge mode, campaign dropdown, calendar publishing, generate-now, auto-approve
+- [x] Auto-approve feature for articles + enhanced settings UI
+- [x] Article list: search, pagination, limit param
+- [x] Blog system upgraded: DB + MDX hybrid (webhook creates `blog_posts`, pages render both sources)
+- [x] Dead code cleanup: 550+ instances removed, orphaned boilerplate, dead components (#31)
+- [x] Code quality refactoring: DRY violations fixed, `useCRUD` hook factory extracted
+- [x] AI detection score: heuristic scoring, on-demand analysis, external provider wired (PR #32 — in review)
+- [x] Article generation enrichment v2: YouTube embedding, internal linking, citations, research enrichment (PR #33 — in review)
+- [x] Campaign autopilot simplification PRD drafted (issue #36 on board, Ready)
 
 ---
 
@@ -254,9 +266,9 @@ Annual discount: 20% off (~2 months free).
 
 **Emails:**
 
-- [ ] Welcome email template (quick start guide)
-- [ ] Article generation complete notification
-- [ ] Low credits alert (80% threshold)
+- [x] Welcome email template (quick start guide) — `WelcomeEmail.tsx`
+- [x] Article generation complete notification — `ArticleCompleteEmail.tsx`
+- [x] Low credits alert — `LowCreditsEmail.tsx`
 
 **Onboarding:**
 
@@ -264,10 +276,10 @@ Annual discount: 20% off (~2 months free).
 
 **Landing Page & Content:**
 
-- [ ] Final landing page polish: competitor comparison table, testimonials (placeholder), trust badges
-- [ ] Features page with screenshots/GIFs of actual product
-- [ ] Write 2-3 launch blog posts: "Why AI SEO Content", "AutopilotRank vs Outrank", product announcement
-- [ ] Update help/FAQ for new product
+- [ ] Final landing page polish: competitor comparison table, testimonials (placeholder), trust badges — not implemented
+- [ ] Features page screenshots/GIFs of actual product — page exists, no real product screenshots
+- [x] Launch blog posts — 20 posts in `content/blog/` (including AutopilotRank vs Outrank, GSC integration, etc.)
+- [x] Help/FAQ updated for new product
 
 **Testing:**
 
@@ -311,23 +323,23 @@ M1 Foundation ✅
 
 ## Outrank Feature Parity Initiative
 
-> **Status:** In Progress (2026-02-25)
+> **Status:** In Progress
 > **Goal:** Achieve feature parity with Outrank.so to validate competitive positioning
 > **Series:** 6 PRDs implementing core Outrank capabilities
 
 **PRD 1: Schema & Data Model Foundation** ✅ (Completed 2026-02-25)
 
 - [x] 7 migrations: projects/campaigns extended, 5 new tables
-- [x] TypeScript types and Zod schemas
+- [x] TypeScript types and Zod schemas (`shared/types/outrank.types.ts` + campaign/article fields)
 - [x] 5 service classes (audiences, competitors, example articles, sitemap pages, content strategy)
 - [x] 10 API endpoints for CRUD operations
 
-**PRD 2: Website Intelligence** (Draft)
+**PRD 2: Website Intelligence** (Partial)
 
-- [ ] Sitemap import and parsing
-- [ ] Website crawl for content analysis
+- [x] Sitemap import and parsing (`sitemap-page.service.ts`, validate-sitemap endpoint)
+- [x] Website crawl for content analysis (`POST /api/projects/:id/crawl` via `website-crawler.service.ts`)
+- [x] Page metadata extraction (title, description from crawl)
 - [ ] Competitor favicon fetching
-- [ ] Page metadata extraction
 
 **PRD 3: DataForSEO Integration** (Draft)
 
@@ -336,27 +348,29 @@ M1 Foundation ✅
 - [ ] Keyword difficulty scores
 - [ ] SERP analysis data
 
-**PRD 4: Enhanced Onboarding** (In Progress - additive version created)
+**PRD 4: Enhanced Onboarding** ✅ (Completed)
 
-- [ ] Onboarding Enhancement PRD created for additive improvements
-- [ ] Website auto-populate from crawl
-- [ ] Content preferences section
-- [ ] Language, country, sitemap URL, blog URL fields
+- [x] Onboarding Enhancement PRD created for additive improvements
+- [x] Website auto-populate from crawl (crawl endpoint wired in onboarding)
+- [x] Content preferences section
+- [x] Language, country, sitemap URL, blog URL fields
 
-**PRD 5: Content Strategy Generator** (Draft)
+**PRD 5: Content Strategy Generator** (Partial)
 
-- [ ] AI-powered content strategy generation
-- [ ] Topic clustering from GSC + sitemap
-- [ ] Content gap analysis vs competitors
-- [ ] Editorial calendar recommendations
+- [ ] AI-powered content strategy generation (endpoint stub exists, AI not wired)
+- [x] Topic clustering from GSC data (`opportunity-analysis.service.ts` — `topic_cluster` opportunity type)
+- [x] Content gap analysis (`opportunity-analysis.service.ts` — `content_gap` opportunity type + OpportunitiesView UI)
+- [ ] Editorial calendar recommendations (calendar exists, strategy-driven recommendations not yet linked)
 
-**PRD 6: Enhanced Article Generation** (Draft)
+**PRD 6: Enhanced Article Generation** (Partial — PR #33 in review)
 
-- [ ] Article style presets (blog, news, how-to, etc.)
-- [ ] Internal linking configuration
-- [ ] Global instructions per campaign
-- [ ] YouTube, CTA, infographic, emoji toggles
-- [ ] Image style selection
+- [ ] Article style presets — DB column + type exist (`informative|how-to|listicle|opinion|tutorial|review|comparison`), **not wired to prompts**
+- [x] Internal linking configuration (implemented in PR #33)
+- [ ] Global instructions per campaign — DB column exists, **not appended to AI prompts**
+- [x] YouTube embedding toggle (implemented in PR #33)
+- [x] Citations / trust signals (implemented in PR #33)
+- [ ] CTA, infographic, emoji toggles — DB columns exist (`include_cta`, `include_infographics`, `include_emojis`), **not used in prompts**
+- [ ] Image style selection — DB column exists (`image_style`), **not consumed by image generation**
 
 > PRDs are in `docs/PRDs/outrank-*.md`. Implementation tracking in each PRD.
 
@@ -397,21 +411,21 @@ M1 Foundation ✅
 - [x] Analytics dashboard view (enabled at `/dashboard/analytics`)
 - [x] Campaign-level aggregate: total clicks/impressions for all articles in campaign
 - [ ] "Top performing articles" sort/filter in article list
-- [ ] Basic rank tracking: show current position for each article's target keyword
+- [ ] Basic rank tracking — `article_performance_snapshots` table + GSC sync exist, UI rank display not implemented
 
 ### P0 — Content Quality (build confidence in the product)
 
 - [ ] Advanced humanizer engine (multi-pass rewriting, style variation)
-- [ ] Pre-publication QA: plagiarism check, readability score, fact-checking flags
-- [ ] Article templates: listicle, how-to, comparison, product review, pillar content
+- [x] Pre-publication QA: plagiarism check, readability score, fact-checking flags — all implemented in QA pipeline
+- [ ] Article templates wired to prompts — DB types exist (`listicle`, `how-to`, `comparison`, `review`), **not applied in generation prompts**
 
 ### P1 — Monetization & Retention
 
-- [ ] Annual billing option (20% off — "2 months free")
+- [ ] Annual billing option (20% off — "2 months free") — monthly only in `subscription.config.ts`
 - [ ] Overage charges: Starter $2.00, Growth $1.50, Agency $0.75 (see [Revenue Streams](../business/business-model-canvas/revenue-streams.md))
 - [ ] Upgrade prompts when approaching plan limits (80% threshold)
 - [x] Scheduled publishing (drip-feed campaign scheduling — moved to Milestone 6)
-- [ ] Bulk actions: approve all, publish all, regenerate
+- [ ] Bulk actions: approve all, publish all, regenerate — no batch endpoints implemented
 
 ### P1 — Google Search Console Integration ✅ (Moved to Milestone 6)
 
@@ -424,11 +438,11 @@ M1 Foundation ✅
 
 - [ ] Brand voice customization (tone, style, vocabulary preferences)
 - [x] Image generation for articles (multi-provider: DALL-E, Stability AI, Flux — completed in Milestone 5)
-- [ ] Internal linking suggestions within campaigns
+- [x] Internal linking suggestions within campaigns (implemented in PR #33)
 - [ ] Keyword research API integration (DataForSEO or Keywords Everywhere)
 - [ ] Keyword clustering (group related keywords into campaigns)
 - [ ] Campaign analytics dashboard (→ moved to P0 above as Content Performance Analytics)
-- [ ] Content calendar view (PRD created: `docs/PRDs/calendar-system-PRD.md`)
+- [x] Content calendar view (completed: month/week/day views, publishing, generate-now, replace/merge mode)
 - [ ] Export articles (Markdown, HTML, DOCX)
 - [ ] Webflow CMS API publishing
 - [ ] Shopify blog publishing
@@ -543,6 +557,7 @@ M1 Foundation ✅
 
 | Date       | Change                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
 | ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 2026-03-01 | **Article generation enrichment v2!** YouTube embedding, internal linking, and citations/trust signals added to article generation pipeline (PR #33). AI detection score wired end-to-end: heuristic scoring, on-demand analysis, and external provider integration (PR #32). Content calendar system completed with replace/merge mode, campaign dropdown, calendar publishing, auto-approve, and generate-now. Auto-approve feature added to article settings. Article list gains search, pagination, limit param. Blog upgraded to DB+MDX hybrid. Dead code cleanup (#31 — 550+ instances). Code quality refactoring (useCRUD hook factory, DRY violations). Campaign autopilot simplification PRD drafted and queued on board (issue #36, Ready). |
 | 2026-02-27 | **Value prop pivot + landing cleanup!** Pivoted core positioning from "quality automation" to "full workflow ownership" (keyword→generate→optimize→publish). Fixed all landing page discrepancies: Growth 150→100 articles/mo, Agency "Unlimited"→500/mo, pricing meta $9-$149→$49-$249, removed fake aggregateRating, softened unverified 95% claim, unblocked Webflow (adapter was already built). Updated feature matrix in value-proposition.md (15+ unbuilt features changed from ✅ to 🔜). Elevated content performance analytics to P0 — closes the full-workflow loop via existing GSC integration. Created CURRENT-FEATURES.md for quick reference. |
 | 2026-02-25 | **Outrank PRD Series launched!** 6-PRD series for Outrank feature parity created: (1) Schema & Data Model Foundation, (2) Website Intelligence, (3) DataForSEO Integration, (4) Enhanced Onboarding, (5) Content Strategy Generator, (6) Enhanced Article Generation. PRD 1 implemented: 7 migrations, TypeScript types, Zod schemas, 5 service classes, 10 API routes for target audiences, competitors, example articles, sitemap pages, and content strategies. Onboarding enhancement PRD created for additive improvements to onboarding flow. DEV-ONBOARDING.md added with comprehensive developer guide.                                               |
 | 2026-02-25 | **Dead Code Report completed!** Comprehensive analysis of 920 files identified 550+ instances of dead code (41 CRITICAL, 482 HIGH, 34 MEDIUM). Key findings: 34 orphaned boilerplate files (image compression, bulk processing), 11 dead UI components, 3 dead stores/hooks, 6 unreachable API endpoints from incomplete PRDs. Calendar system PRD created for content scheduling with month/week/day views.                                                                                                                                                                                                                                                  |
