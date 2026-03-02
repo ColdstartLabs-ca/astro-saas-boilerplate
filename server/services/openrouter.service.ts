@@ -1,4 +1,4 @@
-import { serverEnv } from '@shared/config/env';
+import { serverEnv, isTest } from '@shared/config/env';
 // Model validation now happens upstream in campaign.service.ts (preset key validation)
 // OpenRouter accepts any valid model ID string directly
 import { AppError, ErrorCodes } from '@shared/utils/errors';
@@ -111,6 +111,95 @@ export class OpenRouterService {
   }
 
   /**
+   * Build a mock response for test mode.
+   * Returns appropriate content based on the responseFormat parameter.
+   */
+  private buildTestMockResponse(params: IChatCompletionParams): IChatCompletionResult {
+    const format = params.responseFormat;
+
+    let content: string;
+    if (
+      format?.type === 'json_schema' &&
+      (format as { type: 'json_schema'; json_schema: { name: string } }).json_schema?.name ===
+        'article_outline'
+    ) {
+      // Return a valid IArticleOutline JSON for outline generation
+      const keyword = params.messages[params.messages.length - 1]?.content || 'test keyword';
+      content = JSON.stringify({
+        title: `Complete Guide to ${keyword}`,
+        metaDescription: `Learn everything about ${keyword} in this comprehensive guide covering best practices and key insights.`,
+        slug: String(keyword).toLowerCase().replace(/\s+/g, '-'),
+        sections: [
+          {
+            heading: 'Introduction',
+            subheadings: ['Overview', 'Background'],
+            keyPoints: ['Key point 1', 'Key point 2'],
+          },
+          {
+            heading: 'Main Benefits',
+            subheadings: ['Benefit 1', 'Benefit 2'],
+            keyPoints: ['Key point 3', 'Key point 4'],
+          },
+          {
+            heading: 'How It Works',
+            subheadings: ['Step 1', 'Step 2'],
+            keyPoints: ['Key point 5', 'Key point 6'],
+          },
+          {
+            heading: 'Best Practices',
+            subheadings: [],
+            keyPoints: ['Practice 1', 'Practice 2'],
+          },
+          {
+            heading: 'Conclusion',
+            subheadings: [],
+            keyPoints: ['Summary 1', 'Summary 2'],
+          },
+        ],
+      });
+    } else if (format?.type === 'json_object') {
+      content = '{"result":true}';
+    } else {
+      // Return mock article content that passes quality gates:
+      // - min 70% of target word count (default 1500 → 1050 words required)
+      // - at least 3 H2 headings (## prefix)
+      // - finishReason = 'stop'
+      const w =
+        'test content for automated testing purposes covering the topic in detail providing useful information';
+      // ~15 words × 38 repeats ≈ 570 words per paragraph section
+      const para = `${w} `.repeat(38).trim() + '.';
+      content = [
+        '## Introduction',
+        '',
+        para,
+        '',
+        '## Main Benefits and Features',
+        '',
+        para,
+        '',
+        '## Implementation Guide',
+        '',
+        para,
+        '',
+        '## Best Practices',
+        '',
+        w + '.',
+        '',
+        '## Conclusion',
+        '',
+        w + '.',
+      ].join('\n');
+    }
+
+    return {
+      content,
+      model: 'mock-model-test',
+      usage: { promptTokens: 100, completionTokens: 500, totalTokens: 600 },
+      finishReason: 'stop',
+    };
+  }
+
+  /**
    * Analyze an image using a Vision-Language model via OpenRouter.
    *
    * @param imageDataUrl - Base64 data URL of the image (e.g., "data:image/jpeg;base64,...")
@@ -119,6 +208,11 @@ export class OpenRouterService {
    * @throws Error if API call fails
    */
   async analyzeImage(imageDataUrl: string, prompt: string): Promise<string> {
+    if (isTest()) {
+      console.log('[OpenRouter] Test mode: returning mock analyzeImage response');
+      return `Mock image analysis: ${prompt.substring(0, 50)}`;
+    }
+
     if (!this.isConfigured()) {
       throw new Error('OpenRouter API key not configured');
     }
@@ -188,12 +282,18 @@ export class OpenRouterService {
    * @throws AppError with AI_UNAVAILABLE on API errors
    */
   async chatCompletion(params: IChatCompletionParams): Promise<IChatCompletionResult> {
+    if (isTest()) {
+      console.log('[OpenRouter] Test mode: returning mock chatCompletion response');
+      return this.buildTestMockResponse(params);
+    }
+
     if (!this.isConfigured()) {
       throw new AppError(ErrorCodes.AI_UNAVAILABLE, 'OpenRouter API key not configured');
     }
 
     // Model is already resolved from preset key by the calling service
-    const modelToUse = params.model || serverEnv.OPENROUTER_DEFAULT_MODEL || serverEnv.OPENROUTER_TEXT_MODEL;
+    const modelToUse =
+      params.model || serverEnv.OPENROUTER_DEFAULT_MODEL || serverEnv.OPENROUTER_TEXT_MODEL;
 
     const requestBody = {
       model: modelToUse,

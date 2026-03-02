@@ -149,6 +149,38 @@ export async function verifyApiAuth(
         },
       };
     }
+
+    // Handle browser Supabase client tokens (valid JWT format but not test_token_* prefix).
+    // E2E tests inject a fake JWT via session cookie; the browser Supabase client sends it
+    // as Authorization header. Decode the payload without signature verification so we
+    // never make a network call to the placeholder Supabase URL (ENOTFOUND).
+    if (isValidJwtFormat(token)) {
+      try {
+        const base64Payload = token.split('.')[1];
+        const padding = '='.repeat((4 - (base64Payload.length % 4)) % 4);
+        const base64 = (base64Payload + padding).replace(/-/g, '+').replace(/_/g, '/');
+        const payload = JSON.parse(atob(base64)) as { sub?: string; email?: string };
+        if (payload.sub) {
+          return { user: { id: payload.sub, email: payload.email || '' } };
+        }
+      } catch {
+        // Payload decode failed, fall through to return unauthorized
+      }
+    }
+
+    // In test mode, reject all unrecognized tokens without calling Supabase
+    return {
+      error: new Response(
+        JSON.stringify({
+          success: false,
+          error: {
+            code: 'UNAUTHORIZED',
+            message: 'Valid authentication token required',
+          },
+        }),
+        { status: 401, headers: { 'Content-Type': 'application/json' } }
+      ),
+    };
   }
 
   // Validate JWT format for real tokens

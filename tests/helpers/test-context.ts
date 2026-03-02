@@ -156,7 +156,7 @@ export class TestContext {
           role,
           subscription_status: subscriptionStatus,
           subscription_tier: subscription === 'free' ? null : tier || 'growth',
-          subscription_credits_balance: subscription === 'free' ? 0 : credits,
+          subscription_credits_balance: credits,
           purchased_credits_balance: 0,
           stripe_customer_id: null,
           created_at: now,

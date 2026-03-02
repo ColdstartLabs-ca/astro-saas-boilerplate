@@ -466,9 +466,9 @@ test.describe('API: Article List (§4.4)', () => {
       const data = await response.getData();
       expect(data.article.id).toBe(articleId);
       expect(data.article.primary_keyword).toBe('detail test article');
-      // In test mode the background generation job fails immediately (no OpenRouter key),
-      // so the status may be either 'generating' (race won) or 'failed' (job finished first).
-      expect(['generating', 'failed']).toContain(data.article.status);
+      // Background generation runs with OpenRouter mocked in test mode.
+      // Status may be 'generating' (race won), 'draft' (generation succeeded), or 'failed'.
+      expect(['generating', 'draft', 'failed']).toContain(data.article.status);
     });
   });
 
@@ -729,18 +729,16 @@ test.describe('API: Article Regeneration (§4.5)', () => {
 
     test('should return 202 for failed article with sufficient credits', async ({ request }) => {
       const api = new ApiClient(request).withAuth(user.token);
-      const { projectId, campaignId } = await createProjectAndCampaign(request, user.token);
+      const { campaignId } = await createProjectAndCampaign(request, user.token);
 
-      // Create article
-      const genRes = await api.post('/api/articles/generate', {
-        keyword: 'regen failed article',
-        projectId,
+      // Create a failed article directly — avoids race with background generation
+      // (with OpenRouter mocked, generation now succeeds and goes to 'draft')
+      const { id: articleId } = await ctx.createArticle({
+        userId: user.id,
         campaignId,
+        keyword: 'regen failed article',
+        status: 'failed',
       });
-      const { articleId } = await genRes.getData();
-
-      // Move to failed (simulating generation failure)
-      await api.patch(`/api/articles/${articleId}`, { status: 'failed' });
 
       // Regenerate
       const response = await api.post(`/api/articles/${articleId}/regenerate`, {});
@@ -774,15 +772,16 @@ test.describe('API: Article Regeneration (§4.5)', () => {
 
     test('should log credit transaction for regeneration', async ({ request }) => {
       const api = new ApiClient(request).withAuth(user.token);
-      const { projectId, campaignId } = await createProjectAndCampaign(request, user.token);
+      const { campaignId } = await createProjectAndCampaign(request, user.token);
 
-      const genRes = await api.post('/api/articles/generate', {
-        keyword: 'credit log regen test',
-        projectId,
+      // Create a failed article directly — avoids race with background generation
+      // (with OpenRouter mocked, generation now succeeds and goes to 'draft')
+      const { id: articleId } = await ctx.createArticle({
+        userId: user.id,
         campaignId,
+        keyword: 'credit log regen test',
+        status: 'failed',
       });
-      const { articleId } = await genRes.getData();
-      await api.patch(`/api/articles/${articleId}`, { status: 'failed' });
 
       // Get credits before regeneration
       const beforeHistory = await api.get('/api/credits/history');
