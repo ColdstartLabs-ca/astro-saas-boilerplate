@@ -5,7 +5,7 @@ import { useProjects } from '@client/hooks/useProjects';
 import { useGscConnection } from '@client/hooks/useGscConnection';
 import { OpportunitiesView } from '@client/components/dashboard/views/OpportunitiesView';
 import { OpportunityDetailPanel } from '@client/components/dashboard/views/opportunities/OpportunityDetailPanel';
-import { useState, useMemo, useCallback } from 'react';
+import { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import { dashboardNavigate } from '@client/utils/dashboardNavigation';
 
 export default function OpportunitiesPage(): JSX.Element {
@@ -15,7 +15,9 @@ export default function OpportunitiesPage(): JSX.Element {
     isLoading,
     isAnalyzing,
     lastAnalyzedAt,
+    isDataStale,
     analyzeOpportunities,
+    analyzeOpportunitiesSilent,
     dismissOpportunity,
     createArticle,
     isCreatingArticle,
@@ -36,6 +38,38 @@ export default function OpportunitiesPage(): JSX.Element {
   } = useGscConnection(activeProject?.id);
 
   const [selectedOpportunityId, setSelectedOpportunityId] = useState<string | null>(null);
+
+  // Auto-trigger analysis when page loads if data is stale or missing.
+  // Use a ref keyed to the project ID so switching projects re-triggers correctly.
+  const autoTriggeredForProject = useRef<string | null>(null);
+
+  useEffect(() => {
+    const projectId = activeProject?.id;
+    if (
+      !projectId ||
+      !hasGscConnection ||
+      isLoading ||
+      isLoadingGsc ||
+      isAnalyzing ||
+      !isDataStale ||
+      autoTriggeredForProject.current === projectId
+    ) {
+      return;
+    }
+
+    autoTriggeredForProject.current = projectId;
+    analyzeOpportunitiesSilent().catch(() => {
+      // Error is swallowed here; the mutation itself handles error logging
+    });
+  }, [
+    activeProject?.id,
+    hasGscConnection,
+    isLoading,
+    isLoadingGsc,
+    isAnalyzing,
+    isDataStale,
+    analyzeOpportunitiesSilent,
+  ]);
 
   const selectedOpportunity = useMemo(() => {
     if (!selectedOpportunityId) return null;

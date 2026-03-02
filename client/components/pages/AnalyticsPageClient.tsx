@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { FolderOpen } from 'lucide-react';
 import { useProjects } from '@client/hooks/useProjects';
 import { useGscConnection } from '@client/hooks/useGscConnection';
@@ -18,6 +18,8 @@ export function AnalyticsPageClient(): JSX.Element {
   const t = getTranslations('dashboard');
   const { activeProject, isLoading: isLoadingProjects } = useProjects();
   const [dateRangeDays, setDateRangeDays] = useState<7 | 28 | 90>(28);
+  const [isAutoSyncing, setIsAutoSyncing] = useState(false);
+  const hasAutoTriggered = useRef(false);
 
   const {
     isConnected: hasGscConnection,
@@ -25,7 +27,30 @@ export function AnalyticsPageClient(): JSX.Element {
     connect: connectGsc,
   } = useGscConnection(activeProject?.id);
 
-  const { data, isLoading, sync, isSyncing } = useAnalytics(activeProject?.id, dateRangeDays);
+  const { data, isLoading, isFetched, sync, isSyncing } = useAnalytics(
+    activeProject?.id,
+    dateRangeDays
+  );
+
+  // Auto-trigger sync when:
+  // - A project is selected
+  // - GSC is connected (and done loading)
+  // - Analytics data has been fetched but is empty (no articles)
+  // - We haven't already auto-triggered
+  useEffect(() => {
+    if (hasAutoTriggered.current) return;
+    if (!activeProject?.id) return;
+    if (isLoadingGsc || !hasGscConnection) return;
+    if (isLoading || !isFetched) return;
+    const hasData = (data?.articles.length ?? 0) > 0;
+    if (hasData) return;
+
+    hasAutoTriggered.current = true;
+    setIsAutoSyncing(true);
+    sync().finally(() => {
+      setIsAutoSyncing(false);
+    });
+  }, [activeProject?.id, hasGscConnection, isLoadingGsc, isLoading, isFetched, data, sync]);
 
   const handleConnectGsc = useCallback(() => {
     if (activeProject?.id) {
@@ -75,6 +100,7 @@ export function AnalyticsPageClient(): JSX.Element {
       data={data}
       isLoading={isLoading}
       isSyncing={isSyncing}
+      isAutoSyncing={isAutoSyncing}
       onSync={handleSync}
       dateRangeDays={dateRangeDays}
       onDateRangeChange={handleDateRangeChange}

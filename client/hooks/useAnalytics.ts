@@ -66,6 +66,8 @@ interface IUseAnalyticsReturn {
   data: IAnalyticsData | undefined;
   /** Whether the analytics query is loading */
   isLoading: boolean;
+  /** Whether the analytics query has completed at least once (data fetched or fetch failed) */
+  isFetched: boolean;
   /** Error from the analytics query */
   error: Error | null;
   /** Trigger a GSC sync for the project */
@@ -84,7 +86,7 @@ export function useAnalytics(
   const t = useMemo(() => getTranslations('dashboard'), []);
 
   // Fetch analytics performance data query
-  const { data, isLoading, error } = useQuery({
+  const { data, isLoading, isFetched, error } = useQuery({
     queryKey: ['analytics', projectId, dateRangeDays],
     queryFn: () =>
       projectId
@@ -114,6 +116,7 @@ export function useAnalytics(
   return {
     data,
     isLoading,
+    isFetched,
     error,
     sync: () => handleSync(undefined as void),
     isSyncing: syncMutation.isPending,

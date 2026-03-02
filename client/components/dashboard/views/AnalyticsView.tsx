@@ -1,6 +1,6 @@
 'use client';
 
-import { BarChart3, Loader2, Search, RefreshCw } from 'lucide-react';
+import { BarChart3, Loader2, Search, RefreshCw, Info } from 'lucide-react';
 import { useTranslations } from '@client/hooks/useTranslations';
 import { DashboardButton } from '../ui/DashboardButton';
 import { GscConnectionCard } from './opportunities/GscConnectionCard';
@@ -16,6 +16,8 @@ interface IAnalyticsViewProps {
   data: IAnalyticsData | undefined;
   isLoading: boolean;
   isSyncing: boolean;
+  /** Whether an automatic background sync was triggered on page load */
+  isAutoSyncing: boolean;
   onSync: () => void;
   dateRangeDays: 7 | 28 | 90;
   onDateRangeChange: (days: 7 | 28 | 90) => void;
@@ -92,6 +94,7 @@ export function AnalyticsView({
   data,
   isLoading,
   isSyncing,
+  isAutoSyncing,
   onSync,
   dateRangeDays,
   onDateRangeChange,
@@ -132,6 +135,7 @@ export function AnalyticsView({
 
   // ---- Has GSC but no data yet ----
   const hasArticles = (data?.articles.length ?? 0) > 0;
+  const isActivelySyncing = isSyncing || isAutoSyncing;
 
   if (!hasArticles && !isLoading) {
     return (
@@ -141,8 +145,8 @@ export function AnalyticsView({
             <h2 className="text-xl font-bold text-white">{t('analytics.title')}</h2>
             <p className="text-secondary text-sm">{t('analytics.subtitle')}</p>
           </div>
-          <DashboardButton size="sm" onClick={onSync} disabled={isSyncing}>
-            {isSyncing ? (
+          <DashboardButton size="sm" onClick={onSync} disabled={isActivelySyncing}>
+            {isActivelySyncing ? (
               <>
                 <Loader2 className="w-4 h-4 mr-2 animate-spin" />
                 {t('analytics.syncing')}
@@ -156,33 +160,48 @@ export function AnalyticsView({
           </DashboardButton>
         </div>
 
+        {/* Auto-sync in progress indicator */}
+        {isAutoSyncing && (
+          <div className="flex items-center gap-2 px-4 py-2.5 bg-accent/10 border border-accent/20 rounded-lg text-sm text-accent">
+            <Loader2 className="w-4 h-4 animate-spin shrink-0" />
+            <span>{t('analytics.autoSyncing')}</span>
+          </div>
+        )}
+
         <div className="flex flex-col items-center justify-center py-16 bg-surface border border-border rounded-xl">
           <div className="w-20 h-20 rounded-full bg-main border border-border flex items-center justify-center mb-6">
             <BarChart3 className="w-10 h-10 text-muted" />
           </div>
-          <h3 className="text-lg font-semibold text-white mb-2">{t('analytics.noData')}</h3>
+          <h3 className="text-lg font-semibold text-white mb-2">
+            {isActivelySyncing ? t('analytics.syncingData') : t('analytics.noData')}
+          </h3>
           <p className="text-secondary text-sm mb-6 text-center max-w-md">
-            {t('analytics.noDataDescription')}
+            {isActivelySyncing
+              ? t('analytics.syncingDataDescription')
+              : t('analytics.noDataDescription')}
           </p>
-          <DashboardButton size="sm" onClick={onSync} disabled={isSyncing}>
-            {isSyncing ? (
-              <>
-                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                {t('analytics.syncing')}
-              </>
-            ) : (
-              <>
-                <Search className="w-4 h-4 mr-2" />
-                {t('analytics.syncButton')}
-              </>
-            )}
-          </DashboardButton>
+          {!isActivelySyncing && (
+            <DashboardButton size="sm" onClick={onSync} disabled={isActivelySyncing}>
+              <Search className="w-4 h-4 mr-2" />
+              {t('analytics.syncButton')}
+            </DashboardButton>
+          )}
         </div>
+
+        {/* Helpful hint when sync is done but still no data */}
+        {!isActivelySyncing && (
+          <div className="flex items-start gap-3 px-4 py-3 bg-surface border border-border rounded-lg text-sm text-secondary">
+            <Info className="w-4 h-4 text-muted shrink-0 mt-0.5" />
+            <p>{t('analytics.noDataHint')}</p>
+          </div>
+        )}
       </div>
     );
   }
 
   // ---- Data loaded: full analytics view ----
+  const isActivelySyncingFull = isSyncing || isAutoSyncing;
+
   return (
     <div className="space-y-6 animate-fadeIn">
       {/* Header */}
@@ -193,13 +212,19 @@ export function AnalyticsView({
         </div>
 
         <div className="flex flex-wrap items-center gap-3">
+          {isAutoSyncing && (
+            <span className="flex items-center gap-1.5 text-xs text-accent">
+              <Loader2 className="w-3.5 h-3.5 animate-spin" />
+              {t('analytics.autoSyncing')}
+            </span>
+          )}
           <DateRangePills
             dateRangeDays={dateRangeDays}
             onDateRangeChange={onDateRangeChange}
             t={t}
           />
-          <DashboardButton size="sm" onClick={onSync} disabled={isSyncing}>
-            {isSyncing ? (
+          <DashboardButton size="sm" onClick={onSync} disabled={isActivelySyncingFull}>
+            {isActivelySyncingFull ? (
               <>
                 <Loader2 className="w-4 h-4 mr-2 animate-spin" />
                 {t('analytics.syncing')}

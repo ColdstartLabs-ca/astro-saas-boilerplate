@@ -56,7 +56,6 @@ export function CampaignDetailView({
   const {
     campaign,
     keywords,
-    articles,
     articleStats,
     creditStats,
     isLoading,
@@ -177,6 +176,8 @@ export function CampaignDetailView({
   const handleArticleUpdate = () => {
     queryClient.invalidateQueries({ queryKey: ['campaign-articles', campaignId] });
     queryClient.invalidateQueries({ queryKey: ['campaign-detail', campaignId] });
+    // Also invalidate the useArticles query used by ArticleQueueTable
+    queryClient.invalidateQueries({ queryKey: ['articles'] });
     setSelectedArticle(null);
   };
 
@@ -223,7 +224,7 @@ export function CampaignDetailView({
         {(
           [
             { id: 'overview', label: 'Overview' },
-            { id: 'articles', label: 'Articles', badge: articles.length || undefined },
+            { id: 'articles', label: 'Articles', badge: articleStats?.total || undefined },
             { id: 'integrations', label: 'Integrations' },
           ] as Array<{ id: CampaignTab; label: string; badge?: number }>
         ).map(tab => (
@@ -257,7 +258,7 @@ export function CampaignDetailView({
 
       {activeTab === 'articles' && (
         <ArticleQueueTable
-          articles={articles}
+          campaignId={campaignId}
           onArticleClick={handleArticleClick}
           onDeliver={deliverArticle}
           t={t}

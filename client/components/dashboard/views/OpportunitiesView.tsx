@@ -13,6 +13,7 @@ import {
   Search,
   Loader2,
   X,
+  CheckCircle2,
 } from 'lucide-react';
 import { DashboardButton } from '../ui/DashboardButton';
 import { GscConnectionCard } from './opportunities/GscConnectionCard';
@@ -278,8 +279,35 @@ export function OpportunitiesView({
     );
   }
 
-  // ---- Connected but no opportunities ----
+  // ---- Connected but no opportunities (auto-analyzing in background) ----
+  if (opportunities.length === 0 && isAnalyzing) {
+    return (
+      <div className="space-y-6 animate-fadeIn">
+        <div>
+          <h2 className="text-xl font-bold text-white">{t('opportunities.title')}</h2>
+          <p className="text-secondary text-sm">{t('opportunities.subtitle')}</p>
+        </div>
+
+        <div data-testid="opportunities-auto-analyzing" className="flex flex-col items-center justify-center py-16 bg-surface border border-border rounded-xl">
+          <div className="w-20 h-20 rounded-full bg-main border border-border flex items-center justify-center mb-6">
+            <Loader2 className="w-10 h-10 text-accent animate-spin" />
+          </div>
+          <h3 className="text-lg font-semibold text-white mb-2">
+            {t('opportunities.analyzing')}
+          </h3>
+          <p className="text-secondary text-sm text-center max-w-md">
+            {t('opportunities.empty.autoAnalyzing')}
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  // ---- Connected but no opportunities (analysis done, 0 results) ----
   if (opportunities.length === 0 && !isAnalyzing) {
+    // Determine if we have ever analyzed (lastAnalyzedAt truthy means at least one run completed)
+    const hasAnalyzed = !!lastAnalyzedAt;
+
     return (
       <div className="space-y-6 animate-fadeIn">
         <div className="flex justify-between items-center">
@@ -288,26 +316,42 @@ export function OpportunitiesView({
             <p className="text-secondary text-sm">{t('opportunities.subtitle')}</p>
           </div>
           <DashboardButton size="sm" onClick={onAnalyze} disabled={isAnalyzing}>
-            {isAnalyzing ? (
-              <>
-                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                {t('opportunities.analyzing')}
-              </>
-            ) : (
-              t('opportunities.analyzeNow')
-            )}
+            {t('opportunities.analyzeNow')}
           </DashboardButton>
         </div>
 
-        <div data-testid="opportunities-empty-state" className="flex flex-col items-center justify-center py-16 bg-surface border border-border rounded-xl">
-          <div className="w-20 h-20 rounded-full bg-main border border-border flex items-center justify-center mb-6">
-            <Lightbulb className="w-10 h-10 text-muted" />
+        {hasAnalyzed ? (
+          // Analysis ran but found 0 opportunities — positive "all clear" state
+          <div data-testid="opportunities-empty-state" className="flex flex-col items-center justify-center py-16 bg-surface border border-border rounded-xl">
+            <div className="w-20 h-20 rounded-full bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center mb-6">
+              <CheckCircle2 className="w-10 h-10 text-emerald-400" />
+            </div>
+            <h3 className="text-lg font-semibold text-white mb-2">
+              {t('opportunities.empty.noResults')}
+            </h3>
+            <p className="text-secondary text-sm mb-6 text-center max-w-md">
+              {t('opportunities.empty.noResultsDescription')}
+            </p>
+            {lastAnalyzedAt && (
+              <p className="text-xs text-muted">
+                {t('opportunities.lastAnalyzed')} {dayjs(lastAnalyzedAt).fromNow()}
+              </p>
+            )}
           </div>
-          <h3 className="text-lg font-semibold text-white mb-2">{t('opportunities.title')}</h3>
-          <p className="text-secondary text-sm mb-6 text-center max-w-md">
-            {t('opportunities.empty.noOpportunities')}
-          </p>
-        </div>
+        ) : (
+          // Never analyzed — prompt user (auto-trigger will fire, this is a brief fallback)
+          <div data-testid="opportunities-empty-state" className="flex flex-col items-center justify-center py-16 bg-surface border border-border rounded-xl">
+            <div className="w-20 h-20 rounded-full bg-main border border-border flex items-center justify-center mb-6">
+              <Lightbulb className="w-10 h-10 text-muted" />
+            </div>
+            <h3 className="text-lg font-semibold text-white mb-2">
+              {t('opportunities.empty.neverAnalyzed')}
+            </h3>
+            <p className="text-secondary text-sm mb-6 text-center max-w-md">
+              {t('opportunities.empty.neverAnalyzedDescription')}
+            </p>
+          </div>
+        )}
       </div>
     );
   }

@@ -20,6 +20,7 @@ import type {
   IUpdateOpportunityInput,
   ICreateArticleFromOpportunityResponse,
   IGscConnectionListResponse,
+  IGscConnectionSafe,
 } from '@shared/types/opportunity.types';
 import { apiFetch } from '@client/utils/api-client';
 import { getTranslations } from '@src/i18n/utils';
@@ -134,8 +135,12 @@ interface IUseOpportunitiesReturn {
 
   // Analysis
   analyzeOpportunities: () => Promise<IAnalyzeOpportunitiesResponse>;
+  /** Silently triggers analysis without showing a success toast (for auto-trigger on page load) */
+  analyzeOpportunitiesSilent: () => Promise<IAnalyzeOpportunitiesResponse>;
   isAnalyzing: boolean;
   lastAnalyzedAt: string | null;
+  /** Whether data is stale (never analyzed, or last analysis was >24 hours ago) */
+  isDataStale: boolean;
 
   // Actions
   updateStatus: (opportunityId: string, input: IUpdateOpportunityInput) => Promise<IOpportunity>;
@@ -179,20 +184,46 @@ export function useOpportunities(projectId: string | null | undefined): IUseOppo
     return gscData.connections.some(c => c.status === 'active');
   }, [gscData]);
 
-  // Derive last analyzed timestamp from most recent opportunity
+  // Active GSC connection (first active one)
+  const activeGscConnection = useMemo((): IGscConnectionSafe | null => {
+    return gscData?.connections?.find(c => c.status === 'active') ?? null;
+  }, [gscData]);
+
+  // Derive last analyzed timestamp — prefer GSC connection's last_analyzed_at (accurate even
+  // when analysis found 0 opportunities), fall back to most recent opportunity created_at.
   const lastAnalyzedAt = useMemo(() => {
+    if (activeGscConnection?.last_analyzed_at) {
+      return activeGscConnection.last_analyzed_at;
+    }
     if (opportunities.length === 0) return null;
     const sorted = [...opportunities].sort(
       (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
     );
     return sorted[0].created_at;
-  }, [opportunities]);
+  }, [activeGscConnection, opportunities]);
+
+  // Data is stale when: never analyzed, or last analysis was more than 24 hours ago
+  const isDataStale = useMemo(() => {
+    if (!lastAnalyzedAt) return true;
+    const TWENTY_FOUR_HOURS_MS = 24 * 60 * 60 * 1000;
+    return Date.now() - new Date(lastAnalyzedAt).getTime() > TWENTY_FOUR_HOURS_MS;
+  }, [lastAnalyzedAt]);
 
   // Analyze opportunities mutation
   const analyzeMutation = useMutation({
     mutationFn: () => (projectId ? analyzeOpportunities(projectId) : Promise.reject('No project')),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['opportunities', projectId] });
+      queryClient.invalidateQueries({ queryKey: ['gsc-connections', projectId] });
+    },
+  });
+
+  // Silent analyze mutation — same as above but no toast (used for auto-trigger on page load)
+  const analyzeSilentMutation = useMutation({
+    mutationFn: () => (projectId ? analyzeOpportunities(projectId) : Promise.reject('No project')),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['opportunities', projectId] });
+      queryClient.invalidateQueries({ queryKey: ['gsc-connections', projectId] });
     },
   });
 
@@ -216,6 +247,11 @@ export function useOpportunities(projectId: string | null | undefined): IUseOppo
     errorMessage: t('opportunities.error.analyze'),
     loggerContext: 'Failed to analyze opportunities',
   });
+
+  // Silent version — no toast at all (used for background auto-trigger on page load)
+  const handleAnalyzeSilent = useCallback(async (): Promise<IAnalyzeOpportunitiesResponse> => {
+    return analyzeSilentMutation.mutateAsync();
+  }, [analyzeSilentMutation]);
 
   const updateStatusWithToast = useMutationWithToast(updateStatusMutation, {
     successMessage: t('opportunities.success.dismissed'),
@@ -296,8 +332,10 @@ export function useOpportunities(projectId: string | null | undefined): IUseOppo
 
     // Analysis
     analyzeOpportunities: handleAnalyze,
-    isAnalyzing: analyzeMutation.isPending,
+    analyzeOpportunitiesSilent: handleAnalyzeSilent,
+    isAnalyzing: analyzeMutation.isPending || analyzeSilentMutation.isPending,
     lastAnalyzedAt,
+    isDataStale,
 
     // Actions
     updateStatus: handleUpdateStatus,

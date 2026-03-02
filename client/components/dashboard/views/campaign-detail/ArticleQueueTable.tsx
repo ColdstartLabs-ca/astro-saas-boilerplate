@@ -5,9 +5,9 @@ import {
   Loader2,
   Edit2,
   ExternalLink,
-  Globe,
   RefreshCw,
   Send,
+  FileText,
 } from 'lucide-react';
 import { getArticleStatusStyles } from '@client/utils/statusStyles';
 import {
@@ -16,11 +16,12 @@ import {
 } from '@client/hooks/useArticleBlogStatus';
 import { useArticleActions } from '@client/hooks/useArticleActions';
 import { useToastStore } from '@client/store/toastStore';
+import { useArticles } from '@client/hooks/useArticles';
 import dayjs from 'dayjs';
 import type { IArticleWithCampaign } from '@shared/types/article.types';
 
 interface IArticleQueueTableProps {
-  articles: IArticleWithCampaign[];
+  campaignId: string;
   onArticleClick: (article: IArticleWithCampaign) => void;
   onDeliver?: (articleId: string) => Promise<void>;
   t: (key: string) => string;
@@ -166,7 +167,7 @@ function ArticleQueueRow({
                 title="View on blog"
                 className="inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-medium bg-success/10 text-success hover:bg-success/20 transition-colors"
               >
-                <Globe className="w-3 h-3" />
+                <FileText className="w-3 h-3" />
                 Blog
               </a>
             ) : (
@@ -204,7 +205,7 @@ function ArticleQueueRow({
 }
 
 export function ArticleQueueTable({
-  articles,
+  campaignId,
   onArticleClick,
   onDeliver,
   t,
@@ -213,21 +214,16 @@ export function ArticleQueueTable({
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [deliveringId, setDeliveringId] = useState<string | null>(null);
 
-  const filteredArticles = useMemo(() => {
-    let result = articles;
-    if (searchQuery) {
-      result = result.filter(a =>
-        a.primary_keyword.toLowerCase().includes(searchQuery.toLowerCase())
-      );
-    }
-    if (statusFilter !== 'all') {
-      result = result.filter(a => a.status === statusFilter);
-    }
-    return result;
-  }, [articles, searchQuery, statusFilter]);
+  const { articles, isLoading } = useArticles({
+    campaignId,
+    status: statusFilter !== 'all' ? statusFilter : undefined,
+    search: searchQuery || undefined,
+    limit: 100,
+    enabled: !!campaignId,
+  });
 
   const sortedArticles = useMemo(() => {
-    return [...filteredArticles].sort((a, b) => {
+    return [...articles].sort((a, b) => {
       const statusOrder: Record<string, number> = {
         generating: 0,
         queued: 1,
@@ -240,7 +236,7 @@ export function ArticleQueueTable({
       const bOrder = statusOrder[b.status] ?? 99;
       return aOrder - bOrder;
     });
-  }, [filteredArticles]);
+  }, [articles]);
 
   return (
     <div className="bg-surface border border-border rounded-xl overflow-hidden flex-1 flex flex-col">
@@ -276,39 +272,45 @@ export function ArticleQueueTable({
         </div>
       </div>
       <div className="overflow-y-auto flex-1">
-        <table className="w-full text-sm text-left">
-          <thead className="bg-main/50 text-muted font-medium border-b border-border text-xs uppercase tracking-wider">
-            <tr>
-              <th className="px-6 py-3">Keyword</th>
-              <th className="px-6 py-3">Status</th>
-              <th className="px-6 py-3">{t('campaigns.detail.wordCount')}</th>
-              <th className="px-6 py-3">Delivered</th>
-              <th className="px-6 py-3 text-right">{t('campaigns.detail.generated')}</th>
-              <th className="px-6 py-3 text-right">{t('campaigns.detail.actions')}</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-border">
-            {sortedArticles.length === 0 ? (
+        {isLoading ? (
+          <div className="flex items-center justify-center py-12">
+            <Loader2 className="w-6 h-6 animate-spin text-accent" />
+          </div>
+        ) : (
+          <table className="w-full text-sm text-left">
+            <thead className="bg-main/50 text-muted font-medium border-b border-border text-xs uppercase tracking-wider">
               <tr>
-                <td colSpan={6} className="px-6 py-12 text-center text-muted">
-                  {t('campaigns.detail.noArticles')}
-                </td>
+                <th className="px-6 py-3">Keyword</th>
+                <th className="px-6 py-3">Status</th>
+                <th className="px-6 py-3">{t('campaigns.detail.wordCount')}</th>
+                <th className="px-6 py-3">Delivered</th>
+                <th className="px-6 py-3 text-right">{t('campaigns.detail.generated')}</th>
+                <th className="px-6 py-3 text-right">{t('campaigns.detail.actions')}</th>
               </tr>
-            ) : (
-              sortedArticles.map(article => (
-                <ArticleQueueRow
-                  key={article.id}
-                  article={article}
-                  onArticleClick={onArticleClick}
-                  onDeliver={onDeliver}
-                  deliveringId={deliveringId}
-                  onDeliverStart={setDeliveringId}
-                  onDeliverEnd={() => setDeliveringId(null)}
-                />
-              ))
-            )}
-          </tbody>
-        </table>
+            </thead>
+            <tbody className="divide-y divide-border">
+              {sortedArticles.length === 0 ? (
+                <tr>
+                  <td colSpan={6} className="px-6 py-12 text-center text-muted">
+                    {t('campaigns.detail.noArticles')}
+                  </td>
+                </tr>
+              ) : (
+                sortedArticles.map(article => (
+                  <ArticleQueueRow
+                    key={article.id}
+                    article={article}
+                    onArticleClick={onArticleClick}
+                    onDeliver={onDeliver}
+                    deliveringId={deliveringId}
+                    onDeliverStart={setDeliveringId}
+                    onDeliverEnd={() => setDeliveringId(null)}
+                  />
+                ))
+              )}
+            </tbody>
+          </table>
+        )}
       </div>
     </div>
   );

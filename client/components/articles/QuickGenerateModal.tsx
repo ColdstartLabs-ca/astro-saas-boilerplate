@@ -27,10 +27,12 @@ import { useUserStore } from '@client/store/userStore';
 import { DashboardButton } from '@client/components/dashboard/ui/DashboardButton';
 import { useTranslations } from '@client/hooks/useTranslations';
 import { ModelSelect } from '@client/components/ui/ModelSelect';
+import type { IModelSelectOption } from '@client/components/ui/ModelSelect';
 import { imagePresetToOption } from '@client/utils/modelAdapters';
 import { ArticlePreview } from './ArticlePreview';
 import { dashboardNavigate } from '@client/utils/dashboardNavigation';
 import type { IArticle } from '@shared/types/article.types';
+import { WRITER_CREDIT_COSTS } from '@shared/constants/credit-costs.constants';
 
 // =============================================================================
 // Schema
@@ -39,7 +41,7 @@ import type { IArticle } from '@shared/types/article.types';
 const generateSchema = z.object({
   keyword: z.string().min(1, 'Keyword is required').max(200, 'Keyword is too long'),
   campaignId: z.string().min(1, 'Campaign is required'),
-  model: z.string().optional(),
+  writerPreset: z.enum(['budget', 'balanced', 'pro', 'ultra']).default('budget'),
   tone: z.enum(['professional', 'casual', 'witty', 'academic']).optional(),
   targetWordCount: z.number().int().min(800).max(3000).optional(),
   imagePreset: z.string().optional(),
@@ -62,6 +64,13 @@ const WORD_COUNT_OPTIONS = [
   { value: 2500, label: '~2500 words' },
   { value: 3000, label: '~3000 words' },
 ] as const;
+
+const WRITER_TIER_OPTIONS: IModelSelectOption[] = [
+  { id: 'budget', name: 'Budget', description: 'Fast, cost-effective text generation', tier: 'budget', creditCost: WRITER_CREDIT_COSTS.budget },
+  { id: 'balanced', name: 'Balanced', description: 'Strong all-round writing quality', tier: 'balanced', creditCost: WRITER_CREDIT_COSTS.balanced },
+  { id: 'pro', name: 'Pro', description: 'Professional-grade AI writing', tier: 'pro', creditCost: WRITER_CREDIT_COSTS.pro },
+  { id: 'ultra', name: 'Ultra', description: 'Premium writing with nuance and depth', tier: 'ultra', creditCost: WRITER_CREDIT_COSTS.ultra },
+];
 
 
 // =============================================================================
@@ -89,7 +98,6 @@ export function QuickGenerateModal({
   const { imagePresets, isLoading: _modelsLoading } = useAvailableModels();
   const { user } = useUserStore();
   const [articleId, setArticleId] = useState<string | null>(null);
-  const [showImageSettings, setShowImageSettings] = useState(true);
   const { article, isGenerating, error, generate, reset } = useArticleGeneration(
     articleId,
     setArticleId
@@ -107,7 +115,7 @@ export function QuickGenerateModal({
     defaultValues: {
       keyword: '',
       campaignId: '',
-      model: 'auto',
+      writerPreset: 'budget',
       tone: 'professional',
       targetWordCount: 1500,
       imagePreset: undefined,
@@ -116,14 +124,16 @@ export function QuickGenerateModal({
 
   const watchedImagePreset = watch('imagePreset');
   const watchedTone = watch('tone');
+  const watchedWriterPreset = watch('writerPreset');
   const _watchedCampaignId = watch('campaignId');
 
-  // Auto-select first image preset when modal opens and presets become available
+  // Auto-select balanced image preset when modal opens and presets become available
   useEffect(() => {
-    if (showImageSettings && imagePresets.length > 0 && !watchedImagePreset) {
-      setValue('imagePreset', imagePresets[0].key);
+    if (imagePresets.length > 0 && !watchedImagePreset) {
+      const balanced = imagePresets.find(p => p.tier === 'balanced') ?? imagePresets[0];
+      setValue('imagePreset', balanced.key);
     }
-  }, [imagePresets, showImageSettings, watchedImagePreset, setValue]);
+  }, [imagePresets, watchedImagePreset, setValue]);
 
   // Notify parent of successful generation (don't auto-close)
   useEffect(() => {
@@ -142,7 +152,7 @@ export function QuickGenerateModal({
         keyword: data.keyword,
         projectId: activeProject.id,
         campaignId: data.campaignId,
-        model: data.model === 'auto' ? undefined : data.model,
+        model: data.writerPreset,
         tone: data.tone,
         targetWordCount: data.targetWordCount ?? 1500,
         imagePreset: data.imagePreset,
@@ -161,21 +171,13 @@ export function QuickGenerateModal({
     reset();
     resetForm();
     setArticleId(null);
-    setShowImageSettings(false);
     onClose();
   }, [reset, resetForm, onClose]);
 
   // Calculate total credit cost
-  // QuickGenerate uses default writer (auto), which defaults to budget=1 when undefined
-  const writerCost = 1; // WRITER_CREDIT_COSTS.budget
-  const imageCost =
-    watchedImagePreset === 'budget'
-      ? 0
-      : watchedImagePreset === 'balanced' || watchedImagePreset === 'pro'
-        ? 1
-        : watchedImagePreset === 'ultra'
-          ? 2
-          : 0;
+  const writerCost = WRITER_CREDIT_COSTS[watchedWriterPreset] ?? 1;
+  const selectedImagePreset = imagePresets.find(p => p.key === watchedImagePreset);
+  const imageCost = selectedImagePreset?.creditCost ?? 0;
   const totalCredits = writerCost + imageCost;
 
   // Check if user has enough credits (from subscription + purchased)
@@ -411,6 +413,34 @@ export function QuickGenerateModal({
               )}
             </div>
 
+            {/* Writer Quality + Image Quality — side by side */}
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-sm font-medium text-text-primary mb-1.5">
+                  Writer Quality
+                </label>
+                <ModelSelect
+                  options={WRITER_TIER_OPTIONS}
+                  selectedId={watchedWriterPreset}
+                  onSelect={id => setValue('writerPreset', (id ?? 'budget') as 'budget' | 'balanced' | 'pro' | 'ultra', { shouldValidate: true })}
+                  showCreditCost={true}
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-text-primary mb-1.5">
+                  {_t('quickGenerate.images.title')}
+                </label>
+                <ModelSelect
+                  options={imagePresets.map(imagePresetToOption)}
+                  selectedId={watchedImagePreset || null}
+                  onSelect={preset => setValue('imagePreset', preset || undefined)}
+                  allowNone={true}
+                  noneLabel="No images"
+                  showCreditCost={true}
+                />
+              </div>
+            </div>
+
             {/* Tone Selector */}
             <div>
               <label className="block text-sm font-medium text-text-primary mb-1.5">
@@ -453,61 +483,6 @@ export function QuickGenerateModal({
               </select>
             </div>
 
-            {/* Image Generation Section */}
-            <div className="p-4 bg-accent/5 rounded-lg border border-accent/20">
-              <div className="flex items-center justify-between mb-3">
-                <div>
-                  <label className="block text-sm font-medium text-text-primary">
-                    {_t('quickGenerate.images.title')}
-                  </label>
-                  <p className="text-xs text-text-secondary mt-0.5">
-                    {_t('quickGenerate.images.description')}
-                  </p>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => {
-                    const next = !showImageSettings;
-                    setShowImageSettings(next);
-                    if (next) {
-                      // Auto-select first available preset when toggling ON
-                      const firstPreset = imagePresets[0];
-                      if (firstPreset) {
-                        setValue('imagePreset', firstPreset.key);
-                      }
-                    } else {
-                      // Clear preset when toggling OFF
-                      setValue('imagePreset', undefined);
-                    }
-                  }}
-                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-accent/20 ${
-                    showImageSettings ? 'bg-accent' : 'bg-gray-200 dark:bg-gray-700'
-                  }`}
-                >
-                  <span
-                    className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                      showImageSettings ? 'translate-x-6' : 'translate-x-1'
-                    }`}
-                  />
-                </button>
-              </div>
-
-              {showImageSettings && (
-                <div className="mt-3">
-                  <ModelSelect
-                    options={imagePresets.map(imagePresetToOption)}
-                    selectedId={watchedImagePreset || null}
-                    onSelect={preset => setValue('imagePreset', preset || undefined)}
-                    placeholder="Select image preset..."
-                    showCreditCost={true}
-                  />
-                  <p className="text-xs text-muted mt-2">
-                    Higher quality image presets (Pro, Ultra) add extra credits to the base cost.
-                  </p>
-                </div>
-              )}
-            </div>
-
             {/* Credit Cost Summary */}
             <div
               className={`p-4 rounded-lg border ${
@@ -528,18 +503,18 @@ export function QuickGenerateModal({
                   </h4>
                   <div className={`text-xs mt-2 space-y-1.5 ${hasEnoughCredits ? 'text-blue-100/80' : 'text-red-200/80'}`}>
                     <div className="flex justify-between items-center">
-                      <span>Article (budget writer)</span>
-                      <span className="font-semibold text-white">{writerCost} credit</span>
+                      <span>Article ({watchedWriterPreset} writer)</span>
+                      <span className="font-semibold text-white">{writerCost} credit{writerCost > 1 ? 's' : ''}</span>
                     </div>
                     {imageCost > 0 ? (
                       <div className="flex justify-between items-center">
-                        <span>Images ({watchedImagePreset})</span>
+                        <span>Images ({selectedImagePreset?.displayName ?? watchedImagePreset})</span>
                         <span className="font-semibold text-white">+{imageCost} credit{imageCost > 1 ? 's' : ''}</span>
                       </div>
                     ) : (
                       <div className="flex justify-between items-center text-muted">
                         <span>Images</span>
-                        <span>none (text-only)</span>
+                        <span>{watchedImagePreset ? 'included' : 'none'}</span>
                       </div>
                     )}
                     <div className="h-px bg-white/10 my-1"></div>

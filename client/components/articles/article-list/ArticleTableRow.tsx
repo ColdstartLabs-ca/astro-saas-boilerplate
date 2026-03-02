@@ -14,7 +14,6 @@ import {
   Image as ImageIcon,
   ImageOff,
   RefreshCw,
-  Globe,
 } from 'lucide-react';
 import { getSEOScoreColor, getSEOScoreBorderColor } from '@shared/utils/seo';
 import { dashboardNavigate } from '@client/utils/dashboardNavigation';
@@ -261,7 +260,7 @@ export function ArticleTableRow({
               onClick={e => e.stopPropagation()}
               title="View on blog"
             >
-              <Globe className="w-3 h-3" />
+              <FileText className="w-3 h-3" />
               Blog
             </a>
           ) : (

@@ -539,7 +539,12 @@
     "empty": {
       "noProject": "Selecione um projeto para ver oportunidades",
       "noConnection": "Conecte o Google Search Console para descobrir oportunidades de SEO",
-      "noOpportunities": "Nenhuma oportunidade encontrada. Clique em Analisar Agora para escanear seu site."
+      "noOpportunities": "Nenhuma oportunidade encontrada. Clique em Analisar Agora para escanear seu site.",
+      "neverAnalyzed": "Nenhuma análise ainda",
+      "neverAnalyzedDescription": "Vamos escanear automaticamente seu site em busca de oportunidades de SEO.",
+      "noResults": "Nenhuma oportunidade encontrada",
+      "noResultsDescription": "Seu conteúdo está performando bem! Volte após publicar mais artigos ou clique em Analisar Agora para reanalisar.",
+      "autoAnalyzing": "Escaneando seu site em busca de oportunidades de SEO..."
     },
     "connectGsc": "Conectar Google Search Console",
     "gsc": {
@@ -697,6 +702,10 @@
       "sync": "Sincronizados com sucesso {count} artigos."
     },
     "noDataDescription": "Nenhum dado de desempenho ainda. Clique em 'Sincronizar GSC' para obter seus dados de pesquisa mais recentes do Google Search Console.",
+    "noDataHint": "Se você publicou artigos recentemente, pode levar alguns dias para o Google indexá-los e os dados aparecerem no Search Console. Certifique-se de que seus artigos foram publicados com uma URL definida.",
+    "autoSyncing": "Sincronizando dados...",
+    "syncingData": "Buscando dados de pesquisa",
+    "syncingDataDescription": "Obtendo seus dados de desempenho mais recentes do Google Search Console. Isso pode levar um momento.",
     "noProject": "Nenhum Projeto Selecionado",
     "noProjectDescription": "Crie ou selecione um projeto para ver os dados de analytics.",
     "goToOverview": "Ir para Visão Geral"
