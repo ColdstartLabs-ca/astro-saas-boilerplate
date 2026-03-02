@@ -7,6 +7,7 @@ import type { ICampaign, IKeyword } from '@shared/types/campaign.types';
 import type { IArticle } from '@shared/types/article.types';
 import { useCampaignDetail } from '@client/hooks/useCampaignDetail';
 import { useAvailableModels } from '@client/hooks/useAvailableModels';
+import { useArticles } from '@client/hooks/useArticles';
 
 // Mock lucide-react icons
 vi.mock('lucide-react', () => ({
@@ -114,6 +115,11 @@ vi.mock('@client/components/articles/ArticleDetailModal', () => ({
 // Mock useCampaignDetail hook
 vi.mock('@client/hooks/useCampaignDetail', () => ({
   useCampaignDetail: vi.fn(),
+}));
+
+// Mock useArticles hook
+vi.mock('@client/hooks/useArticles', () => ({
+  useArticles: vi.fn(),
 }));
 
 // Mock useAvailableModels hook
@@ -463,6 +469,14 @@ describe('CampaignDetailView', () => {
       refetch: vi.fn(),
     });
 
+    // Mock useArticles hook used by ArticleQueueTable
+    vi.mocked(useArticles).mockReturnValue({
+      articles: mockArticles,
+      isLoading: false,
+      error: null,
+      refetch: vi.fn(),
+    });
+
     render(<CampaignDetailView campaignId={mockCampaignId} onBackToList={mockOnBackToList} />, {
       wrapper: createWrapper(),
     });
@@ -562,6 +576,21 @@ describe('CampaignDetailView', () => {
       updateCampaign: vi.fn(),
       refetch: vi.fn(),
     });
+
+    // Mock useArticles hook to return filtered articles based on search
+    vi.mocked(useArticles).mockImplementation(({ search }) => ({
+      articles: search
+        ? mockArticles.filter(a => a.primary_keyword.toLowerCase().includes(search.toLowerCase()))
+        : mockArticles,
+      total: search
+        ? mockArticles.filter(a => a.primary_keyword.toLowerCase().includes(search.toLowerCase()))
+            .length
+        : mockArticles.length,
+      totalPages: 1,
+      isLoading: false,
+      error: null,
+      refetch: vi.fn(),
+    }));
 
     render(<CampaignDetailView campaignId={mockCampaignId} onBackToList={mockOnBackToList} />, {
       wrapper: createWrapper(),
