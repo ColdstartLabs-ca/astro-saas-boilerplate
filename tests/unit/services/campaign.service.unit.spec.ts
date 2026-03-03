@@ -811,6 +811,404 @@ describe('CampaignService', () => {
         global_instructions: 'Prefer short paragraphs.',
       });
     });
+
+    it('should inherit valid articleStyle from project content_preferences', async () => {
+      const { supabaseAdmin } = await import('@server/supabase/supabaseAdmin');
+
+      let insertCall: Record<string, unknown> | null = null;
+      let callCount = 0;
+      (supabaseAdmin.from as unknown as ReturnType<typeof vi.fn>).mockImplementation(() => {
+        callCount++;
+        if (callCount === 1) {
+          // verify project ownership
+          return {
+            select: vi.fn().mockReturnValue({
+              eq: vi.fn().mockReturnValue({
+                eq: vi.fn().mockReturnValue({
+                  single: vi.fn().mockResolvedValue({ data: { id: mockProjectId }, error: null }),
+                }),
+              }),
+            }),
+          } as unknown;
+        } else if (callCount === 2) {
+          // fetch project defaults with valid articleStyle
+          return {
+            select: vi.fn().mockReturnValue({
+              eq: vi.fn().mockReturnValue({
+                single: vi.fn().mockResolvedValue({
+                  data: {
+                    content_preferences: {
+                      articleStyle: 'how-to', // valid campaign article style
+                    },
+                  },
+                  error: null,
+                }),
+              }),
+            }),
+          } as unknown;
+        } else if (callCount === 3) {
+          // insert campaign
+          return {
+            insert: vi.fn().mockImplementation((data: unknown) => {
+              insertCall = data as Record<string, unknown>;
+              return {
+                select: vi.fn().mockReturnValue({
+                  single: vi.fn().mockResolvedValue({ data: mockCampaign, error: null }),
+                }),
+              };
+            }),
+          } as unknown;
+        } else {
+          // insert keywords
+          return {
+            insert: vi.fn().mockResolvedValue({ data: null, error: null }),
+          } as unknown;
+        }
+      });
+
+      await campaignService.create(mockUserId, {
+        name: 'New Campaign',
+        projectId: mockProjectId,
+        keywords: ['coffee maker'],
+      });
+
+      expect(insertCall).toMatchObject({
+        article_style: 'how-to',
+      });
+    });
+
+    it('should override project articleStyle when campaign specifies articleStyle', async () => {
+      const { supabaseAdmin } = await import('@server/supabase/supabaseAdmin');
+
+      let insertCall: Record<string, unknown> | null = null;
+      let callCount = 0;
+      (supabaseAdmin.from as unknown as ReturnType<typeof vi.fn>).mockImplementation(() => {
+        callCount++;
+        if (callCount === 1) {
+          // verify project ownership
+          return {
+            select: vi.fn().mockReturnValue({
+              eq: vi.fn().mockReturnValue({
+                eq: vi.fn().mockReturnValue({
+                  single: vi.fn().mockResolvedValue({ data: { id: mockProjectId }, error: null }),
+                }),
+              }),
+            }),
+          } as unknown;
+        } else if (callCount === 2) {
+          // fetch project defaults
+          return {
+            select: vi.fn().mockReturnValue({
+              eq: vi.fn().mockReturnValue({
+                single: vi.fn().mockResolvedValue({
+                  data: {
+                    content_preferences: {
+                      articleStyle: 'how-to',
+                    },
+                  },
+                  error: null,
+                }),
+              }),
+            }),
+          } as unknown;
+        } else if (callCount === 3) {
+          // insert campaign
+          return {
+            insert: vi.fn().mockImplementation((data: unknown) => {
+              insertCall = data as Record<string, unknown>;
+              return {
+                select: vi.fn().mockReturnValue({
+                  single: vi.fn().mockResolvedValue({ data: mockCampaign, error: null }),
+                }),
+              };
+            }),
+          } as unknown;
+        } else {
+          // insert keywords
+          return {
+            insert: vi.fn().mockResolvedValue({ data: null, error: null }),
+          } as unknown;
+        }
+      });
+
+      await campaignService.create(mockUserId, {
+        name: 'New Campaign',
+        projectId: mockProjectId,
+        keywords: ['coffee maker'],
+        articleStyle: 'listicle', // Override project default
+      });
+
+      expect(insertCall).toMatchObject({
+        article_style: 'listicle', // Should use campaign value, not project's 'how-to'
+      });
+    });
+
+    it('should default boolean fields to false when not specified', async () => {
+      const { supabaseAdmin } = await import('@server/supabase/supabaseAdmin');
+
+      let insertCall: Record<string, unknown> | null = null;
+      let callCount = 0;
+      (supabaseAdmin.from as unknown as ReturnType<typeof vi.fn>).mockImplementation(() => {
+        callCount++;
+        if (callCount === 1) {
+          return {
+            select: vi.fn().mockReturnValue({
+              eq: vi.fn().mockReturnValue({
+                eq: vi.fn().mockReturnValue({
+                  single: vi.fn().mockResolvedValue({ data: { id: mockProjectId }, error: null }),
+                }),
+              }),
+            }),
+          } as unknown;
+        } else if (callCount === 2) {
+          return {
+            select: vi.fn().mockReturnValue({
+              eq: vi.fn().mockReturnValue({
+                single: vi.fn().mockResolvedValue({
+                  data: { content_preferences: {} },
+                  error: null,
+                }),
+              }),
+            }),
+          } as unknown;
+        } else if (callCount === 3) {
+          return {
+            insert: vi.fn().mockImplementation((data: unknown) => {
+              insertCall = data as Record<string, unknown>;
+              return {
+                select: vi.fn().mockReturnValue({
+                  single: vi.fn().mockResolvedValue({ data: mockCampaign, error: null }),
+                }),
+              };
+            }),
+          } as unknown;
+        } else {
+          return {
+            insert: vi.fn().mockResolvedValue({ data: null, error: null }),
+          } as unknown;
+        }
+      });
+
+      await campaignService.create(mockUserId, {
+        name: 'New Campaign',
+        projectId: mockProjectId,
+        keywords: ['coffee maker'],
+      });
+
+      expect(insertCall).toMatchObject({
+        include_youtube: false,
+        include_cta: false,
+        include_emojis: false,
+        include_infographics: false,
+        auto_publish: false,
+      });
+    });
+
+    it('should allow setting boolean fields to true', async () => {
+      const { supabaseAdmin } = await import('@server/supabase/supabaseAdmin');
+
+      let insertCall: Record<string, unknown> | null = null;
+      let callCount = 0;
+      (supabaseAdmin.from as unknown as ReturnType<typeof vi.fn>).mockImplementation(() => {
+        callCount++;
+        if (callCount === 1) {
+          return {
+            select: vi.fn().mockReturnValue({
+              eq: vi.fn().mockReturnValue({
+                eq: vi.fn().mockReturnValue({
+                  single: vi.fn().mockResolvedValue({ data: { id: mockProjectId }, error: null }),
+                }),
+              }),
+            }),
+          } as unknown;
+        } else if (callCount === 2) {
+          return {
+            select: vi.fn().mockReturnValue({
+              eq: vi.fn().mockReturnValue({
+                single: vi.fn().mockResolvedValue({
+                  data: { content_preferences: {} },
+                  error: null,
+                }),
+              }),
+            }),
+          } as unknown;
+        } else if (callCount === 3) {
+          return {
+            insert: vi.fn().mockImplementation((data: unknown) => {
+              insertCall = data as Record<string, unknown>;
+              return {
+                select: vi.fn().mockReturnValue({
+                  single: vi.fn().mockResolvedValue({ data: mockCampaign, error: null }),
+                }),
+              };
+            }),
+          } as unknown;
+        } else {
+          return {
+            insert: vi.fn().mockResolvedValue({ data: null, error: null }),
+          } as unknown;
+        }
+      });
+
+      await campaignService.create(mockUserId, {
+        name: 'New Campaign',
+        projectId: mockProjectId,
+        keywords: ['coffee maker'],
+        includeYoutube: true,
+        includeCta: true,
+        includeEmojis: true,
+        includeInfographics: true,
+        autoPublish: true,
+      });
+
+      expect(insertCall).toMatchObject({
+        include_youtube: true,
+        include_cta: true,
+        include_emojis: true,
+        include_infographics: true,
+        auto_publish: true,
+      });
+    });
+
+    it('should inherit multiple fields from project and allow partial override', async () => {
+      const { supabaseAdmin } = await import('@server/supabase/supabaseAdmin');
+
+      let insertCall: Record<string, unknown> | null = null;
+      let callCount = 0;
+      (supabaseAdmin.from as unknown as ReturnType<typeof vi.fn>).mockImplementation(() => {
+        callCount++;
+        if (callCount === 1) {
+          return {
+            select: vi.fn().mockReturnValue({
+              eq: vi.fn().mockReturnValue({
+                eq: vi.fn().mockReturnValue({
+                  single: vi.fn().mockResolvedValue({ data: { id: mockProjectId }, error: null }),
+                }),
+              }),
+            }),
+          } as unknown;
+        } else if (callCount === 2) {
+          return {
+            select: vi.fn().mockReturnValue({
+              eq: vi.fn().mockReturnValue({
+                single: vi.fn().mockResolvedValue({
+                  data: {
+                    content_preferences: {
+                      articleStyle: 'tutorial',
+                      internalLinksCount: 3,
+                      globalInstructions: 'Write with authority',
+                      imageStyle: 'watercolor',
+                    },
+                  },
+                  error: null,
+                }),
+              }),
+            }),
+          } as unknown;
+        } else if (callCount === 3) {
+          return {
+            insert: vi.fn().mockImplementation((data: unknown) => {
+              insertCall = data as Record<string, unknown>;
+              return {
+                select: vi.fn().mockReturnValue({
+                  single: vi.fn().mockResolvedValue({ data: mockCampaign, error: null }),
+                }),
+              };
+            }),
+          } as unknown;
+        } else {
+          return {
+            insert: vi.fn().mockResolvedValue({ data: null, error: null }),
+          } as unknown;
+        }
+      });
+
+      await campaignService.create(mockUserId, {
+        name: 'New Campaign',
+        projectId: mockProjectId,
+        keywords: ['coffee maker'],
+        articleStyle: 'opinion', // Override project's 'tutorial'
+        includeYoutube: true, // Set boolean
+        // internalLinksCount, globalInstructions, imageStyle should inherit
+      });
+
+      expect(insertCall).toMatchObject({
+        article_style: 'opinion', // Overridden
+        internal_links_count: 3, // Inherited
+        global_instructions: 'Write with authority', // Inherited
+        image_style: 'watercolor', // Inherited
+        include_youtube: true, // Explicitly set
+        include_cta: false, // Default
+        include_emojis: false, // Default
+        include_infographics: false, // Default
+        auto_publish: false, // Default
+      });
+    });
+
+    it('should handle null project content_preferences', async () => {
+      const { supabaseAdmin } = await import('@server/supabase/supabaseAdmin');
+
+      let insertCall: Record<string, unknown> | null = null;
+      let callCount = 0;
+      (supabaseAdmin.from as unknown as ReturnType<typeof vi.fn>).mockImplementation(() => {
+        callCount++;
+        if (callCount === 1) {
+          return {
+            select: vi.fn().mockReturnValue({
+              eq: vi.fn().mockReturnValue({
+                eq: vi.fn().mockReturnValue({
+                  single: vi.fn().mockResolvedValue({ data: { id: mockProjectId }, error: null }),
+                }),
+              }),
+            }),
+          } as unknown;
+        } else if (callCount === 2) {
+          return {
+            select: vi.fn().mockReturnValue({
+              eq: vi.fn().mockReturnValue({
+                single: vi.fn().mockResolvedValue({
+                  data: { content_preferences: null },
+                  error: null,
+                }),
+              }),
+            }),
+          } as unknown;
+        } else if (callCount === 3) {
+          return {
+            insert: vi.fn().mockImplementation((data: unknown) => {
+              insertCall = data as Record<string, unknown>;
+              return {
+                select: vi.fn().mockReturnValue({
+                  single: vi.fn().mockResolvedValue({ data: mockCampaign, error: null }),
+                }),
+              };
+            }),
+          } as unknown;
+        } else {
+          return {
+            insert: vi.fn().mockResolvedValue({ data: null, error: null }),
+          } as unknown;
+        }
+      });
+
+      await campaignService.create(mockUserId, {
+        name: 'New Campaign',
+        projectId: mockProjectId,
+        keywords: ['coffee maker'],
+      });
+
+      expect(insertCall).toMatchObject({
+        article_style: null,
+        internal_links_count: 0,
+        global_instructions: null,
+        image_style: null,
+        include_youtube: false,
+        include_cta: false,
+        include_emojis: false,
+        include_infographics: false,
+        auto_publish: false,
+      });
+    });
   });
 
   describe('update', () => {

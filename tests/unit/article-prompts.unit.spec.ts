@@ -110,4 +110,26 @@ describe('getArticlePrompt — style preferences', () => {
 
     expect(prompt).not.toContain('STYLE PREFERENCES');
   });
+
+  it('should include YouTube markers instruction when includeYoutube is true', () => {
+    const prefs: IArticleStylePreferences = { includeYoutube: true };
+    const prompt = getArticlePrompt(MINIMAL_OUTLINE, 'professional', 1500, 0, prefs);
+
+    expect(prompt).toContain('YOUTUBE');
+  });
+
+  it('should include infographic markers instruction when includeInfographics is true', () => {
+    const prefs: IArticleStylePreferences = { includeInfographics: true };
+    const prompt = getArticlePrompt(MINIMAL_OUTLINE, 'professional', 1500, 0, prefs);
+
+    expect(prompt).toContain('INFOGRAPHIC');
+  });
+
+  it('should include imageStyle in the prompt when imageStyle is set', () => {
+    const prefs: IArticleStylePreferences = { imageStyle: 'minimalist line art' };
+    const prompt = getArticlePrompt(MINIMAL_OUTLINE, 'professional', 1500, 0, prefs);
+
+    expect(prompt).toContain('minimalist line art');
+    expect(prompt).toContain('visual style');
+  });
 });

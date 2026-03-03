@@ -303,4 +303,40 @@ describe('ArticleGenerationService — style preferences forwarding', () => {
       [] // empty
     );
   });
+
+  it('should NOT fetch internal links when internalLinksCount is undefined', async () => {
+    const input = makeBaseInput({
+      stylePreferences: { internalLinksCount: undefined },
+    });
+
+    await service.generateArticle(ARTICLE_ID, USER_ID, input);
+
+    // getArticlePrompt should have received an empty array (no DB fetch)
+    expect(getArticlePromptSpy).toHaveBeenCalledWith(
+      expect.any(Object),
+      expect.any(String),
+      expect.any(Number),
+      expect.any(Number),
+      input.stylePreferences,
+      [] // empty
+    );
+  });
+
+  it('should NOT fetch internal links when stylePreferences is undefined', async () => {
+    const input = makeBaseInput({
+      // No stylePreferences at all
+    });
+
+    await service.generateArticle(ARTICLE_ID, USER_ID, input);
+
+    // getArticlePrompt should have received an empty array (no DB fetch)
+    expect(getArticlePromptSpy).toHaveBeenCalledWith(
+      expect.any(Object),
+      expect.any(String),
+      expect.any(Number),
+      expect.any(Number),
+      undefined,
+      [] // empty
+    );
+  });
 });
