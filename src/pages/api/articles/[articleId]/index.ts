@@ -20,6 +20,7 @@ import {
   getValidTransitions,
 } from '@server/services/article-status-transitions';
 
+// Schema for article update
 const updateSchema = z.object({
   content: z.string().optional(),
   title: z.string().optional(),
@@ -90,7 +91,7 @@ export const PATCH = withAuthAndBody(updateSchema, async (userId, input, context
   // Verify article ownership and get current status and campaign info
   const { data: article, error: articleError } = await supabaseAdmin
     .from('articles')
-    .select('id, user_id, status, campaign_id')
+    .select('id, user_id, status, campaign_id, content')
     .eq('id', articleId)
     .eq('user_id', userId)
     .single();
@@ -165,6 +166,16 @@ export const PATCH = withAuthAndBody(updateSchema, async (userId, input, context
       ({ deliveryService }) => deliveryService.deliverArticle(articleId)
     );
     fireAndForget(context.locals, deliveryPromise);
+  }
+
+  // Auto-re-analyze AI detection score if content changed
+  if (input.content && input.content !== article.content && articleId) {
+    // Dynamic import to avoid circular dependencies
+    // eslint-disable-next-line no-restricted-syntax
+    const reanalyzePromise = import('@server/services/ai-detection.service').then(
+      ({ aiDetectionService }) => aiDetectionService.analyzeHeuristic(articleId, input.content!)
+    );
+    fireAndForget(context.locals, reanalyzePromise);
   }
 
   return jsonResponse({ article: updatedArticle });

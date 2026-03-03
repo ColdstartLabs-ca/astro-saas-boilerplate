@@ -680,12 +680,10 @@ Some content follows.`;
       const mockChain = {
         select: vi.fn().mockReturnValue({
           eq: vi.fn().mockReturnValue({
-            single: vi
-              .fn()
-              .mockResolvedValue({
-                data: { content_preferences: { autoApprove: true } },
-                error: null,
-              }),
+            single: vi.fn().mockResolvedValue({
+              data: { content_preferences: { autoApprove: true } },
+              error: null,
+            }),
           }),
         }),
       };
@@ -702,12 +700,10 @@ Some content follows.`;
       const mockChain = {
         select: vi.fn().mockReturnValue({
           eq: vi.fn().mockReturnValue({
-            single: vi
-              .fn()
-              .mockResolvedValue({
-                data: { content_preferences: { autoApprove: false } },
-                error: null,
-              }),
+            single: vi.fn().mockResolvedValue({
+              data: { content_preferences: { autoApprove: false } },
+              error: null,
+            }),
           }),
         }),
       };
@@ -724,9 +720,7 @@ Some content follows.`;
       const mockChain = {
         select: vi.fn().mockReturnValue({
           eq: vi.fn().mockReturnValue({
-            single: vi
-              .fn()
-              .mockResolvedValue({ data: { content_preferences: {} }, error: null }),
+            single: vi.fn().mockResolvedValue({ data: { content_preferences: {} }, error: null }),
           }),
         }),
       };
@@ -848,12 +842,12 @@ Some content follows.`;
       expect(deliveryService.deliverArticle).toHaveBeenCalledWith(mockArticleId);
     });
 
-    it('should auto-approve draft articles (QA exhausted) when autoApprove is enabled', async () => {
+    it('should NOT auto-approve qa_failed articles (QA exhausted) even when autoApprove is enabled', async () => {
       const { qaService } = await import('@server/services/qa.service');
       const { deliveryService } = await import('@server/services/delivery.service');
 
-      // Force QA to always fail — after exhausting retries, article is published as 'draft'
-      // Draft status IS auto-approved when autoApprove=true (changed from old qa_failed behavior)
+      // Force QA to always fail — after exhausting retries, article is published as 'qa_failed'
+      // qa_failed status is NOT auto-approved (intentional safeguard for quality)
       (qaService.runQAChecks as ReturnType<typeof vi.fn>).mockResolvedValue({
         passed: false,
         failureReason: 'AI likelihood too high',
@@ -903,8 +897,8 @@ Some content follows.`;
 
       await service.generateArticle(mockArticleId, mockUserId, input);
 
-      // After QA exhaustion, article is published as 'draft' and IS auto-approved
-      expect(deliveryService.deliverArticle).toHaveBeenCalled();
+      // After QA exhaustion, article is published as 'qa_failed' and is NOT auto-approved (intentional safeguard)
+      expect(deliveryService.deliverArticle).not.toHaveBeenCalled();
     });
 
     it('should skip auto-approve and use normal auto-delivery when autoApprove is disabled', async () => {

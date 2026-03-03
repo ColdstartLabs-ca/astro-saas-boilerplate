@@ -67,6 +67,9 @@ export interface IArticle {
   similar_to_article_id: string | null;
   // QA pipeline fields (E11)
   qa_results: IQAResult | null;
+  // AI Detection fields
+  ai_detection_details: IAIDetectionDetails | null;
+  ai_detection_provider: 'heuristic' | 'originality' | null;
 }
 
 /**
@@ -266,6 +269,7 @@ export interface IQAResult {
       passed: boolean;
       aiScore: number;
       confidence: 'low' | 'medium' | 'high';
+      detectedPatterns?: string[];
     };
   };
 }
@@ -309,4 +313,20 @@ export interface ISimilarityCheckRequest {
   threshold?: number;
   maxResults?: number;
   excludeArticleId?: string;
+}
+
+/**
+ * AI Detection details stored with article
+ */
+export interface IAIDetectionDetails {
+  /** Provider that produced the score */
+  provider: 'heuristic' | 'originality';
+  /** Confidence level of the detection */
+  confidence: 'low' | 'medium' | 'high';
+  /** Detected AI patterns (from heuristic analysis) */
+  detectedPatterns: string[];
+  /** When the analysis was performed */
+  analyzedAt: string;
+  /** Original provider score (0-1 for heuristic, 0-100 for Originality.ai) */
+  rawScore?: number;
 }

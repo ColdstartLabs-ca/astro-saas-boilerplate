@@ -24,7 +24,7 @@ import {
 import ReactMarkdown from 'react-markdown';
 import MDEditor from '@uiw/react-md-editor';
 import '@uiw/react-md-editor/markdown-editor.css';
-import type { IArticleWithCampaign } from '@shared/types/article.types';
+import type { IArticleWithCampaign, IAIDetectionDetails } from '@shared/types/article.types';
 import { DashboardButton } from '@client/components/dashboard/ui/DashboardButton';
 import { ConfirmDialog } from '@client/components/ui/ConfirmDialog';
 import { useToastStore } from '@client/store/toastStore';
@@ -35,7 +35,25 @@ import { DeliveryStatusCard } from '@client/components/dashboard/views/articles/
 import { useArticleDeliveries } from '@client/hooks/useArticleDeliveries';
 import { useTranslations } from '@client/hooks/useTranslations';
 import { useArticleActions } from '@client/hooks/useArticleActions';
+import { useApiRequest } from '@client/hooks/useApiRequest';
 import { ImageOff } from 'lucide-react';
+import type { IQAResult } from '@shared/types/article.types';
+
+/**
+ * Extract AI detection details from QA results for backward compatibility.
+ * Used when ai_detection_details is null but qa_results contains aiLikelihood data.
+ */
+function extractAIDetailsFromQA(qaResults: IQAResult | null): IAIDetectionDetails | null {
+  if (!qaResults?.results?.aiLikelihood) return null;
+  const ai = qaResults.results.aiLikelihood;
+  return {
+    provider: 'heuristic',
+    confidence: ai.confidence,
+    detectedPatterns: ai.detectedPatterns ?? [],
+    analyzedAt: qaResults.checkedAt,
+    rawScore: ai.aiScore,
+  };
+}
 
 function MarkdownImage(props: React.ImgHTMLAttributes<HTMLImageElement>) {
   const [broken, setBroken] = useState(false);
@@ -116,6 +134,7 @@ export function ArticleDetailModal({
   const t = useTranslations('dashboard');
   const queryClient = useQueryClient();
   const { showToast } = useToastStore();
+  const { request } = useApiRequest();
   const [isEditing, setIsEditing] = useState(false);
   const [editedContent, setEditedContent] = useState('');
   const [isSaving, setIsSaving] = useState(false);
@@ -129,6 +148,7 @@ export function ArticleDetailModal({
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showRegenerateConfirm, setShowRegenerateConfirm] = useState(false);
   const [showUnsavedChangesConfirm, setShowUnsavedChangesConfirm] = useState(false);
+  const [isAnalyzingAI, setIsAnalyzingAI] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [currentArticle, setCurrentArticle] = useState<IArticleWithImages | null>(
     article as IArticleWithImages | null
@@ -165,6 +185,33 @@ export function ArticleDetailModal({
       setError(err instanceof Error ? err.message : 'Failed to fix QA issues');
     }
   }, [currentArticle, fixQAIssues, invalidateCampaignCache, onClose, onUpdate, showToast]);
+
+  const handleAnalyzeAI = useCallback(async () => {
+    if (!currentArticle) return;
+    setIsAnalyzingAI(true);
+    setError(null);
+    try {
+      const result = await request<{ score: number; details: IAIDetectionDetails }>(
+        `/api/articles/${currentArticle.id}/analyze`,
+        { method: 'POST', body: { provider: 'heuristic' } }
+      );
+      // Update current article with new AI detection score
+      setCurrentArticle(prev =>
+        prev
+          ? {
+              ...prev,
+              ai_detection_score: result.score,
+              ai_detection_details: result.details,
+            }
+          : null
+      );
+      showToast({ message: 'AI detection analysis complete', type: 'success' });
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to analyze');
+    } finally {
+      setIsAnalyzingAI(false);
+    }
+  }, [currentArticle, request, showToast]);
 
   // Track previous article id to avoid unnecessary re-fetches
   const prevArticleIdRef = useRef<string | null>(null);
@@ -453,7 +500,10 @@ export function ArticleDetailModal({
         {/* Content */}
         <div className="flex-1 overflow-y-auto p-6">
           {error && (
-            <div data-testid="article-inline-error" className="mb-4 p-3 bg-red-500/10 border border-red-500/30 rounded-lg text-red-400 text-sm">
+            <div
+              data-testid="article-inline-error"
+              className="mb-4 p-3 bg-red-500/10 border border-red-500/30 rounded-lg text-red-400 text-sm"
+            >
               {error}
             </div>
           )}
@@ -468,7 +518,15 @@ export function ArticleDetailModal({
           {/* AI Detection Score Display - show when not editing and content exists */}
           {!isEditing && currentArticle.content && (
             <div className="mb-6">
-              <AIDetectionScore score={currentArticle.ai_detection_score ?? null} />
+              <AIDetectionScore
+                score={currentArticle.ai_detection_score ?? null}
+                details={
+                  currentArticle.ai_detection_details ??
+                  extractAIDetailsFromQA(currentArticle.qa_results)
+                }
+                onAnalyze={handleAnalyzeAI}
+                isAnalyzing={isAnalyzingAI}
+              />
             </div>
           )}
 
@@ -632,7 +690,9 @@ export function ArticleDetailModal({
                               </a>
                             </div>
                             <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                              {img.prompt && <p className="text-[10px] text-white/80 truncate">{img.prompt}</p>}
+                              {img.prompt && (
+                                <p className="text-[10px] text-white/80 truncate">{img.prompt}</p>
+                              )}
                             </div>
                           </>
                         ) : img.status === 'failed' ? (
@@ -754,24 +814,31 @@ export function ArticleDetailModal({
             {!isEditing &&
               (currentArticle.status === 'failed' ||
                 currentArticle.status === 'failed_quality') && (
-              <DashboardButton
-                data-testid="regenerate-button"
-                variant="outline"
-                onClick={() => setShowRegenerateConfirm(true)}
-                disabled={isSaving || isDeleting || isRegenerating}
-              >
-                <RotateCcw className="w-4 h-4 mr-2" />
-                {isRegenerating
-                  ? t('articles.detailModal.regenerating')
-                  : t('articles.detailModal.regenerate')}
-              </DashboardButton>
-            )}
+                <DashboardButton
+                  data-testid="regenerate-button"
+                  variant="outline"
+                  onClick={() => setShowRegenerateConfirm(true)}
+                  disabled={isSaving || isDeleting || isRegenerating}
+                >
+                  <RotateCcw className="w-4 h-4 mr-2" />
+                  {isRegenerating
+                    ? t('articles.detailModal.regenerating')
+                    : t('articles.detailModal.regenerate')}
+                </DashboardButton>
+              )}
 
             {/* Delete button */}
             <DashboardButton
               variant="ghost"
               onClick={() => setShowDeleteConfirm(true)}
-              disabled={isSaving || isDeleting || isRegenerating || isApproving || isRejecting || isGeneratingNow}
+              disabled={
+                isSaving ||
+                isDeleting ||
+                isRegenerating ||
+                isApproving ||
+                isRejecting ||
+                isGeneratingNow
+              }
               className="text-red-400 hover:text-red-300"
             >
               <Trash2 className="w-4 h-4 mr-2" />

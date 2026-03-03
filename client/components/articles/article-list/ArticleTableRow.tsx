@@ -16,6 +16,11 @@ import {
   RefreshCw,
 } from 'lucide-react';
 import { getSEOScoreColor, getSEOScoreBorderColor } from '@shared/utils/seo';
+import {
+  getAIScoreColor,
+  getAIScoreBorderColor,
+  getAIScoreBgColor,
+} from '@client/components/articles/AIDetectionScore';
 import { dashboardNavigate } from '@client/utils/dashboardNavigation';
 import type { IArticleWithCampaign } from '@shared/types/article.types';
 import {
@@ -181,8 +186,23 @@ export function ArticleTableRow({
         )}
       </div>
 
+      {/* AI Detection Score Column */}
+      <div className="col-span-1">
+        {article.ai_detection_score != null ? (
+          <span
+            data-testid="article-ai-score"
+            title={`AI Detection Score: ${article.ai_detection_score}/100 (${article.ai_detection_provider ?? 'heuristic'})`}
+            className={`inline-flex items-center justify-center w-8 h-6 rounded text-xs font-bold border ${getAIScoreBorderColor(article.ai_detection_score)} ${getAIScoreColor(article.ai_detection_score)} ${getAIScoreBgColor(article.ai_detection_score)}`}
+          >
+            {article.ai_detection_score}
+          </span>
+        ) : (
+          <span className="text-muted text-xs">—</span>
+        )}
+      </div>
+
       {/* Campaign Column */}
-      <div className="col-span-2 min-w-0">
+      <div className="col-span-1 min-w-0">
         {article.campaigns && article.campaigns.name !== 'Quick Generate' ? (
           <button
             data-testid="article-campaign"

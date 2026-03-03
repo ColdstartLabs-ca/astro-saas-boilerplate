@@ -472,7 +472,8 @@ export function ArticleList({ statusFilter: propStatusFilter }: IArticleListProp
             <div className="col-span-4 pl-6">Article</div>
             <div className="col-span-1">Status</div>
             <div className="col-span-1">SEO</div>
-            <div className="col-span-2">Campaign</div>
+            <div className="col-span-1">AI</div>
+            <div className="col-span-1">Campaign</div>
             <div className="col-span-1 text-right">Words</div>
             <div className="col-span-1 text-center">Images</div>
             <div className="col-span-1 text-right">Date</div>
