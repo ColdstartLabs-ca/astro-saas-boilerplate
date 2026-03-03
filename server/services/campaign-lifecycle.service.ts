@@ -22,6 +22,7 @@ import { isAvailableWriterPreset, DEFAULT_WRITER_PRESET } from '@shared/config/a
 import { calculateArticleCreditCost } from '@shared/constants';
 import { serverEnv } from '@shared/config/env';
 import { AppError } from '@shared/utils/errors';
+import { normalizeKeyword } from '@shared/utils/keyword';
 import { updateCampaignSchema } from '@shared/validation/campaign.schema';
 import {
   calculateNextRunAt,
@@ -543,11 +544,21 @@ export class CampaignLifecycleService {
       throw new Error(`Failed to create campaign: ${campaignError?.message ?? 'Unknown error'}`);
     }
 
-    // Batch insert keywords (skip duplicates via ON CONFLICT)
-    const keywordRows = this.buildKeywordRows(
-      campaign.id,
-      validated.keywords.map(k => k.trim())
-    );
+    // Deduplicate input keywords before insert using the same normalization
+    // logic as the DB uniqueness constraint (case-insensitive + collapsed whitespace).
+    const seen = new Set<string>();
+    const uniqueKeywords: string[] = [];
+    for (const keyword of validated.keywords.map(k => k.trim()).filter(k => k.length > 0)) {
+      const normalized = normalizeKeyword(keyword);
+      if (!normalized || seen.has(normalized)) {
+        continue;
+      }
+      seen.add(normalized);
+      uniqueKeywords.push(keyword);
+    }
+
+    // Batch insert unique keywords
+    const keywordRows = this.buildKeywordRows(campaign.id, uniqueKeywords);
 
     if (keywordRows.length > 0) {
       const { error: keywordsError } = await supabaseAdmin.from('keywords').insert(keywordRows);

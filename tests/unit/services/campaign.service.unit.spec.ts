@@ -648,6 +648,74 @@ describe('CampaignService', () => {
       });
     });
 
+    it('should deduplicate normalized keywords before insert', async () => {
+      const { supabaseAdmin } = await import('@server/supabase/supabaseAdmin');
+
+      let insertedKeywordRows: Array<{ keyword: string }> = [];
+      let callCount = 0;
+      (supabaseAdmin.from as unknown as ReturnType<typeof vi.fn>).mockImplementation(() => {
+        callCount++;
+        if (callCount === 1) {
+          // Verify project ownership
+          return {
+            select: vi.fn().mockReturnValue({
+              eq: vi.fn().mockReturnValue({
+                eq: vi.fn().mockReturnValue({
+                  single: vi.fn().mockResolvedValue({ data: { id: mockProjectId }, error: null }),
+                }),
+              }),
+            }),
+          } as unknown;
+        }
+        if (callCount === 2) {
+          // Fetch project preferences
+          return {
+            select: vi.fn().mockReturnValue({
+              eq: vi.fn().mockReturnValue({
+                single: vi
+                  .fn()
+                  .mockResolvedValue({ data: { content_preferences: null }, error: null }),
+              }),
+            }),
+          } as unknown;
+        }
+        if (callCount === 3) {
+          // Insert campaign
+          return {
+            insert: vi.fn().mockReturnValue({
+              select: vi.fn().mockReturnValue({
+                single: vi.fn().mockResolvedValue({
+                  data: { ...mockCampaign, name: 'Dedup Campaign' },
+                  error: null,
+                }),
+              }),
+            }),
+          } as unknown;
+        }
+        // Insert keywords
+        return {
+          insert: vi.fn().mockImplementation((rows: unknown) => {
+            insertedKeywordRows = rows as Array<{ keyword: string }>;
+            return Promise.resolve({ data: null, error: null });
+          }),
+        } as unknown;
+      });
+
+      const input = {
+        name: 'Dedup Campaign',
+        projectId: mockProjectId,
+        keywords: ['Coffee Maker', ' coffee maker ', 'COFFEE    MAKER', 'espresso machine'],
+        scheduleFrequency: 'daily' as const,
+        scheduleBatchSize: 1,
+        scheduleHour: 9,
+        scheduleTimezone: 'UTC',
+      };
+
+      await campaignService.create(mockUserId, input);
+
+      expect(insertedKeywordRows.map(r => r.keyword)).toEqual(['Coffee Maker', 'espresso machine']);
+    });
+
     it('should reject creation if project not owned by user', async () => {
       const { supabaseAdmin } = await import('@server/supabase/supabaseAdmin');
 

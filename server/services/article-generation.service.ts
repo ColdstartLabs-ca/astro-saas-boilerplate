@@ -54,6 +54,18 @@ import {
 import type { FailureStage } from '@shared/types/failure.types';
 import { getEmailService } from './email.service';
 
+class SemanticDuplicateError extends Error {
+  similarArticleId?: string;
+  similarityScore: number;
+
+  constructor(message: string, similarArticleId?: string, similarityScore = 0) {
+    super(message);
+    this.name = 'SemanticDuplicateError';
+    this.similarArticleId = similarArticleId;
+    this.similarityScore = similarityScore;
+  }
+}
+
 export class ArticleGenerationService {
   private openRouter = new OpenRouterService();
   private supabase = supabaseAdmin;
@@ -104,6 +116,20 @@ export class ArticleGenerationService {
         })
         .eq('id', articleId)
         .eq('user_id', userId);
+
+      // Semantic deduplication guard for ALL generation entrypoints (manual, scheduled, planned, regenerate).
+      // Operational errors are fail-open, but confirmed near-duplicates are blocked.
+      try {
+        await this.enforceSemanticDedup(articleId, userId, input);
+      } catch (error) {
+        if (error instanceof SemanticDuplicateError) {
+          throw error;
+        }
+        console.warn(
+          `[ArticleGeneration] Semantic dedup check unavailable for article ${articleId}, continuing generation:`,
+          error
+        );
+      }
 
       // Step 1: Generate outline (with GSC context if provided)
       // Fetch internal links if needed before generating the outline
@@ -464,11 +490,72 @@ export class ArticleGenerationService {
         userId,
         error,
         imageCreditCost,
-        'unknown',
+        error instanceof SemanticDuplicateError ? 'article_generation' : 'unknown',
         input.model
       );
       throw error; // Re-throw for logging
     }
+  }
+
+  /**
+   * Semantic deduplication check used by all generation paths.
+   * Throws SemanticDuplicateError when the topic overlaps with an existing project article.
+   */
+  private async enforceSemanticDedup(
+    articleId: string,
+    userId: string,
+    input: IGenerateArticleInput
+  ): Promise<void> {
+    if (input.skipSemanticDedup || !input.projectId || !openaiEmbeddingsService.isConfigured()) {
+      return;
+    }
+
+    const { data: projectArticles, error } = await this.supabase
+      .from('articles')
+      .select('id, title, topic_fingerprint')
+      .eq('project_id', input.projectId)
+      .not('topic_fingerprint', 'is', null)
+      .not('status', 'eq', 'failed')
+      .neq('id', articleId)
+      .order('created_at', { ascending: false })
+      .limit(100);
+
+    if (error) {
+      throw new Error(`Failed to fetch project articles for semantic dedup: ${error.message}`);
+    }
+
+    if (!projectArticles || projectArticles.length === 0) {
+      return;
+    }
+
+    const similarityResult = await openaiEmbeddingsService.checkSimilarity(
+      input.keyword,
+      projectArticles.map(a => ({
+        id: a.id,
+        title: a.title,
+        topic_fingerprint: a.topic_fingerprint as number[] | null,
+      })),
+      { threshold: 0.85, maxResults: 3, excludeArticleId: articleId }
+    );
+
+    if (!similarityResult.isSimilar) {
+      return;
+    }
+
+    if (similarityResult.similarArticleId) {
+      await this.supabase
+        .from('articles')
+        .update({ similar_to_article_id: similarityResult.similarArticleId })
+        .eq('id', articleId)
+        .eq('user_id', userId);
+    }
+
+    const similarityPercent = (similarityResult.maxSimilarity * 100).toFixed(1);
+    throw new SemanticDuplicateError(
+      `Semantic duplicate detected (${similarityPercent}% similarity to existing article)`,
+      similarityResult.similarArticleId,
+      similarityResult.maxSimilarity
+    );
   }
 
   /**
