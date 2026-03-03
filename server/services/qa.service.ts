@@ -481,10 +481,18 @@ export class QAService {
    * Check AI likelihood using heuristic patterns
    *
    * Detects common AI writing patterns including:
-   * - Repetitive sentence structures
+   * - AI vocabulary and buzzwords (from Wikipedia's "Signs of AI writing")
    * - Generic transition phrases
-   * - Perfect grammar patterns
+   * - Repetitive sentence structures
    * - Formulaic introduction/conclusion
+   * - Undue emphasis on significance/legacy
+   * - Copula avoidance (serves as, stands as, boasts)
+   * - Negative parallelisms (not only...but...)
+   * - Em dash overuse
+   * - Promotional language
+   * - Rule of three patterns
+   *
+   * Based on Wikipedia's WikiProject AI Cleanup patterns.
    *
    * @param content - Article content to check
    * @returns AI likelihood check result
@@ -492,11 +500,63 @@ export class QAService {
   async checkAILikelihood(content: string): Promise<IAILikelihoodResult> {
     const plainText = this.stripMarkdown(content);
     const sentences = this.splitSentences(plainText);
+    const lowerText = plainText.toLowerCase();
 
     const detectedPatterns: string[] = [];
     let aiScore = 0;
 
-    // Pattern 1: Generic AI transitions (weight: 0.25)
+    // Pattern 1: AI vocabulary/buzzwords (weight: 0.20)
+    // These words appear far more frequently in post-2023 AI-generated text
+    const aiVocabulary = [
+      'additionally',
+      'align with',
+      'crucial',
+      'delve',
+      'emphasizing',
+      'enduring',
+      'enhance',
+      'fostering',
+      'garner',
+      'highlight',
+      'interplay',
+      'intricate',
+      'intricacies',
+      'key role',
+      'pivotal',
+      'showcase',
+      'tapestry',
+      'testament',
+      'underscore',
+      'vibrant',
+      'landscape',
+      'in conclusion',
+      'in summary',
+      'to summarize',
+      'plays a crucial role',
+      'plays an important role',
+      'stands as a',
+      'serves as a',
+      'is a testament',
+      'is a reminder',
+      'broader trend',
+      'evolving landscape',
+    ];
+
+    let vocabCount = 0;
+    for (const word of aiVocabulary) {
+      const regex = new RegExp(`\\b${word.replace(/ /g, '\\s+')}\\b`, 'gi');
+      const matches = lowerText.match(regex);
+      if (matches) {
+        vocabCount += matches.length;
+      }
+    }
+    const vocabScore = Math.min(vocabCount / Math.max(sentences.length * 0.3, 3), 1) * 0.2;
+    if (vocabScore > 0.05) {
+      detectedPatterns.push(`AI vocabulary: ${vocabCount} instances`);
+    }
+    aiScore += vocabScore;
+
+    // Pattern 2: Generic AI transitions (weight: 0.12)
     const aiTransitions = [
       'furthermore',
       'moreover',
@@ -507,6 +567,8 @@ export class QAService {
       "it's essential to understand",
       'it is crucial to recognize',
       'it is vital to remember',
+      'first and foremost',
+      'last but not least',
     ];
 
     let aiTransitionCount = 0;
@@ -519,27 +581,26 @@ export class QAService {
         }
       }
     }
-
-    const transitionScore = Math.min(aiTransitionCount / sentences.length, 1) * 0.25;
-    if (transitionScore > 0.1) {
+    const transitionScore = Math.min(aiTransitionCount / sentences.length, 1) * 0.12;
+    if (transitionScore > 0.04) {
       detectedPatterns.push(`Generic transitions: ${aiTransitionCount} occurrences`);
     }
     aiScore += transitionScore;
 
-    // Pattern 2: Repetitive sentence length (weight: 0.2)
+    // Pattern 3: Repetitive sentence length (weight: 0.08)
     const sentenceLengths = sentences.map(s => s.split(/\s+/).length);
     const avgLength = sentenceLengths.reduce((a, b) => a + b, 0) / sentenceLengths.length;
     const similarLengthCount = sentenceLengths.filter(l => Math.abs(l - avgLength) < 3).length;
-    const repetitiveScore = (similarLengthCount / sentenceLengths.length) * 0.2;
-    if (repetitiveScore > 0.15) {
+    const repetitiveScore = (similarLengthCount / sentenceLengths.length) * 0.08;
+    if (repetitiveScore > 0.06) {
       detectedPatterns.push('Repetitive sentence structure');
     }
     aiScore += repetitiveScore;
 
-    // Pattern 3: Formulaic intros/outros (weight: 0.25)
+    // Pattern 4: Formulaic intros/outros (weight: 0.12)
     const formulaicIntro =
-      /^(in today's world|in this day and age|in the modern era|in recent years)/i;
-    const formulaicOutro = /^(in conclusion|to sum up|in summary|to wrap up)/i;
+      /^(in today's world|in this day and age|in the modern era|in recent years|in the digital age)/i;
+    const formulaicOutro = /^(in conclusion|to sum up|in summary|to wrap up|all in all|ultimately)/i;
 
     let hasFormulaicIntro = false;
     let hasFormulaicOutro = false;
@@ -551,40 +612,100 @@ export class QAService {
       hasFormulaicOutro = formulaicOutro.test(sentences[sentences.length - 1].trim());
     }
 
-    const formulaicScore = (hasFormulaicIntro ? 0.125 : 0) + (hasFormulaicOutro ? 0.125 : 0);
+    const formulaicScore = (hasFormulaicIntro ? 0.06 : 0) + (hasFormulaicOutro ? 0.06 : 0);
     if (formulaicScore > 0) {
       detectedPatterns.push('Formulaic introduction/conclusion');
     }
     aiScore += formulaicScore;
 
-    // Pattern 4: Low sentence complexity (weight: 0.15)
+    // Pattern 5: Copula avoidance - inflated verbs (weight: 0.10)
+    // AI substitutes elaborate constructions for simple "is/are"
+    const copulaPatterns = [
+      /\b(serves as a|stands as a|boasts a|features a|offers a|represents a)\b/gi,
+      /\b(marks a|symbolizes a|reflects a|demonstrates a)\b/gi,
+    ];
+    let copulaCount = 0;
+    for (const pattern of copulaPatterns) {
+      const matches = plainText.match(pattern);
+      if (matches) copulaCount += matches.length;
+    }
+    const copulaScore = Math.min(copulaCount / Math.max(sentences.length * 0.1, 2), 1) * 0.1;
+    if (copulaScore > 0.03) {
+      detectedPatterns.push(`Copula avoidance: ${copulaCount} instances`);
+    }
+    aiScore += copulaScore;
+
+    // Pattern 6: Negative parallelisms (weight: 0.08)
+    // "Not only...but..." or "It's not just..., it's..."
+    const negativeParallelism = /not only\b[^.]*\bbut also|not just\b[^.]*\bit's?|isn't just\b[^.]*\bit's?/gi;
+    const parallelismMatches = plainText.match(negativeParallelism);
+    const parallelismScore = parallelismMatches ? Math.min(parallelismMatches.length * 0.04, 0.08) : 0;
+    if (parallelismScore > 0) {
+      detectedPatterns.push(`Negative parallelisms: ${parallelismMatches?.length || 0}`);
+    }
+    aiScore += parallelismScore;
+
+    // Pattern 7: Em dash overuse (weight: 0.08)
+    const emDashCount = (plainText.match(/—/g) || []).length;
+    const emDashScore = Math.min(emDashCount / Math.max(sentences.length * 0.15, 5), 1) * 0.08;
+    if (emDashScore > 0.03) {
+      detectedPatterns.push(`Em dash overuse: ${emDashCount} dashes`);
+    }
+    aiScore += emDashScore;
+
+    // Pattern 8: Promotional language (weight: 0.10)
+    const promotionalPhrases = [
+      'breathtaking',
+      'stunning',
+      'must-visit',
+      'groundbreaking',
+      'renowned for its',
+      'nestled in',
+      'in the heart of',
+      'rich cultural heritage',
+      'vibrant community',
+      'natural beauty',
+      'exemplifies the',
+    ];
+    let promoCount = 0;
+    for (const phrase of promotionalPhrases) {
+      if (lowerText.includes(phrase)) {
+        promoCount++;
+      }
+    }
+    const promoScore = Math.min(promoCount * 0.02, 0.1);
+    if (promoScore > 0.02) {
+      detectedPatterns.push(`Promotional language: ${promoCount} phrases`);
+    }
+    aiScore += promoScore;
+
+    // Pattern 9: Rule of three overuse (weight: 0.06)
+    // Lists of three adjectives/nouns are common in AI writing
+    const ruleOfThree = /(?:\w+, ){2}(?:and\s+)?\w+/g;
+    const threeMatches = plainText.match(ruleOfThree);
+    const threeScore = threeMatches ? Math.min(threeMatches.length / sentences.length, 1) * 0.06 : 0;
+    if (threeScore > 0.03) {
+      detectedPatterns.push('Rule of three overuse');
+    }
+    aiScore += threeScore;
+
+    // Pattern 10: Low sentence complexity (weight: 0.06)
     const simpleSentences = sentences.filter(s => {
       const words = s.split(/\s+/);
       // Simple sentences: < 15 words, no commas, no complex structure
       return words.length < 15 && !s.includes(',') && !s.includes('—');
     });
-    const simplicityScore = (simpleSentences.length / sentences.length) * 0.15;
-    if (simplicityScore > 0.1) {
+    const simplicityScore = (simpleSentences.length / sentences.length) * 0.06;
+    if (simplicityScore > 0.04) {
       detectedPatterns.push('Low sentence complexity');
     }
     aiScore += simplicityScore;
 
-    // Pattern 5: Passive voice overuse (weight: 0.15)
-    const passiveVoicePattern = /\b(was|were|is|are|been|being)\s+(\w+ed\b)/gi;
-    const passiveMatches = plainText.match(passiveVoicePattern);
-    const passiveScore = passiveMatches
-      ? Math.min(passiveMatches.length / sentences.length, 1) * 0.15
-      : 0;
-    if (passiveScore > 0.05) {
-      detectedPatterns.push('Overuse of passive voice');
-    }
-    aiScore += passiveScore;
-
     // Determine confidence level
     let confidence: 'low' | 'medium' | 'high';
-    if (aiScore < 0.3) {
+    if (aiScore < 0.25) {
       confidence = 'low';
-    } else if (aiScore < 0.6) {
+    } else if (aiScore < 0.5) {
       confidence = 'medium';
     } else {
       confidence = 'high';

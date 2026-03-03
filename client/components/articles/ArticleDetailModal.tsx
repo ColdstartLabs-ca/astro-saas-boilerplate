@@ -215,6 +215,8 @@ export function ArticleDetailModal({
 
   // Track previous article id to avoid unnecessary re-fetches
   const prevArticleIdRef = useRef<string | null>(null);
+  // Track articles that have been auto-analyzed to prevent duplicate triggers
+  const autoAnalyzedRef = useRef<Set<string>>(new Set());
 
   // Fetch full article detail (with images) when modal opens
   useEffect(() => {
@@ -264,6 +266,25 @@ export function ArticleDetailModal({
       cancelled = true;
     };
   }, [article, isOpen]);
+
+  // Auto-trigger AI detection analysis when article has content but no score
+  useEffect(() => {
+    if (
+      !currentArticle ||
+      !currentArticle.content ||
+      currentArticle.ai_detection_score !== null ||
+      isAnalyzingAI ||
+      autoAnalyzedRef.current.has(currentArticle.id)
+    ) {
+      return;
+    }
+
+    // Mark as analyzed to prevent re-triggering
+    autoAnalyzedRef.current.add(currentArticle.id);
+
+    // Trigger analysis automatically
+    handleAnalyzeAI();
+  }, [currentArticle, isAnalyzingAI, handleAnalyzeAI]);
 
   const handleSave = useCallback(async () => {
     if (!currentArticle) return;

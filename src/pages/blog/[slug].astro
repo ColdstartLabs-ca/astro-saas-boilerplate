@@ -119,11 +119,11 @@ const articleJsonLd = {
 
       <!-- Cover Image -->
       {post.image && (
-        <div class="aspect-[21/9] rounded-2xl overflow-hidden mb-12">
+        <div class="rounded-2xl overflow-hidden mb-12">
           <img
             src={post.image}
             alt={post.title}
-            class="w-full h-full object-cover"
+            class="blog-cover-img"
           />
         </div>
       )}
@@ -167,3 +167,24 @@ const articleJsonLd = {
     </article>
   </div>
 </Layout>
+
+<style is:global>
+  .prose img {
+    max-height: 410px;
+    width: 100%;
+    object-fit: cover;
+    object-position: center;
+    border-radius: 0.75rem;
+  }
+  .blog-cover-img {
+    height: 500px;
+    width: 100%;
+    object-fit: cover;
+    object-position: center;
+  }
+  @media (max-width: 768px) {
+    .blog-cover-img {
+      height: 300px;
+    }
+  }
+</style>
