@@ -879,7 +879,12 @@ Even more content...`;
         failureReason: undefined,
         checkedAt: new Date().toISOString(),
         results: {
-          plagiarism: { passed: true, similarityScore: 0, flaggedPhrases: [], consecutiveMatches: 0 },
+          plagiarism: {
+            passed: true,
+            similarityScore: 0,
+            flaggedPhrases: [],
+            consecutiveMatches: 0,
+          },
           factConsistency: { passed: true, score: 1, inconsistencyCount: 0, flaggedStatements: [] },
           readability: {
             passed: true,
@@ -1045,7 +1050,7 @@ Even more content...`;
       expect(mockShouldAutoDeliver).toHaveBeenCalledWith('test-campaign-id');
     });
 
-    it('should trigger auto-delivery when QA is unavailable (draft status)', async () => {
+    it('should NOT trigger auto-delivery when QA is unavailable (qa_failed status)', async () => {
       // QA passes quality gate
       mockCheckQualityGates.mockCheckQualityGates.mockReturnValue({
         passed: true,
@@ -1075,13 +1080,13 @@ Even more content...`;
           finishReason: 'stop',
         });
 
-      await service.generateArticle('article-draft', 'user-1', mockInput);
+      await service.generateArticle('article-qa-failed', 'user-1', mockInput);
 
-      // Auto-delivery should still be checked (draft is deliverable)
-      expect(mockShouldAutoDeliver).toHaveBeenCalledWith('test-campaign-id');
+      // Auto-delivery should NOT be triggered for qa_failed articles (intentional safeguard)
+      expect(mockShouldAutoDeliver).not.toHaveBeenCalled();
     });
 
-    it('should trigger auto-delivery as draft after exhausting all QA retries', async () => {
+    it('should NOT trigger auto-delivery after exhausting all QA retries (qa_failed status)', async () => {
       // Quality gate passes but QA pipeline fails all 3 attempts
       mockCheckQualityGates.mockCheckQualityGates.mockReturnValue({
         passed: true,
@@ -1158,8 +1163,8 @@ Even more content...`;
 
       await service.generateArticle('article-qa-fail', 'user-1', mockInput);
 
-      // After exhausting retries, article is published as draft → auto-delivery runs
-      expect(mockShouldAutoDeliver).toHaveBeenCalledWith('test-campaign-id');
+      // After exhausting retries, article is published as qa_failed → auto-delivery is skipped (intentional safeguard)
+      expect(mockShouldAutoDeliver).not.toHaveBeenCalled();
     });
 
     it('should NOT trigger auto-delivery for quality gate failures (failed_quality)', async () => {

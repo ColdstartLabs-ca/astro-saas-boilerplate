@@ -75,13 +75,9 @@ vi.mock('lucide-react', () => ({
   Check: ({ className }: { className: string }) => (
     <div data-testid="check" className={className} />
   ),
-  Zap: ({ className }: { className: string }) => (
-    <div data-testid="zap" className={className} />
-  ),
+  Zap: ({ className }: { className: string }) => <div data-testid="zap" className={className} />,
   // Additional icons needed by CampaignIntegrationsSection
-  Plug: ({ className }: { className: string }) => (
-    <div data-testid="plug" className={className} />
-  ),
+  Plug: ({ className }: { className: string }) => <div data-testid="plug" className={className} />,
   Globe: ({ className }: { className: string }) => (
     <div data-testid="globe" className={className} />
   ),
@@ -336,19 +332,36 @@ const mockArticles: IArticle[] = [
     ai_model_used: 'gpt-4',
     seo_score: 85,
     ai_detection_score: 10,
+    ai_detection_details: null,
+    ai_detection_provider: null,
     word_count: 1500,
     meta_description: 'A comprehensive guide...',
     published_url: null,
     slug: 'best-coffee-maker-guide',
     credits_used: 1,
     generation_error: null,
+    rejection_reason: null,
     outline: null,
     token_count: 2000,
     generation_time_ms: 5000,
     generated_at: '2024-01-01T01:00:00Z',
     published_at: null,
+    scheduled_publish_at: null,
     created_at: '2024-01-01T00:00:00Z',
     updated_at: '2024-01-01T01:00:00Z',
+    image_preset: null,
+    image_count: 0,
+    last_attempt_at: null,
+    attempt_count: 0,
+    topic_fingerprint: null,
+    similarity_score: null,
+    similar_to_article_id: null,
+    qa_results: null,
+    research_context: null,
+    youtube_videos: null,
+    internal_links: null,
+    citations: null,
+    enrichment_flags: null,
   },
   {
     id: 'article-2',
@@ -362,19 +375,36 @@ const mockArticles: IArticle[] = [
     ai_model_used: null,
     seo_score: null,
     ai_detection_score: null,
+    ai_detection_details: null,
+    ai_detection_provider: null,
     word_count: null,
     meta_description: null,
     published_url: null,
     slug: null,
     credits_used: 0,
     generation_error: null,
+    rejection_reason: null,
     outline: null,
     token_count: null,
     generation_time_ms: null,
     generated_at: null,
     published_at: null,
+    scheduled_publish_at: null,
     created_at: '2024-01-01T00:00:00Z',
     updated_at: '2024-01-01T00:00:00Z',
+    image_preset: null,
+    image_count: 0,
+    last_attempt_at: null,
+    attempt_count: 0,
+    topic_fingerprint: null,
+    similarity_score: null,
+    similar_to_article_id: null,
+    qa_results: null,
+    research_context: null,
+    youtube_videos: null,
+    internal_links: null,
+    citations: null,
+    enrichment_flags: null,
   },
 ];
 
@@ -890,7 +920,9 @@ describe('CampaignDetailView', () => {
       await waitFor(() => {
         const allButtons = screen.getAllByRole('button');
         const balancedButton = allButtons.find(
-          btn => btn.textContent?.includes('Balanced') && btn.querySelector('[data-testid="check"]') === null
+          btn =>
+            btn.textContent?.includes('Balanced') &&
+            btn.querySelector('[data-testid="check"]') === null
         );
         expect(balancedButton).toBeTruthy();
       });
@@ -898,7 +930,9 @@ describe('CampaignDetailView', () => {
       // Find and click the Balanced option (not the tier header)
       const allButtons = screen.getAllByRole('button');
       const balancedOption = allButtons.find(
-        btn => btn.textContent?.trim() === 'Balanced' || btn.querySelector('.text-sm.font-medium')?.textContent === 'Balanced'
+        btn =>
+          btn.textContent?.trim() === 'Balanced' ||
+          btn.querySelector('.text-sm.font-medium')?.textContent === 'Balanced'
       );
       if (balancedOption) {
         await userEvent.click(balancedOption);

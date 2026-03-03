@@ -467,8 +467,8 @@ test.describe('API: Article List (§4.4)', () => {
       expect(data.article.id).toBe(articleId);
       expect(data.article.primary_keyword).toBe('detail test article');
       // Background generation runs with OpenRouter mocked in test mode.
-      // Status may be 'generating' (race won), 'draft' (generation succeeded), or 'failed'.
-      expect(['generating', 'draft', 'failed']).toContain(data.article.status);
+      // Status may be 'generating' (race won), 'draft' (generation succeeded), 'qa_failed' (QA exhausted), or 'failed'.
+      expect(['generating', 'draft', 'qa_failed', 'failed']).toContain(data.article.status);
     });
   });
 

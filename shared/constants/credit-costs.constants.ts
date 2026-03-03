@@ -144,3 +144,13 @@ export const ENRICHMENT_CREDIT_COSTS = {
   /** Citation enrichment: web search + LLM fact verification */
   CITATION_ENRICHMENT: 1,
 } as const;
+
+// =============================================================================
+// AI Detection Credit Costs
+// =============================================================================
+
+/**
+ * Credit cost for external AI detection scan (Originality.ai).
+ * Heuristic analysis is free; external provider costs 1 credit per scan.
+ */
+export const AI_DETECTION_CREDIT_COST = 1;

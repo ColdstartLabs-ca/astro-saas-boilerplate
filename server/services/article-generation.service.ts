@@ -238,9 +238,7 @@ export class ArticleGenerationService {
           qaResults = await qaService.runQAChecks(qaRetryContent, outline.data, qaConfig);
 
           if (qaResults.passed) {
-            console.log(
-              `[ArticleGeneration] Article ${articleId} passed QA on retry ${qaAttempt}`
-            );
+            console.log(`[ArticleGeneration] Article ${articleId} passed QA on retry ${qaAttempt}`);
           }
         }
 
@@ -267,17 +265,18 @@ export class ArticleGenerationService {
           finalStatus = 'qa_passed';
           console.log(`[ArticleGeneration] Article ${articleId} passed QA`);
         } else {
-          // Exhausted all retries — publish as draft so a human can review; never block forever.
-          finalStatus = 'draft';
+          // Exhausted all retries — publish as qa_failed so a human can review; never block forever.
+          // Note: qa_failed status prevents auto-approve/auto-delivery (intentional safeguard)
+          finalStatus = 'qa_failed';
           console.warn(
             `[ArticleGeneration] Article ${articleId} still failed QA after ${MAX_QA_RETRIES} retries ` +
-              `(${qaResults.failureReason}). Publishing as draft for manual review.`
+              `(${qaResults.failureReason}). Publishing as qa_failed for manual review.`
           );
         }
       } catch (error) {
         console.error(`[ArticleGeneration] QA checks failed for article ${articleId}:`, error);
-        // QA pipeline error — publish as draft so the article isn't blocked permanently.
-        finalStatus = 'draft';
+        // QA pipeline error — publish as qa_failed so the article isn't blocked permanently.
+        finalStatus = 'qa_failed';
       }
 
       // Step 5.5: Extract metadata from final content (after QA retries may have updated it)
@@ -306,6 +305,12 @@ export class ArticleGenerationService {
       }
 
       // Step 6: Save result
+      // Calculate AI detection score from QA results (invert: QA aiScore 0-1 higher=AI → display score 0-100 higher=human)
+      const aiDetectionScore =
+        qaResults?.results?.aiLikelihood?.aiScore !== undefined
+          ? Math.round((1 - qaResults.results.aiLikelihood.aiScore) * 100)
+          : null;
+
       await this.supabase
         .from('articles')
         .update({
@@ -316,6 +321,7 @@ export class ArticleGenerationService {
           slug: outline.data.slug,
           word_count: wordCount,
           seo_score: seoResult.overallScore,
+          ai_detection_score: aiDetectionScore,
           ai_model_used: input.model || 'auto',
           token_count: totalTokens,
           generation_time_ms: generationTimeMs,
@@ -337,14 +343,11 @@ export class ArticleGenerationService {
       // Step 6.4: Auto-approve if project setting enabled
       // If autoApprove is set, transition draft/qa_passed → approved → published.
       let autoApproved = false;
-      if ((finalStatus === 'qa_passed' || finalStatus === 'draft') && input.projectId) {
+      if (finalStatus === 'qa_passed' && input.projectId) {
         const shouldAutoApprove = await this.shouldAutoApprove(input.projectId);
         if (shouldAutoApprove) {
           autoApproved = true;
-          await this.supabase
-            .from('articles')
-            .update({ status: 'approved' })
-            .eq('id', articleId);
+          await this.supabase.from('articles').update({ status: 'approved' }).eq('id', articleId);
           try {
             // eslint-disable-next-line no-restricted-syntax
             const { deliveryService } = await import('@server/services/delivery.service');
@@ -371,7 +374,7 @@ export class ArticleGenerationService {
       // Step 6.5: Trigger auto-delivery if campaign has auto_publish enabled
       // Deliver qa_passed articles and draft articles (QA-exhausted or QA-disabled).
       // Skip if already handled by auto-approve (Step 6.4).
-      if (!autoApproved && (finalStatus === 'qa_passed' || finalStatus === 'draft')) {
+      if (!autoApproved && finalStatus === 'qa_passed') {
         try {
           await this.triggerAutoDeliveryIfNeeded(articleId, input.campaignId);
         } catch (deliveryError) {
@@ -388,7 +391,7 @@ export class ArticleGenerationService {
 
       // Step 6.6: Send article complete notification email
       // Only send for successful articles (qa_passed or draft)
-      if (finalStatus === 'qa_passed' || finalStatus === 'draft') {
+      if (finalStatus === 'qa_passed') {
         try {
           const authUser = await supabaseAdmin.auth.admin.getUserById(userId);
           const userEmail = authUser.data.user?.email ?? null;
@@ -548,7 +551,10 @@ export class ArticleGenerationService {
    */
   private parseOutlineJson(raw: string): IArticleOutline {
     // Strip markdown code fences: ```json\n...\n``` or ```\n...\n```
-    const stripped = raw.replace(/^```(?:json)?\s*\n?/i, '').replace(/\n?```\s*$/i, '').trim();
+    const stripped = raw
+      .replace(/^```(?:json)?\s*\n?/i, '')
+      .replace(/\n?```\s*$/i, '')
+      .trim();
     try {
       return JSON.parse(stripped) as IArticleOutline;
     } catch (err) {
@@ -603,9 +609,10 @@ export class ArticleGenerationService {
         { role: 'system', content: systemPrompt },
         {
           role: 'user',
-          content: qaFindings || isRetry
-            ? 'Write the COMPLETE article now. DO NOT STOP until finished.'
-            : 'Write the article now.',
+          content:
+            qaFindings || isRetry
+              ? 'Write the COMPLETE article now. DO NOT STOP until finished.'
+              : 'Write the article now.',
         },
       ],
       responseFormat: { type: 'text' },
@@ -699,7 +706,9 @@ export class ArticleGenerationService {
         : [];
       lines.push(
         `- Consistency: ${flaggedStatements.length} inconsistencies found.` +
-          (flaggedStatements.length > 0 ? ` Issues: ${flaggedStatements.slice(0, 3).join('; ')}.` : '') +
+          (flaggedStatements.length > 0
+            ? ` Issues: ${flaggedStatements.slice(0, 3).join('; ')}.`
+            : '') +
           ' Fix: Ensure all outline sections and headings appear in the content, and that the title keyword is used.'
       );
     }
@@ -775,7 +784,9 @@ export class ArticleGenerationService {
   async fixArticleQAIssues(articleId: string, userId: string): Promise<void> {
     const { data: article } = await this.supabase
       .from('articles')
-      .select('id, content, title, primary_keyword, meta_description, outline, qa_results, campaigns(id, project_id, ai_model)')
+      .select(
+        'id, content, title, primary_keyword, meta_description, outline, qa_results, campaigns(id, project_id, ai_model)'
+      )
       .eq('id', articleId)
       .eq('user_id', userId)
       .single();
@@ -783,7 +794,10 @@ export class ArticleGenerationService {
     if (!article || !article.content || !article.qa_results) {
       await this.supabase
         .from('articles')
-        .update({ status: 'qa_failed', generation_error: 'Cannot fix: missing content or QA results' })
+        .update({
+          status: 'qa_failed',
+          generation_error: 'Cannot fix: missing content or QA results',
+        })
         .eq('id', articleId);
       return;
     }
@@ -800,7 +814,10 @@ export class ArticleGenerationService {
         model,
         messages: [
           { role: 'system', content: systemPrompt },
-          { role: 'user', content: 'Apply the fixes now. Return only the revised article in markdown.' },
+          {
+            role: 'user',
+            content: 'Apply the fixes now. Return only the revised article in markdown.',
+          },
         ],
         responseFormat: { type: 'text' },
         temperature: 0.5,
@@ -810,7 +827,11 @@ export class ArticleGenerationService {
       const fixedContent = result.content;
 
       // Get project QA config (if any)
-      const campaign = (article.campaigns as unknown) as { id: string; project_id: string | null; ai_model: string | null } | null;
+      const campaign = article.campaigns as unknown as {
+        id: string;
+        project_id: string | null;
+        ai_model: string | null;
+      } | null;
       let qaConfig: IQAConfig | undefined;
       if (campaign?.project_id) {
         const { data: project } = await this.supabase
@@ -824,7 +845,12 @@ export class ArticleGenerationService {
       // Re-run QA on fixed content
       const qaResults = await qaService.runQAChecks(
         fixedContent,
-        (article.outline as IArticleOutline) ?? { title: article.title ?? '', sections: [], primaryKeyword: article.primary_keyword, metaDescription: article.meta_description ?? '' },
+        (article.outline as IArticleOutline) ?? {
+          title: article.title ?? '',
+          sections: [],
+          primaryKeyword: article.primary_keyword,
+          metaDescription: article.meta_description ?? '',
+        },
         qaConfig
       );
 
@@ -857,6 +883,12 @@ export class ArticleGenerationService {
         word_count: wordCount,
       });
 
+      // Calculate AI detection score (invert: QA aiScore 0-1 higher=AI → display score 0-100 higher=human)
+      const aiDetectionScore =
+        qaResults?.results?.aiLikelihood?.aiScore !== undefined
+          ? Math.round((1 - qaResults.results.aiLikelihood.aiScore) * 100)
+          : null;
+
       await this.supabase
         .from('articles')
         .update({
@@ -865,6 +897,7 @@ export class ArticleGenerationService {
           word_count: wordCount,
           qa_results: qaResultsForDb,
           seo_score: seoResult.overallScore,
+          ai_detection_score: aiDetectionScore,
           generation_error: null,
         })
         .eq('id', articleId);

@@ -6,10 +6,23 @@
 
 'use client';
 
-import { Brain, CheckCircle2, AlertTriangle, XCircle, TrendingUp, Info } from 'lucide-react';
+import {
+  Brain,
+  CheckCircle2,
+  AlertTriangle,
+  XCircle,
+  TrendingUp,
+  Info,
+  RefreshCw,
+  Loader2,
+} from 'lucide-react';
+import type { IAIDetectionDetails } from '@shared/types/article.types';
 
 interface IAIDetectionScoreProps {
   score: number | null;
+  details?: IAIDetectionDetails | null;
+  onAnalyze?: () => void;
+  isAnalyzing?: boolean;
 }
 
 // AI Detection scoring thresholds
@@ -27,6 +40,34 @@ interface IScoreConfig {
   bgColor: string;
   borderColor: string;
   icon: typeof CheckCircle2;
+}
+
+/**
+ * Get text color class for AI detection score (for table display).
+ * Uses semantic tokens: success (pass), warning (borderline), error (fail).
+ */
+export function getAIScoreColor(score: number): string {
+  if (score >= PASS_THRESHOLD) return 'text-success';
+  if (score >= BORDERLINE_THRESHOLD) return 'text-warning';
+  return 'text-error';
+}
+
+/**
+ * Get border color class for AI detection score (for table display).
+ */
+export function getAIScoreBorderColor(score: number): string {
+  if (score >= PASS_THRESHOLD) return 'border-success/30';
+  if (score >= BORDERLINE_THRESHOLD) return 'border-warning/30';
+  return 'border-error/30';
+}
+
+/**
+ * Get background color class for AI detection score (for table display).
+ */
+export function getAIScoreBgColor(score: number): string {
+  if (score >= PASS_THRESHOLD) return 'bg-success/10';
+  if (score >= BORDERLINE_THRESHOLD) return 'bg-warning/10';
+  return 'bg-error/10';
 }
 
 // Get score configuration based on score value
@@ -48,9 +89,9 @@ function getScoreConfig(score: number | null): IScoreConfig {
       level: 'pass',
       label: 'Human-Like',
       description: 'Content appears to be written by a human',
-      color: 'text-green-400',
-      bgColor: 'bg-green-500/10',
-      borderColor: 'border-green-500/30',
+      color: 'text-success',
+      bgColor: 'bg-success/10',
+      borderColor: 'border-success/30',
       icon: CheckCircle2,
     };
   }
@@ -60,9 +101,9 @@ function getScoreConfig(score: number | null): IScoreConfig {
       level: 'borderline',
       label: 'Borderline',
       description: 'Content may be detected as AI-generated',
-      color: 'text-yellow-400',
-      bgColor: 'bg-yellow-500/10',
-      borderColor: 'border-yellow-500/30',
+      color: 'text-warning',
+      bgColor: 'bg-warning/10',
+      borderColor: 'border-warning/30',
       icon: AlertTriangle,
     };
   }
@@ -71,9 +112,9 @@ function getScoreConfig(score: number | null): IScoreConfig {
     level: 'fail',
     label: 'AI-Detected',
     description: 'Content is likely to be flagged as AI-generated',
-    color: 'text-red-400',
-    bgColor: 'bg-red-500/10',
-    borderColor: 'border-red-500/30',
+    color: 'text-error',
+    bgColor: 'bg-error/10',
+    borderColor: 'border-error/30',
     icon: XCircle,
   };
 }
@@ -107,7 +148,12 @@ function getImprovementSuggestions(score: number | null): string[] {
   return suggestions;
 }
 
-export function AIDetectionScore({ score }: IAIDetectionScoreProps): JSX.Element {
+export function AIDetectionScore({
+  score,
+  details,
+  onAnalyze,
+  isAnalyzing = false,
+}: IAIDetectionScoreProps): JSX.Element {
   const config = getScoreConfig(score);
   const suggestions = getImprovementSuggestions(score);
 
@@ -140,8 +186,11 @@ export function AIDetectionScore({ score }: IAIDetectionScoreProps): JSX.Element
           <div className="w-full h-2 bg-surface-light rounded-full overflow-hidden">
             <div
               className={`h-full rounded-full transition-all duration-500 ${
-                score >= PASS_THRESHOLD ? 'bg-green-500' :
-                score >= BORDERLINE_THRESHOLD ? 'bg-yellow-500' : 'bg-red-500'
+                score >= PASS_THRESHOLD
+                  ? 'bg-success'
+                  : score >= BORDERLINE_THRESHOLD
+                    ? 'bg-warning'
+                    : 'bg-error'
               }`}
               style={{ width: `${score}%` }}
             />
@@ -153,10 +202,37 @@ export function AIDetectionScore({ score }: IAIDetectionScoreProps): JSX.Element
         </div>
       )}
 
-      {/* Confidence level */}
+      {/* Confidence level and provider */}
       {score !== null && (
-        <div className="text-xs text-muted mb-3">
-          Confidence: {score >= PASS_THRESHOLD ? 'High' : score >= BORDERLINE_THRESHOLD ? 'Medium' : 'Low'}
+        <div className="flex items-center gap-3 mb-3">
+          <div className="text-xs text-muted">
+            Confidence:{' '}
+            {details?.confidence ??
+              (score >= PASS_THRESHOLD ? 'High' : score >= BORDERLINE_THRESHOLD ? 'Medium' : 'Low')}
+          </div>
+          {details?.provider && (
+            <div className="text-xs px-2 py-0.5 rounded bg-surface-light text-muted border border-border">
+              {details.provider === 'originality' ? 'Originality.ai' : 'Heuristic'}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Detected patterns (if available) */}
+      {details?.detectedPatterns && details.detectedPatterns.length > 0 && (
+        <div className="mt-3 mb-3">
+          <div className="flex items-center gap-2 mb-2">
+            <AlertTriangle className="w-4 h-4 text-warning" />
+            <span className="text-xs font-semibold text-text-primary">Detected Patterns:</span>
+          </div>
+          <ul className="space-y-1">
+            {details.detectedPatterns.map((pattern, index) => (
+              <li key={index} className="text-xs text-secondary flex items-start gap-2">
+                <span className="text-warning mt-0.5">•</span>
+                <span>{pattern}</span>
+              </li>
+            ))}
+          </ul>
         </div>
       )}
 
@@ -175,6 +251,34 @@ export function AIDetectionScore({ score }: IAIDetectionScoreProps): JSX.Element
               </li>
             ))}
           </ul>
+        </div>
+      )}
+
+      {/* Analyze button */}
+      {onAnalyze && (
+        <div className="mt-4 pt-3 border-t border-border">
+          <button
+            onClick={onAnalyze}
+            disabled={isAnalyzing}
+            className="w-full inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-sm font-medium bg-accent/10 text-accent hover:bg-accent/20 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {isAnalyzing ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin" />
+                Analyzing...
+              </>
+            ) : score === null ? (
+              <>
+                <RefreshCw className="w-4 h-4" />
+                Run Analysis
+              </>
+            ) : (
+              <>
+                <RefreshCw className="w-4 h-4" />
+                Re-analyze
+              </>
+            )}
+          </button>
         </div>
       )}
 

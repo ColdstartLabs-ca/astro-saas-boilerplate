@@ -229,6 +229,12 @@ const serverEnvSchema = z.object({
   OPENAI_API_KEY: z.string().default(''),
 
   // ==========================================
+  // AI DETECTION PROVIDERS
+  // ==========================================
+  // Originality.ai for AI content detection
+  ORIGINALITY_AI_API_KEY: z.string().default(''),
+
+  // ==========================================
   // CMS INTEGRATIONS
   // ==========================================
   // CMS encryption key for encrypting WordPress/webhook credentials
@@ -358,6 +364,9 @@ function loadServerEnv(): IServerEnv {
       metaEnv.AVAILABLE_IMAGE_PRESETS || processEnv.AVAILABLE_IMAGE_PRESETS || '',
     // OpenAI for semantic similarity and embeddings
     OPENAI_API_KEY: metaEnv.OPENAI_API_KEY || processEnv.OPENAI_API_KEY || '',
+    // AI Detection Providers
+    ORIGINALITY_AI_API_KEY:
+      metaEnv.ORIGINALITY_AI_API_KEY || processEnv.ORIGINALITY_AI_API_KEY || '',
     // CMS encryption key
     CMS_ENCRYPTION_KEY: metaEnv.CMS_ENCRYPTION_KEY || processEnv.CMS_ENCRYPTION_KEY || '',
     // Google OAuth
