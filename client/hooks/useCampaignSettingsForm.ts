@@ -85,10 +85,10 @@ const DEFAULT_SCHEDULE = {
 
 /**
  * Check if schedule settings are editable based on campaign status.
- * Only draft, scheduled, and paused campaigns can have their schedule modified.
+ * Only scheduled and paused campaigns can have their schedule modified.
  */
 function isScheduleEditable(status?: CampaignStatus): boolean {
-  return status === 'draft' || status === 'scheduled' || status === 'paused';
+  return status === 'scheduled' || status === 'paused';
 }
 
 /**

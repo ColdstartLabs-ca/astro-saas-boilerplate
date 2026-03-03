@@ -2,13 +2,14 @@ import { test, expect } from '@playwright/test';
 import { TestContext, ApiClient } from '../helpers';
 
 /**
- * Integration Tests for Campaign Start/Pause/Resume API
+ * API Tests: Campaign Schedule Pause/Resume
  *
- * These tests validate the pause/resume functionality for campaigns:
- * - Pause stops in-flight campaign generation
- * - Resume continues processing queued keywords
- * - Campaign status is checked before each keyword generation
- * - Unprocessed keywords remain queued for resume
+ * All campaigns are schedule-only (auto-activated on creation with status='scheduled').
+ * These tests validate pause/resume functionality:
+ * - Campaign is 'scheduled' immediately after creation
+ * - POST /api/campaigns/:id/pause-schedule transitions to 'paused'
+ * - POST /api/campaigns/:id/resume-schedule transitions back to 'scheduled'
+ * - Pause/resume endpoints are idempotent (only valid on correct status)
  */
 
 let ctx: TestContext;
@@ -21,17 +22,13 @@ test.afterAll(async () => {
   await ctx.cleanup();
 });
 
-test.describe('API: Campaign Start/Pause/Resume', () => {
+test.describe('API: Campaign Schedule Pause/Resume', () => {
   let user: Awaited<ReturnType<typeof ctx.createUser>>;
   let projectId: string;
-  let campaignId: string;
 
   test.beforeEach(async ({ request }) => {
     user = await ctx.createUser({ subscription: 'active', tier: 'pro', credits: 100 });
-    // Create a project via API for testing
-    // Note: In test mode with mock users, we create a mock project ID
     if (process.env.ENV === 'test') {
-      // Generate a valid UUID v4 format for the mock project ID
       projectId = crypto.randomUUID();
     } else {
       const api = new ApiClient(request).withAuth(user.token);
@@ -44,139 +41,96 @@ test.describe('API: Campaign Start/Pause/Resume', () => {
     }
   });
 
-  test('should start campaign and generate articles sequentially', async ({ request }) => {
+  test('campaign is scheduled immediately after creation', async ({ request }) => {
     const api = new ApiClient(request).withAuth(user.token);
-    const keywords = ['keyword 1', 'keyword 2', 'keyword 3'];
 
-    // Create campaign
     const createResponse = await api.post('/api/campaigns', {
       name: 'Test Campaign',
       projectId,
-      keywords,
+      keywords: ['keyword 1', 'keyword 2'],
       tone: 'professional',
       targetWordCount: 800,
-      model: 'pro', // Use explicit preset (pro = 2 credits base)
+      model: 'budget',
+      scheduleFrequency: 'daily',
+      scheduleBatchSize: 1,
+      scheduleHour: 9,
+      scheduleTimezone: 'UTC',
     });
     createResponse.expectStatus(201);
     const campaignData = await createResponse.getData();
     const campaignId = campaignData.campaign.id;
 
-    // Start generation
-    const startResponse = await api.post(`/api/campaigns/${campaignId}/start`);
-    startResponse.expectStatus(202);
-    const startData = await startResponse.getData();
-    expect(startData.queued).toBe(3);
-    // pro preset = 2 credits per article (base writer cost)
-    expect(startData.creditsRequired).toBe(6);
-
-    // Wait a bit for generation to start
-    await new Promise(resolve => setTimeout(resolve, 2000));
-
-    // Check campaign status is active
+    // Campaign should be 'scheduled' immediately
     const detailResponse = await api.get(`/api/campaigns/${campaignId}`);
     detailResponse.expectStatus(200);
     const detailData = await detailResponse.getData();
-    expect(detailData.campaign.status).toBe('active');
+    expect(detailData.campaign.status).toBe('scheduled');
   });
 
-  test('should pause campaign and stop processing remaining keywords', async ({ request }) => {
+  test('should pause a scheduled campaign', async ({ request }) => {
     const api = new ApiClient(request).withAuth(user.token);
-    const keywords = ['keyword 1', 'keyword 2', 'keyword 3', 'keyword 4', 'keyword 5'];
 
-    // Create campaign
     const createResponse = await api.post('/api/campaigns', {
-      name: 'Test Campaign',
+      name: 'Test Pause Campaign',
       projectId,
-      keywords,
+      keywords: ['keyword 1'],
       tone: 'professional',
       targetWordCount: 800,
+      model: 'budget',
+      scheduleFrequency: 'daily',
+      scheduleBatchSize: 1,
+      scheduleHour: 9,
+      scheduleTimezone: 'UTC',
     });
     createResponse.expectStatus(201);
-    const campaignData = await createResponse.getData();
-    campaignId = campaignData.campaign.id;
+    const campaignId = (await createResponse.getData()).campaign.id;
 
-    // Start generation
-    const startResponse = await api.post(`/api/campaigns/${campaignId}/start`);
-    startResponse.expectStatus(202);
-
-    // Wait a moment for first keyword to start processing
-    await new Promise(resolve => setTimeout(resolve, 500));
-
-    // Pause the campaign
-    const pauseResponse = await api.put(`/api/campaigns/${campaignId}`, {
-      status: 'paused',
-    });
+    // Pause the scheduled campaign
+    const pauseResponse = await api.post(`/api/campaigns/${campaignId}/pause-schedule`);
     pauseResponse.expectStatus(200);
-
-    // Wait a moment for pause to take effect
-    await new Promise(resolve => setTimeout(resolve, 1000));
 
     // Verify campaign is paused
     const detailResponse = await api.get(`/api/campaigns/${campaignId}`);
     detailResponse.expectStatus(200);
     const detailData = await detailResponse.getData();
     expect(detailData.campaign.status).toBe('paused');
-
-    // Verify that some keywords remain queued (not all completed)
-    // We can't guarantee exact numbers due to timing, but we should have queued keywords
-    expect(detailData.keywords.some((k: { status: string }) => k.status === 'queued')).toBeTruthy();
   });
 
-  test('should resume paused campaign and continue processing queued keywords', async ({
-    request,
-  }) => {
+  test('should resume a paused campaign', async ({ request }) => {
     const api = new ApiClient(request).withAuth(user.token);
-    const keywords = ['keyword 1', 'keyword 2', 'keyword 3'];
 
-    // Create campaign
     const createResponse = await api.post('/api/campaigns', {
-      name: 'Test Campaign',
+      name: 'Test Resume Campaign',
       projectId,
-      keywords,
+      keywords: ['keyword 1'],
       tone: 'professional',
       targetWordCount: 800,
+      model: 'budget',
+      scheduleFrequency: 'daily',
+      scheduleBatchSize: 1,
+      scheduleHour: 9,
+      scheduleTimezone: 'UTC',
     });
     createResponse.expectStatus(201);
-    const campaignData = await createResponse.getData();
-    campaignId = campaignData.campaign.id;
+    const campaignId = (await createResponse.getData()).campaign.id;
 
-    // Start generation
-    const startResponse = await api.post(`/api/campaigns/${campaignId}/start`);
-    startResponse.expectStatus(202);
+    // Pause first
+    await api.post(`/api/campaigns/${campaignId}/pause-schedule`);
 
-    // Wait a moment then pause
-    await new Promise(resolve => setTimeout(resolve, 200));
-    await api.put(`/api/campaigns/${campaignId}`, { status: 'paused' });
+    // Then resume
+    const resumeResponse = await api.post(`/api/campaigns/${campaignId}/resume-schedule`);
+    resumeResponse.expectStatus(200);
 
-    // Wait for pause to take effect
-    await new Promise(resolve => setTimeout(resolve, 500));
-
-    // Verify we have queued keywords
-    let detailResponse = await api.get(`/api/campaigns/${campaignId}`);
-    let detailData = await detailResponse.getData();
-
-    const initialQueuedCount = detailData.keywords.filter(
-      (k: { status: string }) => k.status === 'queued'
-    ).length;
-    expect(initialQueuedCount).toBeGreaterThan(0);
-
-    // Resume by starting again
-    const resumeResponse = await api.post(`/api/campaigns/${campaignId}/start`);
-    resumeResponse.expectStatus(202);
-    const resumeData = await resumeResponse.getData();
-    expect(resumeData.queued).toBe(initialQueuedCount);
-    expect(resumeData.creditsRequired).toBeGreaterThanOrEqual(0);
-
-    // Campaign should be active again
-    detailResponse = await api.get(`/api/campaigns/${campaignId}`);
-    detailData = await detailResponse.getData();
-    expect(detailData.campaign.status).toBe('active');
+    // Verify campaign is scheduled again
+    const detailResponse = await api.get(`/api/campaigns/${campaignId}`);
+    detailResponse.expectStatus(200);
+    const detailData = await detailResponse.getData();
+    expect(detailData.campaign.status).toBe('scheduled');
   });
 
   test('should reject campaign creation with no keywords', async ({ request }) => {
     const api = new ApiClient(request).withAuth(user.token);
 
-    // Create campaign with no keywords
     const createResponse = await api.post('/api/campaigns', {
       name: 'Test Campaign',
       projectId,
@@ -186,5 +140,13 @@ test.describe('API: Campaign Start/Pause/Resume', () => {
     });
     createResponse.expectStatus(400);
     await createResponse.expectErrorCode('VALIDATION_ERROR');
+  });
+
+  test('should return 404 for pause on non-existent campaign', async ({ request }) => {
+    const api = new ApiClient(request).withAuth(user.token);
+    const response = await api.post(
+      '/api/campaigns/00000000-0000-4000-8000-000000000000/pause-schedule'
+    );
+    response.expectStatus(404);
   });
 });

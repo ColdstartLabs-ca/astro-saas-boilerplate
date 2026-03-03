@@ -3,18 +3,15 @@
  *
  * Multi-step modal for creating new campaigns with keyword management,
  * AI model selection, and scheduling options.
+ * All campaigns are schedule-only — auto-activated on creation.
  */
 'use client';
 
 import { Modal } from '@client/components/modal/Modal';
-import { useAvailableModels } from '@client/hooks/useAvailableModels';
 import { useTranslations } from '@client/hooks/useTranslations';
-import { useUserStore } from '@client/store/userStore';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { getImagePresetCreditCost } from '@shared/config/image-models.config';
 import type { ScheduleFrequency, ICreateCampaignInput } from '@shared/types/campaign.types';
-import type { IAvailableWriterPreset } from '@shared/types/models.types';
-import { ArrowRight, Loader2, Zap, Calendar, CalendarDays } from 'lucide-react';
+import { ArrowRight, Loader2, Calendar, CalendarDays } from 'lucide-react';
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useForm } from 'react-hook-form';
 import { DashboardButton } from '../ui/DashboardButton';
@@ -47,7 +44,6 @@ export function NewCampaignModal({
   projectId,
 }: INewCampaignModalProps): JSX.Element | null {
   const t = useTranslations('dashboard');
-  const { user } = useUserStore();
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
   const [keywordInputTab, setKeywordInputTab] = useState<'manual' | 'csv'>('manual');
@@ -71,7 +67,6 @@ export function NewCampaignModal({
       tone: 'professional',
       targetWordCount: 1500,
       imagePreset: 'balanced',
-      scheduleEnabled: true,
       scheduleFrequency: 'daily',
       scheduleBatchSize: 3,
       scheduleHour: 9,
@@ -95,12 +90,6 @@ export function NewCampaignModal({
   }, [isOpen, setValue]);
 
   const watchedKeywords = watch('keywords');
-  const watchedImagePreset = watch('imagePreset');
-  const watchedScheduleEnabled = watch('scheduleEnabled');
-  const watchedModel = watch('model');
-
-  // Get available presets for credit calculation
-  const { writerPresets } = useAvailableModels();
 
   // Parse keywords from textarea (one per line, trimmed, filtered)
   const parsedKeywords = useMemo(
@@ -113,17 +102,6 @@ export function NewCampaignModal({
   );
 
   const keywordCount = parsedKeywords.length;
-  const writerCreditCost =
-    writerPresets.find((p: IAvailableWriterPreset) => p.key === watchedModel)?.creditCost ?? 0;
-  const imageCreditCost = getImagePresetCreditCost(watchedImagePreset || null);
-  const creditsPerKeyword = writerCreditCost + imageCreditCost;
-  const creditCost = keywordCount * creditsPerKeyword;
-
-  // Check if user has enough credits
-  const userCredits =
-    (user?.profile?.subscription_credits_balance ?? 0) +
-    (user?.profile?.purchased_credits_balance ?? 0);
-  const hasEnoughCredits = userCredits >= creditCost;
 
   const handleStep1Next = useCallback(async () => {
     const valid = await trigger(['name', 'keywords']);
@@ -138,11 +116,6 @@ export function NewCampaignModal({
 
   const handleLaunch = useCallback(
     async (data: CampaignFormData) => {
-      // For immediate mode, check credits
-      if (!data.scheduleEnabled && !hasEnoughCredits) {
-        return;
-      }
-
       setLoading(true);
       try {
         const campaign = await onSubmit({
@@ -153,14 +126,10 @@ export function NewCampaignModal({
           tone: data.tone,
           targetWordCount: data.targetWordCount,
           imagePreset: data.imagePreset,
-          ...(data.scheduleEnabled
-            ? {
-                scheduleFrequency: data.scheduleFrequency as ScheduleFrequency,
-                scheduleBatchSize: data.scheduleBatchSize ?? 3,
-                scheduleTimezone: data.scheduleTimezone ?? 'UTC',
-                scheduleHour: data.scheduleHour ?? 9,
-              }
-            : {}),
+          scheduleFrequency: data.scheduleFrequency as ScheduleFrequency,
+          scheduleBatchSize: data.scheduleBatchSize ?? 1,
+          scheduleTimezone: data.scheduleTimezone ?? 'UTC',
+          scheduleHour: data.scheduleHour ?? 9,
           // Content style preferences
           articleStyle: data.articleStyle ?? undefined,
           internalLinksCount: data.internalLinksCount,
@@ -177,7 +146,7 @@ export function NewCampaignModal({
         setLoading(false);
       }
     },
-    [hasEnoughCredits, onSubmit, projectId, parsedKeywords]
+    [onSubmit, projectId, parsedKeywords]
   );
 
   const handleSkipPlanning = useCallback(() => {
@@ -319,7 +288,7 @@ export function NewCampaignModal({
             seoAdvisoryDismissed={seoAdvisoryDismissed}
             setSeoAdvisoryDismissed={setSeoAdvisoryDismissed}
             keywordCount={keywordCount}
-            creditCost={creditCost}
+            creditCost={0}
           />
         )}
 
@@ -364,27 +333,17 @@ export function NewCampaignModal({
             {step === 3 && (
               <DashboardButton
                 onClick={handleSubmit(handleLaunch)}
-                disabled={loading || (!watchedScheduleEnabled && !hasEnoughCredits)}
-                className={`shadow-lg px-10 ${hasEnoughCredits || watchedScheduleEnabled ? 'shadow-accent/20' : 'opacity-50 grayscale cursor-not-allowed shadow-none'}`}
+                disabled={loading}
+                className="shadow-lg shadow-accent/20 px-10"
               >
                 {loading ? (
                   <>
                     <Loader2 className="w-4 h-4 mr-2 animate-spin" />{' '}
-                    {watchedScheduleEnabled
-                      ? 'Starting Schedule...'
-                      : t('campaigns.newCampaign.creating')}
+                    {t('campaigns.newCampaign.creating')}
                   </>
                 ) : (
                   <>
-                    {watchedScheduleEnabled ? (
-                      <>
-                        <Calendar className="w-4 h-4 mr-2" /> Start Schedule
-                      </>
-                    ) : (
-                      <>
-                        <Zap className="w-4 h-4 mr-2" /> {t('campaigns.newCampaign.create')}
-                      </>
-                    )}
+                    <Calendar className="w-4 h-4 mr-2" /> {t('campaigns.newCampaign.create')}
                   </>
                 )}
               </DashboardButton>

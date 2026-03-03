@@ -6,9 +6,7 @@ import {
   Settings,
   Cpu,
   Layers,
-  Calendar,
   Clock,
-  Loader2,
   AlertTriangle,
   CreditCard,
 } from 'lucide-react';
@@ -46,21 +44,11 @@ interface ICampaignDetailHeaderProps {
   };
   pendingCount: number;
   onBackToList: () => void;
-  onTogglePause: () => void;
-  onStartGeneration: () => void;
   onAddKeywords: () => void;
   onOpenSettings: () => void;
-  onStartSchedule?: () => void;
   onResumeSchedule?: () => void;
   onPauseSchedule?: () => void;
   t: (key: string) => string;
-}
-
-/**
- * Check if campaign has an active schedule configuration.
- */
-function hasScheduleConfig(campaign: ICampaign): boolean {
-  return campaign.schedule_frequency !== null;
 }
 
 /**
@@ -125,18 +113,13 @@ export function CampaignDetailHeader({
   campaign,
   keywordsCount,
   stats,
-  pendingCount,
   onBackToList,
-  onTogglePause,
-  onStartGeneration,
   onAddKeywords,
   onOpenSettings,
-  onStartSchedule,
   onResumeSchedule,
   onPauseSchedule,
   t,
 }: ICampaignDetailHeaderProps): JSX.Element {
-  const hasSchedule = hasScheduleConfig(campaign);
   const nextRunDisplay = formatNextRun(campaign.next_run_at);
   const pauseReason = getPauseReason(campaign);
 
@@ -185,13 +168,6 @@ export function CampaignDetailHeader({
           </div>
         </div>
         <div className="flex gap-2 flex-wrap justify-end">
-          {/* Status-based Actions */}
-          {campaign.status === 'active' && !hasSchedule && (
-            <DashboardButton variant="outline" size="sm" onClick={onTogglePause}>
-              <Pause className="w-4 h-4 mr-2" /> {t('campaigns.status.paused')}
-            </DashboardButton>
-          )}
-
           {/* Scheduled Campaign Actions */}
           {campaign.status === 'scheduled' && (
             <>
@@ -209,39 +185,10 @@ export function CampaignDetailHeader({
             </>
           )}
 
-          {/* Paused Campaign with Schedule */}
-          {campaign.status === 'paused' && hasSchedule && onResumeSchedule && (
+          {/* Paused Campaign — resume schedule */}
+          {campaign.status === 'paused' && onResumeSchedule && (
             <DashboardButton variant="primary" size="sm" onClick={onResumeSchedule}>
               <Play className="w-4 h-4 mr-2" /> Resume Schedule
-            </DashboardButton>
-          )}
-
-          {/* Paused Campaign without Schedule (legacy) */}
-          {campaign.status === 'paused' && !hasSchedule && (
-            <DashboardButton variant="primary" size="sm" onClick={onTogglePause}>
-              <Play className="w-4 h-4 mr-2" /> {t('campaigns.status.resume')}
-            </DashboardButton>
-          )}
-
-          {/* Draft Campaign with Schedule */}
-          {campaign.status === 'draft' && hasSchedule && onStartSchedule && (
-            <DashboardButton variant="primary" size="sm" onClick={onStartSchedule}>
-              <Calendar className="w-4 h-4 mr-2" /> Start Schedule
-            </DashboardButton>
-          )}
-
-          {/* Active Campaign - Processing indicator */}
-          {campaign.status === 'active' && hasSchedule && stats.generating > 0 && (
-            <div className="flex items-center gap-2 px-3 py-1.5 bg-amber-500/10 border border-amber-500/20 rounded-lg text-sm">
-              <Loader2 className="w-4 h-4 text-amber-400 animate-spin" />
-              <span className="text-amber-200">Processing batch...</span>
-            </div>
-          )}
-
-          {/* Standard Start Generation (for non-scheduled drafts) */}
-          {campaign.status === 'draft' && !hasSchedule && pendingCount > 0 && (
-            <DashboardButton variant="primary" size="sm" onClick={onStartGeneration}>
-              <Play className="w-4 h-4 mr-2" /> {t('campaigns.detail.startGeneration')}
             </DashboardButton>
           )}
 

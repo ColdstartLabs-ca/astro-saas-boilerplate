@@ -108,10 +108,24 @@ class InMemoryStore {
   }
 
   reset(): void {
+    // Clear in-memory tables
     for (const table of this.defaults) {
       this.tables.set(table, []);
     }
-    this.persistToDisk();
+    // Clear deleted IDs tracking
+    this.deletedIds.clear();
+    // Clear the file directly (avoid merge logic in persistToDisk which would re-add file rows)
+    try {
+      const dir = path.dirname(this.filePath);
+      fs.mkdirSync(dir, { recursive: true });
+      const emptyPayload: Record<string, Row[]> = {};
+      for (const table of this.defaults) {
+        emptyPayload[table] = [];
+      }
+      fs.writeFileSync(this.filePath, JSON.stringify(emptyPayload), 'utf8');
+    } catch {
+      // File persistence is best-effort in test mode.
+    }
   }
 
   hydrateFromDisk(): void {

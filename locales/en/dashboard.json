@@ -718,8 +718,7 @@
     "emptyTitle": "No campaigns yet",
     "createFirst": "Create Your First Campaign",
     "status": {
-      "draft": "Draft",
-      "active": "Active",
+      "scheduled": "Scheduled",
       "paused": "Paused",
       "completed": "Completed",
       "resume": "Resume"

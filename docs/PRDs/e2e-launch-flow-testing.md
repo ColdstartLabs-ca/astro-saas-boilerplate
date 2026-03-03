@@ -2,13 +2,13 @@
 
 **Complexity: 5 → MEDIUM mode**
 
-| Factor | Score |
-|--------|-------|
-| Touches 6-10 files | +2 |
-| Complex state logic (status machine, mock orchestration) | +2 |
-| Database schema changes | 0 |
-| New system from scratch | +1 |
-| **Total** | **5** |
+| Factor                                                   | Score |
+| -------------------------------------------------------- | ----- |
+| Touches 6-10 files                                       | +2    |
+| Complex state logic (status machine, mock orchestration) | +2    |
+| Database schema changes                                  | 0     |
+| New system from scratch                                  | +1    |
+| **Total**                                                | **5** |
 
 ---
 
@@ -42,15 +42,15 @@
 
 **Gap Summary:**
 
-| Flow Step | Unit/API Tested? | E2E Tested? |
-|-----------|:---:|:---:|
-| Create campaign | API ✅ | UI partial (modal only, no submission) |
-| Start campaign | API ✅ | Not tested |
-| Article appears in list | API ✅ | Not tested (static mock) |
-| Article status transitions in UI | API ✅ | Not tested |
-| Approve article | API ✅ | Button visible only |
-| Publish/deliver article | API ✅ | Not tested |
-| Error recovery (regenerate failed) | API ✅ | Partial (regenerate only) |
+| Flow Step                          | Unit/API Tested? |              E2E Tested?               |
+| ---------------------------------- | :--------------: | :------------------------------------: |
+| Create campaign                    |      API ✅      | UI partial (modal only, no submission) |
+| Start campaign                     |      API ✅      |               Not tested               |
+| Article appears in list            |      API ✅      |        Not tested (static mock)        |
+| Article status transitions in UI   |      API ✅      |               Not tested               |
+| Approve article                    |      API ✅      |          Button visible only           |
+| Publish/deliver article            |      API ✅      |               Not tested               |
+| Error recovery (regenerate failed) |      API ✅      |       Partial (regenerate only)        |
 
 ---
 
@@ -136,14 +136,17 @@ sequenceDiagram
 
 ```markdown
 **How will this feature be reached?**
+
 - [x] Entry point: `yarn test:e2e tests/e2e/launch-flow.e2e.spec.ts`
 - [x] Caller: Playwright test runner
 - [x] Registration: New test file auto-discovered by Playwright config
 
 **Is this user-facing?**
+
 - [x] NO → Test-only file, no production code changes
 
 **Full user flow (what we're testing):**
+
 1. User creates a campaign with keywords
 2. User starts the campaign (triggers article generation)
 3. User navigates to articles, sees generated articles
@@ -177,8 +180,8 @@ sequenceDiagram
 
 **Tests Required:**
 
-| Test File | Test Name | Assertion |
-|-----------|-----------|-----------|
+| Test File                           | Test Name                                                     | Assertion                                                 |
+| ----------------------------------- | ------------------------------------------------------------- | --------------------------------------------------------- |
 | `tests/e2e/launch-flow.e2e.spec.ts` | `should complete full create → start → review → approve flow` | Article ends in "approved" status; correct API calls made |
 
 **Verification Plan:**
@@ -218,11 +221,11 @@ sequenceDiagram
 
 **Tests Required:**
 
-| Test File | Test Name | Assertion |
-|-----------|-----------|-----------|
-| `tests/e2e/launch-flow.e2e.spec.ts` | `should publish approved article to CMS` | Article status = "published", publish API called |
-| `tests/e2e/launch-flow.e2e.spec.ts` | `should recover failed article via regenerate` | Article re-enters "draft" status after regenerate |
-| `tests/e2e/launch-flow.e2e.spec.ts` | `should generate articles for all keywords in campaign` | 3 articles visible, all associated with campaign |
+| Test File                           | Test Name                                               | Assertion                                         |
+| ----------------------------------- | ------------------------------------------------------- | ------------------------------------------------- |
+| `tests/e2e/launch-flow.e2e.spec.ts` | `should publish approved article to CMS`                | Article status = "published", publish API called  |
+| `tests/e2e/launch-flow.e2e.spec.ts` | `should recover failed article via regenerate`          | Article re-enters "draft" status after regenerate |
+| `tests/e2e/launch-flow.e2e.spec.ts` | `should generate articles for all keywords in campaign` | 3 articles visible, all associated with campaign  |
 
 **Verification Plan:**
 
@@ -257,11 +260,11 @@ sequenceDiagram
 
 **Tests Required:**
 
-| Test File | Test Name | Assertion |
-|-----------|-----------|-----------|
-| `tests/e2e/launch-flow.e2e.spec.ts` | `should show error when publishing without integrations` | Error feedback visible, article stays "approved" |
-| `tests/e2e/launch-flow.e2e.spec.ts` | `should navigate between campaign detail and filtered articles` | Articles filtered by campaign ID |
-| `tests/e2e/launch-flow.e2e.spec.ts` | `should update status badge in-place after approve` | Badge text changes without full page reload |
+| Test File                           | Test Name                                                       | Assertion                                        |
+| ----------------------------------- | --------------------------------------------------------------- | ------------------------------------------------ |
+| `tests/e2e/launch-flow.e2e.spec.ts` | `should show error when publishing without integrations`        | Error feedback visible, article stays "approved" |
+| `tests/e2e/launch-flow.e2e.spec.ts` | `should navigate between campaign detail and filtered articles` | Articles filtered by campaign ID                 |
+| `tests/e2e/launch-flow.e2e.spec.ts` | `should update status badge in-place after approve`             | Badge text changes without full page reload      |
 
 **Verification Plan:**
 

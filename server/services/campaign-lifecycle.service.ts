@@ -421,12 +421,19 @@ export class CampaignLifecycleService {
         ...kw,
         id: crypto.randomUUID(),
       }));
+
+      // Auto-activate: calculate next_run_at from schedule config
+      const scheduleFrequency = (validated.scheduleFrequency || 'daily') as ScheduleFrequency;
+      const scheduleTimezone = validated.scheduleTimezone || DEFAULT_SCHEDULE_TIMEZONE;
+      const scheduleHour = validated.scheduleHour ?? DEFAULT_SCHEDULE_HOUR;
+      const nextRunAt = calculateNextRunAt(scheduleFrequency, scheduleTimezone, scheduleHour);
+
       const campaign: ITestModeCampaign = {
         id: campaignId,
         user_id: userId,
         project_id: validated.projectId,
         name: validated.name,
-        status: 'draft',
+        status: 'scheduled',
         ai_model: validated.model || DEFAULT_WRITER_PRESET,
         tone: validated.tone || 'professional',
         target_word_count: validated.targetWordCount || 1500,
@@ -436,12 +443,12 @@ export class CampaignLifecycleService {
         updated_at: new Date().toISOString(),
         generation_run_id: null,
         // Schedule fields
-        schedule_frequency: validated.scheduleFrequency || null,
+        schedule_frequency: scheduleFrequency,
         schedule_batch_size: validated.scheduleBatchSize || 1,
-        next_run_at: null,
+        next_run_at: nextRunAt,
         last_run_at: null,
-        schedule_timezone: validated.scheduleTimezone || DEFAULT_SCHEDULE_TIMEZONE,
-        schedule_hour: validated.scheduleHour ?? DEFAULT_SCHEDULE_HOUR,
+        schedule_timezone: scheduleTimezone,
+        schedule_hour: scheduleHour,
         // Outrank feature parity fields (with project defaults applied)
         article_style: resolvedArticleStyle || null,
         internal_links_count: resolvedInternalLinksCount,
@@ -464,18 +471,18 @@ export class CampaignLifecycleService {
         user_id: userId,
         project_id: validated.projectId,
         name: validated.name,
-        status: 'draft',
+        status: 'scheduled',
         ai_model: validated.model || DEFAULT_WRITER_PRESET,
         tone: validated.tone || 'professional',
         target_word_count: validated.targetWordCount || 1500,
         settings: {},
         image_preset: validated.imagePreset || 'budget',
-        schedule_frequency: validated.scheduleFrequency || null,
+        schedule_frequency: scheduleFrequency,
         schedule_batch_size: validated.scheduleBatchSize || 1,
-        next_run_at: null,
+        next_run_at: nextRunAt,
         last_run_at: null,
-        schedule_timezone: validated.scheduleTimezone || DEFAULT_SCHEDULE_TIMEZONE,
-        schedule_hour: validated.scheduleHour ?? DEFAULT_SCHEDULE_HOUR,
+        schedule_timezone: scheduleTimezone,
+        schedule_hour: scheduleHour,
         generation_run_id: null,
         created_at: campaign.created_at,
         updated_at: campaign.updated_at,
@@ -494,23 +501,30 @@ export class CampaignLifecycleService {
       return campaign;
     }
 
-    // Create campaign
+    // Auto-activate: calculate next_run_at from schedule config
+    const scheduleFrequency = (validated.scheduleFrequency || 'daily') as ScheduleFrequency;
+    const scheduleTimezone = validated.scheduleTimezone || DEFAULT_SCHEDULE_TIMEZONE;
+    const scheduleHour = validated.scheduleHour ?? DEFAULT_SCHEDULE_HOUR;
+    const nextRunAt = calculateNextRunAt(scheduleFrequency, scheduleTimezone, scheduleHour);
+
+    // Create campaign with status 'scheduled' and next_run_at set (auto-activation)
     const { data: campaign, error: campaignError } = await supabaseAdmin
       .from('campaigns')
       .insert({
         user_id: userId,
         project_id: validated.projectId,
         name: validated.name,
-        status: 'draft',
+        status: 'scheduled',
         ai_model: validated.model || DEFAULT_WRITER_PRESET,
         tone: validated.tone || 'professional',
         target_word_count: validated.targetWordCount || 1500,
         settings: {},
         image_preset: validated.imagePreset || 'budget',
-        schedule_frequency: validated.scheduleFrequency || null,
+        schedule_frequency: scheduleFrequency,
         schedule_batch_size: validated.scheduleBatchSize || 1,
-        schedule_timezone: validated.scheduleTimezone || DEFAULT_SCHEDULE_TIMEZONE,
-        schedule_hour: validated.scheduleHour ?? DEFAULT_SCHEDULE_HOUR,
+        next_run_at: nextRunAt,
+        schedule_timezone: scheduleTimezone,
+        schedule_hour: scheduleHour,
         // Outrank feature parity fields (with project defaults applied)
         article_style: resolvedArticleStyle || null,
         internal_links_count: resolvedInternalLinksCount,
@@ -574,46 +588,6 @@ export class CampaignLifecycleService {
       throw new AppError('MODEL_NOT_AVAILABLE', 'Selected image preset is not available', 400);
     }
 
-    // BUG H5: Validate status transitions before any update.
-    // The updateCampaignSchema only accepts 'active' or 'paused', but we must also enforce
-    // that the transition is valid for the campaign's current state.
-    // Valid transitions: active → paused, paused → active (simple toggle).
-    // Scheduled campaigns must use dedicated endpoints (startSchedule, pauseSchedule, resumeSchedule).
-    if (validated.status !== undefined) {
-      // Fetch current status - test mode reads from memory, production reads from DB
-      let currentStatus: string;
-      if (serverEnv.ENV === 'test' && userId.includes('mock_user_')) {
-        const existingCampaign = testModeCampaigns.get(campaignId);
-        if (!existingCampaign || existingCampaign.user_id !== userId) {
-          throw new CampaignNotFoundError(campaignId);
-        }
-        currentStatus = existingCampaign.status;
-      } else {
-        const { data: existingCampaign, error: fetchError } = await supabaseAdmin
-          .from('campaigns')
-          .select('status')
-          .eq('id', campaignId)
-          .eq('user_id', userId)
-          .single();
-        if (fetchError || !existingCampaign) {
-          throw new CampaignNotFoundError(campaignId);
-        }
-        currentStatus = existingCampaign.status;
-      }
-
-      const requestedStatus = validated.status;
-      const isValidTransition =
-        (currentStatus === 'active' && requestedStatus === 'paused') ||
-        (currentStatus === 'paused' && requestedStatus === 'active');
-      if (!isValidTransition) {
-        throw new AppError(
-          'INVALID_STATUS_TRANSITION',
-          `Cannot transition campaign from '${currentStatus}' to '${requestedStatus}'. Valid transitions: active→paused, paused→active.`,
-          400
-        );
-      }
-    }
-
     // In test mode with mock users, update in-memory store
     if (serverEnv.ENV === 'test' && userId.includes('mock_user_')) {
       const campaign = testModeCampaigns.get(campaignId);
@@ -628,8 +602,6 @@ export class CampaignLifecycleService {
       if (validated.targetWordCount !== undefined)
         campaign.target_word_count = validated.targetWordCount;
       if (validated.imagePreset !== undefined) campaign.image_preset = validated.imagePreset;
-      // Status for pause/resume (non-scheduled campaigns)
-      if (validated.status !== undefined) campaign.status = validated.status;
       // Schedule fields
       if (validated.scheduleFrequency !== undefined)
         campaign.schedule_frequency = validated.scheduleFrequency;
@@ -667,8 +639,6 @@ export class CampaignLifecycleService {
     if (validated.targetWordCount !== undefined)
       updates.target_word_count = validated.targetWordCount;
     if (validated.imagePreset !== undefined) updates.image_preset = validated.imagePreset;
-    // Status for pause/resume (non-scheduled campaigns)
-    if (validated.status !== undefined) updates.status = validated.status;
     // Schedule fields
     if (validated.scheduleFrequency !== undefined)
       updates.schedule_frequency = validated.scheduleFrequency;
@@ -751,8 +721,8 @@ export class CampaignLifecycleService {
     // In test mode with mock users, remove from in-memory store
     if (serverEnv.ENV === 'test' && userId.includes('mock_user_')) {
       const campaign = testModeCampaigns.get(campaignId);
-      // BUG M6: Prevent deleting active or scheduled campaigns in test mode too
-      if (campaign && (campaign.status === 'active' || campaign.status === 'scheduled')) {
+      // Prevent deleting scheduled campaigns (must pause first)
+      if (campaign && campaign.status === 'scheduled') {
         throw new AppError(
           'CAMPAIGN_DELETION_BLOCKED',
           `Cannot delete campaign in '${campaign.status}' state. Please pause the campaign before deleting.`,
@@ -763,7 +733,7 @@ export class CampaignLifecycleService {
       return;
     }
 
-    // BUG M6: Fetch campaign to validate its status before deleting
+    // Fetch campaign to validate its status before deleting
     const { data: campaignData, error: fetchError } = await supabaseAdmin
       .from('campaigns')
       .select('status')
@@ -776,7 +746,7 @@ export class CampaignLifecycleService {
       return;
     }
 
-    if (campaignData.status === 'active' || campaignData.status === 'scheduled') {
+    if (campaignData.status === 'scheduled') {
       throw new AppError(
         'CAMPAIGN_DELETION_BLOCKED',
         `Cannot delete campaign in '${campaignData.status}' state. Please pause the campaign before deleting.`,

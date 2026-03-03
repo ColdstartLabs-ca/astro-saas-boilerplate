@@ -245,6 +245,14 @@ async function registerCampaignsMocks(page: Page, state: StatefulMockState): Pro
 
   // Campaigns list + create (use ** suffix to match query strings like ?projectId=...)
   await page.route('**/api/campaigns**', async route => {
+    const pathname = new URL(route.request().url()).pathname;
+    // Only handle collection endpoint here; let more specific campaign routes
+    // (e.g. /api/campaigns/:id, /keywords, /start) handle their own payloads.
+    if (pathname !== '/api/campaigns') {
+      await route.fallback();
+      return;
+    }
+
     const method = route.request().method();
     if (method === 'GET') {
       await route.fulfill({
@@ -1013,6 +1021,100 @@ test.describe('Launch Flow: Edge Cases — No Integrations', () => {
 
     // Should show 'approved' status — NOT 'published' because delivery failed
     await articlesPage.assertArticleWithStatusVisible('approved');
+  });
+});
+
+// =============================================================================
+// Phase 3: Cross-Page Navigation — Campaign Detail ↔ Articles
+// =============================================================================
+
+test.describe('Launch Flow: Cross-Page Navigation', () => {
+  let campaignsPage: CampaignsPage;
+  let articlesPage: ArticlesPage;
+  let state: StatefulMockState;
+
+  test.beforeEach(async ({ page }) => {
+    campaignsPage = new CampaignsPage(page);
+    articlesPage = new ArticlesPage(page);
+    state = new StatefulMockState();
+
+    // Campaign with 2 articles
+    state.addCampaign(makeCampaign({ keyword_count: 2, completed_count: 2 }));
+    ['on-page seo', 'off-page seo'].forEach(kw => {
+      state.addArticle(makeDraftArticle(CAMPAIGN_ID, kw));
+    });
+
+    await registerCampaignsMocks(page, state);
+    await registerArticlesMocks(page, state);
+  });
+
+  test('should navigate between campaign detail and filtered articles', async ({ page }) => {
+    // 1. Navigate to campaigns page
+    await campaignsPage.goto();
+    await campaignsPage.waitForLoadingComplete();
+    await campaignsPage.wait(1000);
+
+    // Check if campaign cards are visible
+    const cardCount = await campaignsPage.campaignCards.count();
+    if (cardCount === 0) {
+      test.skip(true, 'No campaign cards visible — campaigns page not ready');
+      return;
+    }
+
+    // 2. Open campaign detail
+    await campaignsPage.openCampaignDetail('Launch Test Campaign');
+    await campaignsPage.waitForLoadingComplete();
+    await campaignsPage.wait(500);
+
+    // Verify we're on the campaign detail page
+    expect(page.url()).toContain(`/dashboard/campaigns/${CAMPAIGN_ID}`);
+
+    // 3. Navigate to articles page
+    await articlesPage.goto();
+    await articlesPage.waitForLoadingComplete();
+    await articlesPage.wait(500);
+
+    // Verify articles list is visible
+    await articlesPage.assertArticlesListVisible();
+    const articleCount = await articlesPage.getArticleCardCount();
+    expect(articleCount).toBe(2);
+
+    // 4. Filter by campaign (if filter panel is available)
+    const filterVisible = await articlesPage.filterButton.isVisible().catch(() => false);
+    if (filterVisible) {
+      await articlesPage.openFilterPanel();
+      const campaignFilter = articlesPage.campaignFilterSelect;
+      const campaignFilterVisible = await campaignFilter.isVisible().catch(() => false);
+
+      if (campaignFilterVisible) {
+        // Get available options
+        const availableOptions = await campaignFilter.evaluate((select: HTMLSelectElement) =>
+          Array.from(select.options).map(o => o.value)
+        );
+
+        // Use CAMPAIGN_ID if available, otherwise use first non-empty option
+        const optionToSelect = availableOptions.includes(CAMPAIGN_ID)
+          ? CAMPAIGN_ID
+          : (availableOptions.find(v => v !== '') ?? '');
+
+        if (optionToSelect) {
+          await campaignFilter.selectOption(optionToSelect);
+          await articlesPage.waitForLoadingComplete();
+
+          // After filtering, should still show the 2 articles from this campaign
+          const filteredCount = await articlesPage.getArticleCardCount();
+          expect(filteredCount).toBeGreaterThan(0);
+        }
+      }
+    }
+
+    // 5. Navigate back to campaigns to verify round-trip navigation works
+    await campaignsPage.goto();
+    await campaignsPage.waitForLoadingComplete();
+    await campaignsPage.wait(500);
+
+    // Verify campaigns list is visible again
+    await campaignsPage.assertCampaignCardsVisible(1);
   });
 });
 

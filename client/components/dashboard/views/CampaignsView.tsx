@@ -7,7 +7,7 @@ import {
   Clock,
   Layers,
   MoreHorizontal,
-  Play,
+  CalendarDays,
   Pause,
   Cpu,
   Trash2,
@@ -293,7 +293,7 @@ export function CampaignsView({
               <span
                 className={`inline-flex items-center px-2 py-1 rounded text-xs font-medium ${getCampaignStatusStyles(campaign.status)}`}
               >
-                {campaign.status === 'active' && <Play className="w-3 h-3 mr-1.5 fill-current" />}
+                {campaign.status === 'scheduled' && <CalendarDays className="w-3 h-3 mr-1.5" />}
                 {campaign.status === 'paused' && <Pause className="w-3 h-3 mr-1.5 fill-current" />}
                 {t(`campaigns.status.${campaign.status}`)}
               </span>

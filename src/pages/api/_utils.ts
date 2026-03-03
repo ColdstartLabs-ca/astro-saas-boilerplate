@@ -224,7 +224,7 @@ export function withAuthAndBody<T extends z.ZodType>(
  * Recognized error types:
  * - ZodError → 400 VALIDATION_ERROR
  * - CampaignNotFoundError → 404 NOT_FOUND
- * - NoPendingKeywordsError → 400 VALIDATION_ERROR
+ * - ScheduleValidationError → 400 VALIDATION_ERROR
  * - InsufficientCreditsError → 402 INSUFFICIENT_CREDITS
  * - IntegrationNotFoundError → 404 NOT_FOUND
  * - OnboardingNotFoundError → 404 NOT_FOUND
@@ -247,10 +247,6 @@ export function handleApiError(error: unknown, context?: string): Response {
     switch (error.name) {
       case 'CampaignNotFoundError':
         return errorResponse('NOT_FOUND', error.message, 404);
-      case 'CampaignAlreadyActiveError':
-        return errorResponse('CAMPAIGN_ALREADY_ACTIVE', error.message, 409);
-      case 'NoPendingKeywordsError':
-        return errorResponse('NO_PENDING_KEYWORDS', error.message, 400);
       case 'ScheduleValidationError':
         return errorResponse('VALIDATION_ERROR', error.message, 400);
       case 'InsufficientCreditsError':

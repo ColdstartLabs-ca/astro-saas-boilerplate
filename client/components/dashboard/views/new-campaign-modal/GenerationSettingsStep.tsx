@@ -263,10 +263,22 @@ export function GenerationSettingsStep({
           <label className="text-sm font-medium text-white">Content Features</label>
           <div className="grid grid-cols-2 gap-2">
             {[
-              { field: 'includeYoutube' as const, label: 'YouTube suggestions', checked: watchedIncludeYoutube },
+              {
+                field: 'includeYoutube' as const,
+                label: 'YouTube suggestions',
+                checked: watchedIncludeYoutube,
+              },
               { field: 'includeCta' as const, label: 'Call-to-action', checked: watchedIncludeCta },
-              { field: 'includeEmojis' as const, label: 'Allow emojis', checked: watchedIncludeEmojis },
-              { field: 'includeInfographics' as const, label: 'Infographic hints', checked: watchedIncludeInfographics },
+              {
+                field: 'includeEmojis' as const,
+                label: 'Allow emojis',
+                checked: watchedIncludeEmojis,
+              },
+              {
+                field: 'includeInfographics' as const,
+                label: 'Infographic hints',
+                checked: watchedIncludeInfographics,
+              },
             ].map(({ field, label, checked }) => (
               <label
                 key={field}
@@ -287,8 +299,7 @@ export function GenerationSettingsStep({
         {/* Global Instructions */}
         <div className="space-y-2">
           <label className="text-sm font-medium text-white">
-            Global Instructions{' '}
-            <span className="text-xs text-muted font-normal">(optional)</span>
+            Global Instructions <span className="text-xs text-muted font-normal">(optional)</span>
           </label>
           <textarea
             {...register('globalInstructions')}

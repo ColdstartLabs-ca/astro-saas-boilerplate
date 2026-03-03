@@ -261,16 +261,7 @@ describe('NewCampaignModal', () => {
     expect(textarea).toBeInTheDocument();
   });
 
-  it('should disable submit when insufficient credits and schedule is off', async () => {
-    vi.mocked(userStoreModule).useUserStore = () => ({
-      user: {
-        profile: {
-          subscription_credits_balance: 2,
-          purchased_credits_balance: 0, // Total 2, less than keyword count (5)
-        },
-      },
-    });
-
+  it('should render step 3 schedule configuration with frequency options', async () => {
     render(
       <NewCampaignModal
         isOpen={true}
@@ -292,7 +283,7 @@ describe('NewCampaignModal', () => {
     fireEvent.click(nextButton);
 
     await waitFor(() => {
-      expect(screen.getByText('Insufficient Credits')).toBeInTheDocument();
+      expect(screen.getByText('Step 2 of 3')).toBeInTheDocument();
     });
 
     // Navigate to step 3
@@ -303,16 +294,11 @@ describe('NewCampaignModal', () => {
       expect(screen.getByText('Step 3 of 3')).toBeInTheDocument();
     });
 
-    // Disable the schedule toggle to test immediate mode with insufficient credits
-    // In immediate mode, the button should be disabled when credits are insufficient.
-    // The schedule toggle disables the schedule, revealing "Create Campaign" button.
-    const scheduleToggle = screen.getByRole('checkbox');
-    fireEvent.click(scheduleToggle);
-
-    await waitFor(() => {
-      const createButton = screen.getByRole('button', { name: /Create Campaign/i });
-      expect(createButton).toBeDisabled();
-    });
+    // Step 3 shows schedule configuration — no schedule toggle (always-on schedule)
+    expect(screen.getByText('Schedule Configuration')).toBeInTheDocument();
+    expect(screen.getByText('Generation Frequency')).toBeInTheDocument();
+    // Create Campaign button is present (always schedule-based now)
+    expect(screen.getByRole('button', { name: /Create Campaign/i })).toBeInTheDocument();
   });
 
   it('should call createCampaign on submit', async () => {
@@ -351,9 +337,9 @@ describe('NewCampaignModal', () => {
       expect(screen.getByText('Step 3 of 3')).toBeInTheDocument();
     });
 
-    // Submit — scheduleEnabled is true by default, so button says "Start Schedule"
-    const startScheduleButton = screen.getByRole('button', { name: /Start Schedule/i });
-    fireEvent.click(startScheduleButton);
+    // Submit — all campaigns are schedule-based, button says "Create Campaign"
+    const createCampaignButton = screen.getByRole('button', { name: /Create Campaign/i });
+    fireEvent.click(createCampaignButton);
 
     await waitFor(() => {
       expect(mockOnSubmit).toHaveBeenCalledWith(

@@ -1,5 +1,6 @@
 /**
  * Validation schema for NewCampaignModal form
+ * All campaigns are schedule-only — scheduleFrequency is required.
  */
 import { z } from 'zod';
 
@@ -13,8 +14,7 @@ export const campaignSchema = z.object({
   tone: z.enum(['professional', 'casual', 'witty', 'academic']).optional(),
   targetWordCount: z.number().int().min(800).max(3000).optional(),
   imagePreset: z.string().optional(),
-  // Schedule fields
-  scheduleEnabled: z.boolean().optional(),
+  // Schedule fields (required — all campaigns are schedule-only)
   scheduleFrequency: z
     .enum([
       '3x_daily',
@@ -26,10 +26,10 @@ export const campaignSchema = z.object({
       'weekly',
       'every_2_weeks',
     ])
-    .optional(),
-  scheduleBatchSize: z.number().int().min(1).max(50).optional(),
-  scheduleHour: z.number().int().min(0).max(23).optional(),
-  scheduleTimezone: z.string().optional(),
+    .default('daily'),
+  scheduleBatchSize: z.number().int().min(1).max(50).default(1),
+  scheduleHour: z.number().int().min(0).max(23).default(9),
+  scheduleTimezone: z.string().default('UTC'),
   // Content style fields (outrank feature parity)
   // Use z.preprocess to convert empty string (HTML select default) to undefined before enum check
   articleStyle: z.preprocess(

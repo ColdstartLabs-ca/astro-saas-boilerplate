@@ -10,6 +10,7 @@
 **Problem:** 8 article style preference fields exist in the DB schema and TypeScript types but are completely ignored by the article generation pipeline. Users can set these during onboarding but they have zero effect on generated articles.
 
 **Files Analyzed:**
+
 - `shared/types/article.types.ts` — `IGenerateArticleInput` (missing outrank fields)
 - `shared/types/campaign.types.ts` — `ICampaign` (has all outrank fields)
 - `shared/types/project.types.ts` — `IContentPreferences` (project-level defaults)
@@ -23,6 +24,7 @@
 - `client/components/onboarding/steps/ContentPreferencesSection.tsx` — has UI for project-level prefs
 
 **Current Behavior:**
+
 - Only `tone`, `target_word_count`, `ai_model`, `image_preset` flow end-to-end
 - `article_style`, `global_instructions`, `internal_links_count`, `include_youtube`, `include_cta`, `include_emojis`, `include_infographics`, `image_style` are stored but never read at generation time
 - Project `content_preferences` are never inherited by campaigns
@@ -33,6 +35,7 @@
 ## 2. Solution
 
 **Approach:**
+
 1. Extend `IGenerateArticleInput` with all outrank fields as an `IArticleStylePreferences` interface
 2. Update all 5 generation entry points to read outrank fields from the campaign and pass them through
 3. Update prompt templates to incorporate style preferences into the system prompts
@@ -72,6 +75,7 @@ flowchart LR
 ```
 
 **Key Decisions:**
+
 - Style preferences are a flat interface (`IArticleStylePreferences`) embedded inside `IGenerateArticleInput` — no nested object
 - Project-level defaults are applied at campaign creation time (server-side), not at generation time — campaigns are self-contained after creation
 - Internal linking uses a simple query: fetch up to N published articles from the same project, pass to prompt as a list
@@ -117,6 +121,7 @@ sequenceDiagram
 **User-visible outcome:** No visible change — foundational types for all subsequent phases.
 
 **Files (3):**
+
 - `shared/types/article.types.ts` — Add `IArticleStylePreferences` interface, extend `IGenerateArticleInput`
 - `shared/types/campaign.types.ts` — Add helper type `CampaignOutrankFields` (pick type for clean extraction)
 - `shared/types/project.types.ts` — No changes needed (already correct)
@@ -140,6 +145,7 @@ sequenceDiagram
 - [ ] Add `internalLinks?: Array<{ title: string; url: string }>` to `IGenerateArticleInput` (for passing fetched links at generation time)
 
 **Verification Plan:**
+
 1. **Unit:** `yarn verify` passes (type-check only, no runtime changes)
 
 ---
@@ -149,6 +155,7 @@ sequenceDiagram
 **User-visible outcome:** Prompts now incorporate all style preferences when provided. No functional change yet (callers don't pass them).
 
 **Files (2):**
+
 - `server/services/prompts/article-prompts.ts` — Update `getOutlinePrompt`, `getArticlePrompt`, `getArticleRetryPrompt`, `getArticleQARetryPrompt` to accept and use `IArticleStylePreferences` + internal links
 - `shared/constants/writing-guidelines.ts` — No changes (static humanizer rules stay as-is)
 
@@ -171,6 +178,7 @@ sequenceDiagram
 - [ ] Keep `getQAFixPrompt` unchanged (it edits existing content, not generating from scratch)
 
 **Verification Plan:**
+
 1. **Unit Test:** `tests/unit/article-prompts.unit.spec.ts`
    - `should include article style instruction when articleStyle is provided`
    - `should include global instructions section when globalInstructions is provided`
@@ -188,6 +196,7 @@ sequenceDiagram
 **User-visible outcome:** The generation service reads style prefs from input and passes them to prompts. Internal linking fetches published articles.
 
 **Files (1):**
+
 - `server/services/article-generation.service.ts` — Update `generateOutline` and `generateFullArticle` to pass `stylePreferences` and `internalLinks` to prompt functions. Add `fetchInternalLinks` private method.
 
 **Implementation:**
@@ -208,6 +217,7 @@ sequenceDiagram
 - [ ] Update the private `generateOutline()` and `generateFullArticle()` method signatures to accept new params and forward to prompt functions
 
 **Verification Plan:**
+
 1. **Unit Test:** `tests/unit/article-generation-style.unit.spec.ts`
    - `should pass style preferences to outline prompt`
    - `should pass style preferences and internal links to article prompt`
@@ -222,6 +232,7 @@ sequenceDiagram
 **User-visible outcome:** All 5 generation entry points now read outrank fields from the campaign and pass them to the generation service.
 
 **Files (4):**
+
 - `src/pages/api/campaigns/[campaignId]/start.ts` — Read outrank fields from campaign, pass as `stylePreferences`
 - `src/pages/api/articles/[articleId]/regenerate.ts` — Read outrank fields from campaign join, pass as `stylePreferences`
 - `src/pages/api/articles/[articleId]/generate-now.ts` — Pass style prefs from campaign settings
@@ -230,6 +241,7 @@ sequenceDiagram
 **Implementation:**
 
 - [ ] **`start.ts` (lines 127-135):** After reading `campaign` object (which already includes all columns via `campaignService.getDetail`), build `stylePreferences` from campaign fields:
+
   ```typescript
   const stylePreferences: IArticleStylePreferences = {
     articleStyle: campaign.article_style ?? undefined,
@@ -242,14 +254,17 @@ sequenceDiagram
     imageStyle: campaign.image_style ?? undefined,
   };
   ```
+
   Pass `stylePreferences` in the `generateArticle` call.
 
 - [ ] **`regenerate.ts` (lines 36-46):** Expand the `campaigns` select to include outrank fields:
+
   ```sql
   campaigns (id, project_id, ai_model, tone, target_word_count, image_preset,
     article_style, global_instructions, internal_links_count,
     include_youtube, include_cta, include_emojis, include_infographics, image_style)
   ```
+
   Build `stylePreferences` from campaign, include in `generateInput`.
 
 - [ ] **`generate-now.ts` (lines 35-44):** The `plannedArticleGenerationService.promoteArticle` returns campaign settings. Extend `IResolvedGenerationSettings` and `fetchCampaignGenerationSettings` to include outrank fields and return them. Pass to `generateArticle`.
@@ -257,6 +272,7 @@ sequenceDiagram
 - [ ] **`planned-article-generation.service.ts` (lines 269-283):** Update `ICampaignGenerationSettings` interface and `fetchCampaignGenerationSettings` query to select all outrank fields. Update `resolveGenerationSettings` to include style prefs. Update `generateArticleForPlannedItem` to pass `stylePreferences`.
 
 **Verification Plan:**
+
 1. **API Test:** `tests/api/article-style-preferences.api.spec.ts`
    - `should pass article style from campaign to generation service on bulk start`
    - `should pass global instructions on regenerate`
@@ -270,6 +286,7 @@ sequenceDiagram
 **User-visible outcome:** When creating a campaign, outrank fields are inherited from project `content_preferences` if not explicitly set by the user.
 
 **Files (2):**
+
 - `server/services/campaign-lifecycle.service.ts` — In `createCampaign`, fetch project content_preferences and merge as defaults
 - `shared/validation/campaign.schema.ts` — Ensure outrank fields are accepted in create schema (should already be, verify)
 
@@ -294,6 +311,7 @@ sequenceDiagram
   - Include these in the campaign INSERT statement
 
 **Verification Plan:**
+
 1. **API Test:** `tests/api/campaign-style-defaults.api.spec.ts`
    - `should inherit articleStyle from project content_preferences when not explicitly set`
    - `should use campaign-level value when explicitly set (override project default)`
@@ -307,6 +325,7 @@ sequenceDiagram
 **User-visible outcome:** The campaign creation modal shows style preference fields (article style, internal links, global instructions, content toggles), pre-filled from project defaults.
 
 **Files (5):**
+
 - `client/components/dashboard/views/new-campaign-modal/validationSchema.ts` — Add outrank fields to schema
 - `client/components/dashboard/views/new-campaign-modal/constants.ts` — Add article style and content toggle constants (reuse from ContentPreferencesSection where possible)
 - `client/components/dashboard/views/new-campaign-modal/GenerationSettingsStep.tsx` — Add content style fields below existing tone/wordCount section
@@ -316,6 +335,7 @@ sequenceDiagram
 **Implementation:**
 
 - [ ] **`validationSchema.ts`:** Add fields to `campaignSchema`:
+
   ```typescript
   articleStyle: z.enum(['informative', 'how-to', 'listicle', 'opinion', 'tutorial']).optional(),
   internalLinksCount: z.number().int().min(0).max(20).optional(),
@@ -337,6 +357,7 @@ sequenceDiagram
   - Image Style dropdown (only show if imagePreset is not null)
 
 - [ ] **`NewCampaignModal.tsx` `handleLaunch`:** Include outrank fields in the `onSubmit` payload:
+
   ```typescript
   articleStyle: data.articleStyle,
   internalLinksCount: data.internalLinksCount,
@@ -351,6 +372,7 @@ sequenceDiagram
 - [ ] Add default values for new fields in the `useForm` defaultValues (should match project defaults or sensible defaults: articleStyle='informative', internalLinksCount=2, others=false)
 
 **Verification Plan:**
+
 1. **E2E Test:** `tests/e2e/campaign-style-preferences.e2e.spec.ts`
    - `should display content style fields in step 2 of campaign creation`
    - `should submit campaign with style preferences`

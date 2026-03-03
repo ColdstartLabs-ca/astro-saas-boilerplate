@@ -718,8 +718,7 @@
     "emptyTitle": "Nenhuma campanha ainda",
     "createFirst": "Criar Sua Primeira Campanha",
     "status": {
-      "draft": "Rascunho",
-      "active": "Ativa",
+      "scheduled": "Agendada",
       "paused": "Pausada",
       "completed": "Concluída",
       "resume": "Retomar"

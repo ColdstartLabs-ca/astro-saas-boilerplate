@@ -631,10 +631,32 @@ export class ArticleGenerationService {
 
     // Select prompt: QA-guided retry > quality-gate retry > standard
     const systemPrompt = qaFindings
-      ? getArticleQARetryPrompt(outline, tone, targetWordCount, imageCount, qaFindings, stylePreferences, internalLinks)
+      ? getArticleQARetryPrompt(
+          outline,
+          tone,
+          targetWordCount,
+          imageCount,
+          qaFindings,
+          stylePreferences,
+          internalLinks
+        )
       : isRetry
-        ? getArticleRetryPrompt(outline, tone, targetWordCount, imageCount, stylePreferences, internalLinks)
-        : getArticlePrompt(outline, tone, targetWordCount, imageCount, stylePreferences, internalLinks);
+        ? getArticleRetryPrompt(
+            outline,
+            tone,
+            targetWordCount,
+            imageCount,
+            stylePreferences,
+            internalLinks
+          )
+        : getArticlePrompt(
+            outline,
+            tone,
+            targetWordCount,
+            imageCount,
+            stylePreferences,
+            internalLinks
+          );
 
     const attemptLabel = qaFindings ? 'qa-retry' : isRetry ? 'quality-retry' : 'initial';
     console.log(
@@ -1071,6 +1093,8 @@ export class ArticleGenerationService {
       status: r.status === 'completed' ? 'completed' : 'failed',
       error: r.error || null,
       generation_time_ms: r.generationTimeMs || null,
+      prompt_embedding: r.promptEmbedding ?? null,
+      reused_from_image_id: r.reusedFromImageId ?? null,
     }));
 
     const { error } = await this.supabase.from('article_images').insert(records);

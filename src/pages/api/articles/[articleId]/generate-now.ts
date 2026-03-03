@@ -6,7 +6,13 @@
  * Only works for articles in 'planned' status.
  */
 
-import { withAuth, jsonResponse, errorResponse, handleApiError, fireAndForget } from '@pages/api/_utils';
+import {
+  withAuth,
+  jsonResponse,
+  errorResponse,
+  handleApiError,
+  fireAndForget,
+} from '@pages/api/_utils';
 import { plannedArticleGenerationService } from '@server/services/planned-article-generation.service';
 import { articleGenerationService } from '@server/services/article-generation.service';
 
@@ -27,10 +33,7 @@ export const POST = withAuth(async (userId, { params, locals }) => {
 
   try {
     const { creditsDeducted, article, model, imagePreset, stylePreferences } =
-      await plannedArticleGenerationService.promoteArticle(
-        articleId,
-        userId
-      );
+      await plannedArticleGenerationService.promoteArticle(articleId, userId);
 
     fireAndForget(
       locals,

@@ -214,11 +214,11 @@ sequenceDiagram
 
 **Tests Required:**
 
-| Test File | Test Name | Assertion |
-|-----------|-----------|-----------|
-| `tests/unit/services/campaign-statuses.unit.spec.ts` | `should create campaign with status 'scheduled'` | `expect(campaign.status).toBe('scheduled')` |
-| `tests/unit/services/campaign-statuses.unit.spec.ts` | `should set next_run_at on creation` | `expect(campaign.next_run_at).toBeDefined()` |
-| `tests/unit/services/campaign-statuses.unit.spec.ts` | `should reject 'draft' as invalid status` | Schema validation fails for `status: 'draft'` |
+| Test File                                            | Test Name                                                       | Assertion                                        |
+| ---------------------------------------------------- | --------------------------------------------------------------- | ------------------------------------------------ |
+| `tests/unit/services/campaign-statuses.unit.spec.ts` | `should create campaign with status 'scheduled'`                | `expect(campaign.status).toBe('scheduled')`      |
+| `tests/unit/services/campaign-statuses.unit.spec.ts` | `should set next_run_at on creation`                            | `expect(campaign.next_run_at).toBeDefined()`     |
+| `tests/unit/services/campaign-statuses.unit.spec.ts` | `should reject 'draft' as invalid status`                       | Schema validation fails for `status: 'draft'`    |
 | `tests/unit/services/campaign-statuses.unit.spec.ts` | `should lock campaign with generation_run_id during processing` | `expect(claimed.generation_run_id).toBeTruthy()` |
 
 **Verification Plan:**
@@ -253,11 +253,11 @@ sequenceDiagram
 
 **Tests Required:**
 
-| Test File | Test Name | Assertion |
-|-----------|-----------|-----------|
-| `tests/api/campaign-autopilot.api.spec.ts` | `should return 404 for POST /api/campaigns/:id/start` | `expect(response.status).toBe(404)` |
-| `tests/api/campaign-autopilot.api.spec.ts` | `should return 404 for POST /api/campaigns/:id/start-schedule` | `expect(response.status).toBe(404)` |
-| `tests/api/campaign-autopilot.api.spec.ts` | `should auto-schedule campaign on creation` | Campaign created with `status='scheduled'` and `next_run_at` set |
+| Test File                                  | Test Name                                                      | Assertion                                                        |
+| ------------------------------------------ | -------------------------------------------------------------- | ---------------------------------------------------------------- |
+| `tests/api/campaign-autopilot.api.spec.ts` | `should return 404 for POST /api/campaigns/:id/start`          | `expect(response.status).toBe(404)`                              |
+| `tests/api/campaign-autopilot.api.spec.ts` | `should return 404 for POST /api/campaigns/:id/start-schedule` | `expect(response.status).toBe(404)`                              |
+| `tests/api/campaign-autopilot.api.spec.ts` | `should auto-schedule campaign on creation`                    | Campaign created with `status='scheduled'` and `next_run_at` set |
 
 **Verification Plan:**
 
@@ -303,11 +303,11 @@ sequenceDiagram
 
 **Tests Required:**
 
-| Test File | Test Name | Assertion |
-|-----------|-----------|-----------|
-| `tests/e2e/campaigns.e2e.spec.ts` | `should show schedule config without toggle` | No checkbox for "Schedule Generation", frequency selector always visible |
-| `tests/e2e/campaigns.e2e.spec.ts` | `should show pause button for scheduled campaign` | Pause button visible when status is 'scheduled' |
-| `tests/e2e/campaigns.e2e.spec.ts` | `should not show Start Generation button` | No "Start Generation" button in detail view |
+| Test File                         | Test Name                                         | Assertion                                                                |
+| --------------------------------- | ------------------------------------------------- | ------------------------------------------------------------------------ |
+| `tests/e2e/campaigns.e2e.spec.ts` | `should show schedule config without toggle`      | No checkbox for "Schedule Generation", frequency selector always visible |
+| `tests/e2e/campaigns.e2e.spec.ts` | `should show pause button for scheduled campaign` | Pause button visible when status is 'scheduled'                          |
+| `tests/e2e/campaigns.e2e.spec.ts` | `should not show Start Generation button`         | No "Start Generation" button in detail view                              |
 
 **Verification Plan:**
 
@@ -344,10 +344,10 @@ sequenceDiagram
 
 **Tests Required:**
 
-| Test File | Test Name | Assertion |
-|-----------|-----------|-----------|
-| `tests/unit/statusStyles.unit.spec.ts` | `should return green styles for 'scheduled' status` | `expect(getCampaignStatusStyles('scheduled')).toContain('green')` |
-| `tests/unit/statusStyles.unit.spec.ts` | `should return fallback for 'active' status` | `expect(getCampaignStatusStyles('active')).toContain('bg-surface')` |
+| Test File                              | Test Name                                           | Assertion                                                           |
+| -------------------------------------- | --------------------------------------------------- | ------------------------------------------------------------------- |
+| `tests/unit/statusStyles.unit.spec.ts` | `should return green styles for 'scheduled' status` | `expect(getCampaignStatusStyles('scheduled')).toContain('green')`   |
+| `tests/unit/statusStyles.unit.spec.ts` | `should return fallback for 'active' status`        | `expect(getCampaignStatusStyles('active')).toContain('bg-surface')` |
 
 **Verification Plan:**
 
@@ -394,11 +394,13 @@ All existing campaign tests must pass with updated assertions.
 
 ```markdown
 **How will this feature be reached?**
+
 - [x] Entry point identified: Campaign creation (POST /api/campaigns) → auto-activate
 - [x] Caller file identified: NewCampaignModal.tsx → campaign creation API → CampaignLifecycleService.create()
 - [x] Registration/wiring needed: No new routes — existing creation endpoint gains auto-scheduling behavior
 
 **Is this user-facing?**
+
 - [x] YES → UI components modified:
   - NewCampaignModal: schedule always visible, no toggle
   - CampaignDetailHeader: simplified action buttons
@@ -406,6 +408,7 @@ All existing campaign tests must pass with updated assertions.
   - CampaignsView: updated status badge colors
 
 **Full user flow:**
+
 1. User does: Creates campaign with name, keywords, schedule frequency
 2. Triggers: POST /api/campaigns → CampaignLifecycleService.create()
 3. Campaign created with status='scheduled', next_run_at calculated → cron picks it up
@@ -438,12 +441,14 @@ All existing campaign tests must pass with updated assertions.
 ## 7. Future Work (Not in Scope)
 
 ### Low-Keyword Notification (Phase 2 — separate PRD)
+
 - When pending keyword count drops below 1 week of content, notify user
 - Email: "Your campaign {name} is running low on keywords (X remaining)"
 - Dashboard badge/notification
 - Cron check during `processScheduledBatch()`: if remaining keywords < frequency × batch_size × 7 days
 
 ### AI Keyword Replenishment (Phase 3 — separate PRD)
+
 - Campaign setting: `replenish_mode: 'manual' | 'ai_suggest' | 'auto_expand'`
 - `ai_suggest`: Generate keyword suggestions via OpenRouter, surface in dashboard for user approval
 - `auto_expand`: Generate and queue keywords automatically (with notification)

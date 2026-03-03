@@ -371,6 +371,10 @@ export function OnboardingStepKeywords({ onComplete }: IOnboardingStepKeywordsPr
         name: 'Onboarding Campaign',
         projectId,
         keywords: parsedKeywords,
+        scheduleFrequency: 'daily',
+        scheduleBatchSize: 3,
+        scheduleHour: 9,
+        scheduleTimezone: 'UTC',
       });
 
       setCampaignId(campaign.id);

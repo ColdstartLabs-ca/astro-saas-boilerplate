@@ -187,10 +187,12 @@ describe('useCampaigns', () => {
   });
 
   it('should fetch campaigns for a project', async () => {
-    mockFetch.mockResolvedValueOnce(createMockResponse({
-      ok: true,
-      json: async () => ({ data: { campaigns: mockCampaigns } }),
-    }));
+    mockFetch.mockResolvedValueOnce(
+      createMockResponse({
+        ok: true,
+        json: async () => ({ data: { campaigns: mockCampaigns } }),
+      })
+    );
 
     const { result } = renderHook(() => useCampaigns('project-1'), {
       wrapper: createWrapper(),
@@ -213,18 +215,24 @@ describe('useCampaigns', () => {
   it('should create a campaign and invalidate query', async () => {
     const newCampaign = mockCampaigns[0];
     mockFetch
-      .mockResolvedValueOnce(createMockResponse({
-        ok: true,
-        json: async () => ({ data: { campaigns: mockCampaigns } }),
-      }))
-      .mockResolvedValueOnce(createMockResponse({
-        ok: true,
-        json: async () => ({ data: { campaign: newCampaign } }),
-      }))
-      .mockResolvedValueOnce(createMockResponse({
-        ok: true,
-        json: async () => ({ data: { campaigns: [...mockCampaigns, newCampaign] } }),
-      }));
+      .mockResolvedValueOnce(
+        createMockResponse({
+          ok: true,
+          json: async () => ({ data: { campaigns: mockCampaigns } }),
+        })
+      )
+      .mockResolvedValueOnce(
+        createMockResponse({
+          ok: true,
+          json: async () => ({ data: { campaign: newCampaign } }),
+        })
+      )
+      .mockResolvedValueOnce(
+        createMockResponse({
+          ok: true,
+          json: async () => ({ data: { campaigns: [...mockCampaigns, newCampaign] } }),
+        })
+      );
 
     const { result } = renderHook(() => useCampaigns('project-1'), {
       wrapper: createWrapper(),
@@ -243,18 +251,24 @@ describe('useCampaigns', () => {
 
   it('should delete a campaign and invalidate query', async () => {
     mockFetch
-      .mockResolvedValueOnce(createMockResponse({
-        ok: true,
-        json: async () => ({ data: { campaigns: mockCampaigns } }),
-      }))
-      .mockResolvedValueOnce(createMockResponse({
-        ok: true,
-        json: async () => ({ success: true }),
-      }))
-      .mockResolvedValueOnce(createMockResponse({
-        ok: true,
-        json: async () => ({ data: { campaigns: [mockCampaigns[1]] } }),
-      }));
+      .mockResolvedValueOnce(
+        createMockResponse({
+          ok: true,
+          json: async () => ({ data: { campaigns: mockCampaigns } }),
+        })
+      )
+      .mockResolvedValueOnce(
+        createMockResponse({
+          ok: true,
+          json: async () => ({ success: true }),
+        })
+      )
+      .mockResolvedValueOnce(
+        createMockResponse({
+          ok: true,
+          json: async () => ({ data: { campaigns: [mockCampaigns[1]] } }),
+        })
+      );
 
     const { result } = renderHook(() => useCampaigns('project-1'), {
       wrapper: createWrapper(),
@@ -276,10 +290,12 @@ describe('useCampaigns', () => {
   });
 
   it('should handle fetch errors gracefully', async () => {
-    mockFetch.mockResolvedValueOnce(createMockResponse({
-      ok: false,
-      json: async () => ({ error: { message: 'Failed to fetch' } }),
-    }));
+    mockFetch.mockResolvedValueOnce(
+      createMockResponse({
+        ok: false,
+        json: async () => ({ error: { message: 'Failed to fetch' } }),
+      })
+    );
 
     const { result } = renderHook(() => useCampaigns('project-1'), {
       wrapper: createWrapper(),
@@ -297,26 +313,30 @@ describe('useCampaignDetail', () => {
 
   it('should fetch campaign detail with keywords and articles', async () => {
     mockFetch
-      .mockResolvedValueOnce(createMockResponse({
-        ok: true,
-        json: async () => ({
-          data: {
-            campaign: mockCampaign,
-            keywords: mockKeywords,
-            articleStats: {
-              queued: 0,
-              generating: 0,
-              draft: 1,
-              published: 0,
-              total: 1,
+      .mockResolvedValueOnce(
+        createMockResponse({
+          ok: true,
+          json: async () => ({
+            data: {
+              campaign: mockCampaign,
+              keywords: mockKeywords,
+              articleStats: {
+                queued: 0,
+                generating: 0,
+                draft: 1,
+                published: 0,
+                total: 1,
+              },
             },
-          },
-        }),
-      }))
-      .mockResolvedValueOnce(createMockResponse({
-        ok: true,
-        json: async () => ({ data: { articles: mockArticles } }),
-      }));
+          }),
+        })
+      )
+      .mockResolvedValueOnce(
+        createMockResponse({
+          ok: true,
+          json: async () => ({ data: { articles: mockArticles } }),
+        })
+      );
 
     const { result } = renderHook(() => useCampaignDetail('campaign-1'), {
       wrapper: createWrapper(),
@@ -329,91 +349,57 @@ describe('useCampaignDetail', () => {
     expect(result.current.articles).toEqual(mockArticles);
   });
 
-  it('should start campaign generation', async () => {
-    mockFetch
-      .mockResolvedValueOnce(createMockResponse({
-        ok: true,
-        json: async () => ({
-          data: {
-            campaign: mockCampaign,
-            keywords: mockKeywords,
-            articleStats: { queued: 0, generating: 0, draft: 0, published: 0, total: 0 },
-          },
-        }),
-      }))
-      .mockResolvedValueOnce(createMockResponse({
-        ok: true,
-        json: async () => ({ data: { articles: [] } }),
-      }))
-      .mockResolvedValueOnce(createMockResponse({
-        ok: true,
-        json: async () => ({ data: { queued: 5, creditsRequired: 5 } }),
-      }))
-      .mockResolvedValueOnce(createMockResponse({
-        ok: true,
-        json: async () => ({
-          data: {
-            campaign: { ...mockCampaign, status: 'active' },
-            keywords: mockKeywords.map(k => ({ ...k, status: 'queued' as const })),
-            articleStats: { queued: 0, generating: 0, draft: 0, published: 0, total: 0 },
-          },
-        }),
-      }));
-
-    const { result } = renderHook(() => useCampaignDetail('campaign-1'), {
-      wrapper: createWrapper(),
-    });
-
-    await waitFor(() => expect(result.current.isLoading).toBe(false));
-
-    const startResult = await result.current.startCampaign();
-
-    expect(startResult).toEqual({ queued: 5, creditsRequired: 5 });
-  });
-
   it('should add keywords to campaign', async () => {
     mockFetch
-      .mockResolvedValueOnce(createMockResponse({
-        ok: true,
-        json: async () => ({
-          data: {
-            campaign: mockCampaign,
-            keywords: mockKeywords,
-            articleStats: { queued: 0, generating: 0, draft: 0, published: 0, total: 0 },
-          },
-        }),
-      }))
-      .mockResolvedValueOnce(createMockResponse({
-        ok: true,
-        json: async () => ({ data: { articles: [] } }),
-      }))
-      .mockResolvedValueOnce(createMockResponse({
-        ok: true,
-        json: async () => ({ data: { added: 2, duplicates: 0 } }),
-      }))
-      .mockResolvedValueOnce(createMockResponse({
-        ok: true,
-        json: async () => ({
-          data: {
-            campaign: mockCampaign,
-            keywords: [
-              ...mockKeywords,
-              {
-                id: 'keyword-2',
-                campaign_id: 'campaign-1',
-                keyword: 'espresso machine',
-                search_volume: null,
-                difficulty: 'unknown',
-                status: 'pending',
-                priority: 0,
-                created_at: '2024-01-01T00:00:00Z',
-                updated_at: '2024-01-01T00:00:00Z',
-              },
-            ],
-            articleStats: { queued: 0, generating: 0, draft: 0, published: 0, total: 0 },
-          },
-        }),
-      }));
+      .mockResolvedValueOnce(
+        createMockResponse({
+          ok: true,
+          json: async () => ({
+            data: {
+              campaign: mockCampaign,
+              keywords: mockKeywords,
+              articleStats: { queued: 0, generating: 0, draft: 0, published: 0, total: 0 },
+            },
+          }),
+        })
+      )
+      .mockResolvedValueOnce(
+        createMockResponse({
+          ok: true,
+          json: async () => ({ data: { articles: [] } }),
+        })
+      )
+      .mockResolvedValueOnce(
+        createMockResponse({
+          ok: true,
+          json: async () => ({ data: { added: 2, duplicates: 0 } }),
+        })
+      )
+      .mockResolvedValueOnce(
+        createMockResponse({
+          ok: true,
+          json: async () => ({
+            data: {
+              campaign: mockCampaign,
+              keywords: [
+                ...mockKeywords,
+                {
+                  id: 'keyword-2',
+                  campaign_id: 'campaign-1',
+                  keyword: 'espresso machine',
+                  search_volume: null,
+                  difficulty: 'unknown',
+                  status: 'pending',
+                  priority: 0,
+                  created_at: '2024-01-01T00:00:00Z',
+                  updated_at: '2024-01-01T00:00:00Z',
+                },
+              ],
+              articleStats: { queued: 0, generating: 0, draft: 0, published: 0, total: 0 },
+            },
+          }),
+        })
+      );
 
     const { result } = renderHook(() => useCampaignDetail('campaign-1'), {
       wrapper: createWrapper(),
@@ -432,26 +418,32 @@ describe('useCampaignDetail', () => {
     vi.useFakeTimers();
 
     mockFetch
-      .mockResolvedValueOnce(createMockResponse({
-        ok: true,
-        json: async () => ({
-          data: {
-            campaign: { ...mockCampaign, status: 'active' },
-            keywords: mockKeywords,
-            articleStats: { queued: 0, generating: 1, draft: 0, published: 0, total: 1 },
-          },
-        }),
-      }))
-      .mockResolvedValueOnce(createMockResponse({
-        ok: true,
-        json: async () => ({ data: { articles: mockArticles } }),
-      }))
-      .mockResolvedValueOnce(createMockResponse({
-        ok: true,
-        json: async () => ({
-          data: { articles: [...mockArticles, { ...mockArticles[0], id: 'article-2' }] },
-        }),
-      }));
+      .mockResolvedValueOnce(
+        createMockResponse({
+          ok: true,
+          json: async () => ({
+            data: {
+              campaign: { ...mockCampaign, status: 'active' },
+              keywords: mockKeywords,
+              articleStats: { queued: 0, generating: 1, draft: 0, published: 0, total: 1 },
+            },
+          }),
+        })
+      )
+      .mockResolvedValueOnce(
+        createMockResponse({
+          ok: true,
+          json: async () => ({ data: { articles: mockArticles } }),
+        })
+      )
+      .mockResolvedValueOnce(
+        createMockResponse({
+          ok: true,
+          json: async () => ({
+            data: { articles: [...mockArticles, { ...mockArticles[0], id: 'article-2' }] },
+          }),
+        })
+      );
 
     const { result } = renderHook(() => useCampaignDetail('campaign-1'), {
       wrapper: createWrapper(),

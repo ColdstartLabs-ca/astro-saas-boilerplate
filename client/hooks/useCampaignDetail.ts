@@ -4,8 +4,8 @@
  *
  * Features:
  * - Fetch campaign detail with keywords and article stats
- * - Polling for active campaigns
- * - Mutations for keywords and generation control
+ * - Polling for scheduled campaigns
+ * - Mutations for keywords and schedule control
  */
 
 'use client';
@@ -64,10 +64,7 @@ async function fetchCampaignArticles(campaignId: string): Promise<IArticleWithCa
 /**
  * Add keywords to campaign
  */
-async function addKeywords(
-  campaignId: string,
-  keywords: string[]
-): Promise<IAddKeywordsResponse> {
+async function addKeywords(campaignId: string, keywords: string[]): Promise<IAddKeywordsResponse> {
   const data = await apiFetch<{
     data: IAddKeywordsResponse;
   }>(`/api/campaigns/${campaignId}/keywords`, {
@@ -81,10 +78,9 @@ async function addKeywords(
  * Remove a keyword from campaign
  */
 async function removeKeyword(campaignId: string, keywordId: string): Promise<{ success: boolean }> {
-  await apiFetch<{ success: boolean }>(
-    `/api/campaigns/${campaignId}/keywords/${keywordId}`,
-    { method: 'DELETE' }
-  );
+  await apiFetch<{ success: boolean }>(`/api/campaigns/${campaignId}/keywords/${keywordId}`, {
+    method: 'DELETE',
+  });
   return { success: true };
 }
 
@@ -112,41 +108,12 @@ async function deliverArticle(articleId: string): Promise<void> {
 }
 
 /**
- * Start campaign generation
- */
-async function startCampaign(campaignId: string): Promise<{
-  queued: number;
-  creditsRequired: number;
-}> {
-  const data = await apiFetch<{ data: { queued: number; creditsRequired: number } }>(
-    `/api/campaigns/${campaignId}/start`,
-    { method: 'POST' }
-  );
-  return data.data;
-}
-
-/**
- * Start scheduled campaign
- */
-async function startScheduleApi(campaignId: string): Promise<{
-  nextRunAt: string;
-  pendingKeywords: number;
-}> {
-  const data = await apiFetch<{ data: { nextRunAt: string; pendingKeywords: number } }>(
-    `/api/campaigns/${campaignId}/start-schedule`,
-    { method: 'POST' }
-  );
-  return data.data;
-}
-
-/**
  * Pause scheduled campaign
  */
 async function pauseScheduleApi(campaignId: string): Promise<void> {
-  await apiFetch<{ data: { paused: boolean } }>(
-    `/api/campaigns/${campaignId}/pause-schedule`,
-    { method: 'POST' }
-  );
+  await apiFetch<{ data: { paused: boolean } }>(`/api/campaigns/${campaignId}/pause-schedule`, {
+    method: 'POST',
+  });
 }
 
 /**
@@ -181,8 +148,6 @@ interface IUseCampaignDetailReturn {
   removeKeyword: (keywordId: string) => Promise<void>;
   deliverArticle: (articleId: string) => Promise<void>;
   updateCampaign: (input: IUpdateCampaignInput) => Promise<ICampaign>;
-  startCampaign: () => Promise<{ queued: number; creditsRequired: number }>;
-  startSchedule: () => Promise<void>;
   pauseSchedule: () => Promise<void>;
   resumeSchedule: () => Promise<void>;
   refetch: () => void;
@@ -193,16 +158,15 @@ export function useCampaignDetail(campaignId: string | null | undefined): IUseCa
   const t = useMemo(() => getTranslations('dashboard'), []);
 
   // BUG M4: Campaign detail query needs polling so that keyword/article counts update
-  // while the campaign is actively generating (active) or scheduled.
+  // while the campaign is scheduled (waiting for next cron run).
   // We read the cached status without creating a circular dependency by using queryClient.
   const cachedDetail = queryClient.getQueryData<{ campaign: { status: string } } | null>([
     'campaign-detail',
     campaignId,
   ]);
   const cachedStatus = cachedDetail?.campaign?.status ?? null;
-  // Poll every 5s when active (articles being generated), every 30s when scheduled (waiting for next run)
-  const detailRefetchInterval: number | false =
-    cachedStatus === 'active' ? 5000 : cachedStatus === 'scheduled' ? 30000 : false;
+  // Poll every 30s when scheduled (waiting for next run), no polling otherwise
+  const detailRefetchInterval: number | false = cachedStatus === 'scheduled' ? 30000 : false;
 
   // Fetch campaign detail query
   const {
@@ -224,24 +188,18 @@ export function useCampaignDetail(campaignId: string | null | undefined): IUseCa
   const creditStats = detailData?.creditStats ?? null;
 
   // Fetch articles list (one-time + re-fetched whenever articles complete via poller)
-  const campaignStatus = campaign?.status ?? null;
   const { data: articlesList = [] } = useQuery({
     queryKey: ['campaign-articles', campaignId],
     queryFn: () => (campaignId ? fetchCampaignArticles(campaignId) : Promise.resolve([])),
     enabled: !!campaignId,
     staleTime: 1000 * 5,
-    // Still poll the list when campaign is active so new articles kicked off by the
-    // scheduler also appear. The article poller handles real-time in-progress updates.
-    refetchInterval: campaignStatus === 'active' ? 5000 : false,
     refetchIntervalInBackground: true,
   });
 
   // Poll each in-progress article individually using the shared ['article', id] cache.
   // When any article completes, invalidate both the list and the campaign detail so
   // stats (generating/draft/published counts) refresh automatically.
-  const inProgressIds = articlesList
-    .filter(a => isArticleInProgress(a.status))
-    .map(a => a.id);
+  const inProgressIds = articlesList.filter(a => isArticleInProgress(a.status)).map(a => a.id);
 
   const { articles: polledArticles } = useArticlePoller(inProgressIds, {
     pollInterval: 3000,
@@ -309,16 +267,6 @@ export function useCampaignDetail(campaignId: string | null | undefined): IUseCa
     },
   });
 
-  // Start campaign mutation
-  const startCampaignMutation = useMutation({
-    mutationFn: () =>
-      campaignId ? startCampaign(campaignId) : Promise.reject(new Error('No campaign ID')),
-    onSuccess: _data => {
-      queryClient.invalidateQueries({ queryKey: ['campaign-detail', campaignId] });
-      queryClient.invalidateQueries({ queryKey: ['campaign-articles', campaignId] });
-    },
-  });
-
   // Wrapped mutation functions with error handling
   const handleAddKeywords = useMutationWithToast(addKeywordsMutation, {
     successMessage: (data: IAddKeywordsResponse) =>
@@ -349,24 +297,6 @@ export function useCampaignDetail(campaignId: string | null | undefined): IUseCa
     loggerContext: 'Failed to update campaign',
   });
 
-  const handleStartCampaign = useMutationWithToast(startCampaignMutation, {
-    successMessage: (data: { queued: number; creditsRequired: number }) =>
-      t('campaigns.generation.started', { count: data.queued }),
-    errorMessage: (error: Error) =>
-      error instanceof Error ? error.message : t('campaigns.errors.startFailed'),
-    loggerContext: 'Failed to start campaign',
-  });
-
-  // Start schedule mutation
-  const startScheduleMutation = useMutation({
-    mutationFn: () =>
-      campaignId ? startScheduleApi(campaignId) : Promise.reject(new Error('No campaign ID')),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['campaign-detail', campaignId] });
-      queryClient.invalidateQueries({ queryKey: ['campaigns'] });
-    },
-  });
-
   // Pause schedule mutation
   const pauseScheduleMutation = useMutation({
     mutationFn: () =>
@@ -387,13 +317,6 @@ export function useCampaignDetail(campaignId: string | null | undefined): IUseCa
     },
   });
 
-  const startScheduleWithToast = useMutationWithToast(startScheduleMutation, {
-    successMessage: t('campaigns.schedule.started'),
-    errorMessage: (error: Error) =>
-      error instanceof Error ? error.message : t('campaigns.errors.startFailed'),
-    loggerContext: 'Failed to start schedule',
-  });
-
   const pauseScheduleWithToast = useMutationWithToast(pauseScheduleMutation, {
     successMessage: t('campaigns.schedule.paused'),
     errorMessage: (error: Error) =>
@@ -408,26 +331,13 @@ export function useCampaignDetail(campaignId: string | null | undefined): IUseCa
     loggerContext: 'Failed to resume schedule',
   });
 
-  const handleStartSchedule = useCallback(
-    async (): Promise<void> => {
-      await startScheduleWithToast(undefined);
-    },
-    [startScheduleWithToast]
-  );
+  const handlePauseSchedule = useCallback(async (): Promise<void> => {
+    await pauseScheduleWithToast(undefined);
+  }, [pauseScheduleWithToast]);
 
-  const handlePauseSchedule = useCallback(
-    async (): Promise<void> => {
-      await pauseScheduleWithToast(undefined);
-    },
-    [pauseScheduleWithToast]
-  );
-
-  const handleResumeSchedule = useCallback(
-    async (): Promise<void> => {
-      await resumeScheduleWithToast(undefined);
-    },
-    [resumeScheduleWithToast]
-  );
+  const handleResumeSchedule = useCallback(async (): Promise<void> => {
+    await resumeScheduleWithToast(undefined);
+  }, [resumeScheduleWithToast]);
 
   return {
     // Data
@@ -444,8 +354,6 @@ export function useCampaignDetail(campaignId: string | null | undefined): IUseCa
     removeKeyword: handleRemoveKeyword,
     deliverArticle: handleDeliverArticle,
     updateCampaign: handleUpdateCampaign,
-    startCampaign: handleStartCampaign,
-    startSchedule: handleStartSchedule,
     pauseSchedule: handlePauseSchedule,
     resumeSchedule: handleResumeSchedule,
     refetch: () => {

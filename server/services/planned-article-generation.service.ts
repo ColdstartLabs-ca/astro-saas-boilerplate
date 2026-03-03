@@ -278,7 +278,8 @@ export class PlannedArticleGenerationService {
     campaignSettings: ICampaignGenerationSettings | null
   ): IResolvedGenerationSettings {
     const stylePreferences: IArticleStylePreferences = {
-      articleStyle: (campaignSettings?.article_style as IArticleStylePreferences['articleStyle']) ?? undefined,
+      articleStyle:
+        (campaignSettings?.article_style as IArticleStylePreferences['articleStyle']) ?? undefined,
       globalInstructions: campaignSettings?.global_instructions ?? undefined,
       internalLinksCount: campaignSettings?.internal_links_count ?? 0,
       includeYoutube: campaignSettings?.include_youtube ?? false,

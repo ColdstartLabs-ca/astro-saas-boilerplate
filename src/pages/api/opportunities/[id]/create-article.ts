@@ -92,6 +92,10 @@ export const POST = withAuthAndBody(
       name: opp.title,
       projectId: opp.project_id,
       keywords,
+      scheduleFrequency: 'daily',
+      scheduleBatchSize: 1,
+      scheduleHour: 9,
+      scheduleTimezone: 'UTC',
     });
 
     // 7. Update opportunity: status = in_progress, action details

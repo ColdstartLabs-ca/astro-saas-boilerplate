@@ -17,9 +17,13 @@ export type ScheduleFrequency =
   | 'every_2_weeks';
 
 /**
- * Campaign status enum representing the lifecycle of a campaign
+ * Campaign status enum representing the lifecycle of a campaign.
+ * Simplified to 3 states (issue #36 — Campaign Autopilot Simplification):
+ * - scheduled: campaign is active and will be processed by the cron
+ * - paused: campaign is paused by user or auto-paused (e.g. insufficient credits)
+ * - completed: all keywords have been processed
  */
-export type CampaignStatus = 'draft' | 'active' | 'paused' | 'completed' | 'scheduled';
+export type CampaignStatus = 'scheduled' | 'paused' | 'completed';
 
 /**
  * Keyword status enum representing the processing state of a keyword
@@ -136,14 +140,14 @@ export interface ICreateCampaignInput {
   targetWordCount?: number;
   /** Image generation preset key (optional, no images if not specified) */
   imagePreset?: string;
-  // Scheduling fields
-  /** How often to generate articles (optional) */
-  scheduleFrequency?: ScheduleFrequency;
-  /** Number of articles per scheduled run (optional, 1-50) */
+  // Scheduling fields (required — all campaigns are schedule-only)
+  /** How often to generate articles */
+  scheduleFrequency: ScheduleFrequency;
+  /** Number of articles per scheduled run (1-50, default 1) */
   scheduleBatchSize?: number;
-  /** IANA timezone for scheduling (optional, default UTC) */
+  /** IANA timezone for scheduling (default UTC) */
   scheduleTimezone?: string;
-  /** Preferred hour in user timezone (optional, 0-23, default 9) */
+  /** Preferred hour in user timezone (0-23, default 9) */
   scheduleHour?: number;
   // Outrank feature parity fields
   /** Article writing style */
@@ -167,13 +171,12 @@ export interface ICreateCampaignInput {
 }
 
 /**
- * Input for updating an existing campaign
+ * Input for updating an existing campaign.
+ * Status changes are not allowed via this interface — use pause-schedule/resume-schedule endpoints.
  */
 export interface IUpdateCampaignInput {
   /** Campaign name */
   name?: string;
-  /** Campaign status */
-  status?: CampaignStatus;
   /** OpenRouter model ID */
   model?: string;
   /** Writing tone */
@@ -225,14 +228,6 @@ export interface IAddKeywordsInput {
 }
 
 /**
- * Input for starting campaign bulk generation
- */
-export interface IStartCampaignInput {
-  /** Campaign ID */
-  campaignId: string;
-}
-
-/**
  * A keyword that is already covered by existing published content
  */
 export interface IKeywordCoverage {
@@ -280,16 +275,6 @@ export interface IAddKeywordsResponse {
   suggestedKeywords?: string[];
   /** Whether the cannibalization check ran (false if services unavailable) */
   cannibalizationChecked?: boolean;
-}
-
-/**
- * Response for starting campaign generation
- */
-export interface IStartCampaignResponse {
-  /** Number of keywords queued for generation */
-  queued: number;
-  /** Total credits required for generation */
-  creditsRequired: number;
 }
 
 /**
@@ -395,16 +380,6 @@ export class CampaignNotFoundError extends Error {
 }
 
 /**
- * Error thrown when attempting to start a campaign with no pending keywords
- */
-export class NoPendingKeywordsError extends Error {
-  constructor() {
-    super('Cannot start campaign: no pending keywords found.');
-    this.name = 'NoPendingKeywordsError';
-  }
-}
-
-/**
  * Error thrown for schedule-related validation failures (invalid state, missing config)
  */
 export class ScheduleValidationError extends Error {
@@ -412,44 +387,6 @@ export class ScheduleValidationError extends Error {
     super(message);
     this.name = 'ScheduleValidationError';
   }
-}
-
-/**
- * Error thrown when attempting to start a campaign that is not in a startable state.
- * Only 'draft' and 'paused' campaigns can be started.
- */
-export class CampaignAlreadyActiveError extends Error {
-  public readonly currentStatus: string;
-
-  constructor(currentStatus: string) {
-    super(
-      `Cannot start campaign: campaign is already in '${currentStatus}' state. Only 'draft' or 'paused' campaigns can be started.`
-    );
-    this.name = 'CampaignAlreadyActiveError';
-    this.currentStatus = currentStatus;
-  }
-}
-
-/**
- * Result data from a campaign generation run (stored for idempotency)
- */
-export interface ICampaignGenerationRunResult {
-  queued: number;
-  creditsRequired: number;
-}
-
-/**
- * Result from claiming a campaign generation with idempotency key
- */
-export interface IClaimCampaignGenerationResult {
-  /** True if this is a new request, false if idempotency key was already used */
-  isNew: boolean;
-  /** The generation run ID (only for new requests) */
-  generationRunId?: string;
-  /** Status of existing run (only for cached requests) */
-  existingStatus?: 'completed' | 'processing' | 'failed' | 'already_running' | 'unknown';
-  /** Cached response data (only for completed runs) */
-  cachedResponse?: ICampaignGenerationRunResult;
 }
 
 /**

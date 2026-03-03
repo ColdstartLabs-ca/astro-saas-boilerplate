@@ -10,7 +10,6 @@ import {
   type ICampaign,
   type ScheduleFrequency,
   CampaignNotFoundError,
-  NoPendingKeywordsError,
   ScheduleValidationError,
 } from '@shared/types/campaign.types';
 import { calculateArticleCreditCost } from '@shared/constants';
@@ -30,14 +29,15 @@ import { testModeCampaigns } from './campaign-lifecycle.service';
 
 export class CampaignSchedulingService {
   /**
-   * Start a scheduled campaign for drip-feed article generation.
-   * Validates campaign has schedule config and pending keywords, then sets status to 'scheduled'.
+   * Resume a paused campaign by setting status to 'scheduled' with recalculated next_run_at.
+   * Used by the resume-schedule endpoint.
+   * (startSchedule is now an alias for resumeSchedule since campaigns auto-activate on creation)
    *
-   * @param campaignId - The campaign ID to start scheduling
+   * @param campaignId - The campaign ID to resume
    * @param userId - The user ID making the request
+   * @param campaign - The campaign to resume (must be fetched with ownership check)
+   * @param pendingKeywordCount - Number of pending keywords (unused, kept for compat)
    * @returns Object with nextRunAt timestamp and pendingKeywords count
-   * @throws CampaignNotFoundError if campaign not found or not owned by user
-   * @throws Error if campaign lacks schedule config, has no pending keywords, or invalid state
    */
   async startSchedule(
     campaignId: string,
@@ -45,63 +45,9 @@ export class CampaignSchedulingService {
     campaign: ICampaign | null,
     pendingKeywordCount: number
   ): Promise<{ nextRunAt: string; pendingKeywords: number }> {
-    // Get campaign with ownership check
-    if (!campaign) {
-      throw new CampaignNotFoundError(campaignId);
-    }
-
-    // Validate campaign has schedule configuration
-    if (!campaign.schedule_frequency) {
-      throw new ScheduleValidationError(
-        'Cannot start schedule: campaign has no schedule configuration. Please set a schedule frequency first.'
-      );
-    }
-
-    // Validate campaign is in a state that can start scheduling (draft or paused)
-    if (campaign.status !== 'draft' && campaign.status !== 'paused') {
-      throw new ScheduleValidationError(
-        `Cannot start schedule: campaign status is '${campaign.status}'. Only draft or paused campaigns can be scheduled.`
-      );
-    }
-
-    // Validate campaign has pending keywords
-    if (pendingKeywordCount === 0) {
-      throw new NoPendingKeywordsError();
-    }
-
-    // Calculate next run time using schedule config
-    const nextRunAt = calculateNextRunAt(
-      campaign.schedule_frequency as ScheduleFrequency,
-      campaign.schedule_timezone || DEFAULT_SCHEDULE_TIMEZONE,
-      campaign.schedule_hour ?? DEFAULT_SCHEDULE_HOUR
-    );
-
-    // In test mode with mock users, update in-memory store
-    if (serverEnv.ENV === 'test' && userId.includes('mock_user_')) {
-      const campaignData = testModeCampaigns.get(campaignId);
-      if (campaignData) {
-        campaignData.status = 'scheduled';
-        campaignData.next_run_at = nextRunAt;
-        testModeCampaigns.set(campaignId, campaignData);
-      }
-      return { nextRunAt, pendingKeywords: pendingKeywordCount };
-    }
-
-    // Update campaign status and next_run_at
-    const { error } = await supabaseAdmin
-      .from('campaigns')
-      .update({
-        status: 'scheduled',
-        next_run_at: nextRunAt,
-      })
-      .eq('id', campaignId)
-      .eq('user_id', userId);
-
-    if (error) {
-      throw new Error(`Failed to start schedule: ${error.message}`);
-    }
-
-    return { nextRunAt, pendingKeywords: pendingKeywordCount };
+    // This is now equivalent to resumeSchedule
+    const result = await this.resumeSchedule(campaignId, userId, campaign);
+    return { nextRunAt: result.nextRunAt, pendingKeywords: pendingKeywordCount };
   }
 
   /**
@@ -125,10 +71,10 @@ export class CampaignSchedulingService {
       throw new CampaignNotFoundError(campaignId);
     }
 
-    // Validate campaign is in a state that can be paused (scheduled or active)
-    if (campaign.status !== 'scheduled' && campaign.status !== 'active') {
+    // Validate campaign is in a state that can be paused (only scheduled)
+    if (campaign.status !== 'scheduled') {
       throw new ScheduleValidationError(
-        `Cannot pause schedule: campaign status is '${campaign.status}'. Only scheduled or active campaigns can be paused.`
+        `Cannot pause schedule: campaign status is '${campaign.status}'. Only scheduled campaigns can be paused.`
       );
     }
 
@@ -271,14 +217,16 @@ export class CampaignSchedulingService {
     articlesQueued?: number;
     nextRunAt?: string;
   }> {
-    // Atomically claim the campaign (prevents race conditions with concurrent cron runs).
-    // Only transitions from 'scheduled' to 'active' - if another run already claimed it,
-    // the WHERE clause won't match and we'll get no rows back.
+    // Atomically claim the campaign using generation_run_id lock (prevents race conditions).
+    // Only updates when generation_run_id IS NULL and status='scheduled'.
+    // If another cron run already claimed it, the WHERE clause won't match and we skip.
+    const runId = crypto.randomUUID();
     const { data: claimed, error: claimError } = await supabaseAdmin
       .from('campaigns')
-      .update({ status: 'active' })
+      .update({ generation_run_id: runId })
       .eq('id', campaignId)
       .eq('status', 'scheduled')
+      .is('generation_run_id', null)
       .select('*')
       .single();
 
@@ -302,16 +250,19 @@ export class CampaignSchedulingService {
       .limit(batchSize);
 
     if (keywordsError) {
-      // On error, set back to scheduled
-      await supabaseAdmin.from('campaigns').update({ status: 'scheduled' }).eq('id', campaignId);
+      // On error, clear generation_run_id lock to allow future processing
+      await supabaseAdmin
+        .from('campaigns')
+        .update({ generation_run_id: null })
+        .eq('id', campaignId);
       throw new Error(`Failed to get pending keywords: ${keywordsError.message}`);
     }
 
-    // If no pending keywords, mark campaign as completed
+    // If no pending keywords, mark campaign as completed and clear lock
     if (!keywords || keywords.length === 0) {
       await supabaseAdmin
         .from('campaigns')
-        .update({ status: 'completed', next_run_at: null })
+        .update({ status: 'completed', next_run_at: null, generation_run_id: null })
         .eq('id', campaignId);
 
       return { completed: true };
@@ -352,6 +303,7 @@ export class CampaignSchedulingService {
             .update({
               status: 'paused',
               next_run_at: null,
+              generation_run_id: null,
               settings,
             })
             .eq('id', campaignId);
@@ -470,6 +422,7 @@ export class CampaignSchedulingService {
             status: 'paused',
             next_run_at: null,
             last_run_at: new Date().toISOString(),
+            generation_run_id: null,
             settings,
           })
           .eq('id', campaignId);
@@ -491,8 +444,8 @@ export class CampaignSchedulingService {
         campaign.schedule_hour ?? DEFAULT_SCHEDULE_HOUR
       );
 
-      // Check if campaign was paused during batch processing (user pause request)
-      // Only set back to scheduled if still active (no user pause intervened)
+      // Check if campaign was paused during batch processing (user pause request via pause-schedule endpoint)
+      // The pause endpoint sets generation_run_id=NULL and status='paused', so we check the DB.
       const { data: currentCampaign } = await supabaseAdmin
         .from('campaigns')
         .select('status')
@@ -501,9 +454,9 @@ export class CampaignSchedulingService {
 
       if (currentCampaign?.status === 'paused') {
         console.log(
-          `[ScheduledBatch] Campaign ${campaignId} was paused during processing, not resetting to scheduled`
+          `[ScheduledBatch] Campaign ${campaignId} was paused during processing, not resetting generation_run_id`
         );
-        // Update last_run_at but respect the paused status
+        // Update last_run_at but respect the paused status (don't clear generation_run_id, already cleared by pause)
         await supabaseAdmin
           .from('campaigns')
           .update({ last_run_at: new Date().toISOString() })
@@ -516,13 +469,14 @@ export class CampaignSchedulingService {
         };
       }
 
-      // Update campaign back to scheduled with new next_run_at
+      // Clear generation_run_id lock and update next_run_at
+      // Campaign stays in 'scheduled' status throughout processing
       await supabaseAdmin
         .from('campaigns')
         .update({
-          status: 'scheduled',
           next_run_at: nextRunAt,
           last_run_at: new Date().toISOString(),
+          generation_run_id: null,
         })
         .eq('id', campaignId);
 
@@ -531,17 +485,11 @@ export class CampaignSchedulingService {
         nextRunAt,
       };
     } catch (error: unknown) {
-      // On error, check if campaign was paused before resetting to scheduled
-      const { data: currentCampaign } = await supabaseAdmin
+      // On error, clear generation_run_id lock to allow future processing
+      await supabaseAdmin
         .from('campaigns')
-        .select('status')
-        .eq('id', campaignId)
-        .single();
-
-      // Only reset to scheduled if not paused (user pause takes priority)
-      if (currentCampaign?.status !== 'paused') {
-        await supabaseAdmin.from('campaigns').update({ status: 'scheduled' }).eq('id', campaignId);
-      }
+        .update({ generation_run_id: null })
+        .eq('id', campaignId);
 
       throw error;
     }

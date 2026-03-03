@@ -2,8 +2,7 @@
 
 import { useState, useMemo } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-import { Loader2, Zap } from 'lucide-react';
-import { ConfirmDialog } from '@client/components/ui/ConfirmDialog';
+import { Loader2 } from 'lucide-react';
 import { useCampaignDetail } from '@client/hooks/useCampaignDetail';
 import { useTranslations } from '@client/hooks/useTranslations';
 import { useAvailableModels } from '@client/hooks/useAvailableModels';
@@ -27,13 +26,6 @@ import type { IAddKeywordsResponse } from '@shared/types/campaign.types';
 
 type CampaignTab = 'overview' | 'articles' | 'integrations';
 
-const WRITER_DISPLAY_NAME: Record<string, string> = {
-  budget: 'Budget',
-  balanced: 'Balanced',
-  pro: 'Pro',
-  ultra: 'Ultra',
-};
-
 interface ICampaignDetailViewProps {
   campaignId: string;
   onBackToList: () => void;
@@ -48,9 +40,8 @@ export function CampaignDetailView({
   const { writerPresets, imagePresets } = useAvailableModels();
   const [activeTab, setActiveTab] = useState<CampaignTab>('overview');
   const [isAddKeywordsModalOpen, setIsAddKeywordsModalOpen] = useState(false);
-  const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
-  const [isGenerating, setIsGenerating] = useState(false);
+  const [isSavingSettings, setIsSavingSettings] = useState(false);
   const [selectedArticle, setSelectedArticle] = useState<IArticleWithCampaign | null>(null);
 
   const {
@@ -61,9 +52,7 @@ export function CampaignDetailView({
     isLoading,
     addKeywords,
     deliverArticle,
-    startCampaign,
     updateCampaign,
-    startSchedule,
     pauseSchedule,
     resumeSchedule,
   } = useCampaignDetail(campaignId);
@@ -85,61 +74,9 @@ export function CampaignDetailView({
     [keywords]
   );
 
-  // Calculate credit cost per article based on campaign settings
-  const { creditsPerArticle, writerCost, imageCost } = useMemo(() => {
-    if (!campaign) return { creditsPerArticle: 1, writerCost: 1, imageCost: 0 };
-
-    const writerPreset = writerPresets.find(p => p.key === campaign.ai_model);
-    const imagePreset = imagePresets.find(p => p.key === campaign.image_preset);
-
-    const writerCost = writerPreset?.creditCost ?? 1;
-    const imageCost = imagePreset?.creditCost ?? 0;
-
-    return {
-      creditsPerArticle: writerCost + imageCost,
-      writerCost,
-      imageCost,
-    };
-  }, [campaign, writerPresets, imagePresets]);
-
-  // Calculate total credits needed for all pending keywords
-  const totalCreditsNeeded = pendingCount * creditsPerArticle;
-
-  // Show confirmation modal
-  const handleStartGenerationClick = () => {
-    setIsConfirmModalOpen(true);
-  };
-
-  // Handle confirmed start generation
-  const handleConfirmStartGeneration = async () => {
-    setIsGenerating(true);
-    try {
-      await startCampaign();
-      setIsConfirmModalOpen(false);
-    } catch {
-      // Error handled by hook
-    } finally {
-      setIsGenerating(false);
-    }
-  };
-
   // Handle add keywords - called by AddKeywordsModal; returns full result for UI display
   const handleAddKeywords = async (keywords: string[]): Promise<IAddKeywordsResponse> => {
     return addKeywords(keywords);
-  };
-
-  // Handle pause/resume campaign.
-  // BUG M22: This only toggles between 'active' and 'paused'.
-  // Status transition validation (active→paused, paused→active only) is enforced server-side
-  // in campaign-lifecycle.service.ts (BUG H5 fix) — no client-side guard is needed here.
-  const handleTogglePause = async () => {
-    if (!campaign) return;
-    const newStatus = campaign.status === 'active' ? 'paused' : 'active';
-    try {
-      await updateCampaign({ status: newStatus });
-    } catch {
-      // Error handled by hook
-    }
   };
 
   // Handle opening settings modal - modal will initialize its own state
@@ -149,17 +86,22 @@ export function CampaignDetailView({
 
   // Handle saving campaign settings - called by CampaignSettingsModal
   const handleSaveSettings = async (settings: ICampaignSettings): Promise<void> => {
-    await updateCampaign({
-      name: settings.name,
-      tone: settings.tone || undefined,
-      targetWordCount: settings.targetWordCount,
-      model: settings.model,
-      imagePreset: settings.imagePreset || undefined,
-      scheduleFrequency: settings.scheduleFrequency ?? undefined,
-      scheduleBatchSize: settings.scheduleBatchSize,
-      scheduleHour: settings.scheduleHour,
-      scheduleTimezone: settings.scheduleTimezone,
-    });
+    setIsSavingSettings(true);
+    try {
+      await updateCampaign({
+        name: settings.name,
+        tone: settings.tone || undefined,
+        targetWordCount: settings.targetWordCount,
+        model: settings.model,
+        imagePreset: settings.imagePreset || undefined,
+        scheduleFrequency: settings.scheduleFrequency ?? undefined,
+        scheduleBatchSize: settings.scheduleBatchSize,
+        scheduleHour: settings.scheduleHour,
+        scheduleTimezone: settings.scheduleTimezone,
+      });
+    } finally {
+      setIsSavingSettings(false);
+    }
   };
 
   // Handle clicking on an article row
@@ -198,11 +140,8 @@ export function CampaignDetailView({
         stats={stats}
         pendingCount={pendingCount}
         onBackToList={onBackToList}
-        onTogglePause={handleTogglePause}
-        onStartGeneration={handleStartGenerationClick}
         onAddKeywords={() => setIsAddKeywordsModalOpen(true)}
         onOpenSettings={handleOpenSettings}
-        onStartSchedule={startSchedule}
         onPauseSchedule={pauseSchedule}
         onResumeSchedule={resumeSchedule}
         t={t}
@@ -251,8 +190,15 @@ export function CampaignDetailView({
       {/* Tab Content */}
       {activeTab === 'overview' && (
         <div className="space-y-6 pb-8">
-          <CampaignMetadata campaign={campaign} keywords={keywords} onOpenSettings={() => setIsSettingsModalOpen(true)} t={t} />
-          {creditStats && <CampaignCreditUsage creditStats={creditStats} keywords={keywords} t={t} />}
+          <CampaignMetadata
+            campaign={campaign}
+            keywords={keywords}
+            onOpenSettings={() => setIsSettingsModalOpen(true)}
+            t={t}
+          />
+          {creditStats && (
+            <CampaignCreditUsage creditStats={creditStats} keywords={keywords} t={t} />
+          )}
         </div>
       )}
 
@@ -276,70 +222,6 @@ export function CampaignDetailView({
         onAdd={handleAddKeywords}
       />
 
-      {/* Start Generation Confirmation Modal */}
-      <ConfirmDialog
-        isOpen={isConfirmModalOpen}
-        onClose={() => setIsConfirmModalOpen(false)}
-        onConfirm={handleConfirmStartGeneration}
-        title={t('campaigns.detail.startGeneration')}
-        message={t(`campaigns.detail.startConfirm_${pendingCount === 1 ? 'one' : 'other'}`, {
-          count: pendingCount,
-          credits: totalCreditsNeeded,
-        })}
-        details={
-          <div className="bg-blue-500/5 border border-blue-500/20 rounded-lg p-3 space-y-2">
-            <p className="text-xs font-medium text-blue-200">Credit cost per article:</p>
-            <div className="space-y-1.5">
-              <div className="flex items-center justify-between text-xs">
-                <span className="text-blue-100/80">
-                  Writer ({WRITER_DISPLAY_NAME[campaign?.ai_model ?? ''] ?? campaign?.ai_model ?? 'Balanced'})
-                </span>
-                <span className="font-semibold text-white">{writerCost} credit</span>
-              </div>
-              {imageCost > 0 ? (
-                <div className="flex items-center justify-between text-xs">
-                  <span className="text-blue-100/80">
-                    Images ({WRITER_DISPLAY_NAME[campaign?.image_preset ?? ''] ?? campaign?.image_preset ?? 'Balanced'})
-                  </span>
-                  <span className="font-semibold text-white">
-                    +{imageCost} credit{imageCost > 1 ? 's' : ''}
-                  </span>
-                </div>
-              ) : (
-                <div className="flex items-center justify-between text-xs">
-                  <span className="text-muted">Images</span>
-                  <span className="text-muted">none (text-only)</span>
-                </div>
-              )}
-              <div className="h-px bg-blue-500/20 my-1"></div>
-              <div className="flex items-center justify-between text-xs">
-                <span className="text-blue-200 font-medium">Total per article</span>
-                <span className="font-bold text-white">
-                  {creditsPerArticle} credit{creditsPerArticle > 1 ? 's' : ''}
-                </span>
-              </div>
-              <div className="h-px bg-blue-500/20 my-1"></div>
-              <div className="flex items-center gap-2 text-xs">
-                <Zap className="w-3 h-3 text-yellow-400" />
-                <span className="text-blue-200">
-                  <strong className="text-white">
-                    {totalCreditsNeeded} credit{totalCreditsNeeded > 1 ? 's' : ''}
-                  </strong>{' '}
-                  for {pendingCount} keyword{pendingCount === 1 ? '' : 's'}
-                </span>
-              </div>
-            </div>
-          </div>
-        }
-        variant="info"
-        labels={{
-          confirm: t('campaigns.detail.start'),
-          confirming: t('campaigns.detail.starting'),
-          cancel: t('campaigns.detail.cancel'),
-        }}
-        isConfirming={isGenerating}
-      />
-
       {/* Settings Modal */}
       <CampaignSettingsModal
         isOpen={isSettingsModalOpen}
@@ -358,7 +240,7 @@ export function CampaignDetailView({
         }}
         writerPresets={writerPresets}
         imagePresets={imagePresets}
-        isSaving={isGenerating}
+        isSaving={isSavingSettings}
         campaignStatus={campaign.status}
       />
 
