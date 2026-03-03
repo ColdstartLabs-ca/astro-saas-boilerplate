@@ -43,6 +43,7 @@ test.describe('API: Article Style Preferences End-to-End', () => {
         projectId,
         keywords: ['test keyword'],
         model: 'balanced',
+        scheduleFrequency: 'weekly',
         articleStyle: 'how-to',
       });
 
@@ -59,6 +60,7 @@ test.describe('API: Article Style Preferences End-to-End', () => {
         projectId,
         keywords: ['test keyword'],
         model: 'balanced',
+        scheduleFrequency: 'weekly',
         globalInstructions: 'Use simple language and avoid jargon',
       });
 
@@ -75,6 +77,7 @@ test.describe('API: Article Style Preferences End-to-End', () => {
         projectId,
         keywords: ['test keyword'],
         model: 'balanced',
+        scheduleFrequency: 'weekly',
         internalLinksCount: 5,
       });
 
@@ -91,6 +94,7 @@ test.describe('API: Article Style Preferences End-to-End', () => {
         projectId,
         keywords: ['test keyword'],
         model: 'balanced',
+        scheduleFrequency: 'weekly',
         includeYoutube: true,
         includeCta: true,
         includeEmojis: false,
@@ -113,6 +117,7 @@ test.describe('API: Article Style Preferences End-to-End', () => {
         projectId,
         keywords: ['test keyword'],
         model: 'balanced',
+        scheduleFrequency: 'weekly',
         imageStyle: 'watercolor',
       });
 
@@ -129,6 +134,7 @@ test.describe('API: Article Style Preferences End-to-End', () => {
         projectId,
         keywords: ['all prefs keyword'],
         model: 'balanced',
+        scheduleFrequency: 'weekly',
         articleStyle: 'listicle',
         globalInstructions: 'Make it engaging and fun to read',
         internalLinksCount: 3,
@@ -163,6 +169,7 @@ test.describe('API: Article Style Preferences End-to-End', () => {
         name: 'Update Test Campaign',
         projectId,
         keywords: ['update keyword'],
+        scheduleFrequency: 'weekly',
         articleStyle: 'informative',
       });
       createRes.expectStatus(201);
@@ -185,6 +192,7 @@ test.describe('API: Article Style Preferences End-to-End', () => {
         name: 'Update Instructions Campaign',
         projectId,
         keywords: ['instructions keyword'],
+        scheduleFrequency: 'weekly',
         globalInstructions: 'Original instructions',
       });
       createRes.expectStatus(201);
@@ -209,11 +217,14 @@ test.describe('API: Article Style Preferences End-to-End', () => {
       const api = new ApiClient(request).withAuth(user.token);
 
       // Create campaign with style preferences
+      // Note: campaigns are schedule-only and auto-activate on creation (status='scheduled')
+      // The /start endpoint has been removed; generation is handled by the cron scheduler.
       const createRes = await api.post('/api/campaigns', {
         name: 'Start Style Test Campaign',
         projectId,
         keywords: ['tutorial keyword 1', 'tutorial keyword 2'],
         model: 'balanced',
+        scheduleFrequency: 'weekly',
         articleStyle: 'tutorial',
         globalInstructions: 'Be thorough and step-by-step',
         internalLinksCount: 2,
@@ -226,22 +237,13 @@ test.describe('API: Article Style Preferences End-to-End', () => {
       createRes.expectStatus(201);
       const { campaign } = await createRes.getData();
 
-      // Start the campaign
-      const startRes = await api.post(`/api/campaigns/${campaign.id}/start`);
-      startRes.expectStatus(202);
-      const startData = await startRes.getData();
-
-      // Verify articles were queued
-      expect(startData.queued).toBe(2);
-      expect(startData.creditsRequired).toBeGreaterThan(0);
-
-      // Verify campaign status is active
+      // Verify campaign is scheduled (auto-activated on creation)
       const detailRes = await api.get(`/api/campaigns/${campaign.id}`);
       detailRes.expectStatus(200);
       const detailData = await detailRes.getData();
 
-      expect(detailData.campaign.status).toBe('active');
-      // Style preferences should still be intact
+      expect(detailData.campaign.status).toBe('scheduled');
+      // Style preferences should be intact
       expect(detailData.campaign.article_style).toBe('tutorial');
       expect(detailData.campaign.global_instructions).toBe('Be thorough and step-by-step');
     });
@@ -257,6 +259,7 @@ test.describe('API: Article Style Preferences End-to-End', () => {
         projectId,
         keywords: ['default style keyword'],
         model: 'balanced',
+        scheduleFrequency: 'weekly',
       });
 
       campaignRes.expectStatus(201);
@@ -273,24 +276,23 @@ test.describe('API: Article Style Preferences End-to-End', () => {
       expect(campaign.image_style).toBeNull();
     });
 
-    test('should start campaign without style preferences', async ({ request }) => {
+    test('should activate campaign without style preferences', async ({ request }) => {
       const api = new ApiClient(request).withAuth(user.token);
 
+      // Note: campaigns are schedule-only and auto-activate on creation (status='scheduled')
+      // The /start endpoint has been removed; generation is handled by the cron scheduler.
       const campaignRes = await api.post('/api/campaigns', {
         name: 'No Prefs Start Campaign',
         projectId,
         keywords: ['no prefs keyword'],
         model: 'balanced',
+        scheduleFrequency: 'weekly',
       });
       campaignRes.expectStatus(201);
       const { campaign } = await campaignRes.getData();
 
-      // Should still be able to start the campaign
-      const startRes = await api.post(`/api/campaigns/${campaign.id}/start`);
-      startRes.expectStatus(202);
-      const startData = await startRes.getData();
-
-      expect(startData.queued).toBe(1);
+      // Campaign should be auto-scheduled on creation
+      expect(campaign.status).toBe('scheduled');
     });
   });
 });
