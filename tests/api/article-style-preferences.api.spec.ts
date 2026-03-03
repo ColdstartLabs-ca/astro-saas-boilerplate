@@ -262,10 +262,10 @@ test.describe('API: Article Style Preferences End-to-End', () => {
       campaignRes.expectStatus(201);
       const { campaign } = await campaignRes.getData();
 
-      // Verify defaults are null/false
+      // Verify defaults are null/false (numeric field defaults to 0)
       expect(campaign.article_style).toBeNull();
       expect(campaign.global_instructions).toBeNull();
-      expect(campaign.internal_links_count).toBeNull();
+      expect(campaign.internal_links_count).toBe(0);
       expect(campaign.include_youtube).toBe(false);
       expect(campaign.include_cta).toBe(false);
       expect(campaign.include_emojis).toBe(false);

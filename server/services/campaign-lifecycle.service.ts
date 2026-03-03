@@ -377,16 +377,16 @@ export class CampaignLifecycleService {
 
     await this.verifyProjectOwnership(validated.projectId, userId);
 
-    // Fetch project content_preferences to use as defaults for outrank fields
+    // Fetch project content_preferences to use as defaults for outrank fields.
+    // In test mode, project ownership checks are skipped for mock users, but defaults
+    // should still be loaded when a project fixture exists.
     let projectDefaults: Record<string, unknown> = {};
-    if (!(serverEnv.ENV === 'test' && userId.includes('mock_user_'))) {
-      const { data: projectData } = await supabaseAdmin
-        .from('projects')
-        .select('content_preferences')
-        .eq('id', validated.projectId)
-        .single();
-      projectDefaults = (projectData?.content_preferences as Record<string, unknown>) ?? {};
-    }
+    const { data: projectData } = await supabaseAdmin
+      .from('projects')
+      .select('content_preferences')
+      .eq('id', validated.projectId)
+      .maybeSingle();
+    projectDefaults = (projectData?.content_preferences as Record<string, unknown>) ?? {};
 
     const projectDefaultArticleStyle = normalizeProjectArticleStyle(projectDefaults.articleStyle);
     const projectDefaultInternalLinksCount = normalizeProjectInternalLinksCount(
