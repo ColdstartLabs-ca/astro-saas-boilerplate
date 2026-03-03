@@ -104,7 +104,7 @@ step_secrets() {
         local cron_worker_name
         cron_worker_name=$(grep '^name' "$PROJECT_ROOT/workers/cron/wrangler.toml" | head -1 | awk -F'"' '{print $2}')
         if [[ -n "$cron_worker_name" ]]; then
-            echo "$CRON_SECRET" | npx wrangler secret put CRON_SECRET --name "$cron_worker_name" 2>/dev/null
+            echo "$CRON_SECRET" | npx wrangler secret put CRON_SECRET --config "$PROJECT_ROOT/workers/cron/wrangler.toml" 2>/dev/null
             log_success "CRON_SECRET → cron worker ($cron_worker_name)"
         fi
     fi
