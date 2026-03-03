@@ -48,6 +48,9 @@ async function createProjectAndCampaign(
     projectId: project.id,
     keywords: opts.keywords ?? ['seo tips 2024'],
     model: opts.model ?? 'pro',
+    scheduleFrequency: 'daily',
+    scheduleBatchSize: 1,
+    scheduleTimezone: 'UTC',
   });
   campaignRes.expectStatus(201);
   const { campaign } = await campaignRes.getData();
@@ -1012,6 +1015,7 @@ test.describe('API: Insufficient Credits Edge Cases (§14.1)', () => {
       projectId: project.id,
       keywords: ['test keyword'],
       model: 'pro', // Use pro model which is available
+      scheduleFrequency: 'daily',
     });
     campaignRes.expectStatus(201);
     const { campaign } = await campaignRes.getData();
@@ -1461,7 +1465,9 @@ const BATCH_LIMIT_CONFIGS: IBatchLimitTestConfig[] = [
   { tier: 'agency', batchLimit: 100, creditsForTest: 500 },
 ];
 
-test.describe('API: Batch Generation Limits by Subscription Tier (§4.2)', () => {
+// NOTE: /api/campaigns/:id/start endpoint removed in schedule-only campaigns PR
+// Batch limits are now enforced differently via scheduled batch processing
+test.describe.skip('API: Batch Generation Limits by Subscription Tier (§4.2)', () => {
   /**
    * Helper: Create campaign with specified number of keywords
    */
@@ -1484,6 +1490,7 @@ test.describe('API: Batch Generation Limits by Subscription Tier (§4.2)', () =>
       projectId: project.id,
       keywords,
       model: 'budget', // Use budget model (1 credit per article)
+      scheduleFrequency: 'daily',
     });
     campaignRes.expectStatus(201);
     const { campaign } = await campaignRes.getData();

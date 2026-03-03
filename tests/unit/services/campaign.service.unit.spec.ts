@@ -1,10 +1,6 @@
 import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
 import { campaignService } from '@server/services/campaign.service';
-import {
-  CampaignNotFoundError,
-  InsufficientCreditsError,
-  NoPendingKeywordsError,
-} from '@shared/types/campaign.types';
+import { CampaignNotFoundError } from '@shared/types/campaign.types';
 import { supabaseAdmin as actualSupabaseAdmin } from '@server/supabase/supabaseAdmin';
 import { AppError } from '@shared/utils/errors';
 
@@ -86,11 +82,14 @@ describe('CampaignService', () => {
     user_id: mockUserId,
     project_id: mockProjectId,
     name: 'Test Campaign',
-    status: 'draft',
+    status: 'scheduled',
     ai_model: 'pro',
     tone: 'professional',
     target_word_count: 1500,
     settings: {},
+    schedule_frequency: 'daily',
+    schedule_batch_size: 1,
+    next_run_at: '2024-01-02T09:00:00Z',
     created_at: '2024-01-01T00:00:00Z',
     updated_at: '2024-01-01T00:00:00Z',
   };
@@ -604,7 +603,9 @@ describe('CampaignService', () => {
           return {
             select: vi.fn().mockReturnValue({
               eq: vi.fn().mockReturnValue({
-                single: vi.fn().mockResolvedValue({ data: { content_preferences: null }, error: null }),
+                single: vi
+                  .fn()
+                  .mockResolvedValue({ data: { content_preferences: null }, error: null }),
               }),
             }),
           } as unknown;
@@ -632,6 +633,10 @@ describe('CampaignService', () => {
         name: 'New Campaign',
         projectId: mockProjectId,
         keywords: ['coffee maker', 'espresso machine'],
+        scheduleFrequency: 'daily' as const,
+        scheduleBatchSize: 1,
+        scheduleHour: 9,
+        scheduleTimezone: 'UTC',
       };
 
       const campaign = await campaignService.create(mockUserId, input);
@@ -639,7 +644,7 @@ describe('CampaignService', () => {
       expect(campaign).toMatchObject({
         id: mockCampaignId,
         name: 'New Campaign',
-        status: 'draft',
+        status: 'scheduled',
       });
     });
 
@@ -660,6 +665,10 @@ describe('CampaignService', () => {
         name: 'New Campaign',
         projectId: mockProjectId,
         keywords: ['coffee maker'],
+        scheduleFrequency: 'daily' as const,
+        scheduleBatchSize: 1,
+        scheduleHour: 9,
+        scheduleTimezone: 'UTC',
       };
 
       await expect(campaignService.create(mockUserId, input)).rejects.toThrow(
@@ -689,7 +698,9 @@ describe('CampaignService', () => {
           return {
             select: vi.fn().mockReturnValue({
               eq: vi.fn().mockReturnValue({
-                single: vi.fn().mockResolvedValue({ data: { content_preferences: null }, error: null }),
+                single: vi
+                  .fn()
+                  .mockResolvedValue({ data: { content_preferences: null }, error: null }),
               }),
             }),
           } as unknown;
@@ -715,6 +726,10 @@ describe('CampaignService', () => {
         name: 'New Campaign',
         projectId: mockProjectId,
         keywords: ['coffee maker'],
+        scheduleFrequency: 'daily' as const,
+        scheduleBatchSize: 1,
+        scheduleHour: 9,
+        scheduleTimezone: 'UTC',
       };
 
       await campaignService.create(mockUserId, input);
@@ -802,39 +817,23 @@ describe('CampaignService', () => {
     it('should update campaign settings', async () => {
       const { supabaseAdmin } = await import('@server/supabase/supabaseAdmin');
 
-      let callCount = 0;
-      (supabaseAdmin.from as unknown as ReturnType<typeof vi.fn>).mockImplementation(() => {
-        callCount++;
-        if (callCount === 1) {
-          // First call: select status for transition validation
-          return {
-            select: vi.fn().mockReturnValue({
-              eq: vi.fn().mockReturnValue({
-                eq: vi.fn().mockReturnValue({
-                  single: vi.fn().mockResolvedValue({ data: { status: 'paused' }, error: null }),
-                }),
+      // The update method calls supabaseAdmin.from('campaigns').update() directly
+      // (no prior select needed when schedule fields haven't changed)
+      (supabaseAdmin.from as unknown as ReturnType<typeof vi.fn>).mockReturnValueOnce({
+        update: vi.fn().mockReturnValue({
+          eq: vi.fn().mockReturnValue({
+            eq: vi.fn().mockReturnValue({
+              select: vi.fn().mockReturnValue({
+                single: vi.fn().mockResolvedValue({ data: mockCampaign, error: null }),
               }),
             }),
-          } as unknown;
-        } else {
-          // Second call: update campaign
-          return {
-            update: vi.fn().mockReturnValue({
-              eq: vi.fn().mockReturnValue({
-                eq: vi.fn().mockReturnValue({
-                  select: vi.fn().mockReturnValue({
-                    single: vi.fn().mockResolvedValue({ data: mockCampaign, error: null }),
-                  }),
-                }),
-              }),
-            }),
-          } as unknown;
-        }
-      });
+          }),
+        }),
+      } as unknown);
 
       const updated = await campaignService.update(mockCampaignId, mockUserId, {
         name: 'Updated Campaign',
-        status: 'active',
+        status: 'scheduled',
       });
 
       expect(updated).toMatchObject({
@@ -1125,236 +1124,6 @@ describe('CampaignService', () => {
     });
   });
 
-  describe('startGeneration', () => {
-    it('should queue articles for pending keywords', async () => {
-      const { supabaseAdmin } = await import('@server/supabase/supabaseAdmin');
-
-      const pendingKeywords = [
-        { id: 'kw1', keyword: 'coffee maker' },
-        { id: 'kw2', keyword: 'espresso machine' },
-      ];
-
-      // New flow uses atomic RPC:
-      // 1. from('campaigns') - get campaign
-      // 2. from('keywords') - get pending keywords
-      // 3. rpc('create_articles_with_credits') - atomic creation + credit deduction
-      // 4. from('keywords') - update keyword status
-      // 5. from('campaigns') - update campaign status
-      let callCount = 0;
-      (supabaseAdmin.from as unknown as ReturnType<typeof vi.fn>).mockImplementation(() => {
-        callCount++;
-        if (callCount === 1) {
-          // First call: get campaign
-          return {
-            select: vi.fn().mockReturnValue({
-              eq: vi.fn().mockReturnValue({
-                eq: vi.fn().mockReturnValue({
-                  single: vi.fn().mockResolvedValue({ data: mockCampaign, error: null }),
-                }),
-              }),
-            }),
-          } as unknown;
-        } else if (callCount === 2) {
-          // Second call: get pending keywords
-          return {
-            select: vi.fn().mockReturnValue({
-              eq: vi.fn().mockReturnValue({
-                eq: vi.fn().mockResolvedValue({
-                  data: pendingKeywords,
-                  error: null,
-                }),
-              }),
-            }),
-          } as unknown;
-        } else if (callCount === 3) {
-          // Third call: update keywords status to queued
-          return {
-            update: vi.fn().mockReturnValue({
-              in: vi.fn().mockResolvedValue({ error: null }),
-            }),
-          } as unknown;
-        } else {
-          // Fourth call: update campaign status to active
-          return {
-            update: vi.fn().mockReturnValue({
-              eq: vi.fn().mockReturnValue({
-                eq: vi.fn().mockResolvedValue({ error: null }),
-              }),
-            }),
-          } as unknown;
-        }
-      });
-
-      // Mock atomic RPC: create_articles_with_credits
-      (supabaseAdmin as unknown as { rpc: ReturnType<typeof vi.fn> }).rpc.mockResolvedValueOnce({
-        data: [{ articles_created: 2, credits_deducted: 4 }],
-        error: null,
-      });
-
-      const result = await campaignService.startGeneration(mockCampaignId, mockUserId);
-
-      expect(result).toEqual({ queued: 2, creditsRequired: 4 });
-    });
-
-    it('should resume paused campaign with queued keywords (no new credits)', async () => {
-      const { supabaseAdmin } = await import('@server/supabase/supabaseAdmin');
-
-      const queuedKeywords = [{ id: 'kw1' }, { id: 'kw2' }];
-
-      let callCount = 0;
-      (supabaseAdmin.from as unknown as ReturnType<typeof vi.fn>).mockImplementation(() => {
-        callCount++;
-        if (callCount === 1) {
-          // First call: get campaign
-          return {
-            select: vi.fn().mockReturnValue({
-              eq: vi.fn().mockReturnValue({
-                eq: vi.fn().mockReturnValue({
-                  single: vi.fn().mockResolvedValue({ data: mockCampaign, error: null }),
-                }),
-              }),
-            }),
-          } as unknown;
-        } else if (callCount === 2) {
-          // Second call: get pending keywords (returns empty - this is a resume)
-          return {
-            select: vi.fn().mockReturnValue({
-              eq: vi.fn().mockReturnValue({
-                eq: vi.fn().mockResolvedValue({
-                  data: [],
-                  error: null,
-                }),
-              }),
-            }),
-          } as unknown;
-        } else if (callCount === 3) {
-          // Third call: get queued keywords (this is a resume)
-          return {
-            select: vi.fn().mockReturnValue({
-              eq: vi.fn().mockReturnValue({
-                eq: vi.fn().mockResolvedValue({
-                  data: queuedKeywords,
-                  error: null,
-                }),
-              }),
-            }),
-          } as unknown;
-        } else if (callCount === 4) {
-          // Fourth call: update campaign status to active
-          return {
-            update: vi.fn().mockReturnValue({
-              eq: vi.fn().mockReturnValue({
-                eq: vi.fn().mockResolvedValue({ error: null }),
-              }),
-            }),
-          } as unknown;
-        }
-        return {} as unknown;
-      });
-
-      const result = await campaignService.startGeneration(mockCampaignId, mockUserId);
-
-      // Should resume without requiring additional credits
-      expect(result).toEqual({ queued: 2, creditsRequired: 0 });
-    });
-
-    it('should throw InsufficientCreditsError when user lacks credits', async () => {
-      const { supabaseAdmin } = await import('@server/supabase/supabaseAdmin');
-
-      let callCount = 0;
-      (supabaseAdmin.from as unknown as ReturnType<typeof vi.fn>).mockImplementation(() => {
-        callCount++;
-        if (callCount === 1) {
-          // Get campaign
-          return {
-            select: vi.fn().mockReturnValue({
-              eq: vi.fn().mockReturnValue({
-                eq: vi.fn().mockReturnValue({
-                  single: vi.fn().mockResolvedValue({ data: mockCampaign, error: null }),
-                }),
-              }),
-            }),
-          } as unknown;
-        } else {
-          // Get pending keywords
-          return {
-            select: vi.fn().mockReturnValue({
-              eq: vi.fn().mockReturnValue({
-                eq: vi.fn().mockResolvedValue({
-                  data: [{ id: 'kw1', keyword: 'coffee maker' }],
-                  error: null,
-                }),
-              }),
-            }),
-          } as unknown;
-        }
-      });
-
-      // RPC returns insufficient credits error
-      (supabaseAdmin as unknown as { rpc: ReturnType<typeof vi.fn> }).rpc.mockResolvedValueOnce({
-        data: null,
-        error: { message: 'Insufficient credits' },
-      });
-
-      await expect(campaignService.startGeneration(mockCampaignId, mockUserId)).rejects.toThrow(
-        InsufficientCreditsError
-      );
-    });
-
-    it('should throw NoPendingKeywordsError when no pending keywords exist', async () => {
-      const { supabaseAdmin } = await import('@server/supabase/supabaseAdmin');
-
-      let callCount = 0;
-      (supabaseAdmin.from as unknown as ReturnType<typeof vi.fn>).mockImplementation(() => {
-        callCount++;
-        if (callCount === 1) {
-          return {
-            select: vi.fn().mockReturnValue({
-              eq: vi.fn().mockReturnValue({
-                eq: vi.fn().mockReturnValue({
-                  single: vi.fn().mockResolvedValue({ data: mockCampaign, error: null }),
-                }),
-              }),
-            }),
-          } as unknown;
-        } else {
-          return {
-            select: vi.fn().mockReturnValue({
-              eq: vi.fn().mockReturnValue({
-                eq: vi.fn().mockResolvedValue({ data: [], error: null }),
-              }),
-            }),
-          } as unknown;
-        }
-      });
-
-      await expect(campaignService.startGeneration(mockCampaignId, mockUserId)).rejects.toThrow(
-        NoPendingKeywordsError
-      );
-    });
-
-    it('should throw CampaignNotFoundError for non-existent campaign', async () => {
-      const { supabaseAdmin } = await import('@server/supabase/supabaseAdmin');
-
-      (supabaseAdmin.from as unknown as ReturnType<typeof vi.fn>).mockReturnValueOnce({
-        select: vi.fn().mockReturnValue({
-          eq: vi.fn().mockReturnValue({
-            eq: vi.fn().mockReturnValue({
-              single: vi.fn().mockResolvedValue({
-                data: null,
-                error: { code: 'PGRST116' },
-              }),
-            }),
-          }),
-        }),
-      } as unknown);
-
-      await expect(campaignService.startGeneration('non-existent', mockUserId)).rejects.toThrow(
-        CampaignNotFoundError
-      );
-    });
-  });
-
   describe('Image Preset Integration', () => {
     it('should validate image preset on create', async () => {
       const { supabaseAdmin } = await import('@server/supabase/supabaseAdmin');
@@ -1378,7 +1147,9 @@ describe('CampaignService', () => {
           return {
             select: vi.fn().mockReturnValue({
               eq: vi.fn().mockReturnValue({
-                single: vi.fn().mockResolvedValue({ data: { content_preferences: null }, error: null }),
+                single: vi
+                  .fn()
+                  .mockResolvedValue({ data: { content_preferences: null }, error: null }),
               }),
             }),
           } as unknown;
@@ -1405,6 +1176,10 @@ describe('CampaignService', () => {
         projectId: mockProjectId,
         keywords: ['coffee maker'],
         imagePreset: 'budget',
+        scheduleFrequency: 'daily' as const,
+        scheduleBatchSize: 1,
+        scheduleHour: 9,
+        scheduleTimezone: 'UTC',
       };
 
       await campaignService.create(mockUserId, input);
@@ -1460,142 +1235,13 @@ describe('CampaignService', () => {
         projectId: mockProjectId,
         keywords: ['coffee maker'],
         imagePreset: 'invalid-preset',
+        scheduleFrequency: 'daily' as const,
+        scheduleBatchSize: 1,
+        scheduleHour: 9,
+        scheduleTimezone: 'UTC',
       };
 
       await expect(campaignService.create(mockUserId, input)).rejects.toThrow();
-    });
-
-    it('should calculate credits including image cost on startGeneration', async () => {
-      const { supabaseAdmin } = await import('@server/supabase/supabaseAdmin');
-
-      const pendingKeywords = [
-        { id: 'kw1', keyword: 'coffee maker' },
-        { id: 'kw2', keyword: 'espresso machine' },
-      ];
-
-      let callCount = 0;
-      (supabaseAdmin.from as unknown as ReturnType<typeof vi.fn>).mockImplementation(() => {
-        callCount++;
-        if (callCount === 1) {
-          // Get campaign with image_preset: 'pro'
-          return {
-            select: vi.fn().mockReturnValue({
-              eq: vi.fn().mockReturnValue({
-                eq: vi.fn().mockReturnValue({
-                  single: vi.fn().mockResolvedValue({
-                    data: { ...mockCampaign, image_preset: 'pro' },
-                    error: null,
-                  }),
-                }),
-              }),
-            }),
-          } as unknown;
-        } else if (callCount === 2) {
-          // Get pending keywords
-          return {
-            select: vi.fn().mockReturnValue({
-              eq: vi.fn().mockReturnValue({
-                eq: vi.fn().mockResolvedValue({
-                  data: pendingKeywords,
-                  error: null,
-                }),
-              }),
-            }),
-          } as unknown;
-        } else if (callCount === 3) {
-          // Update keywords status
-          return {
-            update: vi.fn().mockReturnValue({
-              in: vi.fn().mockResolvedValue({ error: null }),
-            }),
-          } as unknown;
-        } else {
-          // Update campaign status
-          return {
-            update: vi.fn().mockReturnValue({
-              eq: vi.fn().mockReturnValue({
-                eq: vi.fn().mockResolvedValue({ error: null }),
-              }),
-            }),
-          } as unknown;
-        }
-      });
-
-      // Atomic RPC returns success
-      (supabaseAdmin as unknown as { rpc: ReturnType<typeof vi.fn> }).rpc.mockResolvedValueOnce({
-        data: [{ articles_created: 2, credits_deducted: 6 }],
-        error: null,
-      });
-
-      const result = await campaignService.startGeneration(mockCampaignId, mockUserId);
-
-      // With pro writer preset (2 credits) + pro image preset (1 credit) = 3 credits per article, 2 keywords = 6 credits
-      expect(result.creditsRequired).toBe(6);
-    });
-
-    it('should not add extra cost for standard image presets', async () => {
-      const { supabaseAdmin } = await import('@server/supabase/supabaseAdmin');
-
-      const pendingKeywords = [{ id: 'kw1', keyword: 'coffee maker' }];
-
-      let callCount = 0;
-      (supabaseAdmin.from as unknown as ReturnType<typeof vi.fn>).mockImplementation(() => {
-        callCount++;
-        if (callCount === 1) {
-          // Get campaign with image_preset: 'budget'
-          return {
-            select: vi.fn().mockReturnValue({
-              eq: vi.fn().mockReturnValue({
-                eq: vi.fn().mockReturnValue({
-                  single: vi.fn().mockResolvedValue({
-                    data: { ...mockCampaign, image_preset: 'budget' },
-                    error: null,
-                  }),
-                }),
-              }),
-            }),
-          } as unknown;
-        } else if (callCount === 2) {
-          // Get pending keywords
-          return {
-            select: vi.fn().mockReturnValue({
-              eq: vi.fn().mockReturnValue({
-                eq: vi.fn().mockResolvedValue({
-                  data: pendingKeywords,
-                  error: null,
-                }),
-              }),
-            }),
-          } as unknown;
-        } else if (callCount === 3) {
-          // Update keywords status
-          return {
-            update: vi.fn().mockReturnValue({
-              in: vi.fn().mockResolvedValue({ error: null }),
-            }),
-          } as unknown;
-        } else {
-          // Update campaign status
-          return {
-            update: vi.fn().mockReturnValue({
-              eq: vi.fn().mockReturnValue({
-                eq: vi.fn().mockResolvedValue({ error: null }),
-              }),
-            }),
-          } as unknown;
-        }
-      });
-
-      // Atomic RPC returns success
-      (supabaseAdmin as unknown as { rpc: ReturnType<typeof vi.fn> }).rpc.mockResolvedValueOnce({
-        data: [{ articles_created: 1, credits_deducted: 2 }],
-        error: null,
-      });
-
-      const result = await campaignService.startGeneration(mockCampaignId, mockUserId);
-
-      // With pro writer preset (2 credits) + budget image preset (0 credits) = 2 credits per article, 1 keyword = 2 credits
-      expect(result.creditsRequired).toBe(2);
     });
 
     it('should allow undefined image_preset on create (no preset selected)', async () => {
@@ -1620,7 +1266,9 @@ describe('CampaignService', () => {
           return {
             select: vi.fn().mockReturnValue({
               eq: vi.fn().mockReturnValue({
-                single: vi.fn().mockResolvedValue({ data: { content_preferences: null }, error: null }),
+                single: vi
+                  .fn()
+                  .mockResolvedValue({ data: { content_preferences: null }, error: null }),
               }),
             }),
           } as unknown;
@@ -1646,6 +1294,10 @@ describe('CampaignService', () => {
         name: 'New Campaign',
         projectId: mockProjectId,
         keywords: ['coffee maker'],
+        scheduleFrequency: 'daily' as const,
+        scheduleBatchSize: 1,
+        scheduleHour: 9,
+        scheduleTimezone: 'UTC',
         // imagePreset: undefined (not provided)
       };
 
@@ -1745,7 +1397,9 @@ describe('CampaignService', () => {
           return {
             select: vi.fn().mockReturnValue({
               eq: vi.fn().mockReturnValue({
-                single: vi.fn().mockResolvedValue({ data: { content_preferences: null }, error: null }),
+                single: vi
+                  .fn()
+                  .mockResolvedValue({ data: { content_preferences: null }, error: null }),
               }),
             }),
           } as unknown;
@@ -1769,6 +1423,10 @@ describe('CampaignService', () => {
         projectId: mockProjectId,
         keywords: ['coffee maker'],
         model: 'balanced', // This is a valid preset key
+        scheduleFrequency: 'daily' as const,
+        scheduleBatchSize: 1,
+        scheduleHour: 9,
+        scheduleTimezone: 'UTC',
       };
 
       await expect(campaignService.create(mockUserId, input)).resolves.toBeDefined();
@@ -1795,7 +1453,9 @@ describe('CampaignService', () => {
           return {
             select: vi.fn().mockReturnValue({
               eq: vi.fn().mockReturnValue({
-                single: vi.fn().mockResolvedValue({ data: { content_preferences: null }, error: null }),
+                single: vi
+                  .fn()
+                  .mockResolvedValue({ data: { content_preferences: null }, error: null }),
               }),
             }),
           } as unknown;
@@ -1819,6 +1479,10 @@ describe('CampaignService', () => {
         projectId: mockProjectId,
         keywords: ['coffee maker'],
         model: 'ultra', // Any valid preset key should work when env is empty
+        scheduleFrequency: 'daily' as const,
+        scheduleBatchSize: 1,
+        scheduleHour: 9,
+        scheduleTimezone: 'UTC',
       };
 
       // When AVAILABLE_WRITER_PRESETS is empty, all preset keys are allowed

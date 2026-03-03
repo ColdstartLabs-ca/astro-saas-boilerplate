@@ -148,9 +148,7 @@ describe('EmbeddingService', () => {
 
     it('returns array with same length as input on success', async () => {
       const texts = ['prompt one', 'prompt two', 'prompt three'];
-      const fakeEmbeddings = texts.map((_, i) =>
-        Array.from({ length: 1536 }, () => i * 0.1)
-      );
+      const fakeEmbeddings = texts.map((_, i) => Array.from({ length: 1536 }, () => i * 0.1));
 
       mockFetch.mockResolvedValueOnce({
         ok: true,

@@ -207,6 +207,10 @@ describe('OnboardingStepKeywords', () => {
         name: 'Onboarding Campaign',
         projectId: 'project-123',
         keywords: ['seo tips', 'content marketing'],
+        scheduleFrequency: 'daily',
+        scheduleBatchSize: 3,
+        scheduleHour: 9,
+        scheduleTimezone: 'UTC',
       });
     });
   });
@@ -272,7 +276,9 @@ describe('OnboardingStepKeywords', () => {
   });
 
   it('should parse uploaded CSV and populate keywords', async () => {
-    const { getByLabelText, getByText } = render(<OnboardingStepKeywords onComplete={mockOnComplete} />);
+    const { getByLabelText, getByText } = render(
+      <OnboardingStepKeywords onComplete={mockOnComplete} />
+    );
 
     const csvFile = new File(['keyword\nseo tips\ncontent marketing'], 'keywords.csv', {
       type: 'text/csv',

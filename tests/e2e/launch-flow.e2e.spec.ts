@@ -245,6 +245,14 @@ async function registerCampaignsMocks(page: Page, state: StatefulMockState): Pro
 
   // Campaigns list + create (use ** suffix to match query strings like ?projectId=...)
   await page.route('**/api/campaigns**', async route => {
+    const pathname = new URL(route.request().url()).pathname;
+    // Only handle collection endpoint here; let more specific campaign routes
+    // (e.g. /api/campaigns/:id, /keywords, /start) handle their own payloads.
+    if (pathname !== '/api/campaigns') {
+      await route.fallback();
+      return;
+    }
+
     const method = route.request().method();
     if (method === 'GET') {
       await route.fulfill({

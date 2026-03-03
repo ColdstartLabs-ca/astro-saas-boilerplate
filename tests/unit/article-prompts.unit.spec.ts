@@ -6,10 +6,7 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import {
-  getOutlinePrompt,
-  getArticlePrompt,
-} from '@server/services/prompts/article-prompts';
+import { getOutlinePrompt, getArticlePrompt } from '@server/services/prompts/article-prompts';
 import type { IArticleOutline, IArticleStylePreferences } from '@shared/types/article.types';
 
 const MINIMAL_OUTLINE: IArticleOutline = {

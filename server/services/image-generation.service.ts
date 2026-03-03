@@ -84,16 +84,14 @@ export class ImageGenerationService {
     const preset = getImagePreset(presetKey);
     const presetDescription = getPresetDescription(presetKey);
 
-    console.log(
-      `[ImageGeneration] Generating ${markers.length} images with preset: ${presetKey}`
-    );
+    console.log(`[ImageGeneration] Generating ${markers.length} images with preset: ${presetKey}`);
 
     // Step 1: Generate image prompts for each marker
     const prompts = await this.generateImagePrompts(markers, keyword, presetDescription);
 
     // Step 2: Embed all prompts in a single batch API call
-    const promptTexts = markers.map((marker, i) =>
-      prompts[i] || getFallbackImagePrompt(keyword, marker.sectionContext)
+    const promptTexts = markers.map(
+      (marker, i) => prompts[i] || getFallbackImagePrompt(keyword, marker.sectionContext)
     );
     const embeddings = await this.embeddingService.embedBatch(promptTexts);
 
@@ -135,14 +133,21 @@ export class ImageGenerationService {
       // No match — generate fresh via Replicate
       const delay = replicateDelays[Math.min(replicateCallCount, replicateDelays.length - 1)];
       if (delay > 0) {
-        console.log(`[ImageGeneration] Waiting ${delay}ms before image ${i + 1} to respect rate limits`);
+        console.log(
+          `[ImageGeneration] Waiting ${delay}ms before image ${i + 1} to respect rate limits`
+        );
         await this.sleep(delay);
       }
       replicateCallCount++;
 
       try {
         const result = await this.generateSingleImage(marker, prompt, presetKey);
-        results.push({ ...result, promptEmbedding: embedding, wasReused: false, reusedFromImageId: null });
+        results.push({
+          ...result,
+          promptEmbedding: embedding,
+          wasReused: false,
+          reusedFromImageId: null,
+        });
       } catch (error) {
         // If generation fails, still add to results with failed status
         results.push({
@@ -181,11 +186,7 @@ export class ImageGenerationService {
       return [];
     }
 
-    const systemPrompt = getImagePromptsGenerationPrompt(
-      markers,
-      keyword,
-      presetDescription
-    );
+    const systemPrompt = getImagePromptsGenerationPrompt(markers, keyword, presetDescription);
 
     try {
       const result = await this.openRouter.chatCompletionWithRetry({
@@ -206,7 +207,9 @@ export class ImageGenerationService {
         ? parsed
         : Array.isArray(Object.values(parsed)[0])
           ? (Object.values(parsed)[0] as string[])
-          : (() => { throw new Error(`Unexpected response shape: ${Object.keys(parsed).join(', ')}`); })();
+          : (() => {
+              throw new Error(`Unexpected response shape: ${Object.keys(parsed).join(', ')}`);
+            })();
 
       // Validate we got the right number of prompts
       if (prompts.length !== markers.length) {
@@ -219,9 +222,7 @@ export class ImageGenerationService {
     } catch (error) {
       console.warn('[ImageGeneration] Failed to generate prompts via LLM, using fallbacks:', error);
       // Return fallback prompts for each marker
-      return markers.map(marker =>
-        getFallbackImagePrompt(keyword, marker.sectionContext)
-      );
+      return markers.map(marker => getFallbackImagePrompt(keyword, marker.sectionContext));
     }
   }
 
@@ -252,9 +253,7 @@ export class ImageGenerationService {
 
       const generationTimeMs = Date.now() - startTime;
 
-      console.log(
-        `[ImageGeneration] Image ${marker.position} generated in ${generationTimeMs}ms`
-      );
+      console.log(`[ImageGeneration] Image ${marker.position} generated in ${generationTimeMs}ms`);
 
       return {
         position: marker.position,

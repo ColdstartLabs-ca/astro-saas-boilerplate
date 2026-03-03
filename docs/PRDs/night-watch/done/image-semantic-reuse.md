@@ -24,6 +24,7 @@
 **Problem:** Every article image is freshly generated via Replicate (at cost), even when a nearly identical prompt was used before — wasting money on semantically duplicate image generation.
 
 **Files Analyzed:**
+
 - `server/services/image-generation.service.ts` — orchestrates prompt generation + Replicate calls
 - `server/services/article-generation.service.ts` — saves article images to DB via `saveArticleImages()`
 - `server/services/image-storage.service.ts` — persists images to Supabase Storage
@@ -34,6 +35,7 @@
 - `shared/config/image-models.config.ts` — preset config
 
 **Current Behavior:**
+
 - LLM generates a text prompt per image marker based on section context + keyword
 - Replicate is called unconditionally for every prompt, regardless of prior similar generations
 - `article_images` table stores prompt text but no vector representation
@@ -45,6 +47,7 @@
 ## 2. Solution
 
 **Approach:**
+
 1. Add `prompt_embedding vector(1536)` and `reused_from_image_id` to `article_images`
 2. Create `EmbeddingService` using OpenAI `text-embedding-3-small` (already-available API key)
 3. Create `ImageSimilarityService` that queries pgvector for cosine similarity ≥ 0.90
@@ -80,6 +83,7 @@ flowchart LR
 ```
 
 **Key Decisions:**
+
 - **pgvector in Supabase** — no new infra, same DB, HNSW index for fast ANN search
 - **text-embedding-3-small** — 1536 dimensions, $0.02/1M tokens, already-available API key
 - **Cosine similarity threshold: 0.90** — strict, high-relevance reuse only
@@ -147,12 +151,14 @@ sequenceDiagram
 ### Phase 1: Database Foundation — pgvector columns + similarity search function
 
 **Files (4):**
+
 - `supabase/migrations/20260225000000_enable_pgvector.sql` — enable extension + add columns
 - `supabase/migrations/20260225000100_add_image_similarity_function.sql` — SQL function
 
 **Implementation:**
 
 - [ ] Create migration `20260225000000_enable_pgvector.sql`:
+
   ```sql
   -- Enable pgvector (idempotent)
   CREATE EXTENSION IF NOT EXISTS vector;
@@ -212,11 +218,11 @@ sequenceDiagram
 
 **Tests Required:**
 
-| Test File | Test Name | Assertion |
-|-----------|-----------|-----------|
-| `tests/api/image-similarity.api.spec.ts` | `find_similar_image returns match above threshold` | Supabase RPC returns row when similarity ≥ 0.90 |
-| `tests/api/image-similarity.api.spec.ts` | `find_similar_image returns nothing below threshold` | Empty result when vectors are orthogonal |
-| `tests/api/image-similarity.api.spec.ts` | `find_similar_image filters by preset_key` | Returns only rows with matching preset |
+| Test File                                | Test Name                                            | Assertion                                       |
+| ---------------------------------------- | ---------------------------------------------------- | ----------------------------------------------- |
+| `tests/api/image-similarity.api.spec.ts` | `find_similar_image returns match above threshold`   | Supabase RPC returns row when similarity ≥ 0.90 |
+| `tests/api/image-similarity.api.spec.ts` | `find_similar_image returns nothing below threshold` | Empty result when vectors are orthogonal        |
+| `tests/api/image-similarity.api.spec.ts` | `find_similar_image filters by preset_key`           | Returns only rows with matching preset          |
 
 **Verification Plan:**
 
@@ -243,6 +249,7 @@ sequenceDiagram
 ### Phase 2: Embedding Service — OpenAI text-embedding-3-small client
 
 **Files (1):**
+
 - `server/services/embedding.service.ts` — new service
 
 **Implementation:**
@@ -285,7 +292,7 @@ export class EmbeddingService {
       const response = await fetch(OPENAI_EMBEDDING_URL, {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${apiKey}`,
+          Authorization: `Bearer ${apiKey}`,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
@@ -300,7 +307,7 @@ export class EmbeddingService {
         throw new Error(`OpenAI embedding API error ${response.status}: ${error}`);
       }
 
-      const data = await response.json() as {
+      const data = (await response.json()) as {
         data: Array<{ embedding: number[] }>;
         usage: { total_tokens: number };
         model: string;
@@ -309,7 +316,7 @@ export class EmbeddingService {
       return data.data[0].embedding;
     } catch (error) {
       console.error('[EmbeddingService] Failed to generate embedding:', error);
-      return null;  // Graceful degradation — caller falls back to generation
+      return null; // Graceful degradation — caller falls back to generation
     }
   }
 
@@ -330,7 +337,7 @@ export class EmbeddingService {
       const response = await fetch(OPENAI_EMBEDDING_URL, {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${apiKey}`,
+          Authorization: `Bearer ${apiKey}`,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
@@ -345,7 +352,7 @@ export class EmbeddingService {
         throw new Error(`OpenAI embedding API error ${response.status}: ${error}`);
       }
 
-      const data = await response.json() as {
+      const data = (await response.json()) as {
         data: Array<{ index: number; embedding: number[] }>;
         usage: { total_tokens: number };
       };
@@ -355,7 +362,7 @@ export class EmbeddingService {
       return sorted.map(item => item.embedding);
     } catch (error) {
       console.error('[EmbeddingService] Failed to batch embed:', error);
-      return texts.map(() => null);  // Graceful degradation
+      return texts.map(() => null); // Graceful degradation
     }
   }
 }
@@ -365,12 +372,12 @@ export const embeddingService = new EmbeddingService();
 
 **Tests Required:**
 
-| Test File | Test Name | Assertion |
-|-----------|-----------|-----------|
-| `tests/unit/embedding.service.spec.ts` | `embedText returns null when OPENAI_API_KEY missing` | Returns `null` without throwing |
-| `tests/unit/embedding.service.spec.ts` | `embedText returns 1536-dim vector on success` | `embedding.length === 1536` |
+| Test File                              | Test Name                                            | Assertion                          |
+| -------------------------------------- | ---------------------------------------------------- | ---------------------------------- |
+| `tests/unit/embedding.service.spec.ts` | `embedText returns null when OPENAI_API_KEY missing` | Returns `null` without throwing    |
+| `tests/unit/embedding.service.spec.ts` | `embedText returns 1536-dim vector on success`       | `embedding.length === 1536`        |
 | `tests/unit/embedding.service.spec.ts` | `embedBatch returns array with same length as input` | Output length matches input length |
-| `tests/unit/embedding.service.spec.ts` | `embedText returns null on API error` | Returns `null`, logs error |
+| `tests/unit/embedding.service.spec.ts` | `embedText returns null on API error`                | Returns `null`, logs error         |
 
 **Verification Plan:**
 
@@ -389,6 +396,7 @@ curl -s https://api.openai.com/v1/embeddings \
 ### Phase 3: Image Similarity Service — pgvector search wrapper
 
 **Files (1):**
+
 - `server/services/image-similarity.service.ts` — new service
 
 **Implementation:**
@@ -406,7 +414,7 @@ import { supabaseAdmin } from '@server/supabase/admin';
 import { embeddingService } from './embedding.service';
 import type { ImagePresetKey } from '@shared/config/image-models.config';
 
-export const SIMILARITY_THRESHOLD = 0.90;
+export const SIMILARITY_THRESHOLD = 0.9;
 
 export interface ISimilarImageMatch {
   id: string;
@@ -445,11 +453,16 @@ export class ImageSimilarityService {
 
       if (!data || data.length === 0) return null;
 
-      const match = data[0] as { id: string; image_url: string; prompt: string; similarity: number };
+      const match = data[0] as {
+        id: string;
+        image_url: string;
+        prompt: string;
+        similarity: number;
+      };
 
       console.log(
         `[ImageSimilarity] Found reusable image (similarity=${match.similarity.toFixed(4)}) ` +
-        `for preset=${presetKey}`
+          `for preset=${presetKey}`
       );
 
       return {
@@ -460,7 +473,7 @@ export class ImageSimilarityService {
       };
     } catch (error) {
       console.error('[ImageSimilarity] Unexpected error during similarity search:', error);
-      return null;  // Graceful degradation
+      return null; // Graceful degradation
     }
   }
 }
@@ -470,16 +483,17 @@ export const imageSimilarityService = new ImageSimilarityService();
 
 **Tests Required:**
 
-| Test File | Test Name | Assertion |
-|-----------|-----------|-----------|
-| `tests/unit/image-similarity.service.spec.ts` | `findSimilarImage returns null when embedding is null` | Returns `null` without RPC call |
-| `tests/unit/image-similarity.service.spec.ts` | `findSimilarImage returns null when RPC returns empty` | Returns `null` |
+| Test File                                     | Test Name                                              | Assertion                                        |
+| --------------------------------------------- | ------------------------------------------------------ | ------------------------------------------------ |
+| `tests/unit/image-similarity.service.spec.ts` | `findSimilarImage returns null when embedding is null` | Returns `null` without RPC call                  |
+| `tests/unit/image-similarity.service.spec.ts` | `findSimilarImage returns null when RPC returns empty` | Returns `null`                                   |
 | `tests/unit/image-similarity.service.spec.ts` | `findSimilarImage returns match when RPC returns data` | Returns `ISimilarImageMatch` with correct fields |
-| `tests/unit/image-similarity.service.spec.ts` | `findSimilarImage returns null on RPC error` | Logs error, returns `null` (no throw) |
+| `tests/unit/image-similarity.service.spec.ts` | `findSimilarImage returns null on RPC error`           | Logs error, returns `null` (no throw)            |
 
 **Verification Plan:**
 
 Integration test via curl (after Phase 1 migration and seeding a test row with a known embedding):
+
 ```bash
 # Seed a row with a known embedding, then call RPC directly
 npx supabase db shell --local <<'SQL'
@@ -497,6 +511,7 @@ SQL
 ### Phase 4: Integration — Wire similarity check into image generation flow
 
 **Files (4):**
+
 - `server/services/image-generation.service.ts` — add similarity check before Replicate
 - `server/services/article-generation.service.ts` — persist `prompt_embedding` + `reused_from_image_id`
 - `shared/types/article.types.ts` — extend `IImageResult` with reuse metadata
@@ -517,9 +532,9 @@ export interface IImageResult {
   generationTimeMs?: number;
   replicatePredictionId?: string;
   // NEW — semantic reuse metadata
-  promptEmbedding: number[] | null;     // Always set if embedding API responded
-  wasReused: boolean;                    // true = from library, false = freshly generated
-  reusedFromImageId: string | null;     // set when wasReused=true
+  promptEmbedding: number[] | null; // Always set if embedding API responded
+  wasReused: boolean; // true = from library, false = freshly generated
+  reusedFromImageId: string | null; // set when wasReused=true
 }
 ```
 
@@ -556,7 +571,9 @@ for (let i = 0; i < markers.length; i++) {
       wasReused: true,
       reusedFromImageId: match.id,
     });
-    console.log(`[ImageGeneration] Image ${marker.position} reused from library (similarity=${match.similarity.toFixed(4)})`);
+    console.log(
+      `[ImageGeneration] Image ${marker.position} reused from library (similarity=${match.similarity.toFixed(4)})`
+    );
     continue;
   }
 
@@ -569,7 +586,12 @@ for (let i = 0; i < markers.length; i++) {
 
   try {
     const result = await this.generateSingleImage(marker, prompt, presetKey);
-    results.push({ ...result, promptEmbedding: embedding, wasReused: false, reusedFromImageId: null });
+    results.push({
+      ...result,
+      promptEmbedding: embedding,
+      wasReused: false,
+      reusedFromImageId: null,
+    });
   } catch (error) {
     results.push({
       position: marker.position,
@@ -626,13 +648,13 @@ private async saveArticleImages(
 
 **Tests Required:**
 
-| Test File | Test Name | Assertion |
-|-----------|-----------|-----------|
+| Test File                                     | Test Name                                                           | Assertion                                                               |
+| --------------------------------------------- | ------------------------------------------------------------------- | ----------------------------------------------------------------------- |
 | `tests/unit/image-generation.service.spec.ts` | `generateImagesForArticle reuses image when similarity match found` | No Replicate call; result has `wasReused=true`, `reusedFromImageId` set |
-| `tests/unit/image-generation.service.spec.ts` | `generateImagesForArticle generates fresh when no match` | Replicate called; `wasReused=false` |
-| `tests/unit/image-generation.service.spec.ts` | `generateImagesForArticle handles embed failure gracefully` | Falls through to Replicate when `embedBatch` returns null |
-| `tests/unit/image-generation.service.spec.ts` | `generateImagesForArticle skips rate-limit delay for reused images` | Delay only applied before actual Replicate calls |
-| `tests/api/article-generation.api.spec.ts` | `article with images saves prompt_embedding on article_images` | DB row has non-null `prompt_embedding` |
+| `tests/unit/image-generation.service.spec.ts` | `generateImagesForArticle generates fresh when no match`            | Replicate called; `wasReused=false`                                     |
+| `tests/unit/image-generation.service.spec.ts` | `generateImagesForArticle handles embed failure gracefully`         | Falls through to Replicate when `embedBatch` returns null               |
+| `tests/unit/image-generation.service.spec.ts` | `generateImagesForArticle skips rate-limit delay for reused images` | Delay only applied before actual Replicate calls                        |
+| `tests/api/article-generation.api.spec.ts`    | `article with images saves prompt_embedding on article_images`      | DB row has non-null `prompt_embedding`                                  |
 
 **Verification Plan:**
 
@@ -651,6 +673,7 @@ curl -s http://localhost:4321/api/articles/{articleId} \
 ### Phase 5: Backfill — Embed existing article_images records
 
 **Files (1):**
+
 - `scripts/backfill-image-embeddings.ts` — one-time batch backfill script
 
 **Implementation:**
@@ -724,10 +747,10 @@ async function backfill() {
     processed += rows.length;
     console.log(`[Backfill] Processed ${processed} rows (batch ${page + 1})`);
 
-    if (rows.length < BATCH_SIZE) break;  // Last page
+    if (rows.length < BATCH_SIZE) break; // Last page
 
     page++;
-    await sleep(DELAY_BETWEEN_BATCHES_MS);  // Respect OpenAI rate limits
+    await sleep(DELAY_BETWEEN_BATCHES_MS); // Respect OpenAI rate limits
   }
 
   console.log(`[Backfill] Complete. Total processed: ${processed}`);
@@ -741,10 +764,10 @@ backfill().catch(err => {
 
 **Tests Required:**
 
-| Test File | Test Name | Assertion |
-|-----------|-----------|-----------|
-| Manual | Script runs without error on small dataset | Exits with 0 |
-| Manual | Re-run is idempotent | No duplicate updates, `WHERE prompt_embedding IS NULL` skips done rows |
+| Test File | Test Name                                  | Assertion                                                              |
+| --------- | ------------------------------------------ | ---------------------------------------------------------------------- |
+| Manual    | Script runs without error on small dataset | Exits with 0                                                           |
+| Manual    | Re-run is idempotent                       | No duplicate updates, `WHERE prompt_embedding IS NULL` skips done rows |
 
 **Verification Plan:**
 
@@ -767,12 +790,14 @@ SQL
 ## 5. Checkpoint Protocol
 
 After each phase, spawn `prd-work-reviewer`:
+
 ```
 Task({
   subagent_type: 'prd-work-reviewer',
   prompt: 'Review phase [N] of PRD at docs/PRDs/image-semantic-reuse.md',
 })
 ```
+
 Continue only on PASS.
 
 ---
@@ -793,12 +818,12 @@ Continue only on PASS.
 
 ## 7. Cost Impact Estimate
 
-| Scenario | Before | After |
-|---|---|---|
-| 3 images/article, 1000 articles/month | ~3000 Replicate calls | 3000 - (reuse rate × 3000) Replicate calls |
-| Embedding cost (text-embedding-3-small) | $0 | ~$0.003/1000 articles (negligible) |
-| Replicate flux-dev cost (est. ~$0.03/image) | $90/month | $90 × (1 - reuse rate) |
-| Break-even reuse rate | — | Any reuse > 0% is net positive |
+| Scenario                                    | Before                | After                                      |
+| ------------------------------------------- | --------------------- | ------------------------------------------ |
+| 3 images/article, 1000 articles/month       | ~3000 Replicate calls | 3000 - (reuse rate × 3000) Replicate calls |
+| Embedding cost (text-embedding-3-small)     | $0                    | ~$0.003/1000 articles (negligible)         |
+| Replicate flux-dev cost (est. ~$0.03/image) | $90/month             | $90 × (1 - reuse rate)                     |
+| Break-even reuse rate                       | —                     | Any reuse > 0% is net positive             |
 
 ---
 

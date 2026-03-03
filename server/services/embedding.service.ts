@@ -33,7 +33,7 @@ export class EmbeddingService {
       const response = await fetch(OPENAI_EMBEDDING_URL, {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${apiKey}`,
+          Authorization: `Bearer ${apiKey}`,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
@@ -48,7 +48,7 @@ export class EmbeddingService {
         throw new Error(`OpenAI embedding API error ${response.status}: ${error}`);
       }
 
-      const data = await response.json() as {
+      const data = (await response.json()) as {
         data: Array<{ embedding: number[] }>;
         usage: { total_tokens: number };
         model: string;
@@ -57,7 +57,7 @@ export class EmbeddingService {
       return data.data[0].embedding;
     } catch (error) {
       console.error('[EmbeddingService] Failed to generate embedding:', error);
-      return null;  // Graceful degradation — caller falls back to generation
+      return null; // Graceful degradation — caller falls back to generation
     }
   }
 
@@ -78,7 +78,7 @@ export class EmbeddingService {
       const response = await fetch(OPENAI_EMBEDDING_URL, {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${apiKey}`,
+          Authorization: `Bearer ${apiKey}`,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
@@ -93,7 +93,7 @@ export class EmbeddingService {
         throw new Error(`OpenAI embedding API error ${response.status}: ${error}`);
       }
 
-      const data = await response.json() as {
+      const data = (await response.json()) as {
         data: Array<{ index: number; embedding: number[] }>;
         usage: { total_tokens: number };
       };
@@ -103,7 +103,7 @@ export class EmbeddingService {
       return sorted.map(item => item.embedding);
     } catch (error) {
       console.error('[EmbeddingService] Failed to batch embed:', error);
-      return texts.map(() => null);  // Graceful degradation
+      return texts.map(() => null); // Graceful degradation
     }
   }
 }

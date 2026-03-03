@@ -631,10 +631,32 @@ export class ArticleGenerationService {
 
     // Select prompt: QA-guided retry > quality-gate retry > standard
     const systemPrompt = qaFindings
-      ? getArticleQARetryPrompt(outline, tone, targetWordCount, imageCount, qaFindings, stylePreferences, internalLinks)
+      ? getArticleQARetryPrompt(
+          outline,
+          tone,
+          targetWordCount,
+          imageCount,
+          qaFindings,
+          stylePreferences,
+          internalLinks
+        )
       : isRetry
-        ? getArticleRetryPrompt(outline, tone, targetWordCount, imageCount, stylePreferences, internalLinks)
-        : getArticlePrompt(outline, tone, targetWordCount, imageCount, stylePreferences, internalLinks);
+        ? getArticleRetryPrompt(
+            outline,
+            tone,
+            targetWordCount,
+            imageCount,
+            stylePreferences,
+            internalLinks
+          )
+        : getArticlePrompt(
+            outline,
+            tone,
+            targetWordCount,
+            imageCount,
+            stylePreferences,
+            internalLinks
+          );
 
     const attemptLabel = qaFindings ? 'qa-retry' : isRetry ? 'quality-retry' : 'initial';
     console.log(

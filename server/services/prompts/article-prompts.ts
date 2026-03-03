@@ -86,7 +86,9 @@ function buildStylePreferencesSection(
   const lines: string[] = [];
 
   if (stylePreferences?.articleStyle) {
-    lines.push(`- This is a ${stylePreferences.articleStyle} article. Structure and format accordingly.`);
+    lines.push(
+      `- This is a ${stylePreferences.articleStyle} article. Structure and format accordingly.`
+    );
   }
 
   if (stylePreferences?.includeCta) {
@@ -113,7 +115,7 @@ function buildStylePreferencesSection(
     lines.push(`- Preferred visual style for images: ${stylePreferences.imageStyle}.`);
   }
 
-  const internalLinksCount = stylePreferences?.internalLinksCount ?? (internalLinks?.length ?? 0);
+  const internalLinksCount = stylePreferences?.internalLinksCount ?? internalLinks?.length ?? 0;
   if (internalLinksCount > 0 && internalLinks && internalLinks.length > 0) {
     const linkList = internalLinks
       .slice(0, internalLinksCount)

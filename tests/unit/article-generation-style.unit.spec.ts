@@ -142,9 +142,22 @@ vi.mock('@server/supabase/supabaseAdmin', () => ({
 function buildQueryChain(result: unknown) {
   const chain: Record<string, unknown> = {};
   const methods = [
-    'select', 'insert', 'update', 'delete', 'upsert',
-    'eq', 'neq', 'in', 'not', 'is', 'or', 'and',
-    'single', 'maybeSingle', 'limit', 'order',
+    'select',
+    'insert',
+    'update',
+    'delete',
+    'upsert',
+    'eq',
+    'neq',
+    'in',
+    'not',
+    'is',
+    'or',
+    'and',
+    'single',
+    'maybeSingle',
+    'limit',
+    'order',
   ];
   for (const m of methods) {
     chain[m] = vi.fn(() => chain);
@@ -160,9 +173,7 @@ function buildQueryChain(result: unknown) {
     get(target, prop) {
       if (prop === 'then' || prop === 'catch' || prop === 'finally') {
         // Make the proxy itself thenable — return result when awaited
-        return prop === 'then'
-          ? (resolve: (v: unknown) => void) => resolve(result)
-          : undefined;
+        return prop === 'then' ? (resolve: (v: unknown) => void) => resolve(result) : undefined;
       }
       return target[prop as string];
     },
@@ -203,9 +214,7 @@ describe('ArticleGenerationService — style preferences forwarding', () => {
     service = new ArticleGenerationService();
 
     // Default DB mock: articles update + projects select (for QA config)
-    mockSupabaseFrom.mockReturnValue(
-      buildQueryChain({ data: null, error: null })
-    );
+    mockSupabaseFrom.mockReturnValue(buildQueryChain({ data: null, error: null }));
     mockSupabaseRpc.mockResolvedValue({ data: null, error: null });
   });
 
@@ -248,9 +257,7 @@ describe('ArticleGenerationService — style preferences forwarding', () => {
   });
 
   it('should fetch internal links from DB when internalLinksCount > 0', async () => {
-    const mockLinks = [
-      { title: 'Cleaning Guide', published_url: 'https://example.com/clean' },
-    ];
+    const mockLinks = [{ title: 'Cleaning Guide', published_url: 'https://example.com/clean' }];
 
     // Provide a specific mock for the articles query
     mockSupabaseFrom.mockImplementation((table: string) => {

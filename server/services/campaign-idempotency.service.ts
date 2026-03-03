@@ -11,17 +11,29 @@
  */
 
 import { supabaseAdmin } from '@server/supabase/supabaseAdmin';
-import type {
-  ICampaignGenerationRunResult,
-  IClaimCampaignGenerationResult,
-} from '@shared/types/campaign.types';
 import { serverEnv } from '@shared/config/env';
 
+// Inline types (previously exported from campaign.types.ts but removed in issue #36 simplification)
+interface ICampaignGenerationRunResult {
+  queued: number;
+  creditsRequired: number;
+}
+
+interface IClaimCampaignGenerationResult {
+  isNew: boolean;
+  generationRunId?: string;
+  existingStatus?: string;
+  cachedResponse?: ICampaignGenerationRunResult;
+}
+
 // In-memory test data store for test mode
-const testModeGenerationRuns = new Map<string, {
-  status: string;
-  response?: ICampaignGenerationRunResult;
-}>();
+const testModeGenerationRuns = new Map<
+  string,
+  {
+    status: string;
+    response?: ICampaignGenerationRunResult;
+  }
+>();
 
 export class CampaignIdempotencyService {
   /**

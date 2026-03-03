@@ -15,7 +15,7 @@ import { isValidTimezone } from '@shared/config/scheduling.config';
 export const TONES = ['professional', 'casual', 'witty', 'academic'] as const;
 export type Tone = (typeof TONES)[number];
 
-export const CAMPAIGN_STATUSES = ['draft', 'active', 'paused', 'completed', 'scheduled'] as const;
+export const CAMPAIGN_STATUSES = ['scheduled', 'paused', 'completed'] as const;
 export type CampaignStatus = (typeof CAMPAIGN_STATUSES)[number];
 
 export const SCHEDULE_FREQUENCIES = [
@@ -80,16 +80,16 @@ export const createCampaignSchema = z.object({
     .string()
     .optional()
     .refine(val => !val || isValidImagePreset(val), { message: 'Invalid image preset' }),
-  // Scheduling fields
-  scheduleFrequency: z.enum(SCHEDULE_FREQUENCIES).optional(),
-  scheduleBatchSize: z.number().int().min(1).max(50).optional(),
+  // Scheduling fields (required — all campaigns are schedule-only)
+  scheduleFrequency: z.enum(SCHEDULE_FREQUENCIES),
+  scheduleBatchSize: z.number().int().min(1).max(50).default(1),
   scheduleTimezone: z
     .string()
     .min(1, 'Timezone is required')
     .max(100)
     .refine(isValidTimezone, { message: 'Invalid IANA timezone (e.g., America/New_York)' })
-    .optional(),
-  scheduleHour: z.number().int().min(0).max(23).optional(),
+    .default('UTC'),
+  scheduleHour: z.number().int().min(0).max(23).default(9),
   // Outrank feature parity fields
   articleStyle: z.enum(ARTICLE_STYLES).nullable().optional(),
   internalLinksCount: z.number().int().min(0).max(20).optional(),
@@ -105,18 +105,11 @@ export const createCampaignSchema = z.object({
 /**
  * Schema for campaign update (all fields optional)
  *
- * BUG H5: Valid status transitions enforced at the service layer (campaign-lifecycle.service.ts):
- * - active → paused  (pause a running campaign)
- * - paused → active  (resume a paused campaign)
- * All other transitions (e.g., draft → active, * → completed, * → scheduled) are rejected
- * with INVALID_STATUS_TRANSITION. Use dedicated scheduling endpoints for scheduled campaigns.
+ * Status changes are NOT allowed via this schema.
+ * Use dedicated endpoints: pause-schedule, resume-schedule
  */
 export const updateCampaignSchema = z.object({
   name: z.string().min(1).max(100).trim().optional(),
-  // Status is allowed for simple pause/resume transitions on non-scheduled campaigns.
-  // Transition validation is enforced by the service layer (not the schema).
-  // For scheduled campaigns, use dedicated endpoints: startSchedule, pauseSchedule, resumeSchedule
-  status: z.enum(['active', 'paused']).optional(),
   model: z.string().optional(),
   tone: z.enum(TONES).optional(),
   targetWordCount: z.number().int().min(800).max(3000).optional(),

@@ -1,11 +1,18 @@
 /**
  * Campaign Schedule Service Unit Tests
  * Tests for campaign schedule management methods
+ *
+ * Updated for Campaign Autopilot Simplification (issue #36):
+ * - Campaigns have 3 statuses: scheduled | paused | completed
+ * - startSchedule delegates to resumeSchedule (campaigns auto-activate on creation)
+ * - pauseSchedule: only 'scheduled' campaigns can be paused
+ * - resumeSchedule: only 'paused' campaigns can be resumed
+ * - processScheduledBatch: uses generation_run_id as processing lock
  */
 
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { CampaignService } from '../campaign.service';
-import { CampaignNotFoundError, NoPendingKeywordsError } from '@shared/types/campaign.types';
+import { CampaignNotFoundError } from '@shared/types/campaign.types';
 import type { ICampaign } from '@shared/types/campaign.types';
 
 // Mock Supabase admin client
@@ -85,7 +92,7 @@ describe('CampaignService - Schedule Management', () => {
     user_id: mockUserId,
     project_id: 'project-123',
     name: 'Test Campaign',
-    status: 'draft',
+    status: 'paused',
     ai_model: 'pro',
     tone: 'professional',
     target_word_count: 1500,
@@ -119,10 +126,11 @@ describe('CampaignService - Schedule Management', () => {
     mockCalculateNextRunAt.mockReturnValue('2024-02-15T10:00:00.000Z');
   });
 
-  describe('startSchedule', () => {
-    it('should set status to scheduled and return nextRunAt', async () => {
+  // startSchedule is now an alias for resumeSchedule (since campaigns auto-activate on creation)
+  describe('startSchedule (delegates to resumeSchedule)', () => {
+    it('should set status to scheduled and return nextRunAt for a paused campaign', async () => {
       const mockCampaign = createMockCampaign({
-        status: 'draft',
+        status: 'paused',
         schedule_frequency: 'daily',
       });
 
@@ -153,18 +161,12 @@ describe('CampaignService - Schedule Management', () => {
         })),
       });
 
-      // Mock update
-      const mockUpdateSingle = vi.fn(() => ({
-        data: { ...mockCampaign, status: 'scheduled', next_run_at: '2024-02-15T10:00:00.000Z' },
-        error: null,
-      }));
+      // Mock update (from resumeSchedule)
       mockSupabaseAdmin.from.mockReturnValueOnce({
         update: vi.fn(() => ({
           eq: vi.fn(() => ({
             eq: vi.fn(() => ({
-              select: vi.fn(() => ({
-                single: mockUpdateSingle,
-              })),
+              error: null,
             })),
           })),
         })),
@@ -179,7 +181,7 @@ describe('CampaignService - Schedule Management', () => {
 
     it('should reject campaign without schedule config', async () => {
       const mockCampaign = createMockCampaign({
-        status: 'draft',
+        status: 'paused',
         schedule_frequency: null,
       });
 
@@ -197,38 +199,12 @@ describe('CampaignService - Schedule Management', () => {
         })),
       });
 
-      await expect(campaignService.startSchedule(mockCampaignId, mockUserId)).rejects.toThrow(
-        'Cannot start schedule: campaign has no schedule configuration'
-      );
-    });
-
-    it('should reject campaign with no pending keywords', async () => {
-      const mockCampaign = createMockCampaign({
-        status: 'draft',
-        schedule_frequency: 'daily',
-      });
-
-      // Mock getById
-      const mockSingle = vi.fn(() => ({
-        data: mockCampaign,
-        error: null,
-      }));
+      // getPendingKeywordCount mock
       mockSupabaseAdmin.from.mockReturnValueOnce({
         select: vi.fn(() => ({
           eq: vi.fn(() => ({
             eq: vi.fn(() => ({
-              single: mockSingle,
-            })),
-          })),
-        })),
-      });
-
-      // Mock getPendingKeywordCount - returns 0
-      mockSupabaseAdmin.from.mockReturnValueOnce({
-        select: vi.fn(() => ({
-          eq: vi.fn(() => ({
-            eq: vi.fn(() => ({
-              count: 0,
+              count: 3,
               error: null,
             })),
           })),
@@ -236,36 +212,11 @@ describe('CampaignService - Schedule Management', () => {
       });
 
       await expect(campaignService.startSchedule(mockCampaignId, mockUserId)).rejects.toThrow(
-        NoPendingKeywordsError
+        'Cannot resume schedule: campaign has no schedule configuration'
       );
     });
 
-    it('should reject campaign in invalid state (active)', async () => {
-      const mockCampaign = createMockCampaign({
-        status: 'active',
-        schedule_frequency: 'daily',
-      });
-
-      const mockSingle = vi.fn(() => ({
-        data: mockCampaign,
-        error: null,
-      }));
-      mockSupabaseAdmin.from.mockReturnValueOnce({
-        select: vi.fn(() => ({
-          eq: vi.fn(() => ({
-            eq: vi.fn(() => ({
-              single: mockSingle,
-            })),
-          })),
-        })),
-      });
-
-      await expect(campaignService.startSchedule(mockCampaignId, mockUserId)).rejects.toThrow(
-        "Cannot start schedule: campaign status is 'active'"
-      );
-    });
-
-    it('should reject campaign in invalid state (completed)', async () => {
+    it('should reject campaign in completed state', async () => {
       const mockCampaign = createMockCampaign({
         status: 'completed',
         schedule_frequency: 'daily',
@@ -285,12 +236,24 @@ describe('CampaignService - Schedule Management', () => {
         })),
       });
 
+      // getPendingKeywordCount mock
+      mockSupabaseAdmin.from.mockReturnValueOnce({
+        select: vi.fn(() => ({
+          eq: vi.fn(() => ({
+            eq: vi.fn(() => ({
+              count: 3,
+              error: null,
+            })),
+          })),
+        })),
+      });
+
       await expect(campaignService.startSchedule(mockCampaignId, mockUserId)).rejects.toThrow(
-        "Cannot start schedule: campaign status is 'completed'"
+        "Cannot resume schedule: campaign status is 'completed'"
       );
     });
 
-    it('should reject campaign in invalid state (scheduled)', async () => {
+    it('should reject campaign in scheduled state (already running)', async () => {
       const mockCampaign = createMockCampaign({
         status: 'scheduled',
         schedule_frequency: 'daily',
@@ -310,8 +273,20 @@ describe('CampaignService - Schedule Management', () => {
         })),
       });
 
+      // getPendingKeywordCount mock
+      mockSupabaseAdmin.from.mockReturnValueOnce({
+        select: vi.fn(() => ({
+          eq: vi.fn(() => ({
+            eq: vi.fn(() => ({
+              count: 3,
+              error: null,
+            })),
+          })),
+        })),
+      });
+
       await expect(campaignService.startSchedule(mockCampaignId, mockUserId)).rejects.toThrow(
-        "Cannot start schedule: campaign status is 'scheduled'"
+        "Cannot resume schedule: campaign status is 'scheduled'"
       );
     });
 
@@ -333,62 +308,6 @@ describe('CampaignService - Schedule Management', () => {
       await expect(campaignService.startSchedule(mockCampaignId, mockUserId)).rejects.toThrow(
         CampaignNotFoundError
       );
-    });
-
-    it('should accept campaign in paused state', async () => {
-      const mockCampaign = createMockCampaign({
-        status: 'paused',
-        schedule_frequency: 'daily',
-      });
-
-      // Mock getById
-      const mockSingle = vi.fn(() => ({
-        data: mockCampaign,
-        error: null,
-      }));
-      mockSupabaseAdmin.from.mockReturnValueOnce({
-        select: vi.fn(() => ({
-          eq: vi.fn(() => ({
-            eq: vi.fn(() => ({
-              single: mockSingle,
-            })),
-          })),
-        })),
-      });
-
-      // Mock getPendingKeywordCount
-      mockSupabaseAdmin.from.mockReturnValueOnce({
-        select: vi.fn(() => ({
-          eq: vi.fn(() => ({
-            eq: vi.fn(() => ({
-              count: 3,
-              error: null,
-            })),
-          })),
-        })),
-      });
-
-      // Mock update
-      const mockUpdateSingle = vi.fn(() => ({
-        data: { ...mockCampaign, status: 'scheduled', next_run_at: '2024-02-15T10:00:00.000Z' },
-        error: null,
-      }));
-      mockSupabaseAdmin.from.mockReturnValueOnce({
-        update: vi.fn(() => ({
-          eq: vi.fn(() => ({
-            eq: vi.fn(() => ({
-              select: vi.fn(() => ({
-                single: mockUpdateSingle,
-              })),
-            })),
-          })),
-        })),
-      });
-
-      const result = await campaignService.startSchedule(mockCampaignId, mockUserId);
-
-      expect(result.nextRunAt).toBe('2024-02-15T10:00:00.000Z');
-      expect(result.pendingKeywords).toBe(3);
     });
   });
 
@@ -416,10 +335,6 @@ describe('CampaignService - Schedule Management', () => {
       });
 
       // Mock update
-      const mockUpdateResult = vi.fn(() => ({
-        data: { ...mockCampaign, status: 'paused', next_run_at: null },
-        error: null,
-      }));
       mockSupabaseAdmin.from.mockReturnValueOnce({
         update: vi.fn(() => ({
           eq: vi.fn(() => ({
@@ -435,9 +350,9 @@ describe('CampaignService - Schedule Management', () => {
       expect(result.paused).toBe(true);
     });
 
-    it('should reject campaign not in scheduled or active state', async () => {
+    it('should reject campaign not in scheduled state (paused)', async () => {
       const mockCampaign = createMockCampaign({
-        status: 'draft',
+        status: 'paused',
       });
 
       const mockSingle = vi.fn(() => ({
@@ -455,16 +370,15 @@ describe('CampaignService - Schedule Management', () => {
       });
 
       await expect(campaignService.pauseSchedule(mockCampaignId, mockUserId)).rejects.toThrow(
-        "Cannot pause schedule: campaign status is 'draft'"
+        "Cannot pause schedule: campaign status is 'paused'"
       );
     });
 
-    it('should accept campaign in active state', async () => {
+    it('should reject campaign not in scheduled state (completed)', async () => {
       const mockCampaign = createMockCampaign({
-        status: 'active',
+        status: 'completed',
       });
 
-      // Mock getById
       const mockSingle = vi.fn(() => ({
         data: mockCampaign,
         error: null,
@@ -479,20 +393,9 @@ describe('CampaignService - Schedule Management', () => {
         })),
       });
 
-      // Mock update
-      mockSupabaseAdmin.from.mockReturnValueOnce({
-        update: vi.fn(() => ({
-          eq: vi.fn(() => ({
-            eq: vi.fn(() => ({
-              error: null,
-            })),
-          })),
-        })),
-      });
-
-      const result = await campaignService.pauseSchedule(mockCampaignId, mockUserId);
-
-      expect(result.paused).toBe(true);
+      await expect(campaignService.pauseSchedule(mockCampaignId, mockUserId)).rejects.toThrow(
+        "Cannot pause schedule: campaign status is 'completed'"
+      );
     });
 
     it('should throw CampaignNotFoundError for non-existent campaign', async () => {
@@ -684,11 +587,12 @@ describe('CampaignSchedulingService - processScheduledBatch (BUG H7)', () => {
   let schedulingService: CampaignSchedulingService;
   const campaignId = 'campaign-batch-test';
 
+  // Campaign stays 'scheduled' throughout processing — lock via generation_run_id
   const mockScheduledCampaign = {
     id: campaignId,
     user_id: 'user-123',
     project_id: 'project-123',
-    status: 'active', // claimed (transition from scheduled → active)
+    status: 'scheduled',
     ai_model: 'pro',
     tone: 'professional',
     target_word_count: 1500,
@@ -724,13 +628,15 @@ describe('CampaignSchedulingService - processScheduledBatch (BUG H7)', () => {
   });
 
   it('should pause campaign when all batch articles fail (BUG H7 fix)', async () => {
-    // Call 1: claim campaign (update status: scheduled → active)
+    // Call 1: claim campaign via generation_run_id lock
     mockSupabaseAdmin.from.mockReturnValueOnce({
       update: vi.fn(() => ({
         eq: vi.fn(() => ({
           eq: vi.fn(() => ({
-            select: vi.fn(() => ({
-              single: vi.fn(() => ({ data: mockScheduledCampaign, error: null })),
+            is: vi.fn(() => ({
+              select: vi.fn(() => ({
+                single: vi.fn(() => ({ data: mockScheduledCampaign, error: null })),
+              })),
             })),
           })),
         })),
@@ -810,13 +716,15 @@ describe('CampaignSchedulingService - processScheduledBatch (BUG H7)', () => {
   });
 
   it('should reschedule campaign when at least one article succeeds', async () => {
-    // Call 1: claim campaign
+    // Call 1: claim campaign via generation_run_id lock
     mockSupabaseAdmin.from.mockReturnValueOnce({
       update: vi.fn(() => ({
         eq: vi.fn(() => ({
           eq: vi.fn(() => ({
-            select: vi.fn(() => ({
-              single: vi.fn(() => ({ data: mockScheduledCampaign, error: null })),
+            is: vi.fn(() => ({
+              select: vi.fn(() => ({
+                single: vi.fn(() => ({ data: mockScheduledCampaign, error: null })),
+              })),
             })),
           })),
         })),
@@ -892,15 +800,16 @@ describe('CampaignSchedulingService - processScheduledBatch (BUG H7)', () => {
     });
 
     // Call 8: check if campaign was paused during processing
+    // Campaign stays 'scheduled' throughout (no status change to 'active')
     mockSupabaseAdmin.from.mockReturnValueOnce({
       select: vi.fn(() => ({
         eq: vi.fn(() => ({
-          single: vi.fn(() => ({ data: { status: 'active' }, error: null })),
+          single: vi.fn(() => ({ data: { status: 'scheduled' }, error: null })),
         })),
       })),
     });
 
-    // Call 9: update campaign back to scheduled with nextRunAt
+    // Call 9: update campaign with nextRunAt and clear generation_run_id
     mockSupabaseAdmin.from.mockReturnValueOnce({
       update: vi.fn(() => ({
         eq: vi.fn(() => ({ error: null })),

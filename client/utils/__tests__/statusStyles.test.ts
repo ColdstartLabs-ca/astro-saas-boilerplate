@@ -8,8 +8,8 @@ import {
 
 describe('statusStyles', () => {
   describe('getCampaignStatusStyles', () => {
-    it('should return green styles for active campaign', () => {
-      const result = getCampaignStatusStyles('active');
+    it('should return green styles for scheduled campaign', () => {
+      const result = getCampaignStatusStyles('scheduled');
       expect(result).toBe('bg-green-500/10 text-green-400 border-green-500/20');
     });
 
@@ -79,8 +79,8 @@ describe('statusStyles', () => {
   });
 
   describe('getCampaignProgressStyles', () => {
-    it('should return accent styles for active campaign', () => {
-      const result = getCampaignProgressStyles('active');
+    it('should return accent styles for scheduled campaign', () => {
+      const result = getCampaignProgressStyles('scheduled');
       expect(result).toBe('bg-accent');
     });
 

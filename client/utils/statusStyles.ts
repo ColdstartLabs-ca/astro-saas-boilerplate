@@ -10,7 +10,7 @@
  */
 export function getCampaignStatusStyles(status: string): string {
   const styles: Record<string, string> = {
-    active: 'bg-green-500/10 text-green-400 border-green-500/20',
+    scheduled: 'bg-green-500/10 text-green-400 border-green-500/20',
     completed: 'bg-blue-500/10 text-blue-400 border-blue-500/20',
     paused: 'bg-yellow-500/10 text-yellow-400 border-yellow-500/20',
   };
@@ -71,7 +71,7 @@ export function getIntegrationStatusStyles(status: string): string {
  */
 export function getCampaignProgressStyles(status: string): string {
   const styles: Record<string, string> = {
-    active: 'bg-accent',
+    scheduled: 'bg-accent',
     completed: 'bg-green-500',
     paused: 'bg-muted',
   };

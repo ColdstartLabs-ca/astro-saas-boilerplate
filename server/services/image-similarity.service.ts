@@ -7,7 +7,7 @@
 import { supabaseAdmin } from '@server/supabase/supabaseAdmin';
 import type { ImagePresetKey } from '@shared/config/image-models.config';
 
-export const SIMILARITY_THRESHOLD = 0.90;
+export const SIMILARITY_THRESHOLD = 0.9;
 
 export interface ISimilarImageMatch {
   id: string;
@@ -46,11 +46,16 @@ export class ImageSimilarityService {
 
       if (!data || data.length === 0) return null;
 
-      const match = data[0] as { id: string; image_url: string; prompt: string; similarity: number };
+      const match = data[0] as {
+        id: string;
+        image_url: string;
+        prompt: string;
+        similarity: number;
+      };
 
       console.log(
         `[ImageSimilarity] Found reusable image (similarity=${match.similarity.toFixed(4)}) ` +
-        `for preset=${presetKey}`
+          `for preset=${presetKey}`
       );
 
       return {
@@ -61,7 +66,7 @@ export class ImageSimilarityService {
       };
     } catch (error) {
       console.error('[ImageSimilarity] Unexpected error during similarity search:', error);
-      return null;  // Graceful degradation
+      return null; // Graceful degradation
     }
   }
 }

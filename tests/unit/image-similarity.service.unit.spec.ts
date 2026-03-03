@@ -24,7 +24,10 @@ vi.mock('@shared/config/env', () => ({
   clientEnv: {},
 }));
 
-import { ImageSimilarityService, SIMILARITY_THRESHOLD } from '@server/services/image-similarity.service';
+import {
+  ImageSimilarityService,
+  SIMILARITY_THRESHOLD,
+} from '@server/services/image-similarity.service';
 
 describe('ImageSimilarityService', () => {
   let service: ImageSimilarityService;
@@ -135,7 +138,7 @@ describe('ImageSimilarityService', () => {
   });
 
   it('SIMILARITY_THRESHOLD is 0.90', () => {
-    expect(SIMILARITY_THRESHOLD).toBe(0.90);
+    expect(SIMILARITY_THRESHOLD).toBe(0.9);
   });
 
   it('logs a message when a reusable image is found', async () => {
@@ -149,9 +152,7 @@ describe('ImageSimilarityService', () => {
     const embedding = new Array(1536).fill(0.1);
     await service.findSimilarImage(embedding, 'balanced');
 
-    expect(consoleSpy).toHaveBeenCalledWith(
-      expect.stringContaining('Found reusable image')
-    );
+    expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('Found reusable image'));
 
     consoleSpy.mockRestore();
   });

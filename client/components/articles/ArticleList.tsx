@@ -178,7 +178,10 @@ export function ArticleList({ statusFilter: propStatusFilter }: IArticleListProp
   // Error state
   if (error) {
     return (
-      <div data-testid="articles-error-state" className="bg-surface border border-border rounded-xl p-12 text-center">
+      <div
+        data-testid="articles-error-state"
+        className="bg-surface border border-border rounded-xl p-12 text-center"
+      >
         <p className="text-error text-sm">Failed to load articles</p>
       </div>
     );

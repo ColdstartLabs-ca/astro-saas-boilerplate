@@ -50,7 +50,7 @@ vi.mock('@server/services/image-similarity.service', () => ({
     findSimilarImage = mockFindSimilarImage;
   },
   imageSimilarityService: { findSimilarImage: mockFindSimilarImage },
-  SIMILARITY_THRESHOLD: 0.90,
+  SIMILARITY_THRESHOLD: 0.9,
 }));
 
 // Import after mocks are set up
@@ -128,9 +128,7 @@ describe('ImageGenerationService', () => {
         finishReason: 'stop',
       });
 
-      const singleMarker: IImageMarker[] = [
-        { position: 1, sectionContext: 'Intro about SEO' },
-      ];
+      const singleMarker: IImageMarker[] = [{ position: 1, sectionContext: 'Intro about SEO' }];
 
       const result = await imageGenerationService.generateImagesForArticle(
         singleMarker,
@@ -164,9 +162,7 @@ describe('ImageGenerationService', () => {
       mockWithRetry.mockImplementation(async (fn: () => Promise<string>) => fn());
       mockGenerateImage.mockResolvedValue('https://replicate.delivery/fresh.jpg');
 
-      const singleMarker: IImageMarker[] = [
-        { position: 1, sectionContext: 'Some section' },
-      ];
+      const singleMarker: IImageMarker[] = [{ position: 1, sectionContext: 'Some section' }];
 
       const result = await imageGenerationService.generateImagesForArticle(
         singleMarker,
@@ -216,11 +212,12 @@ describe('ImageGenerationService', () => {
       // Two markers: first is reused, second is fresh
       mockEmbedBatch.mockResolvedValue([
         new Array(1536).fill(0.8), // first: has embedding → reused
-        null,                       // second: no embedding → fresh Replicate call
+        null, // second: no embedding → fresh Replicate call
       ]);
 
       mockFindSimilarImage
-        .mockResolvedValueOnce({ // first image: match found
+        .mockResolvedValueOnce({
+          // first image: match found
           id: 'img-reuse-id',
           imageUrl: 'https://cdn.example.com/reused.webp',
           prompt: 'match prompt',
@@ -238,7 +235,9 @@ describe('ImageGenerationService', () => {
       mockWithRetry.mockImplementation(async (fn: () => Promise<string>) => fn());
       mockGenerateImage.mockResolvedValue('https://replicate.delivery/second.jpg');
 
-      const sleepSpy = vi.spyOn(imageGenerationService as any, 'sleep').mockResolvedValue(undefined);
+      const sleepSpy = vi
+        .spyOn(imageGenerationService as any, 'sleep')
+        .mockResolvedValue(undefined);
 
       const result = await imageGenerationService.generateImagesForArticle(
         mockMarkers,

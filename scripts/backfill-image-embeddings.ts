@@ -66,10 +66,10 @@ async function backfill() {
     processed += rows.length;
     console.log(`[Backfill] Processed ${processed} rows (batch ${page + 1})`);
 
-    if (rows.length < BATCH_SIZE) break;  // Last page
+    if (rows.length < BATCH_SIZE) break; // Last page
 
     page++;
-    await sleep(DELAY_BETWEEN_BATCHES_MS);  // Respect OpenAI rate limits
+    await sleep(DELAY_BETWEEN_BATCHES_MS); // Respect OpenAI rate limits
   }
 
   console.log(`[Backfill] Complete. Total processed: ${processed}`);
