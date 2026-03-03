@@ -76,6 +76,14 @@ export function NewCampaignModal({
       scheduleBatchSize: 3,
       scheduleHour: 9,
       scheduleTimezone: detectTimezone(),
+      // Content style defaults
+      articleStyle: 'informative',
+      internalLinksCount: 2,
+      globalInstructions: '',
+      includeYoutube: false,
+      includeCta: false,
+      includeEmojis: false,
+      includeInfographics: false,
     },
   });
 
@@ -153,6 +161,15 @@ export function NewCampaignModal({
                 scheduleHour: data.scheduleHour ?? 9,
               }
             : {}),
+          // Content style preferences
+          articleStyle: data.articleStyle ?? undefined,
+          internalLinksCount: data.internalLinksCount,
+          globalInstructions: data.globalInstructions || undefined,
+          includeYoutube: data.includeYoutube,
+          includeCta: data.includeCta,
+          includeEmojis: data.includeEmojis,
+          includeInfographics: data.includeInfographics,
+          imageStyle: data.imageStyle ?? undefined,
         });
         setCreatedCampaign(campaign);
         setStep(4);

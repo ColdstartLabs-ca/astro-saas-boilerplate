@@ -12,7 +12,11 @@ import { withAuth, jsonResponse, errorResponse, fireAndForget } from '../../_uti
 import { supabaseAdmin } from '@server/supabase/supabaseAdmin';
 import { articleGenerationService } from '@server/services/article-generation.service';
 import { calculateArticleCreditCost } from '@shared/config/credits.config';
-import type { IGenerateArticleInput, ArticleStatus } from '@shared/types/article.types';
+import type {
+  IGenerateArticleInput,
+  IArticleStylePreferences,
+  ArticleStatus,
+} from '@shared/types/article.types';
 
 // Valid statuses for regeneration
 const REGENERATABLE_STATUSES: ArticleStatus[] = [
@@ -41,7 +45,15 @@ export const POST = withAuth(async (userId, { params, locals }) => {
         ai_model,
         tone,
         target_word_count,
-        image_preset
+        image_preset,
+        article_style,
+        global_instructions,
+        internal_links_count,
+        include_youtube,
+        include_cta,
+        include_emojis,
+        include_infographics,
+        image_style
       )
     `
     )
@@ -60,6 +72,14 @@ export const POST = withAuth(async (userId, { params, locals }) => {
     tone: string | null;
     target_word_count: number | null;
     image_preset: string | null;
+    article_style: string | null;
+    global_instructions: string | null;
+    internal_links_count: number | null;
+    include_youtube: boolean | null;
+    include_cta: boolean | null;
+    include_emojis: boolean | null;
+    include_infographics: boolean | null;
+    image_style: string | null;
   } | null;
 
   if (!campaign) {
@@ -134,6 +154,18 @@ export const POST = withAuth(async (userId, { params, locals }) => {
     );
   }
 
+  // Build style preferences from campaign outrank fields
+  const stylePreferences: IArticleStylePreferences = {
+    articleStyle: (campaign.article_style as IArticleStylePreferences['articleStyle']) ?? undefined,
+    globalInstructions: campaign.global_instructions ?? undefined,
+    internalLinksCount: campaign.internal_links_count ?? 0,
+    includeYoutube: campaign.include_youtube ?? false,
+    includeCta: campaign.include_cta ?? false,
+    includeEmojis: campaign.include_emojis ?? false,
+    includeInfographics: campaign.include_infographics ?? false,
+    imageStyle: campaign.image_style ?? undefined,
+  };
+
   // Fire & forget generation
   const generateInput: IGenerateArticleInput = {
     keyword: article.primary_keyword,
@@ -143,6 +175,7 @@ export const POST = withAuth(async (userId, { params, locals }) => {
     tone: (campaign.tone as IGenerateArticleInput['tone']) || undefined,
     targetWordCount: campaign.target_word_count || undefined,
     imagePreset: campaign.image_preset || undefined,
+    stylePreferences,
   };
 
   fireAndForget(locals, articleGenerationService.generateArticle(articleId, userId, generateInput));

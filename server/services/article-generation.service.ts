@@ -29,6 +29,7 @@ import { calculateOverallSEOScore } from '@shared/utils/seo';
 import type {
   ArticleStatus,
   IArticleOutline,
+  IArticleStylePreferences,
   IGenerateArticleInput,
   IImageMarker,
   IImageResult,
@@ -105,6 +106,15 @@ export class ArticleGenerationService {
         .eq('user_id', userId);
 
       // Step 1: Generate outline (with GSC context if provided)
+      // Fetch internal links if needed before generating the outline
+      const stylePreferences = input.stylePreferences;
+      const internalLinksCount = stylePreferences?.internalLinksCount ?? 0;
+      const internalLinks: Array<{ title: string; url: string }> =
+        input.internalLinks ??
+        (internalLinksCount > 0
+          ? await this.fetchInternalLinks(input.projectId, internalLinksCount)
+          : []);
+
       const outline = await this.generateOutline(input, input.gscContext);
       totalTokens += outline.usage.totalTokens;
 
@@ -117,7 +127,15 @@ export class ArticleGenerationService {
 
       // Step 2: Generate full article (with IMAGE markers if enabled) with quality gate
       const targetWordCount = input.targetWordCount || 1500;
-      let articleResult = await this.generateFullArticle(outline.data, input, imagePreset, false);
+      let articleResult = await this.generateFullArticle(
+        outline.data,
+        input,
+        imagePreset,
+        false,
+        undefined,
+        stylePreferences,
+        internalLinks
+      );
       totalTokens += articleResult.usage.totalTokens;
 
       // Step 2.5: Quality gate check with auto-retry
@@ -135,7 +153,15 @@ export class ArticleGenerationService {
 
         // Retry once with stricter prompt
         hasRetriedQualityGate = true;
-        articleResult = await this.generateFullArticle(outline.data, input, imagePreset, true);
+        articleResult = await this.generateFullArticle(
+          outline.data,
+          input,
+          imagePreset,
+          true,
+          undefined,
+          stylePreferences,
+          internalLinks
+        );
         totalTokens += articleResult.usage.totalTokens;
 
         // Re-check quality after retry
@@ -223,7 +249,9 @@ export class ArticleGenerationService {
             input,
             imagePreset,
             false,
-            qaFeedback
+            qaFeedback,
+            stylePreferences,
+            internalLinks
           );
           totalTokens += qaRetryResult.usage.totalTokens;
 
@@ -457,7 +485,13 @@ export class ArticleGenerationService {
     const targetWordCount = input.targetWordCount || 1500;
     const model = resolveWriterModel(input.model || 'auto', serverEnv.AVAILABLE_WRITER_PRESETS);
 
-    const systemPrompt = getOutlinePrompt(input.keyword, tone, targetWordCount, gscContext);
+    const systemPrompt = getOutlinePrompt(
+      input.keyword,
+      tone,
+      targetWordCount,
+      gscContext,
+      input.stylePreferences
+    );
 
     const outlineJsonSchema = {
       type: 'json_schema' as const,
@@ -572,13 +606,17 @@ export class ArticleGenerationService {
    *
    * @param qaFindings - Optional QA failure findings from a previous attempt.
    *   When provided, uses the QA-guided retry prompt so the AI knows what to fix.
+   * @param stylePreferences - Optional style preferences to include in the prompt.
+   * @param internalLinks - Optional pre-fetched internal links to include in the prompt.
    */
   private async generateFullArticle(
     outline: IArticleOutline,
     input: IGenerateArticleInput,
     imagePreset: ImagePresetKey | null | undefined,
     isRetry: boolean = false,
-    qaFindings?: string
+    qaFindings?: string,
+    stylePreferences?: IArticleStylePreferences,
+    internalLinks?: Array<{ title: string; url: string }>
   ): Promise<{ content: string; usage: { totalTokens: number }; finishReason: string }> {
     const tone = input.tone || 'professional';
     const targetWordCount = input.targetWordCount || 1500;
@@ -593,10 +631,10 @@ export class ArticleGenerationService {
 
     // Select prompt: QA-guided retry > quality-gate retry > standard
     const systemPrompt = qaFindings
-      ? getArticleQARetryPrompt(outline, tone, targetWordCount, imageCount, qaFindings)
+      ? getArticleQARetryPrompt(outline, tone, targetWordCount, imageCount, qaFindings, stylePreferences, internalLinks)
       : isRetry
-        ? getArticleRetryPrompt(outline, tone, targetWordCount, imageCount)
-        : getArticlePrompt(outline, tone, targetWordCount, imageCount);
+        ? getArticleRetryPrompt(outline, tone, targetWordCount, imageCount, stylePreferences, internalLinks)
+        : getArticlePrompt(outline, tone, targetWordCount, imageCount, stylePreferences, internalLinks);
 
     const attemptLabel = qaFindings ? 'qa-retry' : isRetry ? 'quality-retry' : 'initial';
     console.log(
@@ -625,6 +663,49 @@ export class ArticleGenerationService {
     );
 
     return { content: result.content, usage: result.usage, finishReason: result.finishReason };
+  }
+
+  /**
+   * Fetch published articles from the same project for internal linking.
+   * Returns up to `limit` articles with their titles and published URLs.
+   *
+   * @param projectId - The project to fetch articles from
+   * @param limit - Maximum number of internal links to fetch
+   */
+  private async fetchInternalLinks(
+    projectId: string,
+    limit: number
+  ): Promise<Array<{ title: string; url: string }>> {
+    if (limit <= 0) {
+      return [];
+    }
+
+    try {
+      const { data, error } = await this.supabase
+        .from('articles')
+        .select('title, published_url')
+        .eq('project_id', projectId)
+        .eq('status', 'published')
+        .not('published_url', 'is', null)
+        .not('title', 'is', null)
+        .order('published_at', { ascending: false })
+        .limit(limit);
+
+      if (error || !data) {
+        console.warn(
+          `[ArticleGeneration] Failed to fetch internal links for project ${projectId}:`,
+          error?.message
+        );
+        return [];
+      }
+
+      return data
+        .filter(a => a.title && a.published_url)
+        .map(a => ({ title: a.title as string, url: a.published_url as string }));
+    } catch (err) {
+      console.warn(`[ArticleGeneration] Error fetching internal links:`, err);
+      return [];
+    }
   }
 
   /**

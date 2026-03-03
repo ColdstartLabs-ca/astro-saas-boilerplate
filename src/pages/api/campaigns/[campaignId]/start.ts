@@ -5,6 +5,7 @@
 
 import { campaignService } from '@server/services/campaign.service';
 import type { IStartCampaignResponse } from '@shared/types/campaign.types';
+import type { IArticleStylePreferences } from '@shared/types/article.types';
 import { articleGenerationService } from '@server/services/article-generation.service';
 import { supabaseAdmin } from '@server/supabase/supabaseAdmin';
 import { batchLimitCheck } from '@server/services/batch-limit.service';
@@ -123,6 +124,18 @@ export const POST = withAuth(async (userId, { params, locals, request }) => {
             continue;
           }
 
+          // Build style preferences from campaign outrank fields
+          const stylePreferences: IArticleStylePreferences = {
+            articleStyle: campaign.article_style ?? undefined,
+            globalInstructions: campaign.global_instructions ?? undefined,
+            internalLinksCount: campaign.internal_links_count ?? 0,
+            includeYoutube: campaign.include_youtube,
+            includeCta: campaign.include_cta,
+            includeEmojis: campaign.include_emojis,
+            includeInfographics: campaign.include_infographics,
+            imageStyle: campaign.image_style ?? undefined,
+          };
+
           // Generate article (sequential generation)
           await articleGenerationService.generateArticle(article.id, userId, {
             keyword: keyword.keyword,
@@ -132,6 +145,7 @@ export const POST = withAuth(async (userId, { params, locals, request }) => {
             tone: campaign.tone,
             targetWordCount: campaign.target_word_count,
             imagePreset: campaign.image_preset ?? undefined,
+            stylePreferences,
           });
 
           // Update keyword status to 'generated' on success

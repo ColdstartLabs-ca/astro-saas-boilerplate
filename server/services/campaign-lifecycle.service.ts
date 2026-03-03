@@ -29,6 +29,60 @@ import {
   DEFAULT_SCHEDULE_HOUR,
 } from '@shared/config/scheduling.config';
 
+const CAMPAIGN_ARTICLE_STYLES = new Set<NonNullable<ICreateCampaignInput['articleStyle']>>([
+  'informative',
+  'how-to',
+  'listicle',
+  'opinion',
+  'tutorial',
+]);
+
+const CAMPAIGN_IMAGE_STYLES = new Set<NonNullable<ICreateCampaignInput['imageStyle']>>([
+  'brand_text',
+  'watercolor',
+  'cinematic',
+  'illustration',
+  'sketch',
+]);
+
+const PROJECT_TO_CAMPAIGN_IMAGE_STYLE_MAP: Record<
+  string,
+  NonNullable<ICreateCampaignInput['imageStyle']>
+> = {
+  'brand-text': 'brand_text',
+};
+
+function normalizeProjectArticleStyle(value: unknown): ICreateCampaignInput['articleStyle'] {
+  if (typeof value !== 'string') {
+    return null;
+  }
+
+  return CAMPAIGN_ARTICLE_STYLES.has(value as NonNullable<ICreateCampaignInput['articleStyle']>)
+    ? (value as NonNullable<ICreateCampaignInput['articleStyle']>)
+    : null;
+}
+
+function normalizeProjectImageStyle(value: unknown): ICreateCampaignInput['imageStyle'] {
+  if (typeof value !== 'string') {
+    return null;
+  }
+
+  const mapped =
+    PROJECT_TO_CAMPAIGN_IMAGE_STYLE_MAP[value] ||
+    (value as NonNullable<ICreateCampaignInput['imageStyle']>);
+  return CAMPAIGN_IMAGE_STYLES.has(mapped) ? mapped : null;
+}
+
+function normalizeProjectInternalLinksCount(value: unknown): number {
+  if (typeof value !== 'number' || !Number.isInteger(value)) {
+    return 0;
+  }
+  if (value < 0 || value > 20) {
+    return 0;
+  }
+  return value;
+}
+
 // =============================================================================
 // Types
 // =============================================================================
@@ -323,6 +377,41 @@ export class CampaignLifecycleService {
 
     await this.verifyProjectOwnership(validated.projectId, userId);
 
+    // Fetch project content_preferences to use as defaults for outrank fields
+    let projectDefaults: Record<string, unknown> = {};
+    if (!(serverEnv.ENV === 'test' && userId.includes('mock_user_'))) {
+      const { data: projectData } = await supabaseAdmin
+        .from('projects')
+        .select('content_preferences')
+        .eq('id', validated.projectId)
+        .single();
+      projectDefaults = (projectData?.content_preferences as Record<string, unknown>) ?? {};
+    }
+
+    const projectDefaultArticleStyle = normalizeProjectArticleStyle(projectDefaults.articleStyle);
+    const projectDefaultInternalLinksCount = normalizeProjectInternalLinksCount(
+      projectDefaults.internalLinksCount
+    );
+    const projectDefaultGlobalInstructions =
+      typeof projectDefaults.globalInstructions === 'string'
+        ? projectDefaults.globalInstructions
+        : null;
+    const projectDefaultImageStyle = normalizeProjectImageStyle(projectDefaults.imageStyle);
+
+    // Apply project defaults for outrank fields not explicitly set by the user
+    const resolvedArticleStyle =
+      validated.articleStyle !== undefined ? validated.articleStyle : projectDefaultArticleStyle;
+    const resolvedInternalLinksCount =
+      validated.internalLinksCount !== undefined
+        ? validated.internalLinksCount
+        : projectDefaultInternalLinksCount;
+    const resolvedGlobalInstructions =
+      validated.globalInstructions !== undefined
+        ? validated.globalInstructions
+        : projectDefaultGlobalInstructions;
+    const resolvedImageStyle =
+      validated.imageStyle !== undefined ? validated.imageStyle : projectDefaultImageStyle;
+
     // In test mode with mock users, store in memory instead of database
     if (serverEnv.ENV === 'test' && userId.includes('mock_user_')) {
       const campaignId = crypto.randomUUID();
@@ -353,16 +442,16 @@ export class CampaignLifecycleService {
         last_run_at: null,
         schedule_timezone: validated.scheduleTimezone || DEFAULT_SCHEDULE_TIMEZONE,
         schedule_hour: validated.scheduleHour ?? DEFAULT_SCHEDULE_HOUR,
-        // Outrank feature parity fields
-        article_style: validated.articleStyle || null,
-        internal_links_count: validated.internalLinksCount ?? 3,
-        global_instructions: validated.globalInstructions || null,
+        // Outrank feature parity fields (with project defaults applied)
+        article_style: resolvedArticleStyle || null,
+        internal_links_count: resolvedInternalLinksCount,
+        global_instructions: resolvedGlobalInstructions || null,
         auto_publish: validated.autoPublish ?? false,
         include_youtube: validated.includeYoutube ?? false,
         include_cta: validated.includeCta ?? false,
         include_infographics: validated.includeInfographics ?? false,
         include_emojis: validated.includeEmojis ?? false,
-        image_style: validated.imageStyle || null,
+        image_style: resolvedImageStyle || null,
         // Test mode keywords
         keywords,
       };
@@ -390,16 +479,16 @@ export class CampaignLifecycleService {
         generation_run_id: null,
         created_at: campaign.created_at,
         updated_at: campaign.updated_at,
-        // Outrank feature parity fields
-        article_style: validated.articleStyle || null,
-        internal_links_count: validated.internalLinksCount ?? 3,
-        global_instructions: validated.globalInstructions || null,
+        // Outrank feature parity fields (with project defaults applied)
+        article_style: resolvedArticleStyle || null,
+        internal_links_count: resolvedInternalLinksCount,
+        global_instructions: resolvedGlobalInstructions || null,
         auto_publish: validated.autoPublish ?? false,
         include_youtube: validated.includeYoutube ?? false,
         include_cta: validated.includeCta ?? false,
         include_infographics: validated.includeInfographics ?? false,
         include_emojis: validated.includeEmojis ?? false,
-        image_style: validated.imageStyle || null,
+        image_style: resolvedImageStyle || null,
       });
 
       return campaign;
@@ -422,16 +511,16 @@ export class CampaignLifecycleService {
         schedule_batch_size: validated.scheduleBatchSize || 1,
         schedule_timezone: validated.scheduleTimezone || DEFAULT_SCHEDULE_TIMEZONE,
         schedule_hour: validated.scheduleHour ?? DEFAULT_SCHEDULE_HOUR,
-        // Outrank feature parity fields
-        article_style: validated.articleStyle || null,
-        internal_links_count: validated.internalLinksCount ?? 3,
-        global_instructions: validated.globalInstructions || null,
+        // Outrank feature parity fields (with project defaults applied)
+        article_style: resolvedArticleStyle || null,
+        internal_links_count: resolvedInternalLinksCount,
+        global_instructions: resolvedGlobalInstructions || null,
         auto_publish: validated.autoPublish ?? false,
         include_youtube: validated.includeYoutube ?? false,
         include_cta: validated.includeCta ?? false,
         include_infographics: validated.includeInfographics ?? false,
         include_emojis: validated.includeEmojis ?? false,
-        image_style: validated.imageStyle || null,
+        image_style: resolvedImageStyle || null,
       })
       .select()
       .single();

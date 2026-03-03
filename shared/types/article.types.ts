@@ -87,6 +87,29 @@ export interface IArticleOutline {
 }
 
 /**
+ * Article style preferences for content generation.
+ * Maps to campaign outrank fields and influences prompt generation.
+ */
+export interface IArticleStylePreferences {
+  /** Article writing style format */
+  articleStyle?: 'informative' | 'how-to' | 'listicle' | 'opinion' | 'tutorial';
+  /** Custom instructions for the AI writer */
+  globalInstructions?: string;
+  /** Number of internal links to include (0 = no internal linking) */
+  internalLinksCount?: number;
+  /** Whether to include YouTube video marker suggestions */
+  includeYoutube?: boolean;
+  /** Whether to include a call-to-action section */
+  includeCta?: boolean;
+  /** Whether to allow emojis in the article */
+  includeEmojis?: boolean;
+  /** Whether to include infographic marker suggestions */
+  includeInfographics?: boolean;
+  /** Preferred image visual style (influences image prompt generation) */
+  imageStyle?: string;
+}
+
+/**
  * Input for article generation API
  */
 export interface IGenerateArticleInput {
@@ -116,6 +139,10 @@ export interface IGenerateArticleInput {
   enableCitations?: boolean;
   /** Enable internal linking to related articles in the same project */
   enableInternalLinks?: boolean;
+  /** Article style preferences (outrank fields from campaign) */
+  stylePreferences?: IArticleStylePreferences;
+  /** Pre-fetched internal links for inclusion in the article */
+  internalLinks?: Array<{ title: string; url: string }>;
 }
 
 /**
