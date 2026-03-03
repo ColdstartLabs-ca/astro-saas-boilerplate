@@ -391,6 +391,7 @@ export class TestContext {
       name: string;
       url?: string;
       domain?: string;
+      content_preferences?: Record<string, unknown>;
     }
   ): Promise<{ id: string }> {
     const projectId = this.generateUUID();
@@ -405,6 +406,12 @@ export class TestContext {
         user_id: userId,
         name: options.name,
         domain: options.domain || options.url || null,
+        content_preferences: options.content_preferences ?? {},
+        cms_type: 'wordpress',
+        cms_credentials: {},
+        status: 'active',
+        language: 'en',
+        country: 'US',
         created_at: now,
         updated_at: now,
       });
@@ -417,6 +424,7 @@ export class TestContext {
       user_id: userId,
       name: options.name,
       domain: options.domain || options.url || null,
+      content_preferences: options.content_preferences ?? {},
     });
 
     if (error) {

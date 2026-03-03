@@ -482,3 +482,19 @@ export interface ISeoVelocityAdvisory {
   /** Whether this should block the operation */
   blocksOperation: boolean;
 }
+
+/**
+ * Helper type for extracting outrank feature parity fields from a campaign.
+ * Used for passing style preferences to article generation.
+ */
+export type CampaignOutrankFields = Pick<
+  ICampaign,
+  | 'article_style'
+  | 'global_instructions'
+  | 'internal_links_count'
+  | 'include_youtube'
+  | 'include_cta'
+  | 'include_emojis'
+  | 'include_infographics'
+  | 'image_style'
+>;
