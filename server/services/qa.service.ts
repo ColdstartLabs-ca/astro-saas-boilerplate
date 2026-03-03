@@ -600,7 +600,8 @@ export class QAService {
     // Pattern 4: Formulaic intros/outros (weight: 0.12)
     const formulaicIntro =
       /^(in today's world|in this day and age|in the modern era|in recent years|in the digital age)/i;
-    const formulaicOutro = /^(in conclusion|to sum up|in summary|to wrap up|all in all|ultimately)/i;
+    const formulaicOutro =
+      /^(in conclusion|to sum up|in summary|to wrap up|all in all|ultimately)/i;
 
     let hasFormulaicIntro = false;
     let hasFormulaicOutro = false;
@@ -637,9 +638,12 @@ export class QAService {
 
     // Pattern 6: Negative parallelisms (weight: 0.08)
     // "Not only...but..." or "It's not just..., it's..."
-    const negativeParallelism = /not only\b[^.]*\bbut also|not just\b[^.]*\bit's?|isn't just\b[^.]*\bit's?/gi;
+    const negativeParallelism =
+      /not only\b[^.]*\bbut also|not just\b[^.]*\bit's?|isn't just\b[^.]*\bit's?/gi;
     const parallelismMatches = plainText.match(negativeParallelism);
-    const parallelismScore = parallelismMatches ? Math.min(parallelismMatches.length * 0.04, 0.08) : 0;
+    const parallelismScore = parallelismMatches
+      ? Math.min(parallelismMatches.length * 0.04, 0.08)
+      : 0;
     if (parallelismScore > 0) {
       detectedPatterns.push(`Negative parallelisms: ${parallelismMatches?.length || 0}`);
     }
@@ -683,7 +687,9 @@ export class QAService {
     // Lists of three adjectives/nouns are common in AI writing
     const ruleOfThree = /(?:\w+, ){2}(?:and\s+)?\w+/g;
     const threeMatches = plainText.match(ruleOfThree);
-    const threeScore = threeMatches ? Math.min(threeMatches.length / sentences.length, 1) * 0.06 : 0;
+    const threeScore = threeMatches
+      ? Math.min(threeMatches.length / sentences.length, 1) * 0.06
+      : 0;
     if (threeScore > 0.03) {
       detectedPatterns.push('Rule of three overuse');
     }
@@ -700,6 +706,23 @@ export class QAService {
       detectedPatterns.push('Low sentence complexity');
     }
     aiScore += simplicityScore;
+
+    // Pattern 11: Passive voice overuse (weight: 0.10)
+    // AI-generated text often overuses passive constructions
+    const passiveVoicePatterns = [
+      /\b(was|were|is|are|been|being)\s+\w+ed\s+by\b/gi,
+      /\b(was|were|is|are|been|being)\s+\w+n\s+by\b/gi,
+    ];
+    let passiveCount = 0;
+    for (const pattern of passiveVoicePatterns) {
+      const matches = plainText.match(pattern);
+      if (matches) passiveCount += matches.length;
+    }
+    const passiveScore = Math.min(passiveCount / Math.max(sentences.length * 0.2, 2), 1) * 0.1;
+    if (passiveScore > 0.04) {
+      detectedPatterns.push(`passive voice overuse: ${passiveCount} instances`);
+    }
+    aiScore += passiveScore;
 
     // Determine confidence level
     let confidence: 'low' | 'medium' | 'high';
