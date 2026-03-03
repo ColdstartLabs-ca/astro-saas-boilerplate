@@ -4,8 +4,9 @@
  * Orchestrates parallel image generation via Replicate API:
  * 1. Parse image markers from article markdown
  * 2. Generate contextual image prompts via LLM
- * 3. Call Replicate API with rate limit awareness
- * 4. Return results with URLs and metadata
+ * 3. Check pgvector similarity library — reuse if ≥ 0.90 cosine similarity
+ * 4. Call Replicate API for novel prompts with rate limit awareness
+ * 5. Return results with URLs and metadata
  */
 
 import { OpenRouterService } from './openrouter.service';
@@ -21,6 +22,8 @@ import {
   type IImageMarker,
 } from './prompts/image-prompts';
 import { serverEnv } from '@shared/config/env';
+import { EmbeddingService } from './embedding.service';
+import { ImageSimilarityService } from './image-similarity.service';
 
 /**
  * Result from generating a single image
@@ -35,6 +38,10 @@ export interface IImageResult {
   error?: string;
   generationTimeMs?: number;
   replicatePredictionId?: string;
+  // Semantic reuse metadata
+  promptEmbedding: number[] | null;
+  wasReused: boolean;
+  reusedFromImageId: string | null;
 }
 
 /**
@@ -43,6 +50,8 @@ export interface IImageResult {
 export class ImageGenerationService {
   private openRouter = new OpenRouterService();
   private replicate = getReplicateService();
+  private embeddingService = new EmbeddingService();
+  private imageSimilarityService = new ImageSimilarityService();
 
   /**
    * Sleep for specified milliseconds
@@ -54,6 +63,8 @@ export class ImageGenerationService {
   /**
    * Generate images for an article based on image markers.
    * Uses sequential generation with exponential backoff for rate limits.
+   * Checks pgvector similarity library first to reuse existing images when
+   * cosine similarity of prompt embeddings is ≥ 0.90 (same preset tier).
    *
    * @param markers - Array of image markers with section context
    * @param presetKey - Image preset to use
@@ -80,28 +91,58 @@ export class ImageGenerationService {
     // Step 1: Generate image prompts for each marker
     const prompts = await this.generateImagePrompts(markers, keyword, presetDescription);
 
-    // Step 2: Generate images sequentially with exponential backoff
-    // Free tier Replicate: 1 request burst, 6 requests/minute
-    // We use exponential backoff: 3s, 5s, 10s between requests
+    // Step 2: Embed all prompts in a single batch API call
+    const promptTexts = markers.map((marker, i) =>
+      prompts[i] || getFallbackImagePrompt(keyword, marker.sectionContext)
+    );
+    const embeddings = await this.embeddingService.embedBatch(promptTexts);
+
+    // Step 3: Generate images — reuse if similar found, else call Replicate
     const results: IImageResult[] = [];
 
-    // Delays in milliseconds: first request no delay, then exponential backoff
-    const delays = [0, 3000, 5000, 10000]; // For up to 4 images
+    // Delays in milliseconds: first Replicate request no delay, then exponential backoff
+    // Track separately from reused images (which skip Replicate entirely)
+    const replicateDelays = [0, 3000, 5000, 10000]; // For up to 4 Replicate calls
+    let replicateCallCount = 0;
 
     for (let i = 0; i < markers.length; i++) {
       const marker = markers[i];
-      const prompt = prompts[i] || getFallbackImagePrompt(keyword, marker.sectionContext);
+      const prompt = promptTexts[i];
+      const embedding = embeddings[i] ?? null;
 
-      // Add delay between requests to respect rate limits (except for first request)
-      const delay = delays[Math.min(i, delays.length - 1)];
+      // Check similarity library before calling Replicate
+      const match = await this.imageSimilarityService.findSimilarImage(embedding, presetKey);
+
+      if (match) {
+        // Reuse existing image — no Replicate call, no rate-limit delay needed
+        results.push({
+          position: marker.position,
+          imageUrl: match.imageUrl,
+          prompt,
+          model: preset.replicateModel,
+          presetKey,
+          status: 'completed',
+          promptEmbedding: embedding,
+          wasReused: true,
+          reusedFromImageId: match.id,
+        });
+        console.log(
+          `[ImageGeneration] Image ${marker.position} reused from library (similarity=${match.similarity.toFixed(4)})`
+        );
+        continue;
+      }
+
+      // No match — generate fresh via Replicate
+      const delay = replicateDelays[Math.min(replicateCallCount, replicateDelays.length - 1)];
       if (delay > 0) {
         console.log(`[ImageGeneration] Waiting ${delay}ms before image ${i + 1} to respect rate limits`);
         await this.sleep(delay);
       }
+      replicateCallCount++;
 
       try {
         const result = await this.generateSingleImage(marker, prompt, presetKey);
-        results.push(result);
+        results.push({ ...result, promptEmbedding: embedding, wasReused: false, reusedFromImageId: null });
       } catch (error) {
         // If generation fails, still add to results with failed status
         results.push({
@@ -112,6 +153,9 @@ export class ImageGenerationService {
           presetKey,
           status: 'failed',
           error: error instanceof Error ? error.message : 'Unknown error',
+          promptEmbedding: embedding,
+          wasReused: false,
+          reusedFromImageId: null,
         });
       }
     }
@@ -220,6 +264,9 @@ export class ImageGenerationService {
         presetKey: preset,
         status: 'completed',
         generationTimeMs,
+        promptEmbedding: null,
+        wasReused: false,
+        reusedFromImageId: null,
       };
     } catch (error) {
       const generationTimeMs = Date.now() - startTime;
@@ -236,6 +283,9 @@ export class ImageGenerationService {
         status: 'failed',
         error: errorMessage,
         generationTimeMs,
+        promptEmbedding: null,
+        wasReused: false,
+        reusedFromImageId: null,
       };
     }
   }

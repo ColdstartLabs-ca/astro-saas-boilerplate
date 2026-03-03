@@ -263,6 +263,10 @@ export interface IImageResult {
   error?: string;
   generationTimeMs?: number;
   replicatePredictionId?: string;
+  // Semantic reuse metadata
+  promptEmbedding: number[] | null;
+  wasReused: boolean;
+  reusedFromImageId: string | null;
 }
 
 /**

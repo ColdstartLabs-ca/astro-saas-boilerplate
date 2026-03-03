@@ -1071,6 +1071,8 @@ export class ArticleGenerationService {
       status: r.status === 'completed' ? 'completed' : 'failed',
       error: r.error || null,
       generation_time_ms: r.generationTimeMs || null,
+      prompt_embedding: r.promptEmbedding ?? null,
+      reused_from_image_id: r.reusedFromImageId ?? null,
     }));
 
     const { error } = await this.supabase.from('article_images').insert(records);
