@@ -6,6 +6,8 @@
 
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { ArticleGenerationService } from '@server/services/article-generation.service';
+import { openaiEmbeddingsService } from '@server/services/openai-embeddings.service';
+import { supabaseAdmin } from '@server/supabase/supabaseAdmin';
 import type { IGenerateArticleInput, IImageMarker } from '@shared/types/article.types';
 
 // Hoisted mock function shared across tests
@@ -185,6 +187,7 @@ describe('ArticleGenerationService', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     service = new ArticleGenerationService();
+    vi.mocked(openaiEmbeddingsService.isConfigured).mockReturnValue(false);
   });
 
   describe('logFailureMetrics', () => {
@@ -265,6 +268,65 @@ describe('ArticleGenerationService', () => {
       });
 
       consoleErrorSpy.mockRestore();
+    });
+  });
+
+  describe('semantic deduplication', () => {
+    it('should block generation when keyword is semantically similar to an existing article', async () => {
+      const queryChain = {
+        eq: vi.fn().mockReturnThis(),
+        not: vi.fn().mockReturnThis(),
+        neq: vi.fn().mockReturnThis(),
+        order: vi.fn().mockReturnThis(),
+        limit: vi.fn().mockResolvedValue({
+          data: [{ id: 'existing-1', title: 'Existing SEO Guide', topic_fingerprint: [0.1, 0.2] }],
+          error: null,
+        }),
+      };
+
+      const updateSecondEq = vi.fn().mockResolvedValue({ error: null });
+      const updateFirstEq = vi.fn().mockReturnValue({ eq: updateSecondEq });
+      const updateMock = vi.fn().mockReturnValue({ eq: updateFirstEq });
+
+      vi.mocked(supabaseAdmin.from)
+        .mockReturnValueOnce({
+          select: vi.fn().mockReturnValue(queryChain),
+        } as never)
+        .mockReturnValueOnce({
+          update: updateMock,
+        } as never);
+
+      vi.mocked(openaiEmbeddingsService.isConfigured).mockReturnValue(true);
+      vi.mocked(openaiEmbeddingsService.checkSimilarity).mockResolvedValue({
+        isSimilar: true,
+        maxSimilarity: 0.91,
+        similarArticleId: 'existing-1',
+        similarArticles: [
+          { articleId: 'existing-1', title: 'Existing SEO Guide', similarity: 0.91 },
+        ],
+      });
+
+      const input: IGenerateArticleInput = {
+        keyword: 'best seo automation tools',
+        projectId: 'project-123',
+        campaignId: 'campaign-123',
+      };
+
+      await expect(
+        (
+          service as {
+            enforceSemanticDedup: (
+              articleId: string,
+              userId: string,
+              i: IGenerateArticleInput
+            ) => Promise<void>;
+          }
+        ).enforceSemanticDedup('article-123', 'user-123', input)
+      ).rejects.toThrow('Semantic duplicate detected');
+
+      expect(updateMock).toHaveBeenCalledWith({ similar_to_article_id: 'existing-1' });
+      expect(updateFirstEq).toHaveBeenCalledWith('id', 'article-123');
+      expect(updateSecondEq).toHaveBeenCalledWith('user_id', 'user-123');
     });
   });
 
