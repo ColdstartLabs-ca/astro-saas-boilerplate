@@ -13,6 +13,7 @@ import {
   MAX_PLANNED_ARTICLES_PER_RUN,
 } from '@shared/config/scheduling.config';
 import { calculateArticleCreditCost } from '@shared/config/credits.config';
+import type { IArticleStylePreferences } from '@shared/types/article.types';
 
 export interface IPlannedArticleGenerationResult {
   processed: number;
@@ -46,11 +47,20 @@ interface IPlannedArticle {
 interface ICampaignGenerationSettings {
   ai_model: string | null;
   image_preset: string | null;
+  article_style: string | null;
+  global_instructions: string | null;
+  internal_links_count: number | null;
+  include_youtube: boolean;
+  include_cta: boolean;
+  include_emojis: boolean;
+  include_infographics: boolean;
+  image_style: string | null;
 }
 
 interface IResolvedGenerationSettings {
   model: string;
   imagePreset: string | null;
+  stylePreferences: IArticleStylePreferences;
 }
 
 export class PlannedArticleGenerationService {
@@ -128,6 +138,7 @@ export class PlannedArticleGenerationService {
           campaignId: article.campaign_id ?? '',
           model: generationSettings.model,
           imagePreset: generationSettings.imagePreset ?? undefined,
+          stylePreferences: generationSettings.stylePreferences,
         });
 
         result.queued++;
@@ -182,6 +193,7 @@ export class PlannedArticleGenerationService {
     article: IPlannedArticle;
     model: string;
     imagePreset: string | null;
+    stylePreferences: IArticleStylePreferences;
   }> {
     const { data: article, error: fetchError } = await supabaseAdmin
       .from('articles')
@@ -225,6 +237,7 @@ export class PlannedArticleGenerationService {
       article: plannedArticle,
       model: generationSettings.model,
       imagePreset: generationSettings.imagePreset,
+      stylePreferences: generationSettings.stylePreferences,
     };
   }
 
@@ -240,10 +253,13 @@ export class PlannedArticleGenerationService {
     articleId: string,
     userId: string
   ): Promise<{ queued: true; creditsDeducted: number }> {
-    const { creditsDeducted, article: plannedArticle, model, imagePreset } = await this.promoteArticle(
-      articleId,
-      userId
-    );
+    const {
+      creditsDeducted,
+      article: plannedArticle,
+      model,
+      imagePreset,
+      stylePreferences,
+    } = await this.promoteArticle(articleId, userId);
 
     await articleGenerationService.generateArticle(articleId, userId, {
       keyword: plannedArticle.primary_keyword,
@@ -251,6 +267,7 @@ export class PlannedArticleGenerationService {
       campaignId: plannedArticle.campaign_id ?? '',
       model,
       imagePreset: imagePreset ?? undefined,
+      stylePreferences,
     });
 
     return { queued: true, creditsDeducted };
@@ -260,9 +277,21 @@ export class PlannedArticleGenerationService {
     article: IPlannedArticle,
     campaignSettings: ICampaignGenerationSettings | null
   ): IResolvedGenerationSettings {
+    const stylePreferences: IArticleStylePreferences = {
+      articleStyle: (campaignSettings?.article_style as IArticleStylePreferences['articleStyle']) ?? undefined,
+      globalInstructions: campaignSettings?.global_instructions ?? undefined,
+      internalLinksCount: campaignSettings?.internal_links_count ?? 0,
+      includeYoutube: campaignSettings?.include_youtube ?? false,
+      includeCta: campaignSettings?.include_cta ?? false,
+      includeEmojis: campaignSettings?.include_emojis ?? false,
+      includeInfographics: campaignSettings?.include_infographics ?? false,
+      imageStyle: campaignSettings?.image_style ?? undefined,
+    };
+
     return {
       model: article.ai_model_used ?? campaignSettings?.ai_model ?? 'balanced',
       imagePreset: article.image_preset ?? campaignSettings?.image_preset ?? null,
+      stylePreferences,
     };
   }
 
@@ -275,7 +304,9 @@ export class PlannedArticleGenerationService {
 
     const { data: campaign } = await supabaseAdmin
       .from('campaigns')
-      .select('ai_model, image_preset')
+      .select(
+        'ai_model, image_preset, article_style, global_instructions, internal_links_count, include_youtube, include_cta, include_emojis, include_infographics, image_style'
+      )
       .eq('id', campaignId)
       .single();
 

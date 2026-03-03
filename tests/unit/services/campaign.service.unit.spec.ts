@@ -600,7 +600,16 @@ describe('CampaignService', () => {
             }),
           } as unknown;
         } else if (callCount === 2) {
-          // Second call: insert campaign - return campaign with the new name
+          // Second call: fetch project content_preferences for outrank defaults
+          return {
+            select: vi.fn().mockReturnValue({
+              eq: vi.fn().mockReturnValue({
+                single: vi.fn().mockResolvedValue({ data: { content_preferences: null }, error: null }),
+              }),
+            }),
+          } as unknown;
+        } else if (callCount === 3) {
+          // Third call: insert campaign - return campaign with the new name
           return {
             insert: vi.fn().mockReturnValue({
               select: vi.fn().mockReturnValue({
@@ -612,7 +621,7 @@ describe('CampaignService', () => {
             }),
           } as unknown;
         } else {
-          // Third call: insert keywords
+          // Fourth call: insert keywords
           return {
             insert: vi.fn().mockResolvedValue({ data: null, error: null }),
           } as unknown;
@@ -676,6 +685,15 @@ describe('CampaignService', () => {
             }),
           } as unknown;
         } else if (callCount === 2) {
+          // Fetch project content_preferences for outrank defaults
+          return {
+            select: vi.fn().mockReturnValue({
+              eq: vi.fn().mockReturnValue({
+                single: vi.fn().mockResolvedValue({ data: { content_preferences: null }, error: null }),
+              }),
+            }),
+          } as unknown;
+        } else if (callCount === 3) {
           return {
             insert: vi.fn().mockImplementation((data: unknown) => {
               insertCall = data as Record<string, unknown>;
@@ -705,6 +723,77 @@ describe('CampaignService', () => {
         ai_model: 'balanced',
         tone: 'professional',
         target_word_count: 1500,
+      });
+    });
+
+    it('should normalize project content preference defaults before campaign insert', async () => {
+      const { supabaseAdmin } = await import('@server/supabase/supabaseAdmin');
+
+      let insertCall: Record<string, unknown> | null = null;
+      let callCount = 0;
+      (supabaseAdmin.from as unknown as ReturnType<typeof vi.fn>).mockImplementation(() => {
+        callCount++;
+        if (callCount === 1) {
+          // verify project ownership
+          return {
+            select: vi.fn().mockReturnValue({
+              eq: vi.fn().mockReturnValue({
+                eq: vi.fn().mockReturnValue({
+                  single: vi.fn().mockResolvedValue({ data: { id: mockProjectId }, error: null }),
+                }),
+              }),
+            }),
+          } as unknown;
+        } else if (callCount === 2) {
+          // fetch project defaults
+          return {
+            select: vi.fn().mockReturnValue({
+              eq: vi.fn().mockReturnValue({
+                single: vi.fn().mockResolvedValue({
+                  data: {
+                    content_preferences: {
+                      articleStyle: 'comparison', // valid for project prefs, invalid for campaigns
+                      imageStyle: 'brand-text', // project format should map to campaign format
+                      internalLinksCount: 3,
+                      globalInstructions: 'Prefer short paragraphs.',
+                    },
+                  },
+                  error: null,
+                }),
+              }),
+            }),
+          } as unknown;
+        } else if (callCount === 3) {
+          // insert campaign
+          return {
+            insert: vi.fn().mockImplementation((data: unknown) => {
+              insertCall = data as Record<string, unknown>;
+              return {
+                select: vi.fn().mockReturnValue({
+                  single: vi.fn().mockResolvedValue({ data: mockCampaign, error: null }),
+                }),
+              };
+            }),
+          } as unknown;
+        } else {
+          // insert keywords
+          return {
+            insert: vi.fn().mockResolvedValue({ data: null, error: null }),
+          } as unknown;
+        }
+      });
+
+      await campaignService.create(mockUserId, {
+        name: 'New Campaign',
+        projectId: mockProjectId,
+        keywords: ['coffee maker'],
+      });
+
+      expect(insertCall).toMatchObject({
+        article_style: null,
+        image_style: 'brand_text',
+        internal_links_count: 3,
+        global_instructions: 'Prefer short paragraphs.',
       });
     });
   });
@@ -1285,6 +1374,15 @@ describe('CampaignService', () => {
             }),
           } as unknown;
         } else if (callCount === 2) {
+          // Fetch project content_preferences for outrank defaults
+          return {
+            select: vi.fn().mockReturnValue({
+              eq: vi.fn().mockReturnValue({
+                single: vi.fn().mockResolvedValue({ data: { content_preferences: null }, error: null }),
+              }),
+            }),
+          } as unknown;
+        } else if (callCount === 3) {
           return {
             insert: vi.fn().mockImplementation((data: unknown) => {
               insertCall = data as Record<string, unknown>;
@@ -1518,6 +1616,15 @@ describe('CampaignService', () => {
             }),
           } as unknown;
         } else if (callCount === 2) {
+          // Fetch project content_preferences for outrank defaults
+          return {
+            select: vi.fn().mockReturnValue({
+              eq: vi.fn().mockReturnValue({
+                single: vi.fn().mockResolvedValue({ data: { content_preferences: null }, error: null }),
+              }),
+            }),
+          } as unknown;
+        } else if (callCount === 3) {
           return {
             insert: vi.fn().mockImplementation((data: unknown) => {
               insertCall = data as Record<string, unknown>;
@@ -1634,6 +1741,15 @@ describe('CampaignService', () => {
             }),
           } as unknown;
         } else if (callCount === 2) {
+          // Fetch project content_preferences for outrank defaults
+          return {
+            select: vi.fn().mockReturnValue({
+              eq: vi.fn().mockReturnValue({
+                single: vi.fn().mockResolvedValue({ data: { content_preferences: null }, error: null }),
+              }),
+            }),
+          } as unknown;
+        } else if (callCount === 3) {
           return {
             insert: vi.fn().mockReturnValue({
               select: vi.fn().mockReturnValue({
@@ -1675,6 +1791,15 @@ describe('CampaignService', () => {
             }),
           } as unknown;
         } else if (callCount === 2) {
+          // Fetch project content_preferences for outrank defaults
+          return {
+            select: vi.fn().mockReturnValue({
+              eq: vi.fn().mockReturnValue({
+                single: vi.fn().mockResolvedValue({ data: { content_preferences: null }, error: null }),
+              }),
+            }),
+          } as unknown;
+        } else if (callCount === 3) {
           return {
             insert: vi.fn().mockReturnValue({
               select: vi.fn().mockReturnValue({

@@ -2,6 +2,30 @@
  * Constants for NewCampaignModal
  */
 
+export const ARTICLE_STYLE_OPTIONS = [
+  { value: 'informative', label: 'Informative' },
+  { value: 'how-to', label: 'How-To' },
+  { value: 'listicle', label: 'Listicle' },
+  { value: 'opinion', label: 'Opinion' },
+  { value: 'tutorial', label: 'Tutorial' },
+] as const;
+
+export const INTERNAL_LINKS_OPTIONS = [
+  { value: 0, label: '0 links' },
+  { value: 1, label: '1 link' },
+  { value: 2, label: '2 links' },
+  { value: 3, label: '3 links' },
+  { value: 5, label: '5 links' },
+] as const;
+
+export const IMAGE_STYLE_OPTIONS = [
+  { value: 'brand_text', label: 'Brand & Text' },
+  { value: 'watercolor', label: 'Watercolor' },
+  { value: 'cinematic', label: 'Cinematic' },
+  { value: 'illustration', label: 'Illustration' },
+  { value: 'sketch', label: 'Sketch' },
+] as const;
+
 export const TONE_OPTIONS = [
   { value: 'professional', label: 'Professional' },
   { value: 'casual', label: 'Casual' },

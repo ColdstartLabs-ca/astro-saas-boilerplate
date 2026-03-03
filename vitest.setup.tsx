@@ -213,6 +213,7 @@ vi.mock('lucide-react', async () => {
     ImageOff: createMockIcon('ImageOff'),
     Info: createMockIcon('Info'),
     Layers: createMockIcon('Layers'),
+    Link2: createMockIcon('Link2'),
     Loader: createMockIcon('Loader'),
     Loader2: createMockIcon('Loader2'),
     LogIn: createMockIcon('LogIn'),

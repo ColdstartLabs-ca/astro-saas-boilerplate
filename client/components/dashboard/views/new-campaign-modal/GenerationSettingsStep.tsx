@@ -1,6 +1,6 @@
 /**
  * Generation Settings Step (Step 2 of NewCampaignModal)
- * Handles AI model selection, tone, word count, and credit calculation
+ * Handles AI model selection, tone, word count, credit calculation, and content style preferences
  */
 'use client';
 
@@ -10,10 +10,16 @@ import { useTranslations } from '@client/hooks/useTranslations';
 import { useUserStore } from '@client/store/userStore';
 import { imagePresetToOption, writerPresetToOption } from '@client/utils/modelAdapters';
 import { getImagePresetCreditCost } from '@shared/config/image-models.config';
-import { Zap, Loader2 } from 'lucide-react';
+import { Zap, Loader2, FileText, Link2, Image } from 'lucide-react';
 import type { UseFormRegister, UseFormSetValue, UseFormWatch } from 'react-hook-form';
 import type { CampaignFormData } from './validationSchema';
-import { TONE_OPTIONS, WORD_COUNT_OPTIONS } from './constants';
+import {
+  TONE_OPTIONS,
+  WORD_COUNT_OPTIONS,
+  ARTICLE_STYLE_OPTIONS,
+  INTERNAL_LINKS_OPTIONS,
+  IMAGE_STYLE_OPTIONS,
+} from './constants';
 
 interface IGenerationSettingsStepProps {
   register: UseFormRegister<CampaignFormData>;
@@ -34,6 +40,12 @@ export function GenerationSettingsStep({
   const watchedImagePreset = watch('imagePreset');
   const watchedKeywords = watch('keywords');
   const watchedModel = watch('model');
+  const watchedArticleStyle = watch('articleStyle');
+  const watchedGlobalInstructions = watch('globalInstructions');
+  const watchedIncludeYoutube = watch('includeYoutube');
+  const watchedIncludeCta = watch('includeCta');
+  const watchedIncludeEmojis = watch('includeEmojis');
+  const watchedIncludeInfographics = watch('includeInfographics');
 
   // Parse keywords from textarea (one per line, trimmed, filtered)
   const parsedKeywords =
@@ -153,6 +165,140 @@ export function GenerationSettingsStep({
           </select>
           <p className="text-[10px] text-muted uppercase tracking-widest pl-1 font-semibold">
             Average content length
+          </p>
+        </div>
+      </div>
+
+      {/* Content Style Section */}
+      <div className="space-y-5 pt-4 border-t border-border/30">
+        <div>
+          <h4 className="text-sm font-semibold text-white uppercase tracking-wider">
+            Content Style
+          </h4>
+          <p className="text-xs text-muted mt-1">
+            Customize how articles are structured and written.
+          </p>
+        </div>
+
+        {/* Article Style + Internal Links */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="space-y-2">
+            <label className="flex items-center gap-2 text-sm font-medium text-white">
+              <FileText className="w-4 h-4 text-muted" />
+              Article Style
+            </label>
+            <select
+              {...register('articleStyle')}
+              value={watchedArticleStyle ?? ''}
+              className="w-full bg-main border border-border rounded-lg px-3 py-2 h-[42px] text-sm text-white focus:ring-1 focus:ring-accent outline-none appearance-none cursor-pointer"
+              style={{
+                backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='currentColor'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`,
+                backgroundRepeat: 'no-repeat',
+                backgroundPosition: 'right 0.75rem center',
+                backgroundSize: '1rem',
+              }}
+            >
+              <option value="">Default (auto)</option>
+              {ARTICLE_STYLE_OPTIONS.map(opt => (
+                <option key={opt.value} value={opt.value}>
+                  {opt.label}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div className="space-y-2">
+            <label className="flex items-center gap-2 text-sm font-medium text-white">
+              <Link2 className="w-4 h-4 text-muted" />
+              Internal Links
+            </label>
+            <select
+              {...register('internalLinksCount', { valueAsNumber: true })}
+              className="w-full bg-main border border-border rounded-lg px-3 py-2 h-[42px] text-sm text-white focus:ring-1 focus:ring-accent outline-none appearance-none cursor-pointer"
+              style={{
+                backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='currentColor'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`,
+                backgroundRepeat: 'no-repeat',
+                backgroundPosition: 'right 0.75rem center',
+                backgroundSize: '1rem',
+              }}
+            >
+              {INTERNAL_LINKS_OPTIONS.map(opt => (
+                <option key={opt.value} value={opt.value}>
+                  {opt.label}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+
+        {/* Image Style (only shown when imagePreset is selected) */}
+        {watchedImagePreset && (
+          <div className="space-y-2">
+            <label className="flex items-center gap-2 text-sm font-medium text-white">
+              <Image className="w-4 h-4 text-muted" />
+              Image Style
+            </label>
+            <select
+              {...register('imageStyle')}
+              className="w-full bg-main border border-border rounded-lg px-3 py-2 h-[42px] text-sm text-white focus:ring-1 focus:ring-accent outline-none appearance-none cursor-pointer"
+              style={{
+                backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='currentColor'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`,
+                backgroundRepeat: 'no-repeat',
+                backgroundPosition: 'right 0.75rem center',
+                backgroundSize: '1rem',
+              }}
+            >
+              <option value="">Default</option>
+              {IMAGE_STYLE_OPTIONS.map(opt => (
+                <option key={opt.value} value={opt.value}>
+                  {opt.label}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
+
+        {/* Content Toggles */}
+        <div className="space-y-2">
+          <label className="text-sm font-medium text-white">Content Features</label>
+          <div className="grid grid-cols-2 gap-2">
+            {[
+              { field: 'includeYoutube' as const, label: 'YouTube suggestions', checked: watchedIncludeYoutube },
+              { field: 'includeCta' as const, label: 'Call-to-action', checked: watchedIncludeCta },
+              { field: 'includeEmojis' as const, label: 'Allow emojis', checked: watchedIncludeEmojis },
+              { field: 'includeInfographics' as const, label: 'Infographic hints', checked: watchedIncludeInfographics },
+            ].map(({ field, label, checked }) => (
+              <label
+                key={field}
+                className="flex items-center gap-2 p-2.5 border border-border bg-main/40 rounded-lg cursor-pointer hover:border-accent/30 transition-colors"
+              >
+                <input
+                  {...register(field)}
+                  type="checkbox"
+                  defaultChecked={checked}
+                  className="w-4 h-4 accent-accent rounded"
+                />
+                <span className="text-xs text-secondary">{label}</span>
+              </label>
+            ))}
+          </div>
+        </div>
+
+        {/* Global Instructions */}
+        <div className="space-y-2">
+          <label className="text-sm font-medium text-white">
+            Global Instructions{' '}
+            <span className="text-xs text-muted font-normal">(optional)</span>
+          </label>
+          <textarea
+            {...register('globalInstructions')}
+            placeholder="Additional instructions for the AI writer (e.g., 'Use British English', 'Avoid jargon', 'Include statistics when available')"
+            rows={3}
+            maxLength={2000}
+            className="w-full bg-main border border-border rounded-lg px-4 py-2.5 text-white text-sm placeholder:text-muted focus:ring-1 focus:ring-accent outline-none transition-all resize-none"
+          />
+          <p className="text-xs text-muted text-right">
+            {watchedGlobalInstructions?.length ?? 0}/2000
           </p>
         </div>
       </div>

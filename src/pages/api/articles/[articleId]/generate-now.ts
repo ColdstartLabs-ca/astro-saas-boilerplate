@@ -26,7 +26,7 @@ export const POST = withAuth(async (userId, { params, locals }) => {
   const articleId = params.articleId as string;
 
   try {
-    const { creditsDeducted, article, model, imagePreset } =
+    const { creditsDeducted, article, model, imagePreset, stylePreferences } =
       await plannedArticleGenerationService.promoteArticle(
         articleId,
         userId
@@ -40,6 +40,7 @@ export const POST = withAuth(async (userId, { params, locals }) => {
         campaignId: article.campaign_id ?? '',
         model,
         imagePreset: imagePreset ?? undefined,
+        stylePreferences,
       })
     );
 
