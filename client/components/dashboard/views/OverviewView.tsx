@@ -7,6 +7,7 @@ import { ProjectList } from '@client/components/projects/ProjectList';
 import { OnboardingWizard } from '@client/components/onboarding/OnboardingWizard';
 import { OnboardingSetupBanner } from '@client/components/onboarding/OnboardingSetupBanner';
 import { CreditsDisplay } from '@client/components/stripe/CreditsDisplay';
+import { useGscConnection } from '@client/hooks/useGscConnection';
 import { useIntegrations } from '@client/hooks/useIntegrations';
 import { useProjects } from '@client/hooks/useProjects';
 import { useSubscription, useUserStore } from '@client/store/userStore';
@@ -54,6 +55,9 @@ export function OverviewView(): JSX.Element {
   const { user } = useUserStore();
   const subscription = useSubscription();
   const { projects, activeProject, isLoading, deleteProject, updateProject } = useProjects();
+  const { isConnected: hasGscConnection, isLoading: isGscConnectionLoading } = useGscConnection(
+    activeProject?.id
+  );
   const { integrations } = useIntegrations();
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [hasAutoOpenedOnboarding, setHasAutoOpenedOnboarding] = useState(() => {
@@ -421,15 +425,17 @@ export function OverviewView(): JSX.Element {
             </DashboardCard>
           </div>
 
-          <div className="bg-gradient-to-br from-indigo-500/5 to-purple-500/5 rounded-xl p-4 border border-indigo-500/10 mt-4 backdrop-blur-sm">
-            <h3 className="text-xs font-bold text-white uppercase tracking-wider mb-1.5 flex items-center gap-2">
-              <span className="w-1.5 h-1.5 rounded-full bg-indigo-500 animate-pulse"></span>
-              Pro Tip
-            </h3>
-            <p className="text-xs text-secondary leading-relaxed font-medium">
-              Connecting your Google Search Console can improve keyword recommendations by 40%.
-            </p>
-          </div>
+          {!isGscConnectionLoading && !hasGscConnection && (
+            <div className="bg-gradient-to-br from-indigo-500/5 to-purple-500/5 rounded-xl p-4 border border-indigo-500/10 mt-4 backdrop-blur-sm">
+              <h3 className="text-xs font-bold text-white uppercase tracking-wider mb-1.5 flex items-center gap-2">
+                <span className="w-1.5 h-1.5 rounded-full bg-indigo-500 animate-pulse"></span>
+                Pro Tip
+              </h3>
+              <p className="text-xs text-secondary leading-relaxed font-medium">
+                Connecting your Google Search Console can improve keyword recommendations by 40%.
+              </p>
+            </div>
+          )}
         </motion.div>
       </div>
 
