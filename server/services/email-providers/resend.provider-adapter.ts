@@ -7,17 +7,28 @@
 
 import type { ReactElement } from 'react';
 import { Resend } from 'resend';
-import { EmailProvider, ProviderTier } from '@shared/types/provider-adapter.types';
-import type { IEmailProviderConfig } from '@shared/types/provider-adapter.types';
-import { BaseEmailProviderAdapter } from './base-email-provider-adapter';
+import {
+  BaseEmailProviderAdapter,
+  type EmailProvider,
+  type IEmailProviderConfig,
+} from './base-email-provider-adapter';
 import { isTest, serverEnv } from '@shared/config/env';
+
+/**
+ * Provider tier constants
+ */
+const ProviderTier = {
+  HYBRID: 'hybrid',
+  FREE: 'free',
+  PAID: 'paid',
+} as const;
 
 /**
  * Resend provider configuration
  * Free tier: 3,000 emails/month (~100/day)
  */
 const RESEND_CONFIG: IEmailProviderConfig = {
-  provider: EmailProvider.RESEND,
+  provider: 'resend' as EmailProvider,
   tier: ProviderTier.HYBRID, // Free tier with paid overage
   priority: 3, // Last priority - use as final fallback
   enabled: true,

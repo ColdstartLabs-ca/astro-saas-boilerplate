@@ -1,12 +1,31 @@
-# AutopilotRank
+# SaaS Boilerplate
 
-SaaS platform for AI-powered SEO content generation. Users create projects, run keyword campaigns, and generate/publish articles to their CMS (WordPress, Ghost, Shopify, Webflow, Notion, Wix, webhooks) — on autopilot. Credit-based billing via Stripe with tiered subscriptions.
+A production-ready Astro 5 + React 18 SaaS boilerplate with authentication, billing, credits, and admin panel. Fork this to build your next SaaS product.
 
 Check `.claude/skills/` for relevant patterns.
 
 ## Tech Stack
 
-Astro 5 SSR + React 18 islands · TypeScript 5.5 strict · Cloudflare Pages + Workers (10ms CPU limit) · Supabase Postgres (no ORM, raw queries, RLS on all tables) · Supabase Auth · Stripe · Zustand + TanStack Query · Tailwind 3 (semantic tokens, never hardcode colors) · Zod · tsyringe DI · OpenRouter/OpenAI/Replicate for AI
+Astro 5 SSR + React 18 islands · TypeScript 5.5 strict · Cloudflare Pages + Workers (10ms CPU limit) · Supabase Postgres (no ORM, raw queries, RLS on all tables) · Supabase Auth · Stripe · Zustand + TanStack Query · Tailwind 3 (semantic tokens, never hardcode colors) · Zod · tsyringe DI
+
+## What's Included
+
+### Core Infrastructure
+
+- **Authentication**: Supabase Auth with email/password, Google, Facebook, Azure SSO
+- **Billing**: Stripe subscriptions, one-time credit packs, customer portal
+- **Credits System**: Flexible credit-based usage with rollover and expiration
+- **Admin Panel**: User management, credit adjustments, subscription oversight
+- **Email**: Multi-provider (Brevo, Resend) with React Email templates
+- **Analytics**: Amplitude server-side tracking
+- **Monitoring**: Baselime logging for Cloudflare Workers
+- **i18n**: English, Portuguese (extensible)
+
+### API Structure
+
+- ~15 API routes (auth, checkout, subscription, credits, email, admin, health, portal, analytics, settings/api-keys, webhooks/stripe)
+- Standardized response envelope: `{ success, data }` or `{ success: false, error: { code, message } }`
+- `withAuth` / `withAuthAndBody` wrappers for authenticated routes
 
 ## Project Structure
 
@@ -20,7 +39,6 @@ workers/cron/       # Separate Cloudflare Worker for scheduled tasks
 supabase/migrations/# SQL migrations (YYYYMMDDHHMMSS_name.sql)
 tests/              # unit (Vitest), api/e2e/integration (Playwright)
 emails/             # React Email templates
-content/            # Blog MDX content
 locales/            # i18n translations (en, pt-BR)
 ```
 
@@ -32,8 +50,19 @@ locales/            # i18n translations (en, pt-BR)
 - `shared/config/subscription.config.ts` — plans, prices, credits, Stripe IDs
 - `shared/config/security.ts` — CSP, public API routes, CORS
 - `src/pages/api/_utils.ts` — `withAuth`, `withAuthAndBody`, `jsonResponse`, `fireAndForget`
-- `shared/types/` — domain interfaces (`IArticle`, `ICampaign`, `IProject`, etc.)
-- API response envelope: `{ success, data }` or `{ success: false, error: { code, message } }`
+- `shared/types/` — domain interfaces (`IUser`, `ISubscription`, `ICreditTransaction`, etc.)
+- `server/services/SubscriptionCredits.ts` — credit operations
+
+## Extension Points
+
+When building your SaaS on this boilerplate:
+
+1. **Add Domain Types** → `shared/types/`
+2. **Add API Routes** → `src/pages/api/`
+3. **Add Services** → `server/services/`
+4. **Add React Components** → `client/components/`
+5. **Add Migrations** → `supabase/migrations/`
+6. **Add i18n Keys** → `locales/en/`, `locales/pt-BR/`
 
 ## Testing
 
@@ -45,6 +74,8 @@ locales/            # i18n translations (en, pt-BR)
 
 - SOLID, SRP, KISS, DRY, YAGNI — no over-engineering.
 - NEVER use `process.env` directly — use `clientEnv` / `serverEnv` from `@shared/config/env`.
+- Tailwind semantic tokens only — never hardcode colors like `text-red-500`.
+- API responses use the envelope pattern — `{ success, data }` or `{ success: false, error }`.
 
 ## Production Safety
 

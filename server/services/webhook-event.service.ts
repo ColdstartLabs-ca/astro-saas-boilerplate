@@ -7,17 +7,101 @@
  */
 
 import { supabaseAdmin } from '@server/supabase/supabaseAdmin';
-import type {
-  WebhookEventType,
-  IWebhookSubscription,
-  IWebhookEventPayload,
-  IArticleEventData,
-  ICampaignCompletedData,
-  IOpportunityFoundData,
-  ISubscribeWebhookInput,
-  IWebhookSubscriptionSafe,
-} from '@shared/types/webhook-event.types';
-import { WebhookSubscriptionNotFoundError } from '@shared/types/webhook-event.types';
+
+/**
+ * Webhook event types (inline definitions)
+ */
+export type WebhookEventType =
+  | 'article.generated'
+  | 'article.published'
+  | 'article.approved'
+  | 'campaign.completed'
+  | 'opportunity.found';
+
+export interface IWebhookSubscription {
+  id: string;
+  user_id: string;
+  event_type: WebhookEventType;
+  target_url: string;
+  secret: string;
+  active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface IWebhookSubscriptionSafe {
+  id: string;
+  user_id: string;
+  event_type: WebhookEventType;
+  target_url: string;
+  active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ISubscribeWebhookInput {
+  eventType: WebhookEventType;
+  targetUrl: string;
+  secret?: string;
+}
+
+export interface IArticleEventData {
+  id: string;
+  title: string | null;
+  slug: string | null;
+  primaryKeyword: string;
+  wordCount: number | null;
+  seoScore: number | null;
+  publishedUrl: string | null;
+  campaignId: string | null;
+  campaignName: string | null;
+  projectId: string | null;
+  projectName: string | null;
+}
+
+export interface ICampaignCompletedData {
+  id: string;
+  name: string;
+  projectId: string | null;
+  projectName: string | null;
+  totalArticles: number;
+  publishedArticles: number;
+  approvedArticles: number;
+}
+
+export interface IOpportunityFoundData {
+  id: string;
+  type: string;
+  title: string;
+  description: string;
+  query: string | null;
+  pageUrl: string | null;
+  estimatedImpact: string;
+  priorityScore: number;
+  projectId: string;
+  projectName: string | null;
+}
+
+export interface IWebhookEventPayload {
+  event: WebhookEventType;
+  timestamp: string;
+  userId: string;
+  data:
+    | IArticleEventData
+    | ICampaignCompletedData
+    | IOpportunityFoundData
+    | Record<string, unknown>;
+}
+
+/**
+ * Error class for webhook subscription not found
+ */
+export class WebhookSubscriptionNotFoundError extends Error {
+  constructor(public readonly subscriptionId: string) {
+    super(`Webhook subscription not found: ${subscriptionId}`);
+    this.name = 'WebhookSubscriptionNotFoundError';
+  }
+}
 
 /**
  * Simple service logger for service-level logging
@@ -112,7 +196,10 @@ export class WebhookEventService {
    * @param input - Subscription input
    * @returns Created subscription (without secret)
    */
-  async subscribe(userId: string, input: ISubscribeWebhookInput): Promise<IWebhookSubscriptionSafe> {
+  async subscribe(
+    userId: string,
+    input: ISubscribeWebhookInput
+  ): Promise<IWebhookSubscriptionSafe> {
     const secret = input.secret || generateSecret();
 
     const { data, error } = await supabaseAdmin
@@ -130,9 +217,7 @@ export class WebhookEventService {
     if (error) {
       // Handle unique constraint violation
       if (error.code === '23505') {
-        throw new Error(
-          `Already subscribed to ${input.eventType} events at this URL`
-        );
+        throw new Error(`Already subscribed to ${input.eventType} events at this URL`);
       }
       serviceLogger.error('Failed to create webhook subscription', error);
       throw new Error('Failed to create webhook subscription');

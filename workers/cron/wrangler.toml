@@ -1,7 +1,7 @@
 # Cloudflare Workers Configuration for Cron Jobs
 # Documentation: https://developers.cloudflare.com/workers/configuration/cron-triggers/
 
-name = "autopilotrank-cron"
+name = "saas-cron"
 main = "index.ts"
 compatibility_date = "2025-03-02"
 compatibility_flags = ["nodejs_compat"]
@@ -12,26 +12,19 @@ enabled = true
 # Cron Triggers
 [triggers]
 crons = [
-  # Scheduled campaign processing - every 5 minutes
-  "*/5 * * * *",
-  # Recover stale articles - every 10 minutes at :03
-  "3/10 * * * *",
   # Webhook recovery - every 15 minutes
   "*/15 * * * *",
   # Expiration check - every hour at :05
   "5 * * * *",
   # Full reconciliation - daily at 3:05 AM UTC
-  "5 3 * * *",
-  # Planned article generation - every 5 minutes (offset by 2 minutes)
-  "2/5 * * * *",
-  # Scheduled article publishing - every 5 minutes (offset by 1 minute)
-  "1/5 * * * *"
+  "5 3 * * *"
 ]
 
 # Environment Variables (non-sensitive defaults)
 # IMPORTANT: Set CRON_SECRET via Cloudflare dashboard or `wrangler secret put CRON_SECRET`
+# IMPORTANT: Set API_BASE_URL to your production domain
 [vars]
-API_BASE_URL = "https://autopilotrank.com"
+API_BASE_URL = "https://your-domain.com"
 
 # Development environment
 [env.development]

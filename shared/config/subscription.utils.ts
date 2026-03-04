@@ -3,7 +3,6 @@
  * Helper functions to access configuration values
  */
 
-import { QUALITY_TIER_CONFIG, type QualityTier } from '../types/coreflow.types';
 import { getSubscriptionConfig } from './subscription.config';
 import type {
   ICreditPack,
@@ -11,6 +10,71 @@ import type {
   IPlanConfig,
   ProcessingMode,
 } from './subscription.types';
+
+/**
+ * Quality tier types (previously in coreflow.types.ts)
+ */
+type QualityTier = 'quick' | 'face-restore' | 'hd-upscale' | 'face-pro' | 'ultra' | 'auto';
+
+interface IQualityTierConfig {
+  label: string;
+  credits: number | 'variable';
+  modelId: string | null;
+  description: string;
+  bestFor: string;
+  smartAnalysisAlwaysOn: boolean;
+}
+
+const QUALITY_TIER_CONFIG: Record<QualityTier, IQualityTierConfig> = {
+  quick: {
+    label: 'Quick',
+    credits: 1,
+    modelId: 'real-esrgan',
+    description: 'Fast processing with good results',
+    bestFor: 'Quick enhancements',
+    smartAnalysisAlwaysOn: false,
+  },
+  'face-restore': {
+    label: 'Face Restore',
+    credits: 2,
+    modelId: 'gfpgan',
+    description: 'Specialized face restoration',
+    bestFor: 'Portrait photos',
+    smartAnalysisAlwaysOn: false,
+  },
+  'hd-upscale': {
+    label: 'HD Upscale',
+    credits: 3,
+    modelId: 'clarity-upscaler',
+    description: 'High-definition upscaling',
+    bestFor: 'High resolution outputs',
+    smartAnalysisAlwaysOn: false,
+  },
+  'face-pro': {
+    label: 'Face Pro',
+    credits: 4,
+    modelId: 'flux-2-pro',
+    description: 'Professional face enhancement',
+    bestFor: 'Professional portraits',
+    smartAnalysisAlwaysOn: true,
+  },
+  ultra: {
+    label: 'Ultra',
+    credits: 5,
+    modelId: 'nano-banana-pro',
+    description: 'Maximum quality processing',
+    bestFor: 'Premium results',
+    smartAnalysisAlwaysOn: true,
+  },
+  auto: {
+    label: 'Auto',
+    credits: 'variable',
+    modelId: null,
+    description: 'Automatic quality selection',
+    bestFor: 'Let AI decide',
+    smartAnalysisAlwaysOn: true,
+  },
+};
 
 // ============================================
 // Unified Pricing Resolver - Single Source of Truth

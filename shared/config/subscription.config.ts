@@ -9,9 +9,25 @@
  * 1 credit = 1 article generation
  */
 
-import { CREDIT_COSTS } from './credits.config';
 import type { ISubscriptionConfig } from './subscription.types';
 import { TIMEOUTS } from './timeouts.config';
+
+/**
+ * Credit cost constants (previously in credits.config.ts)
+ */
+const CREDIT_COSTS = {
+  API_CALL: 1,
+  STARTER_MONTHLY_CREDITS: 30,
+  GROWTH_MONTHLY_CREDITS: 100,
+  AGENCY_MONTHLY_CREDITS: 500,
+  SMALL_PACK_CREDITS: 10,
+  MEDIUM_PACK_CREDITS: 25,
+  LARGE_PACK_CREDITS: 50,
+  DEFAULT_FREE_CREDITS: 3,
+  DEFAULT_TRIAL_CREDITS: 0,
+  LOW_CREDIT_WARNING_THRESHOLD: 2,
+  CREDIT_WARNING_PERCENTAGE: 0.2,
+} as const;
 
 /**
  * Default subscription configuration

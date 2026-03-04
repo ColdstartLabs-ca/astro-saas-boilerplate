@@ -8,14 +8,109 @@
 import { supabaseAdmin } from '@server/supabase/supabaseAdmin';
 import { isDevelopment, isTest, serverEnv } from '@shared/config/env';
 import type { ReactElement } from 'react';
-import type {
-  IEmailProviderAdapter,
-  IEmailProviderConfig,
-  IEmailProviderUsage,
-  ISendEmailParams,
-  ISendEmailResult,
-} from '@shared/types/provider-adapter.types';
-import { getProviderCreditTracker } from '../provider-credit-tracker.service';
+
+/**
+ * Email provider types (inline definitions)
+ */
+export type EmailType = 'transactional' | 'marketing';
+
+export type EmailProvider = 'brevo' | 'resend';
+
+export interface IEmailProviderConfig {
+  provider: EmailProvider;
+  tier: string;
+  priority: number;
+  enabled: boolean;
+  freeTier?: {
+    dailyRequests: number;
+    monthlyCredits: number;
+    hardLimit: boolean;
+    resetTimezone: string;
+  };
+  fallbackProvider?: EmailProvider;
+}
+
+export interface ISendEmailParams {
+  to: string;
+  template: string;
+  data?: Record<string, unknown>;
+  type?: EmailType;
+  userId?: string;
+}
+
+export interface ISendEmailResult {
+  success: boolean;
+  messageId?: string;
+  provider?: EmailProvider;
+  skipped?: boolean;
+}
+
+export interface IEmailProviderUsage {
+  dailyUsed: number;
+  dailyLimit: number;
+  monthlyUsed: number;
+  monthlyLimit: number;
+  isAvailable: boolean;
+}
+
+export interface IEmailProviderAdapter {
+  send(params: ISendEmailParams): Promise<ISendEmailResult>;
+  getConfig(): IEmailProviderConfig;
+  getUsage(): Promise<IEmailProviderUsage>;
+  isAvailable(): Promise<boolean>;
+  resetCounters(period: 'daily' | 'monthly'): Promise<void>;
+  getProviderName(): string;
+}
+
+/**
+ * Simple in-memory credit tracker for email providers
+ */
+class SimpleCreditTracker {
+  private usage: Map<EmailProvider, { daily: number; monthly: number }> = new Map();
+
+  async incrementUsage(
+    provider: EmailProvider,
+    _requests: number,
+    _credits: number
+  ): Promise<void> {
+    const current = this.usage.get(provider) || { daily: 0, monthly: 0 };
+    current.daily += 1;
+    current.monthly += 1;
+    this.usage.set(provider, current);
+  }
+
+  logProviderUsage(provider: EmailProvider): void {
+    const usage = this.usage.get(provider);
+    console.log(`[CreditTracker] ${provider} usage:`, usage);
+  }
+
+  async getProviderUsage(provider: EmailProvider): Promise<IEmailProviderUsage> {
+    const usage = this.usage.get(provider) || { daily: 0, monthly: 0 };
+    return {
+      dailyUsed: usage.daily,
+      dailyLimit: 300,
+      monthlyUsed: usage.monthly,
+      monthlyLimit: 9000,
+      isAvailable: true,
+    };
+  }
+
+  async isProviderAvailable(_provider: EmailProvider): Promise<boolean> {
+    return true;
+  }
+
+  async resetDailyCounters(_provider: EmailProvider): Promise<void> {
+    // Reset daily counters
+  }
+
+  async resetMonthlyCounters(_provider: EmailProvider): Promise<void> {
+    // Reset monthly counters
+  }
+}
+
+function getProviderCreditTracker(): SimpleCreditTracker {
+  return new SimpleCreditTracker();
+}
 
 /**
  * Email error class
@@ -106,7 +201,7 @@ export abstract class BaseEmailProviderAdapter implements IEmailProviderAdapter 
 
       // Get template component and subject
       const TemplateComponent = await this.getTemplate(template);
-      const subject = this.getSubject(template, data);
+      const subject = this.getSubject(template, data || {});
 
       // Inject common environment values into template data
       const templateData = {
@@ -223,7 +318,6 @@ export abstract class BaseEmailProviderAdapter implements IEmailProviderAdapter 
       'low-credits': 'LowCreditsEmail',
       'password-reset': 'PasswordResetEmail',
       'support-request': 'SupportRequestEmail',
-      'article-complete': 'ArticleCompleteEmail',
     };
 
     const exportName = templateExportNames[templateName];
@@ -240,7 +334,6 @@ export abstract class BaseEmailProviderAdapter implements IEmailProviderAdapter 
       'low-credits': () => import('@/emails/templates/LowCreditsEmail'),
       'password-reset': () => import('@/emails/templates/PasswordResetEmail'),
       'support-request': () => import('@/emails/templates/SupportRequestEmail'),
-      'article-complete': () => import('@/emails/templates/ArticleCompleteEmail'),
     };
     /* eslint-enable no-restricted-syntax */
 
@@ -269,7 +362,6 @@ export abstract class BaseEmailProviderAdapter implements IEmailProviderAdapter 
       'password-reset': 'Reset your password',
       'support-request': d =>
         `[Support] [${String(d.category || 'GENERAL').toUpperCase()}] ${d.subject || 'Support Request'}`,
-      'article-complete': d => `Your article is ready: ${d.articleTitle || 'New Article'}`,
     };
 
     const subject = subjects[template];

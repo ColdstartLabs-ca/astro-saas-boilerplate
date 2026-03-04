@@ -10,4 +10,3 @@ export { AdminController } from './AdminController';
 export { SubscriptionController } from './SubscriptionController';
 export { CheckoutController } from './CheckoutController';
 export { CronController } from './CronController';
-export { BlogController } from './BlogController';

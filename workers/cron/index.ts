@@ -42,13 +42,7 @@ export default {
     let endpoint: string;
     let jobName: string;
 
-    if (cronPattern === '*/5 * * * *') {
-      endpoint = '/api/cron/process-scheduled-campaigns';
-      jobName = 'Scheduled Campaign Processing';
-    } else if (cronPattern === '3/10 * * * *') {
-      endpoint = '/api/cron/recover-stale-articles';
-      jobName = 'Stale Article Recovery';
-    } else if (cronPattern === '*/15 * * * *') {
+    if (cronPattern === '*/15 * * * *') {
       endpoint = '/api/cron/recover-webhooks';
       jobName = 'Webhook Recovery';
     } else if (cronPattern === '5 * * * *') {
@@ -57,12 +51,6 @@ export default {
     } else if (cronPattern === '5 3 * * *') {
       endpoint = '/api/cron/reconcile';
       jobName = 'Full Reconciliation';
-    } else if (cronPattern === '2/5 * * * *') {
-      endpoint = '/api/cron/generate-planned-articles';
-      jobName = 'Planned Article Generation';
-    } else if (cronPattern === '1/5 * * * *') {
-      endpoint = '/api/cron/publish-scheduled-articles';
-      jobName = 'Scheduled Article Publishing';
     } else {
       console.error(`[CRON] Unknown cron pattern: ${cronPattern}`);
       return;
@@ -111,7 +99,7 @@ export default {
       return new Response(
         JSON.stringify({
           status: 'ok',
-          worker: env.CRON_SERVICE_NAME || 'autopilotrank-cron',
+          worker: env.CRON_SERVICE_NAME || 'saas-cron',
           timestamp: new Date().toISOString(),
         }),
         {

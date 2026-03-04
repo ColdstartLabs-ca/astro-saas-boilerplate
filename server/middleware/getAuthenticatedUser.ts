@@ -1,7 +1,14 @@
 import { supabaseAdmin } from '@server/supabase/supabaseAdmin';
 import { UserRepository } from '@shared/repositories';
-import { CREDIT_COSTS } from '@shared/config/credits.config';
 import { serverEnv } from '@shared/config/env';
+
+/**
+ * Default credit values for test users
+ */
+const DEFAULT_CREDITS = {
+  FREE_CREDITS: 100,
+  TRIAL_CREDITS: 0,
+};
 
 function parseUserIdFromAuthorization(req: Request): string | null {
   const authHeader = req.headers.get('Authorization') || req.headers.get('authorization');
@@ -66,8 +73,8 @@ export async function getAuthenticatedUser(req: Request): Promise<IUserProfile |
       email: 'test@example.com',
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
-      subscription_credits_balance: CREDIT_COSTS.DEFAULT_FREE_CREDITS,
-      purchased_credits_balance: CREDIT_COSTS.DEFAULT_TRIAL_CREDITS,
+      subscription_credits_balance: DEFAULT_CREDITS.FREE_CREDITS,
+      purchased_credits_balance: DEFAULT_CREDITS.TRIAL_CREDITS,
       stripe_customer_id: null,
       subscription_status: null,
       subscription_tier: null,

@@ -11,10 +11,21 @@
 
 import type { ReactElement } from 'react';
 import { render } from '@react-email/render';
-import { EmailProvider, ProviderTier } from '@shared/types/provider-adapter.types';
-import type { IEmailProviderConfig } from '@shared/types/provider-adapter.types';
-import { BaseEmailProviderAdapter } from './base-email-provider-adapter';
+import {
+  BaseEmailProviderAdapter,
+  type EmailProvider,
+  type IEmailProviderConfig,
+} from './base-email-provider-adapter';
 import { isTest, serverEnv } from '@shared/config/env';
+
+/**
+ * Provider tier constants
+ */
+const ProviderTier = {
+  HYBRID: 'hybrid',
+  FREE: 'free',
+  PAID: 'paid',
+} as const;
 
 /**
  * Brevo API response types
@@ -33,7 +44,7 @@ interface IBrevoErrorResponse {
  * Free tier: 300 emails/day
  */
 const BREVO_CONFIG: IEmailProviderConfig = {
-  provider: EmailProvider.BREVO,
+  provider: 'brevo' as EmailProvider,
   tier: ProviderTier.HYBRID, // Free tier with paid overage
   priority: 1, // Primary provider - 300 free emails/day
   enabled: true,
@@ -43,7 +54,7 @@ const BREVO_CONFIG: IEmailProviderConfig = {
     hardLimit: true,
     resetTimezone: 'UTC',
   },
-  fallbackProvider: EmailProvider.RESEND, // Fall back to Resend if limits hit
+  fallbackProvider: 'resend' as EmailProvider, // Fall back to Resend if limits hit
 };
 
 const BREVO_API_URL = 'https://api.brevo.com/v3/smtp/email';

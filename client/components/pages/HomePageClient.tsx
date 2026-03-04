@@ -1,97 +1,86 @@
-'use client';
+/**
+ * Home Page Client Component
+ *
+ * Landing page for the SaaS boilerplate.
+ * Replace this with your own landing page content.
+ */
 
-import {
-  FAQSection,
-  FeaturesSection,
-  FinalCTASection,
-  HeroSection,
-  PainPointsSection,
-  PricingPreviewSection,
-  SocialProofSection,
-  SolutionSection
-} from '@client/components/landing';
-import { useModalStore } from '@client/store/modalStore';
-import { useToastStore } from '@client/store/toastStore';
-import { prepareAuthRedirect } from '@client/utils/authRedirectManager';
 import { getTranslations } from '@src/i18n/utils';
-import { useEffect } from 'react';
 
-export function HomePageClient(): JSX.Element {
-  const { openAuthModal } = useModalStore();
-  const { showToast } = useToastStore();
-
-  // Use Astro i18n helper instead of next-intl's useTranslations
+export default function HomePageClient() {
   const t = getTranslations('homepage');
 
-  // Check for auth prompts from URL params (must access window inside useEffect)
-  useEffect(() => {
-    const searchParams = new URLSearchParams(window.location.search);
-    const loginRequired = searchParams.get('login');
-    const signupRequired = searchParams.get('signup');
-    const nextUrl = searchParams.get('next');
-
-    // Handle login redirect (from middleware)
-    if (loginRequired === '1' && nextUrl) {
-      prepareAuthRedirect('dashboard_access', {
-        returnTo: nextUrl,
-      });
-
-      showToast({
-        message: t('toastLoginRequired'),
-        type: 'info',
-        duration: 5000,
-      });
-
-      setTimeout(() => {
-        openAuthModal('login');
-      }, 500);
-
-      const url = new URL(window.location.href);
-      url.searchParams.delete('login');
-      url.searchParams.delete('next');
-      window.history.replaceState({}, '', url.toString());
-    }
-
-    // Handle signup prompt (from blog CTAs, etc.)
-    if (signupRequired === '1') {
-      setTimeout(() => {
-        openAuthModal('register');
-      }, 300);
-
-      const url = new URL(window.location.href);
-      url.searchParams.delete('signup');
-      window.history.replaceState({}, '', url.toString());
-    }
-  }, [openAuthModal, showToast, t]);
-
   return (
-    <div className="flex-grow bg-main font-sans selection:bg-accent/20 selection:text-white">
-      {/* Section 1: Hero */}
-      <HeroSection />
+    <div className="min-h-screen bg-background">
+      {/* Hero Section */}
+      <section className="container mx-auto px-4 py-24 text-center">
+        <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-accent/10 text-accent text-sm mb-6">
+          {t('badge')}
+        </div>
 
-      {/* Section 2: Social Proof Top */}
-      <SocialProofSection location="top" />
+        <h1 className="text-4xl md:text-6xl font-bold mb-6">
+          <span className="text-primary">{t('heroTitle')}</span>{' '}
+          <span className="text-accent">{t('heroTitleHighlight')}</span>
+        </h1>
 
-      {/* Section 3: Pain Points */}
-      <PainPointsSection />
+        <p className="text-xl text-muted-foreground mb-8 max-w-2xl mx-auto">
+          {t('heroSubtitle')}{' '}
+          <span className="text-foreground font-medium">{t('heroSubtitleHighlight')}</span>
+        </p>
 
-      {/* Section 4: Features */}
-      <FeaturesSection />
+        <div className="flex flex-col sm:flex-row gap-4 justify-center">
+          <a
+            href="/auth/signup"
+            className="inline-flex items-center justify-center px-8 py-3 text-lg font-semibold text-white bg-accent rounded-lg hover:bg-accent/90 transition-colors"
+          >
+            {t('ctaSignIn')}
+          </a>
+          <a
+            href="/dashboard"
+            className="inline-flex items-center justify-center px-8 py-3 text-lg font-semibold text-foreground border border-border rounded-lg hover:bg-muted transition-colors"
+          >
+            {t('ctaUpscaleFirst')}
+          </a>
+        </div>
 
-      {/* Section 5: Solution */}
-      <SolutionSection />
+        <p className="mt-4 text-sm text-muted-foreground">{t('ctaSubtext')}</p>
+      </section>
 
-      {/* Section 6: Pricing Preview */}
-      <PricingPreviewSection />
+      {/* Features Section */}
+      <section className="container mx-auto px-4 py-16">
+        <div className="grid md:grid-cols-3 gap-8">
+          <div className="p-6 rounded-lg border border-border bg-card">
+            <h3 className="text-xl font-semibold mb-2">Authentication</h3>
+            <p className="text-muted-foreground">
+              Supabase Auth with email/password, Google, Facebook, and Azure SSO support.
+            </p>
+          </div>
+          <div className="p-6 rounded-lg border border-border bg-card">
+            <h3 className="text-xl font-semibold mb-2">Billing</h3>
+            <p className="text-muted-foreground">
+              Stripe integration with subscriptions, one-time credit packs, and customer portal.
+            </p>
+          </div>
+          <div className="p-6 rounded-lg border border-border bg-card">
+            <h3 className="text-xl font-semibold mb-2">Credits System</h3>
+            <p className="text-muted-foreground">
+              Flexible credit-based usage with rollover, expiration, and admin management.
+            </p>
+          </div>
+        </div>
+      </section>
 
-      {/* Section 7: Final CTA */}
-      <FinalCTASection />
-
-      {/* Section 8: FAQ */}
-      <FAQSection />
+      {/* CTA Section */}
+      <section className="container mx-auto px-4 py-24 text-center">
+        <h2 className="text-3xl md:text-4xl font-bold mb-4">{t('finalCtaTitle')}</h2>
+        <p className="text-xl text-muted-foreground mb-8">{t('finalCtaTitleHighlight')}</p>
+        <a
+          href="/auth/signup"
+          className="inline-flex items-center justify-center px-8 py-3 text-lg font-semibold text-white bg-accent rounded-lg hover:bg-accent/90 transition-colors"
+        >
+          {t('ctaStartUpscaling')}
+        </a>
+      </section>
     </div>
   );
 }
-
-// Default export for Astro component import
-export default HomePageClient;

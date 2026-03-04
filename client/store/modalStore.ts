@@ -1,6 +1,9 @@
+/**
+ * Modal Store
+ * Zustand store for managing modal state (auth modals, etc.)
+ */
 import { create } from 'zustand';
 
-// Auth modal view types
 export type AuthModalView =
   | 'login'
   | 'register'
@@ -8,36 +11,49 @@ export type AuthModalView =
   | 'forgotPassword'
   | 'setNewPassword';
 
-interface IModalStore {
-  isOpen: boolean;
-  modalId: string | null;
-  // Auth modal specific state
+interface IModalState {
+  // Auth modal state
   authModalView: AuthModalView;
-  open: (modalId: string) => void;
-  close: () => void;
-  isModalOpen: (modalId: string) => boolean;
-  // Auth modal specific actions
-  setAuthModalView: (view: AuthModalView) => void;
+  openModals: Set<string>;
+
+  // Actions
   openAuthModal: (view: AuthModalView) => void;
+  setAuthModalView: (view: AuthModalView) => void;
   openAuthRequiredModal: () => void;
+  isModalOpen: (modalId: string) => boolean;
+  close: () => void;
 }
 
-export const useModalStore = create<IModalStore>((set, get) => ({
-  isOpen: false,
-  modalId: null,
+export const useModalStore = create<IModalState>((set, get) => ({
+  // Initial state
   authModalView: 'login',
-  open: (modalId: string) => set({ isOpen: true, modalId }),
-  close: () => {
-    set({ isOpen: false, modalId: null });
-    // Reset auth modal view after close animation completes
-    setTimeout(() => {
-      set({ authModalView: 'login' });
-    }, 250);
+  openModals: new Set<string>(),
+
+  // Actions
+  openAuthModal: (view: AuthModalView) => {
+    set({
+      authModalView: view,
+      openModals: new Set(['authenticationModal']),
+    });
   },
-  isModalOpen: (modalId: string) => get().isOpen && get().modalId === modalId,
-  setAuthModalView: (view: AuthModalView) => set({ authModalView: view }),
-  openAuthModal: (view: AuthModalView) =>
-    set({ isOpen: true, modalId: 'authenticationModal', authModalView: view }),
-  openAuthRequiredModal: () =>
-    set({ isOpen: true, modalId: 'authRequiredModal', authModalView: 'login' }),
+
+  setAuthModalView: (view: AuthModalView) => {
+    set({ authModalView: view });
+  },
+
+  openAuthRequiredModal: () => {
+    set({
+      openModals: new Set(['authRequiredModal']),
+    });
+  },
+
+  isModalOpen: (modalId: string) => {
+    return get().openModals.has(modalId);
+  },
+
+  close: () => {
+    set({
+      openModals: new Set(),
+    });
+  },
 }));

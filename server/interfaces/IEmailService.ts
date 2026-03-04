@@ -1,4 +1,7 @@
-import type { ISendEmailParams, ISendEmailResult } from '@shared/types/provider-adapter.types';
+import type {
+  ISendEmailParams,
+  ISendEmailResult,
+} from '../services/email-providers/base-email-provider-adapter';
 
 /**
  * Parameters for article complete notification email

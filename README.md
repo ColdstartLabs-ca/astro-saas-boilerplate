@@ -1,16 +1,28 @@
-# AutopilotRank
+# SaaS Boilerplate
 
-A production-ready Astro 5 + React 18 (islands architecture) SaaS application deployed on Cloudflare Pages. Provides core infrastructure for building credits-based SaaS products.
+A production-ready Astro 5 + React 18 (islands architecture) SaaS boilerplate deployed on Cloudflare Pages. Fork this to quickly build your next credits-based SaaS product.
+
+## What's Included
+
+This boilerplate provides the essential infrastructure for building a SaaS product:
+
+- **Authentication**: Supabase Auth with email/password, Google, Facebook, and Azure SSO
+- **Billing**: Stripe integration with subscriptions, one-time credit packs, and customer portal
+- **Credits System**: Flexible credit-based usage with rollover, expiration, and admin management
+- **Admin Panel**: User management, credit adjustments, and subscription oversight
+- **Email**: Multi-provider email service (Brevo, Resend) with templates
+- **Analytics**: Amplitude server-side tracking
+- **Monitoring**: Baselime logging for Cloudflare Workers
+- **i18n**: Internationalization support (English, Portuguese)
 
 ## Tech Stack
 
 - **Frontend**: Astro 5 (SSR + Islands), React 18, Tailwind CSS
-- **Backend**: Astro API Routes (Cloudflare Workers)
-- **Database**: Supabase (PostgreSQL)
-- **Authentication**: Supabase Auth (Email, Google, Azure OAuth)
-- **Payments**: Stripe (Subscriptions & One-time Credits)
+- **Backend**: Astro API Routes (Cloudflare Workers - 10ms CPU limit)
+- **Database**: Supabase (PostgreSQL with RLS)
+- **Authentication**: Supabase Auth
+- **Payments**: Stripe
 - **Deployment**: Cloudflare Pages
-- **Monitoring**: Baselime
 
 ## Quick Start
 
@@ -59,7 +71,7 @@ See [Supabase Setup Guide](docs/guides/supabase-setup.md) for details.
 | `yarn dev`             | Start development server (Astro + Stripe webhook forward) |
 | `yarn dev:no-webhooks` | Start development server without Stripe webhooks          |
 | `yarn build`           | Build for production                                      |
-| `yarn verify`          | Run TypeScript, ESLint, and all tests                     |
+| `yarn verify`          | Run TypeScript, ESLint, i18n checks, and SEO validation   |
 | `yarn test:e2e`        | Run E2E browser tests                                     |
 | `yarn test:api`        | Run API tests                                             |
 | `yarn test:all`        | Run all Playwright tests                                  |
@@ -76,33 +88,62 @@ See [Supabase Setup Guide](docs/guides/supabase-setup.md) for details.
 ```
 ├── src/
 │   ├── pages/              # Astro pages (SSR)
+│   │   ├── api/            # REST API routes
+│   │   ├── auth/           # Authentication pages
+│   │   └── dashboard/      # Dashboard pages
 │   ├── layouts/            # Astro layouts
-│   ├── components/         # Astro components (analytics, etc.)
-│   └── i18n/               # i18n utilities
+│   └── components/         # Astro components
 ├── client/
 │   ├── components/         # React island components
+│   │   ├── admin/          # Admin panel components
+│   │   ├── auth/           # Authentication components
+│   │   ├── form/           # Form components
+│   │   ├── layout/         # Layout components
+│   │   ├── modal/          # Modal components
+│   │   ├── settings/       # Settings components
+│   │   └── stripe/         # Stripe components
 │   ├── hooks/              # React hooks
 │   ├── store/              # Zustand stores
 │   └── styles/             # Global styles
 ├── server/
-│   ├── blog.ts             # Blog data service
 │   ├── services/           # Business logic services
-│   └── controllers/        # API route handlers
+│   │   ├── SubscriptionCredits.ts  # Credit management
+│   │   ├── email.service.ts        # Email service
+│   │   ├── api-key.service.ts      # API key management
+│   │   └── admin-*.service.ts      # Admin services
+│   ├── controllers/        # API route handlers
+│   └── middleware/         # Express-like middleware
 ├── shared/
 │   ├── config/             # Shared configuration
+│   │   ├── env.ts          # Environment variables
+│   │   ├── subscription.config.ts  # Subscription plans
+│   │   ├── stripe.ts       # Stripe configuration
+│   │   └── security.ts     # Security configuration
 │   ├── types/              # Shared TypeScript types
-│   ├── utils/              # Shared utilities
-│   └── validation/         # Zod schemas
+│   ├── validation/         # Zod schemas
+│   └── repositories/       # Database repositories
 ├── supabase/
 │   └── migrations/         # Database migrations
 ├── tests/
 │   ├── e2e/                # E2E browser tests
 │   ├── api/                # API tests
-│   ├── pages/              # Page Object Models
-│   └── helpers/            # Test utilities
-├── scripts/                # Setup and utility scripts
+│   └── pages/              # Page Object Models
+├── emails/                 # React Email templates
+├── locales/                # i18n translations
+├── workers/cron/           # Cloudflare Workers cron handlers
 └── docs/                   # Documentation
 ```
+
+## Extension Points
+
+When building your SaaS product on this boilerplate:
+
+1. **Add your domain logic** in `server/services/`
+2. **Create API routes** in `src/pages/api/`
+3. **Add React components** in `client/components/`
+4. **Define types** in `shared/types/`
+5. **Add migrations** in `supabase/migrations/`
+6. **Update i18n** in `locales/`
 
 ## License
 

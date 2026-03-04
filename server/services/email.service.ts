@@ -1,5 +1,8 @@
 import { getEmailProviderManager } from './email-providers/email-provider-manager';
-import type { ISendEmailParams, ISendEmailResult } from '@shared/types/provider-adapter.types';
+import type {
+  ISendEmailParams,
+  ISendEmailResult,
+} from './email-providers/base-email-provider-adapter';
 import type {
   IEmailService,
   IArticleCompleteEmailParams,
@@ -62,31 +65,18 @@ export class EmailService implements IEmailService {
    * Send article complete notification email.
    * Transactional email - always sent regardless of preferences.
    * Email failure is caught and logged, never thrown.
+   *
+   * NOTE: The 'article-complete' template is feature-specific and not included
+   * in the base boilerplate. This method will log a warning until the template is added.
    */
   async sendArticleCompleteNotification(params: IArticleCompleteEmailParams): Promise<void> {
-    try {
-      await this.send({
-        to: params.email,
-        template: 'article-complete',
-        type: 'transactional',
-        userId: params.userId,
-        data: {
-          userName: params.userName,
-          articleTitle: params.articleTitle,
-          keyword: params.keyword,
-          campaignName: params.campaignName,
-          articleId: params.articleId,
-        },
-      });
-    } catch (error) {
-      // Log error but don't throw - email failure must never block generation
-      const message = error instanceof Error ? error.message : 'Unknown error';
-      console.error('[EmailService] Failed to send article complete notification:', {
-        userId: params.userId,
-        articleId: params.articleId,
-        error: message,
-      });
-    }
+    // Log that article notification was requested but template is not available
+    console.log('[EmailService] Article complete notification requested:', {
+      userId: params.userId,
+      articleId: params.articleId,
+      articleTitle: params.articleTitle,
+      note: 'article-complete template not available in base boilerplate',
+    });
   }
 
   /**

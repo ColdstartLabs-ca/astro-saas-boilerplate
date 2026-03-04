@@ -9,16 +9,30 @@
  * 2. Resend (fallback) - 3,000 free emails/month
  */
 
-import type {
-  IEmailProviderAdapter,
-  IEmailProviderConfig,
-  IEmailProviderManager,
-  ISendEmailParams,
-  ISendEmailResult,
-} from '@shared/types/provider-adapter.types';
-import { EmailProvider } from '@shared/types/provider-adapter.types';
+import {
+  type EmailProvider,
+  type IEmailProviderAdapter,
+  type IEmailProviderConfig,
+  type ISendEmailParams,
+  type ISendEmailResult,
+} from './base-email-provider-adapter';
 import { createBrevoAdapter } from './brevo.provider-adapter';
 import { createResendAdapter } from './resend.provider-adapter';
+
+/**
+ * Email provider manager interface
+ */
+export interface IEmailProviderManager {
+  getProvider(): Promise<IEmailProviderAdapter>;
+  send(params: ISendEmailParams): Promise<ISendEmailResult>;
+  registerProvider(adapter: IEmailProviderAdapter): void;
+  getAllProviders(): IEmailProviderAdapter[];
+  getProviderByType(provider: EmailProvider): IEmailProviderAdapter | undefined;
+  updateProviderConfig(provider: EmailProvider, config: Partial<IEmailProviderConfig>): void;
+  getAllProvidersUsage(): Promise<
+    Record<EmailProvider, Awaited<ReturnType<IEmailProviderAdapter['getUsage']>>>
+  >;
+}
 
 /**
  * Email provider manager with auto-switching

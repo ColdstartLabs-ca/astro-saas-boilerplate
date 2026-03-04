@@ -15,7 +15,6 @@ import { DEFAULT_LOCALE, type Locale } from '../../i18n/config';
 // English translations
 import enPrivacy from '@locales/en/privacy.json';
 import enTerms from '@locales/en/terms.json';
-import enHelp from '@locales/en/help.json';
 import enHomepage from '@locales/en/homepage.json';
 import enPricing from '@locales/en/pricing.json';
 import enNav from '@locales/en/nav.json';
@@ -29,13 +28,11 @@ import enModal from '@locales/en/modal.json';
 import enSubscription from '@locales/en/subscription.json';
 import enStripe from '@locales/en/stripe.json';
 import enI18n from '@locales/en/i18n.json';
-import enHowItWorks from '@locales/en/howItWorks.json';
 import enDashboard from '@locales/en/dashboard.json';
 
 // Portuguese (Brazil) translations
 import ptBRPrivacy from '@locales/pt-BR/privacy.json';
 import ptBRTerms from '@locales/pt-BR/terms.json';
-import ptBRHelp from '@locales/pt-BR/help.json';
 import ptBRHomepage from '@locales/pt-BR/homepage.json';
 import ptBRPricing from '@locales/pt-BR/pricing.json';
 import ptBRNav from '@locales/pt-BR/nav.json';
@@ -49,7 +46,6 @@ import ptBRModal from '@locales/pt-BR/modal.json';
 import ptBRSubscription from '@locales/pt-BR/subscription.json';
 import ptBRStripe from '@locales/pt-BR/stripe.json';
 import ptBRI18n from '@locales/pt-BR/i18n.json';
-import ptBRHowItWorks from '@locales/pt-BR/howItWorks.json';
 import ptBRDashboard from '@locales/pt-BR/dashboard.json';
 import ptBRSettings from '@locales/pt-BR/settings.json';
 
@@ -80,7 +76,6 @@ type TranslationRegistry = Record<string, Record<string, unknown>>;
 const enTranslations: TranslationRegistry = {
   privacy: enPrivacy,
   terms: enTerms,
-  help: enHelp,
   homepage: enHomepage,
   pricing: enPricing,
   nav: enNav,
@@ -94,7 +89,6 @@ const enTranslations: TranslationRegistry = {
   subscription: enSubscription,
   stripe: enStripe,
   i18n: enI18n,
-  howItWorks: enHowItWorks,
   dashboard: enDashboard,
   footer: ((enCommon as Record<string, unknown>).footer || {}) as Record<string, unknown>,
 } as const;
@@ -105,7 +99,6 @@ const enTranslations: TranslationRegistry = {
 const ptBRTranslations: TranslationRegistry = {
   privacy: ptBRPrivacy,
   terms: ptBRTerms,
-  help: ptBRHelp,
   homepage: ptBRHomepage,
   pricing: ptBRPricing,
   nav: ptBRNav,
@@ -119,7 +112,6 @@ const ptBRTranslations: TranslationRegistry = {
   subscription: ptBRSubscription,
   stripe: ptBRStripe,
   i18n: ptBRI18n,
-  howItWorks: ptBRHowItWorks,
   dashboard: ptBRDashboard,
   footer: ((ptBRCommon as Record<string, unknown>).footer || {}) as Record<string, unknown>,
   settings: ptBRSettings,

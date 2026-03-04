@@ -6,7 +6,6 @@ import type { AuthChangeEvent, Session } from '@supabase/supabase-js';
 import { create } from 'zustand';
 import { useShallow } from 'zustand/react/shallow';
 import { handleAuthRedirect } from '@client/utils/authRedirectManager';
-import { useProjectStore } from '@client/store/projectStore';
 
 // Cache keys
 const USER_CACHE_KEY = `${clientEnv.CACHE_USER_KEY_PREFIX}_user_cache`;
@@ -95,7 +94,8 @@ export const useUserStore = create<IUserState>((set, get) => ({
       // validation. Test fixtures inject auth state via localStorage, and the Supabase
       // session cookie may not be detectable when the test server uses a placeholder URL.
       const isTestMode =
-        typeof window !== 'undefined' && (window as Window & { __TEST_ENV__?: boolean }).__TEST_ENV__;
+        typeof window !== 'undefined' &&
+        (window as Window & { __TEST_ENV__?: boolean }).__TEST_ENV__;
       if (isTestMode) {
         set({ user: cached, isAuthenticated: true, isLoading: false, lastFetched: Date.now() });
         return;
@@ -357,13 +357,12 @@ if (typeof window !== 'undefined') {
       // In Playwright test mode, ignore INITIAL_SESSION with null session.
       // Test auth is injected via localStorage cache; no real Supabase cookie is present.
       const isTestMode =
-        typeof window !== 'undefined' && (window as Window & { __TEST_ENV__?: boolean }).__TEST_ENV__;
+        typeof window !== 'undefined' &&
+        (window as Window & { __TEST_ENV__?: boolean }).__TEST_ENV__;
       if (isTestMode && event !== 'SIGNED_OUT') {
         return;
       }
       store.reset();
-      // Clear stale project selection from localStorage
-      useProjectStore.getState().clearActiveProjectId();
       // Redirect to home page after sign out (skip in test mode to avoid flaky tests)
       if (typeof window !== 'undefined' && event === 'SIGNED_OUT' && clientEnv.ENV !== 'test') {
         window.location.href = '/';
@@ -378,7 +377,6 @@ if (typeof window !== 'undefined') {
       // Different user detected (e.g., new account login) - clear stale state
       if (!isSameUser && currentUser) {
         clearUserCache();
-        useProjectStore.getState().clearActiveProjectId();
       }
 
       // If same user, preserve existing profile/subscription data (avoids flicker on visibility change)

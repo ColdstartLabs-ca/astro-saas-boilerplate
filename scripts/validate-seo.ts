@@ -40,12 +40,13 @@ interface IDataFile {
 }
 
 const DATA_FILES: IDataFile[] = [
-  { path: 'content/features-data.json', label: 'features' },
-  { path: 'content/tools-data.json', label: 'tools' },
-  { path: 'content/alternatives-data.json', label: 'alternatives' },
-  { path: 'content/comparisons-data.json', label: 'comparisons' },
-  { path: 'content/use-cases-data.json', label: 'use-cases' },
-  { path: 'content/geo-data.json', label: 'geo' },
+  // Domain-specific content files removed for boilerplate - add your own pSEO data files here
+  // { path: 'content/features-data.json', label: 'features' },
+  // { path: 'content/tools-data.json', label: 'tools' },
+  // { path: 'content/alternatives-data.json', label: 'alternatives' },
+  // { path: 'content/comparisons-data.json', label: 'comparisons' },
+  // { path: 'content/use-cases-data.json', label: 'use-cases' },
+  // { path: 'content/geo-data.json', label: 'geo' },
 ];
 
 const ROOT = join(import.meta.dirname, '..');
@@ -123,7 +124,7 @@ function validateBlogMdx(): { errors: IIssue[]; warnings: IIssue[] } {
   try {
     files = readdirSync(join(ROOT, BLOG_DIR)).filter(f => extname(f) === '.mdx');
   } catch {
-    errors.push({ file: 'blog', slug: '(dir)', rule: 'read-dir', detail: `Cannot read ${BLOG_DIR}` });
+    // Blog directory doesn't exist - skip silently (boilerplate has no blog content)
     return { errors, warnings };
   }
 
@@ -133,7 +134,12 @@ function validateBlogMdx(): { errors: IIssue[]; warnings: IIssue[] } {
     try {
       content = readFileSync(join(ROOT, BLOG_DIR, filename), 'utf8');
     } catch {
-      errors.push({ file: 'blog', slug: label, rule: 'read-file', detail: `Cannot read ${filename}` });
+      errors.push({
+        file: 'blog',
+        slug: label,
+        rule: 'read-file',
+        detail: `Cannot read ${filename}`,
+      });
       continue;
     }
 
@@ -142,7 +148,12 @@ function validateBlogMdx(): { errors: IIssue[]; warnings: IIssue[] } {
     // Required frontmatter
     for (const field of BLOG_REQUIRED_FRONTMATTER) {
       if (!meta[field]) {
-        errors.push({ file: 'blog', slug: label, rule: 'required', detail: `Missing frontmatter: ${field}` });
+        errors.push({
+          file: 'blog',
+          slug: label,
+          rule: 'required',
+          detail: `Missing frontmatter: ${field}`,
+        });
       }
     }
 
@@ -150,9 +161,19 @@ function validateBlogMdx(): { errors: IIssue[]; warnings: IIssue[] } {
     if (meta.title) {
       const len = meta.title.length;
       if (len > BLOG_TITLE_MAX) {
-        errors.push({ file: 'blog', slug: label, rule: 'title-length', detail: `title is ${len} chars (max ${BLOG_TITLE_MAX}): "${meta.title}"` });
+        errors.push({
+          file: 'blog',
+          slug: label,
+          rule: 'title-length',
+          detail: `title is ${len} chars (max ${BLOG_TITLE_MAX}): "${meta.title}"`,
+        });
       } else if (len < BLOG_TITLE_MIN) {
-        warnings.push({ file: 'blog', slug: label, rule: 'title-length', detail: `title is ${len} chars — consider ${BLOG_TITLE_MIN}–${BLOG_TITLE_MAX} chars for best CTR: "${meta.title}"` });
+        warnings.push({
+          file: 'blog',
+          slug: label,
+          rule: 'title-length',
+          detail: `title is ${len} chars — consider ${BLOG_TITLE_MIN}–${BLOG_TITLE_MAX} chars for best CTR: "${meta.title}"`,
+        });
       }
     }
 
@@ -160,36 +181,71 @@ function validateBlogMdx(): { errors: IIssue[]; warnings: IIssue[] } {
     if (meta.description) {
       const len = meta.description.length;
       if (len < BLOG_DESC_MIN || len > BLOG_DESC_MAX) {
-        errors.push({ file: 'blog', slug: label, rule: 'desc-length', detail: `description is ${len} chars (must be ${BLOG_DESC_MIN}–${BLOG_DESC_MAX}): "${meta.description.slice(0, 60)}..."` });
+        errors.push({
+          file: 'blog',
+          slug: label,
+          rule: 'desc-length',
+          detail: `description is ${len} chars (must be ${BLOG_DESC_MIN}–${BLOG_DESC_MAX}): "${meta.description.slice(0, 60)}..."`,
+        });
       }
     }
 
     // Word count
     const wordCount = countWords(body);
     if (wordCount < BLOG_WORDS_ERROR) {
-      errors.push({ file: 'blog', slug: label, rule: 'word-count', detail: `${wordCount} words — minimum is ${BLOG_WORDS_ERROR} (thin content)` });
+      errors.push({
+        file: 'blog',
+        slug: label,
+        rule: 'word-count',
+        detail: `${wordCount} words — minimum is ${BLOG_WORDS_ERROR} (thin content)`,
+      });
     } else if (wordCount < BLOG_WORDS_WARN) {
-      warnings.push({ file: 'blog', slug: label, rule: 'word-count', detail: `${wordCount} words — recommended minimum is ${BLOG_WORDS_WARN} for ranking` });
+      warnings.push({
+        file: 'blog',
+        slug: label,
+        rule: 'word-count',
+        detail: `${wordCount} words — recommended minimum is ${BLOG_WORDS_WARN} for ranking`,
+      });
     }
 
     // H1 presence and uniqueness
     const h1Matches = body.match(/^# .+/gm) ?? [];
     if (h1Matches.length === 0) {
-      errors.push({ file: 'blog', slug: label, rule: 'h1-missing', detail: 'No H1 heading found (# Heading)' });
+      errors.push({
+        file: 'blog',
+        slug: label,
+        rule: 'h1-missing',
+        detail: 'No H1 heading found (# Heading)',
+      });
     } else if (h1Matches.length > 1) {
-      errors.push({ file: 'blog', slug: label, rule: 'h1-multiple', detail: `${h1Matches.length} H1 headings found — should have exactly one` });
+      errors.push({
+        file: 'blog',
+        slug: label,
+        rule: 'h1-multiple',
+        detail: `${h1Matches.length} H1 headings found — should have exactly one`,
+      });
     }
 
     // H2 presence (structure warning)
     const h2Count = (body.match(/^## .+/gm) ?? []).length;
     if (h2Count === 0) {
-      warnings.push({ file: 'blog', slug: label, rule: 'h2-missing', detail: 'No H2 headings (## Heading) — poor content structure for SEO' });
+      warnings.push({
+        file: 'blog',
+        slug: label,
+        rule: 'h2-missing',
+        detail: 'No H2 headings (## Heading) — poor content structure for SEO',
+      });
     }
 
     // Tags
     const tagsValue = meta.tags ?? '';
     if (!tagsValue || tagsValue === '[]') {
-      warnings.push({ file: 'blog', slug: label, rule: 'tags-missing', detail: 'No tags defined — add tags for content discovery' });
+      warnings.push({
+        file: 'blog',
+        slug: label,
+        rule: 'tags-missing',
+        detail: 'No tags defined — add tags for content discovery',
+      });
     }
   }
 

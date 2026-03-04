@@ -4,7 +4,5 @@ export { devtools } from '@client/store/middleware';
 export type { Middleware } from '@client/store/middleware';
 
 export { useLoadingStore } from '@client/store/loadingStore';
-export { useProjectStore } from '@client/store/projectStore';
-export type { IProjectState } from '@client/store/projectStore';
-export { useOnboardingStore } from '@client/store/onboardingStore';
-export type { IOnboardingState } from '@client/store/onboardingStore';
+export { useModalStore } from '@client/store/modalStore';
+export type { AuthModalView } from '@client/store/modalStore';

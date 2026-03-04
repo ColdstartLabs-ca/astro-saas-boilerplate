@@ -7,12 +7,42 @@
  * Implements E13: Add structured failure taxonomy and metrics.
  */
 
-import type {
-  IParsedError,
-  FailureStage,
-  FailureProvider,
-  ErrorCategory,
-} from '@shared/types/failure.types';
+/**
+ * Failure types (previously in failure.types.ts)
+ */
+type FailureStage =
+  | 'credit_check'
+  | 'outline_generation'
+  | 'article_generation'
+  | 'quality_gate'
+  | 'image_generation'
+  | 'image_upload'
+  | 'metadata_extraction'
+  | 'storage'
+  | 'unknown';
+
+type FailureProvider = 'openrouter' | 'replicate' | 'supabase' | 'stripe' | 'internal' | 'unknown';
+
+type ErrorCategory =
+  | 'transient'
+  | 'rate_limit'
+  | 'quota_exceeded'
+  | 'invalid_input'
+  | 'auth'
+  | 'timeout'
+  | 'content_quality'
+  | 'unknown';
+
+interface IParsedError {
+  message: string;
+  stage: FailureStage;
+  provider: FailureProvider;
+  httpStatus: number | null;
+  isRetryable: boolean;
+  category: ErrorCategory;
+  retryAfterMs?: number;
+  context?: Record<string, unknown>;
+}
 
 /**
  * HTTP status codes that indicate transient failures (retryable)
