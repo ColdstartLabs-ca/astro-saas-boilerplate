@@ -178,19 +178,19 @@ test.describe('Campaign Style Preferences E2E Tests', () => {
       const articleStyleSelect = page.locator('select[name="articleStyle"]');
       await expect(articleStyleSelect).toBeVisible();
 
-      // Verify the options exist
+      // Verify the options exist (options inside select are not "visible" to Playwright)
       const options = articleStyleSelect.locator('option');
       const optionCount = await options.count();
 
       // Should have: Default (auto), Informative, How-To, Listicle, Opinion, Tutorial = 6 options
       expect(optionCount).toBeGreaterThanOrEqual(5);
 
-      // Verify specific options are present
-      await expect(articleStyleSelect.locator('option[value="informative"]')).toBeVisible();
-      await expect(articleStyleSelect.locator('option[value="how-to"]')).toBeVisible();
-      await expect(articleStyleSelect.locator('option[value="listicle"]')).toBeVisible();
-      await expect(articleStyleSelect.locator('option[value="opinion"]')).toBeVisible();
-      await expect(articleStyleSelect.locator('option[value="tutorial"]')).toBeVisible();
+      // Verify specific options exist by checking count (not visibility - options inside select are hidden)
+      expect(await articleStyleSelect.locator('option[value="informative"]').count()).toBe(1);
+      expect(await articleStyleSelect.locator('option[value="how-to"]').count()).toBe(1);
+      expect(await articleStyleSelect.locator('option[value="listicle"]').count()).toBe(1);
+      expect(await articleStyleSelect.locator('option[value="opinion"]').count()).toBe(1);
+      expect(await articleStyleSelect.locator('option[value="tutorial"]').count()).toBe(1);
     });
 
     test('should show internal links dropdown with correct options', async ({ page }) => {
@@ -223,12 +223,12 @@ test.describe('Campaign Style Preferences E2E Tests', () => {
       const internalLinksSelect = page.locator('select[name="internalLinksCount"]');
       await expect(internalLinksSelect).toBeVisible();
 
-      // Verify the options exist (0-5 links)
-      await expect(internalLinksSelect.locator('option[value="0"]')).toBeVisible();
-      await expect(internalLinksSelect.locator('option[value="1"]')).toBeVisible();
-      await expect(internalLinksSelect.locator('option[value="2"]')).toBeVisible();
-      await expect(internalLinksSelect.locator('option[value="3"]')).toBeVisible();
-      await expect(internalLinksSelect.locator('option[value="5"]')).toBeVisible();
+      // Verify the options exist (0-5 links) - check count, not visibility
+      expect(await internalLinksSelect.locator('option[value="0"]').count()).toBe(1);
+      expect(await internalLinksSelect.locator('option[value="1"]').count()).toBe(1);
+      expect(await internalLinksSelect.locator('option[value="2"]').count()).toBe(1);
+      expect(await internalLinksSelect.locator('option[value="3"]').count()).toBe(1);
+      expect(await internalLinksSelect.locator('option[value="5"]').count()).toBe(1);
     });
 
     test('should show global instructions textarea with character counter', async ({ page }) => {
@@ -402,12 +402,12 @@ test.describe('Campaign Style Preferences E2E Tests', () => {
       if (await imageStyleLabel.isVisible().catch(() => false)) {
         await expect(imageStyleSelect).toBeVisible();
 
-        // Verify image style options
-        await expect(imageStyleSelect.locator('option[value="brand_text"]')).toBeVisible();
-        await expect(imageStyleSelect.locator('option[value="watercolor"]')).toBeVisible();
-        await expect(imageStyleSelect.locator('option[value="cinematic"]')).toBeVisible();
-        await expect(imageStyleSelect.locator('option[value="illustration"]')).toBeVisible();
-        await expect(imageStyleSelect.locator('option[value="sketch"]')).toBeVisible();
+        // Verify image style options - check count, not visibility
+        expect(await imageStyleSelect.locator('option[value="brand_text"]').count()).toBe(1);
+        expect(await imageStyleSelect.locator('option[value="watercolor"]').count()).toBe(1);
+        expect(await imageStyleSelect.locator('option[value="cinematic"]').count()).toBe(1);
+        expect(await imageStyleSelect.locator('option[value="illustration"]').count()).toBe(1);
+        expect(await imageStyleSelect.locator('option[value="sketch"]').count()).toBe(1);
       }
     });
   });
