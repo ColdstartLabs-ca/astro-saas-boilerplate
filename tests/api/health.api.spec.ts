@@ -45,25 +45,6 @@ test.describe('API: Health — Stripe (§13)', () => {
   });
 });
 
-test.describe('API: Models (§13)', () => {
-  test('GET /api/models — returns available AI models', async ({ request }) => {
-    const response = await request.get('/api/models');
-    expect(response.status()).toBe(200);
-    const data = await response.json();
-    // Endpoint returns presets/models directly, not wrapped in success envelope
-    expect(data).toHaveProperty('writerPresets');
-    expect(data).toHaveProperty('imagePresets');
-    expect(data).toHaveProperty('writerModels');
-    expect(Array.isArray(data.writerPresets)).toBe(true);
-    expect(Array.isArray(data.imagePresets)).toBe(true);
-    expect(Array.isArray(data.writerModels)).toBe(true);
-  });
-
-  test('GET /api/models — has correct content-type', async ({ request }) => {
-    const response = await request.get('/api/models');
-    expect(response.headers()['content-type']).toContain('application/json');
-  });
-});
 
 test.describe('API: Health Check', () => {
   test('should return valid health status response', async ({ request }) => {

@@ -2,16 +2,14 @@ import { test, expect } from '@playwright/test';
 import { ApiClient } from '../../helpers';
 
 /**
- * API Tests: Remaining Cron Endpoints — Auth (§15)
+ * API Tests: Cron Endpoints — Auth (§15)
  *
  * All cron endpoints share the same auth pattern:
- *   - 401 without x-cron-secret header
- *   - 401 with wrong x-cron-secret
- *   - 200 with correct x-cron-secret (even if no work to do)
+ *   - 401 without Authorization header
+ *   - 401 with wrong Bearer token
+ *   - 200 with correct Bearer token (even if no work to do)
  *
  * Endpoints covered:
- *   POST /api/cron/process-scheduled-campaigns
- *   POST /api/cron/recover-stale-articles
  *   POST /api/cron/recover-webhooks
  *   POST /api/cron/check-expirations
  *   POST /api/cron/reconcile
@@ -21,8 +19,6 @@ const getCronSecret = () => process.env.CRON_SECRET || 'test-cron-secret';
 const isTestMode = () => process.env.ENV === 'test' || process.env.PLAYWRIGHT_TEST === '1';
 
 const CRON_ENDPOINTS = [
-  '/api/cron/process-scheduled-campaigns',
-  '/api/cron/recover-stale-articles',
   '/api/cron/recover-webhooks',
   '/api/cron/check-expirations',
   '/api/cron/reconcile',
@@ -41,7 +37,7 @@ for (const endpoint of CRON_ENDPOINTS) {
       const response = await request.post(endpoint, {
         headers: {
           'Content-Type': 'application/json',
-          'x-cron-secret': 'totally-wrong-secret',
+          Authorization: 'Bearer totally-wrong-secret',
         },
         data: {},
       });
@@ -58,7 +54,7 @@ for (const endpoint of CRON_ENDPOINTS) {
       const response = await request.post(endpoint, {
         headers: {
           'Content-Type': 'application/json',
-          'x-cron-secret': getCronSecret(),
+          Authorization: `Bearer ${getCronSecret()}`,
         },
         data: {},
       });

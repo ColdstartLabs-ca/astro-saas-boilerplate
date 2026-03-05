@@ -68,7 +68,7 @@ export default {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
-              'x-cron-secret': env.CRON_SECRET,
+              Authorization: `Bearer ${env.CRON_SECRET}`,
             },
           });
 

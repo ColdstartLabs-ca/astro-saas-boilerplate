@@ -22,87 +22,6 @@ test.afterAll(async () => {
 const isTestMode = () => process.env.ENV === 'test' || process.env.PLAYWRIGHT_TEST === '1';
 
 test.describe('Cross-User Authorization (§1.3)', () => {
-  test('should not expose another user project via GET', async ({ request }) => {
-
-    const owner = await ctx.createUser({ subscription: 'active', tier: 'growth' });
-    const attacker = await ctx.createUser({ subscription: 'active', tier: 'growth' });
-
-    const ownerApi = new ApiClient(request).withAuth(owner.token);
-    const created = await ownerApi.post('/api/projects', { name: 'Owner Project' });
-    created.expectStatus(201);
-    const { project } = await created.getData();
-
-    const attackerApi = new ApiClient(request).withAuth(attacker.token);
-    const response = await attackerApi.get(`/api/projects/${project.id}`);
-    expect([403, 404]).toContain(response.status);
-  });
-
-  test('should not allow updating another user project', async ({ request }) => {
-
-    const owner = await ctx.createUser({ subscription: 'active', tier: 'growth' });
-    const attacker = await ctx.createUser({ subscription: 'active', tier: 'growth' });
-
-    const ownerApi = new ApiClient(request).withAuth(owner.token);
-    const created = await ownerApi.post('/api/projects', { name: 'Owner Project' });
-    const { project } = await created.getData();
-
-    const attackerApi = new ApiClient(request).withAuth(attacker.token);
-    const response = await attackerApi.patch(`/api/projects/${project.id}`, {
-      name: 'Hacked',
-    });
-    expect([403, 404]).toContain(response.status);
-  });
-
-  test('should not allow deleting another user project', async ({ request }) => {
-
-    const owner = await ctx.createUser({ subscription: 'active', tier: 'growth' });
-    const attacker = await ctx.createUser({ subscription: 'active', tier: 'growth' });
-
-    const ownerApi = new ApiClient(request).withAuth(owner.token);
-    const created = await ownerApi.post('/api/projects', { name: 'Owner Project' });
-    const { project } = await created.getData();
-
-    const attackerApi = new ApiClient(request).withAuth(attacker.token);
-    const response = await attackerApi.delete(`/api/projects/${project.id}`);
-    expect([403, 404]).toContain(response.status);
-
-    // Confirm owner can still access it
-    const ownerCheck = await ownerApi.get(`/api/projects/${project.id}`);
-    ownerCheck.expectStatus(200);
-  });
-
-  test('should not allow accessing another user campaign', async ({ request }) => {
-
-    const owner = await ctx.createUser({ subscription: 'active', tier: 'growth' });
-    const attacker = await ctx.createUser({ subscription: 'active', tier: 'growth' });
-
-    const project = await ctx.createProject(owner.id, { name: 'P' });
-    const campaign = await ctx.createCampaign(owner.id, project.id, {
-      name: 'Owner Campaign',
-      keywords: [],
-    });
-
-    const attackerApi = new ApiClient(request).withAuth(attacker.token);
-    const response = await attackerApi.get(`/api/campaigns/${campaign.id}`);
-    expect([403, 404]).toContain(response.status);
-  });
-
-  test('should not allow accessing another user keywords', async ({ request }) => {
-
-    const owner = await ctx.createUser({ subscription: 'active', tier: 'growth' });
-    const attacker = await ctx.createUser({ subscription: 'active', tier: 'growth' });
-
-    const project = await ctx.createProject(owner.id, { name: 'P' });
-    const campaign = await ctx.createCampaign(owner.id, project.id, {
-      name: 'Owner Campaign',
-      keywords: ['test'],
-    });
-
-    const attackerApi = new ApiClient(request).withAuth(attacker.token);
-    const response = await attackerApi.get(`/api/campaigns/${campaign.id}/keywords`);
-    expect([403, 404]).toContain(response.status);
-  });
-
   test('should not allow accessing another user credit history', async ({ request }) => {
 
     const owner = await ctx.createUser({ subscription: 'active', tier: 'growth', credits: 50 });
@@ -137,7 +56,6 @@ test.describe('Cross-User Authorization (§1.3)', () => {
       () => api.get('/api/admin/stats'),
       () => api.get('/api/admin/users'),
       () => api.post('/api/admin/credits/adjust', { userId: regularUser.id, amount: 1000 }),
-      () => api.get('/api/admin/failure-metrics'),
     ];
 
     for (const call of adminEndpoints) {

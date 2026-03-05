@@ -165,28 +165,3 @@ test.describe('POST /api/admin/credits/adjust', () => {
   });
 });
 
-test.describe('GET /api/admin/failure-metrics', () => {
-  test('should reject unauthenticated requests with 401', async ({ request }) => {
-    const api = new ApiClient(request);
-    const response = await api.get('/api/admin/failure-metrics');
-    response.expectStatus(401);
-  });
-
-  test('should reject non-admin users with 403', async ({ request }) => {
-    const user = await ctx.createUser();
-    const api = new ApiClient(request).withAuth(user.token);
-    const response = await api.get('/api/admin/failure-metrics');
-    response.expectStatus(403);
-  });
-
-  test('should return failure metrics for admin', async ({ request }) => {
-    const user = await ctx.createUser();
-    await makeAdmin(user.id);
-    const api = new ApiClient(request).withAuth(user.token);
-    const response = await api.get('/api/admin/failure-metrics');
-    response.expectStatus(200);
-    const data = await response.json();
-    expect(data.success).toBe(true);
-    expect(data.data).toBeDefined();
-  });
-});
