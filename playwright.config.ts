@@ -19,7 +19,8 @@ const TEST_WRANGLER_PORT =
   process.env.TEST_WRANGLER_PORT ||
   (8800 + Math.floor(Math.random() * 200)).toString();
 const PLAYWRIGHT_MOCK_DB_PATH =
-  process.env.PLAYWRIGHT_MOCK_DB_PATH || `/tmp/autopilotrank-playwright-mock-db-${TEST_PORT}.json`;
+  process.env.PLAYWRIGHT_MOCK_DB_PATH ||
+  `/tmp/saas-boilerplate-playwright-mock-db-${TEST_PORT}.json`;
 
 // Export for use in tests if needed
 process.env.PLAYWRIGHT_TEST_PORT = TEST_PORT;

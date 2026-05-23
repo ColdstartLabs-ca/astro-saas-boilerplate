@@ -13,7 +13,6 @@ export default defineConfig({
       'server/**/*.{test,spec}.{ts,tsx}',
       'shared/**/*.{test,spec}.{ts,tsx}',
       'tests/unit/**/*.unit.spec.{ts,tsx}',
-      'tests/pseo/**/*.test.{ts,tsx}',
       '__tests__/**/*.{test,spec}.{ts,tsx}',
     ],
     exclude: ['node_modules'], // Playwright tests are in tests/api, tests/e2e, tests/integration

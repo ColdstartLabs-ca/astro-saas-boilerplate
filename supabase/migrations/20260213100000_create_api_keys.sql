@@ -4,7 +4,7 @@
 
 -- =============================================================================
 -- Table: api_keys
--- Stores API keys for programmatic access to AutopilotRank
+-- Stores API keys for programmatic access to SaaS Boilerplate
 -- Keys are stored as SHA-256 hashes, never in plaintext
 -- =============================================================================
 

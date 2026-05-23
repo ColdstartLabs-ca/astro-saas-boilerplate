@@ -15,8 +15,8 @@ describe('Unified Pricing Resolver', () => {
       const index = getPriceIndex();
 
       // Should contain starter plan
-      expect(index).toHaveProperty('price_1SxZp7K2K0pPNfoSMt94q8kP');
-      expect(index['price_1SxZp7K2K0pPNfoSMt94q8kP']).toMatchObject({
+      expect(index).toHaveProperty('price_starter_monthly');
+      expect(index['price_starter_monthly']).toMatchObject({
         type: 'plan',
         key: 'starter',
         name: 'Starter',
@@ -26,8 +26,8 @@ describe('Unified Pricing Resolver', () => {
       });
 
       // Should contain growth plan
-      expect(index).toHaveProperty('price_1SxZp9K2K0pPNfoSeOwSLmcp');
-      expect(index['price_1SxZp9K2K0pPNfoSeOwSLmcp']).toMatchObject({
+      expect(index).toHaveProperty('price_growth_monthly');
+      expect(index['price_growth_monthly']).toMatchObject({
         type: 'plan',
         key: 'growth',
         name: 'Growth',
@@ -37,8 +37,8 @@ describe('Unified Pricing Resolver', () => {
       });
 
       // Should contain agency plan
-      expect(index).toHaveProperty('price_1SxZpAK2K0pPNfoSbxIQNtKL');
-      expect(index['price_1SxZpAK2K0pPNfoSbxIQNtKL']).toMatchObject({
+      expect(index).toHaveProperty('price_agency_monthly');
+      expect(index['price_agency_monthly']).toMatchObject({
         type: 'plan',
         key: 'agency',
         name: 'Agency',
@@ -48,8 +48,8 @@ describe('Unified Pricing Resolver', () => {
       });
 
       // Should contain credit packs
-      expect(index).toHaveProperty('price_1SxZpbK2K0pPNfoSOZkDy9td');
-      expect(index['price_1SxZpbK2K0pPNfoSOZkDy9td']).toMatchObject({
+      expect(index).toHaveProperty('price_credits_small');
+      expect(index['price_credits_small']).toMatchObject({
         type: 'pack',
         key: 'small',
         name: 'Small Pack',
@@ -67,31 +67,31 @@ describe('Unified Pricing Resolver', () => {
 
   describe('resolvePriceId', () => {
     test('should resolve known subscription plan price IDs', () => {
-      const starter = resolvePriceId('price_1SxZp7K2K0pPNfoSMt94q8kP');
+      const starter = resolvePriceId('price_starter_monthly');
       expect(starter).toMatchObject({
         type: 'plan',
         key: 'starter',
         name: 'Starter',
-        stripePriceId: 'price_1SxZp7K2K0pPNfoSMt94q8kP',
+        stripePriceId: 'price_starter_monthly',
         priceInCents: 4900,
         currency: 'usd',
         credits: 30,
         maxRollover: 90, // 30 * 3
       });
 
-      const growth = resolvePriceId('price_1SxZp9K2K0pPNfoSeOwSLmcp');
+      const growth = resolvePriceId('price_growth_monthly');
       expect(growth).toMatchObject({
         type: 'plan',
         key: 'growth',
         name: 'Growth',
-        stripePriceId: 'price_1SxZp9K2K0pPNfoSeOwSLmcp',
+        stripePriceId: 'price_growth_monthly',
         priceInCents: 9900,
         currency: 'usd',
         credits: 100,
         maxRollover: 300, // 100 * 3
       });
 
-      const agency = resolvePriceId('price_1SxZpAK2K0pPNfoSbxIQNtKL');
+      const agency = resolvePriceId('price_agency_monthly');
       expect(agency).toMatchObject({
         type: 'plan',
         key: 'agency',
@@ -102,19 +102,19 @@ describe('Unified Pricing Resolver', () => {
     });
 
     test('should resolve known credit pack price IDs', () => {
-      const smallPack = resolvePriceId('price_1SxZpbK2K0pPNfoSOZkDy9td');
+      const smallPack = resolvePriceId('price_credits_small');
       expect(smallPack).toMatchObject({
         type: 'pack',
         key: 'small',
         name: 'Small Pack',
-        stripePriceId: 'price_1SxZpbK2K0pPNfoSOZkDy9td',
+        stripePriceId: 'price_credits_small',
         priceInCents: 999,
         currency: 'usd',
         credits: 10,
         maxRollover: null,
       });
 
-      const mediumPack = resolvePriceId('price_1SxZpbK2K0pPNfoSQ9VDhGSt');
+      const mediumPack = resolvePriceId('price_credits_medium');
       expect(mediumPack).toMatchObject({
         type: 'pack',
         key: 'medium',
@@ -137,7 +137,7 @@ describe('Unified Pricing Resolver', () => {
 
   describe('assertKnownPriceId', () => {
     test('should return resolved data for known price IDs', () => {
-      const result = assertKnownPriceId('price_1SxZp9K2K0pPNfoSeOwSLmcp');
+      const result = assertKnownPriceId('price_growth_monthly');
       expect(result).toMatchObject({
         type: 'plan',
         key: 'growth',
@@ -168,7 +168,7 @@ describe('Unified Pricing Resolver', () => {
 
   describe('resolvePlanOrPack', () => {
     test('should resolve subscription plans with correct structure', () => {
-      const result = resolvePlanOrPack('price_1SxZp7K2K0pPNfoSMt94q8kP');
+      const result = resolvePlanOrPack('price_starter_monthly');
       expect(result).toMatchObject({
         type: 'plan',
         key: 'starter',
@@ -180,7 +180,7 @@ describe('Unified Pricing Resolver', () => {
     });
 
     test('should resolve credit packs with correct structure', () => {
-      const result = resolvePlanOrPack('price_1SxZpbK2K0pPNfoSOZkDy9td');
+      const result = resolvePlanOrPack('price_credits_small');
       expect(result).toMatchObject({
         type: 'pack',
         key: 'small',
@@ -204,7 +204,7 @@ describe('Unified Pricing Resolver', () => {
 
   describe('Starter Tier Specific Tests', () => {
     test('should resolve Starter plan with correct rollover configuration', () => {
-      const starter = resolvePriceId('price_1SxZp7K2K0pPNfoSMt94q8kP');
+      const starter = resolvePriceId('price_starter_monthly');
 
       expect(starter).toMatchObject({
         type: 'plan',
@@ -217,7 +217,7 @@ describe('Unified Pricing Resolver', () => {
     });
 
     test('should handle Starter plan in resolvePlanOrPack', () => {
-      const resolved = resolvePlanOrPack('price_1SxZp7K2K0pPNfoSMt94q8kP');
+      const resolved = resolvePlanOrPack('price_starter_monthly');
 
       expect(resolved).toMatchObject({
         type: 'plan',
@@ -238,7 +238,7 @@ describe('Unified Pricing Resolver', () => {
       // Test that Starter price ID is in the index
       const index = getPriceIndex();
       const starterPriceIds = Object.keys(index).filter(
-        key => key.toLowerCase().includes('starter') || key === 'price_1SxZp7K2K0pPNfoSMt94q8kP'
+        key => key.toLowerCase().includes('starter') || key === 'price_starter_monthly'
       );
       expect(starterPriceIds.length).toBeGreaterThan(0);
 
@@ -253,7 +253,7 @@ describe('Unified Pricing Resolver', () => {
     test('should verify rollover is enabled for Starter tier', () => {
       const index = getPriceIndex();
       const starterPriceIds = Object.keys(index).filter(
-        key => key.toLowerCase().includes('starter') || key === 'price_1SxZp7K2K0pPNfoSMt94q8kP'
+        key => key.toLowerCase().includes('starter') || key === 'price_starter_monthly'
       );
 
       if (starterPriceIds.length > 0) {

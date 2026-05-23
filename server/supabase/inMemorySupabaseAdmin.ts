@@ -14,8 +14,8 @@ type FilterFn = (row: Row) => boolean;
 type OrderRule = { column: string; ascending: boolean };
 type MutationOperation = 'select' | 'insert' | 'update' | 'delete' | 'upsert';
 
-const GLOBAL_STORE_KEY = '__AUTOPILOTRANK_IN_MEMORY_SUPABASE__';
-const DEFAULT_DB_PATH = '/tmp/autopilotrank-playwright-mock-db.json';
+const GLOBAL_STORE_KEY = '__SAAS_BOILERPLATE_IN_MEMORY_SUPABASE__';
+const DEFAULT_DB_PATH = '/tmp/saas-boilerplate-playwright-mock-db.json';
 const DB_PATH = serverEnv.PLAYWRIGHT_MOCK_DB_PATH ?? DEFAULT_DB_PATH;
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -83,7 +83,7 @@ class InMemoryStore {
       'user_onboarding',
       'email_preferences',
       'email_logs',
-      // Outrank feature parity tables
+      // Example Competitor feature parity tables
       'project_target_audiences',
       'project_competitors',
       'project_example_articles',
@@ -1034,7 +1034,7 @@ class InMemorySupabaseAdmin {
         amount: -creditsNeeded,
         type: 'usage',
         reference_id: articleId,
-        description: `Article generation: ${keyword}`,
+        description: `Usage operation: ${keyword}`,
         created_at: now,
       });
 
@@ -1054,7 +1054,7 @@ class InMemorySupabaseAdmin {
       const description =
         typeof params.p_description === 'string' && params.p_description.trim().length > 0
           ? params.p_description.trim()
-          : 'Planned article generation';
+          : 'Planned usage operation';
 
       if (creditsNeeded <= 0) {
         return {

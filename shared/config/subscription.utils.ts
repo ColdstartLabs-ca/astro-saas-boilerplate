@@ -676,7 +676,7 @@ export function buildHomepageTiers(): Array<{
     price: '$0',
     priceValue: 0,
     period: '',
-    description: 'Try AutopilotRank with no commitment.',
+    description: 'Try SaaS Boilerplate with no commitment.',
     features: [
       '3 free articles to start',
       'Multi-model AI generation',

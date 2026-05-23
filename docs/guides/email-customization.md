@@ -16,7 +16,7 @@ Supabase handles all authentication emails including email verification, passwor
 ### Step 1: Access Email Templates
 
 1. Log in to [Supabase Dashboard](https://supabase.com/dashboard)
-2. Select your **AutopilotRank** project
+2. Select your **SaaS Boilerplate** project
 3. Navigate to **Authentication** > **Email Templates**
 
 ### Step 2: Available Templates
@@ -37,11 +37,11 @@ Sent when a new user signs up with email/password.
 **Recommended Customization:**
 
 ```html
-<h2>Welcome to AutopilotRank!</h2>
+<h2>Welcome to SaaS Boilerplate!</h2>
 <p>Thanks for signing up. Click the link below to verify your email address:</p>
 <p><a href="{{ .ConfirmationURL }}">Verify Email Address</a></p>
-<p>If you didn't sign up for AutopilotRank, you can safely ignore this email.</p>
-<p>Best regards,<br />The AutopilotRank Team</p>
+<p>If you didn't sign up for SaaS Boilerplate, you can safely ignore this email.</p>
+<p>Best regards,<br />The SaaS Boilerplate Team</p>
 ```
 
 #### Invite User
@@ -55,7 +55,7 @@ Sent for passwordless sign-in.
 **Recommended Customization:**
 
 ```html
-<h2>Sign in to AutopilotRank</h2>
+<h2>Sign in to SaaS Boilerplate</h2>
 <p>Click the link below to sign in to your account:</p>
 <p><a href="{{ .ConfirmationURL }}">Sign In</a></p>
 <p>This link expires in 1 hour.</p>
@@ -87,7 +87,7 @@ Sent when a user requests a password reset.
 <p><a href="{{ .ConfirmationURL }}">Reset Password</a></p>
 <p>This link expires in 1 hour.</p>
 <p>If you didn't request a password reset, you can safely ignore this email.</p>
-<p>Best regards,<br />The AutopilotRank Team</p>
+<p>Best regards,<br />The SaaS Boilerplate Team</p>
 ```
 
 ### Step 3: Branding Guidelines
@@ -113,17 +113,17 @@ For consistent branding across all emails:
 >
   <div style="background-color: #6366f1; padding: 24px; text-align: center;">
     <!-- Logo here -->
-    <h1 style="color: white; margin: 0;">AutopilotRank</h1>
+    <h1 style="color: white; margin: 0;">SaaS Boilerplate</h1>
   </div>
   <div style="background-color: white; padding: 32px; border: 1px solid #e2e8f0;">
     <!-- Email content here -->
   </div>
   <div style="text-align: center; padding: 16px; color: #64748b; font-size: 14px;">
-    <p>&copy; 2025 AutopilotRank. All rights reserved.</p>
+    <p>&copy; 2025 SaaS Boilerplate. All rights reserved.</p>
     <p>
-      <a href="https://autopilotrank.com/privacy" style="color: #6366f1;">Privacy Policy</a> |
-      <a href="https://autopilotrank.com/terms" style="color: #6366f1;">Terms</a> |
-      <a href="https://autopilotrank.com/help" style="color: #6366f1;">Help</a>
+      <a href="https://example.com/privacy" style="color: #6366f1;">Privacy Policy</a> |
+      <a href="https://example.com/terms" style="color: #6366f1;">Terms</a> |
+      <a href="https://example.com/help" style="color: #6366f1;">Help</a>
     </p>
   </div>
 </div>
@@ -156,7 +156,7 @@ BREVO_API_KEY=xkeysib-your-brevo-api-key
 RESEND_API_KEY=re_your-resend-api-key
 
 # Common email settings
-EMAIL_FROM_ADDRESS=noreply@autopilotrank.com
+EMAIL_FROM_ADDRESS=noreply@example.com
 ```
 
 ---
@@ -180,8 +180,8 @@ Stripe can automatically send payment receipts to customers. This requires confi
 
 1. Click **Customize** next to receipt emails
 2. Configure:
-   - **From name**: `AutopilotRank`
-   - **Reply-to email**: `support@autopilotrank.com`
+   - **From name**: `SaaS Boilerplate`
+   - **Reply-to email**: `support@example.com`
    - **Logo**: Upload your logo (recommended 200px width)
    - **Brand color**: Your brand color
    - **Footer text**: Add company address if required by law
@@ -223,7 +223,7 @@ For subscription plans:
 1. Go to **Settings** > **Emails** > **Invoices**
 2. Click **Customize**
 3. Configure:
-   - **Subject line**: `Your AutopilotRank invoice for [amount]`
+   - **Subject line**: `Your SaaS Boilerplate invoice for [amount]`
    - **Footer message**: Custom footer with support info
    - **Logo**: Same as receipt logo
 
@@ -348,7 +348,7 @@ BREVO_API_KEY=xkeysib-your-brevo-api-key
 RESEND_API_KEY=re_your-resend-api-key
 
 # Common email settings
-EMAIL_FROM_ADDRESS=noreply@autopilotrank.com
+EMAIL_FROM_ADDRESS=noreply@example.com
 ALLOW_TRANSACTIONAL_EMAILS_IN_DEV=false
 ```
 
@@ -360,7 +360,7 @@ import { EmailService } from '@/server/email';
 // Send transactional email
 await EmailService.sendEmail({
   to: 'user@example.com',
-  subject: 'Welcome to AutopilotRank',
+  subject: 'Welcome to SaaS Boilerplate',
   template: 'welcome',
   data: { name: 'User Name' },
 });

@@ -31,11 +31,11 @@ This boilerplate provides the essential infrastructure for building a SaaS produ
 yarn install
 
 # Copy environment files
-cp .env.example .env
-cp .env.prod.example .env.prod
+cp .env.client.example .env.client
+cp .env.api.example .env.api
 
 # Run database migrations
-./scripts/setup-supabase.sh --manual
+yarn setup:db:manual
 
 # Start development server
 yarn dev
@@ -79,9 +79,7 @@ See [Supabase Setup Guide](docs/guides/supabase-setup.md) for details.
 ## Documentation
 
 - **Setup Guides**: `docs/guides/`
-- **PRDs**: `docs/PRDs/`
-- **Technical Docs**: `docs/technical/`
-- **Roadmap**: `docs/management/ROADMAP.md`
+- **Authentication Guides**: `docs/authentication/`
 
 ## Project Structure
 
@@ -147,4 +145,4 @@ When building your SaaS product on this boilerplate:
 
 ## License
 
-Private - All rights reserved.
+Add your preferred license before distributing your application.

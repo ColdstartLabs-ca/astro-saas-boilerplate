@@ -34,11 +34,11 @@ describe('Logo Component', () => {
     test('should render full variant by default', () => {
       render(<Logo />);
 
-      expect(screen.getByText(/Autopilot/)).toBeInTheDocument();
-      expect(screen.getByText(/Rank/)).toBeInTheDocument();
+      expect(screen.getByText(/SaaS/)).toBeInTheDocument();
+      expect(screen.getByText(/Boilerplate/)).toBeInTheDocument();
     });
 
-    test('should render Autopilot text in white', () => {
+    test('should render SaaS text in white', () => {
       const { container } = render(<Logo />);
 
       const textElement = container.querySelector('.font-bold');
@@ -46,12 +46,12 @@ describe('Logo Component', () => {
       expect(textElement).toHaveClass('text-white');
     });
 
-    test('should render Rank with accent color', () => {
+    test('should render Boilerplate with accent color', () => {
       const { container } = render(<Logo />);
 
       const accentText = container.querySelector('.text-accent');
       expect(accentText).toBeInTheDocument();
-      expect(accentText).toHaveTextContent('Rank');
+      expect(accentText).toHaveTextContent('Boilerplate');
     });
 
     test('should render lightning bolt/arrow path', () => {
@@ -68,15 +68,15 @@ describe('Logo Component', () => {
     test('should render full variant text', () => {
       render(<Logo variant="full" />);
 
-      expect(screen.getByText('Autopilot')).toBeInTheDocument();
-      expect(screen.getByText('Rank')).toBeInTheDocument();
+      expect(screen.getByText('SaaS')).toBeInTheDocument();
+      expect(screen.getByText('Boilerplate')).toBeInTheDocument();
     });
 
     test('should render compact variant without text', () => {
       const { container } = render(<Logo variant="compact" />);
 
-      expect(screen.queryByText('Autopilot')).not.toBeInTheDocument();
-      expect(screen.queryByText('Rank')).not.toBeInTheDocument();
+      expect(screen.queryByText('SaaS')).not.toBeInTheDocument();
+      expect(screen.queryByText('Boilerplate')).not.toBeInTheDocument();
 
       // Icon should still be present
       const iconContainer = container.querySelector('.rounded-xl');
@@ -174,14 +174,14 @@ describe('Logo Component', () => {
       const props: IProps = { variant: 'full' };
       render(<Logo {...props} />);
 
-      expect(screen.getByText('Autopilot')).toBeInTheDocument();
+      expect(screen.getByText('SaaS')).toBeInTheDocument();
     });
 
     test('should accept IProps with variant compact', () => {
       const props: IProps = { variant: 'compact' };
       const { container } = render(<Logo {...props} />);
 
-      expect(screen.queryByText('Autopilot')).not.toBeInTheDocument();
+      expect(screen.queryByText('SaaS')).not.toBeInTheDocument();
       expect(container.querySelector('.rounded-xl')).toBeInTheDocument();
     });
 
@@ -198,7 +198,7 @@ describe('Logo Component', () => {
       const { container } = render(<Logo {...props} />);
 
       expect(container.querySelector('.rounded-xl')).toBeInTheDocument();
-      expect(screen.getByText('Autopilot')).toBeInTheDocument();
+      expect(screen.getByText('SaaS')).toBeInTheDocument();
     });
 
     test('should handle undefined className', () => {
@@ -212,7 +212,7 @@ describe('Logo Component', () => {
       const props: IProps = { variant: undefined };
       render(<Logo {...props} />);
 
-      expect(screen.getByText('Autopilot')).toBeInTheDocument();
+      expect(screen.getByText('SaaS')).toBeInTheDocument();
     });
   });
 

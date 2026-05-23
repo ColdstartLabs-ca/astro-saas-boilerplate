@@ -38,7 +38,7 @@ trap cleanup_prod_secrets EXIT
 
 echo ""
 echo -e "${CYAN}══════════════════════════════════════${NC}"
-echo -e "${CYAN}  AutopilotRank Deploy${NC}"
+echo -e "${CYAN}  SaaS Boilerplate Deploy${NC}"
 echo -e "${CYAN}══════════════════════════════════════${NC}"
 echo ""
 
@@ -70,7 +70,7 @@ fi
 if [ "$SKIP_I18N" = "false" ]; then
     echo -e "${CYAN}▸ Checking translations...${NC}"
     cd "$PROJECT_ROOT"
-    if ! yarn i18n:check --no-pseo; then
+    if ! yarn i18n:check ; then
         echo -e "${RED}✗ Translation check failed. Deployment blocked.${NC}"
         echo -e "${YELLOW}  Run 'yarn i18n:check' to see details${NC}"
         exit 1

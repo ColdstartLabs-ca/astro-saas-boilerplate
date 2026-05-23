@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # ============================================================================
-# AutopilotRank Setup Orchestrator
+# SaaS Boilerplate Setup Orchestrator
 # ============================================================================
 # This script orchestrates the complete development setup by running
 # modular setup scripts in sequence.
@@ -42,7 +42,7 @@ SKIP_TYPES=false
 
 show_help() {
     cat << EOF
-${BOLD}PixelPerfect Setup Orchestrator${NC}
+${BOLD}SaaS Boilerplate Setup Orchestrator${NC}
 
 Usage: ./scripts/setup.sh [options]
 
@@ -99,7 +99,7 @@ done
 
 echo ""
 echo -e "${CYAN}╔════════════════════════════════════════════════════════════╗${NC}"
-echo -e "${CYAN}║${NC}          ${BOLD}PixelPerfect Development Setup${NC}                   ${CYAN}║${NC}"
+echo -e "${CYAN}║${NC}          ${BOLD}SaaS Boilerplate Development Setup${NC}                   ${CYAN}║${NC}"
 echo -e "${CYAN}╚════════════════════════════════════════════════════════════╝${NC}"
 echo ""
 

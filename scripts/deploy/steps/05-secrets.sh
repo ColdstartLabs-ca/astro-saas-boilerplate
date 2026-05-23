@@ -3,7 +3,7 @@
 step_secrets() {
     log_step 6 "Uploading secrets"
 
-    local project="${WORKER_NAME:-autopilotrank}"
+    local project="${WORKER_NAME:-saas-boilerplate}"
     local skip_secrets="${SKIP_SECRETS:-false}"
 
     # Get existing secrets (only needed when skipping)
@@ -72,7 +72,7 @@ step_secrets() {
         AVAILABLE_IMAGE_PRESETS
         # CMS
         CMS_ENCRYPTION_KEY
-        # Google OAuth (GSC + API integrations)
+        # Google OAuth (Google API integrations)
         GOOGLE_OAUTH_CLIENT_SECRET
         GSC_STATE_SECRET
         # Monitoring
@@ -89,7 +89,7 @@ step_secrets() {
     # Warn about critical secrets that have empty values (will silently skip)
     for critical in GOOGLE_OAUTH_CLIENT_SECRET GSC_STATE_SECRET EMAIL_FROM_ADDRESS; do
         if [[ -z "${!critical:-}" ]]; then
-            log_warn "$critical is empty — add it to the GCloud secret 'autopilotrank-api-prod' and redeploy"
+            log_warn "$critical is empty — add it to the GCloud secret 'saas-boilerplate-api-prod' and redeploy"
         fi
     done
 

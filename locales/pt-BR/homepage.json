@@ -1,5 +1,5 @@
 {
-  "badge": "NOVO: AutopilotRank",
+  "badge": "NOVO: SaaS Boilerplate",
   "badgeVersion": "v2.0",
   "heroTitle": "Transforme Palavras-chave Em",
   "heroTitleHighlight": "Rankings",
@@ -54,7 +54,7 @@
       },
       "publishReady": {
         "title": "Qualidade Pronta para Publicação",
-        "description": "Motor Humanizer produz conteúdo de nível humano"
+        "description": "Motor Usage produz conteúdo de nível humano"
       },
       "allInOne": {
         "title": "Tudo-em-Um",
@@ -73,13 +73,13 @@
     "feature1": {
       "title": "Motor de IA Multi-Modelo",
       "highlight": "Não Apenas GPT-4. O Melhor Modelo para Cada Tarefa.",
-      "description": "Enquanto concorrentes te prendem a um modelo de IA, o AutopilotRank usa GPT-4, Claude, Gemini e Llama estrategicamente. Modelos diferentes para tipos diferentes de conteúdo significa mais variedade, menos repetição, melhor qualidade.",
+      "description": "Enquanto concorrentes te prendem a um modelo de IA, o SaaS Boilerplate usa GPT-4, Claude, Gemini e Llama estrategicamente. Modelos diferentes para tipos diferentes de conteúdo significa mais variedade, menos repetição, melhor qualidade.",
       "proof": "Diferente de ferramentas de modelo único que podem produzir conteúdo repetitivo"
     },
     "feature2": {
-      "title": "Motor Humanizer",
+      "title": "Motor Usage",
       "highlight": "Conteúdo de IA Que Realmente Parece Humano",
-      "description": "Nosso motor Humanizer proprietário reescreve padrões de IA em prosa natural. Projetado para reduzir significativamente o tempo de edição e produzir conteúdo que flui naturalmente.",
+      "description": "Nosso motor Usage proprietário reescreve padrões de IA em prosa natural. Projetado para reduzir significativamente o tempo de edição e produzir conteúdo que flui naturalmente.",
       "proof": "Projetado para reduzir significativamente o tempo de edição"
     },
     "feature3": {
@@ -91,27 +91,27 @@
   },
   "comparison": {
     "title": "Como Nos Comparamos",
-    "subtitle": "Veja o que diferencia o AutopilotRank de outras ferramentas",
+    "subtitle": "Veja o que diferencia o SaaS Boilerplate de outras ferramentas",
     "disclaimer": "Comparação de recursos baseada em informações disponíveis publicamente em fevereiro de 2026. Verifique os detalhes atuais no site de cada provedor.",
     "rows": {
       "fullAutomation": "Automação Completa",
       "humanQuality": "Conteúdo com Qualidade Humana",
       "nativeCMS": "Publicação Nativa em CMS",
-      "gscIntegration": "Integração com GSC",
-      "humanizer": "Humanizer/Detecção de IA",
+      "gscIntegration": "Integração com analytics",
+      "usage": "Usage/Detecção de IA",
       "prePublicationQA": "QA Pré-Publicação",
       "startingPrice": "Preço Inicial"
     },
     "columns": {
-      "autopilotrank": "AutopilotRank",
-      "toolA": "Outrank",
+      "saas-boilerplate": "SaaS Boilerplate",
+      "toolA": "Example Competitor",
       "toolB": "Surfer",
       "toolC": "Byword"
     }
   },
   "useCases": {
     "title": "Construído Para Equipes Como a Sua",
-    "subtitle": "Veja como o AutopilotRank se encaixa no seu fluxo de trabalho",
+    "subtitle": "Veja como o SaaS Boilerplate se encaixa no seu fluxo de trabalho",
     "tab1": {
       "label": "Donos de PMEs",
       "title": "Escale Sem Contratar uma Equipe de Conteúdo",
@@ -159,7 +159,7 @@
     "title": "Preços Simples e Transparentes",
     "subtitle": "Sem cobrança por palavra. Sem limite de assentos. Sem taxas surpresa.",
     "allPlansInclude": "Todos os planos incluem:",
-    "humanizer": "Motor Humanizer",
+    "usage": "Motor Usage",
     "qa": "QA pré-publicação",
     "wordpress": "Publicação no WordPress",
     "trust": "Pague conforme o uso - Cancele quando quiser - 3 artigos grátis para experimentar",
@@ -198,19 +198,19 @@
   },
   "faq": {
     "title": "Perguntas Frequentes",
-    "subtitle": "Tudo que você precisa saber sobre o AutopilotRank",
+    "subtitle": "Tudo que você precisa saber sobre o SaaS Boilerplate",
     "items": [
       {
         "question": "O Google vai penalizar conteúdo gerado por IA?",
-        "answer": "Não. A política do Google visa conteúdo de baixa qualidade, não conteúdo de IA especificamente. Nosso motor Humanizer produz conteúdo projetado para ler naturalmente, e executamos verificações de qualidade antes da publicação."
+        "answer": "Não. A política do Google visa conteúdo de baixa qualidade, não conteúdo de IA especificamente. Nosso motor Usage produz conteúdo projetado para ler naturalmente, e executamos verificações de qualidade antes da publicação."
       },
       {
-        "question": "Como o AutopilotRank se compara a outras ferramentas?",
-        "answer": "O AutopilotRank combina automação completa, conteúdo com qualidade humana através do nosso motor Humanizer, publicação nativa em CMS e integração com GSC em uma plataforma. Muitas ferramentas focam em apenas um aspecto, exigindo que você junte várias soluções."
+        "question": "Como o SaaS Boilerplate se compara a outras ferramentas?",
+        "answer": "O SaaS Boilerplate combina automação completa, conteúdo com qualidade humana através do nosso motor Usage, publicação nativa em CMS e integração com analytics em uma plataforma. Muitas ferramentas focam em apenas um aspecto, exigindo que você junte várias soluções."
       },
       {
         "question": "Preciso de habilidades técnicas para configurar?",
-        "answer": "Não. Se você consegue instalar um plugin do WordPress, você consegue usar o AutopilotRank. Nosso onboarding guiado te acompanha em tudo em menos de 15 minutos."
+        "answer": "Não. Se você consegue instalar um plugin do WordPress, você consegue usar o SaaS Boilerplate. Nosso onboarding guiado te acompanha em tudo em menos de 15 minutos."
       },
       {
         "question": "Quais plataformas CMS vocês suportam?",

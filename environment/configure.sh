@@ -14,7 +14,7 @@ PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
 
 cd "$PROJECT_ROOT"
 
-echo "AutopilotRank Environment Configuration"
+echo "SaaS Boilerplate Environment Configuration"
 echo "======================================"
 echo ""
 

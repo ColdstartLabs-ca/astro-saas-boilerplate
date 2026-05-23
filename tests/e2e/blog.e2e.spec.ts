@@ -57,7 +57,7 @@ test.describe('Blog', () => {
 
   test.describe('Blog Post Detail Page', () => {
     test('should render blog post detail page', async ({ page }) => {
-      await page.goto('/blog/introducing-autopilotrank');
+      await page.goto('/blog/introducing-saas-boilerplate');
 
       // Wait for content to load
       await page.waitForLoadState('networkidle');
@@ -65,7 +65,7 @@ test.describe('Blog', () => {
       // Verify the page title is present - use first() to handle header h1 + article h1
       const title = page.locator('h1').first();
       await expect(title).toBeVisible();
-      await expect(title).toContainText('Introducing AutopilotRank');
+      await expect(title).toContainText('Introducing SaaS Boilerplate');
 
       // Verify article container exists
       const articleContent = page.locator('article');
@@ -73,21 +73,21 @@ test.describe('Blog', () => {
     });
 
     test('should display post author and date', async ({ page }) => {
-      await page.goto('/blog/introducing-autopilotrank');
+      await page.goto('/blog/introducing-saas-boilerplate');
       await page.waitForLoadState('networkidle');
 
       // Check for author text on page (appears in "By {author}" format)
       const pageContent = await page.locator('article').textContent();
-      expect(pageContent).toContain('AutopilotRank Team');
+      expect(pageContent).toContain('SaaS Boilerplate Team');
 
       // Check for date - the date is displayed with "By" prefix
-      // e.g., "By AutopilotRank Team • 2026-02-16"
+      // e.g., "By SaaS Boilerplate Team • 2026-02-16"
       const articleText = await page.locator('article').textContent();
       expect(articleText).toContain('2026');
     });
 
     test('should have back to blog link', async ({ page }) => {
-      await page.goto('/blog/introducing-autopilotrank');
+      await page.goto('/blog/introducing-saas-boilerplate');
       await page.waitForLoadState('networkidle');
 
       // Check for back to blog link - use a more flexible selector
@@ -113,17 +113,17 @@ test.describe('Blog', () => {
     });
 
     test('should render comparison post', async ({ page }) => {
-      await page.goto('/blog/autopilotrank-vs-outrank');
+      await page.goto('/blog/saas-boilerplate-vs-example-competitor');
       await page.waitForLoadState('networkidle');
 
       // Verify title - use first() to handle header h1 + article h1
       const title = page.locator('h1').first();
-      await expect(title).toContainText('AutopilotRank vs Outrank');
+      await expect(title).toContainText('SaaS Boilerplate vs Example Competitor');
 
       // Verify the page loaded and has content
       const articleContent = await page.locator('article').textContent();
-      expect(articleContent).toContain('AutopilotRank');
-      expect(articleContent).toContain('Outrank');
+      expect(articleContent).toContain('SaaS Boilerplate');
+      expect(articleContent).toContain('Example Competitor');
     });
   });
 

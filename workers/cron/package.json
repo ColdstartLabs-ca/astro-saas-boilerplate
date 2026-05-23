@@ -1,7 +1,7 @@
 {
-  "name": "autopilotrank-cron-worker",
+  "name": "saas-boilerplate-cron-worker",
   "version": "1.0.0",
-  "description": "Cloudflare Worker for AutopilotRank cron jobs",
+  "description": "Cloudflare Worker for SaaS Boilerplate cron jobs",
   "private": true,
   "scripts": {
     "dev": "wrangler dev --local",

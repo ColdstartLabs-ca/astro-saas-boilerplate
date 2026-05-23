@@ -8,7 +8,7 @@
   "viewPrivacy": "Ver Política de Privacidade",
   "acceptance": {
     "title": "1. Aceitação dos Termos",
-    "paragraph1": "Ao acessar ou usar o {APP_NAME} (\"Serviço\"), operado pela ColdStart Labs Inc., você concorda em estar vinculado a estes Termos de Serviço (\"Termos\"). Se você não concordar com estes Termos, não pode usar o Serviço.",
+    "paragraph1": "Ao acessar ou usar o {APP_NAME} (\"Serviço\"), operado pela Your Company, Inc., você concorda em estar vinculado a estes Termos de Serviço (\"Termos\"). Se você não concordar com estes Termos, não pode usar o Serviço.",
     "paragraph2": "Reservamo-nos o direito de modificar estes Termos a qualquer momento. Notificaremos você sobre alterações materiais por email ou notificação no aplicativo. O uso continuado do Serviço após as alterações constitui aceitação dos Termos modificados."
   },
   "description": {
@@ -116,7 +116,7 @@
   },
   "limitation": {
     "title": "9. Limitação de Responsabilidade",
-    "intro": "NA MÁXIMA EXTENSÃO PERMITIDA PELA LEI APLICÁVEL, O {APP_NAME} E A COLDSTART LABS INC. NÃO SERÃO RESPONSÁVEIS POR:",
+    "intro": "NA MÁXIMA EXTENSÃO PERMITIDA PELA LEI APLICÁVEL, O {APP_NAME} E A YOUR COMPANY, INC. NÃO SERÃO RESPONSÁVEIS POR:",
     "exclusions": [
       "Danos indiretos, incidentais, especiais, punitivos ou consequenciais",
       "Perda de lucros, receita, dados ou oportunidades de negócio",
@@ -139,7 +139,7 @@
   },
   "indemnification": {
     "title": "11. Indenização",
-    "description": "Você concorda em indenizar, defender e isentar o {APP_NAME}, a ColdStart Labs Inc. e seus diretores, empregados e agentes de quaisquer reclamações, danos, perdas ou despesas (incluindo honorários advocatícios razoáveis) decorrentes de: (a) seu uso do Serviço; (b) conteúdo que você gera ou publica usando o Serviço; (c) sua violação destes Termos; ou (d) sua infração de direitos de terceiros."
+    "description": "Você concorda em indenizar, defender e isentar o {APP_NAME}, a Your Company, Inc. e seus diretores, empregados e agentes de quaisquer reclamações, danos, perdas ou despesas (incluindo honorários advocatícios razoáveis) decorrentes de: (a) seu uso do Serviço; (b) conteúdo que você gera ou publica usando o Serviço; (c) sua violação destes Termos; ou (d) sua infração de direitos de terceiros."
   },
   "termination": {
     "title": "12. Término",

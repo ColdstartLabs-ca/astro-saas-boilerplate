@@ -31,16 +31,16 @@ export const PLAN_FIXTURES = {
     currency: 'usd',
     interval: 'month',
     periodDisplay: '/mo',
-    stripePriceId: 'price_1SxZp7K2K0pPNfoSMt94q8kP',
+    stripePriceId: 'price_starter_monthly',
     batchLimit: 5,
-    description: 'Perfect for getting started with SEO content',
+    description: 'Perfect for getting started',
     features: [
-      '30 credits/month (1–5 per article)',
+      '30 credits/month',
       'Credits roll over (up to 90)',
-      'Multi-model AI (GPT-4, Claude, Gemini)',
-      'Humanizer engine',
+      'Configurable usage metering',
+      'Usage dashboard',
       'Unlimited projects',
-      'SEO scoring & AI detection',
+      'Basic reporting',
       'Email support',
     ],
   },
@@ -55,18 +55,18 @@ export const PLAN_FIXTURES = {
     currency: 'usd',
     interval: 'month',
     periodDisplay: '/mo',
-    stripePriceId: 'price_1SxZp9K2K0pPNfoSeOwSLmcp',
+    stripePriceId: 'price_growth_monthly',
     batchLimit: 25,
     description: 'For growing content teams',
     recommended: true,
     features: [
-      '100 credits/month (1–5 per article)',
+      '100 credits/month',
       'Credits roll over (up to 300)',
       'Everything in Starter',
-      'GSC integration',
+      'Advanced integrations',
       '3 CMS sites',
-      'Advanced humanizer',
-      'Scheduled publishing',
+      'Advanced reporting',
+      'Scheduled jobs',
       'Priority support',
     ],
   },
@@ -81,12 +81,12 @@ export const PLAN_FIXTURES = {
     currency: 'usd',
     interval: 'month',
     periodDisplay: '/mo',
-    stripePriceId: 'price_1SxZpAK2K0pPNfoSbxIQNtKL',
+    stripePriceId: 'price_agency_monthly',
     batchLimit: 100,
     description: 'For agencies and large teams',
     recommended: false,
     features: [
-      '500 credits/month (1–5 per article)',
+      '500 credits/month',
       'Everything in Growth',
       'Unlimited CMS sites',
       'White-label reports (coming soon)',
@@ -107,7 +107,7 @@ export const CREDIT_PACK_FIXTURES = {
     credits: CREDIT_COSTS.SMALL_PACK_CREDITS, // 10
     priceInCents: 999, // $9.99
     priceDisplay: '$9.99',
-    stripePriceId: 'price_1SxZpbK2K0pPNfoSOZkDy9td',
+    stripePriceId: 'price_credits_small',
     popular: false,
   },
   medium: {
@@ -116,9 +116,9 @@ export const CREDIT_PACK_FIXTURES = {
     credits: CREDIT_COSTS.MEDIUM_PACK_CREDITS, // 25
     priceInCents: 1999, // $19.99
     priceDisplay: '$19.99',
-    stripePriceId: 'price_1SxZpbK2K0pPNfoSQ9VDhGSt',
+    stripePriceId: 'price_credits_medium',
     popular: true,
-    description: '25 articles - Best value',
+    description: '25 credits - Best value',
   },
   large: {
     key: 'large',
@@ -126,7 +126,7 @@ export const CREDIT_PACK_FIXTURES = {
     credits: CREDIT_COSTS.LARGE_PACK_CREDITS, // 50
     priceInCents: 3499, // $34.99
     priceDisplay: '$34.99',
-    stripePriceId: 'price_1SxZpcK2K0pPNfoSv4WoPMSI',
+    stripePriceId: 'price_credits_large',
     popular: false,
   },
 } as const;
@@ -140,8 +140,8 @@ export const FREE_TIER_FIXTURE = {
   monthlyCredits: CREDIT_COSTS.DEFAULT_TRIAL_CREDITS, // 3
   maxBalance: CREDIT_COSTS.DEFAULT_FREE_CREDITS, // 3
   batchLimit: 1,
-  description: 'Try AutopilotRank free',
-  features: ['3 trial articles', 'Basic AI models', 'No credit card required'],
+  description: 'Try the app free',
+  features: ['3 trial credits', 'Basic AI models', 'No credit card required'],
 };
 
 /**

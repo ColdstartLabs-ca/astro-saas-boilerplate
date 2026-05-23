@@ -1,5 +1,5 @@
 /**
- * AutopilotRank Brand Asset Generator
+ * SaaS Boilerplate Brand Asset Generator
  *
  * Generates all PNG brand assets (favicons, OG images) from HTML/SVG templates
  * using Playwright. Loads Inter Black from Google Fonts for consistent rendering.
@@ -103,7 +103,7 @@ function faviconHTML(size: number): string {
 }
 
 async function main() {
-  console.log('🎨 AutopilotRank Brand Asset Generator');
+  console.log('🎨 SaaS Boilerplate Brand Asset Generator');
   console.log('─'.repeat(44));
 
   const browser = await chromium.launch({ args: ['--no-sandbox'] });

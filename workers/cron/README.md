@@ -1,6 +1,6 @@
-# AutopilotRank Cron Worker
+# SaaS Boilerplate Cron Worker
 
-Cloudflare Worker that triggers scheduled cron jobs for the AutopilotRank platform.
+Cloudflare Worker that triggers scheduled cron jobs for the SaaS Boilerplate platform.
 
 ## Overview
 
@@ -54,7 +54,7 @@ Update `wrangler.toml` with your production API URL:
 
 ```toml
 [vars]
-API_BASE_URL = "https://autopilotrank.com"  # Your actual domain
+API_BASE_URL = "https://example.com"  # Your actual domain
 ```
 
 ## Local Development
@@ -121,13 +121,13 @@ npm run deploy
 
 ```bash
 # Check health
-curl https://autopilotrank-cron.workers.dev/health
+curl https://saas-boilerplate-cron.workers.dev/health
 
 # View logs
 wrangler tail
 
 # Test manual trigger
-node scripts/test-trigger.js webhook-recovery https://autopilotrank-cron.workers.dev
+node scripts/test-trigger.js webhook-recovery https://saas-boilerplate-cron.workers.dev
 ```
 
 ## Cron Schedules
@@ -168,7 +168,7 @@ node scripts/test-trigger.js webhook-recovery https://autopilotrank-cron.workers
 ### Cron Not Running
 
 - Cloudflare requires at least one HTTP request to activate cron triggers
-- Send a health check: `curl https://autopilotrank-cron.workers.dev/health`
+- Send a health check: `curl https://saas-boilerplate-cron.workers.dev/health`
 - Cron triggers may take a few minutes to activate after deployment
 
 ### Local Development Issues
@@ -212,7 +212,7 @@ curl -X POST "http://localhost:8787/trigger?pattern=5%203%20%2A%20%2A%20%2A"
 node scripts/test-trigger.js webhook-recovery
 
 # Production
-node scripts/test-trigger.js webhook-recovery https://autopilotrank-cron.workers.dev
+node scripts/test-trigger.js webhook-recovery https://saas-boilerplate-cron.workers.dev
 ```
 
 ## Monitoring
@@ -240,7 +240,7 @@ ORDER BY started_at DESC;
 ### Cloudflare Dashboard
 
 1. Go to Cloudflare Dashboard → Workers
-2. Select `autopilotrank-cron`
+2. Select `saas-boilerplate-cron`
 3. View Analytics, Logs, and Cron Triggers
 
 ## Environment Variables
@@ -267,8 +267,6 @@ workers/cron/
 
 - [Cloudflare Cron Triggers](https://developers.cloudflare.com/workers/configuration/cron-triggers/)
 - [Wrangler CLI](https://developers.cloudflare.com/workers/wrangler/)
-- [Stripe Sync System PRD](../../docs/PRDs/stripe-db-sync-prd.md)
-- [Subscription System Docs](../../docs/technical/systems/subscription-system.md)
 
 ## Development Workflow
 

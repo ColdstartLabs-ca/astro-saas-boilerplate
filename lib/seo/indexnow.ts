@@ -18,12 +18,12 @@
  * import { submitUrl, submitBatch, getSubmissionStatus } from '@lib/seo/indexnow';
  *
  * // Submit single URL
- * await submitUrl('https://autopilotrank.com/blog/new-post');
+ * await submitUrl('https://example.com/blog/new-post');
  *
  * // Submit batch
  * await submitBatch([
- *   'https://autopilotrank.com/blog/post-1',
- *   'https://autopilotrank.com/blog/post-2',
+ *   'https://example.com/blog/post-1',
+ *   'https://example.com/blog/post-2',
  * ]);
  *
  * // Get submission status
@@ -196,7 +196,7 @@ function validateUrl(url: string): boolean {
  *
  * @example
  * ```typescript
- * const result = await submitUrl('https://autopilotrank.com/blog/new-post');
+ * const result = await submitUrl('https://example.com/blog/new-post');
  * if (result.success) {
  *   console.log('URL submitted successfully');
  * }
@@ -236,7 +236,7 @@ export async function submitUrl(url: string): Promise<IIndexNowResult> {
     const response = await fetch(endpoint, {
       method: 'GET',
       headers: {
-        'User-Agent': 'AutopilotRank-IndexNow/1.0',
+        'User-Agent': 'SaaS Boilerplate-IndexNow/1.0',
       },
     });
 
@@ -286,8 +286,8 @@ export async function submitUrl(url: string): Promise<IIndexNowResult> {
  * @example
  * ```typescript
  * const result = await submitBatch([
- *   'https://autopilotrank.com/blog/post-1',
- *   'https://autopilotrank.com/blog/post-2',
+ *   'https://example.com/blog/post-1',
+ *   'https://example.com/blog/post-2',
  * ], { batchSize: 100 });
  * ```
  */
@@ -377,7 +377,7 @@ export async function submitBatch(
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'User-Agent': 'AutopilotRank-IndexNow/1.0',
+          'User-Agent': 'SaaS Boilerplate-IndexNow/1.0',
         },
         body: JSON.stringify(payload),
       });

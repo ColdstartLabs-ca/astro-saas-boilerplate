@@ -179,7 +179,7 @@ async function mockAdminStatsApi(page: import('@playwright/test').Page, stats = 
  */
 function getAdminUserCacheScript(): string {
   // Use the correct cache key prefix matching the app's clientEnv.CACHE_USER_KEY_PREFIX
-  const cacheKey = 'autopilotrank_user_cache';
+  const cacheKey = 'saas-boilerplate_user_cache';
   const cacheObject = {
     version: 1,
     timestamp: Date.now(),

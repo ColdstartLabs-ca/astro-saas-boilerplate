@@ -1,5 +1,5 @@
 {
-  "name": "autopilotrank",
+  "name": "astro-saas-boilerplate",
   "private": true,
   "version": "1.0.0",
   "type": "module",
@@ -54,16 +54,8 @@
     "i18n:stats": "tsx scripts/translation-helper.ts stats",
     "i18n:diff": "tsx scripts/translation-helper.ts diff",
     "i18n:batch": "tsx scripts/translation-helper.ts get-batch",
-    "validate:seo:sitemap": "tsx scripts/validate-sitemap-urls.ts",
-    "validate:seo:sitemap:full": "tsx scripts/validate-sitemap-urls.ts --full",
-    "validate:seo:sitemap:patterns": "tsx scripts/validate-sitemap-urls.ts --patterns-only",
     "validate:seo:sitemap:structure": "tsx scripts/validate-sitemap-structure.ts",
-    "validate:seo:internal-links": "npx tsx scripts/validate-internal-links.ts",
-    "validate:seo:pseo": "tsx scripts/validate-pseo-data.ts",
-    "validate:seo:pseo:verbose": "tsx scripts/validate-pseo-data.ts --verbose",
-    "validate:seo:pseo:http": "tsx scripts/validate-pseo-data.ts --curl",
-    "validate:seo:pseo:http:verbose": "tsx scripts/validate-pseo-data.ts --curl --verbose",
-    "validate:seo:all": "yarn validate:seo:pseo && yarn validate:seo:internal-links",
+    "validate:seo:all": "yarn validate:seo:sitemap:structure",
     "generate:assets": "tsx scripts/generate-brand-assets.ts"
   },
   "dependencies": {

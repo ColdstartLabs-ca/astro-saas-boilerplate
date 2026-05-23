@@ -21,7 +21,7 @@ export class ClientLogger {
       level,
       message,
       context,
-      source: 'autopilotrank-web',
+      source: 'saas-boilerplate-web',
     };
 
     if (clientEnv.ENV === 'development') {

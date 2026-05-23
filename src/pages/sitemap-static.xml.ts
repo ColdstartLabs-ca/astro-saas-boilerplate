@@ -18,29 +18,10 @@ const localizablePages = [
   { path: '/', priority: '1.0', changefreq: 'daily', lastmod: '2026-02-20' },
   { path: '/pricing', priority: '0.9', changefreq: 'weekly', lastmod: '2026-02-15' },
   { path: '/features', priority: '0.85', changefreq: 'weekly', lastmod: '2026-02-15' },
-  { path: '/how-it-works', priority: '0.85', changefreq: 'weekly', lastmod: '2026-02-15' },
   { path: '/blog', priority: '0.8', changefreq: 'daily', lastmod: '2026-02-23' },
   { path: '/help', priority: '0.6', changefreq: 'monthly', lastmod: '2026-01-15' },
   { path: '/privacy', priority: '0.3', changefreq: 'yearly', lastmod: '2026-01-01' },
   { path: '/terms', priority: '0.3', changefreq: 'yearly', lastmod: '2026-01-01' },
-];
-
-/**
- * Pages that are English-only (pSEO pages, resources, etc.)
- * These don't get locale variants
- */
-const englishOnlyPages = [
-  { path: '/alternative', priority: '0.8', changefreq: 'weekly', lastmod: '2026-02-17' },
-  { path: '/compare', priority: '0.8', changefreq: 'weekly', lastmod: '2026-02-17' },
-  { path: '/use-cases', priority: '0.8', changefreq: 'weekly', lastmod: '2026-02-17' },
-  { path: '/tools', priority: '0.8', changefreq: 'weekly', lastmod: '2026-02-13' },
-  { path: '/resources', priority: '0.7', changefreq: 'weekly', lastmod: '2026-02-01' },
-  {
-    path: '/resources/best-ai-seo-tools-2026',
-    priority: '0.8',
-    changefreq: 'monthly',
-    lastmod: '2026-02-01',
-  },
 ];
 
 /**
@@ -95,20 +76,10 @@ export const GET: APIRoute = () => {
     )
   );
 
-  // Generate English-only page entries
-  const englishUrls = englishOnlyPages.map(
-    page => `  <url>
-    <loc>${BASE_URL}${page.path}</loc>
-    <lastmod>${page.lastmod}</lastmod>
-    <changefreq>${page.changefreq}</changefreq>
-    <priority>${page.priority}</priority>
-  </url>`
-  );
-
   const xml = `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
         xmlns:xhtml="http://www.w3.org/1999/xhtml">
-${[...localizedUrls, ...englishUrls].join('\n')}
+${localizedUrls.join('\n')}
 </urlset>`;
 
   return new Response(xml, {

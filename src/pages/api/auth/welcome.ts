@@ -49,7 +49,7 @@ export const POST = withAuth(async userId => {
     data: {
       userName: profile?.display_name || undefined,
       baseUrl: clientEnv.BASE_URL,
-      supportEmail: serverEnv.SUPPORT_EMAIL || 'support@autopilotrank.com',
+      supportEmail: serverEnv.SUPPORT_EMAIL || 'support@example.com',
     },
   });
 

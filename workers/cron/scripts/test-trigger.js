@@ -61,7 +61,7 @@ if (!jobName) {
   console.log('\nExamples:');
   console.log('  node scripts/test-trigger.js webhook-recovery');
   console.log(
-    '  node scripts/test-trigger.js reconciliation https://pixelperfect-cron.workers.dev'
+    '  node scripts/test-trigger.js reconciliation https://saas-boilerplate-cron.workers.dev'
   );
   process.exit(1);
 }

@@ -1,10 +1,10 @@
 #!/bin/bash
 
-# Configuration — always locked to the autopilotrank GCloud project
-GCLOUD_PROJECT="autopilotrank"
-GCLOUD_SECRET_API="${GCLOUD_SECRET_API:-autopilotrank-api-prod}"
-GCLOUD_SECRET_CLIENT="${GCLOUD_SECRET_CLIENT:-autopilotrank-client-prod}"
-GCLOUD_SERVICE_ACCOUNT_KEY="$PROJECT_ROOT/cloud/keys/autopilotrank-866faa7dedda.json"
+# Configuration — always locked to the saas-boilerplate GCloud project
+GCLOUD_PROJECT="saas-boilerplate"
+GCLOUD_SECRET_API="${GCLOUD_SECRET_API:-saas-boilerplate-api-prod}"
+GCLOUD_SECRET_CLIENT="${GCLOUD_SECRET_CLIENT:-saas-boilerplate-client-prod}"
+GCLOUD_SERVICE_ACCOUNT_KEY="$PROJECT_ROOT/cloud/keys/saas-boilerplate-866faa7dedda.json"
 ENV_API_PROD="$PROJECT_ROOT/.env.api.prod"
 ENV_CLIENT_PROD="$PROJECT_ROOT/.env.client.prod"
 
@@ -19,7 +19,7 @@ step_fetch_secrets() {
 
     # Prefer service account key for reliable, non-interactive auth
     if [[ -f "$GCLOUD_SERVICE_ACCOUNT_KEY" ]]; then
-        log_info "Activating service account (cloud/keys/autopilotrank-866faa7dedda.json)..."
+        log_info "Activating service account (cloud/keys/saas-boilerplate-866faa7dedda.json)..."
         gcloud auth activate-service-account --key-file="$GCLOUD_SERVICE_ACCOUNT_KEY" --quiet
         log_success "Service account activated"
     else

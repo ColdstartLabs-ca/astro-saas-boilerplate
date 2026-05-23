@@ -69,7 +69,7 @@ async function setupCreditPacks() {
     // Create a parent product for all credit packs
     console.log('Creating "Credit Packs" product...');
     const product = await stripe.products.create({
-      name: 'AutopilotRank Credit Packs',
+      name: 'SaaS Boilerplate Credit Packs',
       description: 'One-time credit purchases that never expire',
       metadata: {
         type: 'credit_pack',

@@ -5,7 +5,7 @@ test.describe('Landing Page', () => {
     await page.goto('/');
 
     // Check title
-    await expect(page).toHaveTitle(/AutopilotRank/);
+    await expect(page).toHaveTitle(/SaaS Boilerplate/);
 
     // Check meta description
     const metaDescription = await page.locator('meta[name="description"]').getAttribute('content');

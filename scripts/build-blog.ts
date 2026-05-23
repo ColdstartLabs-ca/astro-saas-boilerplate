@@ -18,39 +18,10 @@ const VALID_ROUTES = new Set([
   '/dashboard',
   '/features',
   '/help',
-  '/compare',
-  '/alternative',
-  '/use-cases',
-  '/tools',
-  '/geo',
 ]);
-
-// pSEO data files → route prefixes
-const PSEO_ROUTE_MAPPINGS: Array<[string, string]> = [
-  ['content/comparisons-data.json', '/compare'],
-  ['content/alternatives-data.json', '/alternative'],
-  ['content/use-cases-data.json', '/use-cases'],
-  ['content/tools-data.json', '/tools'],
-  ['content/features-data.json', '/features'],
-  ['content/geo-data.json', '/geo'],
-];
 
 function getAppRoutes(): Set<string> {
   const routes = new Set(VALID_ROUTES);
-
-  // Load pSEO dynamic routes from data files
-  for (const [dataFile, routePrefix] of PSEO_ROUTE_MAPPINGS) {
-    const dataPath = path.join(process.cwd(), dataFile);
-    if (fs.existsSync(dataPath)) {
-      const data = JSON.parse(fs.readFileSync(dataPath, 'utf8'));
-      const pages: Array<{ slug?: string }> = data.pages || [];
-      for (const page of pages) {
-        if (page.slug) {
-          routes.add(`${routePrefix}/${page.slug}`);
-        }
-      }
-    }
-  }
 
   // Scan Astro pages directory (src/pages)
   const astroPagesDir = path.join(process.cwd(), 'src/pages');
@@ -65,7 +36,7 @@ function getAppRoutes(): Set<string> {
         const route = routeName === 'index' ? '/' : `/${routeName}`;
         routes.add(route);
       } else if (entry.isDirectory()) {
-        // Add directory as route: /alternative, /compare, etc.
+        // Add directory as a route.
         routes.add(`/${entry.name}`);
       }
     }
@@ -275,7 +246,7 @@ async function buildBlogData() {
       title: data.title || '',
       description: data.description || '',
       date: data.date || '',
-      author: data.author || 'AutopilotRank Team',
+      author: data.author || 'SaaS Boilerplate Team',
       category: data.category || 'General',
       tags: data.tags || [],
       image: data.image,

@@ -1,0 +1,16 @@
+{
+  "posts": [
+    {
+      "slug": "welcome-to-our-blog",
+      "title": "Welcome to Our Blog",
+      "description": "A sample blog post for the Astro SaaS boilerplate. Replace this entry with your own product updates, tutorials, and customer stories.",
+      "date": "2026-01-01",
+      "author": "SaaS Boilerplate Team",
+      "category": "Updates",
+      "tags": ["boilerplate", "astro", "saas"],
+      "image": "/og-image.png",
+      "readingTime": "1 min read",
+      "content": "# Welcome to Our Blog\n\nThis is a sample blog post. Replace this content with your own.\n\n## Getting Started\n\nAdd your blog posts as MDX files in `content/blog/` and compile them into `content/blog-data.json`.\n\n## What You Can Write About\n\n- Product updates and announcements\n- Tutorials and how-to guides\n- Industry insights\n- Case studies\n\nHappy writing!"
+    }
+  ]
+}

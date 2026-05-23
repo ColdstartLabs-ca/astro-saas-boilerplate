@@ -71,7 +71,7 @@ process_project() {
 
       # Check if there are staged changes
       if [ -n "$(git diff --cached --name-only)" ]; then
-        git commit -m "feat: sync claude skills from pixelperfect
+        git commit -m "feat: sync claude skills from saas-boilerplate
 
 Add/update skills:
 - prd-implementation: PRD implementation standards with checkpoint reviews

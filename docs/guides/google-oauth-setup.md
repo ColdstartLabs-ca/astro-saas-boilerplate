@@ -16,7 +16,7 @@ This guide walks you through setting up Google OAuth for authentication with Sup
 
 This app uses **Google Identity Services (GIS)** for native Google sign-in. This provides:
 
-- **Native App Branding** - Consent screen shows your domain (autopilotrank.com) instead of Supabase's
+- **Native App Branding** - Consent screen shows your domain (example.com) instead of Supabase's
 - **Better UX** - Popup-based flow keeps users on your site
 - **FedCM Ready** - Compatible with Chrome's third-party cookie phase-out
 - **Seamless Fallback** - Automatically falls back to redirect OAuth if GIS unavailable
@@ -27,7 +27,7 @@ This app uses **Google Identity Services (GIS)** for native Google sign-in. This
 User clicks "Sign in with Google"
     ↓
 Google Identity Services popup appears
-(Shows: "Continue to autopilotrank.com")
+(Shows: "Continue to example.com")
     ↓
 User selects Google account
     ↓
@@ -72,7 +72,7 @@ App completes auth and redirects user
 1. Go to [Google Cloud Console](https://console.cloud.google.com/)
 2. Click the project dropdown (top-left, next to "Google Cloud")
 3. Click **New Project** or select an existing one
-4. Enter a project name (e.g., `autopilotrank-auth`)
+4. Enter a project name (e.g., `saas-boilerplate-auth`)
 5. Click **Create**
 
 ### Step 2: Configure OAuth Consent Screen
@@ -85,14 +85,14 @@ App completes auth and redirects user
 
 #### Fill in App Information:
 
-| Field              | Value                              |
-| ------------------ | ---------------------------------- |
-| App name           | `AutopilotRank`                    |
-| User support email | Your email                         |
-| App logo           | (Optional) Upload your logo        |
-| App domain         | Your production domain             |
-| Authorized domains | `autopilotrank.com`, `supabase.co` |
-| Developer contact  | Your email                         |
+| Field              | Value                        |
+| ------------------ | ---------------------------- |
+| App name           | `SaaS Boilerplate`           |
+| User support email | Your email                   |
+| App logo           | (Optional) Upload your logo  |
+| App domain         | Your production domain       |
+| Authorized domains | `example.com`, `supabase.co` |
+| Developer contact  | Your email                   |
 
 4. Click **Save and Continue**
 
@@ -119,7 +119,7 @@ If your app is in "Testing" mode, add test user emails:
 1. Navigate to **APIs & Services** → **Credentials**
 2. Click **Create Credentials** → **OAuth client ID**
 3. Select **Application type**: `Web application`
-4. Enter a name (e.g., `AutopilotRank Web Client`)
+4. Enter a name (e.g., `SaaS Boilerplate Web Client`)
 
 #### Configure Authorized JavaScript Origins:
 
@@ -128,8 +128,8 @@ If your app is in "Testing" mode, add test user emails:
 ```
 http://localhost
 http://localhost:4321
-https://autopilotrank.com
-https://www.autopilotrank.com
+https://example.com
+https://www.example.com
 ```
 
 > **Important:** For localhost development, you MUST add BOTH:
@@ -190,13 +190,13 @@ These are used for the fallback OAuth flow:
 1. Navigate to **Authentication** → **URL Configuration**
 2. Set **Site URL** to your production URL:
    ```
-   https://autopilotrank.com
+   https://example.com
    ```
 3. Add **Redirect URLs** for all environments:
    ```
    http://localhost:4321/**
-   https://autopilotrank.com/**
-   https://www.autopilotrank.com/**
+   https://example.com/**
+   https://www.example.com/**
    ```
 
 ## Environment Variables
@@ -281,8 +281,8 @@ WHERE email = 'your-email@gmail.com';
 ### Production Checklist
 
 - [ ] Add all production domains to Authorized JavaScript Origins:
-  - `https://autopilotrank.com`
-  - `https://www.autopilotrank.com`
+  - `https://example.com`
+  - `https://www.example.com`
 - [ ] Verify Supabase callback URL in Authorized Redirect URIs
 - [ ] Add Client ID to Supabase's "Client IDs" field for ID token auth
 - [ ] Update Supabase Site URL to production domain

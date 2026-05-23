@@ -1,7 +1,15 @@
 ---
-// Payment success page
-// This must be a React-only client component due to heavy use of React hooks
-import SuccessPageClient from '@client/components/pages/SuccessPageClient';
+import Layout from '../layouts/Layout.astro';
 ---
 
-<SuccessPageClient client:only="react" />
+<Layout title="Success">
+  <main class="min-h-screen bg-main flex items-center justify-center px-6">
+    <section class="max-w-xl text-center">
+      <h1 class="text-4xl font-bold text-white mb-4">Success</h1>
+      <p class="text-text-muted mb-8">Your request completed successfully.</p>
+      <a href="/dashboard" class="inline-flex rounded-lg bg-accent px-5 py-3 font-semibold text-white">
+        Go to dashboard
+      </a>
+    </section>
+  </main>
+</Layout>

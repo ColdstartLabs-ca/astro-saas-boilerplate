@@ -1,6 +1,6 @@
 # Baselime Error Monitoring Setup Guide
 
-This guide walks you through setting up Baselime for error monitoring and observability in AutopilotRank.
+This guide walks you through setting up Baselime for error monitoring and observability in SaaS Boilerplate.
 
 ## Table of Contents
 
@@ -41,7 +41,7 @@ Browser (React)              Server (API Routes)
 ## Prerequisites
 
 1. **Baselime Account**: [Sign up for free](https://console.baselime.io)
-2. **Project Setup**: AutopilotRank with packages installed:
+2. **Project Setup**: SaaS Boilerplate with packages installed:
    - `@baselime/react-rum` (client-side)
    - `@baselime/edge-logger` (server-side)
 
@@ -51,7 +51,7 @@ Browser (React)              Server (API Routes)
 
 1. Go to [console.baselime.io](https://console.baselime.io)
 2. Sign up with GitHub or email
-3. Create a new environment (e.g., "autopilotrank-production")
+3. Create a new environment (e.g., "saas-boilerplate-production")
 
 ### Step 2: Get API Keys
 

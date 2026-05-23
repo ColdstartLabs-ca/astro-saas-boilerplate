@@ -65,7 +65,7 @@ That's it! No external services to set up.
 ### File Structure
 
 ```
-autopilotrank.com/
+example.com/
 ├── src/middleware/
 │   └── index.ts                                  # Main middleware (runs on Edge)
 ├── server/lib/

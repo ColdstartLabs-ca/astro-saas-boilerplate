@@ -1,7 +1,7 @@
 /**
  * Standardized Error Handling Utilities
  *
- * All API errors follow the documented format in docs/technical/systems/error-handling.md
+ * All API errors follow the documented format in the API error response contract
  */
 
 /**

@@ -56,7 +56,7 @@ export function createLogger(
   const apiKey = serverEnv.BASELIME_API_KEY;
 
   const logger = new BaselimeLogger({
-    service: 'autopilotrank-api',
+    service: 'saas-boilerplate-api',
     namespace,
     apiKey: apiKey || '',
     ctx: ensureWaitUntil(context) as never,

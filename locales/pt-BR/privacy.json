@@ -8,8 +8,8 @@
   "viewTerms": "Ver Termos de Serviço",
   "introduction": {
     "title": "1. Introdução",
-    "paragraph1": "Bem-vindo ao {APP_NAME} (\"nós\", \"nosso\" ou \"nos\"), operado pela ColdStart Labs Inc. Estamos comprometidos em proteger sua privacidade e garantir a segurança das suas informações pessoais. Esta Política de Privacidade explica como coletamos, usamos, divulgamos e protegemos suas informações quando você usa nossa plataforma de geração de conteúdo SEO com IA e publicação automatizada.",
-    "paragraph2": "Ao usar o {APP_NAME}, você concorda com a coleta e uso de informações de acordo com esta política. Se tiver dúvidas, entre em contato conosco em privacy@autopilotrank.com."
+    "paragraph1": "Bem-vindo ao {APP_NAME} (\"nós\", \"nosso\" ou \"nos\"), operado pela Your Company, Inc. Estamos comprometidos em proteger sua privacidade e garantir a segurança das suas informações pessoais. Esta Política de Privacidade explica como coletamos, usamos, divulgamos e protegemos suas informações quando você usa nossa plataforma de geração de conteúdo SEO com IA e publicação automatizada.",
+    "paragraph2": "Ao usar o {APP_NAME}, você concorda com a coleta e uso de informações de acordo com esta política. Se tiver dúvidas, entre em contato conosco em privacy@example.com."
   },
   "collection": {
     "title": "2. Informações que Coletamos",
@@ -115,7 +115,7 @@
   "retention": {
     "title": "6. Retenção de Dados",
     "paragraph1": "Retemos seus dados de acordo com as seguintes regras: dados de conta (perfil, configurações, credenciais) são retidos enquanto sua assinatura estiver ativa e por 90 dias após o cancelamento, após o qual são excluídos permanentemente mediante solicitação. Artigos gerados são retidos até você excluí-los da sua conta. Registros de pagamento e histórico de transações são retidos por 7 anos conforme exigido pela legislação contábil e fiscal aplicável.",
-    "paragraph2": "Você pode solicitar a exclusão de sua conta e dados associados a qualquer momento entrando em contato com privacy@autopilotrank.com. Observe que obrigações legais de retenção (como registros de pagamento) podem impedir a exclusão imediata de todos os dados."
+    "paragraph2": "Você pode solicitar a exclusão de sua conta e dados associados a qualquer momento entrando em contato com privacy@example.com. Observe que obrigações legais de retenção (como registros de pagamento) podem impedir a exclusão imediata de todos os dados."
   },
   "rights": {
     "title": "7. Seus Direitos",
@@ -158,7 +158,7 @@
   },
   "children": {
     "title": "9. Privacidade de Crianças",
-    "description": "Nosso serviço não é destinado a crianças menores de 13 anos. Não coletamos intencionalmente informações pessoais de crianças menores de 13 anos. Se você acredita que coletamos informações de uma criança menor de 13 anos, entre em contato conosco imediatamente em privacy@autopilotrank.com."
+    "description": "Nosso serviço não é destinado a crianças menores de 13 anos. Não coletamos intencionalmente informações pessoais de crianças menores de 13 anos. Se você acredita que coletamos informações de uma criança menor de 13 anos, entre em contato conosco imediatamente em privacy@example.com."
   },
   "international": {
     "title": "10. Transferências Internacionais de Dados",

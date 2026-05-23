@@ -11,16 +11,7 @@ import { clientEnv } from '@shared/config/env';
 const BASE_URL = `https://${clientEnv.PRIMARY_DOMAIN}`;
 
 export const GET: APIRoute = () => {
-  const sitemaps = [
-    '/sitemap-static.xml',
-    '/sitemap-blog.xml',
-    '/sitemap-tools.xml',
-    '/sitemap-comparisons.xml',
-    '/sitemap-alternatives.xml',
-    '/sitemap-use-cases.xml',
-    '/sitemap-geo.xml',
-    '/sitemap-features.xml',
-  ];
+  const sitemaps = ['/sitemap-static.xml', '/sitemap-blog.xml'];
 
   const lastmod = '2026-02-23';
 

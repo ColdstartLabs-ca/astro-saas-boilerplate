@@ -1,6 +1,6 @@
 # E2E Testing Setup Guide
 
-This guide covers setting up and running Playwright E2E tests for AutopilotRank.
+This guide covers setting up and running Playwright E2E tests for SaaS Boilerplate.
 
 ## Prerequisites
 

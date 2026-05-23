@@ -1,7 +1,7 @@
 /**
  * Feed Types for RSS Feed functionality
  *
- * AutopilotRank - RSS Feed Integration
+ * SaaS Boilerplate - RSS Feed Integration
  */
 
 /**

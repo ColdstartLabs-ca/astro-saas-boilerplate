@@ -1,11 +1,10 @@
 ---
 import Layout from '../layouts/Layout.astro';
 import { clientEnv } from '@shared/config/env';
-import FeaturesPageClient from '@client/components/pages/FeaturesPageClient';
 
 // SEO metadata
-const title = 'Features - AI SEO Content Automation';
-const description = `Discover AutopilotRank's powerful features: Multi-model AI engine, humanizer, pre-publication QA, WordPress publishing, GSC integration, and more.`
+const title = `Features - ${clientEnv.APP_NAME}`;
+const description = `${clientEnv.APP_NAME} includes reusable SaaS foundations for auth, billing, credits, admin workflows, email, analytics, and Cloudflare deployment.`;
 ---
 
 <Layout title={title}>
@@ -26,5 +25,27 @@ const description = `Discover AutopilotRank's powerful features: Multi-model AI 
     <link rel="canonical" href={`${clientEnv.BASE_URL}/features`} />
   </Fragment>
 
-  <FeaturesPageClient client:load />
+  <main class="min-h-screen bg-main">
+    <section class="max-w-6xl mx-auto px-6 py-20">
+      <p class="text-sm font-semibold uppercase tracking-wider text-accent mb-3">Features</p>
+      <h1 class="text-4xl md:text-5xl font-bold text-white mb-6">Reusable SaaS foundations</h1>
+      <p class="text-lg text-text-muted max-w-3xl mb-12">{description}</p>
+
+      <div class="grid md:grid-cols-3 gap-6">
+        {[
+          ['Authentication', 'Supabase Auth with email/password and OAuth provider support.'],
+          ['Billing', 'Stripe subscriptions, one-time credit packs, and customer portal flows.'],
+          ['Credits', 'Credit-based usage tracking with rollover, expiration, and admin controls.'],
+          ['Admin', 'User management, credit adjustments, subscription oversight, and operational APIs.'],
+          ['Email', 'Provider adapters and React Email templates for transactional messaging.'],
+          ['Deployment', 'Cloudflare Pages and Worker configuration for production hosting.'],
+        ].map(([heading, body]) => (
+          <article class="rounded-lg border border-border bg-surface p-6">
+            <h2 class="text-xl font-semibold text-white mb-2">{heading}</h2>
+            <p class="text-text-muted">{body}</p>
+          </article>
+        ))}
+      </div>
+    </section>
+  </main>
 </Layout>

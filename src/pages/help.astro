@@ -2,7 +2,6 @@
 import Layout from '../layouts/Layout.astro';
 import { clientEnv } from '@shared/config/env';
 import { getTranslations } from '../i18n/utils';
-import HelpPageClient from '@client/components/pages/HelpPageClient';
 
 const t = getTranslations('help');
 
@@ -365,30 +364,6 @@ const getTechFaq = (faq: string) => t(`technicalSupport.faqs.${faq}`);
 
           <details class="group bg-surface rounded-lg border border-border hover:border-accent/20 transition-colors">
             <summary class="flex items-center justify-between px-4 py-3 cursor-pointer select-none">
-              <h3 class="text-sm font-medium text-white pr-3">{getTechFaq('humanizer.question')}</h3>
-              <svg class="w-4 h-4 text-muted-foreground group-open:rotate-180 transition-transform flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
-              </svg>
-            </summary>
-            <div class="px-4 pb-3 text-xs text-text-secondary leading-relaxed">
-              {getTechFaq('humanizer.answer')}
-            </div>
-          </details>
-
-          <details class="group bg-surface rounded-lg border border-border hover:border-accent/20 transition-colors">
-            <summary class="flex items-center justify-between px-4 py-3 cursor-pointer select-none">
-              <h3 class="text-sm font-medium text-white pr-3">{getTechFaq('gscIntegration.question')}</h3>
-              <svg class="w-4 h-4 text-muted-foreground group-open:rotate-180 transition-transform flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
-              </svg>
-            </summary>
-            <div class="px-4 pb-3 text-xs text-text-secondary leading-relaxed">
-              {getTechFaq('gscIntegration.answer')}
-            </div>
-          </details>
-
-          <details class="group bg-surface rounded-lg border border-border hover:border-accent/20 transition-colors">
-            <summary class="flex items-center justify-between px-4 py-3 cursor-pointer select-none">
               <h3 class="text-sm font-medium text-white pr-3">{getTechFaq('scheduling.question')}</h3>
               <svg class="w-4 h-4 text-muted-foreground group-open:rotate-180 transition-transform flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
@@ -450,8 +425,22 @@ const getTechFaq = (faq: string) => t(`technicalSupport.faqs.${faq}`);
       </div>
     </section>
 
-    <!-- Contact CTA (React Island) -->
-    <HelpPageClient client:visible />
+    <section class="py-12">
+      <div class="container mx-auto px-4 max-w-3xl text-center">
+        <div class="rounded-lg border border-border bg-surface p-8">
+          <h2 class="text-2xl font-bold text-white mb-3">Need help?</h2>
+          <p class="text-text-muted mb-6">
+            Contact support and include the page URL, your account email, and any relevant error details.
+          </p>
+          <a
+            href={`mailto:${clientEnv.SUPPORT_EMAIL}`}
+            class="inline-flex items-center justify-center rounded-lg bg-accent px-5 py-3 font-semibold text-white hover:bg-accent/90 transition-colors"
+          >
+            Contact support
+          </a>
+        </div>
+      </div>
+    </section>
   </main>
 
   <script define:vars={{ noResultsTemplate: t('page.noResults') }}>

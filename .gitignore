@@ -64,9 +64,6 @@ wrangler.toml.bak
 # TypeScript
 *.tsbuildinfo
 
-# Generated content
-content/blog-data.json
-
 # Local development
 *.local
 

@@ -6,7 +6,7 @@ export interface ITestContextOptions {
 }
 
 // DB path must match the one in inMemorySupabaseAdmin.ts
-const DEFAULT_DB_PATH = '/tmp/autopilotrank-playwright-mock-db.json';
+const DEFAULT_DB_PATH = '/tmp/saas-boilerplate-playwright-mock-db.json';
 const DB_PATH = process.env.PLAYWRIGHT_MOCK_DB_PATH ?? DEFAULT_DB_PATH;
 
 /**

@@ -142,7 +142,7 @@ PUBLIC_SUPABASE_ANON_KEY=your-anon-key
 
 # App
 PUBLIC_BASE_URL=http://localhost:4321
-PUBLIC_APP_NAME=AutopilotRank
+PUBLIC_APP_NAME=SaaS Boilerplate
 
 # Stripe Price IDs are now configured in shared/config/stripe.ts
 # See shared/config/stripe.ts for Price ID configuration

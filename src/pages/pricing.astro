@@ -1,11 +1,12 @@
 ---
 import Layout from '../layouts/Layout.astro';
 import { clientEnv } from '@shared/config/env';
-import PricingPageClient from '@client/components/pages/PricingPageClient';
+import { SUBSCRIPTION_CONFIG } from '@shared/config/subscription.config';
 
 // SEO metadata
 const title = 'Simple, Transparent Pricing';
 const description = `Choose the subscription plan that fits your needs. Get monthly credits with automatic rollover. Free tier available, paid plans from $49 to $249 per month.`
+const plans = SUBSCRIPTION_CONFIG.plans.filter(plan => plan.enabled || plan.key === 'free');
 ---
 
 <Layout title={title}>
@@ -26,5 +27,38 @@ const description = `Choose the subscription plan that fits your needs. Get mont
     <link rel="canonical" href={`${clientEnv.BASE_URL}/pricing`} />
   </Fragment>
 
-  <PricingPageClient client:load />
+  <main class="min-h-screen bg-main">
+    <section class="max-w-6xl mx-auto px-6 py-20">
+      <p class="text-sm font-semibold uppercase tracking-wider text-accent mb-3">Pricing</p>
+      <h1 class="text-4xl md:text-5xl font-bold text-white mb-6">{title}</h1>
+      <p class="text-lg text-text-muted max-w-3xl mb-12">{description}</p>
+
+      <div class="grid md:grid-cols-3 gap-6">
+        {plans.map(plan => (
+          <article class={`rounded-lg border p-6 bg-surface ${plan.recommended ? 'border-accent' : 'border-border'}`}>
+            {plan.recommended && (
+              <p class="text-xs font-semibold uppercase tracking-wider text-accent mb-3">Recommended</p>
+            )}
+            <h2 class="text-2xl font-bold text-white mb-2">{plan.name}</h2>
+            <p class="text-text-muted mb-5">{plan.description}</p>
+            <p class="text-4xl font-bold text-white mb-6">
+              ${(plan.priceInCents / 100).toFixed(0)}
+              <span class="text-sm font-medium text-text-muted">/{plan.interval}</span>
+            </p>
+            <ul class="space-y-3 mb-8">
+              {plan.features.map(feature => (
+                <li class="text-sm text-text-muted">{feature}</li>
+              ))}
+            </ul>
+            <a
+              href="/checkout"
+              class="inline-flex w-full items-center justify-center rounded-lg bg-accent px-4 py-3 font-semibold text-white hover:bg-accent/90 transition-colors"
+            >
+              Get started
+            </a>
+          </article>
+        ))}
+      </div>
+    </section>
+  </main>
 </Layout>

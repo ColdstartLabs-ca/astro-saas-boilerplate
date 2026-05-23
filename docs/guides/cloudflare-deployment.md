@@ -1,6 +1,6 @@
 # Cloudflare Pages Deployment Guide
 
-This guide details how to deploy the AutopilotRank application to Cloudflare Pages using the Astro Cloudflare adapter.
+This guide details how to deploy the SaaS Boilerplate application to Cloudflare Pages using the Astro Cloudflare adapter.
 
 ## Prerequisites
 
@@ -57,7 +57,7 @@ Use Wrangler to deploy directly from your machine.
 
     _Note_: This runs the deploy script which builds and deploys to Cloudflare.
 
-3.  **Verify**: Wrangler will output a URL (e.g., `https://autopilotrank.pages.dev`).
+3.  **Verify**: Wrangler will output a URL (e.g., `https://saas-boilerplate.pages.dev`).
 
 ### Option B: Git Integration (Recommended for Production)
 
@@ -66,7 +66,7 @@ Connect your GitHub repository to Cloudflare Pages for automatic deployments.
 1.  **Push Code**: Ensure your changes are pushed to GitHub.
 2.  **Cloudflare Dashboard**:
     - Go to **Workers & Pages** > **Create Application** > **Pages** > **Connect to Git**.
-    - Select the `autopilotrank.com` repository.
+    - Select the `example.com` repository.
 3.  **Build Settings**:
     - **Framework Preset**: None
     - **Build Command**: `yarn build`
@@ -92,8 +92,8 @@ PUBLIC_SUPABASE_URL=your_supabase_project_url
 PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
 
 # App
-PUBLIC_APP_NAME=AutopilotRank
-PUBLIC_BASE_URL=https://autopilotrank.com
+PUBLIC_APP_NAME=SaaS Boilerplate
+PUBLIC_BASE_URL=https://example.com
 
 # OAuth (public client IDs)
 PUBLIC_GOOGLE_CLIENT_ID=your-google-client-id
@@ -112,8 +112,8 @@ PUBLIC_AMPLITUDE_API_KEY=your_amplitude_key
 PUBLIC_GA_MEASUREMENT_ID=G-XXXXXXXXXX
 
 # Contact emails
-PUBLIC_ADMIN_EMAIL=admin@autopilotrank.com
-PUBLIC_SUPPORT_EMAIL=support@autopilotrank.com
+PUBLIC_ADMIN_EMAIL=admin@example.com
+PUBLIC_SUPPORT_EMAIL=support@example.com
 ```
 
 #### Server-Side Secrets (from `.env.api`)
@@ -132,13 +132,13 @@ BASELIME_API_KEY=your_baselime_api_key
 # Email
 BREVO_API_KEY=your-brevo-api-key
 RESEND_API_KEY=your-resend-api-key
-EMAIL_FROM_ADDRESS=noreply@autopilotrank.com
+EMAIL_FROM_ADDRESS=noreply@example.com
 
 # AI Provider
 OPENROUTER_API_KEY=your-openrouter-api-key
 
 # CORS
-ALLOWED_ORIGIN=https://autopilotrank.com
+ALLOWED_ORIGIN=https://example.com
 ```
 
 ### Important Notes
@@ -156,7 +156,7 @@ ALLOWED_ORIGIN=https://autopilotrank.com
 
 1. Go to **Custom domains** in your Cloudflare Pages project
 2. Click **Set up a custom domain**
-3. Enter `autopilotrank.com`
+3. Enter `example.com`
 4. Click **Continue**
 
 ### Step 2: Configure DNS
@@ -180,7 +180,7 @@ If your domain is external:
 
 ### Step 4: Verify
 
-1. Visit `https://autopilotrank.com`
+1. Visit `https://example.com`
 2. Check SSL certificate (should show valid certificate)
 3. Test all critical routes:
    - `/` - Landing page
@@ -207,11 +207,11 @@ If your domain is external:
 
 ## 6. Troubleshooting
 
-| Issue                                 | Solution                                                                                                                       |
-| :------------------------------------ | :----------------------------------------------------------------------------------------------------------------------------- |
-| **Build fails**                       | Check Node.js version compatibility, ensure all dependencies are installed with `yarn install`                                 |
-| **Environment Variables not loading** | Ensure variables are set for the correct environment (Production/Preview). Trigger a new deployment after adding variables.    |
-| **API routes failing**                | Check that all server-side secrets are configured. Review function logs in Cloudflare Dashboard.                               |
-| **Database connection errors**        | Verify `SUPABASE_SERVICE_ROLE_KEY` is set correctly. Check Supabase project URL matches.                                       |
-| **Stripe webhooks failing**           | Update webhook endpoint in Stripe Dashboard to `https://autopilotrank.com/api/webhooks/stripe`. Verify webhook secret matches. |
-| **Middleware not running**            | Verify `src/middleware/index.ts` exists and is properly configured. Check that it exports the `onRequest` function.            |
+| Issue                                 | Solution                                                                                                                    |
+| :------------------------------------ | :-------------------------------------------------------------------------------------------------------------------------- |
+| **Build fails**                       | Check Node.js version compatibility, ensure all dependencies are installed with `yarn install`                              |
+| **Environment Variables not loading** | Ensure variables are set for the correct environment (Production/Preview). Trigger a new deployment after adding variables. |
+| **API routes failing**                | Check that all server-side secrets are configured. Review function logs in Cloudflare Dashboard.                            |
+| **Database connection errors**        | Verify `SUPABASE_SERVICE_ROLE_KEY` is set correctly. Check Supabase project URL matches.                                    |
+| **Stripe webhooks failing**           | Update webhook endpoint in Stripe Dashboard to `https://example.com/api/webhooks/stripe`. Verify webhook secret matches.    |
+| **Middleware not running**            | Verify `src/middleware/index.ts` exists and is properly configured. Check that it exports the `onRequest` function.         |

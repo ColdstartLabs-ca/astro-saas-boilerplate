@@ -28,7 +28,7 @@ export function LowCreditsEmail({
   upgradeUrl,
   baseUrl,
   supportEmail,
-  appName = 'AutopilotRank',
+  appName = 'SaaS Boilerplate',
 }: ILowCreditsEmailProps): React.JSX.Element {
   const pricingUrl = `${baseUrl}/pricing`;
   const billingUrl = `${baseUrl}/dashboard?view=billing`;

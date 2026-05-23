@@ -2,10 +2,10 @@
  * QA Tests for Core SaaS Boilerplate Infrastructure
  *
  * These tests verify the remaining functionality after stripping
- * domain-specific code from AutopilotRank to create a reusable
+ * domain-specific code from SaaS Boilerplate to create a reusable
  * SaaS boilerplate.
  *
- * PR: feat: Strip AutopilotRank to reusable SaaS boilerplate
+ * PR: feat: Strip SaaS Boilerplate to reusable SaaS boilerplate
  *
  * Tested features:
  * - Landing page structure and navigation

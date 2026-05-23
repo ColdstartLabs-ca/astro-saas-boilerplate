@@ -5,7 +5,7 @@
     "description": "Use chaves de API para criar campanhas e buscar conteúdo programaticamente.",
     "createButton": "Criar Chave de API",
     "empty": "Nenhuma chave de API ainda",
-    "emptyDescription": "Crie uma chave de API para acessar a API do AutopilotRank programaticamente.",
+    "emptyDescription": "Crie uma chave de API para acessar a API do SaaS Boilerplate programaticamente.",
     "listHeader": {
       "name": "Nome",
       "key": "Prefixo da Chave",

@@ -358,9 +358,9 @@ export class WebhookEventService {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'X-AutopilotRank-Signature': `sha256=${signature}`,
-            'X-AutopilotRank-Event': payload.event,
-            'User-Agent': 'AutopilotRank-Webhook/1.0',
+            'X-SaaS Boilerplate-Signature': `sha256=${signature}`,
+            'X-SaaS Boilerplate-Event': payload.event,
+            'User-Agent': 'SaaS Boilerplate-Webhook/1.0',
           },
           body: payloadString,
         });

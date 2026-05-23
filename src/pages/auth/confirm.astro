@@ -1,8 +1,12 @@
 ---
 import MinimalLayout from '../../layouts/MinimalLayout.astro';
-import AuthConfirmClient from '@client/components/pages/AuthConfirmClient';
 ---
 
 <MinimalLayout title="Confirming...">
-  <AuthConfirmClient client:only="react" />
+  <main class="min-h-screen bg-main flex items-center justify-center px-6">
+    <section class="max-w-xl text-center">
+      <h1 class="text-3xl font-bold text-white mb-4">Confirming...</h1>
+      <p class="text-text-muted">Connect this route to your email confirmation handler.</p>
+    </section>
+  </main>
 </MinimalLayout>

@@ -1,131 +1,131 @@
 {
-  "badge": "NEW: AutopilotRank",
+  "badge": "NEW: SaaS Boilerplate",
   "badgeVersion": "v2.0",
-  "heroTitle": "Turn Keywords Into",
-  "heroTitleHighlight": "Rankings",
-  "heroSubtitle": "Generate publish-ready, human-quality SEO content on autopilot. The only AI platform with full automation, native CMS publishing, and pre-publication QA.",
+  "heroTitle": "Launch Your",
+  "heroTitleHighlight": "SaaS Faster",
+  "heroSubtitle": "Start with authentication, billing, credits, admin tooling, email, analytics, and deployment-ready infrastructure.",
   "heroDescription": "Start free.",
   "heroDescriptionHighlight": "No credit card required.",
-  "heroDescriptionMiddle": "Generate publish-ready, human-quality SEO content with",
-  "heroDescriptionTextSharp": "full automation",
+  "heroDescriptionMiddle": "Build production-ready SaaS workflows with",
+  "heroDescriptionTextSharp": "reusable infrastructure",
   "ctaStartFreeTrial": "Get Started",
   "ctaWatchDemo": "Watch Demo",
   "ctaGetStarted": "Get Started",
   "ctaSignIn": "Sign In",
-  "ctaSubtext": "Pay as you go • 3 free articles • Cancel anytime",
+  "ctaSubtext": "Pay as you go • Starter credits • Cancel anytime",
   "ctaStartNow": "Get Started",
   "ctaComparePlans": "Compare Plans",
-  "finalCtaSubtext": "Pay as you go • 3 free articles • Setup in 15 minutes",
+  "finalCtaSubtext": "Pay as you go • Starter credits • Setup in 15 minutes",
   "socialProofBar": {
-    "heading": "Trusted by content teams worldwide"
+    "heading": "Trusted by product teams worldwide"
   },
   "painPoints": {
     "title": "Sound Familiar?",
-    "subtitle": "Common challenges that hold content growth back",
+    "subtitle": "Common challenges that hold product growth back",
     "card1": {
-      "title": "AI Content That Sounds Like AI",
-      "description": "You've tried AI writers. The output is generic, repetitive, and needs hours of editing. Google knows. Your readers know."
+      "title": "Boilerplate Work That Slows You Down",
+      "description": "You've tried starter kits. The foundation is incomplete, inconsistent, and needs weeks of glue code before you can ship."
     },
     "card2": {
-      "title": "Unreliable Tools, Slow Support",
-      "description": "Some platforms have stability issues and slow response times. You're paying premium prices for an inconsistent experience."
+      "title": "Scattered Infrastructure",
+      "description": "Auth, billing, admin, email, and deployment often live in separate examples that do not work together."
     },
     "card3": {
-      "title": "Multiple Tools, One Job",
-      "description": "An optimizer here, a writer there, keyword tool somewhere else. Multiple subscriptions and you still do most of the work."
+      "title": "Multiple Systems, One Product",
+      "description": "A billing flow here, an auth sample there, and custom admin code everywhere. This starter gives you one coherent base."
     },
     "transition": "There's a better way →"
   },
   "solution": {
-    "title": "One Platform. Complete Automation. Human-Quality Content.",
+    "title": "One Boilerplate. Core SaaS Systems. Ready to Extend.",
     "subtitle": "From keywords to published content—entirely on autopilot",
     "workflow": {
-      "keywords": "Keywords",
-      "content": "Content",
-      "optimize": "Optimize",
-      "publish": "Publish",
-      "track": "Track",
+      "keywords": "Auth",
+      "content": "Billing",
+      "optimize": "Admin",
+      "publish": "Email",
+      "track": "Analytics",
       "auto": "Auto"
     },
     "features": {
       "setAndForget": {
-        "title": "Set It & Forget It",
-        "description": "Configure once, get fresh content daily"
+        "title": "Configure and Extend",
+        "description": "Start with sensible defaults and adapt the domain layer"
       },
       "publishReady": {
-        "title": "Publish-Ready Quality",
-        "description": "Humanizer engine produces human-level content"
+        "title": "Email-Ready Quality",
+        "description": "Typed APIs, validation, tests, and operational hooks"
       },
       "allInOne": {
         "title": "All-In-One",
-        "description": "Keywords, writing, optimization, publishing, tracking"
+        "description": "Auth, writing, optimization, publishing, tracking"
       },
       "worksWithYourStack": {
         "title": "Works With Your Stack",
-        "description": "WordPress, Webflow, Shopify, Ghost + webhooks"
+        "description": "Cloudflare, Supabase, Stripe, email providers, and webhooks"
       }
     }
   },
   "features": {
     "label": "Feature Deep Dive",
-    "title": "Built for Quality at Scale",
-    "subtitle": "We didn't just wrap ChatGPT in a UI. We built a complete publishing engine.",
+    "title": "Built for SaaS Delivery",
+    "subtitle": "A practical starter that wires the recurring SaaS systems together.",
     "feature1": {
-      "title": "Multi-Model AI Engine",
-      "highlight": "Not Just GPT-4. The Best Model for Each Task.",
-      "description": "While competitors lock you into one AI model, AutopilotRank uses GPT-4, Claude, Gemini, and Llama strategically. Different models for different content types means more variety, less repetition, better quality.",
-      "proof": "Unlike single-model tools that can produce repetitive content"
+      "title": "Integrated SaaS Stack",
+      "highlight": "Core services are wired together.",
+      "description": "While competitors lock you into one AI model, SaaS Boilerplate uses GPT-4, Claude, Gemini, and Llama strategically. Different models for different content types means more variety, less repetition, better quality.",
+      "proof": "Use the pieces you need and replace the rest"
     },
     "feature2": {
-      "title": "Humanizer Engine",
-      "highlight": "AI Content That Actually Sounds Human",
-      "description": "Our proprietary Humanizer engine rewrites AI patterns into natural prose. Designed to significantly reduce editing time and produce content that flows naturally.",
+      "title": "Credits and Billing",
+      "highlight": "AI Billing That Actually Sounds Human",
+      "description": "Subscription plans, one-time credit packs, rollover, expiration, and admin credit adjustments are included.",
       "proof": "Designed to significantly reduce editing time"
     },
     "feature3": {
-      "title": "Pre-Publication QA",
-      "highlight": "Multi-Layer Quality Checks",
-      "description": "Plagiarism check. AI detection score. SEO optimization score. Readability analysis. Fact verification. All automatic. Nothing slips through.",
+      "title": "Admin and Operations",
+      "highlight": "Operational controls for real products",
+      "description": "User management, support workflows, email preferences, health checks, and analytics are ready to customize.",
       "proof": "Quality checks happen before publishing, not after"
     }
   },
   "comparison": {
-    "title": "How We Compare",
-    "subtitle": "See what sets AutopilotRank apart from other tools",
+    "title": "What Is Included",
+    "subtitle": "See what sets SaaS Boilerplate apart from other tools",
     "disclaimer": "Feature comparison based on publicly available information as of February 2026. Verify current details on each provider's website.",
     "rows": {
       "fullAutomation": "Full Automation",
-      "humanQuality": "Human-Quality Content",
-      "nativeCMS": "Native CMS Publishing",
-      "gscIntegration": "GSC Integration",
-      "humanizer": "Humanizer/AI Detection",
-      "prePublicationQA": "Pre-Publication QA",
+      "humanQuality": "Human-Quality Billing",
+      "nativeCMS": "Native CMS Emailing",
+      "gscIntegration": "Analytics",
+      "usage": "Credits",
+      "prePublicationoperations": "Admin and Operations",
       "startingPrice": "Starting Price"
     },
     "columns": {
-      "autopilotrank": "AutopilotRank",
-      "toolA": "Outrank",
-      "toolB": "Surfer",
-      "toolC": "Byword"
+      "saas-boilerplate": "SaaS Boilerplate",
+      "toolA": "Custom app",
+      "toolB": "Starter repo",
+      "toolC": "From scratch"
     }
   },
   "useCases": {
     "title": "Built For Teams Like Yours",
-    "subtitle": "See how AutopilotRank fits your workflow",
+    "subtitle": "See how SaaS Boilerplate fits your workflow",
     "tab1": {
       "label": "SMB Owners",
-      "title": "Scale Without Hiring a Content Team",
+      "title": "Scale Without Hiring a Billing Team",
       "points": [
-        "Generate 100+ SEO articles/month automatically",
-        "90% cost savings vs. agencies ($0.50/article vs. $50-200)",
+        "Generate 100+ usage credits/month automatically",
+        "90% cost savings vs. agencies ($0.50/credit vs. $50-200)",
         "No technical knowledge required",
-        "Done-for-you programmatic SEO"
+        "Done-for-you programmatic usage"
       ],
       "testimonial": "[Testimonial from beta user]"
     },
     "tab2": {
-      "label": "Content Sites",
-      "title": "Unlimited Content at Fixed Cost",
+      "label": "Billing Sites",
+      "title": "Unlimited Billing at Fixed Cost",
       "points": [
         "Daily fresh content on autopilot",
         "Long-tail keyword capture at scale",
@@ -136,12 +136,12 @@
     },
     "tab3": {
       "label": "Agencies",
-      "title": "White-Label SEO Content at Scale",
+      "title": "Ship Client SaaS Products Faster",
       "points": [
         "Resell under your brand",
         "10x your content capacity overnight",
         "Multi-site discounts",
-        "Expand margins on SEO retainers"
+        "Expand margins on usage retainers"
       ],
       "testimonial": "[Testimonial from beta user]"
     }
@@ -150,7 +150,7 @@
     "metrics": {
       "aiModels": "3 AI Models",
       "integrations": "5+ Integrations",
-      "qa": "Multi-Layer QA",
+      "qa": "Multi-Layer operations",
       "quality": "Human-Quality Output"
     },
     "testimonialsNote": "Beta user testimonials coming soon"
@@ -159,16 +159,16 @@
     "title": "Simple, Transparent Pricing",
     "subtitle": "No per-word charges. No seat limits. No surprise fees.",
     "allPlansInclude": "All plans include:",
-    "humanizer": "Humanizer engine",
-    "qa": "Pre-publication QA",
-    "wordpress": "WordPress publishing",
-    "trust": "Pay as you go - Cancel anytime - 3 free articles to try",
+    "usage": "Usage dashboard",
+    "qa": "Pre-publication operations",
+    "wordpress": "Provider integrations",
+    "trust": "Pay as you go - Cancel anytime - Starter credits to try",
     "starter": {
       "name": "Starter",
       "price": "$49",
       "period": "per month",
       "description": "For solopreneurs",
-      "articles": "30 credits/mo",
+      "credits": "30 credits/mo",
       "sites": "Unlimited projects",
       "integrations": "WordPress",
       "cta": "Get Started"
@@ -179,7 +179,7 @@
       "period": "per month",
       "description": "For SMBs & content sites",
       "badge": "Most Popular",
-      "articles": "100 credits/mo",
+      "credits": "100 credits/mo",
       "sites": "Unlimited projects",
       "integrations": "All integrations",
       "cta": "Get Started"
@@ -189,7 +189,7 @@
       "price": "$249",
       "period": "per month",
       "description": "For agencies",
-      "articles": "500 credits/mo",
+      "credits": "500 credits/mo",
       "sites": "Unlimited projects",
       "integrations": "White-label",
       "cta": "Contact Sales"
@@ -198,27 +198,27 @@
   },
   "faq": {
     "title": "Frequently Asked Questions",
-    "subtitle": "Everything you need to know about AutopilotRank",
+    "subtitle": "Everything you need to know about SaaS Boilerplate",
     "items": [
       {
-        "question": "Will Google penalize AI-generated content?",
-        "answer": "No. Google's policy targets low-quality content, not AI content specifically. Our Humanizer engine produces content designed to read naturally, and we run quality checks before publishing."
+        "question": "What should I customize first?",
+        "answer": "Start with branding, environment values, subscription plans, and the domain-specific service layer."
       },
       {
-        "question": "How does AutopilotRank compare to other tools?",
-        "answer": "AutopilotRank combines full automation, human-quality content via our Humanizer engine, native CMS publishing, and GSC integration in one platform. Many tools focus on just one aspect, requiring you to piece together multiple solutions."
+        "question": "How does SaaS Boilerplate compare to other tools?",
+        "answer": "SaaS Boilerplate combines reusable infrastructure, human-quality content via our Usage dashboard, native CMS publishing, and analytics integration in one platform. Many tools focus on just one aspect, requiring you to piece together multiple solutions."
       },
       {
         "question": "Do I need technical skills to set this up?",
-        "answer": "No. If you can install a WordPress plugin, you can use AutopilotRank. Our guided onboarding walks you through everything in under 15 minutes."
+        "answer": "No. If you can install a WordPress plugin, you can use SaaS Boilerplate. Our guided onboarding walks you through everything in under 15 minutes."
       },
       {
-        "question": "What CMS platforms do you support?",
-        "answer": "Native integrations: WordPress, Webflow, Shopify, Ghost, Notion. Plus webhooks and API for custom platforms."
+        "question": "Which providers are included?",
+        "answer": "Supabase, Stripe, Cloudflare, Brevo, Resend, analytics providers, and OAuth provider hooks are included."
       },
       {
-        "question": "Can I review content before it publishes?",
-        "answer": "Yes. Choose between: (1) Full autopilot - content publishes automatically after QA passes, (2) Review mode - content queued for your approval, (3) Draft mode - content saved as drafts in your CMS."
+        "question": "Can I remove modules I do not need?",
+        "answer": "Yes. The boilerplate is organized by feature areas so optional services can be removed or replaced as your product requires."
       },
       {
         "question": "What's your refund policy?",
@@ -228,17 +228,17 @@
   },
   "finalCta": {
     "title": "Ready to Scale Your Organic Traffic?",
-    "subtitle": "Join businesses publishing quality content on autopilot"
+    "subtitle": "Join businesses shipping with reusable infrastructure"
   },
   "toastLoginRequired": "Please sign in to access the dashboard",
   "ctaSeePricing": "See Pricing",
   "pricingCtaTitle": "Simple, Transparent Pricing",
   "pricingCtaDescription": "Choose the plan that fits your needs. Scale as you grow.",
-  "ctaTryFree": "Try 3 Free Articles",
-  "ctaGetFree": "Get 3 Free Articles",
-  "pricingCtaSubtext": "3 free articles • Pay as you go • Unused credits roll over",
+  "ctaTryFree": "Try the Demo",
+  "ctaGetFree": "Get Started",
+  "pricingCtaSubtext": "Starter credits • Pay as you go • Unused credits roll over",
   "finalCtaTitleHighlight": "Start for free today.",
-  "finalCtaDescription": "Join businesses publishing quality content on autopilot.",
+  "finalCtaDescription": "Join businesses shipping with reusable infrastructure.",
   "featuresTitle": "Everything You Need",
   "featuresSubtitle": "Powerful features to help you build and scale",
   "feature1Title": "Simple API",
@@ -248,8 +248,8 @@
   "feature3Title": "Transparent Pricing",
   "feature3Description": "Pay only for what you use. Credits roll over monthly. No hidden fees.",
   "footer": {
-    "description": "AI SEO content automation platform. Generate publish-ready, human-quality SEO content on autopilot.",
-    "copyright": "Built for content creators.",
+    "description": "AI SaaS product automation platform. Generate publish-ready, human-quality SaaS product on autopilot.",
+    "copyright": "Built for product builders.",
     "allRightsReserved": "All rights reserved.",
     "product": "Product",
     "pricingPlans": "Pricing Plans",

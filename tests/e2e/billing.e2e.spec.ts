@@ -349,7 +349,7 @@ test.describe('Billing E2E Tests', () => {
       await expect(starterCard).toContainText('30 credits/month');
       await expect(starterCard).toContainText('Credits roll over (up to 90)');
       await expect(starterCard).toContainText('Multi-model AI');
-      await expect(starterCard).toContainText('Humanizer engine');
+      await expect(starterCard).toContainText('Usage dashboard');
       await expect(starterCard).toContainText('Unlimited projects');
       await expect(starterCard).toContainText('Email support');
 
@@ -358,7 +358,7 @@ test.describe('Billing E2E Tests', () => {
       await expect(starterGetStarted).toBeVisible();
 
       // Verify the description
-      await expect(starterCard).toContainText('Perfect for getting started with SEO content');
+      await expect(starterCard).toContainText('Perfect for getting started');
 
       // Screenshot for visual verification
       await pricingPage.screenshot('starter-tier-display');

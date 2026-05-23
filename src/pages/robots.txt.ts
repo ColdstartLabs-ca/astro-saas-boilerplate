@@ -1,6 +1,5 @@
 /**
  * Robots.txt Configuration
- * Based on PRD-PSEO-04 Section 5.1: Robots.txt Implementation
  */
 
 import type { APIRoute } from 'astro';
@@ -10,8 +9,6 @@ export const GET: APIRoute = () => {
   const BASE_URL = clientEnv.BASE_URL;
 
   const robotsTxt = `# Robots.txt Configuration
-# Based on PRD-PSEO-04 Section 5.1
-
 User-agent: *
 Allow: /
 Disallow: /api/
@@ -37,12 +34,6 @@ Disallow: /
 Sitemap: ${BASE_URL}/sitemap.xml
 Sitemap: ${BASE_URL}/sitemap-static.xml
 Sitemap: ${BASE_URL}/sitemap-blog.xml
-Sitemap: ${BASE_URL}/sitemap-alternatives.xml
-Sitemap: ${BASE_URL}/sitemap-comparisons.xml
-Sitemap: ${BASE_URL}/sitemap-use-cases.xml
-Sitemap: ${BASE_URL}/sitemap-tools.xml
-Sitemap: ${BASE_URL}/sitemap-geo.xml
-Sitemap: ${BASE_URL}/sitemap-features.xml
 
 # Host
 Host: ${BASE_URL}

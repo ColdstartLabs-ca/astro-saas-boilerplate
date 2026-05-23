@@ -424,32 +424,6 @@ export const onRequest = defineMiddleware(async (context, next) => {
     return next();
   }
 
-  // Skip pSEO paths without locale prefix
-  const hasLocalePrefix = pathname.split('/')[1] && isValidLocale(pathname.split('/')[1]);
-  const isPSEOPath =
-    pathname.startsWith('/tools/') ||
-    pathname.startsWith('/formats/') ||
-    pathname.startsWith('/scale/') ||
-    pathname.startsWith('/guides/') ||
-    pathname.startsWith('/free/') ||
-    pathname.startsWith('/alternatives/') ||
-    pathname.startsWith('/compare/') ||
-    pathname.startsWith('/platforms/') ||
-    pathname.startsWith('/use-cases/') ||
-    pathname.startsWith('/device-use/') ||
-    pathname.startsWith('/format-scale/') ||
-    pathname.startsWith('/platform-format/') ||
-    pathname.startsWith('/photo-restoration') ||
-    pathname.startsWith('/camera-raw') ||
-    pathname.startsWith('/industry-insights') ||
-    pathname.startsWith('/device-optimization') ||
-    pathname.startsWith('/bulk-tools') ||
-    pathname.startsWith('/content');
-
-  if (isPSEOPath && !hasLocalePrefix) {
-    return next();
-  }
-
   // Handle locale routing
   const detectedLocale = detectLocale(request, cookies);
   const hasAuthFlowQuery = hasAuthFlowQueryParams(url);

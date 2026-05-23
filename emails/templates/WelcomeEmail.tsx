@@ -24,7 +24,7 @@ export function WelcomeEmail({
   verifyUrl,
   baseUrl,
   supportEmail,
-  appName = 'AutopilotRank',
+  appName = 'SaaS Boilerplate',
 }: IWelcomeEmailProps): React.JSX.Element {
   const dashboardUrl = `${baseUrl}/dashboard`;
 

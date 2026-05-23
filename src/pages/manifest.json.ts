@@ -10,7 +10,7 @@ const APP_NAME = clientEnv.APP_NAME;
 
 export const GET: APIRoute = () => {
   const manifest = {
-    name: `${APP_NAME} - AI SEO Content on Autopilot`,
+    name: `${APP_NAME} - SaaS Content on Autopilot`,
     short_name: APP_NAME,
     description:
       'Scale your organic traffic on autopilot. Multi-model AI content that ranks and reads human.',

@@ -3,7 +3,7 @@ interface IProps {
   title?: string;
 }
 
-const { title = 'AutopilotRank' } = Astro.props;
+const { title = 'SaaS Boilerplate' } = Astro.props;
 
 // Get current locale — prefer locals.locale (set by middleware rewrite for non-default locales)
 const currentLocale = (Astro.locals as { locale?: string }).locale || Astro.currentLocale || 'en';
@@ -41,7 +41,7 @@ const websiteJsonLd = {
   name: clientEnv.APP_NAME,
   url: clientEnv.BASE_URL,
   inLanguage: currentLocale,
-  description: 'AI SEO content automation platform. Generate publish-ready, human-quality SEO content on autopilot.',
+  description: 'SaaS content automation platform. Generate publish-ready, human-quality SaaS on autopilot.',
   potentialAction: {
     '@type': 'SearchAction',
     target: `${clientEnv.BASE_URL}/blog?search={search_term_string}`,
@@ -55,7 +55,7 @@ const organizationJsonLd = {
   name: clientEnv.APP_NAME,
   url: clientEnv.BASE_URL,
   logo: `${clientEnv.BASE_URL}/logo/horizontal-logo-full.png`,
-  description: 'AutopilotRank - AI-powered SEO content automation for businesses and agencies.',
+  description: 'SaaS Boilerplate - AI-powered SaaS automation for businesses and agencies.',
   sameAs: [],
 };
 

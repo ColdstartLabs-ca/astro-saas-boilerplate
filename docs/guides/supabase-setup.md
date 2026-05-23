@@ -50,7 +50,7 @@ API Routes (Service Role Key)
 1. Go to [Supabase Dashboard](https://supabase.com/dashboard)
 2. Click **New Project**
 3. Fill in:
-   - **Name**: Your project name (e.g., `AutopilotRank`)
+   - **Name**: Your project name (e.g., `SaaS Boilerplate`)
    - **Database Password**: Generate a strong password (save it!)
    - **Region**: Choose closest to your users
 4. Click **Create new project**
@@ -189,7 +189,7 @@ PUBLIC_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 
 # App
 PUBLIC_BASE_URL=http://localhost:4321
-PUBLIC_APP_NAME=AutopilotRank
+PUBLIC_APP_NAME=SaaS Boilerplate
 ```
 
 **`.env.api`** - Server-side secrets (NEVER commit):

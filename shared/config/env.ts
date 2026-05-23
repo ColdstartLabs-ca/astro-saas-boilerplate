@@ -17,7 +17,7 @@ import { z } from 'zod';
 // =============================================================================
 
 const clientEnvSchema = z.object({
-  APP_NAME: z.string().default('AutopilotRank'),
+  APP_NAME: z.string().default('SaaS Boilerplate'),
   ENV: z.string().default('development'),
   BASE_URL: z.string().url().default('http://localhost:4321'),
   SUPABASE_URL: z.string().url().default('https://example.supabase.co'),
@@ -34,27 +34,27 @@ const clientEnvSchema = z.object({
   ENABLE_GOOGLE_OAUTH: z.string().default('true'),
   ENABLE_AZURE_OAUTH: z.string().default('false'),
   // Contact
-  ADMIN_EMAIL: z.string().email().default('admin@autopilotrank.com'),
-  SUPPORT_EMAIL: z.string().email().default('support@autopilotrank.com'),
-  LEGAL_EMAIL: z.string().email().default('legal@autopilotrank.com'),
-  PRIVACY_EMAIL: z.string().email().default('privacy@autopilotrank.com'),
-  SALES_EMAIL: z.string().email().default('sales@autopilotrank.com'),
-  TWITTER_HANDLE: z.string().default('autopilotrank'),
+  ADMIN_EMAIL: z.string().email().default('admin@example.com'),
+  SUPPORT_EMAIL: z.string().email().default('support@example.com'),
+  LEGAL_EMAIL: z.string().email().default('legal@example.com'),
+  PRIVACY_EMAIL: z.string().email().default('privacy@example.com'),
+  SALES_EMAIL: z.string().email().default('sales@example.com'),
+  TWITTER_HANDLE: z.string().default('saas-boilerplate'),
   // App Configuration
-  APP_SLUG: z.string().default('autopilotrank'),
-  DOWNLOAD_PREFIX: z.string().default('autopilotrank'),
-  BATCH_FOLDER_NAME: z.string().default('autopilotrank_batch'),
-  CACHE_USER_KEY_PREFIX: z.string().default('autopilotrank'),
-  WEB_SERVICE_NAME: z.string().default('autopilotrank-web'),
-  CRON_SERVICE_NAME: z.string().default('autopilotrank-cron'),
+  APP_SLUG: z.string().default('saas-boilerplate'),
+  DOWNLOAD_PREFIX: z.string().default('saas-boilerplate'),
+  BATCH_FOLDER_NAME: z.string().default('saas-boilerplate_batch'),
+  CACHE_USER_KEY_PREFIX: z.string().default('saas-boilerplate'),
+  WEB_SERVICE_NAME: z.string().default('saas-boilerplate-web'),
+  CRON_SERVICE_NAME: z.string().default('saas-boilerplate-cron'),
   // GitHub
   GITHUB_USER: z.string().default('your-github-user'),
-  GITHUB_REPO: z.string().default('autopilotrank'),
+  GITHUB_REPO: z.string().default('saas-boilerplate'),
   // Legal
   LAST_UPDATED_DATE: z.string().default('February 4, 2026'),
   // Domains and URLs
-  PRIMARY_DOMAIN: z.string().default('autopilotrank.com'),
-  APP_DOMAIN: z.string().default('autopilotrank.com'),
+  PRIMARY_DOMAIN: z.string().default('example.com'),
+  APP_DOMAIN: z.string().default('example.com'),
   // Stripe
   STRIPE_PUBLISHABLE_KEY: z.string().default(''),
   // Stripe Credit Pack Price IDs (renamed from NEXT_PUBLIC_* to STRIPE_*)
@@ -74,10 +74,10 @@ function loadClientEnv(): IClientEnv {
       : ({} as Record<string, string | undefined>);
 
   const env = {
-    APP_NAME: metaEnv.PUBLIC_APP_NAME || 'AutopilotRank',
+    APP_NAME: metaEnv.PUBLIC_APP_NAME || 'SaaS Boilerplate',
     ENV: metaEnv.PUBLIC_ENV || 'development',
     BASE_URL: metaEnv.PUBLIC_BASE_URL || 'http://localhost:4321',
-    PUBLIC_BASE_URL: metaEnv.PUBLIC_BASE_URL || 'https://autopilotrank.com',
+    PUBLIC_BASE_URL: metaEnv.PUBLIC_BASE_URL || 'https://example.com',
     SUPABASE_URL: metaEnv.PUBLIC_SUPABASE_URL || 'https://example.supabase.co',
     SUPABASE_ANON_KEY: metaEnv.PUBLIC_SUPABASE_ANON_KEY || '',
     GOOGLE_CLIENT_ID: metaEnv.PUBLIC_GOOGLE_CLIENT_ID || '',
@@ -92,27 +92,27 @@ function loadClientEnv(): IClientEnv {
     ENABLE_GOOGLE_OAUTH: metaEnv.PUBLIC_ENABLE_GOOGLE_OAUTH || 'true',
     ENABLE_AZURE_OAUTH: metaEnv.PUBLIC_ENABLE_AZURE_OAUTH || 'false',
     // Contact
-    ADMIN_EMAIL: metaEnv.PUBLIC_ADMIN_EMAIL || 'admin@autopilotrank.com',
-    SUPPORT_EMAIL: metaEnv.PUBLIC_SUPPORT_EMAIL || 'support@autopilotrank.com',
-    LEGAL_EMAIL: metaEnv.PUBLIC_LEGAL_EMAIL || 'legal@autopilotrank.com',
-    PRIVACY_EMAIL: metaEnv.PUBLIC_PRIVACY_EMAIL || 'privacy@autopilotrank.com',
-    SALES_EMAIL: metaEnv.PUBLIC_SALES_EMAIL || 'sales@autopilotrank.com',
-    TWITTER_HANDLE: metaEnv.PUBLIC_TWITTER_HANDLE || 'autopilotrank',
+    ADMIN_EMAIL: metaEnv.PUBLIC_ADMIN_EMAIL || 'admin@example.com',
+    SUPPORT_EMAIL: metaEnv.PUBLIC_SUPPORT_EMAIL || 'support@example.com',
+    LEGAL_EMAIL: metaEnv.PUBLIC_LEGAL_EMAIL || 'legal@example.com',
+    PRIVACY_EMAIL: metaEnv.PUBLIC_PRIVACY_EMAIL || 'privacy@example.com',
+    SALES_EMAIL: metaEnv.PUBLIC_SALES_EMAIL || 'sales@example.com',
+    TWITTER_HANDLE: metaEnv.PUBLIC_TWITTER_HANDLE || 'saas-boilerplate',
     // App Configuration
-    APP_SLUG: metaEnv.PUBLIC_APP_SLUG || 'autopilotrank',
-    DOWNLOAD_PREFIX: metaEnv.PUBLIC_DOWNLOAD_PREFIX || 'autopilotrank',
-    BATCH_FOLDER_NAME: metaEnv.PUBLIC_BATCH_FOLDER_NAME || 'autopilotrank_batch',
-    CACHE_USER_KEY_PREFIX: metaEnv.PUBLIC_CACHE_USER_KEY_PREFIX || 'autopilotrank',
-    WEB_SERVICE_NAME: metaEnv.PUBLIC_WEB_SERVICE_NAME || 'autopilotrank-web',
-    CRON_SERVICE_NAME: metaEnv.PUBLIC_CRON_SERVICE_NAME || 'autopilotrank-cron',
+    APP_SLUG: metaEnv.PUBLIC_APP_SLUG || 'saas-boilerplate',
+    DOWNLOAD_PREFIX: metaEnv.PUBLIC_DOWNLOAD_PREFIX || 'saas-boilerplate',
+    BATCH_FOLDER_NAME: metaEnv.PUBLIC_BATCH_FOLDER_NAME || 'saas-boilerplate_batch',
+    CACHE_USER_KEY_PREFIX: metaEnv.PUBLIC_CACHE_USER_KEY_PREFIX || 'saas-boilerplate',
+    WEB_SERVICE_NAME: metaEnv.PUBLIC_WEB_SERVICE_NAME || 'saas-boilerplate-web',
+    CRON_SERVICE_NAME: metaEnv.PUBLIC_CRON_SERVICE_NAME || 'saas-boilerplate-cron',
     // GitHub
     GITHUB_USER: metaEnv.PUBLIC_GITHUB_USER || 'your-github-user',
-    GITHUB_REPO: metaEnv.PUBLIC_GITHUB_REPO || 'autopilotrank',
+    GITHUB_REPO: metaEnv.PUBLIC_GITHUB_REPO || 'saas-boilerplate',
     // Legal
     LAST_UPDATED_DATE: metaEnv.PUBLIC_LAST_UPDATED_DATE || 'February 4, 2026',
     // Domains and URLs
-    PRIMARY_DOMAIN: metaEnv.PUBLIC_PRIMARY_DOMAIN || 'autopilotrank.com',
-    APP_DOMAIN: metaEnv.PUBLIC_APP_DOMAIN || 'autopilotrank.com',
+    PRIMARY_DOMAIN: metaEnv.PUBLIC_PRIMARY_DOMAIN || 'example.com',
+    APP_DOMAIN: metaEnv.PUBLIC_APP_DOMAIN || 'example.com',
     // Stripe
     STRIPE_PUBLISHABLE_KEY: metaEnv.PUBLIC_STRIPE_PUBLISHABLE_KEY || '',
     // Stripe Credit Pack Price IDs
@@ -158,7 +158,7 @@ export const clientEnv = loadClientEnv();
 const serverEnvSchema = z.object({
   ENV: z.enum(['development', 'production', 'test']).default('development'),
   // App Name
-  APP_NAME: z.string().default('AutopilotRank'),
+  APP_NAME: z.string().default('SaaS Boilerplate'),
   // Node environment
   NODE_ENV: z.string().optional(),
   // Test flags - Playwright sets this to "1" as a string, which Vite may coerce to number
@@ -189,8 +189,8 @@ const serverEnvSchema = z.object({
   CLOUDFLARE_API_TOKEN: z.string().default(''),
   CLOUDFLARE_ACCOUNT_ID: z.string().default(''),
   CLOUDFLARE_ZONE_ID: z.string().default(''),
-  DOMAIN_NAME: z.string().default('autopilotrank.com'),
-  WORKER_NAME: z.string().default('autopilotrank'),
+  DOMAIN_NAME: z.string().default('example.com'),
+  WORKER_NAME: z.string().default('saas-boilerplate'),
   // Cron Job Authentication
   CRON_SECRET: z.string().default(''),
   // Test Authentication
@@ -204,8 +204,8 @@ const serverEnvSchema = z.object({
   // Resend (Fallback) - 3,000 free emails/month
   RESEND_API_KEY: z.string().default(''),
   // Common email settings
-  EMAIL_FROM_ADDRESS: z.string().email().default('noreply@autopilotrank.com'),
-  SUPPORT_EMAIL: z.string().email().default('support@autopilotrank.com'),
+  EMAIL_FROM_ADDRESS: z.string().email().default('noreply@example.com'),
+  SUPPORT_EMAIL: z.string().email().default('support@example.com'),
   // Allow sending transactional emails in development (for testing)
   ALLOW_TRANSACTIONAL_EMAILS_IN_DEV: z.coerce.boolean().default(false),
 
@@ -261,7 +261,7 @@ const serverEnvSchema = z.object({
   // INBOUND WEBHOOKS
   // ==========================================
   // Shared secret for verifying inbound webhook signatures (X-Signature-256 header).
-  // Must match the secret configured in the sending AutopilotRank integration.
+  // Must match the secret configured in the sending SaaS Boilerplate integration.
   // Generate with: openssl rand -hex 32
   INBOUND_WEBHOOK_SECRET: z.string().default(''),
 });
@@ -284,7 +284,7 @@ function loadServerEnv(): IServerEnv {
   const env = {
     ENV: metaEnv.ENV || processEnv.ENV || processEnv.NODE_ENV || 'development',
     // App Name
-    APP_NAME: metaEnv.APP_NAME || metaEnv.PUBLIC_APP_NAME || 'AutopilotRank',
+    APP_NAME: metaEnv.APP_NAME || metaEnv.PUBLIC_APP_NAME || 'SaaS Boilerplate',
     // Node environment
     NODE_ENV: metaEnv.NODE_ENV,
     // Test flags - Playwright sets this to "1", accept string or number
@@ -322,8 +322,8 @@ function loadServerEnv(): IServerEnv {
     CLOUDFLARE_API_TOKEN: metaEnv.CLOUDFLARE_API_TOKEN || processEnv.CLOUDFLARE_API_TOKEN || '',
     CLOUDFLARE_ACCOUNT_ID: metaEnv.CLOUDFLARE_ACCOUNT_ID || processEnv.CLOUDFLARE_ACCOUNT_ID || '',
     CLOUDFLARE_ZONE_ID: metaEnv.CLOUDFLARE_ZONE_ID || processEnv.CLOUDFLARE_ZONE_ID || '',
-    DOMAIN_NAME: metaEnv.DOMAIN_NAME || processEnv.DOMAIN_NAME || 'autopilotrank.com',
-    WORKER_NAME: metaEnv.WORKER_NAME || processEnv.WORKER_NAME || 'autopilotrank',
+    DOMAIN_NAME: metaEnv.DOMAIN_NAME || processEnv.DOMAIN_NAME || 'example.com',
+    WORKER_NAME: metaEnv.WORKER_NAME || processEnv.WORKER_NAME || 'saas-boilerplate',
     // Cron Job Authentication
     CRON_SECRET: metaEnv.CRON_SECRET || processEnv.CRON_SECRET || '',
     // Test Authentication
@@ -333,12 +333,12 @@ function loadServerEnv(): IServerEnv {
     BREVO_API_KEY: metaEnv.BREVO_API_KEY || processEnv.BREVO_API_KEY || '',
     RESEND_API_KEY: metaEnv.RESEND_API_KEY || processEnv.RESEND_API_KEY || '',
     EMAIL_FROM_ADDRESS:
-      metaEnv.EMAIL_FROM_ADDRESS || processEnv.EMAIL_FROM_ADDRESS || 'noreply@autopilotrank.com',
+      metaEnv.EMAIL_FROM_ADDRESS || processEnv.EMAIL_FROM_ADDRESS || 'noreply@example.com',
     SUPPORT_EMAIL:
       metaEnv.SUPPORT_EMAIL ||
       metaEnv.PUBLIC_SUPPORT_EMAIL ||
       processEnv.SUPPORT_EMAIL ||
-      'support@autopilotrank.com',
+      'support@example.com',
     ALLOW_TRANSACTIONAL_EMAILS_IN_DEV:
       metaEnv.ALLOW_TRANSACTIONAL_EMAILS_IN_DEV ??
       processEnv.ALLOW_TRANSACTIONAL_EMAILS_IN_DEV ??

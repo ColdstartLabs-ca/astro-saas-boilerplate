@@ -45,39 +45,6 @@ export function FooterAstro(): JSX.Element {
                 </a>
               </li>
               <li>
-                <a href="/features/auto-publishing" className="hover:text-accent transition-colors">
-                  Auto-Publishing
-                </a>
-              </li>
-              <li>
-                <a href="/features/humanizer" className="hover:text-accent transition-colors">
-                  AI Humanizer
-                </a>
-              </li>
-              <li>
-                <a href="/features/gsc-integration" className="hover:text-accent transition-colors">
-                  GSC Integration
-                </a>
-              </li>
-              <li>
-                <a
-                  href="/features/keyword-research"
-                  className="hover:text-accent transition-colors"
-                >
-                  Keyword Research
-                </a>
-              </li>
-              <li>
-                <a href="/features/content-quality" className="hover:text-accent transition-colors">
-                  Content QA
-                </a>
-              </li>
-              <li>
-                <a href="/how-it-works" className="hover:text-accent transition-colors">
-                  How It Works
-                </a>
-              </li>
-              <li>
                 <a href={localizedPath('/blog')} className="hover:text-accent transition-colors">
                   {t('latestUpdates')}
                 </a>
@@ -85,45 +52,31 @@ export function FooterAstro(): JSX.Element {
             </ul>
           </div>
 
-          {/* Free Tools */}
+          {/* Platform */}
           <div>
             <h4 className="text-white font-bold mb-6 uppercase text-xs tracking-widest">
-              Free Tools
+              Platform
             </h4>
             <ul className="space-y-4 text-sm font-medium">
               <li>
-                <a
-                  href="/tools/keyword-density-checker"
-                  className="hover:text-accent transition-colors"
-                >
-                  Keyword Density Checker
+                <a href="/pricing" className="hover:text-accent transition-colors">
+                  Billing
                 </a>
               </li>
               <li>
-                <a
-                  href="/tools/meta-description-validator"
-                  className="hover:text-accent transition-colors"
-                >
-                  Meta Description Validator
+                <a href="/dashboard" className="hover:text-accent transition-colors">
+                  Dashboard
                 </a>
               </li>
               <li>
-                <a
-                  href="/tools/title-tag-optimizer"
-                  className="hover:text-accent transition-colors"
-                >
-                  Title Tag Optimizer
-                </a>
-              </li>
-              <li>
-                <a href="/geo" className="hover:text-accent transition-colors">
-                  GEO Guides
+                <a href="/help" className="hover:text-accent transition-colors">
+                  Help
                 </a>
               </li>
             </ul>
           </div>
 
-          {/* Resources - pSEO Links */}
+          {/* Resources */}
           <div>
             <h4 className="text-white font-bold mb-6 uppercase text-xs tracking-widest">
               {t('resources')}
@@ -132,21 +85,6 @@ export function FooterAstro(): JSX.Element {
               <li>
                 <a href={localizedPath('/blog')} className="hover:text-accent transition-colors">
                   Blog
-                </a>
-              </li>
-              <li>
-                <a href="/compare" className="hover:text-accent transition-colors">
-                  {t('comparisons')}
-                </a>
-              </li>
-              <li>
-                <a href="/alternative" className="hover:text-accent transition-colors">
-                  {t('alternatives')}
-                </a>
-              </li>
-              <li>
-                <a href="/use-cases" className="hover:text-accent transition-colors">
-                  {t('useCases')}
                 </a>
               </li>
             </ul>

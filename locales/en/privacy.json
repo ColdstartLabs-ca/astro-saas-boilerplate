@@ -8,8 +8,8 @@
   "viewTerms": "View Terms of Service",
   "introduction": {
     "title": "1. Introduction",
-    "paragraph1": "Welcome to {APP_NAME} (\"we,\" \"our,\" or \"us\"), operated by ColdStart Labs Inc. We are committed to protecting your privacy and ensuring the security of your personal information. This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you use our AI-powered SEO content generation and publishing platform.",
-    "paragraph2": "By using {APP_NAME}, you agree to the collection and use of information in accordance with this policy. If you have any questions, contact us at privacy@autopilotrank.com."
+    "paragraph1": "Welcome to {APP_NAME} (\"we,\" \"our,\" or \"us\"), operated by Your Company, Inc. We are committed to protecting your privacy and ensuring the security of your personal information. This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you use our AI-powered SaaS generation and publishing platform.",
+    "paragraph2": "By using {APP_NAME}, you agree to the collection and use of information in accordance with this policy. If you have any questions, contact us at privacy@example.com."
   },
   "collection": {
     "title": "2. Information We Collect",
@@ -25,7 +25,7 @@
     },
     "images": {
       "title": "2.2 Content You Generate",
-      "intro": "When you use our content generation features, we collect and store:",
+      "intro": "When you use our usage workflow features, we collect and store:",
       "items": [
         "Article prompts, topics, and keywords you provide",
         "AI-generated articles and content produced by the service",
@@ -52,7 +52,7 @@
     "title": "3. How We Use Your Information",
     "intro": "We use the collected information to:",
     "items": [
-      "Provide, maintain, and improve our content generation and publishing services",
+      "Provide, maintain, and improve our usage workflow and publishing services",
       "Generate AI-powered articles based on your prompts and campaign settings",
       "Publish content to your connected CMS platforms on your schedule",
       "Manage your account, credit balance, and subscription",
@@ -80,7 +80,7 @@
       },
       {
         "label": "OpenRouter / OpenAI / Replicate (AI Providers):",
-        "description": "Your article prompts and content generation requests are sent to these AI providers to produce articles. Please review their respective privacy policies, as your input content is processed by their systems."
+        "description": "Your article prompts and usage workflow requests are sent to these AI providers to produce articles. Please review their respective privacy policies, as your input content is processed by their systems."
       },
       {
         "label": "Cloudflare:",
@@ -115,7 +115,7 @@
   "retention": {
     "title": "6. Data Retention",
     "paragraph1": "We retain your data according to the following rules: account data (profile, settings, credentials) is retained while your subscription is active and for 90 days after cancellation, after which it is permanently deleted upon request. Generated articles are retained until you delete them from your account. Payment records and transaction history are retained for 7 years as required by applicable accounting and tax law.",
-    "paragraph2": "You may request deletion of your account and associated data at any time by contacting privacy@autopilotrank.com. Note that legal retention obligations (e.g., payment records) may prevent immediate deletion of all data."
+    "paragraph2": "You may request deletion of your account and associated data at any time by contacting privacy@example.com. Note that legal retention obligations (e.g., payment records) may prevent immediate deletion of all data."
   },
   "rights": {
     "title": "7. Your Rights",
@@ -158,7 +158,7 @@
   },
   "children": {
     "title": "9. Children's Privacy",
-    "description": "Our service is not intended for children under 13 years of age. We do not knowingly collect personal information from children under 13. If you believe we have collected information from a child under 13, please contact us immediately at privacy@autopilotrank.com."
+    "description": "Our service is not intended for children under 13 years of age. We do not knowingly collect personal information from children under 13. If you believe we have collected information from a child under 13, please contact us immediately at privacy@example.com."
   },
   "international": {
     "title": "10. International Data Transfers",

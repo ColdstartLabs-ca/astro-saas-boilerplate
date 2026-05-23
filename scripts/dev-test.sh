@@ -29,7 +29,7 @@ export PLAYWRIGHT_TEST="${PLAYWRIGHT_TEST:-1}"
 # Use ports from environment or defaults
 export TEST_PORT="${TEST_PORT:-3100}"
 export TEST_WRANGLER_PORT="${TEST_WRANGLER_PORT:-8800}"
-export PLAYWRIGHT_MOCK_DB_PATH="${PLAYWRIGHT_MOCK_DB_PATH:-/tmp/autopilotrank-playwright-mock-db-${TEST_PORT}.json}"
+export PLAYWRIGHT_MOCK_DB_PATH="${PLAYWRIGHT_MOCK_DB_PATH:-/tmp/saas-boilerplate-playwright-mock-db-${TEST_PORT}.json}"
 
 # Ensure each server start begins with a clean shared mock database.
 rm -f "${PLAYWRIGHT_MOCK_DB_PATH}"

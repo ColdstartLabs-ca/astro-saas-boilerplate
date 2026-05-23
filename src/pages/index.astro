@@ -4,8 +4,8 @@ import { clientEnv } from '@shared/config/env';
 import HomePageClient from '@client/components/pages/HomePageClient';
 
 // SEO metadata
-const title = `AutopilotRank — Automated SEO Content Platform | AI SEO Tool`;
-const description = `The SEO content platform that owns the full pipeline — keyword research, AI writing, optimization, and CMS publishing on autopilot. Multi-model AI, from $49/mo. Start free.`;
+const title = `${clientEnv.APP_NAME} - Astro SaaS Boilerplate`;
+const description = `A reusable Astro SaaS starter with authentication, billing, credits, admin tooling, email, analytics, and deployment-ready infrastructure.`;
 ---
 
 <Layout title={title}>
@@ -35,14 +35,14 @@ const description = `The SEO content platform that owns the full pipeline — ke
       "operatingSystem": "Web",
       "offers": {
         "@type": "Offer",
-        "price": "49.00",
+      "price": "0.00",
         "priceCurrency": "USD",
         "priceSpecification": {
           "@type": "UnitPriceSpecification",
           "billingDuration": "P1M"
         }
       },
-      "description": "AutopilotRank is an automated SEO content platform that generates human-quality SEO content and publishes directly to your CMS on autopilot.",
+      "description": description,
       "url": clientEnv.BASE_URL,
     })}></script>
   </Fragment>

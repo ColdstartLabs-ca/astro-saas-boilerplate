@@ -5,8 +5,8 @@
  * IMPORTANT: This file should be the ONLY place where subscription
  * configuration values are defined. All other files should import from here.
  *
- * AutopilotRank - AI SEO Content Platform
- * 1 credit = 1 article generation
+ * Reusable SaaS subscription defaults
+ * 1 credit = 1 billable unit
  */
 
 import type { ISubscriptionConfig } from './subscription.types';
@@ -44,7 +44,7 @@ export const SUBSCRIPTION_CONFIG: ISubscriptionConfig = {
       priceInCents: 0, // $0.00
       currency: 'usd',
       interval: 'month',
-      creditsPerCycle: 3, // 3 trial articles total, no refresh
+      creditsPerCycle: 3, // 3 trial credits total, no refresh
       maxRollover: 3, // No rollover for trial
       rolloverMultiplier: 1,
       trial: {
@@ -61,9 +61,9 @@ export const SUBSCRIPTION_CONFIG: ISubscriptionConfig = {
         sendExpirationWarning: false,
         warningDaysBefore: 0,
       },
-      features: ['3 trial articles', 'Basic AI models', 'No credit card required'],
+      features: ['3 trial credits', 'Basic AI models', 'No credit card required'],
       recommended: false,
-      description: 'Try AutopilotRank free',
+      description: 'Try the app free',
       displayOrder: 0,
       enabled: false, // Free tier is handled via freeUser config
       batchLimit: 1,
@@ -72,7 +72,7 @@ export const SUBSCRIPTION_CONFIG: ISubscriptionConfig = {
     {
       key: 'starter',
       name: 'Starter',
-      stripePriceId: 'price_1SxZp7K2K0pPNfoSMt94q8kP',
+      stripePriceId: 'price_starter_monthly',
       priceInCents: 4900, // $49.00
       currency: 'usd',
       interval: 'month',
@@ -94,16 +94,16 @@ export const SUBSCRIPTION_CONFIG: ISubscriptionConfig = {
         warningDaysBefore: 0,
       },
       features: [
-        '30 credits/month (1–5 per article)',
+        '30 credits/month',
         'Credits roll over (up to 90)',
-        'Multi-model AI (GPT-4, Claude, Gemini)',
-        'Humanizer engine',
+        'Configurable usage metering',
+        'Usage dashboard',
         'Unlimited projects',
-        'SEO scoring & AI detection',
+        'Basic reporting',
         'Email support',
       ],
       recommended: false,
-      description: 'Perfect for getting started with SEO content',
+      description: 'Perfect for getting started',
       displayOrder: 1,
       enabled: true,
       batchLimit: 5,
@@ -112,7 +112,7 @@ export const SUBSCRIPTION_CONFIG: ISubscriptionConfig = {
     {
       key: 'growth',
       name: 'Growth',
-      stripePriceId: 'price_1SxZp9K2K0pPNfoSeOwSLmcp',
+      stripePriceId: 'price_growth_monthly',
       priceInCents: 9900, // $99.00
       currency: 'usd',
       interval: 'month',
@@ -134,13 +134,13 @@ export const SUBSCRIPTION_CONFIG: ISubscriptionConfig = {
         warningDaysBefore: 0,
       },
       features: [
-        '100 credits/month (1–5 per article)',
+        '100 credits/month',
         'Credits roll over (up to 300)',
         'Everything in Starter',
-        'GSC integration',
+        'Advanced integrations',
         'Unlimited projects',
-        'Advanced humanizer',
-        'Scheduled publishing',
+        'Advanced reporting',
+        'Scheduled jobs',
         'Priority support',
       ],
       recommended: true, // Recommended plan
@@ -153,7 +153,7 @@ export const SUBSCRIPTION_CONFIG: ISubscriptionConfig = {
     {
       key: 'agency',
       name: 'Agency',
-      stripePriceId: 'price_1SxZpAK2K0pPNfoSbxIQNtKL',
+      stripePriceId: 'price_agency_monthly',
       priceInCents: 24900, // $249.00
       currency: 'usd',
       interval: 'month',
@@ -175,7 +175,7 @@ export const SUBSCRIPTION_CONFIG: ISubscriptionConfig = {
         warningDaysBefore: 0,
       },
       features: [
-        '500 credits/month (1–5 per article)',
+        '500 credits/month',
         'Everything in Growth',
         'Unlimited projects',
         'White-label reports (coming soon)',
@@ -196,33 +196,33 @@ export const SUBSCRIPTION_CONFIG: ISubscriptionConfig = {
     {
       key: 'small',
       name: 'Small Pack',
-      credits: CREDIT_COSTS.SMALL_PACK_CREDITS, // 10 articles
+      credits: CREDIT_COSTS.SMALL_PACK_CREDITS, // 10 credits
       priceInCents: 999, // $9.99
       currency: 'usd',
-      stripePriceId: 'price_1SxZpbK2K0pPNfoSOZkDy9td',
-      description: '10 articles',
+      stripePriceId: 'price_credits_small',
+      description: '10 credits',
       popular: false,
       enabled: true,
     },
     {
       key: 'medium',
       name: 'Medium Pack',
-      credits: CREDIT_COSTS.MEDIUM_PACK_CREDITS, // 25 articles
+      credits: CREDIT_COSTS.MEDIUM_PACK_CREDITS, // 25 credits
       priceInCents: 1999, // $19.99
       currency: 'usd',
-      stripePriceId: 'price_1SxZpbK2K0pPNfoSQ9VDhGSt',
-      description: '25 articles - Best value',
+      stripePriceId: 'price_credits_medium',
+      description: '25 credits - Best value',
       popular: true,
       enabled: true,
     },
     {
       key: 'large',
       name: 'Large Pack',
-      credits: CREDIT_COSTS.LARGE_PACK_CREDITS, // 50 articles
+      credits: CREDIT_COSTS.LARGE_PACK_CREDITS, // 50 credits
       priceInCents: 3499, // $34.99
       currency: 'usd',
-      stripePriceId: 'price_1SxZpcK2K0pPNfoSv4WoPMSI',
-      description: '50 articles',
+      stripePriceId: 'price_credits_large',
+      description: '50 credits',
       popular: false,
       enabled: true,
     },
@@ -230,10 +230,10 @@ export const SUBSCRIPTION_CONFIG: ISubscriptionConfig = {
 
   creditCosts: {
     modes: {
-      api: CREDIT_COSTS.API_CALL, // 1 credit = 1 article
-      basic: CREDIT_COSTS.API_CALL * 1, // 1 article
-      premium: CREDIT_COSTS.API_CALL * 1, // 1 article (no multiplier in new model)
-      enterprise: CREDIT_COSTS.API_CALL * 1, // 1 article (no multiplier in new model)
+      api: CREDIT_COSTS.API_CALL, // 1 credit = 1 billable unit
+      basic: CREDIT_COSTS.API_CALL * 1, // 1 billable unit
+      premium: CREDIT_COSTS.API_CALL * 1, // 1 billable unit (no multiplier in new model)
+      enterprise: CREDIT_COSTS.API_CALL * 1, // 1 billable unit (no multiplier in new model)
     },
     featureMultipliers: {
       basic: 1.0,
@@ -249,11 +249,11 @@ export const SUBSCRIPTION_CONFIG: ISubscriptionConfig = {
   },
 
   freeUser: {
-    initialCredits: CREDIT_COSTS.DEFAULT_FREE_CREDITS, // 3 trial articles
+    initialCredits: CREDIT_COSTS.DEFAULT_FREE_CREDITS, // 3 trial credits
     monthlyRefresh: false, // Free users don't get monthly refresh
     monthlyCredits: CREDIT_COSTS.DEFAULT_TRIAL_CREDITS,
     maxBalance: CREDIT_COSTS.DEFAULT_FREE_CREDITS, // Free users capped at 3
-    batchLimit: 1, // Up to 1 article at a time for free users
+    batchLimit: 1, // Up to 1 billable unit at a time for free users
   },
 
   warnings: {

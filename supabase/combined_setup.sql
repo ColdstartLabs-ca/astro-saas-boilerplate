@@ -4302,7 +4302,7 @@ CREATE POLICY "Service role can manage provider usage"
 -- Migration: 20260205100000_create_projects_table.sql
 -- ========================================
 
--- Create projects table for AutopilotRank domain model
+-- Create projects table for SaaS Boilerplate domain model
 CREATE TABLE public.projects (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
@@ -4357,7 +4357,7 @@ CREATE TRIGGER handle_projects_updated_at
 -- Migration: 20260205100100_create_campaigns_table.sql
 -- ========================================
 
--- Create campaigns table for AutopilotRank domain model
+-- Create campaigns table for SaaS Boilerplate domain model
 CREATE TABLE public.campaigns (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
@@ -4408,7 +4408,7 @@ CREATE TRIGGER handle_campaigns_updated_at
 -- Migration: 20260205100200_create_articles_table.sql
 -- ========================================
 
--- Create articles table for AutopilotRank domain model
+-- Create articles table for SaaS Boilerplate domain model
 CREATE TABLE public.articles (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   campaign_id UUID NOT NULL REFERENCES public.campaigns(id) ON DELETE CASCADE,
@@ -4469,7 +4469,7 @@ CREATE TRIGGER handle_articles_updated_at
 -- Migration: 20260205100300_create_keywords_table.sql
 -- ========================================
 
--- Create keywords table for AutopilotRank domain model
+-- Create keywords table for SaaS Boilerplate domain model
 CREATE TABLE public.keywords (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   campaign_id UUID NOT NULL REFERENCES public.campaigns(id) ON DELETE CASCADE,
@@ -4541,7 +4541,7 @@ CREATE TRIGGER handle_keywords_updated_at
 ALTER TABLE public.projects
   ADD COLUMN IF NOT EXISTS industry TEXT;
 
--- Add content_preferences column for storing content generation settings
+-- Add content_preferences column for storing usage workflow settings
 ALTER TABLE public.projects
   ADD COLUMN IF NOT EXISTS content_preferences JSONB DEFAULT '{}';
 
@@ -4746,7 +4746,7 @@ COMMENT ON CONSTRAINT campaigns_project_id_fkey ON public.campaigns IS
 -- ========================================
 
 -- Add 'failed_quality' status to article status check constraint
--- This status is used when an article generation completes but fails quality gates
+-- This status is used when an usage operation completes but fails quality gates
 
 -- Drop the existing constraint
 ALTER TABLE public.articles
@@ -4897,7 +4897,7 @@ BEGIN
     WHERE id = p_user_id;
 
     -- Build description
-    v_description := 'Article generation' ||
+    v_description := 'Usage operation' ||
         CASE WHEN p_image_preset IS NOT NULL THEN format(' with %s image', p_image_preset) ELSE '' END ||
         CASE WHEN from_subscription > 0 AND from_purchased > 0
              THEN format(' (sub: %s, purchased: %s)', from_subscription, from_purchased)
@@ -6444,7 +6444,7 @@ BEGIN
     WHERE id = p_user_id;
 
     -- Build description
-    v_description := 'Article generation' ||
+    v_description := 'Usage operation' ||
         CASE WHEN p_image_preset IS NOT NULL THEN format(' with %s image', p_image_preset) ELSE '' END ||
         CASE WHEN from_subscription > 0 AND from_purchased > 0
              THEN format(' (sub: %s, purchased: %s)', from_subscription, from_purchased)
@@ -6706,7 +6706,7 @@ BEGIN
         purchased_credits_balance = purchased_credits_balance - from_purchased
     WHERE id = p_user_id;
 
-    v_description := 'Article generation' ||
+    v_description := 'Usage operation' ||
         CASE WHEN p_image_preset IS NOT NULL THEN format(' with %s image', p_image_preset) ELSE '' END ||
         CASE WHEN from_subscription > 0 AND from_purchased > 0
              THEN format(' (sub: %s, purchased: %s)', from_subscription, from_purchased)
@@ -6872,28 +6872,28 @@ CREATE INDEX IF NOT EXISTS idx_gsc_connections_project_id ON public.gsc_connecti
 ALTER TABLE public.gsc_connections ENABLE ROW LEVEL SECURITY;
 
 -- RLS Policies
-CREATE POLICY "Users can view own GSC connections"
+CREATE POLICY "Users can view own analytics connections"
   ON public.gsc_connections
   FOR SELECT
   USING (auth.uid() = user_id);
 
-CREATE POLICY "Users can insert own GSC connections"
+CREATE POLICY "Users can insert own analytics connections"
   ON public.gsc_connections
   FOR INSERT
   WITH CHECK (auth.uid() = user_id);
 
-CREATE POLICY "Users can update own GSC connections"
+CREATE POLICY "Users can update own analytics connections"
   ON public.gsc_connections
   FOR UPDATE
   USING (auth.uid() = user_id)
   WITH CHECK (auth.uid() = user_id);
 
-CREATE POLICY "Users can delete own GSC connections"
+CREATE POLICY "Users can delete own analytics connections"
   ON public.gsc_connections
   FOR DELETE
   USING (auth.uid() = user_id);
 
-CREATE POLICY "Service role has full access to GSC connections"
+CREATE POLICY "Service role has full access to analytics connections"
   ON public.gsc_connections
   FOR ALL
   USING (auth.role() = 'service_role');
@@ -6910,7 +6910,7 @@ CREATE TRIGGER on_gsc_connections_updated
 -- Migration: 20260211000400_create_gsc_snapshots.sql
 -- ========================================
 
--- Create gsc_snapshots table for aggregated GSC data per sync
+-- Create gsc_snapshots table for aggregated analytics data per sync
 CREATE TABLE IF NOT EXISTS public.gsc_snapshots (
   id UUID DEFAULT gen_random_uuid() NOT NULL PRIMARY KEY,
   connection_id UUID REFERENCES public.gsc_connections(id) ON DELETE CASCADE NOT NULL,
@@ -6933,22 +6933,22 @@ CREATE INDEX IF NOT EXISTS idx_gsc_snapshots_date_range ON public.gsc_snapshots(
 ALTER TABLE public.gsc_snapshots ENABLE ROW LEVEL SECURITY;
 
 -- RLS Policies
-CREATE POLICY "Users can view own GSC snapshots"
+CREATE POLICY "Users can view own analytics snapshots"
   ON public.gsc_snapshots
   FOR SELECT
   USING (auth.uid() = user_id);
 
-CREATE POLICY "Users can insert own GSC snapshots"
+CREATE POLICY "Users can insert own analytics snapshots"
   ON public.gsc_snapshots
   FOR INSERT
   WITH CHECK (auth.uid() = user_id);
 
-CREATE POLICY "Users can delete own GSC snapshots"
+CREATE POLICY "Users can delete own analytics snapshots"
   ON public.gsc_snapshots
   FOR DELETE
   USING (auth.uid() = user_id);
 
-CREATE POLICY "Service role has full access to GSC snapshots"
+CREATE POLICY "Service role has full access to analytics snapshots"
   ON public.gsc_snapshots
   FOR ALL
   USING (auth.role() = 'service_role');
@@ -7031,8 +7031,8 @@ CREATE TRIGGER on_opportunities_updated
 -- Migration: 20260212100000_add_campaign_scheduling.sql
 -- ========================================
 
--- Add campaign scheduling columns for drip-feed article generation
--- This enables scheduled, time-based article generation instead of all-at-once
+-- Add campaign scheduling columns for drip-feed usage operation
+-- This enables scheduled, time-based usage operation instead of all-at-once
 -- Timestamp: 20260212100000
 
 -- Add scheduling columns to campaigns table
@@ -7157,7 +7157,7 @@ CREATE TRIGGER handle_user_onboarding_updated_at
 
 -- =============================================================================
 -- Table: api_keys
--- Stores API keys for programmatic access to AutopilotRank
+-- Stores API keys for programmatic access to SaaS Boilerplate
 -- Keys are stored as SHA-256 hashes, never in plaintext
 -- =============================================================================
 

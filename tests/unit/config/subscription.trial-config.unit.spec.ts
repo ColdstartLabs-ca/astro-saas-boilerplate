@@ -9,7 +9,7 @@ import {
 describe('Trial Configuration', () => {
   describe('getTrialConfig', () => {
     it('should return null when trial is disabled for a plan', () => {
-      const config = getTrialConfig('price_1SxZp7K2K0pPNfoSMt94q8kP'); // Starter plan
+      const config = getTrialConfig('price_starter_monthly'); // Starter plan
       expect(config).toBe(null);
     });
 
@@ -22,31 +22,29 @@ describe('Trial Configuration', () => {
       // First, let's enable a trial for testing by temporarily modifying the config
       const config = getSubscriptionConfig();
       // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      const planIndex = config.plans.findIndex(
-        p => p.stripePriceId === 'price_1SxZp9K2K0pPNfoSeOwSLmcp'
-      ); // Growth plan
+      const planIndex = config.plans.findIndex(p => p.stripePriceId === 'price_growth_monthly'); // Growth plan
 
       // The trial is currently disabled, so we should get null
-      const disabledConfig = getTrialConfig('price_1SxZp9K2K0pPNfoSeOwSLmcp');
+      const disabledConfig = getTrialConfig('price_growth_monthly');
       expect(disabledConfig).toBe(null);
     });
   });
 
   describe('getPlanConfig', () => {
     it('should return plan configuration for valid price ID (Starter)', () => {
-      const plan = getPlanConfig('price_1SxZp7K2K0pPNfoSMt94q8kP'); // Starter plan
+      const plan = getPlanConfig('price_starter_monthly'); // Starter plan
       expect(plan).toBeTruthy();
       expect(plan?.key).toBe('starter');
       expect(plan?.name).toBe('Starter');
-      expect(plan?.stripePriceId).toBe('price_1SxZp7K2K0pPNfoSMt94q8kP');
+      expect(plan?.stripePriceId).toBe('price_starter_monthly');
     });
 
     it('should return plan configuration for valid price ID (Growth)', () => {
-      const plan = getPlanConfig('price_1SxZp9K2K0pPNfoSeOwSLmcp'); // Growth plan
+      const plan = getPlanConfig('price_growth_monthly'); // Growth plan
       expect(plan).toBeTruthy();
       expect(plan?.key).toBe('growth');
       expect(plan?.name).toBe('Growth');
-      expect(plan?.stripePriceId).toBe('price_1SxZp9K2K0pPNfoSeOwSLmcp');
+      expect(plan?.stripePriceId).toBe('price_growth_monthly');
     });
 
     it('should return null for invalid price ID', () => {
@@ -55,7 +53,7 @@ describe('Trial Configuration', () => {
     });
 
     it('should return plan with trial configuration', () => {
-      const plan = getPlanConfig('price_1SxZp9K2K0pPNfoSeOwSLmcp'); // Growth plan
+      const plan = getPlanConfig('price_growth_monthly'); // Growth plan
       expect(plan).toBeTruthy();
       expect(plan?.trial).toBeDefined();
       expect(plan?.trial.enabled).toBe(false); // Currently disabled
@@ -65,7 +63,7 @@ describe('Trial Configuration', () => {
 
   describe('isTrialEnabled', () => {
     it('should return false when trial is disabled', () => {
-      const isEnabled = isTrialEnabled('price_1SxZp7K2K0pPNfoSMt94q8kP'); // Starter plan
+      const isEnabled = isTrialEnabled('price_starter_monthly'); // Starter plan
       expect(isEnabled).toBe(false);
     });
 
@@ -75,7 +73,7 @@ describe('Trial Configuration', () => {
     });
 
     it('should return false when trial exists but is disabled', () => {
-      const isEnabled = isTrialEnabled('price_1SxZp9K2K0pPNfoSeOwSLmcp'); // Growth plan
+      const isEnabled = isTrialEnabled('price_growth_monthly'); // Growth plan
       expect(isEnabled).toBe(false);
     });
   });

@@ -1,24 +1,24 @@
 {
   "meta": {
     "title": "Terms of Service",
-    "description": "Read the terms and conditions for using {APP_NAME} AI-powered SEO content generation and publishing services."
+    "description": "Read the terms and conditions for using {APP_NAME} AI-powered SaaS generation and publishing services."
   },
   "lastUpdated": "Last updated: {date}",
   "title": "Terms of Service",
   "viewPrivacy": "View Privacy Policy",
   "acceptance": {
     "title": "1. Acceptance of Terms",
-    "paragraph1": "By accessing or using {APP_NAME} (\"Service\"), operated by ColdStart Labs Inc., you agree to be bound by these Terms of Service (\"Terms\"). If you do not agree to these Terms, you may not use the Service.",
+    "paragraph1": "By accessing or using {APP_NAME} (\"Service\"), operated by Your Company, Inc., you agree to be bound by these Terms of Service (\"Terms\"). If you do not agree to these Terms, you may not use the Service.",
     "paragraph2": "We reserve the right to modify these Terms at any time. We will notify you of material changes by email or in-app notice. Continued use of the Service after changes constitutes acceptance of the modified Terms."
   },
   "description": {
     "title": "2. Description of Service",
-    "intro": "{APP_NAME} is an AI-powered SEO content generation and CMS publishing automation platform. The Service allows users to:",
+    "intro": "{APP_NAME} is an AI-powered SaaS generation and CMS publishing automation platform. The Service allows users to:",
     "features": [
       "Generate SEO-optimized articles using AI models (including Gemini, GPT-4o, and Claude)",
       "Automatically publish content to WordPress and other supported CMS platforms",
       "Schedule recurring content campaigns for ongoing SEO automation",
-      "Manage content generation credits and subscription plans"
+      "Manage usage workflow credits and subscription plans"
     ]
   },
   "registration": {
@@ -36,7 +36,7 @@
     "title": "4. Credits and Payments",
     "system": {
       "title": "4.1 Credit System",
-      "description": "The Service operates on a credit-based system. Each article generation consumes credits based on the selected AI model, article length, and features used. Credit costs are displayed before you confirm a generation."
+      "description": "The Service operates on a credit-based system. Each usage operation consumes credits based on the selected AI model, article length, and features used. Credit costs are displayed before you confirm a generation."
     },
     "free": {
       "title": "4.2 Trial Credits",
@@ -55,7 +55,7 @@
       "title": "4.4 Refunds and Failed Generations",
       "intro": "Credits are generally non-refundable once used. However:",
       "reasons": [
-        "Credits consumed by a failed article generation are automatically refunded to your account",
+        "Credits consumed by a failed usage operation are automatically refunded to your account",
         "Duplicate charges due to billing errors may be refunded upon request",
         "Refund requests for other reasons are evaluated at our sole discretion"
       ],
@@ -92,7 +92,7 @@
     "title": "7. Intellectual Property and AI Content",
     "yourContent": {
       "title": "7.1 Ownership of Generated Content",
-      "description": "You own the articles and content generated through your use of the Service. By using the Service, you grant us a limited license to process your prompts and campaign data solely to provide the requested content generation and publishing services."
+      "description": "You own the articles and content generated through your use of the Service. By using the Service, you grant us a limited license to process your prompts and campaign data solely to provide the requested usage workflow and publishing services."
     },
     "aiContent": {
       "title": "7.2 AI Content and Responsibility",
@@ -116,7 +116,7 @@
   },
   "limitation": {
     "title": "9. Limitation of Liability",
-    "intro": "TO THE MAXIMUM EXTENT PERMITTED BY APPLICABLE LAW, {APP_NAME} AND COLDSTART LABS INC. SHALL NOT BE LIABLE FOR:",
+    "intro": "TO THE MAXIMUM EXTENT PERMITTED BY APPLICABLE LAW, {APP_NAME} AND YOUR COMPANY, INC. SHALL NOT BE LIABLE FOR:",
     "exclusions": [
       "Indirect, incidental, special, punitive, or consequential damages",
       "Loss of profits, revenue, data, or business opportunities",
@@ -139,7 +139,7 @@
   },
   "indemnification": {
     "title": "11. Indemnification",
-    "description": "You agree to indemnify, defend, and hold harmless {APP_NAME}, ColdStart Labs Inc., and their officers, directors, employees, and agents from any claims, damages, losses, or expenses (including reasonable legal fees) arising from: (a) your use of the Service; (b) content you generate or publish using the Service; (c) your violation of these Terms; or (d) your infringement of any third-party rights."
+    "description": "You agree to indemnify, defend, and hold harmless {APP_NAME}, Your Company, Inc., and their officers, directors, employees, and agents from any claims, damages, losses, or expenses (including reasonable legal fees) arising from: (a) your use of the Service; (b) content you generate or publish using the Service; (c) your violation of these Terms; or (d) your infringement of any third-party rights."
   },
   "termination": {
     "title": "12. Termination",

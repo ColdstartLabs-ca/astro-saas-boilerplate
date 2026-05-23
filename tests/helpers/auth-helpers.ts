@@ -27,8 +27,8 @@ export interface ITestUserData {
  */
 function getUserCacheKey(): string {
   // Uses the same prefix as in the app's clientEnv.CACHE_USER_KEY_PREFIX
-  // The app defaults to 'autopilotrank' if not set
-  const prefix = process.env.NEXT_PUBLIC_CACHE_USER_KEY_PREFIX || 'autopilotrank';
+  // The app defaults to 'saas-boilerplate' if not set
+  const prefix = process.env.NEXT_PUBLIC_CACHE_USER_KEY_PREFIX || 'saas-boilerplate';
   return `${prefix}_user_cache`;
 }
 

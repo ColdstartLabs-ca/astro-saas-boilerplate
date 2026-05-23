@@ -5,7 +5,7 @@
     "description": "Use API keys to programmatically create campaigns and fetch content.",
     "createButton": "Create API Key",
     "empty": "No API keys yet",
-    "emptyDescription": "Create an API key to access the AutopilotRank API programmatically.",
+    "emptyDescription": "Create an API key to access the SaaS Boilerplate API programmatically.",
     "listHeader": {
       "name": "Name",
       "key": "Key Prefix",

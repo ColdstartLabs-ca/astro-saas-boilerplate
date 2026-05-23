@@ -60,7 +60,7 @@ describe('Subscription Configuration', () => {
 
   describe('Plan Lookup Functions', () => {
     test('getPlanByPriceId returns correct plan for Starter', () => {
-      const plan = getPlanByPriceId('price_1SxZp7K2K0pPNfoSMt94q8kP');
+      const plan = getPlanByPriceId('price_starter_monthly');
       expect(plan).toBeDefined();
       expect(plan?.key).toBe('starter');
       expect(plan?.name).toBe('Starter');
@@ -74,7 +74,7 @@ describe('Subscription Configuration', () => {
     test('getPlanByKey returns correct plan for Starter', () => {
       const plan = getPlanByKey('starter');
       expect(plan).toBeDefined();
-      expect(plan?.stripePriceId).toBe('price_1SxZp7K2K0pPNfoSMt94q8kP');
+      expect(plan?.stripePriceId).toBe('price_starter_monthly');
       expect(plan?.creditsPerCycle).toBe(30);
     });
 
@@ -199,7 +199,7 @@ describe('Subscription Configuration', () => {
 
   describe('Credits Expiration Functions', () => {
     test('getExpirationConfig returns config for valid price ID', () => {
-      const config = getExpirationConfig('price_1SxZp9K2K0pPNfoSeOwSLmcp'); // Growth plan
+      const config = getExpirationConfig('price_growth_monthly'); // Growth plan
       expect(config).toBeDefined();
       expect(config?.mode).toBeDefined();
       expect(['never', 'end_of_cycle', 'rolling_window']).toContain(config?.mode);
@@ -211,7 +211,7 @@ describe('Subscription Configuration', () => {
     });
 
     test('creditsExpireForPlan returns correct value based on mode', () => {
-      const expires = creditsExpireForPlan('price_1SxZp9K2K0pPNfoSeOwSLmcp'); // Growth plan
+      const expires = creditsExpireForPlan('price_growth_monthly'); // Growth plan
       expect(typeof expires).toBe('boolean');
     });
 
@@ -276,9 +276,9 @@ describe('Subscription Configuration', () => {
     });
 
     test('shouldSendExpirationWarning returns correct value based on config', () => {
-      const plan = getPlanByPriceId('price_1SxZp9K2K0pPNfoSeOwSLmcp'); // Growth plan
+      const plan = getPlanByPriceId('price_growth_monthly'); // Growth plan
       const should = shouldSendExpirationWarning({
-        priceId: 'price_1SxZp9K2K0pPNfoSeOwSLmcp',
+        priceId: 'price_growth_monthly',
         daysUntilExpiration: 3,
       });
 
@@ -301,18 +301,18 @@ describe('Subscription Configuration', () => {
     });
 
     test('shouldSendExpirationWarning checks warning configuration', () => {
-      const plan = getPlanByPriceId('price_1SxZp9K2K0pPNfoSeOwSLmcp'); // Growth plan
+      const plan = getPlanByPriceId('price_growth_monthly'); // Growth plan
       const warningDays = plan?.creditsExpiration.warningDaysBefore || 0;
 
       // Test within warning window
       const shouldWarn = shouldSendExpirationWarning({
-        priceId: 'price_1SxZp9K2K0pPNfoSeOwSLmcp',
+        priceId: 'price_growth_monthly',
         daysUntilExpiration: warningDays - 1,
       });
 
       // Test outside warning window
       const shouldNotWarn = shouldSendExpirationWarning({
-        priceId: 'price_1SxZp9K2K0pPNfoSeOwSLmcp',
+        priceId: 'price_growth_monthly',
         daysUntilExpiration: warningDays + 1,
       });
 

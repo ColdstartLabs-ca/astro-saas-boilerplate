@@ -32,7 +32,7 @@ const ALLOWED_EVENTS = [
   'credits_refunded',
   'credits_low_warning',
 
-  // Content/Article events (AutopilotRank)
+  // Content/Article events (SaaS Boilerplate)
   'project_created',
   'article_generation_started',
   'article_generated',

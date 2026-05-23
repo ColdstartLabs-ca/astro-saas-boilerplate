@@ -1,9 +1,9 @@
 #!/usr/bin/env npx tsx
 /**
- * Stripe Setup Script for AutopilotRank
+ * Stripe Setup Script for SaaS Boilerplate
  *
  * Automatically creates all necessary Stripe products, prices, and billing portal
- * configuration for the AutopilotRank application.
+ * configuration for the SaaS Boilerplate application.
  *
  * This script:
  * - Creates subscription products (Starter, Growth, Agency)
@@ -56,7 +56,7 @@ const SUBSCRIPTION_PRODUCTS: IProductDefinition[] = [
   {
     key: 'starter',
     name: 'Starter',
-    description: '30 articles per month - Perfect for getting started with SEO content',
+    description: '30 articles per month - Perfect for getting started with SaaS',
     priceInCents: 4900, // $49.00
     type: 'subscription',
     metadata: {
@@ -165,7 +165,7 @@ class StripeSetup {
   async run(): Promise<void> {
     try {
       this.log('\n' + '='.repeat(70), 'cyan');
-      this.log('  Stripe Setup for AutopilotRank', 'bright');
+      this.log('  Stripe Setup for SaaS Boilerplate', 'bright');
       this.log('='.repeat(70) + '\n', 'cyan');
 
       // Display current configuration
@@ -465,7 +465,7 @@ class StripeSetup {
       // Create new billing portal configuration
       const config = await this.stripe.billingPortal.configurations.create({
         business_profile: {
-          headline: 'Manage your AutopilotRank subscription',
+          headline: 'Manage your SaaS Boilerplate subscription',
         },
         features: {
           customer_update: {

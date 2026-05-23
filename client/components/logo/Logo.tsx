@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import { clientEnv, getAppLogoAbbr } from '@shared/config/env';
 
 interface IProps {
   className?: string;
@@ -9,10 +10,11 @@ interface IProps {
 
 export function Logo({ className = '', variant = 'full' }: IProps): JSX.Element {
   const isCompact = variant === 'compact';
+  const [firstWord, ...restWords] = clientEnv.APP_NAME.split(' ');
+  const accentText = restWords.join(' ');
 
   return (
     <div className={`flex items-center gap-2 ${className}`}>
-      {/* Icon: lightning bolt — autopilot speed */}
       <div
         className="rounded-xl flex items-center justify-center flex-shrink-0"
         style={{
@@ -29,7 +31,7 @@ export function Logo({ className = '', variant = 'full' }: IProps): JSX.Element 
           xmlns="http://www.w3.org/2000/svg"
         >
           <path
-            d="M18 8L10 22H18L16 32L28 16H20L22 8H18Z"
+            d="M20 8L8 16V30L20 38L32 30V16L20 8ZM20 13L27 17.5V26.5L20 31L13 26.5V17.5L20 13Z"
             fill="white"
             stroke="white"
             strokeWidth="1"
@@ -37,12 +39,13 @@ export function Logo({ className = '', variant = 'full' }: IProps): JSX.Element 
           />
         </svg>
       </div>
-      {/* AutopilotRank wordmark */}
       {!isCompact && (
         <span className="text-white font-bold text-xl tracking-tight">
-          Autopilot<span className="text-accent">Rank</span>
+          {firstWord}
+          {accentText && <span className="text-accent"> {accentText}</span>}
         </span>
       )}
+      {isCompact && <span className="sr-only">{getAppLogoAbbr()}</span>}
     </div>
   );
 }

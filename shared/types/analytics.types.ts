@@ -50,7 +50,7 @@ export interface IApiCallProperties {
 }
 
 // =============================================================================
-// PMF & Revenue Events (AutopilotRank specific)
+// PMF & Revenue Events (SaaS Boilerplate specific)
 // =============================================================================
 
 export interface IArticleGeneratedProperties {
@@ -120,7 +120,7 @@ export type IAnalyticsEventName =
   | 'credits_deducted'
   | 'credits_refunded'
   | 'credits_low_warning'
-  // Content/Article events (AutopilotRank)
+  // Content/Article events (SaaS Boilerplate)
   | 'project_created'
   | 'article_generation_started'
   | 'article_generated'
