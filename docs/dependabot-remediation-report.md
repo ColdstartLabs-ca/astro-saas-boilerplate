@@ -217,4 +217,5 @@ Remediation executed on 2026-05-24.
 - Upgraded the live Astro/Cloudflare stack, Wrangler, Resend, Supabase SDK, ESLint stack, and related lockfile transitive dependencies.
 - Replaced the `tsyringe` runtime container with a small manual registry so the Cloudflare worker build no longer bundles CommonJS DI code.
 - Added direct `picomatch` plus a Vite SSR optimizer hint to avoid Astro 6 Cloudflare runner evaluating Astro's CommonJS helper dependency raw.
+- Added Yarn resolutions for remaining vulnerable transitive packages (`flatted`, `js-cookie`, `lodash`, `minimatch`, `picomatch`, `postcss`, `rollup`, `smol-toml`, `vite`, and `yaml`) after the direct dependency cleanup.
 - Left `@astrojs/tailwind` installed for Tailwind 3 support; Astro 6 docs still describe this path, though the package currently emits a peer-range warning.
