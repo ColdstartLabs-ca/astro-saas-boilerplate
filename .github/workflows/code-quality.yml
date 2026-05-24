@@ -18,15 +18,16 @@ jobs:
         uses: actions/setup-node@v3
         with:
           node-version: '20'
+          cache: 'yarn'
 
       - name: Install dependencies
-        run: npm install
+        run: yarn install --frozen-lockfile
 
       - name: Run ESLint
-        run: npm run lint
+        run: yarn lint
 
       - name: Run Prettier
-        run: npm run format
+        run: yarn format
 
       - name: Run TypeScript Compiler
-        run: npm run tsc
+        run: yarn tsc

@@ -6,7 +6,7 @@ Check `.claude/skills/` for relevant patterns.
 
 ## Tech Stack
 
-Astro 5 SSR + React 18 islands · TypeScript 5.5 strict · Cloudflare Pages + Workers (10ms CPU limit) · Supabase Postgres (no ORM, raw queries, RLS on all tables) · Supabase Auth · Stripe · Zustand + TanStack Query · Tailwind 3 (semantic tokens, never hardcode colors) · Zod · tsyringe DI
+Astro 6 SSR + React 18 islands · TypeScript 5.5 strict · Cloudflare Pages + Workers (10ms CPU limit) · Supabase Postgres (no ORM, raw queries, RLS on all tables) · Supabase Auth · Stripe · Zustand + TanStack Query · Tailwind 3 (semantic tokens, never hardcode colors) · Zod · lightweight manual DI
 
 ## What's Included
 

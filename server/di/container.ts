@@ -1,15 +1,15 @@
 /**
  * Dependency Injection Container
  *
- * Uses tsyringe for manual service registration.
+ * Uses a small manual registry for service registration.
  * We use manual registration instead of decorators to avoid Next.js build issues.
  *
  * Services are registered as singletons by default.
  * Registration is lazy to avoid issues with test mocks.
  */
 
-import 'reflect-metadata';
-import { container } from 'tsyringe';
+import { SubscriptionCreditsService } from '../services/SubscriptionCredits';
+import { EmailService } from '../services/email.service';
 
 // Import service interfaces for type documentation and IDE support
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -20,6 +20,24 @@ import type { IEmailService } from '../interfaces/IEmailService';
 // Track whether services are registered
 let servicesRegistered = false;
 
+const services = new Map<string, unknown>();
+
+export const container = {
+  registerInstance<T>(token: string, instance: T): void {
+    services.set(token, instance);
+  },
+
+  resolve<T>(token: string): T {
+    registerServices();
+
+    if (!services.has(token)) {
+      throw new Error(`Service not registered: ${token}`);
+    }
+
+    return services.get(token) as T;
+  },
+};
+
 /**
  * Register services in the DI container
  * This is done lazily to avoid running before test mocks are set up
@@ -29,18 +47,11 @@ function registerServices() {
     return;
   }
 
-  // Import services (will be refactored for DI)
-  // Import here to avoid running before test mocks are set up
-  // eslint-disable-next-line @typescript-eslint/no-require-imports, no-restricted-syntax
-  const { SubscriptionCreditsService } = require('../services/SubscriptionCredits');
-  // eslint-disable-next-line @typescript-eslint/no-require-imports, no-restricted-syntax
-  const { EmailService } = require('../services/email.service');
-
   // Register services as singletons
   // Manual registration instead of decorators for Next.js compatibility
   // We use container.registerInstance to register singleton instances
-  container.registerInstance('ISubscriptionCredits' as never, new SubscriptionCreditsService());
-  container.registerInstance('IEmailService' as never, new EmailService());
+  container.registerInstance('ISubscriptionCredits', new SubscriptionCreditsService());
+  container.registerInstance('IEmailService', new EmailService());
 
   servicesRegistered = true;
 }
@@ -54,11 +65,5 @@ function registerServices() {
  * ```
  */
 export function getService<T>(token: string): T {
-  registerServices(); // Lazy registration
   return container.resolve<T>(token);
 }
-
-/**
- * The DI container for direct access if needed
- */
-export { container };

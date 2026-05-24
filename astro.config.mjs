@@ -3,7 +3,7 @@ import tailwind from '@astrojs/tailwind';
 import react from '@astrojs/react';
 import mdx from '@astrojs/mdx';
 import cloudflare from '@astrojs/cloudflare';
-import { SUPPORTED_LOCALES, DEFAULT_LOCALE } from './i18n/config';
+import { SUPPORTED_LOCALES, DEFAULT_LOCALE } from './i18n/config.ts';
 
 // i18n locale configuration (synced with i18n/config.ts)
 const isPlaywrightTest = process.env.PLAYWRIGHT_TEST === '1' || process.env.ENV === 'test';
@@ -28,10 +28,6 @@ const playwrightOptimizeDeps = [
   '@tanstack/react-query',
   'react-icons/fa',
   '@amplitude/analytics-browser',
-  'papaparse',
-  'xlsx',
-  'react-markdown',
-  '@uiw/react-md-editor',
   'dayjs/plugin/utc',
 ];
 
@@ -70,6 +66,11 @@ export default defineConfig({
         ...baseOptimizeDeps,
         ...(isPlaywrightTest ? playwrightOptimizeDeps : []),
       ],
+    },
+    ssr: {
+      optimizeDeps: {
+        include: ['picomatch'],
+      },
     },
     // Preserve existing path aliases
     resolve: {

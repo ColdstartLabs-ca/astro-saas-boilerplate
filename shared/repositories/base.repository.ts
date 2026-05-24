@@ -262,7 +262,11 @@ export abstract class BaseRepository<
   }
 
   async create(data: TInsert): Promise<T> {
-    const result = await this.supabase.from(this.getTable()).insert(data).select('*').single();
+    const result = await this.supabase
+      .from(this.getTable())
+      .insert(data as Record<string, unknown>)
+      .select('*')
+      .single();
 
     const created = this.handleSingleResult(result);
     if (!created) {
@@ -272,7 +276,10 @@ export abstract class BaseRepository<
   }
 
   async createMany(data: TInsert[]): Promise<T[]> {
-    const result = await this.supabase.from(this.getTable()).insert(data).select('*');
+    const result = await this.supabase
+      .from(this.getTable())
+      .insert(data as Record<string, unknown>[])
+      .select('*');
 
     return this.handleMultipleResult(result);
   }
