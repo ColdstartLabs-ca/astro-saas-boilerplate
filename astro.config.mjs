@@ -11,7 +11,6 @@ const baseOptimizeDeps = [
   '@stripe/react-stripe-js',
   '@stripe/stripe-js',
   'react-hook-form',
-  '@hookform/resolvers/zod',
   'framer-motion',
   'dayjs',
   'dayjs/plugin/relativeTime',
@@ -30,13 +29,16 @@ const playwrightOptimizeDeps = [
   '@amplitude/analytics-browser',
   'dayjs/plugin/utc',
 ];
+const runtimeOptimizeDeps = [
+  ...playwrightOptimizeDeps,
+];
 
 // https://astro.build/config
 export default defineConfig({
   output: 'server',
   adapter: cloudflare({
     // Cloudflare Pages configuration
-    imageService: 'sharp',
+    imageService: 'passthrough',
   }),
   integrations: [
     react({
@@ -64,16 +66,19 @@ export default defineConfig({
     optimizeDeps: {
       include: [
         ...baseOptimizeDeps,
-        ...(isPlaywrightTest ? playwrightOptimizeDeps : []),
+        ...runtimeOptimizeDeps,
       ],
+      exclude: ['@hookform/resolvers/zod'],
     },
     ssr: {
       optimizeDeps: {
-        include: ['picomatch'],
+        include: ['picomatch', ...runtimeOptimizeDeps],
+        exclude: ['@hookform/resolvers/zod'],
       },
     },
     // Preserve existing path aliases
     resolve: {
+      dedupe: ['react', 'react-dom'],
       alias: {
         '@/*': './*',
         '@src/*': './src/*',
@@ -84,8 +89,7 @@ export default defineConfig({
         '@lib/*': './lib/*',
         '@locales/*': './locales/*',
         '@app/*': './app/*',
-        // Fix for React 18.2.x + Vite 6 + @astrojs/react compatibility
-        // Map server.edge to server.browser for React 18.2 compatibility
+        // React 18 does not export server.edge; Cloudflare workerd uses the browser renderer.
         'react-dom/server.edge': 'react-dom/server.browser',
       },
     },

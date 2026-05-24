@@ -30,34 +30,20 @@ test.describe('Landing Page', () => {
     expect(links).toBeGreaterThanOrEqual(1);
   });
 
-  test('should display updated FAQ content', async ({ page }) => {
+  test('should display core landing content', async ({ page }) => {
     await page.goto('/');
 
     // Wait for page to be fully loaded
     await page.waitForLoadState('networkidle');
 
-    // Find FAQ section by id
-    const faqSection = page.locator('#faq');
-    await expect(faqSection).toBeVisible();
+    await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
 
-    // Verify FAQ items exist
-    const faqItems = page.locator('#faq button');
-    const faqCount = await faqItems.count();
-    expect(faqCount).toBeGreaterThanOrEqual(6);
+    await expect(page.getByRole('heading', { name: 'Authentication' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Billing' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Credits System' })).toBeVisible();
 
-    // Verify key FAQ content is present
-    const pageContent = await page.locator('body').textContent();
-
-    // Check Google penalties FAQ
-    expect(pageContent).toContain('Will Google penalize AI-generated content?');
-
-    // Check CMS platforms FAQ
-    expect(pageContent).toContain('What CMS platforms do you support?');
-
-    // Check content review FAQ
-    expect(pageContent).toContain('Can I review content before it publishes?');
-
-    // Check refund policy FAQ
-    expect(pageContent).toContain("What's your refund policy?");
+    await expect(page.getByText('Supabase Auth with email/password')).toBeVisible();
+    await expect(page.getByText('Stripe integration with subscriptions')).toBeVisible();
+    await expect(page.getByText('Flexible credit-based usage')).toBeVisible();
   });
 });

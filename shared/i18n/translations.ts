@@ -90,7 +90,7 @@ const enTranslations: TranslationRegistry = {
   stripe: enStripe,
   i18n: enI18n,
   dashboard: enDashboard,
-  footer: ((enCommon as Record<string, unknown>).footer || {}) as Record<string, unknown>,
+  footer: ((enHomepage as Record<string, unknown>).footer || {}) as Record<string, unknown>,
 } as const;
 
 /**
@@ -113,7 +113,7 @@ const ptBRTranslations: TranslationRegistry = {
   stripe: ptBRStripe,
   i18n: ptBRI18n,
   dashboard: ptBRDashboard,
-  footer: ((ptBRCommon as Record<string, unknown>).footer || {}) as Record<string, unknown>,
+  footer: ((ptBRHomepage as Record<string, unknown>).footer || {}) as Record<string, unknown>,
   settings: ptBRSettings,
 } as const;
 
